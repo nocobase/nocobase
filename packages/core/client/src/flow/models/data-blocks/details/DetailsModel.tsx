@@ -51,7 +51,12 @@ export class DetailsModel extends DataBlockModel<{
     const resource = this.resource as MultiRecordResource;
     const onPageChange = (page) => {
       resource.setPage(page);
+      resource.loading = true;
       resource.refresh();
+      const data = this.resource.getData();
+      this.setSharedContext({
+        currentRecord: Array.isArray(data) ? data[0] : data,
+      });
     };
     return (
       <>
@@ -59,16 +64,12 @@ export class DetailsModel extends DataBlockModel<{
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
-                const data = this.resource.getData();
-                const currentRecord = Array.isArray(data) ? data[0] : data;
-
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
                       key={action.uid}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false }}
-                      sharedContext={{ currentRecord: currentRecord }}
                       extraToolbarItems={[
                         {
                           key: 'drag-handler',
@@ -85,13 +86,7 @@ export class DetailsModel extends DataBlockModel<{
                 model={this}
                 items={buildActionItems(this, 'RecordActionModel')}
                 onModelCreated={async (actionModel) => {
-                  const data = this.resource.getData();
-                  const currentRecord = Array.isArray(data) ? data[0] : data;
-                  actionModel.setSharedContext({
-                    currentRecord,
-                  });
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
-                  await actionModel.applyFlow('buttonSettings');
                 }}
               />
             </Space>
@@ -104,13 +99,13 @@ export class DetailsModel extends DataBlockModel<{
         {this.isMultiRecordResource() && (
           <div
             style={{
-              padding: this.context.themeToken.padding,
               textAlign: 'center',
             }}
           >
             <Pagination
               simple
               pageSize={1}
+              showSizeChanger={false}
               defaultCurrent={resource.getPage()}
               total={resource.getTotalPage()}
               onChange={onPageChange}
@@ -140,6 +135,10 @@ DetailsModel.registerFlow({
         } else {
           ctx.model.resource.loading = false;
         }
+        const data = ctx.model.resource.getData();
+        ctx.model.setSharedContext({
+          currentRecord: Array.isArray(data) ? data[0] : data,
+        });
       },
     },
   },

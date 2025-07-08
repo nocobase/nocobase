@@ -8,12 +8,12 @@
  */
 
 import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
-import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
 import React from 'react';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
-import { EditableFieldModel } from '../../fields';
-import { FormModel } from './FormModel';
 import { FieldModel } from '../../base/FieldModel';
+import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
+import { EditableFieldModel } from '../../fields';
+import { FormCustomFormItemModel } from './FormCustomFormItemModel';
+import { FormModel } from './FormModel';
 
 export class FormFieldGridModel extends GridModel<{
   parent: FormModel;
@@ -48,9 +48,9 @@ export class FormFieldGridModel extends GridModel<{
           subModelKey="items"
           subModelBaseClass={FormCustomFormItemModel}
           model={this}
-          onSubModelAdded={async (model: EditableFieldModel) => {
-            const params = model.getStepParams('default', 'step1');
-            formModelInstance.addAppends(params?.fieldPath, !!this.ctx.shared?.currentFlow?.runtimeArgs?.filterByTk);
+          onSubModelAdded={async (field: EditableFieldModel) => {
+            const fieldPath = field.getStepParams('fieldSettings', 'init').fieldPath;
+            this.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
           }}
         />
         {/* <FlowSettingsButton

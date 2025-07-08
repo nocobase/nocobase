@@ -60,8 +60,8 @@ const AddDetailField = ({ model }) => {
         await field.applyAutoFlows();
       }}
       onSubModelAdded={async (item: DetailItemModel) => {
-        const field: any = item.subModels.field;
-        detailsModelInstance.addAppends(field.fieldPath, true);
+        const fieldPath = item.getStepParams('fieldSettings', 'init').fieldPath;
+        model.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
       }}
     />
   );
