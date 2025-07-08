@@ -13,6 +13,7 @@ import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
+import { observable } from '@formily/reactive';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
@@ -23,7 +24,7 @@ const FilterContent: FC<{ value: any }> = (props) => {
 
   return (
     <>
-      <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} ctx={modelInstance.ctx} />
+      <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} model={modelInstance} />
       <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
         <Button onClick={() => modelInstance.dispatchEvent('reset')}>{t('Reset')}</Button>
         <Button type="primary" onClick={() => modelInstance.dispatchEvent('submit')}>
@@ -46,7 +47,7 @@ export class FilterActionModel extends GlobalActionModel {
     type: 'default',
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
-    filterValue: { $and: [] },
+    filterValue: observable({ $and: [] }),
     ignoreFieldsNames: [],
   };
 
@@ -129,6 +130,7 @@ FilterActionModel.registerFlow({
                 fields={fields}
                 ignoreFieldsNames={ignoreFieldsNames}
                 ctx={modelInstance.ctx}
+                model={modelInstance}
               />
             );
           },
