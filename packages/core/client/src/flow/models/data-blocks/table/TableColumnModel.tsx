@@ -9,7 +9,14 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DragHandler, Droppable, escapeT, FlowModel, FlowsFloatContextMenu } from '@nocobase/flow-engine';
+import {
+  DragHandler,
+  Droppable,
+  escapeT,
+  FlowModel,
+  FlowsFloatContextMenu,
+  useStepSettingContext,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -124,6 +131,15 @@ TableColumnModel.registerFlow({
           'x-component-props': {
             placeholder: escapeT('Column title'),
           },
+          'x-reactions': (field) => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const { model } = useStepSettingContext();
+            const originTitle = model.collectionField?.uiSchema?.title;
+            field.decoratorProps = {
+              ...field.decoratorProps,
+              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+            };
+          },
         },
       },
       defaultParams: (ctx) => {
@@ -132,7 +148,6 @@ TableColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        console.log('editColumTitle params:', params);
         const title = ctx.engine.translate(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
@@ -217,7 +232,6 @@ TableCustomColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        console.log('editColumTitle params:', params);
         const title = ctx.engine.translate(params.title);
         ctx.model.setProps('title', title);
       },
