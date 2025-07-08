@@ -707,7 +707,7 @@ async function buildDataSourceBlockItems(
         if (currentFlow && collection) {
           const relatedCollections = collection?.getRelatedCollections() || [];
           meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedCollections);
-          meta.children = meta.children.forEach((child) => {
+          meta.children.forEach((child) => {
             child.defaultOptions = _.merge(_.cloneDeep(defaultOptions), child.defaultOptions);
           });
         }
