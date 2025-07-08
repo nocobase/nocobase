@@ -23,6 +23,22 @@
 
 ---
 
+## 在 uiSchema 中使用 ctx 的注意事项
+
+- **uiSchema 主要用于配置 params**：uiSchema 用于描述参数（params）的结构、表单、校验等，最终生成的 params 会传递给 handler 进行业务处理。
+- **settings 模式下 ctx 变量为字符串模板**：在 uiSchema 设计阶段（settings 模式），ctx 的所有属性（如 runId、steps、inputArgs 等）都是字符串模板。例如：
+  ```js
+  console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
+  ```
+- **变量引用为字符串模板**：在 uiSchema 的表达式、默认值、联动条件等地方，使用 `{{ ctx.xxx }}` 形式引用流程变量，实现动态表单和参数配置。
+- **不要在 uiSchema 里直接依赖真实数据**：settings 模式下 ctx 仅用于变量占位和表达式生成，不能获取到运行时的实际值。实际值只会在 handler（运行时）中通过 params 获取和处理。
+- **典型用法**：在 uiSchema 的表达式、默认值、联动条件等地方，使用 `{{ ctx.xxx }}` 形式引用流程变量，实现动态表单和参数配置。
+
+**总结**：  
+uiSchema 里 ctx 只用于变量引用和表达式生成，所有 ctx 变量都是字符串模板，最终会在流程运行时由 handler 通过 params 获取真实数据。不要在 uiSchema 里依赖 ctx 的实际值。
+
+---
+
 ## 代理（delegate）机制说明
 
 - `FlowRuntimeContext` 通过代理（delegate）机制可访问其对应的 `FlowModelContext` 的属性和方法，实现模型级别的服务、配置、数据共享。
@@ -107,3 +123,35 @@ function MyComponent() {
   console.log(ctx.runId); // '{{ ctx.runId }}'
 }
 ```
+
+### 6. ctx 字符串变量示例
+
+在 uiSchema 配置参数时，ctx 变量会以字符串模板的形式存在，实际运行时会被替换为真实值。常见用法如下：
+
+```ts
+{
+  steps: {
+    step1: {
+      uiSchema: {
+        runId: {
+          'x-component': 'Input', // 表单中展示 runId 字段
+        },
+      },
+      defaultParams: {
+        runId: '{{ctx.runId}}', // 配置阶段为字符串模板
+      },
+      handler(ctx, params) {
+        // 运行时 params.runId 会被替换为实际的 runId，如 'a3afl8...'
+        console.log(params.runId); // 例如 'a3afl8...'
+      }
+    },
+  }
+}
+```
+
+**说明：**
+- 在 `uiSchema` 阶段，`runId` 字段的默认值是字符串模板 `'{{ctx.runId}}'`，用于占位和表达式引用。
+- 在流程实际运行时（handler 执行时），`params.runId` 会自动被替换为当前流程实例的真实 runId。
+- 这种机制适用于所有 ctx 变量（如 `ctx.steps.step1.result`、`ctx.inputArgs.xxx` 等），便于在表单、参数、联动等场景下灵活引用流程上下文数据。
+
+> 提示：`{{ctx.xxx}}` 在 uiSchema（settings 模式）中仅作为变量占位符，实际数据会在 handler（runtime 模式）中自动解析和注入。
