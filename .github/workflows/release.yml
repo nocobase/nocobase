@@ -137,6 +137,8 @@ jobs:
           fi
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -160,7 +162,7 @@ jobs:
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
           TAGS=()
-          
+
           TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
           TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
 
@@ -180,7 +182,7 @@ jobs:
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
           TAGS=()
-          
+
           TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
           TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
 
