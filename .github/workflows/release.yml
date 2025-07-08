@@ -26,6 +26,7 @@ jobs:
         id: get-info
         shell: bash
         run: |
+          echo "cnaVersion=${{ github.ref_name }}" | sed 's/^refs\/tags\/v//' >> "$GITHUB_OUTPUT"
           if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
@@ -210,7 +211,7 @@ jobs:
         with:
           context: ./docker/nocobase
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
+            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_TAGS }}
@@ -220,7 +221,7 @@ jobs:
           context: ./docker/nocobase
           file: ./docker/nocobase/Dockerfile-full
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
+            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_FULL_TAGS }}
