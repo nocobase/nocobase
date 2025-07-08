@@ -10,5 +10,5 @@
 import { EditableFieldModel } from './EditableFieldModel';
 
 export class SingleTextEditableFieldModel extends EditableFieldModel {
-  static supportedFieldInterfaces = '*' as any;
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url'] as any;
 }
