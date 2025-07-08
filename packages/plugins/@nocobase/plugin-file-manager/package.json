@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "1.8.0-beta.13",
+  "version": "1.9.0-beta.1",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "Provides files storage services with files collection template and attachment field.",
@@ -22,7 +22,6 @@
     "antd": "5.x",
     "axios": "^1.7.0",
     "cos-nodejs-sdk-v5": "^2.11.14",
-    "file-type": "^21.0.0",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
     "mime-types": "^3.0.1",
@@ -36,6 +35,9 @@
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6",
     "url-join": "4.0.1"
+  },
+  "dependencies": {
+    "file-type": "^21.0.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
