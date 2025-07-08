@@ -15,7 +15,6 @@ import { EditableFieldModel } from '../EditableFieldModel';
 const DatePickerCom = (props) => {
   const { value, utc, format = 'YYYY-MM-DD HH:mm:ss', ...rest } = props;
   const parsedValue = value ? (utc ? dayjs.utc(value).local() : dayjs(value)) : null;
-
   return <DatePicker {...rest} value={parsedValue} format={format} />;
 };
 

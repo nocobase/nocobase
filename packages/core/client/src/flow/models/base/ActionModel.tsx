@@ -54,17 +54,19 @@ ActionModel.registerFlow({
         type: {
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
-          title: escapeT('Button background color'),
+          title: escapeT('Button type'),
           enum: [
             { value: 'default', label: '{{t("Default")}}' },
-            { value: 'primary', label: '{{t("Highlight")}}' },
-            { value: 'danger', label: '{{t("Danger red")}}' },
+            { value: 'primary', label: '{{t("Primary")}}' },
+            { value: 'dashed', label: '{{t("Dashed")}}' },
+            { value: 'link', label: '{{t("Link")}}' },
+            { value: 'text', label: '{{t("Text")}}' },
           ],
-          'x-reactions': [
-            (field) => {
-              field.hidden = field.value === 'link';
-            },
-          ],
+        },
+        danger: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+          title: escapeT('Danger'),
         },
       },
       defaultParams(ctx) {
@@ -75,12 +77,12 @@ ActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        const { title, icon, type } = params;
+        const { title, icon, type, danger } = params;
         ctx.model.setProps({
           title: ctx.t(title),
           icon,
-          type: type === 'danger' ? 'primary' : type,
-          danger: type === 'danger',
+          type: type,
+          danger,
           onClick: (event) => {
             ctx.model.dispatchEvent('click', { event });
           },
