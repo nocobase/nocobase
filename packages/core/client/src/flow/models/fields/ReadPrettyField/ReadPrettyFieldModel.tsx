@@ -13,7 +13,7 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 
 export class ReadPrettyFieldModel extends FieldModel {
-  static readonly supportedFieldInterfaces = '*';
+  static readonly supportedFieldInterfaces = '*' as any;
 
   getValue() {
     return this.ctx.shared.value;
@@ -23,8 +23,6 @@ export class ReadPrettyFieldModel extends FieldModel {
     const value = this.getValue();
     const { prefix, suffix } = this.props;
     const dataType = this.collectionField?.dataType;
-
-    console.log(dataType, value, this.collectionField.name, this.collectionField.title);
 
     let content = '';
 
