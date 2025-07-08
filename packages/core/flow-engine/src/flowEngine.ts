@@ -54,6 +54,7 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
+    this.registerModels({ FlowModel });
   }
 
   get context() {
