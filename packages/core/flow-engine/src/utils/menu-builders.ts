@@ -698,8 +698,8 @@ async function buildDataSourceBlockItems(
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
       const meta = hasCurrentFlowContext ? _.cloneDeep((ModelClass as any).meta) : (ModelClass as any).meta;
+      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
-      // 增强流程上下文
       if (hasCurrentFlowContext) {
         const currentFlow = model.parent?.getSharedContext()?.currentFlow;
         const collection: Collection = currentFlow?.shared?.currentBlockModel?.collection;
@@ -707,6 +707,9 @@ async function buildDataSourceBlockItems(
         if (currentFlow && collection) {
           const relatedCollections = collection?.getRelatedCollections() || [];
           meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedCollections);
+          meta.children = meta.children.forEach((child) => {
+            child.defaultOptions = _.merge(_.cloneDeep(defaultOptions), child.defaultOptions);
+          });
         }
       }
 
@@ -719,8 +722,6 @@ async function buildDataSourceBlockItems(
         };
       }
 
-      // 简单区块处理
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
       const dataSourceMenuItems = dataSources.map((dataSource) => ({
         key: `${className}.${dataSource.key}`,
         label: dataSource.displayName,
