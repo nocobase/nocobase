@@ -106,7 +106,7 @@ export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restP
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
           >
-            拖拽中
+            {flowEngine.translate('Dragging')}
           </span>
         )}
       </DragOverlay>
