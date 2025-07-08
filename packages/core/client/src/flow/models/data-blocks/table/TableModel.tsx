@@ -384,7 +384,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
               onChange: (_, selectedRows) => {
                 this.resource.setSelectedRows(selectedRows);
               },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row._rowKey),
+              selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
               renderCell: this.renderCell,
             }
           }
