@@ -99,19 +99,17 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   };
 };
 
-export const getWorkflowCallers = async (groupName, plugin) => {
+export const getWorkflowCallers = async (plugin) => {
   const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
   const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values()).filter(
     (item) => item.type === 'ai-employee',
   );
   const register: ToolRegisterOptions[] = [];
   for (const workflow of aiSupporterWorkflows) {
-    const toolName = `${groupName}-${workflow.key}`;
     const config = workflow.config;
     register.push({
-      groupName,
       tool: {
-        name: toolName,
+        name: workflow.key,
         title: workflow.title,
         description: workflow.description,
         schema: buildSchema(config),

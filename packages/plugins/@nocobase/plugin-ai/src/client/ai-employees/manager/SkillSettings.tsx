@@ -173,6 +173,7 @@ export const Skills: React.FC = () => {
   const handleAdd = (name: string) => {
     const skills = [...(field.value || [])];
     skills.push(name);
+    console.log('handleAdd', skills);
     field.value = Array.from(new Set(skills));
   };
 
@@ -182,13 +183,12 @@ export const Skills: React.FC = () => {
         key: item.group.groupName,
       };
       const itemProps = {
-        title: item.group.title ?? "",
-        description: item.group.description ?? "",
+        title: item.group.title ?? '',
+        description: item.group.description ?? '',
         name: item.group.groupName,
         isRoot: true,
-      }
+      };
       if (item.tools) {
-
         result.label = <SkillsListItem {...itemProps} />;
         result.children = item.tools.map((child) => {
           return {
@@ -238,10 +238,8 @@ export const Skills: React.FC = () => {
           bordered
           dataSource={field.value || []}
           renderItem={(item: string) => {
-            const tools = data?.flatMap(x => x.tools) ?? []
-            console.log(tools)
-            const [name] = item.split('-');
-            const tool = tools.find((tool) => tool.name === name);
+            const tools = data?.flatMap((x) => x.tools) ?? [];
+            const tool = tools.find((tool) => tool.name === item);
             if (!tool) {
               return null;
             }

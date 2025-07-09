@@ -98,7 +98,7 @@ export class PluginAIServer extends Plugin {
     toolManager.registerDynamicTool({
       groupName: workflowGroupName,
       getTools: async () => {
-        return await getWorkflowCallers(workflowGroupName, this);
+        return await getWorkflowCallers(this);
       },
     });
   }

@@ -59,7 +59,7 @@ export class AIEmployee {
     const skills = this.employee.skillSettings?.skills || [];
     if (skills?.length) {
       for (const skill of skills) {
-        const tool = await this.plugin.aiManager.getTool(skill);
+        const tool = await this.plugin.aiManager.toolManager.getTool(skill);
         if (tool) {
           tools.push(tool);
         }
