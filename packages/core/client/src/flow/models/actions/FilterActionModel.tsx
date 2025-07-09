@@ -169,6 +169,7 @@ FilterActionModel.registerFlow({
 
         if (!isEmptyFilter(ctx.model.props.filterValue)) {
           resource.addFilterGroup(ctx.model.uid, removeNullCondition(ctx.model.props.filterValue));
+          resource.setPage(1);
         }
         resource.refresh();
         ctx.model.setProps('open', false);
