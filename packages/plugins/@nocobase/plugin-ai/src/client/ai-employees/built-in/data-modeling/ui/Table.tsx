@@ -10,7 +10,7 @@
 import React from 'react';
 import { Table as AntdTable, Checkbox, Tag, Select, Input } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { useT } from '../../locale';
+import { useT } from '../../../../locale';
 import { useApp, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import lodash from 'lodash';

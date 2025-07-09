@@ -17,23 +17,23 @@ import {
   useSchemaToolbar,
   useToken,
 } from '@nocobase/client';
-import { useT } from '../../locale';
-import { avatars } from '../avatars';
+import { useT } from '../../../locale';
+import { avatars } from '../../avatars';
 import { Card, Avatar, Tooltip, Modal, Tag, Typography } from 'antd';
 import { ArrayTabs } from '@formily/antd-v5';
 const { Meta } = Card;
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
-import { AIEmployee, ContextItem as ContextItemType } from '../types';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
+import { AIEmployee, ContextItem as ContextItemType } from '../../types';
 import { AIVariableRawTextArea } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
-import { AddContextButton } from '../AddContextButton';
+import { AddContextButton } from '../../AddContextButton';
 import { useField } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { ContextItem } from '../chatbox/ContextItem';
+import { ContextItem } from '../../chatbox/ContextItem';
 
 const WorkContext: React.FC = () => {
   const field = useField<ArrayField>();

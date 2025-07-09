@@ -103,11 +103,12 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
 
 export const getWorkflowCallers = async (groupName, plugin) => {
   const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
-  const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values())
-      .filter((item) => item.type === 'ai-employee');
+  const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values()).filter(
+    (item) => item.type === 'ai-employee',
+  );
   const register: ToolRegisterOptions<unknown>[] = [];
   for (const workflow of aiSupporterWorkflows) {
-    const toolName = `${groupName}-${workflow.key}`
+    const toolName = `${groupName}-${workflow.key}`;
     const config = workflow.config;
     register.push({
       groupName,
@@ -118,8 +119,8 @@ export const getWorkflowCallers = async (groupName, plugin) => {
         description: workflow.description,
         schema: buildSchema(config),
         invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
-      }
+      },
     });
   }
   return register;
-}
+};

@@ -50,15 +50,15 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.registerTool({
-      toolName: "formFiller",
+      toolName: 'formFiller',
       tool: formFiller,
     });
-    const workflowGroupName = "workflowCaller";
+    const workflowGroupName = 'workflowCaller';
     this.aiManager.registerToolGroup({
       groupName: workflowGroupName,
       title: '{{t("Workflow caller")}}',
       description: '{{t("Use workflow as a tool")}}',
-    })
+    });
     this.aiManager.registerDynamicTool({
       groupName: workflowGroupName,
       getTools: async () => {

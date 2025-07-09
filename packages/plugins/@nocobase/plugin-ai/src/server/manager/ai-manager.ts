@@ -42,33 +42,33 @@ export interface ToolOptions<T> {
 }
 
 export type ToolRegisterOptions<T> = {
-    groupName?: string;
-    toolName: string;
-    tool: ToolOptions<T>
-}
+  groupName?: string;
+  toolName: string;
+  tool: ToolOptions<T>;
+};
 
 export type ToolGroupRegisterOptions = {
-    groupName: string;
-    title?: string;
-    description?: string;
-}
+  groupName: string;
+  title?: string;
+  description?: string;
+};
 
 export type ToolRegisterDelegate = {
-  groupName: string
+  groupName: string;
   getTools: () => Promise<ToolRegisterOptions<unknown>[]>;
-}
+};
 
 export interface AIToolRegister {
-  registerToolGroup(options: ToolGroupRegisterOptions)
-  registerDynamicTool(delegate: ToolRegisterDelegate)
-  registerTool<T>(options: ToolRegisterOptions<T> | ToolRegisterOptions<T>[])
+  registerToolGroup(options: ToolGroupRegisterOptions);
+  registerDynamicTool(delegate: ToolRegisterDelegate);
+  registerTool<T>(options: ToolRegisterOptions<T> | ToolRegisterOptions<T>[]);
 }
 
 const DEFAULT_TOOL_GROUP: ToolGroupRegisterOptions = {
   groupName: 'default',
   title: '{{t("Default")}}',
   description: '{{t("Default tools")}}',
-}
+};
 
 export class AIManager implements AIToolRegister {
   llmProviders = new Map<string, LLMProviderOptions>();
@@ -98,26 +98,24 @@ export class AIManager implements AIToolRegister {
     this.delegates.push(delegate);
   }
 
-  registerTool<T>(
-      options: ToolRegisterOptions<T> | ToolRegisterOptions<T>[]
-  ) {
+  registerTool<T>(options: ToolRegisterOptions<T> | ToolRegisterOptions<T>[]) {
     const list = _.isArray(options) ? options : [options];
     list.forEach((x) => {
       if (!x.groupName) {
-          x.groupName = DEFAULT_TOOL_GROUP.groupName;
+        x.groupName = DEFAULT_TOOL_GROUP.groupName;
       }
       this.tools.register(x.toolName, x);
     });
   }
 
   async getTool(name: string, raw = false): Promise<ToolOptions<unknown>> {
-    let result = await this._getTool(this.tools, name, raw);
+    const result = await this._getTool(this.tools, name, raw);
     if (result) {
       return result;
     } else {
       const delegateTools: Registry<ToolRegisterOptions<unknown>> = new Registry();
       const [groupName] = name.split('-');
-      for (const delegate of this.delegates.filter(x => x.groupName === groupName)) {
+      for (const delegate of this.delegates.filter((x) => x.groupName === groupName)) {
         const tools = await delegate.getTools();
         for (const tool of tools) {
           const item = {
@@ -131,7 +129,11 @@ export class AIManager implements AIToolRegister {
     }
   }
 
-  private async _getTool(register: Registry<ToolRegisterOptions<unknown>>, name: string, raw = false): Promise<ToolOptions<unknown>> {
+  private async _getTool(
+    register: Registry<ToolRegisterOptions<unknown>>,
+    name: string,
+    raw = false,
+  ): Promise<ToolOptions<unknown>> {
     const processSchema = (schema: any) => {
       if (!schema) return undefined;
       try {
@@ -153,20 +155,22 @@ export class AIManager implements AIToolRegister {
     };
   }
 
-  async listTools(): Promise<{
-    group: ToolGroupRegisterOptions;
-    tools: ToolOptions<unknown>[]
-  }[]> {
+  async listTools(): Promise<
+    {
+      group: ToolGroupRegisterOptions;
+      tools: ToolOptions<unknown>[];
+    }[]
+  > {
     const groupRegisters = Array.from(this.groups.getValues());
     const toolRegisters = Array.from(this.tools.getValues());
     for (const delegate of this.delegates) {
       const delegateTools = await delegate.getTools();
       toolRegisters.push(...delegateTools);
     }
-    const groupedTools = _.groupBy(toolRegisters, item => item.groupName)
+    const groupedTools = _.groupBy(toolRegisters, (item) => item.groupName);
     return Array.from(groupRegisters).map((group) => ({
       group,
-      tools: groupedTools[group.groupName]?.map(x => x.tool) ?? [],
-    }))
+      tools: groupedTools[group.groupName]?.map((x) => x.tool) ?? [],
+    }));
   }
 }

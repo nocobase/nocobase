@@ -17,15 +17,13 @@ import { LLMInstruction } from './workflow/nodes/llm';
 import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
-import { aiEmployeesInitializer } from './ai-employees/initializer/AIEmployees';
-import { aiEmployeeButtonSettings } from './ai-employees/settings/AIEmployeeButton';
-import { withAISelectable } from './ai-employees/selector/withAISelectable';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import { ClassicPagesContext } from './ai-employees/context/classic-pages';
 import { CollectionDefinitionsContext } from './ai-employees/context/data-modeling';
+import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -33,12 +31,6 @@ const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'Mes
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
-const { AIEmployeeButton } = lazy(() => import('./ai-employees/initializer/AIEmployeeButton'), 'AIEmployeeButton');
-const { AIFormContextCollector } = lazy(
-  () => import('./ai-employees/selector/AIContextCollector'),
-  'AIFormContextCollector',
-);
-// const { PermissionsTab } = lazy(() => import('./ai-employees/permissions/PermissionsTab'), 'PermissionsTab');
 
 export class PluginAIClient extends Plugin {
   aiManager = new AIManager();
@@ -52,16 +44,18 @@ export class PluginAIClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.use(AIEmployeesProvider);
-    this.app.addComponents({
-      AIEmployeeButton,
-      AIFormContextCollector,
-      CardItem: withAISelectable(CardItem, {
-        selectType: 'block',
-      }),
-      CollectionField: withAISelectable(CollectionField, {
-        selectType: 'field',
-      }),
+
+    this.flowEngine.registerModels({
+      AIEmployeeShortcutListModel,
+      AIEmployeeShortcutModel,
     });
+
+    this.addPluginSettings();
+    this.setupAIFeatures();
+    this.setupWorkflow();
+  }
+
+  addPluginSettings() {
     this.app.pluginSettingsManager.add('ai', {
       icon: 'TeamOutlined',
       title: tval('AI employees', { ns: namespace }),
@@ -86,33 +80,13 @@ export class PluginAIClient extends Plugin {
       Component: AdminSettings,
     });
 
-    this.app.schemaInitializerManager.addItem(
-      'table:configureActions',
-      'enableActions.aiEmployees',
-      aiEmployeesInitializer,
-    );
-    this.app.schemaInitializerManager.addItem(
-      'details:configureActions',
-      'enableActions.aiEmployees',
-      aiEmployeesInitializer,
-    );
-    this.app.schemaInitializerManager.addItem(
-      'createForm:configureActions',
-      'enableActions.aiEmployees',
-      aiEmployeesInitializer,
-    );
-    this.app.schemaInitializerManager.addItem(
-      'editForm:configureActions',
-      'enableActions.aiEmployees',
-      aiEmployeesInitializer,
-    );
-    this.app.schemaSettingsManager.add(aiEmployeeButtonSettings);
-
     const aclPlugin = this.app.pm.get(PluginACLClient);
     if (aclPlugin) {
       aclPlugin.settingsUI.addPermissionsTab(PermissionsTab);
     }
+  }
 
+  setupAIFeatures() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
@@ -137,7 +111,9 @@ export class PluginAIClient extends Plugin {
         form.setValues(data);
       },
     });
+  }
 
+  setupWorkflow() {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClient;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });

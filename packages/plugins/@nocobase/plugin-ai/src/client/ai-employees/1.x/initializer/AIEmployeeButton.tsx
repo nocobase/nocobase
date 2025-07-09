@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Avatar, Popover, Button, Spin } from 'antd';
-import { avatars } from '../avatars';
+import { avatars } from '../../avatars';
 import {
   SortableItem,
   useBlockRequestContext,
@@ -20,9 +20,9 @@ import {
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
-import { useChatBoxContext } from '../chatbox/ChatBoxContext';
-import { ProfileCard } from '../ProfileCard';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useChatBoxContext } from '../../chatbox/ChatBoxContext';
+import { ProfileCard } from '../../ProfileCard';
+import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 
 export const AIEmployeeButton: React.FC<{
   username: string;

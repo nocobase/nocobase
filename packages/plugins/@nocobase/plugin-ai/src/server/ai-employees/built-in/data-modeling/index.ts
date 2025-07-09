@@ -7,14 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Snowflake from '../snowflake';
+import profile from './profile';
 
-it('generate snowflake id', async () => {
-  const snowflake = new Snowflake();
-  const ids = [];
-  for (let i = 0; i < 10; i++) {
-    ids.push(snowflake.generate());
-  }
-  // check unique
-  expect(new Set(ids).size).toBe(10);
-});
+export const dataModeling = {
+  profile,
+  skills: ['system.data-modeling'],
+};

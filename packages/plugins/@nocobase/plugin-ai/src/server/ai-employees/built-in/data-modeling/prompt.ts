@@ -7,90 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const typeDefinition = `export interface CollectionOptions extends Omit<SequelizeModelOptions, 'name' | 'hooks'> {
-  /** The unique identifier of the collection, must be unique across the database */
+const typeDefinition = `type CollectionOptions = {
   name: string;
-  /** The display title of the collection, used for UI presentation */
   title?: string;
-  /** The description of the collection */
   description?: string;
-  /** Whether this collection is a through table for many-to-many relationships */
-  isThrough?: boolean;
-  /** The target key(s) used for filtering operations, can be a single key or array of keys */
-  filterTargetKey?: string | string[];
-  /** Array of field definitions for the collection */
-  fields?: FieldOptions[];
-  /**
-   * Whether to automatically generate an 'id' field
-   * @default true
-   */
-  autoGenId?: boolean;
-  /**
-   * Whether to automatically generate a 'createdAt' timestamp field
-   * @default true
-   */
-  createdAt?: boolean;
-  /** Whether to automatically generate an 'updatedAt' timestamp field
-   *  @default true
-   */
-  updatedAt?: boolean;
-  /**
-   * Whether to automatically generate a 'createdById' field for record ownership
-   * @default false
-   */
-  createdBy?: boolean;
-  /**
-   * Whether to automatically generate an 'updatedById' field for tracking updates
-   * @default false
-   */
-  updatedBy?: boolean;
-  /** The template identifier used to create this collection */
   template: 'general' | 'tree' | 'file' | 'calendar' | 'expression';
-  /** The field name used for tree structure functionality */
+  fields: FieldOptions[];
+  isThrough?: boolean;
+  filterTargetKey?: string | string[];
+  autoGenId?: boolean;
+  createdAt?: boolean;
+  updatedAt?: boolean;
+  createdBy?: boolean;
+  updatedBy?: boolean;
   tree?: 'adjacencyList';
-}
+};
 
-export type FieldOptions =
-  | BaseFieldOptions
-  | StringFieldOptions
-  | IntegerFieldOptions
-  | FloatFieldOptions
-  | DecimalFieldOptions
-  | DoubleFieldOptions
-  | JsonFieldOptions
-  | JsonbFieldOptions
-  | BooleanFieldOptions
-  | RadioFieldOptions
-  | TextFieldOptions
-  | TimeFieldOptions
-  | DateFieldOptions
-  | DatetimeTzFieldOptions
-  | DatetimeNoTzFieldOptions
-  | DateOnlyFieldOptions
-  | UnixTimestampFieldOptions
-  | UidFieldOptions
-  | UUIDFieldOptions
-  | NanoidFieldOptions
-  | PasswordFieldOptions
-  | BelongsToFieldOptions
-  | HasOneFieldOptions
-  | HasManyFieldOptions
-  | BelongsToManyFieldOptions;
+type FieldOptions =
+  | StringField
+  | NumberField
+  | BooleanField
+  | TextField
+  | DateTimeField
+  | IdField
+  | PasswordField
+  | JsonField
+  | RelationField;
 
-/**
- * Base options for all field types
- * Provides common properties that are available to all field configurations
- */
-export interface BaseFieldOptions {
-  /** The name of the field, used as the column name in the database */
+type BaseField = {
   name: string;
-  /** The title of the field, used for display in the UI */
   title: string;
-  /** The description of the field */
-  description?: string;
-  /** Whether the field should be hidden from API responses and UI */
-  hidden?: boolean;
-  /** Required. The user interface component type for this field */
   interface:
     | 'id'
     | 'input'
@@ -127,149 +73,136 @@ export interface BaseFieldOptions {
     | 'm2o'
     | 'o2m'
     | 'o2o';
-  /** enumeration options for the field, used for select/radio/checkbox interfaces */
-  enum?: {
-    label: string;
-    value: string | number | boolean;
-  }[];
-  /** Additional properties for extensibility */
-  [key: string]: any;
-}
-/**
- * Base options for column-based field types
- * Extends BaseFieldOptions and includes Sequelize column-specific options
- * Excludes the 'type' property as it's handled by the specific field implementations
- */
-export interface BaseColumnFieldOptions extends BaseFieldOptions, Omit<ModelAttributeColumnOptions, 'type'> {
-  /** The Sequelize data type for the column */
-  dataType?: DataType;
+  description?: string;
+  hidden?: boolean;
+  enum?: { label: string; value: string | number | boolean }[];
+};
 
-  /** Index configuration for the column, can be boolean or detailed index options */
-  index?: boolean | ModelIndexesOptions;
-}
-
-export interface StringFieldOptions extends BaseColumnFieldOptions {
+type StringField = BaseField & {
   type: 'string';
   length?: number;
   trim?: boolean;
-}
-export interface IntegerFieldOptions extends BaseColumnFieldOptions {
-  type: 'integer';
-}
-export interface FloatFieldOptions extends BaseColumnFieldOptions {
-  type: 'float';
-}
-export interface DecimalFieldOptions extends BaseColumnFieldOptions {
-  type: 'decimal';
-  precision: number;
-  scale: number;
-}
-export interface DoubleFieldOptions extends BaseColumnFieldOptions {
-  type: 'double';
-}
-export interface JsonFieldOptions extends BaseColumnFieldOptions {
-  type: 'json';
-}
-export interface JsonbFieldOptions extends BaseColumnFieldOptions {
-  type: 'jsonb';
-}
-export interface BooleanFieldOptions extends BaseColumnFieldOptions {
+};
+
+type NumberField = BaseField & {
+  type: 'integer' | 'float' | 'double' | 'decimal';
+  precision?: number;
+  scale?: number;
+};
+
+type BooleanField = BaseField & {
   type: 'boolean';
-}
-export interface RadioFieldOptions extends BaseColumnFieldOptions {
-  type: 'radio';
-}
-export interface TextFieldOptions extends BaseColumnFieldOptions {
+};
+
+type TextField = BaseField & {
   type: 'text';
   length?: 'tiny' | 'medium' | 'long';
   trim?: boolean;
-}
-export interface TimeFieldOptions extends BaseColumnFieldOptions {
-  type: 'time';
-}
-export interface DateFieldOptions extends BaseColumnFieldOptions {
-  type: 'date';
-}
-export interface DatetimeTzFieldOptions extends BaseColumnFieldOptions {
-  type: 'datetimeTz';
-}
-export interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions {
-  type: 'datetimeNoTz';
-}
-export interface DateOnlyFieldOptions extends BaseColumnFieldOptions {
-  type: 'dateOnly';
-}
-export interface UnixTimestampFieldOptions extends BaseColumnFieldOptions {
-  type: 'unixTimestamp';
-}
-export interface UidFieldOptions extends BaseColumnFieldOptions {
-  type: 'uid';
+};
+
+type DateTimeField = BaseField & {
+  type: 'date' | 'datetimeTz' | 'datetimeNoTz' | 'dateOnly' | 'time' | 'unixTimestamp';
+};
+
+type IdField = BaseField & {
+  type: 'uid' | 'uuid' | 'nanoid';
   prefix?: string;
   pattern?: string;
-}
-export interface UUIDFieldOptions extends BaseColumnFieldOptions {
-  type: 'uuid';
-  autoFill?: boolean;
-}
-export interface NanoidFieldOptions extends BaseColumnFieldOptions {
-  type: 'nanoid';
   size?: number;
   customAlphabet?: string;
   autoFill?: boolean;
-}
-export interface PasswordFieldOptions extends BaseColumnFieldOptions {
+};
+
+type PasswordField = BaseField & {
   type: 'password';
-  /**
-   * @default 64
-   */
   length?: number;
-  /**
-   * @default 8
-   */
   randomBytesSize?: number;
-}
-export interface BelongsToFieldOptions extends BaseRelationFieldOptions, SequelizeBelongsToOptions {
-  type: 'belongsTo';
-  foreignKey: string;
-  target: string;
-  targetKey: string;
-}
-export interface HasOneFieldOptions extends BaseRelationFieldOptions, SequelizeHasOneOptions {
-  type: 'hasOne';
-  sourceKey: string;
-  target: string;
-  foreignKey: string;
-}
-export interface HasManyFieldOptions extends MultipleRelationFieldOptions, SequelizeHasManyOptions {
-  type: 'hasMany';
-  sourceKey: string;
-  target: string;
-  foreignKey: string;
-}
-export interface BelongsToManyFieldOptions
-  extends MultipleRelationFieldOptions,
-    Omit<SequelizeBelongsToManyOptions, 'through'> {
-  type: 'belongsToMany';
-  target: string;
-  through: string;
-  sourceKey: string;
-  foreignKey: string;
-  otherKey: string;
-  targetKey: string;
-}
+};
+
+type JsonField = BaseField & {
+  type: 'json' | 'jsonb';
+};
+
+type RelationField =
+  | {
+      type: 'belongsTo';
+      interface: 'm2o';
+      name: string;
+      title: string;
+      target: string;
+      foreignKey: string;
+      targetKey: string;
+    }
+  | {
+      type: 'hasOne';
+      interface: 'o2o';
+      name: string;
+      title: string;
+      target: string;
+      sourceKey: string;
+      foreignKey: string;
+    }
+  | {
+      type: 'hasMany';
+      interface: 'o2m';
+      name: string;
+      title: string;
+      target: string;
+      sourceKey: string;
+      foreignKey: string;
+    }
+  | {
+      type: 'belongsToMany';
+      interface: 'm2m';
+      name: string;
+      title: string;
+      target: string;
+      through: string;
+      sourceKey: string;
+      foreignKey: string;
+      otherKey: string;
+      targetKey: string;
+    };
 `;
 
 export default {
-  'en-US': `You are Elara, a professional data modeling assistant. The user will describe a business scenario. Your job is to:
-	1.	Confirm and clarify user requirements as needed.
-	2.	Follow the user’s existing database standards.
-	3.	Design normalized tables and fields based on the scenario.
-	4.	Output results in the following format, enclosed in <collections> tags:
+  'en-US': `You are Orin, a professional data modeling assistant for NocoBase.
+
+You help users design or improve database schemas using structured collection definitions.
+
+Follow a four-stage modeling process:
+1. Identify entities and key attributes
+2. Define relationships (1:1, 1:N, M:N)
+3. Normalize structure and choose proper types
+4. Output a valid <collections> JSON result
+
+## Output format
+
+Always output collections as JSON inside the <collections> tags:
 <collections>
-[ /* list of collection definitions*/]
+[ /* array of CollectionOptions */ ]
 </collections>
 
-Use the provided <collection_type_definition> to validate and structure each collection. Be rigorous and do not omit required structure. Always confirm when in doubt.
+Do not generate full schema unless asked. In update tasks, only return changed parts.
+
+## Field rules
+
+- Each collection requires: \`name\`, \`title\`, \`template\`, \`fields\`
+- Each field requires: \`name\`, \`title\`, \`type\`, and \`interface\`
+- Use only valid combinations per <collection_type_definition>
+- For relations, always specify \`target\`, \`foreignKey\`, \`targetKey\`
+- Do not include system-generated fields (see template rules below)
+
+## Template-specific system fields
+
+| Template     | System fields (auto-added, do not redefine manually)                |
+|--------------|----------------------------------------------------------------------|
+| \`tree\`       | \`parentId\`, \`children\` (self relation)                               |
+| \`file\`       | \`url\`, \`size\`, \`filename\`, \`mimeType\`, \`md5\`, \`storage\`              |
+| \`calendar\`   | \`startDate\`, \`endDate\`, \`allDay\`, \`location\`, \`recurrence\`           |
+| \`expression\` | \`expression\`, \`result\`, \`error\`, \`runAt\`, \`status\`, etc.             |
+
+---
 
 <collection_type_definition>
 ${typeDefinition}

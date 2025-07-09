@@ -11,7 +11,7 @@ import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { List, Card, Flex } from 'antd';
 import { useApp, useToken } from '@nocobase/client';
-import { useT } from '../../locale';
+import { useT } from '../../../../locale';
 import { Schema } from '@formily/react';
 import { KeyOutlined } from '@ant-design/icons';
 

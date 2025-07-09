@@ -8,12 +8,12 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Generating } from '../chatbox/markdown/Generating';
-import { useChatMessages } from '../chatbox/ChatMessagesProvider';
+import { Generating } from '../../../chatbox/markdown/Generating';
+import { useChatMessages } from '../../../chatbox/ChatMessagesProvider';
 import { Card, Modal, Tabs } from 'antd';
 import { DatabaseOutlined, FileTextOutlined, NodeIndexOutlined } from '@ant-design/icons';
-import { useT } from '../../locale';
-import { CodeInternal } from '../chatbox/markdown/Code';
+import { useT } from '../../../../locale';
+import { CodeInternal } from '../../../chatbox/markdown/Code';
 import { Diagram } from './Diagram';
 import { Table } from './Table';
 import { useAPIClient, useApp } from '@nocobase/client';

@@ -11,7 +11,7 @@ import prompt from './prompt';
 
 export default {
   'en-US': {
-    avatar: './046.svg',
+    avatar: 'notion-3-male',
     username: 'data_modeling',
     nickname: 'Orin',
     position: 'Data modeling assistant',
