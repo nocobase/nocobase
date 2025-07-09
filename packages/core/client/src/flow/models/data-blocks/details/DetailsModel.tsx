@@ -19,7 +19,6 @@ import {
   buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -149,7 +148,7 @@ DetailsModel.registerFlow({
 });
 
 DetailsModel.define({
-  title: tval('Details'),
+  title: escapeT('Details'),
   group: 'Content',
   defaultOptions: {
     use: 'DetailsModel',

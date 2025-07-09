@@ -16,10 +16,10 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DataBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
@@ -71,11 +71,11 @@ export class FormModel extends DataBlockModel<{
 }
 
 FormModel.registerFlow({
-  key: 'resourceSettings2',
+  key: 'formSettings',
   auto: true,
-  title: tval('Resource settings'),
+  title: escapeT('Form settings'),
   steps: {
-    initForm: {
+    init: {
       async handler(ctx, params) {
         if (ctx.model.form) {
           return;
@@ -104,7 +104,7 @@ FormModel.registerFlow({
 });
 
 FormModel.define({
-  title: tval('Form'),
+  title: escapeT('Form'),
   group: 'Content',
   defaultOptions: {
     use: 'FormModel',
