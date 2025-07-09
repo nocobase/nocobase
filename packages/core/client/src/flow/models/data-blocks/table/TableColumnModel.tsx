@@ -181,13 +181,19 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: escapeT('Enable quick edit'),
-      uiSchema: {
+      uiSchema: (ctx) => ({
         editable: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
+          'x-disabled': ctx.model.collectionField.readonly,
         },
-      },
+      }),
       defaultParams(ctx) {
+        if (ctx.model.collectionField.readonly) {
+          return {
+            editable: false,
+          };
+        }
         return {
           editable: ctx.model.parent.props.editable || false,
         };

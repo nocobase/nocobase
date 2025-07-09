@@ -512,6 +512,10 @@ export class CollectionField {
     return this.collection.dataSourceKey;
   }
 
+  get readonly() {
+    return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
+  }
+
   get fullpath() {
     return this.collection.dataSource.key + '.' + this.collection.name + '.' + this.name;
   }
