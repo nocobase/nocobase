@@ -88,12 +88,6 @@ PageModel.registerFlow({
     general: {
       title: escapeT('General'),
       uiSchema: {
-        displayTitle: {
-          type: 'boolean',
-          title: escapeT('Display page title'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
         title: {
           type: 'string',
           title: escapeT('Page title'),
@@ -107,6 +101,12 @@ PageModel.registerFlow({
               },
             },
           },
+        },
+        displayTitle: {
+          type: 'boolean',
+          title: escapeT('Display page title'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
         },
         // enableTabs: {
         //   type: 'boolean',
@@ -123,13 +123,17 @@ PageModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
-        ctx.model.setProps(
-          'title',
-          ctx.t(params.title || ctx.model.ctx.shared?.currentFlow.shared?.currentRoute?.title),
-        );
+        if (!ctx.model.ctx.shared.closable) {
+          ctx.model.setProps(
+            'title',
+            ctx.t(params.title || ctx.model.ctx.shared?.currentFlow.shared?.currentRoute?.title),
+          );
+        } else {
+          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+        }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.shared.currentDrawer) {
+        if (ctx.model.ctx.shared.closable) {
           ctx.model.setProps('headerStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,
           });

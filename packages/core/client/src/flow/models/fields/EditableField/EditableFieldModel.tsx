@@ -135,16 +135,16 @@ EditableFieldModel.registerFlow({
         }
       },
     },
-    title: {
-      title: escapeT('Title'),
+    label: {
+      title: escapeT('Label'),
       uiSchema: {
-        title: {
+        label: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
         },
       },
       handler(ctx, params) {
-        ctx.model.setTitle(params.title);
+        ctx.model.setTitle(params.label);
       },
       defaultParams: (ctx) => {
         return {
@@ -152,16 +152,23 @@ EditableFieldModel.registerFlow({
         };
       },
     },
-    description: {
-      title: escapeT('Description'),
+    showLabel: {
+      title: escapeT('Show label'),
       uiSchema: {
-        description: {
-          'x-component': 'Input.TextArea',
+        showLabel: {
+          'x-component': 'Switch',
           'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
         },
       },
+      defaultParams: {
+        showLabel: true,
+      },
       handler(ctx, params) {
-        ctx.model.setDescription(params.description);
+        ctx.model.showTitle(params.showLabel);
       },
     },
     tooltip: {
@@ -174,6 +181,18 @@ EditableFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setTooltip(params.tooltip);
+      },
+    },
+    description: {
+      title: escapeT('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDescription(params.description);
       },
     },
     initialValue: {
@@ -206,25 +225,6 @@ EditableFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setRequired(params.required || false);
-      },
-    },
-    showTitle: {
-      title: escapeT('Show title'),
-      uiSchema: {
-        showTitle: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
-          },
-        },
-      },
-      defaultParams: {
-        showTitle: true,
-      },
-      handler(ctx, params) {
-        ctx.model.showTitle(params.showTitle);
       },
     },
     pattern: {

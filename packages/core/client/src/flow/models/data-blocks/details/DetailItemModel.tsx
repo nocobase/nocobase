@@ -67,27 +67,27 @@ DetailItemModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
       },
     },
-    title: {
-      title: escapeT('Title'),
+    label: {
+      title: escapeT('Label'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
         },
       },
-      handler(ctx, params) {
-        ctx.model.setDecoratorProps({ title: params.title });
-      },
       defaultParams: (ctx) => {
         return {
           title: ctx.model.collectionField?.title,
         };
       },
+      handler(ctx, params) {
+        ctx.model.setDecoratorProps({ title: params.title });
+      },
     },
-    showTitle: {
-      title: escapeT('Show title'),
+    showLabel: {
+      title: escapeT('Show label'),
       uiSchema: {
-        showTitle: {
+        showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -97,10 +97,10 @@ DetailItemModel.registerFlow({
         },
       },
       defaultParams: {
-        showTitle: true,
+        showLabel: true,
       },
       handler(ctx, params) {
-        ctx.model.showTitle(params.showTitle);
+        ctx.model.showTitle(params.showLabel);
       },
     },
     description: {
