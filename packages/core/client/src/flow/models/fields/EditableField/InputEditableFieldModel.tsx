@@ -10,7 +10,7 @@
 import { EditableFieldModel } from './EditableFieldModel';
 import { Input } from '@formily/antd-v5';
 
-export class SingleTextEditableFieldModel extends EditableFieldModel {
+export class InputEditableFieldModel extends EditableFieldModel {
   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence'];
   get component() {
     return [Input, {}];
