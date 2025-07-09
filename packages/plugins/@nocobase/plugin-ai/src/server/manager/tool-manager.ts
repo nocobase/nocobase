@@ -1,8 +1,8 @@
-import { Registry } from "@nocobase/utils";
+import { Registry } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
-import { ZodObject } from "zod";
+import { ZodObject } from 'zod';
 import zodToJsonSchema from 'zod-to-json-schema';
-import _ from "lodash";
+import _ from 'lodash';
 
 export interface AIToolRegister {
   registerToolGroup(options: ToolGroupRegisterOptions);
@@ -48,7 +48,6 @@ const DEFAULT_TOOL_GROUP: ToolGroupRegisterOptions = {
 };
 
 export class ToolManager implements AIToolRegister {
-
   tools = new Registry<ToolRegisterOptions>();
   groups = new Registry<ToolGroupRegisterOptions>();
   delegates = new Array<ToolRegisterDelegate>();
@@ -86,7 +85,7 @@ export class ToolManager implements AIToolRegister {
         const tools = await delegate.getTools();
         for (const tool of tools) {
           const item = {
-            ...tool
+            ...tool,
           };
           item.tool.name = `${groupName}-${item.tool.name}}`;
           delegateTools.register(item.tool.name, item);
@@ -109,12 +108,11 @@ export class ToolManager implements AIToolRegister {
       toolRegisters.push(...delegateTools);
     }
 
-    const toolList = toolRegisters
-      .map(x => {
-        const t = {...x};
-        t.tool.schema = this.processSchema(t.tool.schema, true);
-        return t;
-      });
+    const toolList = toolRegisters.map((x) => {
+      const t = { ...x };
+      t.tool.schema = this.processSchema(t.tool.schema, true);
+      return t;
+    });
 
     const groupedTools = _.groupBy(toolList, (item) => item.groupName);
     return Array.from(groupRegisters).map((group) => ({
@@ -123,11 +121,7 @@ export class ToolManager implements AIToolRegister {
     }));
   }
 
-  private async _getTool(
-    register: Registry<ToolRegisterOptions>,
-    name: string,
-    raw = false,
-  ): Promise<ToolOptions> {
+  private async _getTool(register: Registry<ToolRegisterOptions>, name: string, raw = false): Promise<ToolOptions> {
     const { tool } = register.get(name);
     if (!tool) {
       return null;
@@ -138,7 +132,7 @@ export class ToolManager implements AIToolRegister {
     };
   }
 
-  private processSchema (schema: any, raw = false) {
+  private processSchema(schema: any, raw = false) {
     if (!schema) return undefined;
     try {
       // Use type assertion to break the recursive type checking
@@ -147,5 +141,5 @@ export class ToolManager implements AIToolRegister {
       // Fallback if zodToJsonSchema fails
       return schema;
     }
-  };
+  }
 }
