@@ -217,39 +217,43 @@ DatePicker.RangePicker = function RangePicker(props: any) {
           defaultValue={targetPicker}
           options={compile([
             {
-              label: '{{t("Date")}}',
+              label: t('Date'),
               value: 'date',
             },
 
             {
-              label: '{{t("Month")}}',
+              label: t('Month'),
               value: 'month',
             },
             {
-              label: '{{t("Quarter")}}',
+              label: t('Quarter'),
               value: 'quarter',
             },
             {
-              label: '{{t("Year")}}',
+              label: t('Year'),
               value: 'year',
             },
           ])}
           onChange={(value) => {
             const format = getPickerFormat(value);
             const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
-            field.setComponentProps({
+            field?.setComponentProps({
               picker: value,
               format,
             });
             newProps.picker = value;
             newProps.format = dateTimeFormat;
             setStateProps(newProps);
-            fieldSchema['x-component-props'] = {
-              ...props,
-              picker: value,
-              format: dateTimeFormat,
-            };
-            field.value = undefined;
+            if (fieldSchema) {
+              fieldSchema['x-component-props'] = {
+                ...props,
+                picker: value,
+                format: dateTimeFormat,
+              };
+            }
+            if (field) {
+              field.value = undefined;
+            }
           }}
         />
         <InternalRangePicker {...stateProps} value={value} />
@@ -319,19 +323,23 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
           setTargetPicker(value);
           const format = getPickerFormat(value);
           const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
-          field.setComponentProps({
+          field?.setComponentProps({
             picker: value,
             format,
           });
           newProps.picker = value;
           newProps.format = dateTimeFormat;
           setStateProps(newProps);
-          fieldSchema['x-component-props'] = {
-            ...props,
-            picker: value,
-            format: dateTimeFormat,
-          };
-          field.value = null;
+          if (fieldSchema?.['x-component-props']) {
+            fieldSchema['x-component-props'] = {
+              ...props,
+              picker: value,
+              format: dateTimeFormat,
+            };
+          }
+          if (field) {
+            field.value = null;
+          }
         }}
       />
       <InternalDatePicker {...stateProps} value={value} />
