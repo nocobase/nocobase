@@ -18,7 +18,10 @@ const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
-  const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+  const ignoreFieldsNames = getIgnoreFieldsNames(
+    modelInstance.props.filterableFieldsNames || [],
+    fields.map((field) => field.name),
+  );
   const t = modelInstance.translate;
 
   return (
@@ -47,7 +50,6 @@ export class FilterActionModel extends GlobalActionModel {
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
-    ignoreFieldsNames: [],
   };
 
   render() {
@@ -78,10 +80,10 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('position', params.position || 'left');
       },
     },
-    ignoreFieldsNames: {
+    filterableFieldsNames: {
       title: escapeT('Filterable fields'),
       uiSchema: {
-        ignoreFieldsNames: {
+        filterableFieldsNames: {
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
@@ -102,12 +104,13 @@ FilterActionModel.registerFlow({
         },
       },
       defaultParams(ctx) {
+        const names = ctx.shared?.currentBlockModel.collection.getFields().map((field) => field.name);
         return {
-          ignoreFieldsNames: ctx.model.defaultProps.ignoreFieldsNames || [],
+          filterableFieldsNames: names || [],
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('ignoreFieldsNames', params.ignoreFieldsNames);
+        ctx.model.setProps('filterableFieldsNames', params.filterableFieldsNames);
       },
     },
     defaultFilter: {
@@ -128,7 +131,6 @@ FilterActionModel.registerFlow({
                 value={props.value || {}}
                 fields={fields}
                 ignoreFieldsNames={ignoreFieldsNames}
-                ctx={modelInstance.ctx}
                 model={modelInstance}
               />
             );
@@ -195,3 +197,7 @@ FilterActionModel.registerFlow({
     },
   },
 });
+
+function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
+  return allFields.filter((field) => !filterableFieldsNames.includes(field));
+}
