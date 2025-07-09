@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import flat from 'flat';
 
 export const isString = (value: any): value is string => {
   return typeof value === 'string';
@@ -144,3 +145,15 @@ export function isEmptyFilter(obj) {
 
   return false;
 }
+
+export const removeNullCondition = (filter, customFlat = flat) => {
+  const items = customFlat(filter || {});
+  const values = {};
+  for (const key in items) {
+    const value = items[key];
+    if (value != null && !isEmpty(value)) {
+      values[key] = value;
+    }
+  }
+  return customFlat.unflatten(values);
+};

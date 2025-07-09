@@ -204,10 +204,13 @@ const FilterItem: FC<{
         return;
       }
 
+      const filed = findFieldInOptions(props.options, value);
+      const defaultOperator = (filed?.operators || [])[0];
+
       const newFieldPath = value.join('.');
 
       delete props.value[fieldNames[0]];
-      _.set(props.value, newFieldPath, {});
+      _.set(props.value, newFieldPath, defaultOperator ? { [defaultOperator.value]: undefined } : {});
 
       props.onChange?.(props.value);
     };
@@ -232,7 +235,7 @@ const FilterItem: FC<{
       if (operatorOption.noValue) {
         _.set(props.value, `${fieldPath}.${value}`, true);
       } else {
-        _.set(props.value, `${fieldPath}.${value}`, _.get(props.value, `${fieldPath}.${prevOperator}`));
+        _.set(props.value, `${fieldPath}.${value}`, undefined);
       }
 
       if (prevOperator) {

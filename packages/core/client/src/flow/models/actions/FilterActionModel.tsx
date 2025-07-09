@@ -13,7 +13,7 @@ import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
-import { isEmptyFilter } from '@nocobase/utils/client';
+import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
@@ -168,7 +168,7 @@ FilterActionModel.registerFlow({
         }
 
         if (!isEmptyFilter(ctx.model.props.filterValue)) {
-          resource.addFilterGroup(ctx.model.uid, ctx.model.props.filterValue);
+          resource.addFilterGroup(ctx.model.uid, removeNullCondition(ctx.model.props.filterValue));
         }
         resource.refresh();
         ctx.model.setProps('open', false);
