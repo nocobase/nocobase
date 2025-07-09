@@ -24,6 +24,12 @@ export class DetailItemModel extends FieldModel<{
     Object.assign(this.decoratorProps, props);
   }
 
+  showTitle(showTitle: boolean) {
+    this.setDecoratorProps({
+      labelStyle: { display: showTitle ? 'flex' : 'none' },
+    });
+  }
+
   @reactive
   render() {
     const resource = this.parent.parent.resource;
@@ -61,15 +67,12 @@ DetailItemModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
       },
     },
-    editTitle: {
-      title: escapeT('Edit title'),
+    title: {
+      title: escapeT('Title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Enter field title'),
-          },
         },
       },
       handler(ctx, params) {
@@ -81,10 +84,10 @@ DetailItemModel.registerFlow({
         };
       },
     },
-    displayLabel: {
-      title: escapeT('Display label'),
+    showTitle: {
+      title: escapeT('Show title'),
       uiSchema: {
-        displayLabel: {
+        showTitle: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -94,14 +97,14 @@ DetailItemModel.registerFlow({
         },
       },
       defaultParams: {
-        displayLabel: true,
+        showTitle: true,
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ displayLabel: params.displayLabel === undefined ? true : params.displayLabel });
+        ctx.model.showTitle(params.showTitle);
       },
     },
-    editDescription: {
-      title: escapeT('Edit description'),
+    description: {
+      title: escapeT('Description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -112,8 +115,8 @@ DetailItemModel.registerFlow({
         ctx.model.setDecoratorProps({ description: params.description });
       },
     },
-    editTooltip: {
-      title: escapeT('Edit tooltip'),
+    tooltip: {
+      title: escapeT('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
