@@ -342,7 +342,6 @@ AssociationSelectEditableFieldModel.registerFlow({
             [key]: null,
           });
         }
-
         ctx.model.resource = resource;
       },
     },
