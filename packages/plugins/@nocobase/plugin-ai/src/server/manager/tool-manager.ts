@@ -8,6 +8,13 @@ export interface AIToolRegister {
   registerToolGroup(options: ToolGroupRegisterOptions);
   registerDynamicTool(delegate: ToolRegisterDelegate);
   registerTools<T>(options: ToolRegisterOptions | ToolRegisterOptions[]);
+  getTool(name: string, raw?: boolean): Promise<ToolOptions>;
+  listTools(): Promise<
+    {
+      group: ToolGroupRegisterOptions;
+      tools: ToolOptions[];
+    }[]
+  >;
 }
 
 export interface ToolOptions {
@@ -87,7 +94,7 @@ export class ToolManager implements AIToolRegister {
           const item = {
             ...tool,
           };
-          item.tool.name = `${groupName}-${item.tool.name}}`;
+          item.tool.name = `${groupName}-${item.tool.name}`;
           delegateTools.register(item.tool.name, item);
         }
       }
@@ -104,7 +111,15 @@ export class ToolManager implements AIToolRegister {
     const groupRegisters = Array.from(this.groups.getValues());
     const toolRegisters = Array.from(this.tools.getValues());
     for (const delegate of this.delegates) {
-      const delegateTools = await delegate.getTools();
+      let delegateTools = await delegate.getTools();
+      delegateTools = delegateTools.map((item) => ({
+        ...item,
+        groupName: delegate.groupName,
+        tool: {
+          ...item.tool,
+          name: `${delegate.groupName}-${item.tool.name}`,
+        },
+      }));
       toolRegisters.push(...delegateTools);
     }
 
@@ -122,10 +137,11 @@ export class ToolManager implements AIToolRegister {
   }
 
   private async _getTool(register: Registry<ToolRegisterOptions>, name: string, raw = false): Promise<ToolOptions> {
-    const { tool } = register.get(name);
-    if (!tool) {
+    const registeredTool = register.get(name);
+    if (!registeredTool || !registeredTool.tool) {
       return null;
     }
+    const { tool } = registeredTool;
     return {
       ...tool,
       schema: this.processSchema(tool.schema, raw),
