@@ -9,8 +9,8 @@
 import { z } from 'zod';
 import { ToolOptions } from '../manager/tool-manager';
 
-export const defineCollections: ToolOptions= {
-  name: "defineCollections",
+export const defineCollections: ToolOptions = {
+  name: 'defineCollections',
   title: '{{t("Define collections")}}',
   description: '{{t("Create or edit collections")}}',
   schema: z.object({
@@ -25,7 +25,7 @@ export const defineCollections: ToolOptions= {
 };
 
 export const getCollectionMetadata: ToolOptions = {
-  name: "getCollectionMetadata",
+  name: 'getCollectionMetadata',
   title: '{{t("Get collection metadata")}}',
   description: '{{t("Retrieve metadata for specified collections")}}',
   schema: z.object({

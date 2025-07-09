@@ -60,24 +60,31 @@ export class PluginAIServer extends Plugin {
   }
 
   registerTools() {
+    const toolManager = this.aiManager.toolManager;
     const frontendGroupName = 'frontend';
-    this.aiManager.registerToolGroup({
+    const dataModelingGroupName = 'data-modeling';
+    const workflowGroupName = 'workflowCaller';
+    toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
       description: '{{t("Frontend actions")}}',
     });
-    this.aiManager.registerTools({
-      groupName: frontendGroupName,
-      tool: formFiller,
-    });
-
-    const dataModelingGroupName = 'data-modeling';
-    this.aiManager.registerToolGroup({
+    toolManager.registerToolGroup({
       groupName: dataModelingGroupName,
       title: '{{t("Data modeling")}}',
       description: '{{t("Data modeling tools")}}',
     });
-    this.aiManager.registerTools([
+    toolManager.registerToolGroup({
+      groupName: workflowGroupName,
+      title: '{{t("Workflow caller")}}',
+      description: '{{t("Use workflow as a tool")}}',
+    });
+
+    this.aiManager.toolManager.registerTools([
+      {
+        groupName: frontendGroupName,
+        tool: formFiller,
+      },
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
@@ -88,13 +95,7 @@ export class PluginAIServer extends Plugin {
       },
     ]);
 
-    const workflowGroupName = 'workflowCaller';
-    this.aiManager.registerToolGroup({
-      groupName: workflowGroupName,
-      title: '{{t("Workflow caller")}}',
-      description: '{{t("Use workflow as a tool")}}',
-    });
-    this.aiManager.registerDynamicTool({
+    toolManager.registerDynamicTool({
       groupName: workflowGroupName,
       getTools: async () => {
         return await getWorkflowCallers(workflowGroupName, this);

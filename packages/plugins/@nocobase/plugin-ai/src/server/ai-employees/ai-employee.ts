@@ -398,7 +398,7 @@ ${content}`;
     autoCall = false,
   ) {
     try {
-      const tool = await this.plugin.aiManager.getTool(toolCall.name);
+      const tool = await this.plugin.aiManager.toolManager.getTool(toolCall.name);
       if (!tool) {
         this.sendErrorResponse('Tool not found');
         return;

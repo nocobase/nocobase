@@ -357,7 +357,7 @@ export default {
       const toolNames = tools.map((tool: any) => tool.name);
       const result = {};
       for (const toolName of toolNames) {
-        const tool = await plugin.aiManager.getTool(toolName);
+        const tool = await plugin.aiManager.toolManager.getTool(toolName);
         if (tool) {
           result[toolName] = {
             name: tool.name,
