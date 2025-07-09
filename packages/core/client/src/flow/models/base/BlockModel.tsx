@@ -164,7 +164,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     if (!field) {
       return;
     }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
+    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type)) {
       (this.resource as BaseRecordResource).addAppends(field.name);
       if (refresh) {
         this.resource.refresh();
