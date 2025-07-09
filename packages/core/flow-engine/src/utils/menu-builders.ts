@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { Collection, DataSource, DataSourceManager } from '../data-source';
+import { Collection, CollectionField, DataSource, DataSourceManager } from '../data-source';
 import type { FlowModel } from '../models';
 import type { ModelConstructor } from '../types';
 import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
@@ -207,25 +207,31 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
 function createAssociationRecordsMenuItem(
   className: string,
   baseCollectionName: string,
-  collections: Collection[],
+  fields: CollectionField[],
   sourceId = '{{ctx.runtimeArgs.filterByTk}}',
 ) {
+  const collections = fields
+    .filter((f) => f.target !== baseCollectionName && !!f.targetCollection)
+    .map((f) => f.targetCollection);
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
-    defaultOptions: (_parentModel: any, extra: any) => ({
-      use: className,
-      stepParams: {
-        resourceSettings: {
-          init: {
-            dataSourceKey: extra.dataSourceKey,
-            collectionName: extra.collectionName,
-            associationName: baseCollectionName + '.' + extra.collectionName,
-            sourceId,
+    defaultOptions: (_parentModel: any, extra: any) => {
+      const field = fields.find((f) => f.target === extra.collectionName);
+      return {
+        use: className,
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: extra.dataSourceKey,
+              collectionName: field.target, // extra.collectionName,
+              associationName: field.collection.name + '.' + field.name,
+              sourceId,
+            },
           },
         },
-      },
-    }),
+      };
+    },
     collections,
   };
 }
@@ -245,7 +251,7 @@ function buildCollectionOnlyItems(className: string, collection: Collection): an
 function buildCurrentCollectionItems(
   className: string,
   collection: Collection,
-  relatedCollections: Collection[],
+  relatedFields: CollectionField[],
 ): any[] {
   const items: any[] = [];
 
@@ -255,8 +261,8 @@ function buildCurrentCollectionItems(
   }
 
   // 添加关联记录（如果有）
-  if (relatedCollections.length > 0) {
-    items.push(createAssociationRecordsMenuItem(className, collection.name, relatedCollections));
+  if (relatedFields.length > 0) {
+    items.push(createAssociationRecordsMenuItem(className, collection.name, relatedFields));
   }
 
   // 添加其他记录
@@ -295,15 +301,8 @@ function buildOtherCollectionItems(
   // 添加关联记录
   const sourceCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
   if (sourceCollection) {
-    const relatedCollections = sourceCollection.getRelatedCollections();
-    items.push(
-      createAssociationRecordsMenuItem(
-        className,
-        currentFlow.runtimeArgs!.collectionName!,
-        relatedCollections,
-        '{{ctx.runtimeArgs.sourceId}}',
-      ),
-    );
+    const relatedFields = sourceCollection.getRelationshipFields();
+    items.push(createAssociationRecordsMenuItem(className, currentFlow.runtimeArgs!.collectionName!, relatedFields));
   }
 
   // 添加其他记录
@@ -318,7 +317,7 @@ function buildDynamicMetaChildren(
   className: string,
   currentFlow: MenuBuilderFlowContext,
   collection: Collection,
-  relatedCollections: Collection[],
+  relatedFields: CollectionField[],
 ) {
   // 场景1：没有 filterByTk，显示集合选择
   if (!currentFlow.runtimeArgs?.filterByTk) {
@@ -331,7 +330,7 @@ function buildDynamicMetaChildren(
 
   // 场景2：当前集合上下文
   if (shouldUseCurrentCollection) {
-    return buildCurrentCollectionItems(className, collection, relatedCollections);
+    return buildCurrentCollectionItems(className, collection, relatedFields);
   }
 
   // 场景3：其他集合上下文
@@ -706,10 +705,14 @@ async function buildDataSourceBlockItems(
         const collection: Collection = currentFlow?.shared?.currentBlockModel?.collection;
 
         if (currentFlow && collection) {
-          const relatedCollections = collection?.getRelatedCollections() || [];
-          meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedCollections);
-          meta.children.forEach((child) => {
-            child.defaultOptions = _.merge(_.cloneDeep(defaultOptions), child.defaultOptions);
+          const relatedFields = collection?.getRelationshipFields() || [];
+          meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedFields);
+          meta.children.forEach(async (child) => {
+            const childDefault = child.defaultOptions;
+            child.defaultOptions = async (model, extra) => {
+              const options = await resolveDefaultOptions(childDefault, model, extra);
+              return _.merge(_.cloneDeep(defaultOptions), options);
+            };
           });
         }
       }
