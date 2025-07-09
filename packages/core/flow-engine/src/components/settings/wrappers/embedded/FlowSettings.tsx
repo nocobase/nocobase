@@ -148,7 +148,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
       // 解析 defaultParams
-      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
+      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
 
       // 合并默认参数和当前参数，当前参数优先
       const mergedParams = { ...resolvedDefaultParams, ...stepParams };

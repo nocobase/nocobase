@@ -212,7 +212,7 @@ export class FlowEngine {
       definition = {
         ...options,
         name: nameOrDefinition,
-      };
+      } as any;
     } else if (typeof nameOrDefinition === 'object') {
       definition = nameOrDefinition as ActionDefinition<TModel>;
     } else {
@@ -253,7 +253,7 @@ export class FlowEngine {
    *   'ProductModel': ProductModel
    * });
    */
-  public registerModels(models: Record<string, ModelConstructor>) {
+  public registerModels(models: Record<string, ModelConstructor | typeof FlowModel<any>>) {
     for (const [name, modelClass] of Object.entries(models)) {
       this.registerModel(name, modelClass);
     }

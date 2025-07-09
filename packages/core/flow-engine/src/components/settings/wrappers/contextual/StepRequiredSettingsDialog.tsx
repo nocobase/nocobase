@@ -226,8 +226,8 @@ const openRequiredParamsStepFormDialog = async ({
             actionDefaultParams = action.defaultParams || {};
           }
           // 解析 defaultParams
-          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
-          const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
+          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext as any);
+          const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
           const mergedParams = {
             ...toJS(resolvedActionDefaultParams),
             ...toJS(resolvedDefaultParams),

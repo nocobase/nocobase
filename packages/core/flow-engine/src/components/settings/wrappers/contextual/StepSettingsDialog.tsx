@@ -112,8 +112,8 @@ const openStepSettingsDialog = async ({
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
   // 解析 defaultParams
-  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
-  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
+  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
+  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext as any);
   const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
