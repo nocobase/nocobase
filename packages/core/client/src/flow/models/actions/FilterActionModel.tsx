@@ -187,6 +187,7 @@ FilterActionModel.registerFlow({
         resource.removeFilterGroup(ctx.model.uid);
         resource.refresh();
         ctx.model.setProps('open', false);
+        ctx.model.setProps('filterValue', clearInputValue(ctx.model.props.filterValue));
       },
     },
   },
@@ -206,4 +207,19 @@ FilterActionModel.registerFlow({
 
 function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
   return allFields.filter((field) => !filterableFieldsNames.includes(field));
+}
+
+function clearInputValue(value: any) {
+  if (Array.isArray(value)) {
+    return value.map((item) => clearInputValue(item));
+  } else if (typeof value === 'object' && value !== null) {
+    const newValue: any = {};
+    for (const key in value) {
+      newValue[key] = clearInputValue(value[key]);
+    }
+    return newValue;
+  } else if (typeof value === 'string') {
+    return '';
+  }
+  return undefined;
 }
