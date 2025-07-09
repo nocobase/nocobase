@@ -9,14 +9,13 @@
 
 import { EditableFieldModel } from '@nocobase/client';
 import { onFormValuesChange } from '@formily/core';
-import { useFormEffects } from '@formily/react';
+import { useFormEffects, useForm, useField } from '@formily/react';
 import { toJS } from '@formily/reactive';
 import { Checkbox, DatePicker, InputNumber, Input as InputString } from '@nocobase/client';
 import _ from 'lodash';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState } from 'react';
-import { useFlowModel } from '@nocobase/flow-engine';
 
 import { toDbType } from '../utils';
 
@@ -74,21 +73,20 @@ function areValuesEqual(value1, value2) {
 }
 
 function Result(props) {
-  const { value, ...others } = props;
-  const model: any = useFlowModel();
-  const collectionField = model.collectionField;
+  const { value, collectionField, fieldPath, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField.options;
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
-  const field: any = model.field;
-  const fieldPath = model.fieldPath;
+  const currentForm = useForm();
+  const field: any = useField();
+
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
 
   useFormEffects(() => {
     onFormValuesChange((form) => {
-      if ((fieldPath as string).indexOf('.') >= 0 || model.form?.readPretty) {
+      if ((fieldPath as string).indexOf('.') >= 0 || currentForm?.readPretty) {
         return;
       }
       const scope = toJS(getValuesByFullPath(form.values, fieldPath));
@@ -125,6 +123,12 @@ export class FormulaFieldModel extends EditableFieldModel {
   static supportedFieldInterfaces = ['formula'];
 
   get component() {
-    return [Result, {}];
+    return [
+      Result,
+      {
+        collectionField: this.collectionField,
+        fieldPath: this.fieldPath,
+      },
+    ];
   }
 }
