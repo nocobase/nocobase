@@ -394,6 +394,10 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
             current: this.resource.getPage(),
             pageSize: this.resource.getPageSize(),
             total: this.resource.getMeta('count'),
+            showTotal: (total) => {
+              return this.translate('Total {{count}} items', { count: total });
+            },
+            showSizeChanger: true,
           }}
           onChange={(pagination) => {
             console.log('onChange pagination:', pagination);
