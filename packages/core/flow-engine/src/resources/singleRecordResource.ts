@@ -10,10 +10,7 @@
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
-  isNewRecord = true;
-
   setFilterByTk(filterByTk: string | number) {
-    this.isNewRecord = false;
     this.addRequestParameter('filterByTk', filterByTk);
     return this;
   }
@@ -24,7 +21,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       params: {},
     };
     let actionName = 'create';
-    if (!this.isNewRecord) {
+    if (this.getFilterByTk()) {
       options.params.filterByTk = this.request.params.filterByTk;
       actionName = 'update';
     }
@@ -32,7 +29,6 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...options,
       data,
     });
-    this.isNewRecord = false;
     if (config.refresh !== false && this.request.params.filterByTk) {
       await this.refresh();
     }
@@ -51,7 +47,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   }
 
   async refresh(): Promise<void> {
-    if (this.isNewRecord) {
+    if (!this.getFilterByTk()) {
       return;
     }
     const { data, meta } = await this.runAction<TData, any>('get', {
