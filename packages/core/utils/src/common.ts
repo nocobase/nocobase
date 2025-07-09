@@ -134,3 +134,13 @@ export function sleep(ms: number): Promise<void> {
     setTimeout(resolve, ms);
   });
 }
+
+export function isEmptyFilter(obj) {
+  if (!obj) return true;
+
+  if (('$and' in obj && _.isEmpty(obj.$and)) || ('$or' in obj && _.isEmpty(obj.$or))) {
+    return true;
+  }
+
+  return false;
+}
