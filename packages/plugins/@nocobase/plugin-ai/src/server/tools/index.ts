@@ -9,3 +9,4 @@
 
 export * from './form-filler';
 export * from './workflow-caller';
+export * from './data-modeling';

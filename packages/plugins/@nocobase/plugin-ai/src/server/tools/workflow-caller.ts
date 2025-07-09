@@ -10,8 +10,6 @@
 import { z } from 'zod';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
-import { Registry } from '@nocobase/utils';
-import { Tool } from '@langchain/core/tools';
 import { ToolRegisterOptions } from '../manager/ai-manager';
 
 interface ParameterConfig {

@@ -21,7 +21,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { formFiller, getWorkflowCallers } from './tools';
+import { defineCollections, formFiller, getCollectionMetadata, getWorkflowCallers } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -71,6 +71,25 @@ export class PluginAIServer extends Plugin {
       toolName: 'formFiller',
       tool: formFiller,
     });
+
+    const dataModelingGroupName = 'data-modeling';
+    this.aiManager.registerToolGroup({
+      groupName: dataModelingGroupName,
+      title: '{{t("Data modeling")}}',
+      description: '{{t("Data modeling tools")}}',
+    });
+    this.aiManager.registerTool([
+      {
+        groupName: dataModelingGroupName,
+        toolName: 'defineCollections',
+        tool: defineCollections,
+      },
+      {
+        groupName: dataModelingGroupName,
+        toolName: 'getCollectionMetadata',
+        tool: getCollectionMetadata,
+      },
+    ]);
 
     const workflowGroupName = 'workflowCaller';
     this.aiManager.registerToolGroup({
