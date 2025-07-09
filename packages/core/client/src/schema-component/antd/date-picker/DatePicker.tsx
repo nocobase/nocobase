@@ -19,6 +19,7 @@ import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
 import { autorun } from '@formily/reactive';
+import { useFlowEngine } from '@nocobase/flow-engine';
 interface IDatePickerProps {
   utc?: boolean;
 }
@@ -263,11 +264,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
-  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const initPicker = value ? inferPickerType(value, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const targetDateFormat = getPickerFormat(initPicker) || format;
+  const { t } = useTranslation();
+
   const newProps = {
     utc,
     inputReadOnly: isMobileMedia,
@@ -294,25 +296,25 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
         value={targetPicker}
-        options={compile([
+        options={[
           {
-            label: '{{t("Date")}}',
+            label: t('Date'),
             value: 'date',
           },
 
           {
-            label: '{{t("Month")}}',
+            label: t('Month'),
             value: 'month',
           },
           {
-            label: '{{t("Quarter")}}',
+            label: t('Quarter'),
             value: 'quarter',
           },
           {
-            label: '{{t("Year")}}',
+            label: t('Year'),
             value: 'year',
           },
-        ])}
+        ]}
         onChange={(value) => {
           setTargetPicker(value);
           const format = getPickerFormat(value);
