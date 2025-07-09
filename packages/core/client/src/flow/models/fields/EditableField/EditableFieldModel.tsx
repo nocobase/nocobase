@@ -17,6 +17,7 @@ import { FormFieldGridModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
+
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
 type Structure = {
@@ -162,6 +163,9 @@ EditableFieldModel.registerFlow({
           'x-component-props': {},
         },
       },
+      defaultParams: (ctx) => ({
+        defaultValue: ctx.model.collectionField.defaultValue,
+      }),
       handler(ctx, params) {
         ctx.model.setInitialValue(params.defaultValue);
       },

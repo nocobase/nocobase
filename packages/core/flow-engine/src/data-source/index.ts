@@ -549,6 +549,10 @@ export class CollectionField {
     return this.options.uiSchema?.enum || [];
   }
 
+  get defaultValue() {
+    return this.options.defaultValue;
+  }
+
   get interface() {
     return this.options.interface || 'input';
   }
