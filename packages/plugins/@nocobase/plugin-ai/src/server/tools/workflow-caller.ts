@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ToolOptions } from '../manager/ai-manager';
 import { z } from 'zod';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
+import { Registry } from '@nocobase/utils';
+import { Tool } from '@langchain/core/tools';
+import { ToolRegisterOptions } from '../manager/ai-manager';
 
 interface ParameterConfig {
   name: string;
@@ -99,41 +101,25 @@ const invoke = async (ctx: Context, workflow: Workflow, args: Record<string, any
   };
 };
 
-export const workflowCaller: ToolOptions = {
-  type: 'group',
-  title: '{{t("Workflow caller")}}',
-  description: '{{t("Use workflow as a tool")}}',
-
-  getTools: async (plugin) => {
-    const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
-    const workflows = Array.from(workflowPlugin.enabledCache.values()).filter((item) => item.type === 'ai-employee');
-    return workflows.map((workflow: Workflow) => {
-      const config = workflow.config;
-      return {
-        name: `workflowCaller-${workflow.key}`,
+export const getWorkflowCallers = async (groupName, plugin) => {
+  const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
+  const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values())
+      .filter((item) => item.type === 'ai-employee');
+  const register: ToolRegisterOptions<unknown>[] = [];
+  for (const workflow of aiSupporterWorkflows) {
+    const toolName = `${groupName}-${workflow.key}`
+    const config = workflow.config;
+    register.push({
+      groupName,
+      toolName,
+      tool: {
+        name: toolName,
         title: workflow.title,
         description: workflow.description,
         schema: buildSchema(config),
         invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
-      };
+      }
     });
-  },
-
-  getTool: async (plugin, name) => {
-    const workflowPlugin = plugin.app.pm.get('workflow') as PluginWorkflowServer;
-    const workflow = Array.from(workflowPlugin.enabledCache.values()).find(
-      (item) => item.type === 'ai-employee' && item.key === name,
-    );
-    if (!workflow) {
-      return null;
-    }
-    const config = workflow.config;
-    return {
-      name: `workflowCaller-${workflow.key}`,
-      title: workflow.title,
-      description: workflow.description,
-      schema: buildSchema(config),
-      invoke: async (ctx: Context, args: Record<string, any>) => invoke(ctx, workflow, args),
-    };
-  },
-};
+  }
+  return register;
+}

@@ -94,11 +94,16 @@ export type TriggerTaskOptions = {
 };
 
 export type Tool = {
-  name: string;
-  title: string;
-  description: string;
-  schema?: any;
-  children?: Tool[];
+  group: {
+    groupName: string;
+    title?: string;
+    description?: string;
+  };
+  tools: {
+    name: string;
+    title: string;
+    description: string;
+  }[];
 };
 
 export type Attachment = any;

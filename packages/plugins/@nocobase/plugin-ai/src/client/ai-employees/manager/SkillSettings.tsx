@@ -179,11 +179,18 @@ export const Skills: React.FC = () => {
   const items =
     data?.map((item) => {
       const result: any = {
-        key: item.name,
+        key: item.group.groupName,
       };
-      if (item.children) {
-        result.label = <SkillsListItem {...item} isRoot={true} />;
-        result.children = item.children.map((child) => {
+      const itemProps = {
+        title: item.group.title ?? "",
+        description: item.group.description ?? "",
+        name: item.group.groupName,
+        isRoot: true,
+      }
+      if (item.tools) {
+
+        result.label = <SkillsListItem {...itemProps} />;
+        result.children = item.tools.map((child) => {
           return {
             key: child.name,
             label: <SkillsListItem {...child} />,
@@ -191,8 +198,8 @@ export const Skills: React.FC = () => {
           };
         });
       } else {
-        result.label = <SkillsListItem {...item} />;
-        result.onClick = () => handleAdd(item.name);
+        result.label = <SkillsListItem {...itemProps} />;
+        result.onClick = () => {};
       }
       return result;
     }) || [];
@@ -231,17 +238,10 @@ export const Skills: React.FC = () => {
           bordered
           dataSource={field.value || []}
           renderItem={(item: string) => {
+            const tools = data?.flatMap(x => x.tools) ?? []
+            console.log(tools)
             const [name] = item.split('-');
-            const root = data?.find((tool) => tool.name === name);
-            if (!root) {
-              return null;
-            }
-            let tool: any;
-            if (root.children) {
-              tool = root.children.find((tool) => tool.name === item);
-            } else {
-              tool = root;
-            }
+            const tool = tools.find((tool) => tool.name === name);
             if (!tool) {
               return null;
             }

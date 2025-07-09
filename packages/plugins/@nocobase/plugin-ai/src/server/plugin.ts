@@ -21,7 +21,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { formFiller, workflowCaller } from './tools';
+import { formFiller, getWorkflowCallers, workflowCallers } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -49,8 +49,22 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
-    this.aiManager.registerTool('formFiller', formFiller);
-    this.aiManager.registerTool('workflowCaller', workflowCaller);
+    this.aiManager.registerTool({
+      toolName: "formFiller",
+      tool: formFiller,
+    });
+    const workflowGroupName = "workflowCaller";
+    this.aiManager.registerToolGroup({
+      groupName: workflowGroupName,
+      title: '{{t("Workflow caller")}}',
+      description: '{{t("Use workflow as a tool")}}',
+    })
+    this.aiManager.registerDynamicTool({
+      groupName: workflowGroupName,
+      getTools: async () => {
+        return await getWorkflowCallers(workflowGroupName, this);
+      },
+    });
 
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
