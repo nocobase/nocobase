@@ -65,9 +65,9 @@ export interface AIToolRegister {
 }
 
 const DEFAULT_TOOL_GROUP: ToolGroupRegisterOptions = {
-  groupName: 'default',
-  title: '{{t("Default")}}',
-  description: '{{t("Default tools")}}',
+  groupName: 'others',
+  title: '{{t("Others")}}',
+  description: '{{t("Other tools")}}',
 };
 
 export class AIManager implements AIToolRegister {

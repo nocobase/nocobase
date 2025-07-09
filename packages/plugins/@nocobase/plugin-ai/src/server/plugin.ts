@@ -21,7 +21,7 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { formFiller, getWorkflowCallers, workflowCallers } from './tools';
+import { formFiller, getWorkflowCallers } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -44,15 +44,34 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
+    this.registerLLMProviders();
+    this.registerTools();
+    this.defineResources();
+    this.setPermissions();
+    this.registerWorkflow();
+  }
+
+  registerLLMProviders() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
+  }
+
+  registerTools() {
+    const frontendGroupName = 'frontend';
+    this.aiManager.registerToolGroup({
+      groupName: frontendGroupName,
+      title: '{{t("Frontend")}}',
+      description: '{{t("Frontend actions")}}',
+    });
     this.aiManager.registerTool({
+      groupName: frontendGroupName,
       toolName: 'formFiller',
       tool: formFiller,
     });
+
     const workflowGroupName = 'workflowCaller';
     this.aiManager.registerToolGroup({
       groupName: workflowGroupName,
@@ -65,7 +84,9 @@ export class PluginAIServer extends Plugin {
         return await getWorkflowCallers(workflowGroupName, this);
       },
     });
+  }
 
+  defineResources() {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
@@ -84,6 +105,12 @@ export class PluginAIServer extends Plugin {
       { before: 'createMiddleware' },
     );
 
+    Object.entries(aiEmployeeActions).forEach(([name, action]) => {
+      this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
+    });
+  }
+
+  setPermissions() {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
@@ -100,9 +127,6 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
 
-    Object.entries(aiEmployeeActions).forEach(([name, action]) => {
-      this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
-    });
     this.app.acl.allow('aiEmployees', 'listByUser', 'loggedIn');
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');
 
@@ -110,10 +134,6 @@ export class PluginAIServer extends Plugin {
     if (workflowSnippet) {
       workflowSnippet.actions.push('ai:listModels');
     }
-
-    const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
-    workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
-    workflow.registerInstruction('llm', LLMInstruction);
 
     this.app.db.on('roles.beforeCreate', async (instance: Model) => {
       instance.set('allowNewAiEmployee', ['admin', 'member'].includes(instance.name));
@@ -132,6 +152,12 @@ export class PluginAIServer extends Plugin {
         transaction,
       });
     });
+  }
+
+  registerWorkflow() {
+    const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
+    workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
+    workflow.registerInstruction('llm', LLMInstruction);
   }
 
   handleSyncMessage(message: any): Promise<void> {
