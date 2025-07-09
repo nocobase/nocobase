@@ -111,7 +111,7 @@ export const Display = withDynamicSchemaProps((props) => {
 
   const elRef = useRef<HTMLDivElement>();
   useEffect(() => {
-    if (!props.value || !field?.value) return;
+    if (!props.value || (field && !field?.value)) return;
     if (props.ellipsis) {
       Vditor.md2html(props.value, {
         mode: 'light',

@@ -30,24 +30,7 @@ MarkdownReadPrettyFieldModel.registerFlow({
   sort: 200,
   steps: {
     displayMode: {
-      uiSchema: {
-        textOnly: {
-          type: 'string',
-          enum: [
-            { label: tval('Text only'), value: true },
-            { label: tval('Html'), value: false },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
-      },
-      title: tval('Display mode'),
-      defaultParams: {
-        textOnly: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ textOnly: params.textOnly });
-      },
+      use: 'displayMode',
     },
   },
 });
