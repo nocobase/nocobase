@@ -49,7 +49,11 @@ export const titleField = defineAction({
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
-      label: ctx.model.props.fieldNames?.label || targetCollection.options.titleField || filterKey,
+      label:
+        ctx.model.field?.componentProps?.fieldNames?.label ||
+        ctx.model.props.fieldNames?.label ||
+        targetCollection.options.titleField ||
+        filterKey,
     };
   },
   async handler(ctx: any, params) {

@@ -52,8 +52,8 @@ BlockModel.registerFlow({
   title: escapeT('Card settings'),
   auto: true,
   steps: {
-    editBlockTitleAndDescription: {
-      title: escapeT('Edit block title & description'),
+    titleDescription: {
+      title: escapeT('Title & description'),
       uiSchema: {
         title: {
           'x-component': 'Input',
@@ -67,8 +67,8 @@ BlockModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        const title = ctx.globals.flowEngine.translate(params.title);
-        const description = ctx.globals.flowEngine.translate(params.description);
+        const title = ctx.t(params.title);
+        const description = ctx.t(params.description);
         ctx.model.setDecoratorProps({ title: title, description: description });
       },
     },
@@ -164,7 +164,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     if (!field) {
       return;
     }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
+    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type)) {
       (this.resource as BaseRecordResource).addAppends(field.name);
       if (refresh) {
         this.resource.refresh();

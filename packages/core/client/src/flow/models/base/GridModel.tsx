@@ -258,9 +258,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   }
 
   render() {
-    console.log('rowGap', this.props.rowGap);
-    console.log('colGap', this.props.colGap);
-
     return (
       <>
         {this.subModels.items?.length > 0 && (
@@ -284,7 +281,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         model={item}
                         key={item.uid}
                         fallback={<SkeletonFallback />}
-                        showFlowSettings={{ showBackground: false, showDragHandle: true }}
+                        showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.props.flowSettings }}
                         showErrorFallback
                         showTitle
                         extraToolbarItems={[

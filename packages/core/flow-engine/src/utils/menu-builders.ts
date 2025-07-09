@@ -232,11 +232,11 @@ function createAssociationRecordsMenuItem(
 // 场景1：没有 filterByTk 的情况
 function buildCollectionOnlyItems(className: string, collection: Collection): any[] {
   return [
-    createBasicMenuItem(MENU_KEYS.OTHER_COLLECTIONS, 'Other collections', className),
     {
       ...createBasicMenuItem(MENU_KEYS.CURRENT_COLLECTIONS, 'Current collection', className),
       collections: [collection],
     },
+    createBasicMenuItem(MENU_KEYS.OTHER_COLLECTIONS, 'Other collections', className),
   ];
 }
 

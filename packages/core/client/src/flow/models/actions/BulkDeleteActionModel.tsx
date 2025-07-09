@@ -29,6 +29,11 @@ BulkDeleteActionModel.registerFlow({
   steps: {
     confirm: {
       use: 'confirm',
+      defaultParams: {
+        enable: true,
+        title: escapeT('Delete record'),
+        content: escapeT('Are you sure you want to delete it?'),
+      },
     },
     delete: {
       async handler(ctx, params) {
@@ -41,7 +46,7 @@ BulkDeleteActionModel.registerFlow({
           ctx.message.warning(ctx.t('No records selected for deletion'));
           return;
         }
-        await resource.destroySelectedRows();
+        await resource.destroy(ctx.shared.currentBlockModel.collection.getFilterByTK(resource.getSelectedRows()));
         ctx.message.success(ctx.t('Selected records deleted successfully'));
       },
     },

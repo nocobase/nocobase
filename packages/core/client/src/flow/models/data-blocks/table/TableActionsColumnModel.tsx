@@ -50,9 +50,11 @@ const AddActionToolbarComponent = ({ model }) => {
       items={buildActionItems(model, 'RecordActionModel')}
       subModelKey="actions"
       onModelCreated={async (actionModel) => {
-        actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'link' });
-        await actionModel.applyFlow('buttonSettings');
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
+      // onSubModelAdded={async (model) => {
+      //   await model.applyAutoFlows();
+      // }}
     >
       <PlusOutlined />
     </AddActionButton>

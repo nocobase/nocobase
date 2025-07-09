@@ -85,8 +85,8 @@ PageModel.registerFlow({
   title: escapeT('Page settings'),
   auto: true,
   steps: {
-    settings: {
-      title: escapeT('Edit page'),
+    general: {
+      title: escapeT('General'),
       uiSchema: {
         displayTitle: {
           type: 'boolean',
@@ -96,12 +96,9 @@ PageModel.registerFlow({
         },
         title: {
           type: 'string',
-          title: escapeT('Page Title'),
+          title: escapeT('Page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-component-props': {
-            placeholder: escapeT('Enter page title'),
-          },
           'x-reactions': {
             dependencies: ['displayTitle'],
             fulfill: {

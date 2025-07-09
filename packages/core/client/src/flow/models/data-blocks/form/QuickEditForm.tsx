@@ -201,10 +201,14 @@ QuickEditForm.registerFlow({
                   fieldPath,
                 },
               },
+              formItemSettings: {
+                createField: {
+                  fieldProps,
+                },
+              },
             },
           });
           await fieldModel.applyAutoFlows();
-          fieldModel.setComponentProps(fieldProps);
           ctx.model.addAppends(fieldPath);
         }
         if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {

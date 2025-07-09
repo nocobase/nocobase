@@ -38,8 +38,8 @@ ActionModel.registerFlow({
   title: escapeT('Button settings'),
   auto: true,
   steps: {
-    buttonProps: {
-      title: escapeT('Edit button'),
+    general: {
+      title: escapeT('General'),
       uiSchema: {
         title: {
           'x-decorator': 'FormItem',
@@ -116,7 +116,7 @@ RecordActionModel.registerFlow({
   key: 'recordActionSettings',
   auto: true,
   steps: {
-    buttonProps: {
+    interaction: {
       handler(ctx, params) {
         const { currentRecord, currentBlockModel } = ctx.shared;
         if (!currentRecord) {

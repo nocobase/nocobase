@@ -9,24 +9,24 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import {
+  AddActionButton,
+  DndProvider,
+  DragHandler,
+  Droppable,
   FlowModelRenderer,
   MultiRecordResource,
   SingleRecordResource,
   buildActionItems,
   escapeT,
-  AddActionButton,
-  DndProvider,
-  Droppable,
-  DragHandler,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { RecordActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
-import { RecordActionModel } from '../../base/ActionModel';
 
 export class DetailsModel extends DataBlockModel<{
   parent?: BlockGridModel;
@@ -49,9 +49,14 @@ export class DetailsModel extends DataBlockModel<{
 
   renderComponent() {
     const resource = this.resource as MultiRecordResource;
-    const onPageChange = (page) => {
+    const onPageChange = async (page) => {
       resource.setPage(page);
-      resource.refresh();
+      resource.loading = true;
+      await resource.refresh();
+      const data = this.resource.getData();
+      this.setSharedContext({
+        currentRecord: Array.isArray(data) ? data[0] : data,
+      });
     };
     return (
       <>
@@ -59,16 +64,15 @@ export class DetailsModel extends DataBlockModel<{
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
-                const data = this.resource.getData();
-                const currentRecord = Array.isArray(data) ? data[0] : data;
+                const currentRecord = this.ctx.shared.currentRecord;
+                const filterByTk = currentRecord?.[this.collection.filterTargetKey];
 
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
-                      key={action.uid}
+                      key={`${action.uid}-${filterByTk}`}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false }}
-                      sharedContext={{ currentRecord: currentRecord }}
                       extraToolbarItems={[
                         {
                           key: 'drag-handler',
@@ -85,13 +89,7 @@ export class DetailsModel extends DataBlockModel<{
                 model={this}
                 items={buildActionItems(this, 'RecordActionModel')}
                 onModelCreated={async (actionModel) => {
-                  const data = this.resource.getData();
-                  const currentRecord = Array.isArray(data) ? data[0] : data;
-                  actionModel.setSharedContext({
-                    currentRecord,
-                  });
-                  actionModel.setStepParams('buttonSettings', 'buttonProps', { type: 'default' });
-                  await actionModel.applyFlow('buttonSettings');
+                  actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
               />
             </Space>
@@ -104,13 +102,13 @@ export class DetailsModel extends DataBlockModel<{
         {this.isMultiRecordResource() && (
           <div
             style={{
-              padding: this.context.themeToken.padding,
               textAlign: 'center',
             }}
           >
             <Pagination
               simple
               pageSize={1}
+              showSizeChanger={false}
               defaultCurrent={resource.getPage()}
               total={resource.getTotalPage()}
               onChange={onPageChange}
@@ -136,7 +134,12 @@ DetailsModel.registerFlow({
       async handler(ctx, params) {
         const { dataLoadingMode } = ctx.model.props;
         if (dataLoadingMode === 'auto') {
+          await ctx.model.applySubModelsAutoFlows('grid');
           await ctx.model.resource.refresh();
+          const data = ctx.model.resource.getData();
+          ctx.model.setSharedContext({
+            currentRecord: Array.isArray(data) ? data[0] : data,
+          });
         } else {
           ctx.model.resource.loading = false;
         }

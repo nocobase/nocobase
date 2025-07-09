@@ -25,9 +25,7 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { Resource } from '@nocobase/resourcer';
-import { tval } from '@nocobase/utils/client';
-import { Space, Spin, Table } from 'antd';
+import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
@@ -129,8 +127,7 @@ const AddFieldColumn = ({ model }) => {
       },
       subModels: {
         field: {
-          // @ts-ignore
-          use: defaultOptions.use as any,
+          use: defaultOptions.use,
           stepParams: {
             fieldSettings: {
               init: {
@@ -230,7 +227,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
-                  filterByTk: record.id,
+                  filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: model.subModels.field.props,
                   onSuccess: (values) => {
@@ -239,7 +236,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
-                    fork.rerender();
+                    model.rerender();
                   },
                 });
                 // await this.resource.refresh();
@@ -423,23 +420,23 @@ TableModel.registerFlow({
   sort: 500,
   title: escapeT('Table settings'),
   steps: {
-    virtual: {
-      title: tval('Virtual'),
+    showRowNumbers: {
+      title: escapeT('Show row numbers'),
       uiSchema: {
-        virtual: {
+        showIndex: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
         },
       },
       defaultParams: {
-        virtual: false,
+        showIndex: true,
       },
       handler(ctx, params) {
-        ctx.model.setProps('virtual', params.virtual);
+        ctx.model.setProps('showIndex', params.showIndex);
       },
     },
-    enableEditable: {
-      title: tval('Editable'),
+    quickEdit: {
+      title: escapeT('Enable quick edit'),
       uiSchema: {
         editable: {
           'x-component': 'Switch',
@@ -450,17 +447,17 @@ TableModel.registerFlow({
         editable: false,
       },
       handler(ctx, params) {
-        console.log('enableEditable params:', params);
         ctx.model.setProps('editable', params.editable);
       },
     },
-    editPageSize: {
-      title: tval('Edit page size'),
+    pageSize: {
+      title: escapeT('Page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },
@@ -480,40 +477,26 @@ TableModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: tval('Set data scope'),
+      title: escapeT('Data scope'),
     },
-    sortingRule: {
+    defaultSorting: {
       use: 'sortingRule',
-      title: tval('Set default sorting rules'),
+      title: escapeT('Default sorting'),
     },
     dataLoadingMode: {
       use: 'dataLoadingMode',
+      title: escapeT('Data loading mode'),
     },
-    enabledIndexColumn: {
-      title: tval('Enable index column'),
-      uiSchema: {
-        showIndex: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        showIndex: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('showIndex', params.showIndex);
-      },
-    },
-    tableSize: {
-      title: tval('Table size'),
+    tableDensity: {
+      title: escapeT('Table density'),
       uiSchema: {
         size: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
-            { label: tval('Large'), value: 'large' },
-            { label: tval('Middle'), value: 'middle' },
-            { label: tval('Small'), value: 'small' },
+            { label: escapeT('Large'), value: 'large' },
+            { label: escapeT('Middle'), value: 'middle' },
+            { label: escapeT('Small'), value: 'small' },
           ],
         },
       },
@@ -524,7 +507,23 @@ TableModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
-    refresh: {
+    virtualScrolling: {
+      title: escapeT('Enable virtual scrolling'),
+      uiSchema: {
+        virtual: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        virtual: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('virtual', params.virtual);
+      },
+    },
+    refreshData: {
+      title: escapeT('Refresh data'),
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
         const { dataLoadingMode } = ctx.model.props;
@@ -539,8 +538,8 @@ TableModel.registerFlow({
 });
 
 TableModel.define({
-  title: tval('Table'),
-  group: tval('Content'),
+  title: escapeT('Table'),
+  group: escapeT('Content'),
   defaultOptions: {
     use: 'TableModel',
     subModels: {

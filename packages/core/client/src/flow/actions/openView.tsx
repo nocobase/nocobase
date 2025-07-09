@@ -13,7 +13,7 @@ import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('Edit popup'),
+  title: escapeT('General'),
   uiSchema: {
     mode: {
       type: 'string',
@@ -21,7 +21,7 @@ export const openView = defineAction({
       enum: [
         { label: escapeT('Drawer'), value: 'drawer' },
         { label: escapeT('Dialog'), value: 'dialog' },
-        { label: escapeT('Page'), value: 'page' },
+        // { label: escapeT('Page'), value: 'page' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',

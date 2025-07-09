@@ -18,7 +18,10 @@ const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields();
-  const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+  const ignoreFieldsNames = getIgnoreFieldsNames(
+    modelInstance.props.filterableFieldsNames || [],
+    fields.map((field) => field.name),
+  );
   const t = modelInstance.translate;
 
   return (
@@ -47,7 +50,6 @@ export class FilterActionModel extends GlobalActionModel {
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
-    ignoreFieldsNames: [],
   };
 
   render() {
@@ -57,6 +59,12 @@ export class FilterActionModel extends GlobalActionModel {
         content={<FilterContent value={this.props.filterValue} />}
         trigger="click"
         placement="bottomLeft"
+        onOpenChange={(open) => {
+          // 解决当鼠标点击其他地方时，Popover 不关闭的问题
+          if (open === false) {
+            this.setProps('open', undefined);
+          }
+        }}
       >
         {super.render()}
       </Popover>
@@ -78,10 +86,10 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('position', params.position || 'left');
       },
     },
-    ignoreFieldsNames: {
+    filterableFieldsNames: {
       title: escapeT('Filterable fields'),
       uiSchema: {
-        ignoreFieldsNames: {
+        filterableFieldsNames: {
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
@@ -102,12 +110,13 @@ FilterActionModel.registerFlow({
         },
       },
       defaultParams(ctx) {
+        const names = ctx.shared?.currentBlockModel.collection.getFields().map((field) => field.name);
         return {
-          ignoreFieldsNames: ctx.model.defaultProps.ignoreFieldsNames || [],
+          filterableFieldsNames: names || [],
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('ignoreFieldsNames', params.ignoreFieldsNames);
+        ctx.model.setProps('filterableFieldsNames', params.filterableFieldsNames);
       },
     },
     defaultFilter: {
@@ -128,7 +137,6 @@ FilterActionModel.registerFlow({
                 value={props.value || {}}
                 fields={fields}
                 ignoreFieldsNames={ignoreFieldsNames}
-                ctx={modelInstance.ctx}
                 model={modelInstance}
               />
             );
@@ -179,6 +187,7 @@ FilterActionModel.registerFlow({
         resource.removeFilterGroup(ctx.model.uid);
         resource.refresh();
         ctx.model.setProps('open', false);
+        ctx.model.setProps('filterValue', clearInputValue(ctx.model.props.filterValue));
       },
     },
   },
@@ -195,3 +204,22 @@ FilterActionModel.registerFlow({
     },
   },
 });
+
+function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
+  return allFields.filter((field) => !filterableFieldsNames.includes(field));
+}
+
+function clearInputValue(value: any) {
+  if (Array.isArray(value)) {
+    return value.map((item) => clearInputValue(item));
+  } else if (typeof value === 'object' && value !== null) {
+    const newValue: any = {};
+    for (const key in value) {
+      newValue[key] = clearInputValue(value[key]);
+    }
+    return newValue;
+  } else if (typeof value === 'string') {
+    return '';
+  }
+  return undefined;
+}

@@ -8,9 +8,9 @@
  */
 
 import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
-import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
+import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
 import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
 
@@ -60,8 +60,8 @@ const AddDetailField = ({ model }) => {
         await field.applyAutoFlows();
       }}
       onSubModelAdded={async (item: DetailItemModel) => {
-        const field: any = item.subModels.field;
-        detailsModelInstance.addAppends(field.fieldPath, true);
+        const fieldPath = item.getStepParams('fieldSettings', 'init').fieldPath;
+        model.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
       }}
     />
   );
@@ -72,8 +72,6 @@ export class DetailsFieldGridModel extends GridModel<{
   subModels: { items: FieldModel[] };
 }> {
   renderAddSubModelButton() {
-    const t = this.translate;
-
     return (
       <>
         <AddDetailField model={this} />
@@ -93,6 +91,12 @@ DetailsFieldGridModel.registerFlow({
   key: 'detailFieldGridSettings',
   auto: true,
   steps: {
+    init: {
+      async handler(ctx, params) {
+        console.log('init detailFieldGridSettings', ctx.model.subModels.items);
+        await ctx.model.applySubModelsAutoFlows('items');
+      },
+    },
     grid: {
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);

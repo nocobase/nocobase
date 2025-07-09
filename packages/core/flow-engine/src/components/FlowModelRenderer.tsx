@@ -98,7 +98,7 @@ interface FlowModelRendererProps {
  */
 const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -150,7 +150,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
  */
 const FlowModelRendererWithoutAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -192,7 +192,9 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
  */
 const FlowModelRendererCore: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean };
+  showFlowSettings:
+    | boolean
+    | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -239,6 +241,7 @@ const FlowModelRendererCore: React.FC<{
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -275,6 +278,7 @@ const FlowModelRendererCore: React.FC<{
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>

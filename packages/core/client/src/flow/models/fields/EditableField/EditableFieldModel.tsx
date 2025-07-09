@@ -27,7 +27,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
   static supportedFieldInterfaces = '*' as any;
   field: Field;
   get form() {
-    return (this.parent.form as Form) || (this.parent.parent.form as Form);
+    return (this.ctx.shared.currentBlockModel.form as Form) || (this.parent.parent.form as Form);
   }
 
   get decorator() {
@@ -114,6 +114,7 @@ EditableFieldModel.registerFlow({
   steps: {
     createField: {
       handler(ctx, params) {
+        const { fieldProps = {} } = params;
         const { collectionField } = ctx.model;
 
         // 如果字段已存在但连接有问题，重新创建
@@ -122,7 +123,7 @@ EditableFieldModel.registerFlow({
         }
 
         ctx.model.field = ctx.model.field || ctx.model.createField();
-        ctx.model.setComponentProps(collectionField.getComponentProps());
+        ctx.model.setComponentProps({ ...collectionField.getComponentProps(), ...fieldProps });
         if (collectionField.enum.length) {
           ctx.model.setDataSource(collectionField.enum);
         }
