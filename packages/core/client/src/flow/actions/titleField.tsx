@@ -48,16 +48,9 @@ export const titleField = defineAction({
   defaultParams: (ctx: any) => {
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
-    console.log(
-      ctx.model.field?.componentProps?.fieldNames?.label ||
-        ctx.model.props.fieldNames?.label ||
-        targetCollection.options.titleField ||
-        filterKey,
-    );
-
     return {
       label:
-        ctx.model.field.componentProps.fieldNames.label ||
+        ctx.model.field?.componentProps?.fieldNames?.label ||
         ctx.model.props.fieldNames?.label ||
         targetCollection.options.titleField ||
         filterKey,
@@ -67,10 +60,7 @@ export const titleField = defineAction({
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
-    const label =
-      // ctx.runtimeArgs?.fieldProps?.fieldNames?.label ||
-      params.label || targetCollection.options.titleField || filterKey;
-    console.log(ctx.model.field.componentProps, label);
+    const label = params.label || targetCollection.options.titleField || filterKey;
     const newFieldNames = {
       value: filterKey,
       label,
