@@ -337,7 +337,7 @@ AssociationSelectEditableFieldModel.registerFlow({
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {
-          resource.addFilterGroup(collectionField.foreignKey, { $is: null });
+          resource.addFilterGroup(ctx.model.uid, { [collectionField.foreignKey]: { $is: null } });
         }
 
         ctx.model.resource = resource;
