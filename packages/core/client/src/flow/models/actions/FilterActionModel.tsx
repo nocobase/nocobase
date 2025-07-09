@@ -59,6 +59,12 @@ export class FilterActionModel extends GlobalActionModel {
         content={<FilterContent value={this.props.filterValue} />}
         trigger="click"
         placement="bottomLeft"
+        onOpenChange={(open) => {
+          // 解决当鼠标点击其他地方时，Popover 不关闭的问题
+          if (open === false) {
+            this.setProps('open', undefined);
+          }
+        }}
       >
         {super.render()}
       </Popover>
