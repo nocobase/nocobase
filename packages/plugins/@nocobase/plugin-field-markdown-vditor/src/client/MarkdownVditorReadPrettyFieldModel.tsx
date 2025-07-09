@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel, ApplicationContext, useApp } from '@nocobase/client';
+import { ReadPrettyFieldModel, ApplicationContext } from '@nocobase/client';
 import { Display } from './components/Display';
 
 export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -19,8 +19,6 @@ export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
   public render() {
     const value = this.getValue();
     const app = this.ctx.globals.app;
-    console.log(this.app);
-    console.log(this.ctx.globals.app);
     if (!value) {
       return <div></div>;
     }
