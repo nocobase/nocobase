@@ -56,6 +56,11 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+      },
+    },
     editTitle: {
       title: escapeT('Edit title'),
       uiSchema: {

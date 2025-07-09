@@ -49,10 +49,10 @@ export class DetailsModel extends DataBlockModel<{
 
   renderComponent() {
     const resource = this.resource as MultiRecordResource;
-    const onPageChange = (page) => {
+    const onPageChange = async (page) => {
       resource.setPage(page);
       resource.loading = true;
-      resource.refresh();
+      await resource.refresh();
       const data = this.resource.getData();
       this.setSharedContext({
         currentRecord: Array.isArray(data) ? data[0] : data,
@@ -64,10 +64,13 @@ export class DetailsModel extends DataBlockModel<{
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
+                const currentRecord = this.ctx.shared.currentRecord;
+                const filterByTk = currentRecord?.[this.collection.filterTargetKey];
+
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
-                      key={action.uid}
+                      key={`${action.uid}-${filterByTk}`}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false }}
                       extraToolbarItems={[
