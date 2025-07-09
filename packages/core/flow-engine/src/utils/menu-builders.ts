@@ -192,7 +192,7 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
       stepParams: stepParams || {
         resourceSettings: {
           init: {
-            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+            filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
             collectionName: collection.name,
             dataSourceKey: collection.dataSource.key,
           },
@@ -207,7 +207,7 @@ function createAssociationRecordsMenuItem(
   className: string,
   baseCollectionName: string,
   collections: Collection[],
-  sourceId = '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+  sourceId = '{{ctx.runtimeArgs.filterByTk}}',
 ) {
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
@@ -282,8 +282,8 @@ function buildOtherCollectionItems(
             dataSourceKey: collection.dataSource.key,
             collectionName: currentFlow.runtimeArgs!.collectionName,
             associationName: `${collection.name}.${currentFlow.runtimeArgs!.collectionName}`,
-            sourceId: '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
-            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+            sourceId: '{{ctx.runtimeArgs.sourceId}}',
+            filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
           },
         },
       };
@@ -300,7 +300,7 @@ function buildOtherCollectionItems(
         className,
         currentFlow.runtimeArgs!.collectionName!,
         relatedCollections,
-        '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
+        '{{ctx.runtimeArgs.sourceId}}',
       ),
     );
   }

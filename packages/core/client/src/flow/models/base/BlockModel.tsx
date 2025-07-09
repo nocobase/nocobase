@@ -195,10 +195,10 @@ DataBlockModel.registerFlow({
           });
         }
         if (Object.keys(params).includes('sourceId')) {
-          ctx.model.resource.setSourceId(Schema.compile(params.sourceId, { ctx }));
+          ctx.model.resource.setSourceId(Schema.compile(params.sourceId, { ctx: ctx.shared.currentFlow }));
         }
         if (Object.keys(params).includes('filterByTk')) {
-          ctx.model.resource.setFilterByTk(Schema.compile(params.filterByTk, { ctx }));
+          ctx.model.resource.setFilterByTk(Schema.compile(params.filterByTk, { ctx: ctx.shared.currentFlow }));
         }
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
