@@ -227,7 +227,13 @@ const FilterItem: FC<{
       const fieldPath = fieldNames.join('.');
       const operatorObject = _.get(props.value, fieldPath);
       const prevOperator = Object.keys(operatorObject || {})[0];
-      _.set(props.value, `${fieldPath}.${value}`, _.get(props.value, `${fieldPath}.${prevOperator}`));
+      const operatorOption = operators.find((op) => op.value === value) || {};
+
+      if (operatorOption.noValue) {
+        _.set(props.value, `${fieldPath}.${value}`, true);
+      } else {
+        _.set(props.value, `${fieldPath}.${value}`, _.get(props.value, `${fieldPath}.${prevOperator}`));
+      }
 
       if (prevOperator) {
         delete operatorObject[prevOperator];
