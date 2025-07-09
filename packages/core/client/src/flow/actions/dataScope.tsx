@@ -9,8 +9,9 @@
 
 import { defineAction, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
+import { isEmptyFilter, tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../components/FilterGroup';
+import _ from 'lodash';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -53,7 +54,13 @@ export const dataScope = defineAction({
     if (!resource) {
       return;
     }
-    resource.addFilterGroup(ctx.model.uid, params.filter);
+
+    if (isEmptyFilter(params.filter)) {
+      resource.removeFilterGroup(ctx.model.uid);
+    } else {
+      resource.addFilterGroup(ctx.model.uid, params.filter);
+    }
+
     // resource.refresh();
   },
 });
