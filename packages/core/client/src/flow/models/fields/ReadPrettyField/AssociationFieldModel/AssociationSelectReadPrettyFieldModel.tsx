@@ -59,8 +59,8 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index + this.ctx.shared.index}`;
-          let fieldModel = this.fieldModelCache[v?.[fieldNames.label]];
+          const key = `${index + (this.ctx.shared.index || 0)}`;
+          let fieldModel = this.fieldModelCache[v?.[fieldNames.label] + key];
 
           if (!fieldModel) {
             fieldModel = field.createFork({}, key);
@@ -69,7 +69,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
               value: v?.[fieldNames.label],
               currentRecord: v,
             });
-            this.fieldModelCache[v?.[fieldNames.label]] = fieldModel;
+            this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : this.flowEngine.translate('N/A');
