@@ -27,7 +27,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
   static supportedFieldInterfaces = '*' as any;
   field: Field;
   get form() {
-    return (this.parent.form as Form) || (this.parent.parent.form as Form);
+    return (this.ctx.shared.currentBlockModel.form as Form) || (this.parent.parent.form as Form);
   }
 
   get decorator() {
