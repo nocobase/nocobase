@@ -59,6 +59,7 @@ interface MenuBuilderFlowContext {
     filterByTk?: string;
     collectionName?: string;
     sourceId?: string;
+    associationName?: string;
   };
   shared?: {
     currentBlockModel?: {
@@ -281,7 +282,7 @@ function buildOtherCollectionItems(
           init: {
             dataSourceKey: collection.dataSource.key,
             collectionName: currentFlow.runtimeArgs!.collectionName,
-            associationName: `${collection.name}.${currentFlow.runtimeArgs!.collectionName}`,
+            associationName: currentFlow.runtimeArgs.associationName,
             sourceId: '{{ctx.runtimeArgs.sourceId}}',
             filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
           },

@@ -148,9 +148,12 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     let collectionTitle = this.collection?.title;
     if (this.resource instanceof BaseRecordResource && this.resource.getSourceId()) {
       const resourceName = this.resource.getResourceName();
-      const collectionNames = resourceName.split('.');
-      const collections = collectionNames.map((name) => this.collection.dataSource.getCollection(name));
-      collectionTitle = collections.map((collection) => `${collection.title}`).join(' > ');
+      const associationCollectionName = resourceName.split('.')[0];
+      // const collections = collectionNames.map((name) => this.collection.dataSource.getCollection(name));
+      collectionTitle = [
+        this.collection.dataSource.getCollection(associationCollectionName)?.title,
+        this.collection.title,
+      ].join(' > ');
     }
     return `
     ${this.translate(this.constructor['meta']?.title || this.constructor.name)}:
