@@ -338,7 +338,7 @@ AssociationSelectEditableFieldModel.registerFlow({
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {
           const key = `${collectionField.foreignKey}.$is`;
-          resource.addFilterGroup(ctx.model.uid, {
+          resource.addFilterGroup(collectionField.name, {
             [key]: null,
           });
         }
