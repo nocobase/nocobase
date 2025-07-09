@@ -64,7 +64,7 @@ export class DetailsModel extends DataBlockModel<{
             <Space>
               {this.mapSubModels('actions', (action) => {
                 const currentRecord = this.ctx.shared.currentRecord;
-                const filterByTk = currentRecord?.[this.collection.filterTargetKey];
+                const filterByTk = this.collection.getFilterByTK(currentRecord);
 
                 return (
                   <Droppable model={action} key={action.uid}>
