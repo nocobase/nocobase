@@ -138,6 +138,9 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord, parentRecord) => {
           const targetCollection = ctx.model.collectionField.targetCollection;
+          if (!targetCollection || !currentRecord) {
+            return;
+          }
           ctx.model.dispatchEvent('click', {
             event: e,
             filterByTk: currentRecord[targetCollection.filterTargetKey],
