@@ -41,6 +41,7 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
     'obo',
     'updatedBy',
     'createdBy',
+    'mbm',
   ];
 
   set onClick(fn) {

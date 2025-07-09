@@ -66,7 +66,14 @@ export class ReadPrettyFieldModel extends FieldModel {
     }
 
     return (
-      <span>
+      <span
+        style={{
+          display: 'inline-block',
+          maxHeight: '200px',
+          overflowY: 'auto',
+          verticalAlign: 'top',
+        }}
+      >
         {prefix}
         {this.translate(content)}
         {suffix}

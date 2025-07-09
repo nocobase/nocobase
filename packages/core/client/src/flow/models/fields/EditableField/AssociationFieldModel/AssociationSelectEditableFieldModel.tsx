@@ -129,7 +129,7 @@ const AssociationSelect = connect(
 );
 
 export class AssociationSelectEditableFieldModel extends AssociationFieldEditableFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy'];
+  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   dataSource;
   declare resource: MultiRecordResource;
 
