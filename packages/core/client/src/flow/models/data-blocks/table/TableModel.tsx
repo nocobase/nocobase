@@ -127,8 +127,7 @@ const AddFieldColumn = ({ model }) => {
       },
       subModels: {
         field: {
-          // @ts-ignore
-          use: defaultOptions.use as any,
+          use: defaultOptions.use,
           stepParams: {
             fieldSettings: {
               init: {
@@ -237,7 +236,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
-                    fork.rerender();
+                    model.rerender();
                   },
                 });
                 // await this.resource.refresh();
