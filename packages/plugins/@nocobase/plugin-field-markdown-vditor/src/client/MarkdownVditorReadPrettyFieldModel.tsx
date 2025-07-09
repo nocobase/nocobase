@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel, ApplicationContext } from '@nocobase/client';
+import { ReadPrettyFieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
 export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -24,8 +24,20 @@ export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
     }
     return (
       <ApplicationContext.Provider value={app}>
-        <Display value={value} />
+        <Display value={value} ellipsis={this.props.textOnly} />
       </ApplicationContext.Provider>
     );
   }
 }
+
+MarkdownVditorReadPrettyFieldModel.registerFlow({
+  key: 'markdownVditorSettings',
+  title: tval('MarkdownVditor settings'),
+  auto: true,
+  sort: 200,
+  steps: {
+    displayMode: {
+      use: 'displayMode',
+    },
+  },
+});
