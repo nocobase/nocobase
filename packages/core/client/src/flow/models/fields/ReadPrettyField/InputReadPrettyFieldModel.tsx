@@ -9,10 +9,12 @@
 
 import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { reactive } from '@nocobase/flow-engine';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url'] as any;
 
+  @reactive
   public render() {
     const value = this.getValue();
     const { prefix, suffix } = this.props;
