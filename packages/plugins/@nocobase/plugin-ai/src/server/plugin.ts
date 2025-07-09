@@ -66,9 +66,8 @@ export class PluginAIServer extends Plugin {
       title: '{{t("Frontend")}}',
       description: '{{t("Frontend actions")}}',
     });
-    this.aiManager.registerTool({
+    this.aiManager.registerTools({
       groupName: frontendGroupName,
-      toolName: 'formFiller',
       tool: formFiller,
     });
 
@@ -78,15 +77,13 @@ export class PluginAIServer extends Plugin {
       title: '{{t("Data modeling")}}',
       description: '{{t("Data modeling tools")}}',
     });
-    this.aiManager.registerTool([
+    this.aiManager.registerTools([
       {
         groupName: dataModelingGroupName,
-        toolName: 'defineCollections',
         tool: defineCollections,
       },
       {
         groupName: dataModelingGroupName,
-        toolName: 'getCollectionMetadata',
         tool: getCollectionMetadata,
       },
     ]);

@@ -10,7 +10,7 @@
 import { z } from 'zod';
 import PluginWorkflowServer, { Processor, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Context } from '@nocobase/actions';
-import { ToolRegisterOptions } from '../manager/ai-manager';
+import { ToolRegisterOptions } from '../manager/tool-manager';
 
 interface ParameterConfig {
   name: string;
@@ -104,13 +104,12 @@ export const getWorkflowCallers = async (groupName, plugin) => {
   const aiSupporterWorkflows = Array.from(workflowPlugin.enabledCache.values()).filter(
     (item) => item.type === 'ai-employee',
   );
-  const register: ToolRegisterOptions<unknown>[] = [];
+  const register: ToolRegisterOptions[] = [];
   for (const workflow of aiSupporterWorkflows) {
     const toolName = `${groupName}-${workflow.key}`;
     const config = workflow.config;
     register.push({
       groupName,
-      toolName,
       tool: {
         name: toolName,
         title: workflow.title,

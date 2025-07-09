@@ -6,13 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { ToolOptions } from '../manager/ai-manager';
 import { z } from 'zod';
+import { ToolOptions } from '../manager/tool-manager';
 
-export const defineCollections: ToolOptions<{
-  collections: any[];
-}> = {
+export const defineCollections: ToolOptions= {
+  name: "defineCollections",
   title: '{{t("Define collections")}}',
   description: '{{t("Create or edit collections")}}',
   schema: z.object({
@@ -26,9 +24,8 @@ export const defineCollections: ToolOptions<{
   },
 };
 
-export const getCollectionMetadata: ToolOptions<{
-  collectionNames: string[];
-}> = {
+export const getCollectionMetadata: ToolOptions = {
+  name: "getCollectionMetadata",
   title: '{{t("Get collection metadata")}}',
   description: '{{t("Retrieve metadata for specified collections")}}',
   schema: z.object({
