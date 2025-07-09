@@ -125,7 +125,7 @@ PageModel.registerFlow({
         ctx.model.setProps('displayTitle', params.displayTitle);
         ctx.model.setProps(
           'title',
-          ctx.t(params.title || ctx.model.ctx.shared?.currentFlow.shared?.currentRoute.title),
+          ctx.t(params.title || ctx.model.ctx.shared?.currentFlow.shared?.currentRoute?.title),
         );
         ctx.model.setProps('enableTabs', params.enableTabs);
 
