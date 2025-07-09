@@ -170,7 +170,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
   const compile = useCompile();
-  const isFilterAction: any = !fieldSchema['x-filter-operator']; // 在筛选按钮中使用
+  const isFilterAction: any = !fieldSchema?.['x-filter-operator']; // 在筛选按钮中使用
   const presets = [
     { label: t('Today'), value: rangesValue.today },
     { label: t('Last week'), value: rangesValue.lastWeek },
