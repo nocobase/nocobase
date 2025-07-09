@@ -228,7 +228,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
-                  filterByTk: record.id,
+                  filterByTk: this.collection.getFilterByTK(record),
                   record: record,
                   fieldProps: model.subModels.field.props,
                   onSuccess: (values) => {

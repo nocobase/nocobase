@@ -46,7 +46,7 @@ BulkDeleteActionModel.registerFlow({
           ctx.message.warning(ctx.t('No records selected for deletion'));
           return;
         }
-        await resource.destroySelectedRows();
+        await resource.destroy(ctx.shared.currentBlockModel.collection.getFilterByTK(resource.getSelectedRows()));
         ctx.message.success(ctx.t('Selected records deleted successfully'));
       },
     },

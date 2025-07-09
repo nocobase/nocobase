@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
+import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 
 export interface DataSourceOptions extends Record<string, any> {
@@ -298,6 +299,22 @@ export class Collection {
     this.fields = observable.shallow<Map<string, CollectionField>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
     this.setFields(options.fields || []);
+  }
+
+  getFilterByTK(record) {
+    if (!record) {
+      throw new Error('Record is required to get filterByTk');
+    }
+    if (Array.isArray(record)) {
+      return record.map((r) => this.getFilterByTK(r));
+    }
+    if (!this.filterTargetKey) {
+      throw new Error(`filterTargetKey is not defined for collection ${this.name}`);
+    }
+    if (typeof this.filterTargetKey === 'string') {
+      return record[this.filterTargetKey];
+    }
+    return _.pick(record, this.filterTargetKey);
   }
 
   get flowEngine() {
