@@ -69,6 +69,9 @@ export const openView = defineAction({
             }}
             onModelLoaded={(uid) => {
               pageModelUid = uid;
+              const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+              pageModel.invalidateAutoFlowCache();
+              pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
           />
         );
