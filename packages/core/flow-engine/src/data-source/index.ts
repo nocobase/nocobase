@@ -532,6 +532,10 @@ export class CollectionField {
     return this.options.dataType;
   }
 
+  get foreignKey() {
+    return this.options.foreignKey;
+  }
+
   get target() {
     return this.options.target;
   }

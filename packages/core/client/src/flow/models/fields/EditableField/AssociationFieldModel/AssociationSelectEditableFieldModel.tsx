@@ -329,11 +329,17 @@ AssociationSelectEditableFieldModel.registerFlow({
     init: {
       handler(ctx) {
         const resource = new MultiRecordResource();
-        const { target, dataSourceKey } = ctx.model.collectionField;
+        const collectionField = ctx.model.collectionField;
+        const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setAPIClient(ctx.globals.api);
         resource.setPageSize(paginationState.pageSize);
+        const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
+        if (isOToAny) {
+          resource.addFilterGroup(collectionField.foreignKey, { $is: null });
+        }
+
         ctx.model.resource = resource;
       },
     },
