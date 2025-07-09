@@ -387,7 +387,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           }
           loading={this.resource.loading}
           virtual={this.props.virtual}
-          scroll={{ x: 'max-content', y: '100%' }}
+          scroll={{ x: 'max-content' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
