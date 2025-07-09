@@ -1002,6 +1002,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 }
 
+export class ErrorFlowModel extends FlowModel {
+  public errorMessage: string;
+
+  setErrorMessage(msg: string) {
+    this.errorMessage = msg;
+  }
+
+  public render() {
+    throw new Error(this.errorMessage);
+  }
+}
+
 export function defineFlow<TModel extends FlowModel = FlowModel>(definition: FlowDefinition): FlowDefinition<TModel> {
   return definition as FlowDefinition<TModel>;
 }

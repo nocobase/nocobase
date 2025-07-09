@@ -10,7 +10,7 @@ import { observable } from '@formily/reactive';
 import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { initFlowEngineLocale } from './locale';
-import { FlowModel } from './models';
+import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
 import {
   ActionDefinition,
@@ -322,14 +322,18 @@ export class FlowEngine {
     const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
-    if (!ModelClass) {
-      throw new Error(`Model class '${modelClassName}' not found. Please register it first.`);
-    }
-
     if (uid && this.modelInstances.has(uid)) {
       return this.modelInstances.get(uid) as T;
     }
-    const modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
+
+    let modelInstance;
+
+    if (!ModelClass) {
+      modelInstance = new ErrorFlowModel({ ...options, flowEngine: this } as any);
+      modelInstance.setErrorMessage(`Model class '${modelClassName}' not found. Please register it first.`);
+    } else {
+      modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
+    }
 
     modelInstance.onInit(options);
 
