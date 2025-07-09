@@ -11,6 +11,7 @@ import { FormItem } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
+import { escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { FormFieldGridModel } from '../..';
@@ -73,9 +74,9 @@ export class EditableFieldModel extends FieldModel<Structure> {
   getDecoratorProps() {
     return this.field.decoratorProps;
   }
-  setDisplayLabel(displayLabel: boolean) {
+  showTitle(showTitle: boolean) {
     this.field.setDecoratorProps({
-      labelStyle: { display: displayLabel ? 'flex' : 'none' },
+      labelStyle: { display: showTitle ? 'flex' : 'none' },
     });
   }
   setDescription(description: string) {
@@ -110,7 +111,7 @@ export class EditableFieldModel extends FieldModel<Structure> {
 EditableFieldModel.registerFlow({
   key: 'formItemSettings',
   auto: true,
-  title: tval('Form item settings'),
+  title: escapeT('Form item settings'),
   sort: 150,
   steps: {
     createField: {
@@ -134,15 +135,12 @@ EditableFieldModel.registerFlow({
         }
       },
     },
-    editTitle: {
-      title: tval('Edit Title'),
+    title: {
+      title: escapeT('Title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: tval('Enter field title'),
-          },
         },
       },
       handler(ctx, params) {
@@ -154,8 +152,32 @@ EditableFieldModel.registerFlow({
         };
       },
     },
+    description: {
+      title: escapeT('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDescription(params.description);
+      },
+    },
+    tooltip: {
+      title: escapeT('Tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setTooltip(params.tooltip);
+      },
+    },
     initialValue: {
-      title: tval('Set default value'),
+      title: escapeT('Default value'),
       uiSchema: {
         defaultValue: {
           'x-component': 'Input',
@@ -171,14 +193,14 @@ EditableFieldModel.registerFlow({
       },
     },
     required: {
-      title: tval('Required'),
+      title: escapeT('Required'),
       uiSchema: {
         required: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: tval('Yes'),
-            unCheckedChildren: tval('No'),
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
           },
         },
       },
@@ -186,51 +208,27 @@ EditableFieldModel.registerFlow({
         ctx.model.setRequired(params.required || false);
       },
     },
-    displayLabel: {
-      title: tval('Display label'),
+    showTitle: {
+      title: escapeT('Show title'),
       uiSchema: {
-        displayLabel: {
+        showTitle: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: tval('Yes'),
-            unCheckedChildren: tval('No'),
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
           },
         },
       },
       defaultParams: {
-        displayLabel: true,
+        showTitle: true,
       },
       handler(ctx, params) {
-        ctx.model.setDisplayLabel(params.displayLabel === undefined ? true : params.displayLabel);
-      },
-    },
-    editDescription: {
-      title: tval('Edit description'),
-      uiSchema: {
-        description: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setDescription(params.description);
-      },
-    },
-    editTooltip: {
-      title: tval('Edit tooltip'),
-      uiSchema: {
-        tooltip: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setTooltip(params.tooltip);
+        ctx.model.showTitle(params.showTitle);
       },
     },
     pattern: {
-      title: tval('Pattern'),
+      title: escapeT('Display mode'),
       uiSchema: {
         pattern: {
           'x-component': 'Select',
@@ -238,25 +236,25 @@ EditableFieldModel.registerFlow({
           enum: [
             {
               value: 'editable',
-              label: tval('Editable'),
+              label: escapeT('Editable'),
             },
             {
               value: 'disabled',
-              label: tval('Disabled'),
+              label: escapeT('Disabled'),
             },
-            {
-              value: 'readOnly',
-              label: tval('ReadOnly'),
-            },
+            // {
+            //   value: 'readOnly',
+            //   label: escapeT('Read only'),
+            // },
             {
               value: 'readPretty',
-              label: tval('ReadPretty'),
+              label: escapeT('Display only'),
             },
           ],
         },
       },
       defaultParams: (ctx) => ({
-        pattern: ctx.model.field?.pattern || 'editable',
+        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
       handler(ctx, params) {
         ctx.model.setPattern(params.pattern);

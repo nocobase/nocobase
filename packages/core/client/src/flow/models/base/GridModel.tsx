@@ -47,6 +47,8 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   subModelBaseClass = 'BlockModel';
   gridContainerRef = React.createRef<HTMLDivElement>();
   prevMoveDistance = 0;
+  // 设置项菜单的层级，默认为 1
+  itemSettingsMenuLevel = 1;
 
   onInit(options: any): void {
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
@@ -283,6 +285,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         fallback={<SkeletonFallback />}
                         showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.props.flowSettings }}
                         showErrorFallback
+                        settingsMenuLevel={this.itemSettingsMenuLevel}
                         showTitle
                         extraToolbarItems={[
                           {
