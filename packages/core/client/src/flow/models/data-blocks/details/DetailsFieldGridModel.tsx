@@ -71,6 +71,7 @@ export class DetailsFieldGridModel extends GridModel<{
   parent: DetailsModel;
   subModels: { items: FieldModel[] };
 }> {
+  itemSettingsMenuLevel = 2;
   renderAddSubModelButton() {
     return (
       <>
