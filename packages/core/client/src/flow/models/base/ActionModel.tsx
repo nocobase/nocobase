@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT } from '@nocobase/flow-engine';
+import { Collection, FlowModel, escapeT } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
@@ -66,7 +66,7 @@ ActionModel.registerFlow({
         danger: {
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
-          title: escapeT('Danger'),
+          title: escapeT('Danger action'),
         },
       },
       defaultParams(ctx) {
@@ -126,9 +126,10 @@ RecordActionModel.registerFlow({
           throw new Error('Current block model is not set in shared context');
         }
         ctx.model.setProps('onClick', (event) => {
+          const collection = currentBlockModel.collection as Collection;
           ctx.model.dispatchEvent('click', {
             event,
-            filterByTk: currentRecord[currentBlockModel.collection.filterTargetKey],
+            filterByTk: collection.getFilterByTK(currentRecord),
           });
         });
       },

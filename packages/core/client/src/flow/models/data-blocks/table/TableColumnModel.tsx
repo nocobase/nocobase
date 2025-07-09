@@ -155,9 +155,6 @@ TableColumnModel.registerFlow({
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Tooltip'),
-          },
         },
       },
       handler(ctx, params) {
@@ -238,14 +235,11 @@ TableCustomColumnModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Edit tooltip'),
+      title: escapeT('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Edit tooltip'),
-          },
         },
       },
       handler(ctx, params) {

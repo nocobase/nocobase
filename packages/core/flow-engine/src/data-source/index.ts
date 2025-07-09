@@ -536,6 +536,14 @@ export class CollectionField {
     return this.options.foreignKey;
   }
 
+  get targetKey() {
+    return this.options.targetKey || this.targetCollection.filterTargetKey;
+  }
+
+  get sourceKey() {
+    return this.options.sourceKey;
+  }
+
   get target() {
     return this.options.target;
   }
