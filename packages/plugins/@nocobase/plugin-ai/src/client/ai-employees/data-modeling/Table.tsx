@@ -154,7 +154,7 @@ const ExpandedRowRender = (record) => {
       dataSource={record.fields}
       pagination={false}
       expandable={{
-        expandedRowRender: (record) => {
+        expandedRowRender: (record: any) => {
           return (
             <>
               <div>
