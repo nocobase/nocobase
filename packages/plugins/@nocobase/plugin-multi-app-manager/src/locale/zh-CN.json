@@ -19,5 +19,6 @@
   "Password": "密码",
   "Database name": "数据库名称",
   "Authentication options": "认证选项",
-  "JWT secret": "JWT 密钥"
+  "JWT secret": "JWT 密钥",
+  "Automatically generate a JWT secret (An independent JWT secret ensures data and session isolation from other applications)": "自动生成 JWT 密钥（独立的 JWT 密钥，保证与其他应用的数据与会话隔离）"
 }
