@@ -24,9 +24,7 @@ export const JwtSecretInput = ({ value, onChange }) => {
   };
   return (
     <Checkbox onChange={onCheck} checked={checked}>
-      {t(
-        'Automatically generate a JWT secret (An independent JWT secret ensures data and session isolation from other applications)',
-      )}
+      {t('Automatically generate a JWT secret')}
     </Checkbox>
   );
 };

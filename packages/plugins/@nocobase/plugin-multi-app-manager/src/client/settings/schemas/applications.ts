@@ -313,6 +313,49 @@ export const formSchema: ISchema = {
                 },
               },
             },
+            tableRow: {
+              type: 'void',
+              'x-component': 'Grid.Row',
+              properties: {
+                tablePrefixCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    tablePrefix: {
+                      type: 'string',
+                      title: `{{t("Table prefix", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                    },
+                  },
+                },
+                schemaCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    underscored: {
+                      type: 'boolean',
+                      title: `{{t("Naming style", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Radio.Group',
+                      enum: [
+                        { label: `{{t("Camel case", { ns: "${NAMESPACE}" })}}`, value: false },
+                        { label: `{{t("Snake case", { ns: "${NAMESPACE}" })}}`, value: true },
+                      ],
+                      default: false,
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -326,6 +369,7 @@ export const formSchema: ISchema = {
         'jwt.secret': {
           type: 'string',
           title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t("An independent JWT secret ensures data and session isolation from other applications.", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'JwtSecretInput',
         },
