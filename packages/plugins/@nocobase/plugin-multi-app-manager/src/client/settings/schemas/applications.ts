@@ -158,58 +158,162 @@ export const formSchema: ISchema = {
       },
       title: `{{t("Database options", { ns: "${NAMESPACE}" })}}`,
       properties: {
-        // host, port, username, password, dialect, database, schema
-        dialect: {
-          type: 'string',
-          title: `{{t("Dialect", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: 'PostgreSQL', value: 'postgres' },
-            { label: 'MySQL', value: 'mysql' },
-            { label: 'Mariadb', value: 'mariadb' },
-            { label: 'KingBase', value: 'kingbase' },
-          ],
-          required: true,
-        },
-        host: {
-          type: 'string',
-          title: `{{t("Host", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-        },
-        port: {
-          type: 'number',
-          title: `{{t("Port", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'InputNumber',
-        },
-        username: {
-          type: 'string',
-          title: `{{t("Username", { ns: "${NAMESPACE}" })}}`,
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          required: true,
-        },
-        password: {
-          type: 'string',
-          title: `{{t("Password", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.Password',
-        },
-        database: {
-          type: 'string',
-          title: `{{t("Database name", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          required: true,
-        },
-        schema: {
-          type: 'string',
-          title: `{{t("Schema", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
+        grid: {
+          type: 'void',
+          'x-component': 'Grid',
+          properties: {
+            originRow: {
+              type: 'void',
+              'x-component': 'Grid.Row',
+              properties: {
+                dailectCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 25,
+                  },
+                  properties: {
+                    dialect: {
+                      type: 'string',
+                      title: `{{t("Dialect", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Select',
+                      enum: [
+                        { label: 'PostgreSQL', value: 'postgres' },
+                        { label: 'MySQL', value: 'mysql' },
+                        { label: 'Mariadb', value: 'mariadb' },
+                        { label: 'KingBase', value: 'kingbase' },
+                      ],
+                      required: true,
+                    },
+                  },
+                },
+                hostCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    host: {
+                      type: 'string',
+                      title: `{{t("Host", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      required: true,
+                    },
+                  },
+                },
+                portCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 25,
+                  },
+                  properties: {
+                    port: {
+                      type: 'number',
+                      title: `{{t("Port", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'InputNumber',
+                    },
+                  },
+                },
+              },
+            },
+            authRow: {
+              type: 'void',
+              'x-component': 'Grid.Row',
+              properties: {
+                usernameCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    username: {
+                      type: 'string',
+                      title: `{{t("Username", { ns: "${NAMESPACE}" })}}`,
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                      required: true,
+                    },
+                  },
+                },
+                portCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    password: {
+                      type: 'string',
+                      title: `{{t("Password", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input.Password',
+                      default: '',
+                    },
+                  },
+                },
+              },
+            },
+            databaseRow: {
+              type: 'void',
+              'x-component': 'Grid.Row',
+              properties: {
+                databaseCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    database: {
+                      type: 'string',
+                      title: `{{t("Database name", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      required: true,
+                    },
+                  },
+                },
+                schemaCol: {
+                  type: 'void',
+                  'x-component': 'Grid.Col',
+                  'x-component-props': {
+                    // flex: 'auto',
+                    width: 50,
+                  },
+                  properties: {
+                    schema: {
+                      type: 'string',
+                      title: `{{t("Schema", { ns: "${NAMESPACE}" })}}`,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-reactions': [
+                        {
+                          dependencies: ['.dialect'],
+                          fulfill: {
+                            state: {
+                              visible: '{{ $deps[0] === "postgres" }}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -221,8 +325,10 @@ export const formSchema: ISchema = {
       properties: {
         'jwt.secrete': {
           type: 'string',
+          title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'Input.Password',
+          default: `${uid()}${uid()}${uid()}${uid()}`,
         },
       },
     },
