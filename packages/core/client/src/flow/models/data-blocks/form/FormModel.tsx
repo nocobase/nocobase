@@ -212,19 +212,8 @@ export class EditFormModel extends FormModel {
         this.setSharedContext({
           currentRecord: newRecord,
         });
-
-        // 更新表单数据
-        if (this.form && newRecord) {
-          this.form
-            .reset()
-            .then(() => {
-              if (this.form && newRecord) {
-                this.form.setInitialValues(newRecord);
-                this.form.setValues(newRecord);
-              }
-            })
-            .catch(console.error);
-        }
+        await this.form.reset();
+        this.form.setValues(newRecord);
       }
     };
 
@@ -294,37 +283,19 @@ EditFormModel.registerFlow({
         }
         ctx.model.form = createForm();
         // 编辑表单需要监听refresh事件来加载现有数据
-        ctx.model.resource.on('refresh', () => {
+        ctx.model.resource.on('refresh', async () => {
           const data = ctx.model.resource.getData();
           const record = Array.isArray(data) ? data[0] : data;
-          if (ctx.model.form && record) {
-            ctx.model.form
-              .reset()
-              .then(() => {
-                if (ctx.model.form && record) {
-                  ctx.model.form.setInitialValues(record);
-                  ctx.model.form.setValues(record);
-                }
-              })
-              .catch(console.error);
-          }
+          await ctx.model.form.reset();
+          ctx.model.form.setValues(record);
         });
 
         // 如果资源已经有数据，立即设置到表单中
         const existingData = ctx.model.resource.getData();
         if (existingData) {
           const record = Array.isArray(existingData) ? existingData[0] : existingData;
-          if (record) {
-            ctx.model.form
-              .reset()
-              .then(() => {
-                if (ctx.model.form && record) {
-                  ctx.model.form.setInitialValues(record);
-                  ctx.model.form.setValues(record);
-                }
-              })
-              .catch(console.error);
-          }
+          await ctx.model.form.reset();
+          ctx.model.form.setValues(record);
         }
       },
     },
@@ -346,18 +317,8 @@ EditFormModel.registerFlow({
           currentRecord: record,
         });
 
-        // 4. 使用 reset().then() 确保字段已经创建完成后再设置值
-        if (ctx.model.form && record) {
-          ctx.model.form
-            .reset()
-            .then(() => {
-              if (ctx.model.form && record) {
-                ctx.model.form.setInitialValues(record);
-                ctx.model.form.setValues(record);
-              }
-            })
-            .catch(console.error);
-        }
+        await ctx.model.form.reset();
+        ctx.model.form.setValues(record);
       },
     },
   },
