@@ -175,7 +175,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
       title: escapeT('Display style'),
       uiSchema: {
         displayStyle: {
-          'x-component': 'Select',
+          'x-component': 'Radio.Group',
           'x-decorator': 'FormItem',
           enum: [
             { label: escapeT('Tag'), value: 'tag' },
@@ -184,7 +184,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
         },
       },
       defaultParams: {
-        displayStyle: 'tag',
+        displayStyle: 'text',
       },
       handler(ctx, params) {
         ctx.model.setProps('displayStyle', params.displayStyle);
