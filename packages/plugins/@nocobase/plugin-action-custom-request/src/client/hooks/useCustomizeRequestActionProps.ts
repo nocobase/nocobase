@@ -51,11 +51,12 @@ export const useCustomizeRequestActionProps = () => {
       const {
         manualClose,
         redirecting,
-        redirectTo,
+        redirectTo: rawRedirectTo,
         successMessage: rawSuccessMessage,
         actionAfterSuccess,
       } = onSuccess || {};
       let successMessage = rawSuccessMessage;
+      let redirectTo = rawRedirectTo;
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
@@ -90,6 +91,14 @@ export const useCustomizeRequestActionProps = () => {
             { name: '$nResponse', ctx: new Proxy({ ...res?.data?.data, ...res?.data }, {}) },
           ],
         });
+
+        if (rawRedirectTo) {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(res?.data?.data, {}) }],
+          });
+        }
         if (res.headers['content-disposition']) {
           const contentDisposition = res.headers['content-disposition'];
           const utf8Match = contentDisposition.match(/filename\*=utf-8''([^;]+)/i);
