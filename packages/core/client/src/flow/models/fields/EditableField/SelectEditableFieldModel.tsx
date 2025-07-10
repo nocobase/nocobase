@@ -14,6 +14,11 @@ export class SelectEditableFieldModel extends EditableFieldModel {
   static supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {
-    return [Select, {}];
+    return [
+      Select,
+      {
+        allowClear: true,
+      },
+    ];
   }
 }
