@@ -12,26 +12,26 @@ import { Button } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { AssociationReadPrettyFieldModel } from './AssociationReadPrettyFieldModel';
+import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
 const LinkToggleWrapper = ({ enableLink, children, currentRecord, parentRecord, ...props }) => {
   return enableLink ? (
-    <Button
-      style={{ padding: 0, height: 'auto' }}
-      type="link"
+    <a
+      // style={{ padding: 0, height: 'auto' }}
+      // type="link"
       {...props}
       onClick={(e) => {
         props.onClick(e, currentRecord, parentRecord);
       }}
     >
       {children}
-    </Button>
+    </a>
   ) : (
     children
   );
 };
 
-export class AssociationSelectReadPrettyFieldModel extends AssociationReadPrettyFieldModel {
+export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFieldModel {
   public static readonly supportedFieldInterfaces = [
     'm2m',
     'm2o',
@@ -88,15 +88,15 @@ export class AssociationSelectReadPrettyFieldModel extends AssociationReadPretty
   }
 }
 
-AssociationSelectReadPrettyFieldModel.registerFlow({
-  key: 'associationFieldSettings',
-  title: escapeT('Association field settings'),
+TagReadPrettyAssociationFieldModel.registerFlow({
+  key: 'tagSettings',
+  title: escapeT('Association tag settings'),
   auto: true,
   sort: 200,
   steps: {
     fieldNames: {
       use: 'titleField',
-      title: escapeT('Title field'),
+      title: escapeT('Label field'),
       async handler(ctx, params) {
         const { target } = ctx.model.collectionField;
         const collectionManager = ctx.model.collectionField.collection.collectionManager;
@@ -159,7 +159,7 @@ AssociationSelectReadPrettyFieldModel.registerFlow({
   },
 });
 
-AssociationSelectReadPrettyFieldModel.registerFlow({
+TagReadPrettyAssociationFieldModel.registerFlow({
   key: 'popupSettings',
   title: escapeT('Popup settings'),
   on: 'click',

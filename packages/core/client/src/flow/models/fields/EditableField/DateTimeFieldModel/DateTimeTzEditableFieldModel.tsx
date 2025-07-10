@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import React from 'react';
+import { PreviewText } from '@formily/antd-v5';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
+import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { PreviewText } from '@formily/antd-v5';
 
 function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
   if (!value) return undefined;
@@ -71,7 +71,8 @@ const DatePickerCom = connect(
     return <PreviewText.DatePicker {...rest} value={display} />;
   }),
 );
-export class DateTimeEditableWithTzFieldModel extends DateTimeFieldModel {
+
+export class DateTimeTzEditableFieldModel extends DateTimeFieldModel {
   static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
   setComponentProps(componentProps) {
     super.setComponentProps({

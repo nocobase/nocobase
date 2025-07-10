@@ -6,11 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from 'antd';
-import React from 'react';
-import dayjs from 'dayjs';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { PreviewText } from '@formily/antd-v5';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
 const DatePickerCom = connect(

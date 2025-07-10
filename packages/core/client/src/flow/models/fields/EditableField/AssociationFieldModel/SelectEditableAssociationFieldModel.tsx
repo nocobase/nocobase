@@ -12,7 +12,7 @@ import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { AssociationFieldEditableFieldModel } from './AssociationFieldEditableFieldModel';
+import { EditableAssociationFieldModel } from './EditableAssociationFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
@@ -128,7 +128,7 @@ const AssociationSelect = connect(
   }),
 );
 
-export class AssociationSelectEditableFieldModel extends AssociationFieldEditableFieldModel {
+export class SelectEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   dataSource;
   declare resource: MultiRecordResource;
@@ -161,7 +161,7 @@ const paginationState = {
 };
 
 // 事件绑定
-AssociationSelectEditableFieldModel.registerFlow({
+SelectEditableAssociationFieldModel.registerFlow({
   key: 'eventSettings',
   auto: true,
   sort: 300,
@@ -202,7 +202,7 @@ AssociationSelectEditableFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-AssociationSelectEditableFieldModel.registerFlow({
+SelectEditableAssociationFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -232,7 +232,7 @@ AssociationSelectEditableFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-AssociationSelectEditableFieldModel.registerFlow({
+SelectEditableAssociationFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -272,7 +272,7 @@ AssociationSelectEditableFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-AssociationSelectEditableFieldModel.registerFlow({
+SelectEditableAssociationFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -320,9 +320,9 @@ AssociationSelectEditableFieldModel.registerFlow({
 });
 
 //专有配置项
-AssociationSelectEditableFieldModel.registerFlow({
-  key: 'associationFieldSettings',
-  title: escapeT('Association field settings'),
+SelectEditableAssociationFieldModel.registerFlow({
+  key: 'selectSettings',
+  title: escapeT('Association select settings'),
   auto: true,
   sort: 200,
   steps: {
@@ -347,15 +347,12 @@ AssociationSelectEditableFieldModel.registerFlow({
     },
     fieldNames: {
       use: 'titleField',
-      title: tval('Title field'),
     },
     dataScope: {
       use: 'dataScope',
-      title: tval('Set data scope'),
     },
     sortingRule: {
       use: 'sortingRule',
-      title: tval('Set default sorting rules'),
     },
   },
 });

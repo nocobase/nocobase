@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
+import { EditableFieldModel } from '../EditableFieldModel';
 
-export class AssociationReadPrettyFieldModel extends ReadPrettyFieldModel {}
+export class EditableAssociationFieldModel extends EditableFieldModel {}

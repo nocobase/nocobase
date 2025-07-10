@@ -1237,5 +1237,7 @@
   "Label": "标签",
   "Show label": "显示标签",
   "Display mode": "显示模式",
-  "Detail item settings": "详情项设置"
+  "Detail item settings": "详情项设置",
+  "Association tag settings": "关系标签设置",
+  "Association select settings": "关系选择器设置"
 }

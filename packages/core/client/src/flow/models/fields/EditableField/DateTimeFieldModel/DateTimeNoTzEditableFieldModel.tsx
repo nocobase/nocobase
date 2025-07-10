@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DatePicker } from '@formily/antd-v5';
-import React from 'react';
 import dayjs from 'dayjs';
+import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
 const DatePickerCom = (props) => {
@@ -32,7 +32,8 @@ const DatePickerCom = (props) => {
     />
   );
 };
-export class DateTimeEditableWithoutTzFieldModel extends DateTimeFieldModel {
+
+export class DateTimeNoTzEditableFieldModel extends DateTimeFieldModel {
   static supportedFieldInterfaces = ['datetimeNoTz'];
   get component() {
     return [DatePickerCom, {}];

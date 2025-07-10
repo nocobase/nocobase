@@ -38,7 +38,7 @@ const SelectOptions = (props) => {
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: tval('Title field'),
+  title: tval('Label field'),
   uiSchema: {
     label: {
       'x-component': SelectOptions,
