@@ -44,18 +44,14 @@ export const useCurrentRoles = () => {
 
 export const CurrentUserProvider = (props) => {
   const api = useAPIClient();
-  const result = useRequest<any>(
-    () =>
-      api
-        .request({
-          url: '/auth:check',
-          skipNotify: true,
-          skipAuth: true,
-        })
-        .then((res) => res?.data),
-    {
-      manual: !api.auth.token,
-    },
+  const result = useRequest<any>(() =>
+    api
+      .request({
+        url: '/auth:check',
+        skipNotify: true,
+        skipAuth: true,
+      })
+      .then((res) => res?.data),
   );
 
   const { render } = useAppSpin();

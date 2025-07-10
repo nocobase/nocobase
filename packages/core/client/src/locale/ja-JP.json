@@ -1049,5 +1049,6 @@
   "Full permissions": "すべての権限",
   "Refresh data blocks": "データブロックを更新",
   "Select data blocks to refresh": "データブロックを選択して更新",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "送信後、選択したデータブロックが自動的に更新されます。"
+  "After successful submission, the selected data blocks will be automatically refreshed.": "送信後、選択したデータブロックが自動的に更新されます。",
+  "Reset link expiration": "リンクの有効期限をリセット"
 }

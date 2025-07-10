@@ -15,6 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const chalk = require('chalk');
+const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../util');
 
 class Package {
   data;
@@ -142,6 +143,17 @@ class Package {
       });
       console.log(chalk.greenBright(`Downloaded: ${this.packageName}@${version}`));
     } catch (error) {
+      if (error?.response?.data && typeof error?.response?.data?.pipe === 'function') {
+        let errorMessageBuffer = '';
+        error.response.data.on?.('data', (chunk) => {
+          errorMessageBuffer += chunk.toString('utf8'); // 收集错误信息
+        });
+        error.response.data.on?.('end', () => {
+          if (error.response.status === 403) {
+            console.error(chalk.redBright('You do not have permission to download this package version.'));
+          }
+        });
+      }
       console.log(chalk.redBright(`Download failed: ${this.packageName}`));
     }
   }
@@ -174,6 +186,9 @@ class PackageManager {
       });
       this.token = res1.data.token;
     } catch (error) {
+      if (error?.response?.data?.error === 'license not valid') {
+        showLicenseInfo(LicenseKeyError.notValid);
+      }
       console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
     }
   }
@@ -248,10 +263,19 @@ module.exports = (cli) => {
         NOCOBASE_PKG_USERNAME,
         NOCOBASE_PKG_PASSWORD,
       } = process.env;
-      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+      let accessKeyId;
+      let accessKeySecret;
+      try {
+        ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
+      } catch (e) {
         return;
       }
-      const credentials = { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
+      if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
+        return;
+      }
+      const credentials = accessKeyId
+        ? { username: accessKeyId, password: accessKeySecret }
+        : { username: NOCOBASE_PKG_USERNAME, password: NOCOBASE_PKG_PASSWORD };
       const pm = new PackageManager({ baseURL: NOCOBASE_PKG_URL });
       await pm.login(credentials);
       const file = path.resolve(__dirname, '../../package.json');

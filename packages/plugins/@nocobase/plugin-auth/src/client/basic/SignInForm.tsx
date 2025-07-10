@@ -39,7 +39,7 @@ export const useSignIn = (authenticator: string) => {
   };
 };
 
-const passwordForm: ISchema = {
+const getPasswordForm = ({ showForgotPassword }: { showForgotPassword?: boolean }): ISchema => ({
   type: 'object',
   name: 'passwordForm',
   'x-component': 'FormV2',
@@ -67,7 +67,7 @@ const passwordForm: ISchema = {
       'x-component': 'Password',
       required: true,
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Password")}}', style: {} },
+      'x-component-props': { placeholder: '{{t("Password")}}', style: {}, showForgotPassword },
     },
     actions: {
       type: 'void',
@@ -87,17 +87,38 @@ const passwordForm: ISchema = {
         },
       },
     },
-    signUp: {
+    links: {
       type: 'void',
-      'x-component': 'Link',
+      'x-component': 'div',
       'x-component-props': {
-        to: '{{ signUpLink }}',
+        style: {
+          display: 'flex',
+          justifyContent: 'space-between',
+        },
       },
-      'x-content': '{{t("Create an account")}}',
-      'x-visible': '{{ allowSignUp }}',
+      properties: {
+        signUp: {
+          type: 'void',
+          'x-component': 'Link',
+          'x-component-props': {
+            to: '{{ signUpLink }}',
+          },
+          'x-content': '{{t("Create an account")}}',
+          'x-visible': '{{ allowSignUp }}',
+        },
+        forgotPassword: {
+          type: 'void',
+          'x-component': 'Link',
+          'x-component-props': {
+            to: '{{"/forgot-password?name=" + authenticator.name}}',
+          },
+          'x-content': '{{t("Forgot password")}}',
+          'x-visible': showForgotPassword,
+        },
+      },
     },
   },
-};
+});
 export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
@@ -110,5 +131,10 @@ export const SignInForm = (props: { authenticator: Authenticator }) => {
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
+  return (
+    <SchemaComponent
+      schema={getPasswordForm({ showForgotPassword: !!options?.enableResetPassword })}
+      scope={{ useBasicSignIn, allowSignUp, signUpLink, t, authenticator }}
+    />
+  );
 };

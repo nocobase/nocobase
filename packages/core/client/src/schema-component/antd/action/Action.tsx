@@ -58,6 +58,7 @@ import { getVariableValue } from '../../../common/getVariableValue';
 // 这个要放到最下面，否则会导致前端单测失败
 import { useApp } from '../../../application';
 import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
+import { VariableScope } from '../../../variables/VariableScope';
 
 const useA = () => {
   return {
@@ -191,36 +192,38 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     }, [onClick, fieldSchema, getAllDataBlocks]);
 
     return (
-      <InternalAction
-        containerRefKey={containerRefKey}
-        fieldSchema={fieldSchema}
-        designable={designable}
-        field={field}
-        icon={icon}
-        loading={loading}
-        handleMouseEnter={handleMouseEnter}
-        tarComponent={tarComponent}
-        className={className}
-        type={props.type}
-        Designer={Designer}
-        onClick={handleClick}
-        confirm={confirm}
-        confirmTitle={confirmTitle}
-        popover={popover}
-        addChild={addChild}
-        recordData={recordData}
-        title={title}
-        style={style}
-        propsDisabled={propsDisabled}
-        useAction={useAction}
-        visibleWithURL={visibleWithURL}
-        setVisibleWithURL={setVisibleWithURL}
-        setSubmitted={setSubmitted}
-        getAriaLabel={getAriaLabel}
-        parentRecordData={parentRecordData}
-        actionCallback={actionCallback}
-        {...others}
-      />
+      <VariableScope scopeId={fieldSchema?.['x-uid']} type="action">
+        <InternalAction
+          containerRefKey={containerRefKey}
+          fieldSchema={fieldSchema}
+          designable={designable}
+          field={field}
+          icon={icon}
+          loading={loading}
+          handleMouseEnter={handleMouseEnter}
+          tarComponent={tarComponent}
+          className={className}
+          type={props.type}
+          Designer={Designer}
+          onClick={handleClick}
+          confirm={confirm}
+          confirmTitle={confirmTitle}
+          popover={popover}
+          addChild={addChild}
+          recordData={recordData}
+          title={title}
+          style={style}
+          propsDisabled={propsDisabled}
+          useAction={useAction}
+          visibleWithURL={visibleWithURL}
+          setVisibleWithURL={setVisibleWithURL}
+          setSubmitted={setSubmitted}
+          getAriaLabel={getAriaLabel}
+          parentRecordData={parentRecordData}
+          actionCallback={actionCallback}
+          {...others}
+        />
+      </VariableScope>
     );
   }),
   { displayName: 'Action' },
@@ -305,7 +308,12 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   const { modal } = App.useApp();
   const form = useForm();
   const aclCtx = useACLActionParamsContext();
-  const { run, element, disabled: disableAction } = useAction?.(actionCallback) || ({} as any);
+  const {
+    run,
+    element,
+    disabled: disableAction,
+    loading: loadingOfUseAction,
+  } = useAction?.(actionCallback) || ({} as any);
   const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
@@ -320,7 +328,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     field,
     aclCtx,
     icon,
-    loading,
+    loading: typeof loadingOfUseAction === 'boolean' ? loadingOfUseAction : loading,
     disabled,
     buttonStyle,
     handleMouseEnter,
@@ -442,6 +450,13 @@ export default Action;
 // TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
 export function isBulkEditAction(fieldSchema) {
   return fieldSchema['x-action'] === 'customize:bulkEdit';
+}
+
+// TODO: Plugin-related code should not exist in the core. It would be better to implement it by modifying the schema, but it would cause incompatibility.
+export function isWriteEmailAction(fieldSchema) {
+  return (
+    fieldSchema['x-action'] === 'customize:writeEmail' || fieldSchema.parent?.['x-action'] === 'customize:writeEmail'
+  );
 }
 
 const RenderButton = ({

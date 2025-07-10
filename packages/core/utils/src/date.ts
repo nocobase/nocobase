@@ -88,7 +88,12 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
 
   if (dayjs(val).isValid()) {
     if (dateOnly) {
-      return dayjs.utc(val, 'YYYY-MM-DD');
+      const date = dayjs(val);
+
+      if (!date.isValid()) return val;
+
+      const dateString = date.format('YYYY-MM-DD');
+      return dayjs.utc(dateString, 'YYYY-MM-DD');
     }
     if (!utc) {
       return dayjs.utc(val);

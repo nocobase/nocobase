@@ -14,8 +14,8 @@ import { Snowflake } from 'nodejs-snowflake';
 import { Transaction, Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
-import { FindOptions, Op } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
+import { Op } from '@nocobase/database';
+import { Plugin, QueueEventOptions } from '@nocobase/server';
 import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
@@ -56,6 +56,8 @@ export type EventOptions = {
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
+const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
+
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
@@ -64,7 +66,7 @@ export default class PluginWorkflowServer extends Plugin {
   snowflake: Snowflake;
 
   private ready = false;
-  private executing: Promise<void> | null = null;
+  private executing: Promise<any> | null = null;
   private pending: Pending[] = [];
   private events: CachedEvent[] = [];
   private eventsCount = 0;
@@ -72,6 +74,23 @@ export default class PluginWorkflowServer extends Plugin {
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
   private checker: NodeJS.Timeout = null;
+
+  private onQueueExecution: QueueEventOptions['process'] = async (event) => {
+    const ExecutionRepo = this.db.getRepository('executions');
+    const execution = await ExecutionRepo.findOne({
+      filterByTk: event.executionId,
+    });
+    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
+      this.getLogger('dispatcher').info(
+        `execution (${event.executionId}) from queue not found or not in queueing status, skip`,
+      );
+      return;
+    }
+    this.getLogger(execution.workflowId).info(
+      `execution (${execution.id}) received from queue, adding to pending list`,
+    );
+    this.run(execution);
+  };
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -196,6 +215,7 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onBeforeStop = async () => {
+    this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
@@ -328,6 +348,13 @@ export default class PluginWorkflowServer extends Plugin {
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
+
+    if (this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
+      this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
+        idle: () => !this.executing && !this.pending.length && !this.events.length,
+        process: this.onQueueExecution,
+      });
+    }
   }
 
   /**
@@ -501,18 +528,30 @@ export default class PluginWorkflowServer extends Plugin {
     return null;
   }
 
-  public async resume(job) {
-    if (!job.execution) {
-      job.execution = await job.getExecution();
-    }
-    this.getLogger(job.execution.workflowId).info(
-      `execution (${job.execution.id}) resuming from job (${job.id}) added to pending list`,
-    );
-    this.pending.push([job.execution, job]);
-    if (this.executing) {
+  async run(execution: ExecutionModel, job?: JobModel): Promise<void> {
+    while (this.executing) {
       await this.executing;
     }
+
+    this.executing = this.process(execution, job);
+
+    await this.executing;
+
+    this.executing = null;
+
     this.dispatch();
+  }
+
+  public async resume(job) {
+    let { execution } = job;
+    if (!execution) {
+      execution = await job.getExecution();
+    }
+    this.getLogger(execution.workflowId).info(
+      `execution (${execution.id}) resuming from job (${job.id}) added to pending list`,
+    );
+
+    this.run(execution, job);
   }
 
   /**
@@ -524,11 +563,8 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
     this.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
-    this.pending.push([execution]);
-    if (this.executing) {
-      await this.executing;
-    }
-    this.dispatch();
+
+    this.run(execution);
   }
 
   private async validateEvent(workflow: WorkflowModel, context: any, options: EventOptions) {
@@ -640,8 +676,14 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution?.status === EXECUTION_STATUS.QUEUEING && !this.executing && !this.pending.length) {
-        this.pending.push([execution]);
+      if (execution?.status === EXECUTION_STATUS.QUEUEING) {
+        if (!this.executing && !this.pending.length) {
+          logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
+          this.pending.push([execution]);
+        } else {
+          logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
+          this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+        }
       }
     } catch (error) {
       logger.error(`failed to create execution:`, { error });
@@ -662,6 +704,13 @@ export default class PluginWorkflowServer extends Plugin {
   private dispatch() {
     if (!this.ready) {
       this.getLogger('dispatcher').warn(`app is not ready, new dispatching will be ignored`);
+      return;
+    }
+
+    if (!this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
+      this.getLogger('dispatcher').warn(
+        `${WORKER_JOB_WORKFLOW_PROCESS} is not serving, new dispatching will be ignored`,
+      );
       return;
     }
 
@@ -690,7 +739,9 @@ export default class PluginWorkflowServer extends Plugin {
             async (transaction) => {
               const execution = (await this.db.getRepository('executions').findOne({
                 filter: {
-                  status: EXECUTION_STATUS.QUEUEING,
+                  status: {
+                    [Op.is]: EXECUTION_STATUS.QUEUEING,
+                  },
                   'workflow.enabled': true,
                 },
                 sort: 'id',
@@ -736,7 +787,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
       const transaction = await this.useDataSourceTransaction('main', options.transaction);
       await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
-      logger.info(`queueing execution (${execution.id}) from pending list updated to started`);
+      logger.info(`execution (${execution.id}) from pending list updated to started`);
     }
     const processor = this.createProcessor(execution, options);
 

@@ -16,7 +16,7 @@ import type { SelectProps as AntdSelectProps } from 'antd';
 import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
 import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
 import { every } from 'lodash';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { isDesktop } from 'react-device-detect';
 import { useCompile } from '../../';
 import { ReadPretty } from './ReadPretty';
@@ -142,6 +142,13 @@ const InternalSelect = connect(
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
+
+    useEffect(() => {
+      if (value != null && !Array.isArray(value) && (['tags', 'multiple'].includes(props.mode) || props.multiple)) {
+        props.onChange?.([value]);
+      }
+    }, [value, props.mode, props.multiple, props.onChange]);
+
     if (objectValue) {
       return (
         <ObjectSelect

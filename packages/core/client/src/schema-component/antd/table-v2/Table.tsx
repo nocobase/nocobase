@@ -33,9 +33,10 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, isWriteEmailAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
+  FlagProvider,
   RecordIndexProvider,
   RecordProvider,
   useAssociationNames,
@@ -59,6 +60,8 @@ import {
 } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
 import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
@@ -66,8 +69,6 @@ import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
-import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -186,7 +187,10 @@ const useTableColumns = (
 
   const filterProperties = useCallback(
     (schema) =>
-      isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
+      isBulkEditAction(schema) ||
+      isWriteEmailAction(schema) ||
+      !isPopupVisibleControlledByURL() ||
+      schema['x-component'] !== 'Action.Container',
     [isPopupVisibleControlledByURL],
   );
 
@@ -630,10 +634,13 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const [dynamicStyle, setDynamicStyle] = useState({});
   const isReadPrettyMode =
     !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
-  const mergedStyle = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
+  const mergedStyle = useMemo(
+    () => ({ overflow: 'hidden', ...props.style, ...dynamicStyle }),
+    [props.style, dynamicStyle],
+  );
 
   return (
-    <>
+    <FlagProvider isInTableCell>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
       {!_.isEmpty(styleRules) && (
         <GetStyleRules record={record} schema={schema} onStyleChange={isReadPrettyMode ? setDynamicStyle : _.noop} />
@@ -641,7 +648,7 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
       <td {...others} className={classNames(props.className, cellClass)} style={mergedStyle}>
         {props.children}
       </td>
-    </>
+    </FlagProvider>
   );
 });
 
@@ -651,12 +658,15 @@ const displayNone = { display: 'none' };
 
 const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
   const { designable } = useDesignable();
+  const style = designable ? columnOpacityStyle : columnHiddenStyle;
 
   if (props.columnHidden) {
     return (
-      <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
-        {designable ? props.children : <span style={displayNone}>{props.children}</span>}
-      </td>
+      <FlagProvider isInTableCell>
+        <td style={{ overflow: 'hidden', ...style }}>
+          {designable ? props.children : <span style={displayNone}>{props.children}</span>}
+        </td>
+      </FlagProvider>
     );
   }
 

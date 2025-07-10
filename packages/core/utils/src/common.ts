@@ -128,3 +128,9 @@ export function sortTree(tree: any[], sortBy: string | Function, childrenKey = '
     return node;
   });
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}

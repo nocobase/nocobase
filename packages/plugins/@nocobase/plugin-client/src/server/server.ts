@@ -34,7 +34,7 @@ async function getLang(ctx) {
 }
 
 export class PluginClientServer extends Plugin {
-  async beforeLoad() { }
+  async beforeLoad() {}
 
   async install() {
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
@@ -288,16 +288,13 @@ export class PluginClientServer extends Plugin {
       if (values.length) {
         const instances = await this.app.db.getRepository('desktopRoutes').find({
           filter: {
-            $or: [
-              { id: { $in: values } },
-              { parentId: { $in: values } }
-            ]
-          }
+            $or: [{ id: { $in: values } }, { parentId: { $in: values } }],
+          },
         });
         values = instances.map((instance) => instance.get('id'));
-      };
+      }
       const { resourceName, sourceId } = ctx.action;
-      const repository = this.app.db.getRepository<MultipleRelationRepository>(resourceName, sourceId)
+      const repository = this.app.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
       await repository['set'](values);
 
       ctx.status = 200;

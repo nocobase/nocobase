@@ -528,7 +528,7 @@ export async function replaceVariables(
   const scope = {};
 
   if (value == null) {
-    return;
+    return {};
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
