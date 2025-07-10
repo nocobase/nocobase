@@ -10,14 +10,14 @@
 import React from 'react';
 import { Checkbox } from 'antd';
 import { usePluginUtils } from './utils';
-import crypto from 'crypto';
+import { uid } from '@formily/shared';
 
 export const JwtSecretInput = ({ value, onChange }) => {
   const { t } = usePluginUtils();
   const checked = !!value;
   const onCheck = (e: any) => {
     if (e.target.checked) {
-      onChange(crypto.randomBytes(32).toString('hex'));
+      onChange(`${uid()}${uid()}${uid()}${uid()}`);
     } else {
       onChange('');
     }

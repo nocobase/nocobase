@@ -328,7 +328,6 @@ export const formSchema: ISchema = {
           title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
           'x-component': 'JwtSecretInput',
-          default: `${uid()}${uid()}${uid()}${uid()}`,
         },
       },
     },
