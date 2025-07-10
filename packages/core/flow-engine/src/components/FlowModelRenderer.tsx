@@ -43,16 +43,16 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Spin } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useApplyAutoFlows, FlowModelProvider } from '../hooks';
+import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
 import { FlowModel } from '../models';
 import { ToolbarItemConfig } from '../types';
+import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import { FlowErrorFallback } from './FlowErrorFallback';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -311,7 +311,7 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
-    fallback = <Spin />,
+    fallback = <Skeleton.Button size="small" />,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
