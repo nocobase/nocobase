@@ -193,10 +193,14 @@ export class EditFormModel extends FormModel {
     return this.resource instanceof MultiRecordResource;
   }
 
+  getCurrentRecord() {
+    const data = this.resource.getData();
+    return Array.isArray(data) ? data[0] : data;
+  }
+
   renderComponent() {
     // 获取当前记录数据
-    const data = this.resource.getData();
-    const currentRecord = Array.isArray(data) ? data[0] : data;
+    const currentRecord = this.getCurrentRecord();
 
     // 分页切换处理函数（仅用于 MultiRecordResource）
     const onPageChange = async (page: number) => {
@@ -205,15 +209,6 @@ export class EditFormModel extends FormModel {
         multiResource.setPage(page);
         multiResource.loading = true;
         await multiResource.refresh();
-
-        const newData = this.resource.getData();
-        const newRecord = Array.isArray(newData) ? newData[0] : newData;
-
-        this.setSharedContext({
-          currentRecord: newRecord,
-        });
-        await this.form.reset();
-        this.form.setValues(newRecord);
       }
     };
 
@@ -284,19 +279,23 @@ EditFormModel.registerFlow({
         ctx.model.form = createForm();
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.model.resource.on('refresh', async () => {
-          const data = ctx.model.resource.getData();
-          const record = Array.isArray(data) ? data[0] : data;
           await ctx.model.form.reset();
-          ctx.model.form.setValues(record);
+          const currentRecord = ctx.model.getCurrentRecord();
+          const targetKey = ctx.model.associationField?.targetKey;
+          if (targetKey) {
+            ctx.model.resource.setMeta({
+              currentFilterByTk: currentRecord?.[targetKey],
+            });
+          } else {
+            ctx.model.resource.setMeta({
+              currentFilterByTk: ctx.model.collection.getFilterByTK(currentRecord),
+            });
+          }
+          ctx.model.setSharedContext({
+            currentRecord,
+          });
+          ctx.model.form.setValues(currentRecord);
         });
-
-        // 如果资源已经有数据，立即设置到表单中
-        const existingData = ctx.model.resource.getData();
-        if (existingData) {
-          const record = Array.isArray(existingData) ? existingData[0] : existingData;
-          await ctx.model.form.reset();
-          ctx.model.form.setValues(record);
-        }
       },
     },
     refresh: {
@@ -306,19 +305,8 @@ EditFormModel.registerFlow({
         }
         // 1. 先初始化字段网格，确保所有字段都创建完成
         await ctx.model.applySubModelsAutoFlows('grid');
-
         // 2. 加载数据
         await ctx.model.resource.refresh();
-        const data = ctx.model.resource.getData();
-        const record = Array.isArray(data) ? data[0] : data;
-
-        // 3. 设置共享上下文
-        ctx.model.setSharedContext({
-          currentRecord: record,
-        });
-
-        await ctx.model.form.reset();
-        ctx.model.form.setValues(record);
       },
     },
   },
