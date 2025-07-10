@@ -157,6 +157,7 @@ export const formSchema: ISchema = {
         variant: 'borderless',
       },
       title: `{{t("Database options", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Configure the independent database connection options.", { ns: "${NAMESPACE}" })}}`,
       properties: {
         grid: {
           type: 'void',

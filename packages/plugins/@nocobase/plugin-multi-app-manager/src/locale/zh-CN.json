@@ -12,6 +12,7 @@
   "Start on first visit": "首次访问时启动",
   "Start with main application": "随主应用一同启动",
   "Database options": "数据库选项",
+  "Configure the independent database connection options.": "配置独立的数据库连接选项。",
   "Dialect": "类别",
   "Host": "主机",
   "Port": "端口",
