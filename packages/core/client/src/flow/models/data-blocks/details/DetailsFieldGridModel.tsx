@@ -72,6 +72,15 @@ export class DetailsFieldGridModel extends GridModel<{
   subModels: { items: FieldModel[] };
 }> {
   itemSettingsMenuLevel = 2;
+  itemFlowSettings = {
+    showBackground: true,
+    style: {
+      top: -6,
+      left: -6,
+      right: -6,
+      bottom: -6,
+    },
+  };
   renderAddSubModelButton() {
     return (
       <>

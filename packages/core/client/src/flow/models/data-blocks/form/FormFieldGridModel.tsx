@@ -19,6 +19,15 @@ export class FormFieldGridModel extends GridModel<{
   parent: FormModel;
   subModels: { items: FieldModel[] };
 }> {
+  itemFlowSettings = {
+    showBackground: true,
+    style: {
+      top: -6,
+      left: -6,
+      right: -6,
+      bottom: -6,
+    },
+  };
   renderAddSubModelButton() {
     const t = this.translate;
     const formModelInstance = this.parent as FormModel;
@@ -78,15 +87,6 @@ FormFieldGridModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);
         ctx.model.setProps('colGap', 16);
-        ctx.model.setProps('flowSettings', {
-          showBackground: true,
-          style: {
-            top: -6,
-            left: -6,
-            right: -6,
-            bottom: -6,
-          },
-        });
       },
     },
   },
