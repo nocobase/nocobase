@@ -64,7 +64,7 @@ const SWITCH_CONTAINER_STYLE = {
   justifyContent: 'space-between',
   alignItems: 'center',
   width: '100%',
-  padding: '0 4px',
+  padding: '0',
 } as const;
 
 const SWITCH_STYLE = {
@@ -216,7 +216,7 @@ const transformSubModelItems = async (items: SubModelItem[], model: FlowModel): 
     // 处理开关式菜单项
     if (item.toggleDetector && !item.children) {
       const isToggled = toggleMap.get(index) || false;
-      const originalLabel = item.label || '';
+      const originalLabel = model.translate(item.label) || '';
       transformedItem.label = createSwitchLabel(originalLabel, isToggled);
       transformedItem.isToggled = isToggled;
     }

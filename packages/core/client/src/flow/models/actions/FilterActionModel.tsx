@@ -79,6 +79,22 @@ export class FilterActionModel extends GlobalActionModel {
 
 FilterActionModel.define({
   title: escapeT('Filter'),
+  toggleDetector: (model) => {
+    let ret = false;
+    model.findSubModel('actions', (action) => {
+      if (action.constructor === FilterActionModel) {
+        ret = true;
+      }
+    });
+    return ret;
+  },
+  customRemove: async (model, item) => {
+    model.findSubModel('actions', (action) => {
+      if (action instanceof FilterActionModel) {
+        action.destroy();
+      }
+    });
+  },
 });
 
 FilterActionModel.registerFlow({
