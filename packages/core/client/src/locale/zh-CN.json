@@ -1240,5 +1240,6 @@
   "Detail item settings": "详情项设置",
   "Association tag settings": "关系标签设置",
   "Association select settings": "关系选择器设置",
-  "Enable click to open": "启用点击打开"
+  "Enable click to open": "启用点击打开",
+  "Display style":"显示样式"
 }
