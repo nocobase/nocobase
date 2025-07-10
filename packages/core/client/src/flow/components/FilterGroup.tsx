@@ -210,7 +210,11 @@ const FilterItem: FC<{
       const newFieldPath = value.join('.');
 
       delete props.value[fieldNames[0]];
-      _.set(props.value, newFieldPath, defaultOperator ? { [defaultOperator.value]: undefined } : {});
+      _.set(
+        props.value,
+        newFieldPath,
+        defaultOperator ? { [defaultOperator.value]: defaultOperator.noValue ? true : undefined } : {},
+      );
 
       props.onChange?.(props.value);
     };
