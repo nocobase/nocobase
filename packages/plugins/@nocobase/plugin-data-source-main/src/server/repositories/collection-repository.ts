@@ -194,8 +194,9 @@ export class CollectionRepository extends Repository {
     const existCollection = await this.findOne({ filter: { name: collectionName } });
 
     if (existCollection) {
+      delete collectionOptions.fields;
       await this.update({
-        filter: { name: collectionName },
+        filter: { key: existCollection.key },
         values: {
           ...collectionOptions,
           from: 'db2cm',
