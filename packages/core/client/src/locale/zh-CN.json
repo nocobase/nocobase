@@ -1232,5 +1232,10 @@
   "Button type": "按钮类型",
   "Danger action": "危险操作",
   "Datetime settings": "日期时间设置",
-  "Association field settings": "关系字段设置"
+  "Association field settings": "关系字段设置",
+  "Form item settings": "表单项设置",
+  "Label": "标签",
+  "Show label": "显示标签",
+  "Display mode": "显示模式",
+  "Detail item settings": "详情项设置"
 }

@@ -103,18 +103,6 @@ DetailItemModel.registerFlow({
         ctx.model.showTitle(params.showLabel);
       },
     },
-    description: {
-      title: escapeT('Description'),
-      uiSchema: {
-        description: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setDecoratorProps({ description: params.description });
-      },
-    },
     tooltip: {
       title: escapeT('Tooltip'),
       uiSchema: {
@@ -125,6 +113,18 @@ DetailItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setDecoratorProps({ tooltip: params.tooltip });
+      },
+    },
+    description: {
+      title: escapeT('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDecoratorProps({ description: params.description });
       },
     },
   },
