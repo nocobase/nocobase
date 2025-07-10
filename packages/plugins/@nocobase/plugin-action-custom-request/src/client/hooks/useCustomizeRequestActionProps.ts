@@ -86,14 +86,17 @@ export const useCustomizeRequestActionProps = () => {
         });
         successMessage = await getVariableValue(successMessage, {
           variables,
-          localVariables,
+          localVariables: [
+            ...localVariables,
+            { name: '$nResponse', ctx: new Proxy({ ...res?.data?.data, ...res?.data }, {}) },
+          ],
         });
 
         if (rawRedirectTo) {
           // eslint-disable-next-line react-hooks/rules-of-hooks
           redirectTo = await getVariableValue(rawRedirectTo, {
             variables,
-            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(res?.data?.data, {}) }],
+            localVariables,
           });
         }
         if (res.headers['content-disposition']) {
