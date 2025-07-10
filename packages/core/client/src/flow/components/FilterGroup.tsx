@@ -296,6 +296,7 @@ const FilterItem: FC<{
               component={component}
               value={fieldValue}
               onChange={onChangeFieldValue}
+              options={filed?.schema?.enum}
               {...componentProps}
             />
           ) : null}
