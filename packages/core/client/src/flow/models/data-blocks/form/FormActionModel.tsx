@@ -42,17 +42,27 @@ FormSubmitActionModel.registerFlow({
         try {
           await currentBlockModel.form.submit();
           const values = currentBlockModel.form.values;
+          const data = currentBlockModel.resource.getData();
+          const currentRecord = Array.isArray(data) ? data[0] : data;
+          const filterByTk = currentRecord?.[currentBlockModel.collection.filterTargetKey];
 
           // 根据资源类型调用不同的保存方法
           if (currentBlockModel.resource instanceof SingleRecordResource) {
-            // SingleRecordResource 有 save 方法
-            await currentBlockModel.resource.save(values);
+            if (filterByTk) {
+              const options = {
+                params: {
+                  filterByTk,
+                },
+              };
+              await currentBlockModel.resource.runAction('update', {
+                ...options,
+                data: values,
+              });
+              await currentBlockModel.resource.refresh();
+            } else {
+              await currentBlockModel.resource.save(values);
+            }
           } else if (currentBlockModel.resource instanceof MultiRecordResource) {
-            // MultiRecordResource 需要使用 update 方法，需要 filterByTk
-            const data = currentBlockModel.resource.getData();
-            const currentRecord = Array.isArray(data) ? data[0] : data;
-            const filterByTk = currentRecord?.[currentBlockModel.collection.filterTargetKey];
-
             if (filterByTk) {
               // 更新现有记录
               await currentBlockModel.resource.update(filterByTk, values);
@@ -60,8 +70,6 @@ FormSubmitActionModel.registerFlow({
               // 如果没有当前记录或主键，则创建新记录
               await currentBlockModel.resource.create(values);
             }
-          } else {
-            throw new Error('Unsupported resource type for form submission');
           }
         } catch (error) {
           // 显示保存失败提示
