@@ -52,13 +52,13 @@ export const FlowRoute = () => {
       layoutContentElement: layoutContentRef.current,
       currentRoute,
     });
-    model.dispatchEvent('click', { target: layoutContentRef.current, activeTab: params.tabUid });
+    model.dispatchEvent('click', { mode: 'page', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { parentId, onModelLoaded, ...rest } = props;
+  const { pageModelClass = 'SubPageModel', parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
@@ -67,7 +67,7 @@ export const FlowPage = (props) => {
         parentId,
         subKey: 'page',
         subType: 'object',
-        use: 'PageModel',
+        use: pageModelClass,
         subModels: {
           tabs: [
             {

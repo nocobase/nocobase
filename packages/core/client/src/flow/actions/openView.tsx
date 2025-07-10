@@ -41,6 +41,7 @@ export const openView = defineAction({
   defaultParams: {
     mode: 'drawer',
     size: 'medium',
+    pageModelClass: 'SubPageModel',
   },
   async handler(ctx, params) {
     // eslint-disable-next-line prefer-const
@@ -50,6 +51,8 @@ export const openView = defineAction({
       medium: 800,
       large: 1200,
     };
+
+    const pageModelClass = params.pageModelClass;
 
     const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
     let pageModelUid: string | null = null;
@@ -62,6 +65,7 @@ export const openView = defineAction({
         return (
           <FlowPage
             parentId={ctx.model.uid}
+            pageModelClass={pageModelClass}
             sharedContext={{
               currentFlow: ctx,
               currentView: currentView,

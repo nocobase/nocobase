@@ -156,3 +156,6 @@ PageModel.registerFlow({
     },
   },
 });
+
+export class MainPageModel extends PageModel {}
+export class SubPageModel extends PageModel {}
