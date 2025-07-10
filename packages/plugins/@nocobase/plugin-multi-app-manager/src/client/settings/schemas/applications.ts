@@ -22,6 +22,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 import { i18nText } from '../../utils';
+import { NAMESPACE } from '../../../locale';
 
 const collection = {
   name: 'applications',
@@ -147,6 +148,83 @@ export const formSchema: ISchema = {
     pinned: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
+    },
+    'options.database': {
+      type: 'object',
+      'x-decorator': 'FormItem',
+      'x-component': 'Fieldset',
+      'x-component-props': {
+        variant: 'borderless',
+      },
+      title: `{{t("Database options", { ns: "${NAMESPACE}" })}}`,
+      properties: {
+        // host, port, username, password, dialect, database, schema
+        dialect: {
+          type: 'string',
+          title: `{{t("Dialect", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          enum: [
+            { label: 'PostgreSQL', value: 'postgres' },
+            { label: 'MySQL', value: 'mysql' },
+            { label: 'Mariadb', value: 'mariadb' },
+            { label: 'KingBase', value: 'kingbase' },
+          ],
+          required: true,
+        },
+        host: {
+          type: 'string',
+          title: `{{t("Host", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
+        port: {
+          type: 'number',
+          title: `{{t("Port", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+        },
+        username: {
+          type: 'string',
+          title: `{{t("Username", { ns: "${NAMESPACE}" })}}`,
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          required: true,
+        },
+        password: {
+          type: 'string',
+          title: `{{t("Password", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.Password',
+        },
+        database: {
+          type: 'string',
+          title: `{{t("Database name", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+        },
+        schema: {
+          type: 'string',
+          title: `{{t("Schema", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+    },
+    'options.authManager': {
+      type: 'object',
+      'x-decorator': 'FormItem',
+      'x-component': 'Fieldset',
+      title: `{{t("Authentication options", { ns: "${NAMESPACE}" })}}`,
+      properties: {
+        'jwt.secrete': {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.Password',
+        },
+      },
     },
   },
 };
