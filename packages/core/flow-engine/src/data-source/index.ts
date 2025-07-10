@@ -275,11 +275,23 @@ export class CollectionManager {
   }
 
   getCollection(name: string): Collection | undefined {
+    if (name.includes('.')) {
+      const [collectionName, fieldName] = name.split('.');
+      const collection = this.getCollection(collectionName);
+      if (!collection) {
+        throw new Error(`Collection ${collectionName} not found in data source ${this.dataSource.key}`);
+      }
+      const field = collection.getField(fieldName);
+      if (!field) {
+        throw new Error(`Field ${fieldName} not found in collection ${collectionName}`);
+      }
+      return field.targetCollection;
+    }
     return this.collections.get(name);
   }
 
   getCollections(): Collection[] {
-    return Array.from(this.collections.values());
+    return _.sortBy(Array.from(this.collections.values()), 'sort');
   }
 
   clearCollections() {
