@@ -448,6 +448,7 @@ ${content}`;
             model,
             provider: service.provider,
             toolCall,
+            autoCall,
           },
         },
       });
