@@ -20,6 +20,7 @@ import { ProfileCard } from '../ProfileCard';
 import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
 import { useChatMessages } from './ChatMessagesProvider';
+import { EditMessageHeader } from './EditMessageHeader';
 
 export const SenderHeader: React.FC = () => {
   const {
@@ -30,7 +31,7 @@ export const SenderHeader: React.FC = () => {
   const t = useT();
   const switchAIEmployee = useChatBoxContext('switchAIEmployee');
   const currentEmployee = useChatBoxContext('currentEmployee');
-  const { responseLoading } = useChatMessages();
+  const { responseLoading, isEditingMessage } = useChatMessages();
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
       key: employee.username,
@@ -66,6 +67,11 @@ export const SenderHeader: React.FC = () => {
       }}
     >
       <div>
+        {isEditingMessage ? (
+          <div style={{ marginBottom: 8 }}>
+            <EditMessageHeader />
+          </div>
+        ) : null}
         {!currentEmployee ? (
           <Button variant="dashed" color="default" size="small">
             <span

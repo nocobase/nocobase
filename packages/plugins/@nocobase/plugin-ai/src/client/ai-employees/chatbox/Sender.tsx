@@ -10,18 +10,25 @@
 import React, { useEffect, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
 import { useChatBoxContext } from './ChatBoxContext';
-import { SenderPrefix } from './SenderPrefix';
 import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { useChatConversations } from './ChatConversationsProvider';
 import { useChatMessages } from './ChatMessagesProvider';
 import { SenderHeader } from './SenderHeader';
-import { AttachmentsHeader } from './AttachmentsHeader';
 
 export const Sender: React.FC = () => {
   const t = useT();
   const { currentConversation } = useChatConversations();
-  const { responseLoading, cancelRequest, attachments, contextItems, systemMessage } = useChatMessages();
+  const {
+    responseLoading,
+    cancelRequest,
+    attachments,
+    contextItems,
+    systemMessage,
+    isEditingMessage,
+    editingMessageId,
+    finishEditingMessage,
+  } = useChatMessages();
   const senderValue = useChatBoxContext('senderValue');
   const setSenderValue = useChatBoxContext('setSenderValue');
   const senderPlaceholder = useChatBoxContext('senderPlaceholder');
@@ -50,7 +57,7 @@ export const Sender: React.FC = () => {
       onChange={(value) => {
         setValue(value);
       }}
-      onSubmit={(content) =>
+      onSubmit={(content) => {
         send({
           sessionId: currentConversation,
           aiEmployee: currentEmployee,
@@ -63,8 +70,12 @@ export const Sender: React.FC = () => {
           ],
           attachments,
           workContext: contextItems,
-        })
-      }
+          editingMessageId,
+        });
+        if (isEditingMessage) {
+          finishEditingMessage();
+        }
+      }}
       onCancel={cancelRequest}
       header={<SenderHeader />}
       loading={responseLoading}
