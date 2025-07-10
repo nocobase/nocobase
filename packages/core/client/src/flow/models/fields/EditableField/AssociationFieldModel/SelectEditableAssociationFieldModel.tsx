@@ -333,7 +333,7 @@ SelectEditableAssociationFieldModel.registerFlow({
         const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
-        resource.setAPIClient(ctx.globals.api);
+        resource.setAPIClient(ctx.api);
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {

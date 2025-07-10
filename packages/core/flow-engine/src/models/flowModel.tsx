@@ -463,8 +463,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     flowContext.defineProperty('shared', {
       value: this.getSharedContext(),
     });
-    flowContext.defineProperty('globals', {
-      value: globalContexts,
+    flowContext.defineProperty('flowEngine', {
+      value: globalContexts.flowEngine,
+    });
+    flowContext.defineProperty('app', {
+      value: globalContexts.app,
+    });
+    flowContext.defineProperty('api', {
+      value: globalContexts.api,
+    });
+    flowContext.defineProperty('themeToken', {
+      value: globalContexts.themeToken,
     });
     flowContext.defineProperty('runtimeArgs', {
       value: runtimeArgs,
@@ -951,9 +960,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   get ctx() {
+    const globals = this.flowEngine.getContext();
     return {
-      globals: this.flowEngine.getContext(),
       shared: this.getSharedContext(),
+      flowEngine: globals.flowEngine,
+      app: globals.app,
+      api: globals.api,
+      themeToken: globals.themeToken,
     };
   }
 

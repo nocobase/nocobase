@@ -13,8 +13,10 @@ import React, { createContext, useContext, ReactNode } from 'react';
 export interface StepSettingContextType {
   // paramsContext 中的信息
   model: any;
-  globals: Record<string, any>;
   app: any;
+  flowEngine: any;
+  api: any;
+  themeToken: any;
   // 额外的上下文信息
   step: any;
   flow: any;

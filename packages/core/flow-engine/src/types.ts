@@ -167,14 +167,13 @@ export interface FlowContext<TModel extends FlowModel = FlowModel> {
   reactView: ReactView;
   stepResults: Record<string, any>; // Results from previous steps
   shared: Record<string, any>; // Shared data within the flow (read/write)
-  globals: Record<string, any> & {
-    flowEngine: FlowEngine;
-    app: any;
-    api: APIClient;
-  };
   runtimeArgs: Record<string, any>; // Runtime arguments passed to applyFlow (read-only)
   model: TModel; // Current model instance with specific type
   app: any; // Application instance (required)
+  flowEngine: FlowEngine;
+  api: APIClient;
+  themeToken: any;
+  dataSourceManager: any;
 }
 
 export type CreateSubModelOptions = CreateModelOptions | FlowModel;

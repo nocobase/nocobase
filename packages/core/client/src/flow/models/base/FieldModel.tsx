@@ -35,7 +35,7 @@ FieldModel.registerFlow({
         if (!ctx.model.parent) {
           throw new Error('FieldModel must have a parent model');
         }
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(
+        const collectionField = ctx.dataSourceManager.getCollectionField(
           `${dataSourceKey}.${collectionName}.${fieldPath}`,
         ) as CollectionField;
         if (!collectionField) {

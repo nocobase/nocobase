@@ -49,7 +49,7 @@ RefFlowModel.registerFlow('defaultFlow', {
       },
       async handler(ctx, params) {
         waitForRefCallback(ctx.model.ref, async (el) => {
-          const echarts = await ctx.globals.requireAsync('requireEcharts');
+          const echarts = await ctx.requireAsync('requireEcharts');
           const chart = echarts.init(el);
           chart.setOption(JSON.parse(params.option));
         });

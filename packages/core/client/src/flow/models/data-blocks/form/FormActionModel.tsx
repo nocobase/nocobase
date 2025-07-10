@@ -34,7 +34,7 @@ FormSubmitActionModel.registerFlow({
     step1: {
       async handler(ctx) {
         if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
+          ctx.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
           return;
         }
         const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
@@ -73,12 +73,12 @@ FormSubmitActionModel.registerFlow({
           }
         } catch (error) {
           // 显示保存失败提示
-          ctx.globals.message.error(ctx.model.flowEngine.translate('Save failed'));
+          ctx.message.error(ctx.model.flowEngine.translate('Save failed'));
           console.error('Form submission error:', error);
           return;
         }
 
-        ctx.globals.message.success(ctx.model.flowEngine.translate('Saved successfully'));
+        ctx.message.success(ctx.model.flowEngine.translate('Saved successfully'));
 
         if (currentBlockModel.resource instanceof SingleRecordResource && currentBlockModel.resource.isNewRecord) {
           // 新增记录成功后重置表单
