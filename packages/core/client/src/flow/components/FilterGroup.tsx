@@ -147,7 +147,10 @@ const field2option = (field: CollectionField, depth, nonfilterable, dataSourceMa
     option['children'] = children;
   }
   if (nested) {
-    const targetFields = field.getFields();
+    const targetFields = field.getFields().filter((f) => {
+      // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+      return f.target !== 'attachments';
+    });
     const options = getOptions(targetFields, depth + 1, nonfilterable, dataSourceManager, t).filter(Boolean);
     option['children'] = option['children'] || [];
     option['children'].push(...options);
@@ -328,7 +331,10 @@ export const FilterGroup: FC<{
     const logic = Object.keys(props.value).includes('$or') ? '$or' : '$and';
     const items = props.value[logic] || [];
     const options = getOptions(
-      props.fields,
+      props.fields.filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }),
       1,
       props.ignoreFieldsNames,
       props.model.ctx.globals.dataSourceManager,

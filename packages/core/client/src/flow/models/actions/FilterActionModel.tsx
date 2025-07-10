@@ -18,7 +18,11 @@ import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
   const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
-  const fields = currentBlockModel.collection.getFields();
+  const fields = currentBlockModel.collection.getFields().filter((field) => {
+    // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+    return field.target !== 'attachments';
+  });
+
   const ignoreFieldsNames = getIgnoreFieldsNames(
     modelInstance.props.filterableFieldsNames || [],
     fields.map((field) => field.name),
