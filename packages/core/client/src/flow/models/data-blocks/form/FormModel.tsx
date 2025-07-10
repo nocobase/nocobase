@@ -34,7 +34,9 @@ export class FormModel extends DataBlockModel<{
   declare resource: SingleRecordResource;
 
   createResource(ctx, params) {
-    return new SingleRecordResource();
+    const resource = new SingleRecordResource();
+    resource.isNewRecord = true; // Default to new record
+    return resource;
   }
 
   renderComponent() {
@@ -82,6 +84,11 @@ FormModel.registerFlow({
         }
         ctx.model.form = createForm();
         ctx.model.resource.on('refresh', () => {
+          const record = ctx.model.resource.getData();
+          const tragetKey = ctx.model.associationField?.targetKey;
+          if (!ctx.model.resource.getFilterByTk() && tragetKey) {
+            ctx.model.resource.setFilterByTk(record[tragetKey]);
+          }
           ctx.model.form.setValues(ctx.model.resource.getData());
         });
       },
@@ -91,13 +98,11 @@ FormModel.registerFlow({
         if (!ctx.model.resource) {
           throw new Error('Resource is not initialized');
         }
-        if (ctx.model.resource.getFilterByTk()) {
-          await ctx.model.applySubModelsAutoFlows('grid');
-          await ctx.model.resource.refresh();
-          ctx.model.setSharedContext({
-            currentRecord: ctx.model.resource.getData(),
-          });
-        }
+        await ctx.model.applySubModelsAutoFlows('grid');
+        await ctx.model.resource.refresh();
+        ctx.model.setSharedContext({
+          currentRecord: ctx.model.resource.getData(),
+        });
       },
     },
   },
