@@ -59,7 +59,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index + (this.ctx.shared.index || 0)}`;
+          const key = `${index}-${this.ctx.shared.index || 0}`;
           let fieldModel = this.fieldModelCache[v?.[fieldNames.label] + key];
 
           if (!fieldModel) {
