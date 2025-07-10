@@ -88,7 +88,7 @@ FormModel.registerFlow({
         ctx.model.resource.on('refresh', () => {
           const record = ctx.model.resource.getData();
           const tragetKey = ctx.model.associationField?.targetKey;
-          if (!ctx.model.resource.getFilterByTk() && tragetKey) {
+          if (!ctx.model.resource.getFilterByTk() && tragetKey && record) {
             ctx.model.resource.setFilterByTk(record[tragetKey]);
           }
           ctx.model.form.setValues(ctx.model.resource.getData());
@@ -283,13 +283,10 @@ export class EditFormModel extends FormModel {
 }
 
 EditFormModel.registerFlow({
-  key: 'editFormSettings',
+  key: 'formSettings',
   auto: true,
   title: escapeT('Edit form settings'),
   steps: {
-    dataLoadingMode: {
-      use: 'dataLoadingMode', // 借鉴DetailsModel的数据加载模式
-    },
     init: {
       async handler(ctx) {
         if (ctx.model.form) {
@@ -341,39 +338,30 @@ EditFormModel.registerFlow({
         if (!ctx.model.resource) {
           throw new Error('Resource is not initialized');
         }
+        // 1. 先初始化字段网格，确保所有字段都创建完成
+        await ctx.model.applySubModelsAutoFlows('grid');
 
-        const { dataLoadingMode } = ctx.model.props;
-        if (dataLoadingMode === 'auto') {
-          // 1. 先初始化字段网格，确保所有字段都创建完成
-          await ctx.model.applySubModelsAutoFlows('grid');
+        // 2. 加载数据
+        await ctx.model.resource.refresh();
+        const data = ctx.model.resource.getData();
+        const record = Array.isArray(data) ? data[0] : data;
 
-          // 2. 加载数据
-          await ctx.model.resource.refresh();
-          const data = ctx.model.resource.getData();
-          const record = Array.isArray(data) ? data[0] : data;
+        // 3. 设置共享上下文
+        ctx.model.setSharedContext({
+          currentRecord: record,
+        });
 
-          // 3. 设置共享上下文
-          ctx.model.setSharedContext({
-            currentRecord: record,
-          });
-
-          // 4. 使用 reset().then() 确保字段已经创建完成后再设置值
-          if (ctx.model.form && record) {
-            ctx.model.form
-              .reset()
-              .then(() => {
-                if (ctx.model.form && record) {
-                  ctx.model.form.setInitialValues(record);
-                  ctx.model.form.setValues(record);
-                }
-              })
-              .catch(console.error);
-          }
-        } else {
-          ctx.model.resource.loading = false;
-          ctx.model.setSharedContext({
-            currentRecord: {},
-          });
+        // 4. 使用 reset().then() 确保字段已经创建完成后再设置值
+        if (ctx.model.form && record) {
+          ctx.model.form
+            .reset()
+            .then(() => {
+              if (ctx.model.form && record) {
+                ctx.model.form.setInitialValues(record);
+                ctx.model.form.setValues(record);
+              }
+            })
+            .catch(console.error);
         }
       },
     },

@@ -215,7 +215,7 @@ function createAssociationRecordsMenuItem(
   );
   const toManyInterfaces = ['o2m', 'm2m'];
 
-  if (className !== 'DetailsModel') {
+  if (className !== 'DetailsModel' && className !== 'EditFormModel') {
     associationFields = associationFields.filter((f) => toManyInterfaces.includes(f.interface));
   }
 
