@@ -29,6 +29,7 @@ import {
   getStoredPopupContext,
   usePopupUtils,
 } from './pagePopupUtils';
+import { removePopupLayerState } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -160,6 +161,12 @@ const PagePopupsItemProvider: FC<{
   currentLevel: number;
 }> = ({ params, context, currentLevel, children }) => {
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
+
+  useEffect(() => {
+    return () => {
+      removePopupLayerState(currentLevel);
+    };
+  }, [currentLevel]);
 
   if (!context) {
     context = _.omitBy(
