@@ -14,8 +14,8 @@ import React from 'react';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
-const LinkToggleWrapper = ({ enableLink, children, currentRecord, parentRecord, ...props }) => {
-  return enableLink ? (
+const LinkToggleWrapper = ({ clickToOpen, children, currentRecord, parentRecord, ...props }) => {
+  return clickToOpen ? (
     <a
       // style={{ padding: 0, height: 'auto' }}
       // type="link"
@@ -50,7 +50,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
   private fieldModelCache: Record<string, FlowModel> = {};
   @reactive
   public render() {
-    const { fieldNames, enableLink = true } = this.props;
+    const { fieldNames, clickToOpen = true } = this.props;
     const value = this.getValue();
     const parentRecord = this.getSharedContext()?.currentRecord;
     if (!value || !fieldNames) return null;
@@ -77,7 +77,12 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
           return (
             <React.Fragment key={index}>
               {index > 0 && ', '}
-              <LinkToggleWrapper enableLink={enableLink} {...this.props} parentRecord={parentRecord} currentRecord={v}>
+              <LinkToggleWrapper
+                clickToOpen={clickToOpen}
+                {...this.props}
+                parentRecord={parentRecord}
+                currentRecord={v}
+              >
                 {content}
               </LinkToggleWrapper>
             </React.Fragment>
@@ -125,16 +130,16 @@ TagReadPrettyAssociationFieldModel.registerFlow({
         await model.applyAutoFlows();
       },
     },
-    enableLink: {
+    clickToOpen: {
       title: escapeT('Enable click to open'),
       uiSchema: {
-        enableLink: {
+        clickToOpen: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
         },
       },
       defaultParams: {
-        enableLink: true,
+        clickToOpen: true,
       },
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord, parentRecord) => {
@@ -153,7 +158,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
             sourceId: parentRecord[sourceKey],
           });
         };
-        ctx.model.setProps('enableLink', params.enableLink);
+        ctx.model.setProps('clickToOpen', params.clickToOpen);
       },
     },
   },
