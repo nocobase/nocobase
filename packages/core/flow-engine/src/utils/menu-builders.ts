@@ -210,29 +210,27 @@ function createAssociationRecordsMenuItem(
   fields: CollectionField[],
   sourceId = '{{ctx.runtimeArgs.filterByTk}}',
 ) {
-  const collections = fields
-    .filter((f) => f.target !== baseCollectionName && !!f.targetCollection)
-    .map((f) => f.targetCollection);
+  const associationFields = fields.filter((f) => f.target !== baseCollectionName && !!f.targetCollection);
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
-    defaultOptions: (_parentModel: any, extra: any) => {
-      const field = fields.find((f) => f.target === extra.collectionName);
+    fields: associationFields,
+    defaultOptions: (_parentModel: any, field: CollectionField) => {
       return {
         use: className,
         stepParams: {
           resourceSettings: {
             init: {
-              dataSourceKey: extra.dataSourceKey,
-              collectionName: field.target, // extra.collectionName,
+              dataSourceKey: field.collection.dataSource.key,
+              collectionName: field.target,
               associationName: field.collection.name + '.' + field.name,
               sourceId,
+              // filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
             },
           },
         },
       };
     },
-    collections,
   };
 }
 
@@ -423,49 +421,90 @@ async function processDataBlockChildren(
         children: nestedChildren,
       });
     } else {
-      // 对于关联记录，只显示与当前collection相同数据源的数据
-      let filteredDataSources = dataSources;
-      if (child.key === MENU_KEYS.ASSOCIATION_RECORDS && child.collections && child.collections.length > 0) {
-        const currentDataSource = child.collections[0].dataSource;
-        filteredDataSources = dataSources.filter((ds) => ds.key === currentDataSource.key);
-      }
+      let menuItems;
 
-      const menuItems = await Promise.all(
-        filteredDataSources.map(async (dataSource) => ({
-          key: `${childKey}.${dataSource.key}`,
-          label: dataSource.displayName,
-          children: await Promise.all(
-            dataSource.collections
-              .filter((c) => {
-                return (
-                  !child.collections ||
-                  child.collections.find((col: any) => col.name === c.name && col.dataSource.key === dataSource.key)
-                );
-              })
-              .map(async (collection) => {
-                const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
-                  dataSourceKey: dataSource.key,
-                  collectionName: collection.name,
-                });
-                return {
-                  key: `${childKey}.${dataSource.key}.${collection.name}`,
-                  label: collection.title || collection.name,
-                  createModelOptions: {
-                    ..._.cloneDeep(defaultOptions),
-                    use:
-                      typeof defaultOptions?.use === 'string'
-                        ? defaultOptions.use
-                        : (defaultOptions?.use as any)?.name || childKey,
-                    stepParams: {
-                      ...createDataSourceStepParams(dataSource.key, collection.name),
-                      ...defaultOptions?.stepParams,
+      // 对于关联记录，构建 datasource -> field 层级
+      if (child.key === MENU_KEYS.ASSOCIATION_RECORDS && child.fields) {
+        // 按数据源分组关联字段
+        const fieldsByDataSource = new Map<string, CollectionField[]>();
+        for (const field of child.fields) {
+          const dataSourceKey = field.collection.dataSource.key;
+          if (!fieldsByDataSource.has(dataSourceKey)) {
+            fieldsByDataSource.set(dataSourceKey, []);
+          }
+          fieldsByDataSource.get(dataSourceKey)!.push(field);
+        }
+
+        menuItems = await Promise.all(
+          Array.from(fieldsByDataSource.entries()).map(async ([dataSourceKey, fields]) => {
+            const dataSource = dataSources.find((ds) => ds.key === dataSourceKey);
+            return {
+              key: `${childKey}.${dataSourceKey}`,
+              label: dataSource?.displayName || dataSourceKey,
+              children: await Promise.all(
+                fields.map(async (field) => {
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, field);
+                  return {
+                    key: `${childKey}.${dataSourceKey}.${field.name}`,
+                    label: field.uiSchema?.title || field.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use:
+                        typeof defaultOptions?.use === 'string'
+                          ? defaultOptions.use
+                          : (defaultOptions?.use as any)?.name || childKey,
                     },
-                  },
-                };
-              }),
-          ),
-        })),
-      );
+                  };
+                }),
+              ),
+            };
+          }),
+        );
+      } else {
+        // 原有的逻辑处理其他类型的菜单项
+        let filteredDataSources = dataSources;
+        if (child.collections && child.collections.length > 0) {
+          const currentDataSource = child.collections[0].dataSource;
+          filteredDataSources = dataSources.filter((ds) => ds.key === currentDataSource.key);
+        }
+
+        menuItems = await Promise.all(
+          filteredDataSources.map(async (dataSource) => ({
+            key: `${childKey}.${dataSource.key}`,
+            label: dataSource.displayName,
+            children: await Promise.all(
+              dataSource.collections
+                .filter((c) => {
+                  return (
+                    !child.collections ||
+                    child.collections.find((col: any) => col.name === c.name && col.dataSource.key === dataSource.key)
+                  );
+                })
+                .map(async (collection) => {
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
+                    dataSourceKey: dataSource.key,
+                    collectionName: collection.name,
+                  });
+                  return {
+                    key: `${childKey}.${dataSource.key}.${collection.name}`,
+                    label: collection.title || collection.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use:
+                        typeof defaultOptions?.use === 'string'
+                          ? defaultOptions.use
+                          : (defaultOptions?.use as any)?.name || childKey,
+                      stepParams: {
+                        ...createDataSourceStepParams(dataSource.key, collection.name),
+                        ...defaultOptions?.stepParams,
+                      },
+                    },
+                  };
+                }),
+            ),
+          })),
+        );
+      }
 
       // 对于关联记录，即使只有一个选项也不要隐藏collection选择
       const totalCollections = menuItems.reduce((sum, item) => sum + item.children.length, 0);
