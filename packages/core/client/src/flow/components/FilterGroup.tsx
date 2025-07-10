@@ -293,6 +293,7 @@ const FilterItem: FC<{
           />
           {!operatorOption.noValue ? (
             <FieldComponent
+              style={{ minWidth: 150 }}
               component={component}
               value={fieldValue}
               onChange={onChangeFieldValue}
