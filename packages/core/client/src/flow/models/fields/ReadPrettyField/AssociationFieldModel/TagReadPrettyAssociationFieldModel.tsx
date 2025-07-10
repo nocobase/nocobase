@@ -8,26 +8,65 @@
  */
 
 import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
-import { Button } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
+import { Tag } from 'antd';
+import { css, cx } from '@emotion/css';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
-const LinkToggleWrapper = ({ clickToOpen, children, currentRecord, parentRecord, ...props }) => {
-  return clickToOpen ? (
-    <a
-      // style={{ padding: 0, height: 'auto' }}
-      // type="link"
-      {...props}
-      onClick={(e) => {
-        props.onClick(e, currentRecord, parentRecord);
-      }}
-    >
+const textItemClass = css`
+  & + &::before {
+    content: ', ';
+    color: #8c8c8c;
+    margin-right: 4px;
+  }
+`;
+
+const LinkToggleWrapper = ({
+  clickToOpen,
+  displayStyle,
+  children,
+  currentRecord,
+  parentRecord,
+  onClick,
+  ...restProps
+}) => {
+  const isTag = displayStyle === 'tag';
+  const isClickable = !!clickToOpen;
+
+  const handleClick = (e) => {
+    if (isClickable && typeof onClick === 'function') {
+      onClick(e, currentRecord, parentRecord);
+    }
+  };
+
+  const commonStyle = {
+    cursor: isClickable ? 'pointer' : 'default',
+    color: isClickable ? 'var(--colorPrimaryText)' : undefined,
+    ...restProps.style,
+  };
+
+  if (isTag) {
+    return (
+      <Tag {...restProps} style={commonStyle} onClick={handleClick}>
+        {children}
+      </Tag>
+    );
+  }
+
+  if (isClickable) {
+    return (
+      <a {...restProps} style={commonStyle} onClick={handleClick}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <span {...restProps} style={commonStyle}>
       {children}
-    </a>
-  ) : (
-    children
+    </span>
   );
 };
 
@@ -56,6 +95,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
     if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);
     const field = this.subModels.field as FlowModel;
+
     return (
       <>
         {arrayValue.map((v, index) => {
@@ -73,19 +113,20 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
           }
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : this.flowEngine.translate('N/A');
-
+          const itemClass = this.props.displayStyle === 'text' && textItemClass;
           return (
-            <React.Fragment key={index}>
-              {index > 0 && ', '}
-              <LinkToggleWrapper
-                clickToOpen={clickToOpen}
-                {...this.props}
-                parentRecord={parentRecord}
-                currentRecord={v}
-              >
-                {content}
-              </LinkToggleWrapper>
-            </React.Fragment>
+            <LinkToggleWrapper
+              key={key}
+              clickToOpen={clickToOpen}
+              {...this.props}
+              parentRecord={parentRecord}
+              currentRecord={v}
+              className={cx(this.props.className, itemClass)}
+              displayStyle={this.props.displayStyle}
+              onClick={this.props.onClick}
+            >
+              {content}
+            </LinkToggleWrapper>
           );
         })}
       </>
@@ -128,6 +169,25 @@ TagReadPrettyAssociationFieldModel.registerFlow({
           },
         });
         await model.applyAutoFlows();
+      },
+    },
+    displayStyle: {
+      title: escapeT('Display style'),
+      uiSchema: {
+        displayStyle: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: escapeT('Tag'), value: 'tag' },
+            { label: escapeT('Text'), value: 'text' },
+          ],
+        },
+      },
+      defaultParams: {
+        displayStyle: 'tag',
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('displayStyle', params.displayStyle);
       },
     },
     clickToOpen: {
