@@ -149,6 +149,12 @@ export const formSchema: ISchema = {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
     },
+    'options.useIndependentDatabase': {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': `{{t("Use independent database", { ns: "${NAMESPACE}" })}}`,
+    },
     'options.database': {
       type: 'object',
       'x-decorator': 'FormItem',
@@ -158,6 +164,16 @@ export const formSchema: ISchema = {
       },
       title: `{{t("Database options", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Configure the independent database connection options.", { ns: "${NAMESPACE}" })}}`,
+      'x-reactions': [
+        {
+          dependencies: ['options.useIndependentDatabase'],
+          fulfill: {
+            state: {
+              visible: '{{ Boolean($deps[0]) }}',
+            },
+          },
+        },
+      ],
       properties: {
         grid: {
           type: 'void',
