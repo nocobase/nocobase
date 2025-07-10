@@ -210,7 +210,15 @@ function createAssociationRecordsMenuItem(
   fields: CollectionField[],
   sourceId = '{{ctx.runtimeArgs.filterByTk}}',
 ) {
-  const associationFields = fields.filter((f) => f.target !== baseCollectionName && !!f.targetCollection);
+  let associationFields = fields.filter(
+    (f) => f.target !== baseCollectionName && !!f.targetCollection && f.interface !== 'mbm',
+  );
+  const toManyInterfaces = ['o2m', 'm2m'];
+
+  if (className !== 'DetailsModel') {
+    associationFields = associationFields.filter((f) => toManyInterfaces.includes(f.interface));
+  }
+
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
