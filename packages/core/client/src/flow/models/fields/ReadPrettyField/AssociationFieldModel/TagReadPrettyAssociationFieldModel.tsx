@@ -16,10 +16,14 @@ import { getUniqueKeyFromCollection } from '../../../../../collection-manager/in
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
 const textItemClass = css`
+  display: inline-block;
+  white-space: nowrap;
+
   & + &::before {
     content: ', ';
     color: #8c8c8c;
-    margin-right: 4px;
+    margin-right:
+    vertical-align: baseline;
   }
 `;
 
@@ -33,20 +37,16 @@ const LinkToggleWrapper = ({
   ...restProps
 }) => {
   const isTag = displayStyle === 'tag';
-  const isClickable = !!clickToOpen;
-
   const handleClick = (e) => {
-    if (isClickable && typeof onClick === 'function') {
+    if (clickToOpen && typeof onClick === 'function') {
       onClick(e, currentRecord, parentRecord);
     }
   };
 
   const commonStyle = {
-    cursor: isClickable ? 'pointer' : 'default',
-    color: isClickable ? 'var(--colorPrimaryText)' : undefined,
+    cursor: clickToOpen ? 'pointer' : 'default',
     ...restProps.style,
   };
-
   if (isTag) {
     return (
       <Tag {...restProps} style={commonStyle} onClick={handleClick}>
@@ -55,7 +55,7 @@ const LinkToggleWrapper = ({
     );
   }
 
-  if (isClickable) {
+  if (clickToOpen) {
     return (
       <a {...restProps} style={commonStyle} onClick={handleClick}>
         {children}
@@ -64,7 +64,7 @@ const LinkToggleWrapper = ({
   }
 
   return (
-    <span {...restProps} style={commonStyle}>
+    <span {...restProps} style={commonStyle} className={restProps.className}>
       {children}
     </span>
   );
@@ -125,7 +125,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
               displayStyle={this.props.displayStyle}
               onClick={this.props.onClick}
             >
-              {content}
+              <span className={itemClass}>{content}</span>
             </LinkToggleWrapper>
           );
         })}
