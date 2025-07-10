@@ -706,14 +706,20 @@ export function buildBlockItems(
 
   const result: MenuItem[] = [];
 
+  const sortFn = (Model1, Model2) => {
+    const meta1 = (Model1.ModelClass as any).meta;
+    const meta2 = (Model2.ModelClass as any).meta;
+    return (meta1?.sort || 500) - (meta2?.sort || 500);
+  };
+
   if (dataBlocks.length > 0) {
-    result.push(buildBlockGroup('data', dataBlocks, model));
+    result.push(buildBlockGroup('data', dataBlocks.sort(sortFn), model));
   }
   if (filterBlocks.length > 0) {
-    result.push(buildBlockGroup('filter', filterBlocks, model));
+    result.push(buildBlockGroup('filter', filterBlocks.sort(sortFn), model));
   }
   if (otherBlocks.length > 0) {
-    result.push(buildBlockGroup('other', otherBlocks, model));
+    result.push(buildBlockGroup('other', otherBlocks.sort(sortFn), model));
   }
 
   return result;
