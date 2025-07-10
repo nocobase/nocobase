@@ -126,7 +126,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
       },
     },
     enableLink: {
-      title: 'Enable link',
+      title: escapeT('Enable click to open'),
       uiSchema: {
         enableLink: {
           'x-component': 'Switch',
