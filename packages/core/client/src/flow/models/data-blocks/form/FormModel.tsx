@@ -297,11 +297,6 @@ EditFormModel.registerFlow({
         ctx.model.resource.on('refresh', () => {
           const data = ctx.model.resource.getData();
           const record = Array.isArray(data) ? data[0] : data;
-          const targetKey = ctx.model.associationField?.targetKey;
-          if (!ctx.model.resource.getFilterByTk() && targetKey && record) {
-            ctx.model.resource.setFilterByTk(record[targetKey]);
-          }
-          // 将现有数据设置到表单中，使用 reset().then() 确保字段已创建
           if (ctx.model.form && record) {
             ctx.model.form
               .reset()
