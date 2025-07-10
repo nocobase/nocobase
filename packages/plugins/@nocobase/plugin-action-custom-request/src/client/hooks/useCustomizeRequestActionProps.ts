@@ -86,10 +86,7 @@ export const useCustomizeRequestActionProps = () => {
         });
         successMessage = await getVariableValue(successMessage, {
           variables,
-          localVariables: [
-            ...localVariables,
-            { name: '$nResponse', ctx: new Proxy({ ...res?.data?.data, ...res?.data }, {}) },
-          ],
+          localVariables,
         });
 
         if (rawRedirectTo) {
