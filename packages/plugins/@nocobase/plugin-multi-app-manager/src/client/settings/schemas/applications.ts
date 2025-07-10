@@ -323,7 +323,7 @@ export const formSchema: ISchema = {
       'x-component': 'Fieldset',
       title: `{{t("Authentication options", { ns: "${NAMESPACE}" })}}`,
       properties: {
-        'jwt.secrete': {
+        'jwt.secret': {
           type: 'string',
           title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'FormItem',
