@@ -45,6 +45,10 @@ interface ChatMessagesContextValue {
   removeContextItem: (type: string, uid: string) => void;
   systemMessage: string;
   setSystemMessage: React.Dispatch<React.SetStateAction<string>>;
+  isEditingMessage: boolean;
+  editingMessageId: string;
+  startEditingMessage: (msg: any) => void;
+  finishEditingMessage: () => void;
 }
 
 export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
@@ -64,6 +68,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { currentConversation } = useChatConversations();
   const abortControllerRef = useRef<AbortController | null>(null);
   const ctxRef = useRef(ctx);
+  const [isEditingMessage, setIsEditingMessage] = useState<boolean>(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | undefined>();
 
   const messagesService = useRequest<{
     data: Message[];
@@ -256,6 +262,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     attachments,
     workContext,
     onConversationCreate,
+    editingMessageId,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
@@ -309,7 +316,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         url: 'aiConversations:sendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
+        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs, editingMessageId },
         responseType: 'stream',
         adapter: 'fetch',
         signal: abortControllerRef.current?.signal,
@@ -451,6 +458,26 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     messagesService.run(sessionId);
   }, []);
 
+  const startEditingMessage = (msg: any) => {
+    const currentMsgIndex = messages.findIndex((x) => x.key == msg.messageId);
+    setIsEditingMessage(true);
+    setEditingMessageId(msg.messageId);
+    setMessages(messages.slice(0, currentMsgIndex));
+    if (msg.attachments) {
+      setAttachments(msg.attachments);
+    }
+    if (msg.workContext) {
+      setContextItems(msg.workContext);
+    }
+  };
+
+  const finishEditingMessage = () => {
+    setIsEditingMessage(false);
+    setEditingMessageId(undefined);
+    setAttachments([]);
+    setContextItems([]);
+  };
+
   useEffect(() => {
     ctxRef.current = ctx;
   }, [ctx]);
@@ -480,6 +507,10 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         removeContextItem,
         systemMessage,
         setSystemMessage,
+        isEditingMessage,
+        editingMessageId,
+        startEditingMessage,
+        finishEditingMessage,
       }}
     >
       {children}
