@@ -374,17 +374,15 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           tableLayout="fixed"
           size={this.props.size}
           rowKey={this.collection.filterTargetKey}
-          rowSelection={
-            this.props.showIndex && {
-              columnWidth: 50,
-              type: 'checkbox',
-              onChange: (_, selectedRows) => {
-                this.resource.setSelectedRows(selectedRows);
-              },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
-              renderCell: this.renderCell,
-            }
-          }
+          rowSelection={{
+            columnWidth: 50,
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.resource.setSelectedRows(selectedRows);
+            },
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
+            renderCell: this.renderCell,
+          }}
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content' }}
