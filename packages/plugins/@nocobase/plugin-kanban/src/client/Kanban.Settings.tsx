@@ -26,7 +26,7 @@ import {
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
-
+import { SchemaSettingsColumnWidthItem } from './SchemaSettingsColumnWidthItem';
 export const kanbanSettings = new SchemaSettings({
   name: 'blockSettings:kanban',
   items: [
@@ -38,6 +38,7 @@ export const kanbanSettings = new SchemaSettings({
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
     },
+
     {
       name: 'blockLinkageRules',
       Component: SchemaSettingsLinkageRules,
@@ -50,6 +51,10 @@ export const kanbanSettings = new SchemaSettings({
           category: LinkageRuleCategory.block,
         };
       },
+    },
+    {
+      name: 'columnWidth',
+      Component: SchemaSettingsColumnWidthItem,
     },
     {
       name: 'dataScope',
