@@ -9,8 +9,9 @@
 
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import PluginFileManagerClient from '@nocobase/plugin-file-manager/client';
-import { useChatMessages } from './ChatMessagesProvider';
-import { useAISettingsContext } from '../AISettingsProvider';
+import { useAISettingsContext } from '../../AISettingsProvider';
+import { usePopover } from 'packages/core/flow-engine/src/views';
+import { useChatMessagesStore } from '../stores/chat-messages';
 
 export function useStorage(storage: string) {
   const name = storage ?? '';
@@ -78,7 +79,8 @@ export function useUploadProps(props: any) {
 }
 
 export const useUploadFiles = () => {
-  const { setAttachments } = useChatMessages();
+  const setAttachments = useChatMessagesStore.use.setAttachments();
+
   const uploadProps = {
     action: 'aiFiles:create',
     onChange({ fileList }) {

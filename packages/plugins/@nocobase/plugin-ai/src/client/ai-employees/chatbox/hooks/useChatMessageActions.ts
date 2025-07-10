@@ -1,75 +1,29 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
-import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions } from '../types';
-import React, { useState } from 'react';
-import { uid } from '@formily/shared';
-import { useT } from '../../locale';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
-import { useChatConversations } from './ChatConversationsProvider';
+import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
+import PluginAIClient from '../../..';
+import { uid } from '@formily/shared';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
-import PluginAIClient from '../..';
+import { useT } from '../../../locale';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
-interface ChatMessagesContextValue {
-  responseLoading: boolean;
-  messages: Message[];
-  addMessage: (message: Message) => void;
-  addMessages: (messages: Message[]) => void;
-  setMessages: (messages: Message[]) => void;
-  sendMessages: (
-    options: SendOptions & {
-      onConversationCreate?: (sessionId: string) => void;
-    },
-  ) => Promise<void>;
-  resendMessages: (options: ResendOptions) => void;
-  cancelRequest: () => void;
-  callTool: (options: { sessionId: string; messageId: string; aiEmployee: AIEmployee }) => void;
-  updateMessage: (options: { sessionId: string; messageId: string; content: any }) => Promise<void>;
-  messagesService: any;
-  lastMessageRef: (node: HTMLElement | null) => void;
-  attachments: Attachment[];
-  setAttachments: React.Dispatch<React.SetStateAction<any[]>>;
-  addAttachments: (attachments: Attachment | Attachment[]) => void;
-  removeAttachment: (filename: string) => void;
-  contextItems: ContextItem[];
-  setContextItems: React.Dispatch<React.SetStateAction<ContextItem[]>>;
-  addContextItems: (items: ContextItem | ContextItem[]) => void;
-  removeContextItem: (type: string, uid: string) => void;
-  systemMessage: string;
-  setSystemMessage: React.Dispatch<React.SetStateAction<string>>;
-  isEditingMessage: boolean;
-  editingMessageId: string;
-  startEditingMessage: (msg: any) => void;
-  finishEditingMessage: () => void;
-}
-
-export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
-
-export const useChatMessages = () => useContext(ChatMessagesContext);
-
-export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useChatMessageActions = () => {
   const t = useT();
   const api = useAPIClient();
   const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
-  const [contextItems, setContextItems] = useState<ContextItem[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [systemMessage, setSystemMessage] = useState<string>('');
-  const [responseLoading, setResponseLoading] = useState(false);
-  const { currentConversation } = useChatConversations();
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const messages = useChatMessagesStore.use.messages();
+  const setMessages = useChatMessagesStore.use.setMessages();
+  const addMessage = useChatMessagesStore.use.addMessage();
+  const addMessages = useChatMessagesStore.use.addMessages();
+  const updateLastMessage = useChatMessagesStore.use.updateLastMessage();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setAbortController = useChatMessagesStore.use.setAbortController();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   const ctxRef = useRef(ctx);
-  const [isEditingMessage, setIsEditingMessage] = useState<boolean>(false);
-  const [editingMessageId, setEditingMessageId] = useState<string | undefined>();
 
   const messagesService = useRequest<{
     data: Message[];
@@ -84,6 +38,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .getMessages({
           sessionId,
           cursor,
+          paginate: false,
         })
         .then((res) => res?.data),
     {
@@ -107,67 +62,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
   const messagesServiceRef = useRef<any>();
   messagesServiceRef.current = messagesService;
-
-  const addMessage = (message: Message) => {
-    setMessages((prev) => [...prev, message]);
-  };
-
-  const addMessages = (newMessages: Message[]) => {
-    setMessages((prev) => [...prev, ...newMessages]);
-  };
-
-  const updateLastMessage = (updater: (message: Message) => Message) => {
-    setMessages((prev) => {
-      const lastIndex = prev.length - 1;
-      if (lastIndex < 0) return prev;
-      const updated = [...prev];
-      updated[lastIndex] = updater(updated[lastIndex]);
-      return updated;
-    });
-  };
-
-  const addAttachments = (attachments: Attachment | Attachment[]) => {
-    setAttachments((prev) => {
-      if (Array.isArray(attachments)) {
-        return [...prev, ...attachments];
-      }
-      return [...prev, attachments];
-    });
-  };
-
-  const removeAttachment = (filename: string) => {
-    setAttachments((prev) => {
-      const newAttachments = [...prev];
-      const index = newAttachments.findIndex((item) => item.filename === filename);
-      newAttachments.splice(index, 1);
-      return newAttachments;
-    });
-  };
-
-  const addContextItems = (items: ContextItem | ContextItem[]) => {
-    setContextItems((prev) => {
-      const next = Array.isArray(items) ? items : [items];
-      const map = new Map<string, ContextItem>();
-      for (const item of prev) {
-        map.set(`${item.type}:${item.uid}`, item);
-      }
-      for (const item of next) {
-        map.set(`${item.type}:${item.uid}`, item);
-      }
-      return Array.from(map.values());
-    });
-  };
-
-  const removeContextItem = (type: string, uid: string) => {
-    setContextItems((prev) => {
-      const newItems = [...prev];
-      const index = newItems.findIndex((item) => item.type === type && item.uid === uid);
-      if (index !== -1) {
-        newItems.splice(index, 1);
-      }
-      return newItems;
-    });
-  };
 
   const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
@@ -262,7 +156,6 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     attachments,
     workContext,
     onConversationCreate,
-    editingMessageId,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
@@ -310,16 +203,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       loading: true,
     });
 
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:sendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs, editingMessageId },
+        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
         responseType: 'stream',
         adapter: 'fetch',
-        signal: abortControllerRef.current?.signal,
+        signal: controller?.signal,
         skipNotify: (err) => err.name === 'CanceledError',
       });
 
@@ -336,7 +230,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setResponseLoading(false);
       throw err;
     } finally {
-      abortControllerRef.current = null;
+      setAbortController(null);
     }
   };
 
@@ -356,7 +250,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       },
     ]);
 
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:resendMessages',
@@ -365,7 +260,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         data: { sessionId, messageId },
         responseType: 'stream',
         adapter: 'fetch',
-        signal: abortControllerRef.current?.signal,
+        signal: controller?.signal,
         skipNotify: (err) => err.name === 'CanceledError',
       });
 
@@ -382,16 +277,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setResponseLoading(false);
       throw err;
     } finally {
-      abortControllerRef.current = null;
+      setAbortController(null);
     }
   };
 
   const cancelRequest = useCallback(async () => {
-    if (!abortControllerRef.current) {
+    const controller = useChatMessagesStore.getState().abortController;
+    if (!controller) {
       return;
     }
-    abortControllerRef.current.abort();
-    abortControllerRef.current = null;
+    controller.abort();
+    setAbortController(null);
     await api.resource('aiConversations').abort({
       values: {
         sessionId: currentConversation,
@@ -458,62 +354,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     messagesService.run(sessionId);
   }, []);
 
-  const startEditingMessage = (msg: any) => {
-    const currentMsgIndex = messages.findIndex((x) => x.key == msg.messageId);
-    setIsEditingMessage(true);
-    setEditingMessageId(msg.messageId);
-    setMessages(messages.slice(0, currentMsgIndex));
-    if (msg.attachments) {
-      setAttachments(msg.attachments);
-    }
-    if (msg.workContext) {
-      setContextItems(msg.workContext);
-    }
-  };
-
-  const finishEditingMessage = () => {
-    setIsEditingMessage(false);
-    setEditingMessageId(undefined);
-    setAttachments([]);
-    setContextItems([]);
-  };
-
   useEffect(() => {
     ctxRef.current = ctx;
   }, [ctx]);
 
-  return (
-    <ChatMessagesContext.Provider
-      value={{
-        responseLoading,
-        messages,
-        addMessage,
-        addMessages,
-        setMessages,
-        sendMessages,
-        resendMessages,
-        cancelRequest,
-        callTool,
-        updateMessage,
-        messagesService,
-        lastMessageRef,
-        attachments,
-        setAttachments,
-        addAttachments,
-        removeAttachment,
-        contextItems,
-        setContextItems,
-        addContextItems,
-        removeContextItem,
-        systemMessage,
-        setSystemMessage,
-        isEditingMessage,
-        editingMessageId,
-        startEditingMessage,
-        finishEditingMessage,
-      }}
-    >
-      {children}
-    </ChatMessagesContext.Provider>
-  );
+  return {
+    messagesService,
+    sendMessages,
+    resendMessages,
+    cancelRequest,
+    callTool,
+    updateMessage,
+    lastMessageRef,
+  };
 };

@@ -10,7 +10,6 @@
 import React, { useMemo } from 'react';
 import { Tag, Modal, Typography } from 'antd';
 import { ContextItem as ContextItemType } from '../types';
-import { useChatMessages } from './ChatMessagesProvider';
 import PluginAIClient from '../..';
 import { usePlugin } from '@nocobase/client';
 const { Paragraph } = Typography;

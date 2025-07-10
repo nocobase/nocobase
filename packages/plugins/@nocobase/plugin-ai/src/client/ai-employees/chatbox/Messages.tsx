@@ -9,18 +9,23 @@
 
 import React, { memo, useEffect, useRef } from 'react';
 import { Bubble } from '@ant-design/x';
-import { useChatBoxContext } from './ChatBoxContext';
-import emptyIcon from '../empty-icon.svg';
 import { Spin, Layout } from 'antd';
-import { useChatMessages } from './ChatMessagesProvider';
 import { useT } from '../../locale';
 import { useToken } from '@nocobase/client';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatMessageActions } from './hooks/useChatMessageActions';
+import { useChatBoxStore } from './stores/chat-box';
 
 export const Messages: React.FC = () => {
   const t = useT();
   const { token } = useToken();
-  const { messages, messagesService, lastMessageRef } = useChatMessages();
-  const roles = useChatBoxContext('roles');
+
+  const roles = useChatBoxStore.use.roles();
+
+  const messages = useChatMessagesStore.use.messages();
+
+  const { messagesService, lastMessageRef } = useChatMessageActions();
+
   const containerRef = useRef(null);
 
   useEffect(() => {

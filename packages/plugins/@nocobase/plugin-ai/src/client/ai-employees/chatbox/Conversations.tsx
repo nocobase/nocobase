@@ -11,16 +11,19 @@ import React, { memo, useMemo } from 'react';
 import { Layout, Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
 import { SchemaComponent, useAPIClient, useActionContext, useToken } from '@nocobase/client';
-import { useChatBoxContext } from './ChatBoxContext';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { useChatConversations } from './ChatConversationsProvider';
-import { useChatMessages } from './ChatMessagesProvider';
 const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { uid } from '@formily/shared';
+import { useChatConversationActions } from './hooks/useChatConversationActions';
+import { useChatConversationsStore } from './stores/chat-conversations';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatMessageActions } from './hooks/useChatMessageActions';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { useChatBoxStore } from './stores/chat-box';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -37,7 +40,7 @@ const useSubmitActionProps = (conversationKey: string) => {
   const { setVisible } = useActionContext();
   const api = useAPIClient();
   const form = useForm();
-  const { conversationsService } = useChatConversations();
+  const { conversationsService } = useChatConversationActions();
   return {
     onClick: async () => {
       await form.submit();
@@ -130,23 +133,26 @@ export const Conversations: React.FC = memo(() => {
   const { modal, message } = App.useApp();
   const { token } = useToken();
   const { aiEmployeesMap } = useAIEmployeesContext();
-  const {
-    currentConversation,
-    setCurrentConversation,
-    conversationsService,
-    conversations,
-    lastConversationRef,
-    keyword,
-    setKeyword,
-  } = useChatConversations();
-  const { messagesService, setMessages } = useChatMessages();
-  const startNewConversation = useChatBoxContext('startNewConversation');
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
-  const clear = useChatBoxContext('clear');
-  const expanded = useChatBoxContext('expanded');
-  const setShowConversations = useChatBoxContext('setShowConversations');
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+  const expanded = useChatBoxStore.use.expanded();
+  const setShowConversations = useChatBoxStore.use.setShowConversations();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const setCurrentConversation = useChatConversationsStore.use.setCurrentConversation();
+  const conversations = useChatConversationsStore.use.conversations();
+  const keyword = useChatConversationsStore.use.keyword();
+  const setKeyword = useChatConversationsStore.use.setKeyword();
+
+  const setMessages = useChatMessagesStore.use.setMessages();
+
+  const { messagesService } = useChatMessageActions();
+
+  const { conversationsService, lastConversationRef } = useChatConversationActions();
   const { loading: conversationsLoading } = conversationsService;
+
+  const { startNewConversation, clear } = useChatBoxActions();
 
   const items = useMemo(() => {
     const result: ConversationsProps['items'] = conversations.map((item, index) => {

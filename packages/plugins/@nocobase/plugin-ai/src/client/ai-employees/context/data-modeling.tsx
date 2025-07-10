@@ -14,7 +14,6 @@ import { tval } from '@nocobase/utils/client';
 // @ts-ignore
 import pkg from '../../../../package.json';
 import { useT } from '../../locale';
-import { useChatMessages } from '../chatbox/ChatMessagesProvider';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { useTranslation } from 'react-i18next';
 import { Schema } from '@formily/react';
@@ -123,7 +122,6 @@ export const CollectionDefinitionsContext: WorkContextOptions = {
         Component: ({ onAdd }) => {
           const t = useT();
           const { startSelect } = useAISelectionContext();
-          const { addAttachments } = useChatMessages();
 
           return <Checkbox>{t('Roles #4cb2eb66a99')}</Checkbox>;
         },

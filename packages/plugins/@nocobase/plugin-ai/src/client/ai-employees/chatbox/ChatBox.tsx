@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Layout, Card, Button, Divider, Tooltip } from 'antd';
 import {
   CloseOutlined,
@@ -19,7 +19,6 @@ import {
 } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
-import { useChatBoxContext } from './ChatBoxContext';
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
@@ -27,18 +26,27 @@ import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
 
 export const ChatBox: React.FC = () => {
-  const chatBoxRef = useChatBoxContext('chatBoxRef');
-  const setOpen = useChatBoxContext('setOpen');
-  const startNewConversation = useChatBoxContext('startNewConversation');
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const expanded = useChatBoxContext('expanded');
-  const setExpanded = useChatBoxContext('setExpanded');
-  const showConversations = useChatBoxContext('showConversations');
-  const setShowConversations = useChatBoxContext('setShowConversations');
+  const chatBoxRef = useRef<HTMLDivElement | null>(null);
+  const setChatBoxRef = useChatBoxStore.use.setChatBoxRef();
+  const setOpen = useChatBoxStore.use.setOpen();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const expanded = useChatBoxStore.use.expanded();
+  const setExpanded = useChatBoxStore.use.setExpanded();
+  const showConversations = useChatBoxStore.use.showConversations();
+  const setShowConversations = useChatBoxStore.use.setShowConversations();
+
+  const { startNewConversation } = useChatBoxActions();
+
   const { token } = useToken();
   const t = useT();
+
+  useEffect(() => {
+    setChatBoxRef(chatBoxRef);
+  }, []);
 
   return (
     <Layout style={{ height: '100%' }} ref={chatBoxRef}>
@@ -136,8 +144,9 @@ export const ChatBox: React.FC = () => {
 };
 
 export const ChatBoxWrapper: React.FC = () => {
-  const expanded = useChatBoxContext('expanded');
-  const showConversations = useChatBoxContext('showConversations');
+  const expanded = useChatBoxStore.use.expanded();
+  const showConversations = useChatBoxStore.use.showConversations();
+
   const { selectable } = useAISelectionContext();
 
   return expanded ? (

@@ -8,30 +8,15 @@
  */
 
 import { useAPIClient, useRequest } from '@nocobase/client';
-import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { Conversation } from '../types';
+import { Conversation } from '../../types';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useCallback, useRef } from 'react';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 
-type ChatConversationContextValue = {
-  currentConversation?: string;
-  setCurrentConversation: React.Dispatch<React.SetStateAction<string | undefined>>;
-  conversationsService: any;
-  lastConversationRef: (node: HTMLDivElement | null) => void;
-  conversations: Conversation[];
-  keyword: string;
-  setKeyword: React.Dispatch<React.SetStateAction<string>>;
-};
-
-export const ChatConversationsContext = createContext<ChatConversationContextValue | null>(null);
-
-export const useChatConversations = () => useContext(ChatConversationsContext);
-
-export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useChatConversationActions = () => {
   const api = useAPIClient();
-  const [currentConversation, setCurrentConversation] = useState<string>();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [keyword, setKeyword] = useState<string>('');
-
+  const setConversations = useChatConversationsStore.use.setConversations();
+  const keyword = useChatConversationsStore.use.keyword();
   const conversationsService = useRequest<Conversation[]>(
     (page = 1, keyword = '') =>
       api
@@ -67,19 +52,12 @@ export const ChatConversationsProvider: React.FC<{ children: React.ReactNode }> 
     if (conversationsService.loading || (meta && meta.page >= meta.totalPage)) {
       return;
     }
-    await conversationsService.runAsync(meta.page + 1, keyword);
+    await conversationsService.runAsync(meta?.page ? meta.page + 1 : 1, keyword);
   }, [keyword]);
   const { ref: lastConversationRef } = useLoadMoreObserver({ loadMore: loadMoreConversations });
 
-  const value = {
-    currentConversation,
-    setCurrentConversation,
+  return {
     conversationsService,
     lastConversationRef,
-    conversations,
-    keyword,
-    setKeyword,
   };
-
-  return <ChatConversationsContext.Provider value={value}>{children}</ChatConversationsContext.Provider>;
 };

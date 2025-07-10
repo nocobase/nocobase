@@ -14,11 +14,11 @@ import { tval } from '@nocobase/utils/client';
 // @ts-ignore
 import pkg from '../../../../package.json';
 import { useT } from '../../locale';
-import { useChatMessages } from '../chatbox/ChatMessagesProvider';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { useTranslation } from 'react-i18next';
 import { Schema } from '@formily/react';
 import { Button } from 'antd';
+import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 
 const isAttachment = (value: any) => {
   let file = value;
@@ -157,7 +157,7 @@ export const ClassicPagesContext: WorkContextOptions = {
         Component: ({ onAdd }) => {
           const t = useT();
           const { startSelect } = useAISelectionContext();
-          const { addAttachments } = useChatMessages();
+          const addAttachments = useChatMessagesStore.use.addAttachments();
 
           return (
             <div

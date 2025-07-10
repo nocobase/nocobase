@@ -9,17 +9,20 @@
 
 import React from 'react';
 import { Divider, Flex } from 'antd';
-import { useChatMessages } from './ChatMessagesProvider';
 import { Upload } from './Upload';
 import { AddContextButton } from '../AddContextButton';
-import { useChatBoxContext } from './ChatBoxContext';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatBoxStore } from './stores/chat-box';
 
 export const SenderFooter: React.FC<{
   components: any;
 }> = ({ components }) => {
   const { SendButton, LoadingButton } = components;
-  const { responseLoading: loading, addContextItems } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const loading = useChatMessagesStore.use.responseLoading();
+  const addContextItems = useChatMessagesStore.use.addContextItems();
 
   return (
     <Flex justify="space-between" align="center">

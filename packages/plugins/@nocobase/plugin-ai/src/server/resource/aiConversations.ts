@@ -114,7 +114,7 @@ export default {
         return ctx.throw(403);
       }
 
-      const { sessionId, cursor } = ctx.action.params || {};
+      const { sessionId, cursor, paginate = true } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
@@ -131,24 +131,25 @@ export default {
       }
 
       const pageSize = 10;
+      const maxLimit = 200;
       const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
       const filter = {
         role: {
           $notIn: ['tool'],
         },
       };
-      if (cursor) {
+      if (paginate && cursor) {
         filter['messageId'] = {
           $lt: cursor,
         };
       }
       const rows = await messageRepository.find({
         sort: ['-messageId'],
-        limit: pageSize + 1,
+        limit: paginate ? pageSize + 1 : maxLimit,
         filter,
       });
 
-      const hasMore = rows.length > pageSize;
+      const hasMore = paginate && rows.length > pageSize;
       const data = hasMore ? rows.slice(0, -1) : rows;
       const newCursor = data.length ? data[data.length - 1].messageId : null;
 
@@ -164,8 +165,10 @@ export default {
           });
           return provider.parseResponseMessage(row);
         }),
-        hasMore,
-        cursor: newCursor,
+        ...(paginate && {
+          hasMore,
+          cursor: newCursor,
+        }),
       };
 
       await next();
@@ -210,7 +213,7 @@ export default {
 
       setupSSEHeaders(ctx);
 
-      const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
+      const { sessionId, aiEmployee: employeeName, messages } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -251,28 +254,14 @@ export default {
         }
 
         try {
-          await ctx.db.sequelize.transaction(async (transaction) => {
-            if (editingMessageId) {
-              await ctx.db.getRepository('aiMessages').destroy({
-                filter: {
-                  sessionId,
-                  messageId: {
-                    $gte: editingMessageId,
-                  },
-                },
-                transaction,
-              });
-            }
-            await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-              values: messages.map((message: any) => ({
-                messageId: plugin.snowflake.generate(),
-                role: message.role,
-                content: message.content,
-                attachments: message.attachments,
-                workContext: message.workContext,
-              })),
-              transaction,
-            });
+          await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+            values: messages.map((message: any) => ({
+              messageId: plugin.snowflake.generate(),
+              role: message.role,
+              content: message.content,
+              attachments: message.attachments,
+              workContext: message.workContext,
+            })),
           });
         } catch (err) {
           ctx.log.error(err);

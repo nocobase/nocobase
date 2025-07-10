@@ -15,17 +15,20 @@ import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
-import { useChatConversations } from '../ChatConversationsProvider';
 import { Schema } from '@formily/react';
 import PluginAIClient from '../../..';
-import { useChatMessages } from '../ChatMessagesProvider';
-import { useChatBoxContext } from '../ChatBoxContext';
 import { useAISelectionContext } from '../../selector/AISelectorProvider';
+import { useChatBoxStore } from '../stores/chat-box';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatMessageActions } from '../hooks/useChatMessageActions';
 
 const useDefaultAction = (messageId: string) => {
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const { currentConversation } = useChatConversations();
-  const { callTool } = useChatMessages();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const { callTool } = useChatMessageActions();
+
   return {
     invoke: () => {
       callTool({
@@ -79,8 +82,9 @@ export const ToolCard: React.FC<{
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
-  const { currentConversation } = useChatConversations();
   const api = useAPIClient();
+
+  const currentConversation = useChatConversationsStore((s) => s.currentConversation);
 
   const { data } = useRequest<{
     [name: string]: {
@@ -124,7 +128,9 @@ export const ToolCard: React.FC<{
         </Tag>
       </div>
     ),
-    extra: !autoCallTools.includes(tool.name) && <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
+    extra: !autoCallTools?.includes(tool.name) && (
+      <CallButton messageId={messageId} name={tool.name} args={tool.args} />
+    ),
     children: (
       <ReactMarkdown
         components={{
