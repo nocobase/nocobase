@@ -495,11 +495,14 @@ async function isEnvMatch(keyData) {
   const env = await getEnvAsync();
   if (env?.container?.id && keyData?.instanceData?.container?.id) {
     return (
-      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname'])) ===
-      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname']))
+      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname', 'mac'])) ===
+      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname', 'mac']))
     );
   }
-  return JSON.stringify(omit(env, ['timestamp'])) === JSON.stringify(omit(keyData?.instanceData, ['timestamp']));
+  return (
+    JSON.stringify(omit(env, ['timestamp', 'mac'])) ===
+    JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'mac']))
+  );
 }
 
 exports.getAccessKeyPair = async function () {
