@@ -13,6 +13,7 @@ import {
   APIResource,
   BaseRecordResource,
   Collection,
+  CollectionField,
   DefaultStructure,
   escapeT,
   FlowModel,
@@ -127,6 +128,7 @@ BlockModel.define({ hide: true });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   resource: BaseRecordResource;
+  associationField?: CollectionField;
   collection: Collection;
 
   onInit(options) {
@@ -188,7 +190,15 @@ DataBlockModel.registerFlow({
         if (!params.collectionName) {
           throw new Error('collectionName is required');
         }
+        if (!ctx.model.collection) {
+          ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        }
         if (!ctx.model.resource) {
+          if (params.associationName) {
+            const [cName, fName] = params.associationName.split('.');
+            const sourceCollection = ctx.dataSourceManager.getCollection(params.dataSourceKey, cName);
+            ctx.model.associationField = sourceCollection.getField(fName);
+          }
           ctx.model.resource = ctx.model.createResource(ctx, params);
           ctx.model.resource.setAPIClient(ctx.api);
           ctx.model.resource.setDataSourceKey(params.dataSourceKey);
@@ -206,9 +216,6 @@ DataBlockModel.registerFlow({
           ctx.model.resource.setFilterByTk(
             Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
           );
-        }
-        if (!ctx.model.collection) {
-          ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
         }
         ctx.logger.info('params', params);
       },

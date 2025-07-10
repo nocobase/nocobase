@@ -10,6 +10,7 @@
 import { FormLayout } from '@formily/antd-v5';
 import {
   AddActionButton,
+  CollectionField,
   DndProvider,
   DragHandler,
   Droppable,
@@ -34,8 +35,15 @@ export class DetailsModel extends DataBlockModel<{
   declare resource: MultiRecordResource | SingleRecordResource;
 
   createResource(ctx, params) {
+    if (this.associationField?.type === 'hasOne' || this.associationField?.type === 'belongsTo') {
+      const resource = new SingleRecordResource();
+      resource.isNewRecord = false;
+      return resource;
+    }
     if (Object.keys(params).includes('filterByTk')) {
-      return new SingleRecordResource();
+      const resource = new SingleRecordResource();
+      resource.isNewRecord = false;
+      return resource;
     }
     const resource = new MultiRecordResource();
     resource.setPageSize(1);

@@ -10,8 +10,11 @@
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
-  hasFilterByTk() {
-    return Object.prototype.hasOwnProperty.call(this.request.params, 'filterByTk');
+  isNewRecord = false;
+
+  setFilterByTk(filterByTk: any) {
+    this.isNewRecord = false;
+    return super.setFilterByTk(filterByTk);
   }
 
   async save(data: TData, config: { refresh?: boolean } = {}): Promise<void> {
@@ -21,7 +24,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     };
     let actionName = 'create';
     // 如果有 filterByTk，则表示是更新操作
-    if (this.hasFilterByTk()) {
+    if (!this.isNewRecord) {
       options.params.filterByTk = this.getFilterByTk();
       actionName = 'update';
     }
@@ -49,7 +52,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   async refresh(): Promise<void> {
     // 如果没有设置 filterByTk，则不执行刷新操作
     // 这是为了避免在没有指定记录的情况下进行不必要的 API 调用
-    if (!this.hasFilterByTk()) {
+    if (this.isNewRecord) {
       return;
     }
     const { data, meta } = await this.runAction<TData, any>('get', {
