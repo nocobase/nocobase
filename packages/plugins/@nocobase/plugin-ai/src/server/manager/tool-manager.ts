@@ -64,21 +64,29 @@ export class ToolManager implements AIToolRegister {
   }
 
   registerToolGroup(options: ToolGroupRegisterOptions) {
+    this.checkGroupName(options.groupName);
     this.groups.register(options.groupName, options);
   }
 
   registerDynamicTool(delegate: ToolRegisterDelegate) {
+    this.checkGroupName(delegate.groupName);
     this.delegates.push(delegate);
   }
 
   registerTools<T>(options: ToolRegisterOptions | ToolRegisterOptions[]) {
     const list = _.isArray(options) ? options : [options];
-    list.forEach((x) => {
-      if (!x.groupName) {
-        x.groupName = DEFAULT_TOOL_GROUP.groupName;
-      }
-      this.tools.register(x.tool.name, x);
-    });
+    list
+      .map((x) => ({ ...x, tool: { ...x.tool } }))
+      .forEach((x) => {
+        if (!x.groupName) {
+          x.groupName = DEFAULT_TOOL_GROUP.groupName;
+        } else {
+          this.checkGroupName(x.groupName);
+        }
+        const toolName = `${x.groupName}-${x.tool.name}`;
+        x.tool.name = toolName;
+        this.tools.register(x.tool.name, x);
+      });
   }
 
   async getTool(name: string, raw = false): Promise<ToolOptions> {
@@ -156,6 +164,12 @@ export class ToolManager implements AIToolRegister {
     } catch (error) {
       // Fallback if zodToJsonSchema fails
       return schema;
+    }
+  }
+
+  private checkGroupName(name: string) {
+    if (!name || _.isEmpty(name) || name.includes('-')) {
+      throw new Error('Invalid group name');
     }
   }
 }
