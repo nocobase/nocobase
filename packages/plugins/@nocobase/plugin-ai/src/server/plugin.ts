@@ -62,7 +62,7 @@ export class PluginAIServer extends Plugin {
   registerTools() {
     const toolManager = this.aiManager.toolManager;
     const frontendGroupName = 'frontend';
-    const dataModelingGroupName = 'data-modeling';
+    const dataModelingGroupName = 'dataModeling';
     const workflowGroupName = 'workflowCaller';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
