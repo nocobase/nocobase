@@ -93,17 +93,11 @@ export const DataModelingModal: React.FC<{
   );
 };
 
-const useCollections = (collectionsStr: string) => {
+const useCollections = (collections: any[]) => {
   const app = useApp();
   const fim = app.dataSourceManager.collectionFieldInterfaceManager;
   return useMemo(() => {
     const result = [];
-    let collections = [];
-    try {
-      collections = JSON.parse(collectionsStr);
-    } catch (e) {
-      return [];
-    }
     for (const collection of collections) {
       const fields = collection.fields.map((field: any) => {
         const fieldInterface = fim.getFieldInterface(field.interface);
@@ -129,20 +123,20 @@ const useCollections = (collectionsStr: string) => {
       });
     }
     return result;
-  }, [collectionsStr]);
+  }, [collections]);
 };
 
-export const Collections = (props: any) => {
+export const Collections: React.FC<{
+  tool: {
+    name: string;
+    args: {
+      collections: any[];
+    };
+  };
+}> = (props) => {
   const t = useT();
   const [open, setOpen] = React.useState(false);
-  const { children, className, message, index, ...rest } = props;
-  const { responseLoading } = useChatMessages();
-  const collectionsStr = String(children).replace(/\n$/, '');
-  const collections = useCollections(collectionsStr);
-
-  if (responseLoading && !message.messageId) {
-    return <Generating />;
-  }
+  const collections = useCollections(props.tool.args.collections);
 
   return (
     <>

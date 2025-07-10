@@ -87,11 +87,11 @@ export class PluginAIServer extends Plugin {
       },
       {
         groupName: dataModelingGroupName,
-        tool: defineCollections,
+        tool: getCollectionMetadata,
       },
       {
         groupName: dataModelingGroupName,
-        tool: getCollectionMetadata,
+        tool: defineCollections,
       },
     ]);
 

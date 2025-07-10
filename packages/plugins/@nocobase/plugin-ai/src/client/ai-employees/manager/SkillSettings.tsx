@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { List, Button, Dropdown, Tooltip, Card, Popover, Space, Switch } from 'antd';
+import { List, Button, Dropdown, Tooltip, Card, Popover, Space, Switch, Flex } from 'antd';
 import { InfoCircleOutlined, PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { SchemaComponent, useAPIClient, useRequest, useToken } from '@nocobase/client';
@@ -172,9 +172,10 @@ export const Skills: React.FC = () => {
 
   const handleAdd = (name: string) => {
     const skills = [...(field.value || [])];
-    skills.push(name);
-    console.log('handleAdd', skills);
-    field.value = Array.from(new Set(skills));
+    if (!skills.some((s) => s.name === name)) {
+      skills.push({ name, autoCall: false });
+    }
+    field.value = skills;
   };
 
   const items =
@@ -237,9 +238,9 @@ export const Skills: React.FC = () => {
           itemLayout="vertical"
           bordered
           dataSource={field.value || []}
-          renderItem={(item: string) => {
+          renderItem={(item: { name: string; autoCall?: boolean }) => {
             const tools = data?.flatMap((x) => x.tools) ?? [];
-            const tool = tools.find((tool) => tool.name === item);
+            const tool = tools.find((tool) => tool.name === item.name);
             if (!tool) {
               return null;
             }
@@ -247,31 +248,57 @@ export const Skills: React.FC = () => {
               <List.Item
                 key={tool.name}
                 extra={
-                  <Space>
-                    <Popover
-                      content={<ToolInfo {...tool} />}
-                      placement="bottom"
-                      arrow={false}
-                      styles={{
-                        body: {
-                          padding: 0,
-                          marginRight: '8px',
-                        },
-                      }}
-                    >
-                      <InfoCircleOutlined />
-                    </Popover>
-                    <Button
-                      icon={<DeleteOutlined />}
-                      variant="link"
-                      color="default"
-                      onClick={() => {
-                        const skills = [...(field.value || [])];
-                        skills.splice(skills.indexOf(tool.name), 1);
-                        field.value = Array.from(new Set(skills));
-                      }}
-                    />
-                  </Space>
+                  <Flex vertical={true} justify="end">
+                    <Space>
+                      <div
+                        style={{
+                          fontSize: token.fontSizeSM,
+                        }}
+                      >
+                        {t('Auto usage')}
+                        <Switch
+                          style={{
+                            marginLeft: '4px',
+                            marginRight: '8px',
+                          }}
+                          size="small"
+                          checked={item.autoCall}
+                          onChange={(checked) => {
+                            const updated = (field.value || []).map((s: { name: string; autoCall?: boolean }) =>
+                              s.name === item.name ? { ...s, autoCall: checked } : s,
+                            );
+                            field.value = updated;
+                          }}
+                        />
+                      </div>
+                      <Popover
+                        content={<ToolInfo {...tool} />}
+                        placement="bottom"
+                        arrow={false}
+                        styles={{
+                          body: {
+                            padding: 0,
+                            marginRight: '8px',
+                          },
+                        }}
+                      >
+                        <InfoCircleOutlined />
+                      </Popover>
+                      <Button
+                        icon={<DeleteOutlined />}
+                        variant="link"
+                        color="default"
+                        onClick={() => {
+                          const skills = [...(field.value || [])];
+                          const index = skills.findIndex((s) => s.name === tool.name);
+                          if (index !== -1) {
+                            skills.splice(index, 1);
+                            field.value = skills;
+                          }
+                        }}
+                      />
+                    </Space>
+                  </Flex>
                 }
               >
                 <div>{Schema.compile(tool.title, { t })}</div>
@@ -306,12 +333,6 @@ export const SkillSettings: React.FC = () => {
               skills: {
                 type: 'array',
                 'x-component': 'Skills',
-                'x-decorator': 'FormItem',
-              },
-              autoCall: {
-                type: 'boolean',
-                title: t('Automatically use skills when available'),
-                'x-component': 'Checkbox',
                 'x-decorator': 'FormItem',
                 description: t('Auto skill description'),
               },

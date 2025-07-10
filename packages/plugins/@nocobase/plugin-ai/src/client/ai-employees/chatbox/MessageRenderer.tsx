@@ -17,12 +17,12 @@ import { useChatBoxContext } from './ChatBoxContext';
 import { useChatConversations } from './ChatConversationsProvider';
 import { usePlugin, useToken } from '@nocobase/client';
 import { Markdown } from './markdown/Markdown';
-import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
 import { Task } from '../types';
 import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
+import { ToolRenderer } from './generative-ui/ToolRenderer';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -57,7 +57,7 @@ const AITextMessageRenderer: React.FC<{
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
         {msg.tool_calls?.length ? (
-          <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
+          <ToolRenderer tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
         ) : null}
       </div>
     );

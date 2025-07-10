@@ -9,18 +9,18 @@
 
 import React from 'react';
 import { Button, Collapse, Tooltip, Tag } from 'antd';
-import { useT } from '../../locale';
+import { useT } from '../../../locale';
 import { CaretRightOutlined, QuestionCircleOutlined, ToolOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
-import { useChatConversations } from './ChatConversationsProvider';
+import { useChatConversations } from '../ChatConversationsProvider';
 import { Schema } from '@formily/react';
-import PluginAIClient from '../..';
-import { useChatMessages } from './ChatMessagesProvider';
-import { useChatBoxContext } from './ChatBoxContext';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
+import PluginAIClient from '../../..';
+import { useChatMessages } from '../ChatMessagesProvider';
+import { useChatBoxContext } from '../ChatBoxContext';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
 
 const useDefaultAction = (messageId: string) => {
   const currentEmployee = useChatBoxContext('currentEmployee');

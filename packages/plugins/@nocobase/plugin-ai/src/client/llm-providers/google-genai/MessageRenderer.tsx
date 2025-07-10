@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Markdown } from '../../ai-employees/chatbox/markdown/Markdown';
-import { ToolCard } from '../../ai-employees/chatbox/ToolCard';
+import { ToolRenderer } from '../../ai-employees/chatbox/generative-ui/ToolRenderer';
 
 export const MessageRenderer: React.FC<{
   msg: {
@@ -50,7 +50,7 @@ export const MessageRenderer: React.FC<{
           }}
         />
       )}
-      {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
+      {msg.tool_calls?.length && <ToolRenderer tools={msg.tool_calls} messageId={msg.messageId} />}
     </div>
   );
 };

@@ -22,7 +22,13 @@ export type LLMProviderOptions = {
 };
 
 export type ToolOptions = {
-  invoke: (ctx: any, params: any) => void | Promise<void>;
+  Component?: ComponentType<{
+    tool: {
+      name: string;
+      args: any;
+    };
+  }>;
+  invoke?: (ctx: any, params: any) => void | Promise<void>;
 };
 
 export class AIManager {
