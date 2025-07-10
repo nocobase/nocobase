@@ -106,8 +106,14 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   getFilter(): Record<string, any> {
+    const value = [...this.filterGroups.values()].filter(Boolean);
+
+    if (value.length === 0) {
+      return;
+    }
+
     return {
-      $and: [...this.filterGroups.values()].filter(Boolean),
+      $and: value,
     };
   }
 
