@@ -59,7 +59,7 @@ export class AIEmployee {
     const skills = this.employee.skillSettings?.skills || [];
     if (skills?.length) {
       for (const skill of skills) {
-        const tool = await this.plugin.aiManager.toolManager.getTool(skill);
+        const tool = await this.plugin.aiManager.toolManager.getTool(skill.name);
         if (tool) {
           tools.push(tool);
         }
@@ -127,6 +127,7 @@ export class AIEmployee {
 
     const message = gathered?.content;
     const toolCalls = gathered?.tool_calls;
+    const skills = this.employee.skillSettings?.skills;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
       this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
       this.ctx.res.end();
@@ -142,7 +143,6 @@ export class AIEmployee {
         metadata: {
           model,
           provider: service.provider,
-          autoCallTool: this.employee.skillSettings?.autoCall,
           usage_metadata: {},
         },
         toolCalls: null,
@@ -154,6 +154,11 @@ export class AIEmployee {
 
       if (toolCalls?.length) {
         values.toolCalls = toolCalls;
+        values.metadata['autoCallTools'] = toolCalls
+          .filter((tool: { name: string }) => {
+            return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+          })
+          .map((tool: { name: string }) => tool.name);
       }
 
       if (gathered?.usage_metadata) {
@@ -191,8 +196,12 @@ export class AIEmployee {
       }
     }
 
-    if (gathered?.tool_calls?.length && this.employee.skillSettings?.autoCall) {
-      await this.callTool(gathered.tool_calls[0], true);
+    if (toolCalls?.length) {
+      const tool = toolCalls[0];
+      const skill = skills?.find((s: { name: string; autoCall?: boolean }) => s.name === tool.name);
+      if (skill.autoCall) {
+        await this.callTool(toolCalls[0], true);
+      }
     }
 
     this.ctx.res.end();
@@ -438,7 +447,6 @@ ${content}`;
           metadata: {
             model,
             provider: service.provider,
-            autoCallTool: this.employee.skillSettings?.autoCall,
             toolCall,
           },
         },

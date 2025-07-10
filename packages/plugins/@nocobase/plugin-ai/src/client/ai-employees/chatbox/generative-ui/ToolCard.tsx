@@ -74,8 +74,8 @@ export const ToolCard: React.FC<{
     name: string;
     args: any;
   }[];
-  autoCall?: boolean;
-}> = ({ tools, messageId, autoCall }) => {
+  autoCallTools?: string[];
+}> = ({ tools, messageId, autoCallTools }) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
@@ -124,7 +124,7 @@ export const ToolCard: React.FC<{
         </Tag>
       </div>
     ),
-    extra: !autoCall && <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
+    extra: !autoCallTools.includes(tool.name) && <CallButton messageId={messageId} name={tool.name} args={tool.args} />,
     children: (
       <ReactMarkdown
         components={{
@@ -151,5 +151,5 @@ export const ToolCard: React.FC<{
     },
   }));
 
-  return <Collapse items={items} size="small" bordered={false} defaultActiveKey={!autoCall ? [tools[0].name] : []} />;
+  return <Collapse items={items} size="small" bordered={false} />;
 };

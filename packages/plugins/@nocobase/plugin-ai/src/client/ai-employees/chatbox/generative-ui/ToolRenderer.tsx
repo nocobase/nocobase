@@ -18,11 +18,11 @@ export const ToolRenderer: React.FC<{
     name: string;
     args: any;
   }[];
-  autoCall?: boolean;
-}> = ({ tools, messageId, autoCall }) => {
+  autoCallTools?: string[];
+}> = ({ tools, messageId, autoCallTools }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   if (tools.length > 1) {
-    return <ToolCard tools={tools} messageId={messageId} autoCall={autoCall} />;
+    return <ToolCard tools={tools} messageId={messageId} autoCallTools={autoCallTools} />;
   }
   const tool = tools[0];
   const toolOption = plugin.aiManager.tools.get(tool.name);
@@ -30,5 +30,5 @@ export const ToolRenderer: React.FC<{
     const C = toolOption.Component;
     return <C tool={tool} />;
   }
-  return <ToolCard tools={[tool]} messageId={messageId} autoCall={autoCall} />;
+  return <ToolCard tools={[tool]} messageId={messageId} autoCallTools={autoCallTools} />;
 };
