@@ -63,5 +63,8 @@ MapReadPrettyFieldModel.registerFlow({
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
+    zoom: {
+      use: 'setDefaultZoomLevel',
+    },
   },
 });

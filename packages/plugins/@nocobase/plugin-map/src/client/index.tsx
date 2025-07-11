@@ -15,6 +15,7 @@ import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
 import { Configuration, Map } from './components';
 import * as fieldModes from './fields/fieldModels';
+import { setDefaultZoomLevel } from './fields/fieldModels/setDefaultZoomLevel';
 
 // 懒加载会把 Map.Designer 的值变成 undefined，进而导致地图字段不显示 settings
 // const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
@@ -66,6 +67,7 @@ export class PluginMapClient extends Plugin {
     this.app.addScopes({
       useMapBlockProps,
     });
+    this.flowEngine.registerActions({ setDefaultZoomLevel });
     this.flowEngine.registerModels({
       ...fieldModes,
     });

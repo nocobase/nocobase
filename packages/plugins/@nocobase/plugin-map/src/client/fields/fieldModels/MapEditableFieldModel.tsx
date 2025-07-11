@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { escapeT } from '@nocobase/flow-engine';
 
 import { css } from '@nocobase/client';
 import { EditableFieldModel } from '@nocobase/client';
@@ -43,3 +44,20 @@ export class MapEditableFieldModel extends EditableFieldModel {
     ];
   }
 }
+
+MapEditableFieldModel.registerFlow({
+  key: 'mapFieldSetting',
+  title: escapeT('Map field setting'),
+  auto: true,
+  sort: 500,
+  steps: {
+    zoom: {
+      use: 'setDefaultZoomLevel',
+      handler(ctx, params) {
+        ctx.model.setComponentProps({
+          zoom: params.zoom,
+        });
+      },
+    },
+  },
+});
