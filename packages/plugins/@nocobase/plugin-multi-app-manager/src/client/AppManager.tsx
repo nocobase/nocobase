@@ -12,7 +12,6 @@ import { Card } from 'antd';
 import React from 'react';
 import { schema } from './settings/schemas/applications';
 import { usePluginUtils } from './utils';
-import { JwtSecretInput } from './JwtSecretInput';
 
 const useLink = () => {
   const record = useRecord();
@@ -36,7 +35,7 @@ const AppVisitor = () => {
 export const AppManager = () => {
   return (
     <Card bordered={false}>
-      <SchemaComponent schema={schema} components={{ AppVisitor, JwtSecretInput }} />
+      <SchemaComponent schema={schema} components={{ AppVisitor }} />
     </Card>
   );
 };

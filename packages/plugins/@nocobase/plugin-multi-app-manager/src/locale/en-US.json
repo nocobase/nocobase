@@ -7,7 +7,5 @@
   "Custom domain": "Custom domain",
   "Manage applications": "Manage applications",
   "Standalone deployment": "Standalone deployment",
-  "Auto start": "Auto start",
-  "JWT secret": "JWT secret",
-  "Automatically generate a JWT secret (An independent JWT secret ensures data and session isolation from other applications)": "Automatically generate a JWT secret (An independent JWT secret ensures data and session isolation from other applications)"
+  "Auto start": "Auto start"
 }
