@@ -12,7 +12,7 @@ export interface Channel {
   userId: string;
   unreadMsgCnt: number;
   totalMsgCnt: number;
-  latestMsgReceiveTimestamp: number;
+  latestMsgReceiveTimestamp: number | string;
   latestMsgTitle: string;
 }
 
@@ -22,7 +22,7 @@ export interface Message {
   userId: string;
   channelName: string;
   content: string;
-  receiveTimestamp: number;
+  receiveTimestamp: number | string;
   status: 'read' | 'unread';
   url: string;
   options: Record<string, any>;
