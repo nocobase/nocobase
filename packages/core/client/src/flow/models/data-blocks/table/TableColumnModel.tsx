@@ -136,7 +136,7 @@ TableColumnModel.registerFlow({
             const originTitle = model.collectionField?.uiSchema?.title;
             field.decoratorProps = {
               ...field.decoratorProps,
-              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              extra: model.ctx.t('Original field title: ') + (model.ctx.t(originTitle) ?? ''),
             };
           },
         },
