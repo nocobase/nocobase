@@ -10,5 +10,22 @@
   "Auto start": "自动启动",
   "Start mode": "启动方式",
   "Start on first visit": "首次访问时启动",
-  "Start with main application": "随主应用一同启动"
+  "Start with main application": "随主应用一同启动",
+  "Use independent database": "使用独立数据库",
+  "Database options": "数据库选项",
+  "Configure the independent database connection options.": "配置独立的数据库连接选项。",
+  "Dialect": "类别",
+  "Host": "主机",
+  "Port": "端口",
+  "Username": "用户名",
+  "Password": "密码",
+  "Database name": "数据库名称",
+  "Table prefix": "表前缀",
+  "Naming style": "命名风格",
+  "Camel case": "驼峰式",
+  "Snake case": "下划线式",
+  "Authentication options": "认证选项",
+  "JWT secret": "JWT 密钥",
+  "Automatically generate a JWT secret": "自动生成 JWT 密钥",
+  "An independent JWT secret ensures data and session isolation from other applications.": "独立的 JWT 密钥，保证与其他应用的数据与会话隔离。"
 }
