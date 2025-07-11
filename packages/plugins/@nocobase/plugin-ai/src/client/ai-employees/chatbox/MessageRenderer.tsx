@@ -19,7 +19,7 @@ import { cx, css } from '@emotion/css';
 import { Task } from '../types';
 import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
-import { ToolRenderer } from './generative-ui/ToolRenderer';
+import { ToolCard } from './generative-ui/ToolCard';
 import { userDataSyncSourcesSchema } from 'packages/plugins/@nocobase/plugin-user-data-sync/src/client/schemas/user-data-sync-sources';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
@@ -60,7 +60,7 @@ const AITextMessageRenderer: React.FC<{
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
         {msg.tool_calls?.length ? (
-          <ToolRenderer tools={msg.tool_calls} messageId={msg.messageId} autoCallTools={msg.metadata?.autoCallTools} />
+          <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCallTools={msg.metadata?.autoCallTools} />
         ) : null}
       </div>
     );
