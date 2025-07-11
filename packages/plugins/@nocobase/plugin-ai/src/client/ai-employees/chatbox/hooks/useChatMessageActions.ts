@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useChatMessagesStore } from '../stores/chat-messages';
 import { useCallback, useEffect, useRef } from 'react';
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
@@ -8,12 +17,17 @@ import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxStore } from '../stores/chat-box';
 
 export const useChatMessageActions = () => {
   const t = useT();
   const api = useAPIClient();
   const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
+
+  const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
+  const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+
   const messages = useChatMessagesStore.use.messages();
   const setMessages = useChatMessagesStore.use.setMessages();
   const addMessage = useChatMessagesStore.use.addMessage();
@@ -21,6 +35,8 @@ export const useChatMessageActions = () => {
   const updateLastMessage = useChatMessagesStore.use.updateLastMessage();
   const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
   const setAbortController = useChatMessagesStore.use.setAbortController();
+  const setAttachments = useChatMessagesStore.use.setAttachments();
+  const setContextItems = useChatMessagesStore.use.setContextItems();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const ctxRef = useRef(ctx);
@@ -40,23 +56,32 @@ export const useChatMessageActions = () => {
           cursor,
           paginate: false,
         })
-        .then((res) => res?.data),
+        .then((res) => {
+          console.log(res);
+          return res?.data;
+        }),
     {
       manual: true,
       onSuccess: (data, params) => {
+        console.log('useChatMessageActions messagesService onSuccess', data, params);
         const cursor = params[1];
         if (!data?.data) {
           return;
         }
         const newMessages = [...data.data].reverse();
+        console.log('useChatMessageActions messagesService onSuccess', newMessages, data.meta);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           const result = cursor ? [...newMessages, ...prev] : newMessages;
           if (last?.role === 'error') {
             result.push(last);
           }
+          console.log('useChatMessageActions messagesService setMessages', result);
           return result;
         });
+      },
+      onError: (err) => {
+        console.error('❌ onError:', err);
       },
     },
   );
@@ -155,6 +180,7 @@ export const useChatMessageActions = () => {
     messages: sendMsgs,
     attachments,
     workContext,
+    editingMessageId,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
@@ -210,7 +236,7 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:sendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
+        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs, systemMessage, editingMessageId },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,
@@ -354,6 +380,26 @@ export const useChatMessageActions = () => {
     messagesService.run(sessionId);
   }, []);
 
+  const startEditingMessage = useCallback((msg: any) => {
+    const index = messages.findIndex((m) => m.key === msg.messageId);
+    setIsEditingMessage(true);
+    setEditingMessageId(msg.messageId);
+    setMessages(messages.slice(0, index));
+    if (msg.attachments) {
+      setAttachments(msg.attachments);
+    }
+    if (msg.workContext) {
+      setContextItems(msg.workContext);
+    }
+  }, []);
+
+  const finishEditingMessage = useCallback(() => {
+    setIsEditingMessage(false);
+    setEditingMessageId(undefined);
+    setAttachments([]);
+    setContextItems([]);
+  }, []);
+
   useEffect(() => {
     ctxRef.current = ctx;
   }, [ctx]);
@@ -366,5 +412,7 @@ export const useChatMessageActions = () => {
     callTool,
     updateMessage,
     lastMessageRef,
+    startEditingMessage,
+    finishEditingMessage,
   };
 };

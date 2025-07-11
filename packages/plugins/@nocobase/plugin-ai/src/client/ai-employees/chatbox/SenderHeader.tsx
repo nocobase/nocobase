@@ -21,6 +21,7 @@ import { ContextItemsHeader } from './ContextItemsHeader';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { EditMessageHeader } from './EditMessageHeader';
 
 export const SenderHeader: React.FC = () => {
   const {
@@ -31,6 +32,7 @@ export const SenderHeader: React.FC = () => {
   const t = useT();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
 
   const responseLoading = useChatMessagesStore.use.responseLoading();
 
@@ -71,6 +73,11 @@ export const SenderHeader: React.FC = () => {
       }}
     >
       <div>
+        {isEditingMessage ? (
+          <div style={{ marginBottom: 8 }}>
+            <EditMessageHeader />
+          </div>
+        ) : null}
         {!currentEmployee ? (
           <Button variant="dashed" color="default" size="small">
             <span

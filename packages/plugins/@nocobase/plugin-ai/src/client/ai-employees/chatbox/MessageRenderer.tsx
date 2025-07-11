@@ -182,6 +182,8 @@ export const UserMessage: React.FC<{
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const senderRef = useChatBoxStore.use.senderRef();
 
+  const { startEditingMessage } = useChatMessageActions();
+
   const copy = () => {
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
@@ -213,6 +215,7 @@ export const UserMessage: React.FC<{
             icon={
               <EditOutlined
                 onClick={() => {
+                  startEditingMessage(msg);
                   setSenderValue(msg.content);
                   senderRef.current?.focus();
                 }}

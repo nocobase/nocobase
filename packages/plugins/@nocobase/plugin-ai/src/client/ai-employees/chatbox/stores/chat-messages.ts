@@ -48,10 +48,15 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   responseLoading: false,
   abortController: null,
 
-  setMessages: (messages) =>
-    set((state) => ({
-      messages: typeof messages === 'function' ? messages(state.messages) : messages,
-    })),
+  setMessages: (messages) => {
+    console.log('setMessages', messages);
+    set((state) => {
+      console.log('setMessages state', state.messages);
+      return {
+        messages: typeof messages === 'function' ? messages(state.messages) : messages,
+      };
+    });
+  },
 
   addMessage: (message) =>
     set((state) => ({

@@ -67,6 +67,7 @@ export type SendOptions = {
   }[];
   attachments?: Attachment[];
   workContext: ContextItem[];
+  editingMessageId?: string;
 };
 
 export type ResendOptions = {

@@ -29,6 +29,8 @@ export const Sender: React.FC = () => {
   const senderPlaceholder = useChatBoxStore.use.senderPlaceholder();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setSenderRef = useChatBoxStore.use.setSenderRef();
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
+  const editingMessageId = useChatBoxStore.use.editingMessageId();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
@@ -37,7 +39,7 @@ export const Sender: React.FC = () => {
   const contextItems = useChatMessagesStore.use.contextItems();
   const systemMessage = useChatMessagesStore.use.systemMessage();
 
-  const { cancelRequest } = useChatMessageActions();
+  const { cancelRequest, finishEditingMessage } = useChatMessageActions();
 
   const { send } = useChatBoxActions();
 
@@ -67,7 +69,7 @@ export const Sender: React.FC = () => {
       onChange={(value) => {
         setValue(value);
       }}
-      onSubmit={(content) =>
+      onSubmit={(content) => {
         send({
           sessionId: currentConversation,
           aiEmployee: currentEmployee,
@@ -80,8 +82,13 @@ export const Sender: React.FC = () => {
           ],
           attachments,
           workContext: contextItems,
-        })
-      }
+          editingMessageId: isEditingMessage ? editingMessageId : undefined,
+        });
+
+        if (isEditingMessage) {
+          finishEditingMessage();
+        }
+      }}
       onCancel={cancelRequest}
       header={<SenderHeader />}
       loading={responseLoading}

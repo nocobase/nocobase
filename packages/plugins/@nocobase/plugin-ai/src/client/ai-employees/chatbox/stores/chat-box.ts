@@ -29,6 +29,9 @@ interface ChatBoxState {
     localVariables?: Record<string, any>;
   };
 
+  isEditingMessage: boolean;
+  editingMessageId?: string;
+
   chatBoxRef: React.MutableRefObject<HTMLDivElement> | null;
   senderRef: React.MutableRefObject<GetRef<typeof Sender>> | null;
 }
@@ -45,6 +48,9 @@ interface ChatBoxActions {
   setRoles: (roles: RolesType | ((prev: RolesType) => RolesType)) => void;
   addRole: (name: string, role: any) => void;
 
+  setIsEditingMessage: (isEditing: boolean) => void;
+  setEditingMessageId: (id?: string) => void;
+
   setChatBoxRef: (ref: React.MutableRefObject<HTMLDivElement> | null) => void;
   setSenderRef: (ref: React.MutableRefObject<GetRef<typeof Sender>> | null) => void;
 }
@@ -53,11 +59,16 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   open: false,
   expanded: false,
   showConversations: false,
+
   currentEmployee: null,
   senderValue: '',
   senderPlaceholder: '',
   taskVariables: {},
   roles: {},
+
+  isEditingMessage: false,
+  editingMessageId: null,
+
   chatBoxRef: {
     current: null,
   },
@@ -82,6 +93,9 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
       roles: typeof roles === 'function' ? (roles as (prev: RolesType) => RolesType)(state.roles) : roles,
     })),
   addRole: (name, role) => set((state) => ({ roles: { ...state.roles, [name]: role } })),
+
+  setIsEditingMessage: (isEditing) => set({ isEditingMessage: isEditing }),
+  setEditingMessageId: (id) => set({ editingMessageId: id }),
 
   setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
   setSenderRef: (ref) => set({ senderRef: ref }),
