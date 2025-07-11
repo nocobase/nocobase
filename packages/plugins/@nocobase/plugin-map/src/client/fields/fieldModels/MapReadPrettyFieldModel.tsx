@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ReadPrettyFieldModel } from '@nocobase/client';
+import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
 import { reactive, escapeT } from '@nocobase/flow-engine';
 import { MapComponent } from '../../components/MapComponent';
 
@@ -46,15 +46,20 @@ MapReadPrettyFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: escapeT('Display style'),
-      uiSchema: {
-        displayStyle: {
-          'x-component': 'Radio.Group',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: escapeT('Text'), value: 'text' },
-            { label: escapeT('Map'), value: 'map' },
-          ],
-        },
+      uiSchema: (ctx) => {
+        if (ctx.model.parent instanceof TableColumnModel) {
+          return null;
+        }
+        return {
+          displayStyle: {
+            'x-component': 'Radio.Group',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: escapeT('Text'), value: 'text' },
+              { label: escapeT('Map'), value: 'map' },
+            ],
+          },
+        };
       },
       defaultParams: {
         displayStyle: 'text',

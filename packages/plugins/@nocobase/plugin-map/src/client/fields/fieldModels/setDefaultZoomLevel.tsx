@@ -12,15 +12,21 @@ import { NAMESPACE } from '../../locale';
 export const setDefaultZoomLevel = defineAction({
   name: 'setDefaultZoomLevel',
   title: escapeT('Set default zoom level', { ns: NAMESPACE }),
-  uiSchema: {
-    zoom: {
-      title: escapeT('Zoom', { ns: NAMESPACE }),
-      'x-component': 'NumberPicker',
-      'x-decorator': 'FormItem',
-      'x-component-props': {
-        precision: 0,
+  uiSchema: (ctx) => {
+    const { displayStyle } = ctx.model.props;
+    if (displayStyle === 'text') {
+      return null;
+    }
+    return {
+      zoom: {
+        title: escapeT('Zoom', { ns: NAMESPACE }),
+        'x-component': 'NumberPicker',
+        'x-decorator': 'FormItem',
+        'x-component-props': {
+          precision: 0,
+        },
       },
-    },
+    };
   },
   defaultParams: {
     zoom: 13,
