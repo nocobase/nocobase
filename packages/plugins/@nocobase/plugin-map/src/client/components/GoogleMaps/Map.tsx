@@ -18,7 +18,6 @@ import { defaultImage } from '../../constants';
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
-import { useMapHeight } from '../hook';
 import { Search } from './Search';
 import { getCurrentPosition, getIcon } from './utils';
 
@@ -86,7 +85,16 @@ export interface GoogleMapForwardedRefProps {
 
 export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, GoogleMapsComponentProps>(
   (props, ref) => {
-    const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
+    const {
+      value,
+      onChange,
+      block = false,
+      readonly,
+      disabled = block,
+      zoom = 13,
+      overlayCommonOptions,
+      height,
+    } = props;
     const { accessKey } = useMapConfiguration(props.mapType) || {};
     const { t } = useMapTranslation();
     const { getField } = useCollection_deprecated();
@@ -98,8 +106,6 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const [errMessage, setErrMessage] = useState('');
     const api = useAPIClient();
     const { modal } = App.useApp();
-    const height = useMapHeight();
-
     useEffect(() => {
       if (map.current) {
         map.current.setZoom(zoom);
