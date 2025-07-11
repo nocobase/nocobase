@@ -337,6 +337,10 @@ export class Collection {
     return this.dataSource.collectionManager;
   }
 
+  get sort() {
+    return this.options.sort || 0;
+  }
+
   get filterTargetKey() {
     return this.options.filterTargetKey;
   }
