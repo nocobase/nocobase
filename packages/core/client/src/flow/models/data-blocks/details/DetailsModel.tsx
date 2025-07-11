@@ -61,14 +61,14 @@ export class DetailsModel extends DataBlockModel<{
       resource.loading = true;
       await resource.refresh();
       const data = this.resource.getData();
-      this.setSharedContext({
+      this.defineContextProperties({
         currentRecord: Array.isArray(data) ? data[0] : data,
       });
     };
     return (
       <>
         <DndProvider>
-          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
+          <div style={{ padding: this.ctx.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
                 const currentRecord = this.ctx.currentRecord;
@@ -144,7 +144,7 @@ DetailsModel.registerFlow({
           await ctx.model.applySubModelsAutoFlows('grid');
           await ctx.model.resource.refresh();
           const data = ctx.model.resource.getData();
-          ctx.model.setSharedContext({
+          ctx.model.defineContextProperties({
             currentRecord: Array.isArray(data) ? data[0] : data,
           });
         } else {

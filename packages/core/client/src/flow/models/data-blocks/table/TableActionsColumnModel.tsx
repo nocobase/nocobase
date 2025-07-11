@@ -28,7 +28,7 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
-        fork.setSharedContext({ index, currentRecord: record });
+        fork.defineContextProperties({ index, currentRecord: record });
         return (
           <FlowModelRenderer
             showFlowSettings={{ showBorder: false }}

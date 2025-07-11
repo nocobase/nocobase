@@ -36,7 +36,7 @@ export class DetailItemModel extends FieldModel<{
     const fieldModel = this.subModels.field as any;
     const values = castArray(resource.getData()).filter(Boolean);
     const value = values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.setSharedContext({
+    fieldModel.defineContextProperties({
       value,
     });
     return (

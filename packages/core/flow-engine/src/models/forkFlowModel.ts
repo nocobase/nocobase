@@ -162,23 +162,19 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     });
   }
 
-  get context() {
+  get ctx() {
     if (!this['_flowContext']) {
       this['_flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
     }
     return this['_flowContext'] as unknown as FlowModelContext;
   }
 
-  public setSharedContext(ctx: Record<string, any>) {
+  public defineContextProperties(ctx: Record<string, any>) {
     for (const key in ctx) {
       this.ctx.defineProperty(key, {
         value: ctx[key],
       });
     }
-  }
-
-  get ctx() {
-    return this.context;
   }
 
   /**

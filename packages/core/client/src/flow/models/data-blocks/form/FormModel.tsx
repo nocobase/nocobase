@@ -102,7 +102,7 @@ FormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('grid');
         await ctx.model.resource.refresh();
-        ctx.model.setSharedContext({
+        ctx.model.defineContextProperties({
           currentRecord: ctx.model.resource.getData(),
         });
       },
@@ -146,7 +146,7 @@ CreateFormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('grid');
         // 新增表单不需要刷新数据
-        ctx.model.setSharedContext({
+        ctx.model.defineContextProperties({
           currentRecord: {}, // 空记录
         });
       },
@@ -209,7 +209,7 @@ export class EditFormModel extends FormModel {
         const newData = this.resource.getData();
         const newRecord = Array.isArray(newData) ? newData[0] : newData;
 
-        this.setSharedContext({
+        this.defineContextProperties({
           currentRecord: newRecord,
         });
 
@@ -342,7 +342,7 @@ EditFormModel.registerFlow({
         const record = Array.isArray(data) ? data[0] : data;
 
         // 3. 设置共享上下文
-        ctx.model.setSharedContext({
+        ctx.model.defineContextProperties({
           currentRecord: record,
         });
 

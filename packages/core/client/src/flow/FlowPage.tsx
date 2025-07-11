@@ -48,7 +48,7 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    model.setSharedContext({
+    model.defineContextProperties({
       layoutContentElement: layoutContentRef.current,
       currentRoute,
     });

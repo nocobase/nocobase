@@ -468,14 +468,14 @@ describe('ForkFlowModel', () => {
     test('should set shared context', () => {
       const contextData = { key1: 'value1', key2: 'value2' };
 
-      fork.setSharedContext(contextData);
+      fork.defineContextProperties(contextData);
 
       expect((fork as any)._sharedContext).toEqual(contextData);
     });
 
     test('should merge shared context', () => {
-      fork.setSharedContext({ initial: 'value' });
-      fork.setSharedContext({ additional: 'data', initial: 'updated' });
+      fork.defineContextProperties({ initial: 'value' });
+      fork.defineContextProperties({ additional: 'data', initial: 'updated' });
 
       expect((fork as any)._sharedContext).toEqual({
         initial: 'updated',
@@ -488,7 +488,7 @@ describe('ForkFlowModel', () => {
       const sharedContext = { shared: 'data' };
 
       (mockMaster as any).flowEngine.getContext = vi.fn(() => globalContext);
-      fork.setSharedContext(sharedContext);
+      fork.defineContextProperties(sharedContext);
 
       const ctx = fork.ctx;
 

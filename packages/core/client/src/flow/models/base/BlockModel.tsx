@@ -132,7 +132,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   collection: Collection;
 
   onInit(options) {
-    this.setSharedContext({
+    this.defineContextProperties({
       currentBlockModel: this,
     });
   }

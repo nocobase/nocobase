@@ -104,7 +104,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
 
           if (!fieldModel) {
             fieldModel = field.createFork({}, key);
-            fieldModel.setSharedContext({
+            fieldModel.defineContextProperties({
               index,
               value: v?.[fieldNames.label],
               currentRecord: v,

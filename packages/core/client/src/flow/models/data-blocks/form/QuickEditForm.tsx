@@ -94,7 +94,7 @@ export class QuickEditForm extends FlowModel<{
   }
 
   onInit(options) {
-    this.setSharedContext({
+    this.defineContextProperties({
       currentBlockModel: this,
     });
   }
@@ -134,7 +134,7 @@ export class QuickEditForm extends FlowModel<{
 
           this.resource.save(formValues, { refresh: false }).catch((error) => {
             console.error('Failed to save form data:', error);
-            this.context.message.error(this.translate('Failed to save form data'));
+            this.ctx.message.error(this.translate('Failed to save form data'));
             this.ctx.__onSubmitSuccess?.(originalValues);
           });
           this.ctx.__onSubmitSuccess?.(formValues);

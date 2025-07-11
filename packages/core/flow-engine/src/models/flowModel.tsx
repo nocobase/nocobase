@@ -121,7 +121,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  get context() {
+  get ctx() {
     if (!this._flowContext) {
       this._flowContext = new FlowModelContext(this);
     }
@@ -743,7 +743,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
     if (this._options.delegateToParent !== false) {
-      this.context.addDelegate(this.parent.context);
+      this.ctx.addDelegate(this.parent.ctx);
     }
   }
 
@@ -837,7 +837,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        sub.setSharedContext(shared);
+        sub.defineContextProperties(shared);
         await sub.applyAutoFlows(runtimeArgs, false);
       }),
     );
@@ -956,15 +956,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  get ctx() {
-    return this.context;
-  }
-
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);
   }
 
-  public setSharedContext(ctx: Record<string, any>) {
+  public defineContextProperties(ctx: Record<string, any>) {
     for (const key in ctx) {
       this.ctx.defineProperty(key, {
         value: ctx[key],

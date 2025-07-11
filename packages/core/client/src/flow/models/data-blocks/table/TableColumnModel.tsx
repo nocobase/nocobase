@@ -90,7 +90,7 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.setSharedContext({ index, value, currentRecord: record });
+          fork.defineContextProperties({ index, value, currentRecord: record });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
       </>
