@@ -166,5 +166,5 @@ DetailsModel.define({
       },
     },
   },
-  sort: 300,
+  sort: 350,
 });
