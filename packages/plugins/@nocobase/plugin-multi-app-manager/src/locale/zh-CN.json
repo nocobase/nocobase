@@ -10,5 +10,9 @@
   "Auto start": "自动启动",
   "Start mode": "启动方式",
   "Start on first visit": "首次访问时启动",
-  "Start with main application": "随主应用一同启动"
+  "Start with main application": "随主应用一同启动",
+  "Authentication options": "认证选项",
+  "JWT secret": "JWT 密钥",
+  "Automatically generate a JWT secret": "自动生成 JWT 密钥",
+  "An independent JWT secret ensures data and session isolation from other applications.": "独立的 JWT 密钥，保证与其他应用的数据与会话隔离。"
 }
