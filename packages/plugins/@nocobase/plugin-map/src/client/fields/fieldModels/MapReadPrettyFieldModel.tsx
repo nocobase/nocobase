@@ -50,7 +50,6 @@ MapReadPrettyFieldModel.registerFlow({
         displayStyle: {
           'x-component': 'Radio.Group',
           'x-decorator': 'FormItem',
-          title: escapeT('Display mode'),
           enum: [
             { label: escapeT('Text'), value: 'text' },
             { label: escapeT('Map'), value: 'map' },
