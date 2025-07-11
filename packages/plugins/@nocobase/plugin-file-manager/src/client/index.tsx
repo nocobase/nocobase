@@ -19,6 +19,7 @@ import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
 import { PreviewReadPrettyFieldModel } from './fieldModels/PreviewReadPrettyFieldModel';
+import { UploadEditableFieldModel } from './fieldModels/UploadEditableFieldModel';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -67,7 +68,7 @@ export class PluginFileManagerClient extends Plugin {
       FileSizeField,
     });
 
-    this.flowEngine.registerModels({ PreviewReadPrettyFieldModel });
+    this.flowEngine.registerModels({ PreviewReadPrettyFieldModel, UploadEditableFieldModel });
   }
 
   registerStorageType(name: string, options) {
