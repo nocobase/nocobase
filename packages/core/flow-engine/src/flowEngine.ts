@@ -40,7 +40,7 @@ export class FlowEngine {
   public flowSettings: FlowSettings = new FlowSettings();
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-  private _flowContext: FlowEngineContext;
+  #flowContext: FlowEngineContext;
 
   /**
    * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
@@ -56,10 +56,10 @@ export class FlowEngine {
   }
 
   get context() {
-    if (!this._flowContext) {
-      this._flowContext = new FlowEngineContext(this);
+    if (!this.#flowContext) {
+      this.#flowContext = new FlowEngineContext(this);
     }
-    return this._flowContext;
+    return this.#flowContext;
   }
 
   /**
