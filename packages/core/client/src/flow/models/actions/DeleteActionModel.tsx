@@ -37,16 +37,16 @@ DeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        if (!ctx.currentBlockModel?.resource) {
           ctx.message.error(ctx.t('No resource selected for deletion'));
           return;
         }
-        if (!ctx.shared.currentRecord) {
+        if (!ctx.currentRecord) {
           ctx.message.error(ctx.t('No resource or record selected for deletion'));
           return;
         }
-        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
-        await resource.destroy(ctx.shared.currentRecord);
+        const resource = ctx.currentBlockModel.resource as MultiRecordResource;
+        await resource.destroy(ctx.currentRecord);
         ctx.message.success(ctx.t('Record deleted successfully'));
       },
     },

@@ -118,7 +118,7 @@ RecordActionModel.registerFlow({
   steps: {
     interaction: {
       handler(ctx, params) {
-        const { currentRecord, currentBlockModel } = ctx.shared;
+        const { currentRecord, currentBlockModel } = ctx;
         if (!currentRecord) {
           throw new Error('Current record is not set in shared context');
         }

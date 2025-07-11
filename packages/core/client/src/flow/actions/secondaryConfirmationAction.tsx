@@ -42,8 +42,8 @@ export const secondaryConfirmationAction = {
   },
   async handler(ctx, params) {
     if (params.enable) {
-      const confirmed = await ctx.globals.modal.confirm({
-        title: ctx.globals.flowEngine.translate(params.title),
+      const confirmed = await ctx.modal.confirm({
+        title: ctx.t(params.title),
         content: params.content,
       });
 

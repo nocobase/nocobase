@@ -41,7 +41,7 @@ function LabelByField(props) {
   const field = currentModel.subModels.field as FlowModel;
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
-  fieldModel.setSharedContext({
+  fieldModel.defineContextProperties({
     value: option?.[fieldNames.label],
     currentRecord: option,
   });
@@ -98,7 +98,7 @@ const AssociationSelect = connect(
     const field = currentModel.subModels.field as FlowModel;
     const key = value?.[fieldNames.value];
     const fieldModel = field.createFork({}, key);
-    fieldModel.setSharedContext({
+    fieldModel.defineContextProperties({
       value: value?.[fieldNames.label],
       currentRecord: value,
     });
@@ -109,7 +109,7 @@ const AssociationSelect = connect(
         {arrayValue.map((v, index) => {
           const key = `${index}`;
           const fieldModel = field.createFork({}, key);
-          fieldModel.setSharedContext({
+          fieldModel.defineContextProperties({
             index,
             value: v?.[fieldNames.label],
             currentRecord: v,
@@ -333,7 +333,7 @@ SelectEditableAssociationFieldModel.registerFlow({
         const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
-        resource.setAPIClient(ctx.globals.api);
+        resource.setAPIClient(ctx.api);
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {

@@ -34,7 +34,7 @@ FormItemModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        const field = ctx.globals.dsm.getCollectionField(params.fieldPath);
+        const field = ctx.dsm.getCollectionField(params.fieldPath);
         ctx.model.field = field;
       },
     },

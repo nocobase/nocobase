@@ -23,8 +23,11 @@ import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { EditableFieldModel } from '../../fields/EditableField';
 
-export class QuickEditForm extends FlowModel {
+export class QuickEditForm extends FlowModel<{
+  subModels: { fields: EditableFieldModel[] };
+}> {
   form: Form;
   fieldPath: string;
 
@@ -91,13 +94,13 @@ export class QuickEditForm extends FlowModel {
   }
 
   onInit(options) {
-    this.setSharedContext({
+    this.defineContextProperties({
       currentBlockModel: this,
     });
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+    const field = this.ctx.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     );
     if (!field) {
@@ -131,11 +134,11 @@ export class QuickEditForm extends FlowModel {
 
           this.resource.save(formValues, { refresh: false }).catch((error) => {
             console.error('Failed to save form data:', error);
-            this.context.message.error(this.translate('Failed to save form data'));
-            this.ctx.shared.__onSubmitSuccess?.(originalValues);
+            this.ctx.message.error(this.translate('Failed to save form data'));
+            this.ctx.__onSubmitSuccess?.(originalValues);
           });
-          this.ctx.shared.__onSubmitSuccess?.(formValues);
-          this.ctx.shared.currentView.close();
+          this.ctx.__onSubmitSuccess?.(formValues);
+          this.ctx.currentView.close();
         }}
       >
         <FormProvider form={this.form}>
@@ -154,7 +157,7 @@ export class QuickEditForm extends FlowModel {
           <FormButtonGroup align="right">
             <Button
               onClick={() => {
-                this.ctx.shared.currentView.close();
+                this.ctx.currentView.close();
               }}
             >
               {this.translate('Cancel')}
@@ -181,17 +184,17 @@ QuickEditForm.registerFlow({
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
         ctx.model.fieldPath = fieldPath;
-        ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
+        ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
         ctx.model.form = createForm();
         const resource = new SingleRecordResource();
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
-        resource.setAPIClient(ctx.globals.api);
+        resource.setAPIClient(ctx.api);
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
-          const fieldModel = ctx.model.addSubModel('fields', {
+          const fieldModel = ctx.model.addSubModel<EditableFieldModel>('fields', {
             use,
             stepParams: {
               fieldSettings: {

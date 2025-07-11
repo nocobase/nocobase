@@ -66,7 +66,7 @@ LinkActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.globals.modal.confirm({
+        ctx.modal.confirm({
           title: `${ctx.runtimeArgs.record?.id}`,
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
@@ -84,7 +84,7 @@ DeleteActionModel.registerFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.globals.modal.confirm({
+        ctx.modal.confirm({
           title: `Selected Rows`,
           content: <pre>{JSON.stringify(ctx.runtimeArgs.currentResource?.getSelectedRows(), null, 2)}</pre>,
           // onOk: async () => {},

@@ -116,7 +116,7 @@ TableModel.registerFlow({
         if (ctx.model.collection) {
           return;
         }
-        ctx.model.collection = ctx.globals.dsm.getCollection(params.dataSourceKey, params.collectionName);
+        ctx.model.collection = ctx.dsm.getCollection(params.dataSourceKey, params.collectionName);
         const resource = new MultiRecordResource();
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.collectionName);

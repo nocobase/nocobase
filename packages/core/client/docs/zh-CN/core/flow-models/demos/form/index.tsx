@@ -10,7 +10,9 @@ import { SubmitActionModel } from './submit-action-model';
 
 class PluginDemo extends Plugin {
   async load() {
-    this.flowEngine.setContext({ dsm });
+    this.flowEngine.context.defineProperty('dsm', {
+      value: dsm,
+    });
     this.flowEngine.registerModels({
       FormModel,
       FormItemModel,

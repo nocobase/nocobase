@@ -111,7 +111,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
     opacity: 0;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
-    border-radius: ${ctx.globals.themeToken.borderRadiusLG}px;
+    border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
 
     &.nb-in-template {

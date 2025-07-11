@@ -132,7 +132,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   collection: Collection;
 
   onInit(options) {
-    this.setSharedContext({
+    this.defineContextProperties({
       currentBlockModel: this,
     });
   }
@@ -160,7 +160,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+    const field = this.ctx.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     );
     if (!field) {
@@ -206,12 +206,12 @@ DataBlockModel.registerFlow({
         }
         if (Object.keys(params).includes('sourceId')) {
           ctx.model.resource.setSourceId(
-            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
         if (Object.keys(params).includes('filterByTk')) {
           ctx.model.resource.setFilterByTk(
-            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
         ctx.logger.info('params', params);

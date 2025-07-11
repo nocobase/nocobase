@@ -25,7 +25,7 @@ FieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
-        if (!ctx.shared.currentBlockModel) {
+        if (!ctx.currentBlockModel) {
           throw new Error('Current block model is not set in shared context');
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
@@ -35,7 +35,7 @@ FieldModel.registerFlow({
         if (!ctx.model.parent) {
           throw new Error('FieldModel must have a parent model');
         }
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(
+        const collectionField = ctx.dataSourceManager.getCollectionField(
           `${dataSourceKey}.${collectionName}.${fieldPath}`,
         ) as CollectionField;
         if (!collectionField) {
@@ -43,7 +43,7 @@ FieldModel.registerFlow({
         }
         ctx.model.collectionField = collectionField;
         ctx.model.fieldPath = fieldPath;
-        ctx.shared.currentBlockModel.addAppends(fieldPath);
+        ctx.currentBlockModel.addAppends(fieldPath);
       },
     },
   },

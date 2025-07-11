@@ -612,7 +612,7 @@ export class CollectionField {
   }
 
   getInterfaceOptions() {
-    const app = this.flowEngine.getContext('app');
+    const app = this.flowEngine.context.app;
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 

@@ -78,10 +78,4 @@ describe('FlowEngine', () => {
     engine.registerModels({ BaseModel: NewBaseModel });
     expect(engine.getModelClass('BaseModel')).toBe(NewBaseModel);
   });
-
-  it('setContext/getContext should merge and return context', () => {
-    engine.setContext({ a: 1 });
-    engine.setContext({ b: 2 });
-    expect(engine.getContext()).toMatchObject({ a: 1, b: 2 });
-  });
 });

@@ -102,7 +102,7 @@ FormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('grid');
         await ctx.model.resource.refresh();
-        ctx.model.setSharedContext({
+        ctx.model.defineContextProperties({
           currentRecord: ctx.model.resource.getData(),
         });
       },
@@ -146,7 +146,7 @@ CreateFormModel.registerFlow({
         }
         await ctx.model.applySubModelsAutoFlows('grid');
         // 新增表单不需要刷新数据
-        ctx.model.setSharedContext({
+        ctx.model.defineContextProperties({
           currentRecord: {}, // 空记录
         });
       },
@@ -291,7 +291,7 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.model.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.model.setSharedContext({
+          ctx.model.defineContextProperties({
             currentRecord,
           });
           ctx.model.form.setValues(currentRecord);

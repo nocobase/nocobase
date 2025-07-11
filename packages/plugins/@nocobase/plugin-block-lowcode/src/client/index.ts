@@ -23,12 +23,11 @@ export class PluginBlockLowcodeClient extends Plugin {
     this.flowEngine.registerModels({ LowcodeBlockModel });
 
     // Set up requirejs context for lowcode components
-    this.flowEngine.setContext({
-      requireAsync: async (mod: string): Promise<any> => {
-        return new Promise((resolve, reject) => {
-          this.app.requirejs.requirejs([mod], (arg: any) => resolve(arg), reject);
-        });
-      },
+
+    this.flowEngine.context.defineMethod('requireAsync', async (mod) => {
+      return new Promise((resolve, reject) => {
+        this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
+      });
     });
   }
 }

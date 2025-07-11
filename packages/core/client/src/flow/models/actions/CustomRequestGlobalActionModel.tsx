@@ -221,7 +221,7 @@ CustomRequestGlobalActionModel.registerFlow({
         },
       },
       async handler(ctx, params) {
-        ctx.globals.modal({
+        ctx.modal({
           title: tval('TODO: Custom request action handler'),
         });
       },

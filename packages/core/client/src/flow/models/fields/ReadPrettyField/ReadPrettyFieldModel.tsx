@@ -16,7 +16,7 @@ export class ReadPrettyFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = '*' as any;
 
   getValue() {
-    return this.ctx.shared.value;
+    return this.ctx.value;
   }
   @reactive
   public render() {

@@ -53,8 +53,8 @@ export const CurrentUserProvider = (props) => {
         skipAuth: true,
       })
       .then((res) => {
-        app.flowEngine.setContext({
-          user: res?.data?.data,
+        app.flowEngine.context.defineProperty('user', {
+          value: res?.data?.data,
         });
         return res?.data;
       }),

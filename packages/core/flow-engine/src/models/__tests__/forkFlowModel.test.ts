@@ -468,14 +468,14 @@ describe('ForkFlowModel', () => {
     test('should set shared context', () => {
       const contextData = { key1: 'value1', key2: 'value2' };
 
-      fork.setSharedContext(contextData);
+      fork.defineContextProperties(contextData);
 
       expect((fork as any)._sharedContext).toEqual(contextData);
     });
 
     test('should merge shared context', () => {
-      fork.setSharedContext({ initial: 'value' });
-      fork.setSharedContext({ additional: 'data', initial: 'updated' });
+      fork.defineContextProperties({ initial: 'value' });
+      fork.defineContextProperties({ additional: 'data', initial: 'updated' });
 
       expect((fork as any)._sharedContext).toEqual({
         initial: 'updated',
@@ -483,36 +483,17 @@ describe('ForkFlowModel', () => {
       });
     });
 
-    test('should get shared context in async mode', () => {
-      // Mock async property on the fork
-      Object.defineProperty(fork, 'async', {
-        get: () => true,
-        configurable: true,
-      });
-      fork.setSharedContext({ async: 'context' });
-
-      const context = fork.getSharedContext();
-
-      expect(context).toEqual({ async: 'context' });
-    });
-
     test('should get ctx with globals and shared', () => {
       const globalContext = { app: {}, api: {} };
       const sharedContext = { shared: 'data' };
 
       (mockMaster as any).flowEngine.getContext = vi.fn(() => globalContext);
-      fork.setSharedContext(sharedContext);
+      fork.defineContextProperties(sharedContext);
 
       const ctx = fork.ctx;
 
       expect(ctx.globals).toBe(globalContext);
       expect(ctx.shared).toEqual(sharedContext);
-    });
-
-    test('should handle empty shared context', () => {
-      const context = fork.getSharedContext();
-
-      expect(context).toEqual({});
     });
   });
 

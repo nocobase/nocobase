@@ -10,21 +10,21 @@
 import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
 import type { FlowModel } from '../models';
-import type { ParamsContext } from '../types';
+import { FlowRuntimeContext } from '../flowContext';
 
 /**
  * 解析 uiSchema，支持静态值和函数形式
- * 函数可以接收 ParamsContext（在 settings 中）
- * @param {Record<string, ISchema> | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)} uiSchema UI Schema 定义
- * @param {ParamsContext<TModel>} ctx 上下文
+ * 函数可以接收 FlowRuntimeContext（在 settings 中）
+ * @param {Record<string, ISchema> | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)} uiSchema UI Schema 定义
+ * @param {FlowRuntimeContext<TModel>} ctx 上下文
  * @returns {Promise<Record<string, ISchema>>} 解析后的 UI Schema 对象
  */
 export async function resolveUiSchema<TModel extends FlowModel = FlowModel>(
   uiSchema:
     | Record<string, ISchema>
-    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
     | undefined,
-  ctx: ParamsContext<TModel>,
+  ctx: FlowRuntimeContext<TModel>,
 ): Promise<Record<string, ISchema>> {
   if (!uiSchema) {
     return {};

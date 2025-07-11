@@ -308,7 +308,7 @@ export class FlowForkModelContext extends FlowContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate(this.model.context);
+    this.addDelegate(this.model.ctx);
   }
 }
 
@@ -321,7 +321,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     protected mode: 'runtime' | 'settings' = 'runtime',
   ) {
     super();
-    this.addDelegate(this.model.context);
+    this.addDelegate(this.model.ctx);
   }
 
   protected _getOwnProperty(key: string): any {

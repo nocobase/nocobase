@@ -37,16 +37,16 @@ BulkDeleteActionModel.registerFlow({
     },
     delete: {
       async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        if (!ctx.currentBlockModel?.resource) {
           ctx.message.error(ctx.t('No resource selected for deletion'));
           return;
         }
-        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
+        const resource = ctx.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
           ctx.message.warning(ctx.t('No records selected for deletion'));
           return;
         }
-        await resource.destroy(ctx.shared.currentBlockModel.collection.getFilterByTK(resource.getSelectedRows()));
+        await resource.destroy(ctx.currentBlockModel.collection.getFilterByTK(resource.getSelectedRows()));
         ctx.message.success(ctx.t('Selected records deleted successfully'));
       },
     },

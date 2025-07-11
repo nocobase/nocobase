@@ -9,13 +9,11 @@
 
 import { FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
-import type { ParamsContext } from '../types';
 
 /**
  * 解析 defaultParams，支持静态值和函数形式
- * 函数可以接收 ParamsContext（在 settings 中）或 FlowContext（在 applyFlow 中）
  * @param {Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>)} defaultParams 默认参数
- * @param {ParamsContext<TModel>} ctx 上下文
+ * @param {FlowRuntimeContext<TModel>} ctx 上下文
  * @returns {Promise<Record<string, any>>} 解析后的参数对象
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(

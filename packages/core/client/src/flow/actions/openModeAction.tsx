@@ -66,7 +66,7 @@ export const openModeAction = {
       large: 1200,
     };
 
-    currentDrawer = ctx.globals[params.mode].open({
+    currentDrawer = ctx[params.mode].open({
       title: tval('Imperative Drawer'),
       width: sizeToWidthMap[params.size],
       content: <DrawerContent />,

@@ -15,6 +15,7 @@ import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
 import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -72,6 +73,9 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
       // 如果没有当前步骤信息，返回基础上下文
       return {
         model,
+        flowEngine: model.ctx.flowEngine,
+        api: model.ctx.api,
+        themeToken: model.ctx.themeToken,
         globals: model.flowEngine.getContext(),
         app: model.flowEngine.getContext('app'),
         step: null,
@@ -170,9 +174,10 @@ const openRequiredParamsStepFormDialog = async ({
                 }
               }
 
+              const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
               // 解析动态 uiSchema
-              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
-              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
+              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
 
               // 合并uiSchema，确保step的uiSchema优先级更高
               const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };

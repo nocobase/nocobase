@@ -330,7 +330,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     }
 
     useEffect(() => {
-      model.setSharedContext(sharedContext);
+      model.defineContextProperties(sharedContext);
     }, [model, sharedContext]);
 
     // 根据 skipApplyAutoFlows 选择不同的内部组件

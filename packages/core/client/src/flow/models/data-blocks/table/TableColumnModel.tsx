@@ -90,7 +90,7 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.setSharedContext({ index, value, currentRecord: record });
+          fork.defineContextProperties({ index, value, currentRecord: record });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
       </>
@@ -136,7 +136,7 @@ TableColumnModel.registerFlow({
             const originTitle = model.collectionField?.uiSchema?.title;
             field.decoratorProps = {
               ...field.decoratorProps,
-              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              extra: model.ctx.t('Original field title: ') + (model.ctx.t(originTitle) ?? ''),
             };
           },
         },

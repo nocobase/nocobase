@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CreateModelOptions, FlowContext, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { CreateModelOptions, FlowRuntimeContext, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 import { observable } from '@formily/reactive';
 import { observer } from '@formily/react';
@@ -16,7 +16,7 @@ import { ViewComponent } from './ViewComponent';
 // 视图栈
 const viewStack: {
   type: 'drawer' | 'modal' | 'subPage';
-  ctx: FlowContext;
+  ctx: FlowRuntimeContext<FlowModel>;
   model: FlowModel;
   options?: any;
 }[] = observable.shallow([]);
@@ -53,7 +53,7 @@ export const ViewContainer: React.FC = observer(
  */
 export const openView = (params: {
   type: 'drawer' | 'modal' | 'subPage';
-  ctx: FlowContext;
+  ctx: FlowRuntimeContext<FlowModel>;
   model: FlowModel | CreateModelOptions;
   options?: any;
 }) => {

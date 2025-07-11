@@ -87,7 +87,7 @@ export const openLinkAction = {
     },
   },
   handler(ctx, params) {
-    ctx.globals.modal.confirm({
+    ctx.modal.confirm({
       title: `TODO`,
       content: JSON.stringify(params, null, 2),
     });

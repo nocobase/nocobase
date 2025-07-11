@@ -59,7 +59,7 @@ export class FormFieldGridModel extends GridModel<{
           model={this}
           onSubModelAdded={async (field: EditableFieldModel) => {
             const fieldPath = field.getStepParams('fieldSettings', 'init').fieldPath;
-            this.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
+            this.ctx.currentBlockModel.addAppends(fieldPath, true);
           }}
         />
         {/* <FlowSettingsButton
