@@ -57,32 +57,22 @@ export const useChatMessageActions = () => {
           paginate: false,
         })
         .then((res) => {
-          console.log(res);
-          return res?.data;
+          const data = res?.data;
+          if (!data?.data) {
+            return;
+          }
+          const newMessages = [...data.data].reverse();
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            const result = cursor ? [...newMessages, ...prev] : newMessages;
+            if (last?.role === 'error') {
+              result.push(last);
+            }
+            return result;
+          });
         }),
     {
       manual: true,
-      onSuccess: (data, params) => {
-        console.log('useChatMessageActions messagesService onSuccess', data, params);
-        const cursor = params[1];
-        if (!data?.data) {
-          return;
-        }
-        const newMessages = [...data.data].reverse();
-        console.log('useChatMessageActions messagesService onSuccess', newMessages, data.meta);
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          const result = cursor ? [...newMessages, ...prev] : newMessages;
-          if (last?.role === 'error') {
-            result.push(last);
-          }
-          console.log('useChatMessageActions messagesService setMessages', result);
-          return result;
-        });
-      },
-      onError: (err) => {
-        console.error('❌ onError:', err);
-      },
     },
   );
   const messagesServiceRef = useRef<any>();
