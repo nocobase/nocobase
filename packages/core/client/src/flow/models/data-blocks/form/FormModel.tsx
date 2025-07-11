@@ -193,10 +193,14 @@ export class EditFormModel extends FormModel {
     return this.resource instanceof MultiRecordResource;
   }
 
+  getCurrentRecord() {
+    const data = this.resource.getData();
+    return Array.isArray(data) ? data[0] : data;
+  }
+
   renderComponent() {
     // 获取当前记录数据
-    const data = this.resource.getData();
-    const currentRecord = Array.isArray(data) ? data[0] : data;
+    const currentRecord = this.getCurrentRecord();
 
     // 分页切换处理函数（仅用于 MultiRecordResource）
     const onPageChange = async (page: number) => {
@@ -205,26 +209,6 @@ export class EditFormModel extends FormModel {
         multiResource.setPage(page);
         multiResource.loading = true;
         await multiResource.refresh();
-
-        const newData = this.resource.getData();
-        const newRecord = Array.isArray(newData) ? newData[0] : newData;
-
-        this.setSharedContext({
-          currentRecord: newRecord,
-        });
-
-        // 更新表单数据
-        if (this.form && newRecord) {
-          this.form
-            .reset()
-            .then(() => {
-              if (this.form && newRecord) {
-                this.form.setInitialValues(newRecord);
-                this.form.setValues(newRecord);
-              }
-            })
-            .catch(console.error);
-        }
       }
     };
 
@@ -294,43 +278,24 @@ EditFormModel.registerFlow({
         }
         ctx.model.form = createForm();
         // 编辑表单需要监听refresh事件来加载现有数据
-        ctx.model.resource.on('refresh', () => {
-          const data = ctx.model.resource.getData();
-          const record = Array.isArray(data) ? data[0] : data;
+        ctx.model.resource.on('refresh', async () => {
+          await ctx.model.form.reset();
+          const currentRecord = ctx.model.getCurrentRecord();
           const targetKey = ctx.model.associationField?.targetKey;
-          if (!ctx.model.resource.getFilterByTk() && targetKey && record) {
-            ctx.model.resource.setFilterByTk(record[targetKey]);
+          if (targetKey) {
+            ctx.model.resource.setMeta({
+              currentFilterByTk: currentRecord?.[targetKey],
+            });
+          } else {
+            ctx.model.resource.setMeta({
+              currentFilterByTk: ctx.model.collection.getFilterByTK(currentRecord),
+            });
           }
-          // 将现有数据设置到表单中，使用 reset().then() 确保字段已创建
-          if (ctx.model.form && record) {
-            ctx.model.form
-              .reset()
-              .then(() => {
-                if (ctx.model.form && record) {
-                  ctx.model.form.setInitialValues(record);
-                  ctx.model.form.setValues(record);
-                }
-              })
-              .catch(console.error);
-          }
+          ctx.model.setSharedContext({
+            currentRecord,
+          });
+          ctx.model.form.setValues(currentRecord);
         });
-
-        // 如果资源已经有数据，立即设置到表单中
-        const existingData = ctx.model.resource.getData();
-        if (existingData) {
-          const record = Array.isArray(existingData) ? existingData[0] : existingData;
-          if (record) {
-            ctx.model.form
-              .reset()
-              .then(() => {
-                if (ctx.model.form && record) {
-                  ctx.model.form.setInitialValues(record);
-                  ctx.model.form.setValues(record);
-                }
-              })
-              .catch(console.error);
-          }
-        }
       },
     },
     refresh: {
@@ -340,29 +305,8 @@ EditFormModel.registerFlow({
         }
         // 1. 先初始化字段网格，确保所有字段都创建完成
         await ctx.model.applySubModelsAutoFlows('grid');
-
         // 2. 加载数据
         await ctx.model.resource.refresh();
-        const data = ctx.model.resource.getData();
-        const record = Array.isArray(data) ? data[0] : data;
-
-        // 3. 设置共享上下文
-        ctx.model.setSharedContext({
-          currentRecord: record,
-        });
-
-        // 4. 使用 reset().then() 确保字段已经创建完成后再设置值
-        if (ctx.model.form && record) {
-          ctx.model.form
-            .reset()
-            .then(() => {
-              if (ctx.model.form && record) {
-                ctx.model.form.setInitialValues(record);
-                ctx.model.form.setValues(record);
-              }
-            })
-            .catch(console.error);
-        }
       },
     },
   },
