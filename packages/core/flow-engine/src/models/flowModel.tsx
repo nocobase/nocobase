@@ -21,7 +21,6 @@ import type {
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
-  FlowContext,
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
@@ -446,7 +445,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext();
     const flowContext = new FlowRuntimeContext(this, flowKey);
 
     flowContext.defineProperty('logger', {
@@ -459,18 +457,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
     flowContext.defineProperty('reactView', {
       value: this.reactView,
-    });
-    flowContext.defineProperty('flowEngine', {
-      value: globalContexts.flowEngine,
-    });
-    flowContext.defineProperty('app', {
-      value: globalContexts.app,
-    });
-    flowContext.defineProperty('api', {
-      value: globalContexts.api,
-    });
-    flowContext.defineProperty('themeToken', {
-      value: globalContexts.themeToken,
     });
     flowContext.defineProperty('runtimeArgs', {
       value: runtimeArgs,

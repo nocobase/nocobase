@@ -12,16 +12,16 @@ import React, { createContext, useContext, ReactNode } from 'react';
 // StepSettingContext 接口定义
 export interface StepSettingContextType {
   // paramsContext 中的信息
-  model: any;
-  app: any;
-  flowEngine: any;
-  api: any;
-  themeToken: any;
+  model?: any;
+  app?: any;
+  flowEngine?: any;
+  api?: any;
+  themeToken?: any;
   // 额外的上下文信息
-  step: any;
-  flow: any;
-  flowKey: string;
-  stepKey: string;
+  step?: any;
+  flow?: any;
+  flowKey?: string;
+  stepKey?: string;
 }
 
 // 创建 Context

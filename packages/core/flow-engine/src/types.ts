@@ -156,7 +156,7 @@ export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 /**
  * Context object passed to handlers during flow execution.
  */
-export interface FlowContext<TModel extends FlowModel = FlowModel> {
+export interface FlowContext33<TModel extends FlowModel = FlowModel> {
   exit: () => void; // Terminate the entire flow execution
   logger: {
     info: (message: string, meta?: any) => void;

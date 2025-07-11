@@ -10,7 +10,7 @@
 import { APIClient } from '@nocobase/sdk';
 import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowContext, FlowDefinition, FlowModelOptions } from '../../types';
+import type { DefaultStructure, FlowContext33, FlowDefinition, FlowModelOptions } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
 
@@ -62,7 +62,6 @@ const createMockFlowEngine = (): FlowEngine => {
     saveModel: vi.fn().mockResolvedValue({ success: true }),
     destroyModel: vi.fn().mockResolvedValue({ success: true }),
     getAction: vi.fn(),
-    getContext: vi.fn(() => ({ app: {}, api: {} as APIClient, flowEngine: mockEngine as FlowEngine })),
     translate: vi.fn((key: string) => key),
     reactView: null as any,
     applyFlowCache,
@@ -433,7 +432,7 @@ describe('FlowModel', () => {
           key: 'exitFlow',
           steps: {
             step1: {
-              handler: (ctx: FlowContext<any>) => {
+              handler: (ctx: FlowContext33<any>) => {
                 ctx.exit();
                 return 'should-not-reach';
               },

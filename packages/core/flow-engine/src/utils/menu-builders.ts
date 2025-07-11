@@ -72,8 +72,7 @@ interface MenuBuilderFlowContext {
 
 function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
   try {
-    const globalContext = model.flowEngine.getContext();
-    const dataSourceManager: DataSourceManager = globalContext?.dataSourceManager;
+    const dataSourceManager: DataSourceManager = model.ctx.dataSourceManager;
 
     if (!dataSourceManager) return [];
 

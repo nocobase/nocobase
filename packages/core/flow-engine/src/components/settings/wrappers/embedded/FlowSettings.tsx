@@ -13,8 +13,8 @@ import React, { useCallback, useEffect } from 'react';
 import { observer } from '@formily/react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { StepDefinition } from '../../../../types';
 import { resolveDefaultParams } from '../../../../utils';
+import { FlowRuntimeContext } from 'packages/core/flow-engine/src/flowContext';
 
 const { Item: FormItem } = Form;
 
@@ -135,20 +135,13 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
   const getCurrentParams = useCallback(async () => {
     const params = {};
 
-    // 创建参数解析上下文用于解析函数形式的 defaultParams
-    // 在 settings 中，我们只有基本的上下文信息
-    const paramsContext = {
-      model,
-      globals: model.flowEngine.getContext(),
-      app: model.flowEngine.getContext('app'),
-    };
-
     // 从model中获取每个步骤的参数，如果为空则使用默认参数
     for (const { stepKey, step } of configurableSteps) {
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
+      const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
       // 解析 defaultParams
-      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
+      const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
 
       // 合并默认参数和当前参数，当前参数优先
       const mergedParams = { ...resolvedDefaultParams, ...stepParams };

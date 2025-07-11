@@ -16,7 +16,6 @@ import {
   ActionDefinition,
   ActionOptions,
   CreateModelOptions,
-  FlowContext,
   FlowDefinition,
   IFlowModelRepository,
   ModelConstructor,
@@ -39,7 +38,6 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  _context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
   private _flowContext: FlowEngineContext;
@@ -77,20 +75,6 @@ export class FlowEngine {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
     }
     this.modelRepository = modelRepository;
-  }
-
-  setContext(context: any) {
-    this._context = { ...this._context, ...context };
-    if (this._context.i18n) {
-      initFlowEngineLocale(this._context.i18n);
-    }
-  }
-
-  getContext(key?: string): any {
-    if (key) {
-      return this._context[key] || null;
-    }
-    return this._context || {};
   }
 
   /**
@@ -132,8 +116,8 @@ export class FlowEngine {
    * @private
    */
   private translateKey(key: string, options?: any): string {
-    if (this._context?.i18n?.t) {
-      return this._context.i18n.t(key, options);
+    if (this.context?.i18n?.t) {
+      return this.context.i18n.t(key, options);
     }
     // 如果没有翻译函数，返回原始键值
     return key;

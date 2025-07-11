@@ -58,12 +58,17 @@ RefFlowModel.registerFlow('defaultFlow', {
 // 插件定义
 class PluginHelloModel extends Plugin {
   async load() {
-    this.flowEngine.setContext({
+    this.flowEngine.setContext222({
       requireAsync: async (mod) => {
         return new Promise((resolve, reject) => {
           this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
         });
       },
+    });
+    this.flowEngine.context.defineMethod('requireAsync', async (mod) => {
+      return new Promise((resolve, reject) => {
+        this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
+      });
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, params) => {
