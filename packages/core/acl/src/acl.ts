@@ -208,17 +208,13 @@ export class ACL extends EventEmitter {
   }
 
   can(options: CanArgs): CanResult | null {
-    if (options.role === 'root' || options.roles?.includes('root')) {
-      return {
-        role: 'root',
-        resource: options.resource,
-        action: options.action,
-      };
-    }
     if (options.role) {
       return lodash.cloneDeep(this.getCanByRole(options));
     }
     if (options.roles?.length) {
+      if (options.roles.includes('root')) {
+        options.roles = ['root'];
+      }
       return lodash.cloneDeep(this.getCanByRoles(options));
     }
 
