@@ -91,7 +91,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
   public render() {
     const { fieldNames, clickToOpen = true } = this.props;
     const value = this.getValue();
-    const parentRecord = this.getSharedContext()?.currentRecord;
+    const parentRecord = this.ctx.currentRecord;
     if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);
     const field = this.subModels.field as FlowModel;
@@ -99,7 +99,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index}-${this.ctx.shared.index || 0}`;
+          const key = `${index}-${this.ctx.index || 0}`;
           let fieldModel = this.fieldModelCache[v?.[fieldNames.label] + key];
 
           if (!fieldModel) {
@@ -203,7 +203,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.onClick = (e, currentRecord, parentRecord) => {
-          const sourceCollection = ctx.shared.currentBlockModel.collection;
+          const sourceCollection = ctx.currentBlockModel.collection;
           const targetCollection = ctx.model.collectionField.targetCollection;
           const sourceKey = ctx.model.collectionField.sourceKey || sourceCollection.filterTargetKey;
           const targetKey = ctx.model.collectionField.targetKey;

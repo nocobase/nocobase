@@ -53,11 +53,11 @@ BulkEditActionModel.registerFlow({
       },
       async handler(ctx, params) {
         const t = ctx.model.translate;
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        if (!ctx.currentBlockModel?.resource) {
           ctx.message.error(t('No resource selected for bulk edit'));
           return;
         }
-        const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
+        const resource = ctx.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
           ctx.message.warning(t('No records selected for bulk edit'));
           return;

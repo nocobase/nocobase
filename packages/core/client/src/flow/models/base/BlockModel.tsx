@@ -206,12 +206,12 @@ DataBlockModel.registerFlow({
         }
         if (Object.keys(params).includes('sourceId')) {
           ctx.model.resource.setSourceId(
-            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
         if (Object.keys(params).includes('filterByTk')) {
           ctx.model.resource.setFilterByTk(
-            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
         ctx.logger.info('params', params);

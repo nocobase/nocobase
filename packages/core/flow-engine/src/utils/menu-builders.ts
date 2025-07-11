@@ -754,8 +754,8 @@ async function buildDataSourceBlockItems(
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
       if (hasCurrentFlowContext) {
-        const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-        const collection: Collection = currentFlow?.shared?.currentBlockModel?.collection;
+        const currentFlow = model.parent?.ctx.currentFlow;
+        const collection: Collection = currentFlow?.currentBlockModel?.collection;
 
         if (currentFlow && collection) {
           const relatedFields = collection?.getRelationshipFields() || [];

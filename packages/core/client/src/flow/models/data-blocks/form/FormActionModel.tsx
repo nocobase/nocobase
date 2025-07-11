@@ -33,11 +33,11 @@ FormSubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        if (!ctx.currentBlockModel?.resource) {
           ctx.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
+        const currentBlockModel = ctx.currentBlockModel as FormModel;
 
         try {
           await currentBlockModel.form.submit();
@@ -88,12 +88,12 @@ FormSubmitActionModel.registerFlow({
           await currentBlockModel.resource.refresh();
         }
 
-        const parentBlockModel = ctx.shared?.currentFlow?.shared?.currentBlockModel as DataBlockModel;
+        const parentBlockModel = ctx.currentFlow?.currentBlockModel as DataBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentView && ctx.shared.closable) {
-          ctx.shared.currentView.close();
+        if (ctx.currentView && ctx.closable) {
+          ctx.currentView.close();
         }
       },
     },

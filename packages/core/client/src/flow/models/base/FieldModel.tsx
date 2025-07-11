@@ -25,7 +25,7 @@ FieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
-        if (!ctx.shared.currentBlockModel) {
+        if (!ctx.currentBlockModel) {
           throw new Error('Current block model is not set in shared context');
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
@@ -43,7 +43,7 @@ FieldModel.registerFlow({
         }
         ctx.model.collectionField = collectionField;
         ctx.model.fieldPath = fieldPath;
-        ctx.shared.currentBlockModel.addAppends(fieldPath);
+        ctx.currentBlockModel.addAppends(fieldPath);
       },
     },
   },

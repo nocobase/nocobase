@@ -170,24 +170,15 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this['_sharedContext'] = { ...this['_sharedContext'], ...ctx };
-  }
-
-  public getSharedContext() {
-    if (this.async || !this.parent) {
-      return this['_sharedContext'] || {};
+    for (const key in ctx) {
+      this.ctx.defineProperty(key, {
+        value: ctx[key],
+      });
     }
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this['_sharedContext'], // 当前实例的 context 优先级最高
-    };
   }
 
   get ctx() {
-    return {
-      globals: this.flowEngine.getContext(),
-      shared: this.getSharedContext(),
-    };
+    return this.context;
   }
 
   /**

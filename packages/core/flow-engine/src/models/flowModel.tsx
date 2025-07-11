@@ -460,9 +460,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     flowContext.defineProperty('reactView', {
       value: this.reactView,
     });
-    flowContext.defineProperty('shared', {
-      value: this.getSharedContext(),
-    });
     flowContext.defineProperty('flowEngine', {
       value: globalContexts.flowEngine,
     });
@@ -960,14 +957,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   get ctx() {
-    const globals = this.flowEngine.getContext();
-    return {
-      shared: this.getSharedContext(),
-      flowEngine: globals.flowEngine,
-      app: globals.app,
-      api: globals.api,
-      themeToken: globals.themeToken,
-    };
+    return this.context;
   }
 
   get translate() {
@@ -975,17 +965,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = { ...this._sharedContext, ...ctx };
-  }
-
-  public getSharedContext() {
-    if (this.async || !this.parent) {
-      return this._sharedContext;
+    for (const key in ctx) {
+      this.ctx.defineProperty(key, {
+        value: ctx[key],
+      });
     }
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this._sharedContext, // 当前实例的 context 优先级最高
-    };
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况

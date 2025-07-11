@@ -135,10 +135,10 @@ export class QuickEditForm extends FlowModel<{
           this.resource.save(formValues, { refresh: false }).catch((error) => {
             console.error('Failed to save form data:', error);
             this.context.message.error(this.translate('Failed to save form data'));
-            this.ctx.shared.__onSubmitSuccess?.(originalValues);
+            this.ctx.__onSubmitSuccess?.(originalValues);
           });
-          this.ctx.shared.__onSubmitSuccess?.(formValues);
-          this.ctx.shared.currentView.close();
+          this.ctx.__onSubmitSuccess?.(formValues);
+          this.ctx.currentView.close();
         }}
       >
         <FormProvider form={this.form}>
@@ -157,7 +157,7 @@ export class QuickEditForm extends FlowModel<{
           <FormButtonGroup align="right">
             <Button
               onClick={() => {
-                this.ctx.shared.currentView.close();
+                this.ctx.currentView.close();
               }}
             >
               {this.translate('Cancel')}

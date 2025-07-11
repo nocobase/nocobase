@@ -483,19 +483,6 @@ describe('ForkFlowModel', () => {
       });
     });
 
-    test('should get shared context in async mode', () => {
-      // Mock async property on the fork
-      Object.defineProperty(fork, 'async', {
-        get: () => true,
-        configurable: true,
-      });
-      fork.setSharedContext({ async: 'context' });
-
-      const context = fork.getSharedContext();
-
-      expect(context).toEqual({ async: 'context' });
-    });
-
     test('should get ctx with globals and shared', () => {
       const globalContext = { app: {}, api: {} };
       const sharedContext = { shared: 'data' };
@@ -507,12 +494,6 @@ describe('ForkFlowModel', () => {
 
       expect(ctx.globals).toBe(globalContext);
       expect(ctx.shared).toEqual(sharedContext);
-    });
-
-    test('should handle empty shared context', () => {
-      const context = fork.getSharedContext();
-
-      expect(context).toEqual({});
     });
   });
 

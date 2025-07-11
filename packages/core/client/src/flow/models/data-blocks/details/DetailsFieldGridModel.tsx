@@ -61,7 +61,7 @@ const AddDetailField = ({ model }) => {
       }}
       onSubModelAdded={async (item: DetailItemModel) => {
         const fieldPath = item.getStepParams('fieldSettings', 'init').fieldPath;
-        model.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
+        model.ctx.currentBlockModel.addAppends(fieldPath, true);
       }}
     />
   );

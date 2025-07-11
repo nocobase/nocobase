@@ -71,7 +71,7 @@ export class DetailsModel extends DataBlockModel<{
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
-                const currentRecord = this.ctx.shared.currentRecord;
+                const currentRecord = this.ctx.currentRecord;
                 const filterByTk = this.collection.getFilterByTK(currentRecord);
 
                 return (
