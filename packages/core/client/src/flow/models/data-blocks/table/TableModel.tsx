@@ -552,4 +552,5 @@ TableModel.define({
       ],
     },
   },
+  sort: 300,
 });
