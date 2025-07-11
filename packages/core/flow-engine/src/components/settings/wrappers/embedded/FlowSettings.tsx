@@ -14,7 +14,7 @@ import { observer } from '@formily/react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { resolveDefaultParams } from '../../../../utils';
-import { FlowRuntimeContext } from 'packages/core/flow-engine/src/flowContext';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 const { Item: FormItem } = Form;
 
