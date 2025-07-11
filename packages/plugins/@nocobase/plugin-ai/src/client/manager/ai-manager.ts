@@ -22,12 +22,15 @@ export type LLMProviderOptions = {
 };
 
 export type ToolOptions = {
-  Component?: ComponentType<{
-    tool: {
-      name: string;
-      args: any;
-    };
-  }>;
+  components?: {
+    card?: ComponentType<{
+      messageId: string;
+      tool: {
+        name: string;
+        args: any;
+      };
+    }>;
+  };
   invoke?: (ctx: any, params: any) => void | Promise<void>;
 };
 

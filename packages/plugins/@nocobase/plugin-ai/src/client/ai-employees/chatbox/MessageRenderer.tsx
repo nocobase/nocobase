@@ -16,7 +16,7 @@ import { usePlugin, useToken } from '@nocobase/client';
 import { Markdown } from './markdown/Markdown';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
-import { Task } from '../types';
+import { Message, Task } from '../types';
 import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
 import { ToolCard } from './generative-ui/ToolCard';
@@ -45,7 +45,7 @@ const MessageWrapper = React.forwardRef<
 });
 
 const AITextMessageRenderer: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = ({ msg }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
@@ -70,7 +70,7 @@ const AITextMessageRenderer: React.FC<{
 };
 
 const AIMessageRenderer: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = ({ msg }) => {
   switch (msg.type) {
     case 'greeting':
@@ -92,7 +92,7 @@ const AIMessageRenderer: React.FC<{
 };
 
 export const AIMessage: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
   const { token } = useToken();
@@ -174,7 +174,7 @@ export const AIMessage: React.FC<{
 });
 
 export const UserMessage: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
   const { message } = App.useApp();

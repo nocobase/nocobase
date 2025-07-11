@@ -40,15 +40,35 @@ export type ContextItem = {
   content: string;
 };
 
+export type ToolCall<T> = {
+  id: string;
+  type: string;
+  name: string;
+  args: T;
+};
+
 export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
   content: {
-    type?: MessageType;
     content: any;
+    ref?: React.MutableRefObject<any>;
+    type?: MessageType;
+    messageId?: string;
     attachments?: Attachment[];
     workContext?: ContextItem[];
+    tool_calls?: ToolCall<unknown>[];
+    metadata?: {
+      model: string;
+      provider: string;
+      usage_metadata?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+      };
+    };
+    autoCallTools?: string[];
   };
 };
 export type Action = {

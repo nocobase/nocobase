@@ -19,7 +19,7 @@ import { Echarts } from './ECharts';
 import { Form } from './Form';
 
 export const Markdown: React.FC<{
-  message: Message;
+  message: Message['content'];
 }> = ({ message }) => {
   const tagIndexes: Record<string, number> = {};
   const getIndex = (tagName: string): number => {

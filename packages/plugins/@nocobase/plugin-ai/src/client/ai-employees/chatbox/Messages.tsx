@@ -15,6 +15,7 @@ import { useToken } from '@nocobase/client';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
+import { useChatToolsStore } from './stores/chat-tools';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -24,10 +25,15 @@ export const Messages: React.FC = () => {
 
   const messages = useChatMessagesStore.use.messages();
 
+  const updateTools = useChatToolsStore.use.updateTools();
+
   const { messagesService, lastMessageRef } = useChatMessageActions();
 
-  const containerRef = useRef(null);
+  useEffect(() => {
+    updateTools(messages);
+  }, [messages, updateTools]);
 
+  const containerRef = useRef(null);
   useEffect(() => {
     if (!containerRef.current) return;
 

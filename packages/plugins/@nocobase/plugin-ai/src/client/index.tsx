@@ -100,7 +100,9 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
     this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
     this.aiManager.registerTool('defineCollections', {
-      Component: Collections,
+      components: {
+        card: Collections,
+      },
     });
     this.aiManager.registerTool('formFiller', {
       invoke: (ctx, params) => {

@@ -9,14 +9,15 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Generating } from '../../../chatbox/markdown/Generating';
-import { useChatMessages } from '../../../chatbox/ChatMessagesProvider';
 import { Card, Modal, Tabs } from 'antd';
 import { DatabaseOutlined, FileTextOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import { useT } from '../../../../locale';
 import { CodeInternal } from '../../../chatbox/markdown/Code';
 import { Diagram } from './Diagram';
 import { Table } from './Table';
-import { useAPIClient, useApp } from '@nocobase/client';
+import { useAPIClient, useApp, useToken } from '@nocobase/client';
+import { useChatToolsStore } from '../../../chatbox/stores/chat-tools';
+import { ToolCall } from '../../../types';
 
 const TabPane: React.FC<{
   children: React.ReactNode;
@@ -127,16 +128,18 @@ const useCollections = (collections: any[]) => {
 };
 
 export const Collections: React.FC<{
-  tool: {
-    name: string;
-    args: {
-      collections: any[];
-    };
-  };
-}> = (props) => {
+  messageId: string;
+  tool: ToolCall<{
+    collections: [];
+  }>;
+}> = ({ messageId, tool }) => {
   const t = useT();
+  const { token } = useToken();
   const [open, setOpen] = React.useState(false);
-  const collections = useCollections(props.tool.args.collections);
+  const collections = useCollections(tool.args.collections);
+
+  const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
+  const version = toolsByMessageId[messageId]?.[tool.id]?.version;
 
   return (
     <>
@@ -149,7 +152,24 @@ export const Collections: React.FC<{
       >
         <Card.Meta
           avatar={<DatabaseOutlined />}
-          title={t('Data modeling')}
+          title={
+            <>
+              {t('Data modeling')}
+              {version && version > 1 ? (
+                <span
+                  style={{
+                    marginLeft: '8px',
+                    color: token.colorTextDescription,
+                    // fontSize: token.fontSizeSM,
+                    fontWeight: 'normal',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {t('version')} {version}
+                </span>
+              ) : null}
+            </>
+          }
           description={t('Please review and finish the process')}
         />
       </Card>

@@ -26,9 +26,9 @@ export const ToolCard: React.FC<{
   }
   const tool = tools[0];
   const toolOption = plugin.aiManager.tools.get(tool.name);
-  if (toolOption?.Component) {
-    const C = toolOption.Component;
-    return <C tool={tool} />;
+  const C = toolOption?.components?.card;
+  if (C) {
+    return <C messageId={messageId} tool={tool} />;
   }
   return <DefaultToolCard tools={[tool]} messageId={messageId} autoCallTools={autoCallTools} />;
 };
