@@ -62,11 +62,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
 
   /**
-   * model 树的共享运行上下文
-   */
-  protected _sharedContext: Record<string, any> = {};
-
-  /**
    * 上一次 applyAutoFlows 的执行参数
    */
   private _lastAutoRunParams: any[] | null = null;

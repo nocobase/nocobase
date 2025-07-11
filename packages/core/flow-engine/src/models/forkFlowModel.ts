@@ -66,7 +66,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
   // private _sharedContext: Record<string, any> = {};
   // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
-  // private _flowContext: FlowModelContext;
+  private _flowContext: FlowModelContext;
 
   constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
     void this.localProperties; // 避免 IDE 提示 unused
@@ -261,5 +261,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 }
 
 // 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-unsafe-declaration-merging
+// @ts-expect-error Interface extends with different private property declarations is intentional for duck typing
+export type ForkFlowModel<TMaster extends FlowModel = FlowModel> = FlowModel;

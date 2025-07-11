@@ -33,11 +33,11 @@ FormSubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
+        if (!ctx.currentBlockModel?.resource) {
           ctx.message.error(ctx.t('No resource selected for submission.'));
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
+        const currentBlockModel = ctx.currentBlockModel as FormModel;
         try {
           await currentBlockModel.form.submit();
           const values = currentBlockModel.form.values;
