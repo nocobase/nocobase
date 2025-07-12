@@ -33,6 +33,8 @@ import viewResourcer from './resourcers/views';
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
 
+  private db2cmCollections: string[] = [];
+
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
   }
@@ -408,6 +410,26 @@ export class PluginDataSourceMainServer extends Plugin {
       name: `pm.data-source-manager.collection-view `,
       actions: ['dbViews:*'],
     });
+
+    this.app.db.on('afterDefineCollection', async (collection) => {
+      if (collection.options.uiManageable) {
+        this.db2cmCollections.push(collection.name);
+      }
+    });
+
+    this.app.on('afterEnablePlugin', this.db2cm.bind(this));
+
+    this.app.on('afterInstall', this.db2cm.bind(this));
+
+    this.app.on('afterUpgrade', this.db2cm.bind(this));
+  }
+
+  private async db2cm() {
+    if (this.db2cmCollections.length) {
+      await this.app.db.getRepository<CollectionRepository>('collections').db2cmCollections(this.db2cmCollections);
+      this.log.info(`collections synced to collection manager: ${this.db2cmCollections.join(', ')}`);
+      this.db2cmCollections = [];
+    }
   }
 
   async load() {
