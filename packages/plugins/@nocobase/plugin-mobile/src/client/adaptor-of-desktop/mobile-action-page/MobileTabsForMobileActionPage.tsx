@@ -19,6 +19,7 @@ import {
   useBackButton,
   useCompile,
   useDesigner,
+  useFlag,
   useSchemaInitializerRender,
   useTabsContext,
   withDynamicSchemaProps,
@@ -27,11 +28,11 @@ import { Tabs } from 'antd-mobile';
 import { LeftOutline } from 'antd-mobile-icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMobileApp } from '../../mobile';
 import { MobilePageHeader } from '../../pages/dynamic-page';
 import { MobilePageContentContainer } from '../../pages/dynamic-page/content/MobilePageContentContainer';
 import { useStyles } from '../../pages/dynamic-page/header/tabs';
 import { hideDivider } from '../hideDivider';
-import { useMobileApp } from '../../mobile';
 
 export const MobileTabsForMobileActionPage: any = observer(
   (props) => {
@@ -42,6 +43,7 @@ export const MobileTabsForMobileActionPage: any = observer(
     const { componentCls, hashId } = useStyles();
     const { showBackButton } = useMobileApp();
     const { goBack } = useBackButton();
+    const { isInMobileDrawer } = useFlag();
 
     const onChange = useCallback(
       (key) => {
@@ -83,22 +85,26 @@ export const MobileTabsForMobileActionPage: any = observer(
 
     return (
       <>
-        <MobilePageHeader>
-          <div className={`${componentCls} ${hashId}`} data-testid="mobile-action-page-tabs">
-            {showBackButton && (
-              <div className="nb-mobile-page-tabs-back-button" onClick={goBack}>
-                <LeftOutline />
-              </div>
-            )}
-            <DndContext>
-              <Tabs activeKey={activeKey} onChange={onChange} className="nb-mobile-page-tabs-list">
-                {items}
-              </Tabs>
-            </DndContext>
-            <div className="nb-mobile-page-tabs-button">{render()}</div>
-          </div>
-        </MobilePageHeader>
-        <MobilePageContentContainer hideTabBar>{tabContent}</MobilePageContentContainer>
+        {!isInMobileDrawer && (
+          <MobilePageHeader>
+            <div className={`${componentCls} ${hashId}`} data-testid="mobile-action-page-tabs">
+              {showBackButton && (
+                <div className="nb-mobile-page-tabs-back-button" onClick={goBack}>
+                  <LeftOutline />
+                </div>
+              )}
+              <DndContext>
+                <Tabs activeKey={activeKey} onChange={onChange} className="nb-mobile-page-tabs-list">
+                  {items}
+                </Tabs>
+              </DndContext>
+              <div className="nb-mobile-page-tabs-button">{render()}</div>
+            </div>
+          </MobilePageHeader>
+        )}
+        <MobilePageContentContainer hideTabBar displayPageHeader={!isInMobileDrawer}>
+          {tabContent}
+        </MobilePageContentContainer>
       </>
     );
   },

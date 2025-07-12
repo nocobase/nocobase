@@ -72,8 +72,8 @@ describe('useBuiltinVariables', () => {
     const builtinVars = result.current.builtinVariables;
 
     // Check for some standard variables
-    expect(builtinVars.some(v => v.name === '$user')).toBeTruthy();
-    expect(builtinVars.some(v => v.name === '$nDate')).toBeTruthy();
-    expect(builtinVars.some(v => v.name === '$nToken')).toBeTruthy();
+    expect(builtinVars.some((v) => v.name === '$user')).toBeTruthy();
+    expect(builtinVars.some((v) => v.name === '$nDate')).toBeTruthy();
+    expect(builtinVars.some((v) => v.name === '$nToken')).toBeTruthy();
   });
 });

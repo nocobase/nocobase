@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, CardProps } from 'antd';
-import React, { useMemo, useRef, useEffect, createContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useFieldSchema } from '@formily/react';
-import { useToken } from '../../../style';
-import { MarkdownReadPretty } from '../markdown';
+import { Card, CardProps } from 'antd';
+import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { BlockLinkageRuleProvider } from '../../../modules/blocks/BlockLinkageRuleProvider';
+import { useToken } from '../../../style';
+import { MarkdownReadPretty } from '../markdown';
 
 export const BlockItemCardContext = createContext({});
 
@@ -28,7 +28,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   const titleRef = useRef<HTMLDivElement | null>(null);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const isBlockLinkage = fieldSchema['x-block-linkage-rules'];
+  const isBlockLinkage = fieldSchema?.['x-block-linkage-rules'];
   useEffect(() => {
     const timer = setTimeout(() => {
       if (titleRef.current) {

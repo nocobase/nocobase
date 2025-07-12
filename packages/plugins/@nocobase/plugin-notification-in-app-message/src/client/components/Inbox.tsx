@@ -26,9 +26,15 @@ import React, { FC, useCallback, useEffect, useState } from 'react';
 import { useLocalTranslation } from '../../locale';
 import { Channel } from '../../types';
 import {
-  fetchChannels, inboxVisible, liveSSEObs,
+  fetchChannels,
+  inboxVisible,
+  liveSSEObs,
   messageMapObs,
-  selectedChannelNameObs, startMsgSSEStreamWithRetry, unreadMsgsCountObs, updateUnreadMsgsCount, userIdObs
+  selectedChannelNameObs,
+  startMsgSSEStreamWithRetry,
+  unreadMsgsCountObs,
+  updateUnreadMsgsCount,
+  userIdObs,
 } from '../observables';
 import { InboxContent } from './InboxContent';
 import { MobileChannelPage } from './mobile/ChannelPage';
@@ -53,11 +59,16 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
         <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
           <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
         </MobilePopup>
-        <MobilePopup title={selectedChannel?.title} visible={props.visible && !!selectedChannel} onClose={() => setSelectedChannel(null)} minHeight={'60vh'}>
+        <MobilePopup
+          title={selectedChannel?.title}
+          visible={props.visible && !!selectedChannel}
+          onClose={() => setSelectedChannel(null)}
+          minHeight={'60vh'}
+        >
           <MobileMessagePage displayPageHeader={false} />
         </MobilePopup>
       </>
-    )
+    );
   }
 
   return (
@@ -74,9 +85,8 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
     >
       <InboxContent />
     </Drawer>
-  )
-}
-
+  );
+};
 
 const InnerInbox = (props) => {
   const { t } = useLocalTranslation();
@@ -169,7 +179,13 @@ const InnerInbox = (props) => {
           </Badge>
         </Button>
       </Tooltip>
-      <InboxPopup title={t('Message')} visible={inboxVisible.value} onClose={() => { inboxVisible.value = false; }} />
+      <InboxPopup
+        title={t('Message')}
+        visible={inboxVisible.value}
+        onClose={() => {
+          inboxVisible.value = false;
+        }}
+      />
     </ConfigProvider>
   );
 };
