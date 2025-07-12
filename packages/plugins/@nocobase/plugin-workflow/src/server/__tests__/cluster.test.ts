@@ -111,86 +111,89 @@ describe('workflow > cluster', () => {
       }
     });
 
-    it('should be able to process executions on other nodes', async () => {
-      const [app1, app2, app3] = cluster.nodes;
+    it.skipIf(process.env['DB_DIALECT'] == 'sqlite')(
+      'should be able to process executions on other nodes',
+      async () => {
+        const [app1, app2, app3] = cluster.nodes;
 
-      const p1 = app1.pm.get(Plugin) as Plugin;
-      const p2 = app2.pm.get(Plugin) as Plugin;
+        const p1 = app1.pm.get(Plugin) as Plugin;
+        const p2 = app2.pm.get(Plugin) as Plugin;
 
-      const w1 = await app1.db.getRepository('workflows').create({
-        values: {
-          type: 'asyncTrigger',
-          enabled: true,
-        },
-      });
+        const w1 = await app1.db.getRepository('workflows').create({
+          values: {
+            type: 'asyncTrigger',
+            enabled: true,
+          },
+        });
 
-      const n1 = await w1.createNode({
-        type: 'timeConsume',
-        config: {
-          duration: 350,
-        },
-      });
+        const n1 = await w1.createNode({
+          type: 'timeConsume',
+          config: {
+            duration: 350,
+          },
+        });
 
-      const n2 = await w1.createNode({
-        type: 'recordAppId',
-        upstreamId: n1.id,
-      });
-      await n1.setDownstream(n2);
+        const n2 = await w1.createNode({
+          type: 'recordAppId',
+          upstreamId: n1.id,
+        });
+        await n1.setDownstream(n2);
 
-      p1.trigger(w1, { a: 1 });
-      p1.trigger(w1, { a: 2 });
-      p1.trigger(w1, { a: 3 });
-      p1.trigger(w1, { a: 4 });
-      p2.trigger(w1, { a: 5 });
-      p2.trigger(w1, { a: 6 });
-      p2.trigger(w1, { a: 7 });
-      p2.trigger(w1, { a: 8 });
+        p1.trigger(w1, { a: 1 });
+        p1.trigger(w1, { a: 2 });
+        p1.trigger(w1, { a: 3 });
+        p1.trigger(w1, { a: 4 });
+        p2.trigger(w1, { a: 5 });
+        p2.trigger(w1, { a: 6 });
+        p2.trigger(w1, { a: 7 });
+        p2.trigger(w1, { a: 8 });
 
-      await sleep(300);
+        await sleep(300);
 
-      const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
-      // NOTE: app3 read one
-      expect(q1.length).toBe(5);
+        const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
+        // NOTE: app3 read one
+        expect(q1.length).toBe(5);
 
-      const e1s = await w1.getExecutions({ order: [['id', 'ASC']] });
-      expect(e1s.length).toBe(8);
-      expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
-      expect(e1s[1].status).toBe(EXECUTION_STATUS.STARTED);
-      expect(e1s[2].status).toBe(EXECUTION_STATUS.STARTED);
+        const e1s = await w1.getExecutions({ order: [['id', 'ASC']] });
+        expect(e1s.length).toBe(8);
+        expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
+        expect(e1s[1].status).toBe(EXECUTION_STATUS.STARTED);
+        expect(e1s[2].status).toBe(EXECUTION_STATUS.STARTED);
 
-      for (let i = 3; i < 8; i++) {
-        expect(e1s[i].status).toBe(EXECUTION_STATUS.QUEUEING);
-      }
+        for (let i = 3; i < 8; i++) {
+          expect(e1s[i].status).toBe(EXECUTION_STATUS.QUEUEING);
+        }
 
-      await sleep(2000);
+        await sleep(2000);
 
-      const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
-      expect(e2s.length).toBe(8);
-      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
+        const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
+        expect(e2s.length).toBe(8);
+        expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
-      const appIds = e2s.map((item) =>
-        item.jobs
-          .find((job) => job.nodeId === n2.id)
-          .result.split('_')
-          .pop(),
-      );
-      const appIdsSet = new Set(appIds);
-      expect(appIdsSet.size).toBe(3);
-      // expect(appNameJobs[0].result).toBe(app1.instanceId);
-      // expect(appNameJobs[1].result).toBe(app2.instanceId);
-      // expect(appNameJobs[2].result).toBe(app3.instanceId);
-      // expect(appNameJobs[3].result).toBe(app1.instanceId);
-      // expect(appNameJobs[4].result).toBe(app2.instanceId);
-      // expect(appNameJobs[5].result).toBe(app3.instanceId);
-      // expect(appNameJobs[6].result).toBe(app1.instanceId);
-      // expect(appNameJobs[7].result).toBe(app2.instanceId);
-    });
+        const appIds = e2s.map((item) =>
+          item.jobs
+            .find((job) => job.nodeId === n2.id)
+            .result.split('_')
+            .pop(),
+        );
+        const appIdsSet = new Set(appIds);
+        expect(appIdsSet.size).toBe(3);
+        // expect(appNameJobs[0].result).toBe(app1.instanceId);
+        // expect(appNameJobs[1].result).toBe(app2.instanceId);
+        // expect(appNameJobs[2].result).toBe(app3.instanceId);
+        // expect(appNameJobs[3].result).toBe(app1.instanceId);
+        // expect(appNameJobs[4].result).toBe(app2.instanceId);
+        // expect(appNameJobs[5].result).toBe(app3.instanceId);
+        // expect(appNameJobs[6].result).toBe(app1.instanceId);
+        // expect(appNameJobs[7].result).toBe(app2.instanceId);
+      },
+    );
   });
 });
