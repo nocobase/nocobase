@@ -128,3 +128,13 @@ export function isStringOrNumber(value: any) {
 export function getKeysByPrefix(keys: string[], prefix: string) {
   return keys.filter((key) => key.startsWith(`${prefix}.`)).map((key) => key.substring(prefix.length + 1));
 }
+
+export function extractTypeFromDefinition(rawType: string) {
+  const leftParenIndex = rawType.indexOf('(');
+
+  if (leftParenIndex === -1) {
+    return rawType.toLowerCase();
+  }
+
+  return rawType.substring(0, leftParenIndex).toLowerCase().trim();
+}
