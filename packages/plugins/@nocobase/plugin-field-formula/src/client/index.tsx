@@ -12,6 +12,8 @@ import { Formula } from './components';
 import { FormulaComponentFieldSettings } from './FormulaComponentFieldSettings';
 import { FormulaFieldInterface } from './interfaces/formula';
 import { renderExpressionDescription } from './scopes';
+import { FormulaFieldModel } from './FormulaFieldModel';
+import { FlowModel } from '@nocobase/flow-engine';
 
 export class PluginFieldFormulaClient extends Plugin {
   expressionFields = [
@@ -50,6 +52,9 @@ export class PluginFieldFormulaClient extends Plugin {
     });
     this.app.dataSourceManager.addFieldInterfaces([FormulaFieldInterface]);
     this.app.schemaSettingsManager.add(FormulaComponentFieldSettings);
+    this.flowEngine.registerModels({
+      FormulaFieldModel,
+    });
   }
 }
 

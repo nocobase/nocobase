@@ -681,9 +681,10 @@ export const InternalAdminLayout = () => {
   const { styles } = useHeaderStyle();
 
   const route = useMemo(() => {
+    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t });
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t }),
+      children: Array.isArray(children) ? children : [],
     };
   }, [allAccessRoutes, designable, isMobileLayout, t]);
   const layoutToken = useMemo(() => {
@@ -929,7 +930,7 @@ function convertRoutesToLayout(
   routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
 ) {
-  if (!routes) return;
+  if (!routes || !Array.isArray(routes)) return [];
 
   const getInitializerButton = (testId: string) => {
     return {
@@ -943,56 +944,82 @@ function convertRoutesToLayout(
     };
   };
 
-  const result: any[] = routes.map((item) => {
-    const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
-
-    if (item.type === NocoBaseDesktopRouteType.link) {
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: '/',
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _parentRoute: parentRoute,
-      };
-    }
-
-    if (item.type === NocoBaseDesktopRouteType.page) {
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: `/admin/${item.schemaUid}`,
-        redirect: `/admin/${item.schemaUid}`,
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _parentRoute: parentRoute,
-      };
-    }
-
-    if (item.type === NocoBaseDesktopRouteType.group) {
-      const children =
-        convertRoutesToLayout(item.children, { designable, parentRoute: item, depth: depth + 1, t }) || [];
-
-      // add a designer button
-      if (designable && depth === 0) {
-        children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
+  const result: any[] = routes
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null;
       }
 
-      return {
-        name,
-        icon: item.icon ? <Icon type={item.icon} /> : null,
-        path: `/admin/${item.id}`,
-        redirect:
-          children[0]?.key === 'x-designer-button'
-            ? undefined
-            : `/admin/${findFirstPageRoute(item.children)?.schemaUid || item.id}`,
-        routes: children.length === 0 ? [{ path: '/', name: ' ', disabled: true, _hidden: true }] : children,
-        hideInMenu: item.hideInMenu,
-        _route: item,
-        _depth: depth,
-      };
-    }
-  });
+      const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
+
+      if (item.type === NocoBaseDesktopRouteType.link) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: '/',
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.page) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.schemaUid}`,
+          redirect: `/admin/${item.schemaUid}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.flowPage) {
+        return {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.schemaUid}`,
+          redirect: `/admin/${item.schemaUid}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _parentRoute: parentRoute,
+        };
+      }
+
+      if (item.type === NocoBaseDesktopRouteType.group) {
+        const itemChildren = Array.isArray(item.children) ? item.children : [];
+        const children =
+          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, t }) || [];
+
+        // add a designer button
+        if (designable && depth === 0) {
+          children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
+        }
+
+        const groupRoute: any = {
+          name,
+          icon: item.icon ? <Icon type={item.icon} /> : null,
+          path: `/admin/${item.id}`,
+          redirect:
+            children[0]?.key === 'x-designer-button'
+              ? undefined
+              : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || item.id}`,
+          hideInMenu: item.hideInMenu,
+          _route: item,
+          _depth: depth,
+        };
+
+        if (children.length > 0) {
+          groupRoute.routes = children;
+        }
+
+        return groupRoute;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
 
   if (designable && depth === 0) {
     isMobile
