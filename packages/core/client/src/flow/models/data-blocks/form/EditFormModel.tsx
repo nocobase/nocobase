@@ -26,11 +26,9 @@ import React from 'react';
 import { FormModel } from './FormModel';
 
 export class EditFormModel extends FormModel {
-  declare resource: MultiRecordResource | SingleRecordResource;
-
   createResource(_ctx: any, params: any) {
     // 完全借鉴DetailsModel的逻辑
-    if (this.associationField?.type === 'hasOne' || this.associationField?.type === 'belongsTo') {
+    if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
       resource.isNewRecord = false;
       return resource;
@@ -122,22 +120,21 @@ EditFormModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        if (ctx.model.form) {
-          return;
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
         }
-        ctx.model.form = createForm();
         // 编辑表单需要监听refresh事件来加载现有数据
-        ctx.model.resource.on('refresh', async () => {
-          await ctx.model.form.reset();
+        ctx.resource.on('refresh', async () => {
+          await ctx.form.reset();
           const currentRecord = ctx.model.getCurrentRecord();
-          const targetKey = ctx.model.associationField?.targetKey;
+          const targetKey = ctx.association?.targetKey;
           if (targetKey) {
-            ctx.model.resource.setMeta({
+            ctx.resource.setMeta({
               currentFilterByTk: currentRecord?.[targetKey],
             });
           } else {
-            ctx.model.resource.setMeta({
-              currentFilterByTk: ctx.model.collection.getFilterByTK(currentRecord),
+            ctx.resource.setMeta({
+              currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
           ctx.model.setSharedContext({
@@ -149,13 +146,13 @@ EditFormModel.registerFlow({
     },
     refresh: {
       async handler(ctx) {
-        if (!ctx.model.resource) {
+        if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
         // 1. 先初始化字段网格，确保所有字段都创建完成
         await ctx.model.applySubModelsAutoFlows('grid');
         // 2. 加载数据
-        await ctx.model.resource.refresh();
+        await ctx.resource.refresh();
       },
     },
   },
@@ -163,7 +160,6 @@ EditFormModel.registerFlow({
 
 EditFormModel.define({
   title: escapeT('Form (Edit)'),
-  group: 'Form',
   defaultOptions: {
     use: 'EditFormModel',
     subModels: {

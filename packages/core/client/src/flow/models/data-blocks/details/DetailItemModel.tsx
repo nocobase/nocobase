@@ -74,7 +74,7 @@ DetailItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          title: ctx.model.collectionField?.title,
+          title: ctx.collectionField.title,
         };
       },
       handler(ctx, params) {

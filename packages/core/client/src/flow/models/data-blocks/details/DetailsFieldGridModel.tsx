@@ -17,7 +17,6 @@ import { DetailsModel } from './DetailsModel';
 const AddDetailField = ({ model }) => {
   const blockModel = model.context.blockModel as DetailsModel;
   const collection = blockModel.collection;
-  console.log('AddDetailField', collection);
 
   const items = buildFieldItems(
     collection.getFields(),

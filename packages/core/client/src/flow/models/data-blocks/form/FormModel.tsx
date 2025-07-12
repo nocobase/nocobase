@@ -31,8 +31,24 @@ export class FormModel extends DataBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
 }> {
-  form: Form;
-  declare resource: SingleRecordResource | MultiRecordResource;
+  get form() {
+    return this.context.form as Form;
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineProperty('form', {
+      get: () => createForm(),
+    });
+    this.context.defineProperty('record', {
+      get: () => this.getCurrentRecord(),
+      cache: false,
+    });
+  }
+
+  getCurrentRecord() {
+    return {};
+  }
 
   renderComponent() {
     throw new Error('renderComponent method must be implemented in subclasses of FormModel');

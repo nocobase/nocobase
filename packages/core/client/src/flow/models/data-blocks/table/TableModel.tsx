@@ -158,7 +158,9 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
-  declare resource: MultiRecordResource;
+  get resource() {
+    return super.resource as MultiRecordResource;
+  }
 
   createResource(ctx, params) {
     return new MultiRecordResource();
@@ -236,6 +238,12 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
                     fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
+                    fork.context.defineProperty('record', {
+                      get: () => record,
+                    });
+                    fork.context.defineProperty('fieldValue', {
+                      get: () => values[dataIndex],
+                    });
                     model.rerender();
                   },
                 });

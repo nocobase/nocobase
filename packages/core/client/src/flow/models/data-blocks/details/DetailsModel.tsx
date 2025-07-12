@@ -35,7 +35,7 @@ export class DetailsModel extends DataBlockModel<{
   // declare resource: MultiRecordResource | SingleRecordResource;
 
   createResource(ctx, params) {
-    if (this.associationField?.type === 'hasOne' || this.associationField?.type === 'belongsTo') {
+    if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
       resource.isNewRecord = false;
       return resource;

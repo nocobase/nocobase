@@ -27,18 +27,17 @@ CreateFormModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
+        }
         if (ctx.model.form) {
           return;
         }
-        ctx.model.form = createForm();
         // 新增表单不需要监听refresh事件，因为没有现有数据
       },
     },
     refresh: {
       async handler(ctx) {
-        if (!ctx.model.resource) {
-          throw new Error('Resource is not initialized');
-        }
         await ctx.model.applySubModelsAutoFlows('grid');
         // 新增表单不需要刷新数据
         ctx.model.setSharedContext({
@@ -51,7 +50,6 @@ CreateFormModel.registerFlow({
 
 CreateFormModel.define({
   title: escapeT('Form (Add new)'),
-  group: 'Form',
   defaultOptions: {
     use: 'CreateFormModel',
     subModels: {

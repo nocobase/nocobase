@@ -226,10 +226,10 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
   // UI and params configuration
   uiSchema?:
     | Record<string, ISchema>
-    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
   defaultParams?:
     | Record<string, any>
-    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition if 'use' is provided
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition if 'use' is provided
 
   // Step configuration
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model

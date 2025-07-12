@@ -14,6 +14,7 @@ import {
   BaseRecordResource,
   Collection,
   CollectionField,
+  DataSource,
   DefaultStructure,
   escapeT,
   FlowModel,
@@ -22,6 +23,14 @@ import {
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
+
+export interface ResourceSettingsInitParams {
+  dataSourceKey: string;
+  collectionName: string;
+  associationName?: string;
+  sourceId?: string;
+  filterByTk?: string;
+}
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
@@ -126,6 +135,10 @@ BlockModel.registerFlow({
 BlockModel.define({ hide: true });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
+  get dataSource(): DataSource {
+    return this.context.dataSource;
+  }
+
   get collection(): Collection {
     return this.context.collection;
   }
@@ -134,8 +147,16 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     return this.context.resource;
   }
 
+  get association(): CollectionField | undefined {
+    return this.context.association;
+  }
+
   get associationField(): CollectionField | undefined {
     return this.context.association;
+  }
+
+  getResourceSettingsInitParams(): ResourceSettingsInitParams {
+    return this.getStepParams('resourceSettings', 'init');
   }
 
   onInit(options) {
@@ -147,19 +168,19 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     });
     this.context.defineProperty('dataSource', {
       get: () => {
-        const params = this.getStepParams('resourceSettings', 'init');
+        const params = this.getResourceSettingsInitParams();
         return this.context.dataSourceManager.getDataSource(params.dataSourceKey);
       },
     });
     this.context.defineProperty('collection', {
       get: () => {
-        const params = this.getStepParams('resourceSettings', 'init');
+        const params = this.getResourceSettingsInitParams();
         return this.context.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
       },
     });
     this.context.defineProperty('resource', {
       get: () => {
-        const params = this.getStepParams('resourceSettings', 'init');
+        const params = this.getResourceSettingsInitParams();
         const resource = this.createResource(this.context, params);
         resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
@@ -172,13 +193,11 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     });
     this.context.defineProperty('association', {
       get: () => {
-        const params = this.getStepParams('resourceSettings', 'init');
+        const params = this.getResourceSettingsInitParams();
         if (!params.associationName) {
           return undefined;
         }
-        const [cName, fName] = params.associationName.split('.');
-        const sourceCollection = this.context.dataSourceManager.getCollection(params.dataSourceKey, cName);
-        return sourceCollection.getField(fName);
+        return this.dataSource.getAssocation(params.associationName);
       },
     });
   }
@@ -188,15 +207,15 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   get title() {
-    return this.translate(this._title) || this.defaultBlockTitle();
+    return this.context.t(this._title) || this.defaultBlockTitle();
   }
 
   protected defaultBlockTitle() {
     let collectionTitle = this.collection?.title;
-    if (this.associationField) {
+    if (this.association) {
       const resourceName = this.resource.getResourceName();
-      const sourceCollection = this.collection.dataSource.getCollection(resourceName.split('.')[0]);
-      collectionTitle = [sourceCollection.title, this.associationField.title].join(' > ');
+      const sourceCollection = this.dataSource.getCollection(resourceName.split('.')[0]);
+      collectionTitle = [sourceCollection.title, this.association.title].join(' > ');
       collectionTitle += ` (${this.collection?.title})`;
     }
     return `
@@ -234,13 +253,13 @@ DataBlockModel.registerFlow({
         }
         // sourceId 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('sourceId')) {
-          ctx.model.resource.setSourceId(
+          ctx.resource.setSourceId(
             Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
           );
         }
         // filterByTk 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('filterByTk')) {
-          ctx.model.resource.setFilterByTk(
+          ctx.resource.setFilterByTk(
             Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
           );
         }
