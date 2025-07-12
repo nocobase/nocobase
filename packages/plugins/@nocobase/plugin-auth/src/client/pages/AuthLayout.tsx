@@ -52,6 +52,7 @@ export function AuthLayout() {
         maxWidth: 320,
         margin: '0 auto',
         paddingTop: '20vh',
+        paddingBottom: '20vh',
       }}
     >
       <div style={{ position: 'fixed', top: '2em', right: '2em' }}>
