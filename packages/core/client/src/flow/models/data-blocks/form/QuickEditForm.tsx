@@ -25,7 +25,6 @@ import _ from 'lodash';
 import React from 'react';
 
 export class QuickEditForm extends FlowModel {
-  form: Form;
   fieldPath: string;
 
   declare resource: SingleRecordResource;
@@ -35,6 +34,10 @@ export class QuickEditForm extends FlowModel {
 
   viewContainer: any;
   __onSubmitSuccess;
+
+  get form() {
+    return this.context.form as Form;
+  }
 
   static async open(options: {
     flowEngine: FlowEngine;
@@ -97,6 +100,9 @@ export class QuickEditForm extends FlowModel {
     });
     this.context.defineProperty('blockModel', {
       value: this,
+    });
+    this.context.defineProperty('form', {
+      get: () => createForm(),
     });
   }
 
@@ -189,7 +195,6 @@ QuickEditForm.registerFlow({
         }
         ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-        ctx.model.form = createForm();
         const resource = new SingleRecordResource();
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
