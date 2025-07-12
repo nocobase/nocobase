@@ -632,6 +632,10 @@ export class CollectionField {
     return undefined;
   }
 
+  isAssociationField() {
+    return ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(this.type);
+  }
+
   /**
    * 检查字段是否为关联字段
    * @returns 是否为关联字段

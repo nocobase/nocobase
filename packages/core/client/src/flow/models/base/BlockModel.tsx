@@ -20,7 +20,6 @@ import {
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 
@@ -127,19 +126,65 @@ BlockModel.registerFlow({
 BlockModel.define({ hide: true });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
-  resource: BaseRecordResource;
-  associationField?: CollectionField;
-  collection: Collection;
+  get collection(): Collection {
+    return this.context.collection;
+  }
+
+  get resource(): BaseRecordResource {
+    return this.context.resource;
+  }
+
+  get associationField(): CollectionField | undefined {
+    return this.context.association;
+  }
 
   onInit(options) {
     this.setSharedContext({
       currentBlockModel: this,
     });
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
+    this.context.defineProperty('dataSource', {
+      get: () => {
+        const params = this.getStepParams('resourceSettings', 'init');
+        return this.context.dataSourceManager.getDataSource(params.dataSourceKey);
+      },
+    });
+    this.context.defineProperty('collection', {
+      get: () => {
+        const params = this.getStepParams('resourceSettings', 'init');
+        return this.context.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+      },
+    });
+    this.context.defineProperty('resource', {
+      get: () => {
+        const params = this.getStepParams('resourceSettings', 'init');
+        const resource = this.createResource(this.context, params);
+        resource.setAPIClient(this.context.api);
+        resource.setDataSourceKey(params.dataSourceKey);
+        resource.setResourceName(params.associationName || params.collectionName);
+        resource.on('refresh', () => {
+          this.invalidateAutoFlowCache();
+        });
+        return resource;
+      },
+    });
+    this.context.defineProperty('association', {
+      get: () => {
+        const params = this.getStepParams('resourceSettings', 'init');
+        if (!params.associationName) {
+          return undefined;
+        }
+        const [cName, fName] = params.associationName.split('.');
+        const sourceCollection = this.context.dataSourceManager.getCollection(params.dataSourceKey, cName);
+        return sourceCollection.getField(fName);
+      },
+    });
   }
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
     throw new Error('createResource method must be implemented in subclasses of DataBlockModel');
-    return new MultiRecordResource();
   }
 
   get title() {
@@ -160,13 +205,13 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+    const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-    );
+    ) as CollectionField;
     if (!field) {
       return;
     }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type)) {
+    if (field.isAssociationField()) {
       (this.resource as BaseRecordResource).addAppends(field.name);
       if (refresh) {
         this.resource.refresh();
@@ -187,34 +232,18 @@ DataBlockModel.registerFlow({
         if (!params.collectionName) {
           throw new Error('collectionName is required');
         }
-        if (!ctx.model.collection) {
-          ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
-        }
-        if (!ctx.model.resource) {
-          if (params.associationName) {
-            const [cName, fName] = params.associationName.split('.');
-            const sourceCollection = ctx.dataSourceManager.getCollection(params.dataSourceKey, cName);
-            ctx.model.associationField = sourceCollection.getField(fName);
-          }
-          ctx.model.resource = ctx.model.createResource(ctx, params);
-          ctx.model.resource.setAPIClient(ctx.api);
-          ctx.model.resource.setDataSourceKey(params.dataSourceKey);
-          ctx.model.resource.setResourceName(params.associationName || params.collectionName);
-          ctx.model.resource.on('refresh', () => {
-            ctx.model.invalidateAutoFlowCache();
-          });
-        }
+        // sourceId 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('sourceId')) {
           ctx.model.resource.setSourceId(
             Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
           );
         }
+        // filterByTk 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('filterByTk')) {
           ctx.model.resource.setFilterByTk(
             Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
           );
         }
-        ctx.logger.info('params', params);
       },
     },
   },

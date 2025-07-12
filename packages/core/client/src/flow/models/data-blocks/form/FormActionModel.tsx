@@ -11,7 +11,8 @@ import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/fl
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
-import { EditFormModel, FormModel } from './FormModel';
+import { EditFormModel } from './EditFormModel';
+import { FormModel } from './FormModel';
 
 export class FormActionModel extends ActionModel {}
 

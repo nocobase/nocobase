@@ -10,16 +10,18 @@
 import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
-import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
+import { GridModel } from '../../base/GridModel';
 import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
 
 const AddDetailField = ({ model }) => {
-  const detailsModelInstance = model.parent as DetailsModel;
+  const blockModel = model.context.blockModel as DetailsModel;
+  const collection = blockModel.collection;
+  console.log('AddDetailField', collection);
 
   const items = buildFieldItems(
-    detailsModelInstance.collection.getFields(),
-    detailsModelInstance,
+    collection.getFields(),
+    blockModel,
     'ReadPrettyFieldModel',
     'items',
     ({ defaultOptions, fieldPath }) => ({
@@ -27,8 +29,8 @@ const AddDetailField = ({ model }) => {
       stepParams: {
         fieldSettings: {
           init: {
-            dataSourceKey: detailsModelInstance.collection.dataSourceKey,
-            collectionName: detailsModelInstance.collection.name,
+            dataSourceKey: collection.dataSourceKey,
+            collectionName: collection.name,
             fieldPath,
           },
         },
@@ -39,8 +41,8 @@ const AddDetailField = ({ model }) => {
           stepParams: {
             fieldSettings: {
               init: {
-                dataSourceKey: detailsModelInstance.collection.dataSourceKey,
-                collectionName: detailsModelInstance.collection.name,
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
                 fieldPath,
               },
             },
@@ -60,8 +62,7 @@ const AddDetailField = ({ model }) => {
         await field.applyAutoFlows();
       }}
       onSubModelAdded={async (item: DetailItemModel) => {
-        const fieldPath = item.getStepParams('fieldSettings', 'init').fieldPath;
-        model.ctx.shared.currentBlockModel.addAppends(fieldPath, true);
+        model.context.blockModel.addAppends(item.fieldPath, true);
       }}
     />
   );
@@ -103,7 +104,6 @@ DetailsFieldGridModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        console.log('init detailFieldGridSettings', ctx.model.subModels.items);
         await ctx.model.applySubModelsAutoFlows('items');
       },
     },

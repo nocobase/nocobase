@@ -9,7 +9,7 @@
 
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { FormProvider, observer } from '@formily/react';
+import { FormProvider } from '@formily/react';
 import {
   BaseRecordResource,
   Collection,
@@ -94,10 +94,13 @@ export class QuickEditForm extends FlowModel {
     this.setSharedContext({
       currentBlockModel: this,
     });
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+    const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     );
     if (!field) {

@@ -8,13 +8,33 @@
  */
 
 import { CollectionField, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { DataBlockModel } from './BlockModel';
 
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
 export type SupportedFieldInterfaces = string[] | '*' | null;
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
-  collectionField: CollectionField;
-  fieldPath: string;
+  onInit(options: any): void {
+    this.context.defineProperty('collectionField', {
+      get: () => {
+        const params = this.getStepParams('fieldSettings', 'init');
+        console.log('params', params);
+        const collectionField = this.context.dataSourceManager.getCollectionField(
+          `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
+        ) as CollectionField;
+        return collectionField;
+      },
+    });
+  }
+
+  get fieldPath(): string {
+    return this.getStepParams('fieldSettings', 'init').fieldPath;
+  }
+
+  get collectionField() {
+    return this.context.collectionField as CollectionField;
+  }
+
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
 }
 
@@ -25,8 +45,9 @@ FieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
-        if (!ctx.shared.currentBlockModel) {
-          throw new Error('Current block model is not set in shared context');
+        const blockModel = ctx.blockModel as DataBlockModel;
+        if (!blockModel) {
+          throw new Error('Current block model is not set in model context');
         }
         const { dataSourceKey, collectionName, fieldPath } = params;
         if (!dataSourceKey || !collectionName || !fieldPath) {
@@ -35,15 +56,7 @@ FieldModel.registerFlow({
         if (!ctx.model.parent) {
           throw new Error('FieldModel must have a parent model');
         }
-        const collectionField = ctx.globals.dataSourceManager.getCollectionField(
-          `${dataSourceKey}.${collectionName}.${fieldPath}`,
-        ) as CollectionField;
-        if (!collectionField) {
-          throw new Error(`Collection field not found for path: ${params.fieldPath}`);
-        }
-        ctx.model.collectionField = collectionField;
-        ctx.model.fieldPath = fieldPath;
-        ctx.shared.currentBlockModel.addAppends(fieldPath);
+        blockModel.addAppends(fieldPath);
       },
     },
   },

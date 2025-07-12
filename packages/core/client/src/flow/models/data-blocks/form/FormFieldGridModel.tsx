@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddFieldButton, buildFieldItems } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
-import { GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base/GridModel';
+import { GridModel } from '../../base/GridModel';
 import { EditableFieldModel } from '../../fields';
 import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { FormModel } from './FormModel';
@@ -29,7 +29,6 @@ export class FormFieldGridModel extends GridModel<{
     },
   };
   renderAddSubModelButton() {
-    const t = this.translate;
     const formModelInstance = this.parent as FormModel;
     const fieldItems = buildFieldItems(
       formModelInstance.collection.getFields(),
