@@ -38,7 +38,7 @@ export function reactive<T extends (...args: any[]) => React.ReactNode>(
     // 创建一个响应式组件包装器
     const ReactiveWrapper = observer(() => {
       // 在observer内部调用原始的render方法
-      this.props; // 这样能保证及时 render 函数内部没有用到 this.props，也能触发响应式更新 （例如this.ctx.xxx）
+      this.props; // 这样能保证及时 render 函数内部没有用到 this.props，也能触发响应式更新 （例如this.context.xxx）
       return originalMethod.apply(this, args);
     });
 

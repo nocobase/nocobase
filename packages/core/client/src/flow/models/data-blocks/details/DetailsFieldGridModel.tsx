@@ -15,7 +15,7 @@ import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
 
 const AddDetailField = ({ model }) => {
-  const blockModel = model.ctx.blockModel as DetailsModel;
+  const blockModel = model.context.blockModel as DetailsModel;
   const collection = blockModel.collection;
 
   const items = buildFieldItems(
@@ -61,7 +61,7 @@ const AddDetailField = ({ model }) => {
         await field.applyAutoFlows();
       }}
       onSubModelAdded={async (item: DetailItemModel) => {
-        model.ctx.blockModel.addAppends(item.fieldPath, true);
+        model.context.blockModel.addAppends(item.fieldPath, true);
       }}
     />
   );

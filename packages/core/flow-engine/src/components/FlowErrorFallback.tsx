@@ -59,7 +59,7 @@ const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }
 
     setLoading(true);
     try {
-      // 从 model.ctx.api 获取 apiClient
+      // 从 model.context.api 获取 apiClient
       const apiClient = model.context.api;
 
       // 从 window 对象获取位置信息
