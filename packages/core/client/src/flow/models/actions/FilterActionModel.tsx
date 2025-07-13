@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, useFlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
@@ -115,7 +115,7 @@ FilterActionModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useStepSettingContext();
+            const { model } = useFlowSettingsContext();
             const options = model.ctx.currentBlockModel.collection.getFields().map((field) => {
               return {
                 label: field.title,
@@ -148,7 +148,7 @@ FilterActionModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model: modelInstance } = useStepSettingContext();
+            const { model: modelInstance } = useFlowSettingsContext();
             const currentBlockModel = modelInstance.ctx.currentBlockModel;
             const fields = currentBlockModel.collection.getFields();
             const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];

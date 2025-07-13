@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { defineAction, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { isEmptyFilter, tval } from '@nocobase/utils/client';
 import { FilterGroup } from '../components/FilterGroup';
 import _ from 'lodash';
+import { FieldModel } from '../models/base/FieldModel';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -20,24 +21,23 @@ export const dataScope = defineAction({
     filter: {
       type: 'object',
       'x-decorator': 'FormItem',
-      'x-component': (props) => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const { model: modelInstance } = useStepSettingContext();
-        let fields = [];
-        const collectionField = modelInstance.collectionField;
+      'x-component': function Component(props) {
+        const flowContext = useFlowSettingsContext<FieldModel>();
+        let fields;
+        const collectionField = flowContext.model.collectionField;
         if (collectionField) {
           fields = collectionField.targetCollection.fields;
         } else {
-          const currentBlockModel = modelInstance.ctx.currentBlockModel;
+          const currentBlockModel = flowContext.model.ctx.currentBlockModel;
           fields = currentBlockModel.collection.getFields();
         }
-        const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+        const ignoreFieldsNames = flowContext.model.props.ignoreFieldsNames || [];
         return (
           <FilterGroup
             value={props.value}
             fields={fields}
             ignoreFieldsNames={ignoreFieldsNames}
-            model={modelInstance}
+            model={flowContext.model}
           />
         );
       },

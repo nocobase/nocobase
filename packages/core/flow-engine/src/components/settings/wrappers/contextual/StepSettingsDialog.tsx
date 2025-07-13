@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { Button, message, Space } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
-import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
 const SchemaField = createSchemaField();
@@ -78,6 +77,8 @@ const openStepSettingsDialog = async ({
 
   // 解析动态 uiSchema
   const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+  flowRuntimeContext.defineProperty('currentStep', { value: step });
+
   const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
   const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
 
@@ -99,7 +100,7 @@ const openStepSettingsDialog = async ({
 
   const flowEngine = model.flowEngine;
   const scopes = {
-    useStepSettingContext,
+    useFlowSettingsContext,
     ...flowEngine.flowSettings?.scopes,
   };
 
@@ -173,19 +174,11 @@ const openStepSettingsDialog = async ({
       </Space>
     ),
     content: (currentDialog) => {
-      const contextValue: StepSettingContextType = {
-        model,
-        app: model.ctx.app,
-        step,
-        flow,
-        flowKey,
-        stepKey,
-      };
       // 编译 formSchema 中的表达式
       const compiledFormSchema = compileUiSchema(scopes, formSchema);
       return (
         <FormProvider form={form}>
-          <StepSettingContextProvider value={contextValue}>
+          <FlowSettingsContextProvider value={flowRuntimeContext}>
             <SchemaField
               schema={compiledFormSchema}
               components={{
@@ -193,7 +186,7 @@ const openStepSettingsDialog = async ({
               }}
               scope={scopes}
             />
-          </StepSettingContextProvider>
+          </FlowSettingsContextProvider>
         </FormProvider>
       );
     },

@@ -15,7 +15,7 @@ import {
   escapeT,
   FlowModel,
   FlowsFloatContextMenu,
-  useStepSettingContext,
+  useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -132,7 +132,7 @@ TableColumnModel.registerFlow({
           },
           'x-reactions': (field) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useStepSettingContext();
+            const { model } = useFlowSettingsContext<FieldModel>();
             const originTitle = model.collectionField?.uiSchema?.title;
             field.decoratorProps = {
               ...field.decoratorProps,
