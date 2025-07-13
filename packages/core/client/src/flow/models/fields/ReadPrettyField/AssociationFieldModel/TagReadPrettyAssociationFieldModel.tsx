@@ -104,10 +104,19 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
 
           if (!fieldModel) {
             fieldModel = field.createFork({}, key);
-            fieldModel.defineContextProperties({
-              index,
-              value: v?.[fieldNames.label],
-              currentRecord: v,
+            // fieldModel.defineContextProperties({
+            //   index,
+            //   value: v?.[fieldNames.label],
+            //   currentRecord: v,
+            // });
+            fieldModel.ctx.defineProperty('index', {
+              get: () => index,
+            });
+            fieldModel.ctx.defineProperty('value', {
+              get: () => v?.[fieldNames.label],
+            });
+            fieldModel.ctx.defineProperty('currentRecord', {
+              get: () => v,
             });
             this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }

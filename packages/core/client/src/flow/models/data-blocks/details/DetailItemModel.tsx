@@ -33,9 +33,13 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.ctx.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.defineContextProperties({
-      value,
+    // fieldModel.defineContextProperties({
+    //   value,
+    // });
+    fieldModel.ctx.defineProperty('value', {
+      get: () => value,
     });
+
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}

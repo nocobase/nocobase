@@ -10,7 +10,7 @@
 import { APIClient } from '@nocobase/sdk';
 import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowContext33, FlowDefinition, FlowModelOptions } from '../../types';
+import type { DefaultStructure, FlowDefinition, FlowModelOptions } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
 
@@ -432,7 +432,7 @@ describe('FlowModel', () => {
           key: 'exitFlow',
           steps: {
             step1: {
-              handler: (ctx: FlowContext33<any>) => {
+              handler: (ctx) => {
                 ctx.exit();
                 return 'should-not-reach';
               },

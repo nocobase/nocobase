@@ -48,10 +48,13 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    model.defineContextProperties({
-      layoutContentElement: layoutContentRef.current,
-      currentRoute,
+    model.ctx.defineProperty('layoutContentElement', {
+      get: () => layoutContentRef.current,
     });
+    model.ctx.defineProperty('currentRoute', {
+      get: () => currentRoute,
+    });
+
     model.dispatchEvent('click', { mode: 'page', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;

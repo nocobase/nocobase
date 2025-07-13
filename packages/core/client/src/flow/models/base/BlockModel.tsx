@@ -160,9 +160,6 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   onInit(options) {
-    this.defineContextProperties({
-      currentBlockModel: this,
-    });
     this.ctx.defineProperty('blockModel', {
       value: this,
     });
