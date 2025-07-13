@@ -876,9 +876,8 @@ describe('FlowModel', () => {
           parentModel.addSubModel('children', child2);
 
           const runtimeData = { test: 'extra' };
-          const sharedData = { shared: 'data' };
 
-          await parentModel.applySubModelsAutoFlows('children', runtimeData, sharedData);
+          await parentModel.applySubModelsAutoFlows('children', runtimeData);
 
           expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
           expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);

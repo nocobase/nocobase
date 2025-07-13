@@ -818,7 +818,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        sub.defineContextProperties(shared);
         await sub.applyAutoFlows(runtimeArgs, false);
       }),
     );
