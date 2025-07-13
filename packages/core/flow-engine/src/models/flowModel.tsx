@@ -72,7 +72,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _lastAutoRunParams: any[] | null = null;
   private observerDispose: () => void;
-  private _flowContext: FlowModelContext;
+  #flowContext: FlowModelContext;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -122,10 +122,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   get context() {
-    if (!this._flowContext) {
-      this._flowContext = new FlowModelContext(this);
+    if (!this.#flowContext) {
+      this.#flowContext = new FlowModelContext(this);
     }
-    return this._flowContext;
+    return this.#flowContext;
   }
 
   on(eventName: string, listener: (...args: any[]) => void) {
