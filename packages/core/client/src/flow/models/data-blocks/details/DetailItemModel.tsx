@@ -10,7 +10,6 @@
 import { BaseItem } from '@formily/antd-v5';
 import { observable } from '@formily/reactive';
 import { escapeT, reactive } from '@nocobase/flow-engine';
-import { castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
@@ -32,10 +31,8 @@ export class DetailItemModel extends FieldModel<{
 
   @reactive
   render() {
-    const resource = this.parent.parent.resource;
-    const fieldModel = this.subModels.field as any;
-    const values = castArray(resource.getData()).filter(Boolean);
-    const value = values[0] ? values[0][this.fieldPath] : null;
+    const fieldModel = this.subModels.field as FieldModel;
+    const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
     fieldModel.setSharedContext({
       ...this.ctx.shared,
       value,
@@ -77,7 +74,7 @@ DetailItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          title: ctx.model.collectionField?.title,
+          title: ctx.collectionField.title,
         };
       },
       handler(ctx, params) {

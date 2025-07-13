@@ -43,7 +43,7 @@ BulkDeleteActionModel.registerFlow({
         }
         const resource = ctx.shared.currentBlockModel.resource as MultiRecordResource;
         if (resource.getSelectedRows().length === 0) {
-          ctx.message.warning(ctx.t('No records selected for deletion'));
+          ctx.message.warning(ctx.t('Please select at least one record to delete'));
           return;
         }
         await resource.destroy(ctx.shared.currentBlockModel.collection.getFilterByTK(resource.getSelectedRows()));

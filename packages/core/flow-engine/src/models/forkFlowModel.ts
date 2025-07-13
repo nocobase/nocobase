@@ -169,10 +169,16 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     return this['_flowContext'] as unknown as FlowModelContext;
   }
 
+  /**
+   * @deprecated
+   */
   public setSharedContext(ctx: Record<string, any>) {
     this['_sharedContext'] = { ...this['_sharedContext'], ...ctx };
   }
 
+  /**
+   * @deprecated
+   */
   public getSharedContext() {
     if (this.async || !this.parent) {
       return this['_sharedContext'] || {};

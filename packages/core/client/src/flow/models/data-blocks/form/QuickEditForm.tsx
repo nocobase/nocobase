@@ -9,7 +9,7 @@
 
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { FormProvider, observer } from '@formily/react';
+import { FormProvider } from '@formily/react';
 import {
   BaseRecordResource,
   Collection,
@@ -25,13 +25,19 @@ import _ from 'lodash';
 import React from 'react';
 
 export class QuickEditForm extends FlowModel {
-  form: Form;
   fieldPath: string;
 
   declare resource: SingleRecordResource;
   declare collection: Collection;
 
   now: number = Date.now();
+
+  viewContainer: any;
+  __onSubmitSuccess;
+
+  get form() {
+    return this.context.form as Form;
+  }
 
   static async open(options: {
     flowEngine: FlowEngine;
@@ -74,13 +80,11 @@ export class QuickEditForm extends FlowModel {
         },
       },
       content: (popover) => {
+        model.viewContainer = popover;
+        model.__onSubmitSuccess = onSuccess;
         console.log('QuickEditForm.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
-            sharedContext={{
-              currentView: popover,
-              __onSubmitSuccess: onSuccess,
-            }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
             runtimeArgs={{ filterByTk, record }}
@@ -94,10 +98,16 @@ export class QuickEditForm extends FlowModel {
     this.setSharedContext({
       currentBlockModel: this,
     });
+    this.context.defineProperty('blockModel', {
+      value: this,
+    });
+    this.context.defineProperty('form', {
+      get: () => createForm(),
+    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.globals.dataSourceManager.getCollectionField(
+    const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     );
     if (!field) {
@@ -124,23 +134,26 @@ export class QuickEditForm extends FlowModel {
           const formValues = {
             [this.fieldPath]: this.form.values[this.fieldPath],
           };
-
           const originalValues = {
             [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
           };
-
-          this.resource.save(formValues, { refresh: false }).catch((error) => {
+          try {
+            this.resource.save(formValues, { refresh: false }).catch((error) => {});
+            this.__onSubmitSuccess?.(formValues);
+            this.viewContainer.close();
+          } catch (error) {
             console.error('Failed to save form data:', error);
-            this.context.message.error(this.translate('Failed to save form data'));
-            this.ctx.shared.__onSubmitSuccess?.(originalValues);
-          });
-          this.ctx.shared.__onSubmitSuccess?.(formValues);
-          this.ctx.shared.currentView.close();
+            this.context.message.error(this.context.t('Failed to save form data'));
+            this.__onSubmitSuccess?.(originalValues);
+          }
         }}
       >
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
+              field.context.defineProperty('record', {
+                get: () => this.resource.getData(),
+              });
               return (
                 <FlowModelRenderer
                   key={field.uid}
@@ -154,13 +167,13 @@ export class QuickEditForm extends FlowModel {
           <FormButtonGroup align="right">
             <Button
               onClick={() => {
-                this.ctx.shared.currentView.close();
+                this.viewContainer.close();
               }}
             >
-              {this.translate('Cancel')}
+              {this.context.t('Cancel')}
             </Button>
             <Button type="primary" htmlType="submit">
-              {this.translate('Submit')}
+              {this.context.t('Submit')}
             </Button>
           </FormButtonGroup>
         </FormProvider>
@@ -181,12 +194,11 @@ QuickEditForm.registerFlow({
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
         ctx.model.fieldPath = fieldPath;
-        ctx.model.collection = ctx.globals.dataSourceManager.getCollection(dataSourceKey, collectionName);
-        ctx.model.form = createForm();
+        ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
         const resource = new SingleRecordResource();
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
-        resource.setAPIClient(ctx.globals.api);
+        resource.setAPIClient(ctx.api);
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {

@@ -37,6 +37,15 @@ describe('FlowContext properties and methods', () => {
     expect(ctx.b).toBe('ab');
   });
 
+  it('should support context reference in get', () => {
+    const ctx1 = new FlowContext();
+    ctx1.defineProperty('a', { get: () => 'a' });
+    const ctx = new FlowContext();
+    ctx.addDelegate(ctx1);
+    ctx.defineProperty('b', { get: () => ctx.a + 'b' });
+    expect(ctx.b).toBe('ab');
+  });
+
   it('should support async context reference in get', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('c', { get: async () => 'c' });

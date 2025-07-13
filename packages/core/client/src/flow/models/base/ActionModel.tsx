@@ -118,15 +118,16 @@ RecordActionModel.registerFlow({
   steps: {
     interaction: {
       handler(ctx, params) {
-        const { currentRecord, currentBlockModel } = ctx.shared;
+        const blockModel = ctx.blockModel;
+        if (!blockModel) {
+          throw new Error('Current block model is not set in context');
+        }
+        const { currentRecord } = ctx.shared;
         if (!currentRecord) {
           throw new Error('Current record is not set in shared context');
         }
-        if (!currentBlockModel) {
-          throw new Error('Current block model is not set in shared context');
-        }
         ctx.model.setProps('onClick', (event) => {
-          const collection = currentBlockModel.collection as Collection;
+          const collection = ctx.collection as Collection;
           ctx.model.dispatchEvent('click', {
             event,
             filterByTk: collection.getFilterByTK(currentRecord),

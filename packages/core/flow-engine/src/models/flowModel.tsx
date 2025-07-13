@@ -961,6 +961,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.flowEngine.translate.bind(this.flowEngine);
   }
 
+  /**
+   * @deprecated
+   */
   public setSharedContext(ctx: Record<string, any>) {
     this._sharedContext = { ...this._sharedContext, ...ctx };
   }
