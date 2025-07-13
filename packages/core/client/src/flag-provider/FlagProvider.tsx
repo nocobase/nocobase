@@ -47,6 +47,7 @@ export interface FlagProviderProps {
    * 是否存在于变量选择器中
    */
   isInXButton?: boolean;
+  isInMobileDrawer?: boolean;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);
