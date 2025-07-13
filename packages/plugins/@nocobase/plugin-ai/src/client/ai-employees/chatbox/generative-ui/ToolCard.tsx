@@ -11,13 +11,11 @@ import React from 'react';
 import { DefaultToolCard } from './DefaultToolCard';
 import { usePlugin } from '@nocobase/client';
 import { PluginAIClient } from '../../../';
+import { ToolCall } from '../../types';
 
 export const ToolCard: React.FC<{
   messageId: string;
-  tools: {
-    name: string;
-    args: any;
-  }[];
+  tools: ToolCall<unknown>[];
   autoCallTools?: string[];
 }> = ({ tools, messageId, autoCallTools }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
@@ -26,7 +24,7 @@ export const ToolCard: React.FC<{
   }
   const tool = tools[0];
   const toolOption = plugin.aiManager.tools.get(tool.name);
-  const C = toolOption?.components?.card;
+  const C = toolOption?.ui?.card;
   if (C) {
     return <C messageId={messageId} tool={tool} />;
   }

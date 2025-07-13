@@ -18,6 +18,7 @@ import { useT } from '../../../locale';
 import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
+import { useChatToolsStore } from '../stores/chat-tools';
 
 export const useChatBoxActions = () => {
   const t = useT();
@@ -39,6 +40,10 @@ export const useChatBoxActions = () => {
   const setContextItems = useChatMessagesStore.use.setContextItems();
   const setMessages = useChatMessagesStore.use.setMessages();
 
+  const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
+  const setActiveTool = useChatToolsStore.use.setActiveTool();
+  const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
+
   const { conversationsService } = useChatConversationActions();
   const { sendMessages } = useChatMessageActions();
 
@@ -48,6 +53,9 @@ export const useChatBoxActions = () => {
     setAttachments([]);
     setContextItems([]);
     setTaskVariables({});
+    setOpenToolModal(false);
+    setActiveTool(null);
+    setActiveMessageId('');
   };
 
   const send = (options: SendOptions) => {

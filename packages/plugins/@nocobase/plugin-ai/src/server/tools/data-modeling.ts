@@ -8,6 +8,128 @@
  */
 import { z } from 'zod';
 import { ToolOptions } from '../manager/tool-manager';
+import { Context } from '@nocobase/actions';
+import _ from 'lodash';
+
+const idField = {
+  name: 'id',
+  type: 'bigInt',
+  autoIncrement: true,
+  primaryKey: true,
+  allowNull: false,
+  uiSchema: {
+    type: 'number',
+    title: '{{t("ID")}}',
+    'x-component': 'InputNumber',
+    'x-read-pretty': true,
+  },
+  interface: 'id',
+};
+const createdAtField = {
+  name: 'createdAt',
+  interface: 'createdAt',
+  type: 'date',
+  field: 'createdAt',
+  uiSchema: {
+    type: 'datetime',
+    title: '{{t("Created at")}}',
+    'x-component': 'DatePicker',
+    'x-component-props': {},
+    'x-read-pretty': true,
+  },
+};
+const updatedAtField = {
+  type: 'date',
+  field: 'updatedAt',
+  name: 'updatedAt',
+  interface: 'updatedAt',
+  uiSchema: {
+    type: 'datetime',
+    title: '{{t("Last updated at")}}',
+    'x-component': 'DatePicker',
+    'x-component-props': {},
+    'x-read-pretty': true,
+  },
+};
+
+export const getCollectionNames: ToolOptions = {
+  name: 'getCollectionNames',
+  title: '{{t("Get collection names")}}',
+  description: '{{t("Retrieve names and titles map of all collections")}}',
+  schema: z.object({}),
+  invoke: async (ctx: Context) => {
+    let names: { name: string; title: string }[] = [];
+    try {
+      const collections = await ctx.db.getRepository('collections').find();
+      names = collections.map((collection: { name: string; title: string }) => ({
+        name: collection.name,
+        title: collection.title,
+      }));
+    } catch (err) {
+      ctx.log.error(err, {
+        module: 'ai',
+        subModule: 'toolCalling',
+        groupName: 'dataModeling',
+        toolName: 'getCollectionNames',
+      });
+      return {
+        status: 'error',
+        content: `Failed to retrieve collection names: ${err.message}`,
+      };
+    }
+
+    return {
+      status: 'success',
+      content: JSON.stringify(names),
+    };
+  },
+};
+
+export const getCollectionMetadata: ToolOptions = {
+  name: 'getCollectionMetadata',
+  title: '{{t("Get collection metadata")}}',
+  description: '{{t("Retrieve metadata for specified collections and their fields")}}',
+  schema: z.object({
+    collectionNames: z.array(z.string()).describe('An array of collection names to retrieve metadata for.'),
+  }),
+  invoke: async (
+    ctx: Context,
+    args: {
+      collectionNames: string[];
+    },
+  ) => {
+    const { collectionNames } = args || {};
+    if (!collectionNames || !Array.isArray(collectionNames) || collectionNames.length === 0) {
+      return {
+        status: 'error',
+        content: 'No collection names provided or invalid format.',
+      };
+    }
+    const collections = await ctx.db.getRepository('collections').find({
+      filter: { name: collectionNames },
+      appends: ['fields'],
+    });
+    const metadata = collections.map((collection: any) => {
+      const fields = collection.fields.map((field: any) => {
+        return {
+          name: field.name,
+          type: field.type,
+          interface: field.interface,
+          options: field.options || {},
+        };
+      });
+      return {
+        name: collection.name,
+        title: collection.title,
+        fields,
+      };
+    });
+    return {
+      status: 'success',
+      content: JSON.stringify(metadata),
+    };
+  },
+};
 
 export const defineCollections: ToolOptions = {
   name: 'defineCollections',
@@ -16,25 +138,142 @@ export const defineCollections: ToolOptions = {
   schema: z.object({
     collections: z.array(z.record(z.any())).describe('An array of collections to be defined or edited.'),
   }),
-  invoke: async () => {
-    return {
-      status: 'success',
-      content: 'I have filled the form with the provided data.',
-    };
-  },
-};
+  invoke: async (ctx: Context) => {
+    const {
+      args: { collections },
+    } = ctx.action.params.values || {};
+    if (!collections || !Array.isArray(collections)) {
+      return {
+        status: 'error',
+        content: 'No collections provided or invalid format.',
+      };
+    }
+    const sorted = collections.sort((a, b) => (a.isThrough ? 1 : 0) - (b.isThrough ? 1 : 0));
+    try {
+      await ctx.db.sequelize.transaction(async (transaction) => {
+        const repo = ctx.db.getRepository('collections');
+        const pendingRelationFields: {
+          name: string;
+          relationFields: any[];
+        }[] = [];
 
-export const getCollectionMetadata: ToolOptions = {
-  name: 'getCollectionMetadata',
-  title: '{{t("Get collection metadata")}}',
-  description: '{{t("Retrieve metadata for specified collections")}}',
-  schema: z.object({
-    collectionNames: z.array(z.string()).describe('An array of collection names to retrieve metadata for.'),
-  }),
-  invoke: async () => {
+        for (const rawOptions of sorted) {
+          const options = { ...rawOptions };
+          options.fields = options.fields || [];
+
+          // Remove CURRENT_TIMESTAMP defaultValue
+          options.fields = options.fields.map((f: any) =>
+            f.defaultValue === 'CURRENT_TIMESTAMP' ? _.omit(f, ['defaultValue']) : f,
+          );
+
+          // Filter fields
+          const relationFields = options.fields.filter((f: any) =>
+            ['belongsTo', 'hasMany', 'belongsToMany', 'hasOne'].includes(f.type),
+          );
+          const normalFields = options.fields.filter(
+            (f: any) => !['belongsTo', 'hasMany', 'belongsToMany', 'hasOne'].includes(f.type),
+          );
+
+          // System fields
+          const systemFields = [];
+          if (options.autoGenId !== false && !options.isThrough) {
+            systemFields.push(idField);
+            options.autoGenId = false;
+          }
+          if (options.createdAt !== false) {
+            systemFields.push(createdAtField);
+            options.createdAt = true;
+          }
+          if (options.updatedAt !== false) {
+            systemFields.push(updatedAtField);
+            options.updatedAt = true;
+          }
+
+          const baseFields = [...systemFields, ...normalFields];
+          const collection = await repo.findOne({ filter: { name: options.name }, transaction });
+          if (!collection) {
+            await repo.create({
+              values: { ...options, fields: baseFields },
+              transaction,
+              context: ctx,
+            });
+          } else {
+            await repo.update({
+              filterByTk: options.name,
+              values: _.omit(options, ['fields']),
+              transaction,
+            });
+            for (const field of baseFields) {
+              const fieldRepo = ctx.db.getRepository('collections.fields', options.name);
+              const existing = await fieldRepo.findOne({
+                filter: {
+                  name: field.name,
+                },
+              });
+              if (!existing) {
+                await fieldRepo.create({
+                  values: field,
+                  transaction,
+                });
+              } else {
+                await fieldRepo.update({
+                  filterByTk: field.name,
+                  values: _.omit(field, ['key']),
+                  transaction,
+                });
+              }
+            }
+          }
+
+          if (relationFields.length > 0) {
+            pendingRelationFields.push({
+              name: options.name,
+              relationFields,
+            });
+          }
+        }
+        for (const { name, relationFields } of pendingRelationFields) {
+          const fieldRepo = ctx.db.getRepository('collections.fields', name);
+          for (const field of relationFields) {
+            const existing = await fieldRepo.findOne({
+              filter: {
+                name: field.name,
+              },
+            });
+            if (!existing) {
+              await fieldRepo.create({
+                values: field,
+                transaction,
+              });
+            } else {
+              await fieldRepo.update({
+                filterByTk: field.name,
+                values: _.omit(field, ['key']),
+                transaction,
+              });
+            }
+          }
+        }
+      });
+    } catch (e) {
+      ctx.log.error(e, {
+        module: 'ai',
+        subModule: 'toolCalling',
+        groupName: 'dataModeling',
+        toolName: 'defineCollections',
+        collections,
+        stack: e.stack,
+        cause: e.cause,
+      });
+      return {
+        status: 'error',
+        content: `Failed to define collections: ${e.message}`,
+      };
+    }
+
     return {
       status: 'success',
-      content: 'I have retrieved the metadata for the specified collections.',
+      content: 'Defined collections successfully in one transaction.',
     };
   },
 };

@@ -14,6 +14,8 @@ import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';
 import { useChatBoxEffect } from './hooks/useChatBoxEffect';
 import { useChatBoxStore } from './stores/chat-box';
+import { ToolModal } from './generative-ui/ToolModal';
+import { useChatToolsStore } from './stores/chat-tools';
 
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
@@ -21,6 +23,7 @@ export const ChatBoxLayout: React.FC<{
   const currentUserCtx = useContext(CurrentUserContext);
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
+  const activeTool = useChatToolsStore.use.activeTool();
 
   useChatBoxEffect();
 
@@ -60,6 +63,7 @@ html body {
         </Helmet>
       ) : null}
       {open ? <ChatBoxWrapper /> : null}
+      {activeTool && <ToolModal />}
     </div>
   );
 };

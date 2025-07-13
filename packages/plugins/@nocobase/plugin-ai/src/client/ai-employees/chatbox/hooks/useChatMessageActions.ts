@@ -316,7 +316,17 @@ export const useChatMessageActions = () => {
   }, [currentConversation]);
 
   const callTool = useCallback(
-    async ({ sessionId, messageId, aiEmployee }: { sessionId: string; messageId?: string; aiEmployee: AIEmployee }) => {
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      args,
+    }: {
+      sessionId: string;
+      messageId?: string;
+      aiEmployee: AIEmployee;
+      args?: Record<string, any>;
+    }) => {
       setResponseLoading(true);
       addMessage({
         key: uid(),
@@ -330,7 +340,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:callTool',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId },
+          data: { sessionId, messageId, args },
           responseType: 'stream',
           adapter: 'fetch',
         });

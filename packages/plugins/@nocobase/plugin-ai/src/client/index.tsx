@@ -9,22 +9,19 @@
 
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { CardItem, CollectionField, FormV2, Plugin, lazy } from '@nocobase/client';
+import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { LLMInstruction } from './workflow/nodes/llm';
-import { AIEmployeeInstruction } from './workflow/nodes/employee';
 import { tval } from '@nocobase/utils/client';
 import { namespace } from './locale';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { ClassicPagesContext } from './ai-employees/context/classic-pages';
-import { CollectionDefinitionsContext } from './ai-employees/context/data-modeling';
 import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
-const { Collections } = lazy(() => import('./ai-employees/built-in/data-modeling/ui/Collections'), 'Collections');
+import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -97,14 +94,10 @@ export class PluginAIClient extends Plugin {
       title: tval('Messages'),
       Component: MessagesSettings,
     });
-    this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
-    this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
-    this.aiManager.registerTool('defineCollections', {
-      components: {
-        card: Collections,
-      },
-    });
-    this.aiManager.registerTool('formFiller', {
+    // this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
+    // this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
+    this.aiManager.registerTool(...defineCollectionsTool);
+    this.aiManager.registerTool('frontEnd', 'formFiller', {
       invoke: (ctx, params) => {
         const { form: uid, data } = params;
         if (!uid || !data) {

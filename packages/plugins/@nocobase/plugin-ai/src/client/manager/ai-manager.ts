@@ -9,7 +9,7 @@
 
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
-import { WorkContextOptions } from '../ai-employees/types';
+import { ToolCall, WorkContextOptions } from '../ai-employees/types';
 
 export type LLMProviderOptions = {
   components: {
@@ -22,14 +22,21 @@ export type LLMProviderOptions = {
 };
 
 export type ToolOptions = {
-  components?: {
+  ui?: {
     card?: ComponentType<{
       messageId: string;
-      tool: {
-        name: string;
-        args: any;
-      };
+      tool: ToolCall<unknown>;
     }>;
+    modal?: {
+      title?: string;
+      okText?: string;
+      useOnOk?: () => {
+        onOk: () => void | Promise<void>;
+      };
+      Component?: ComponentType<{
+        tool: ToolCall<unknown>;
+      }>;
+    };
   };
   invoke?: (ctx: any, params: any) => void | Promise<void>;
 };
@@ -50,8 +57,8 @@ export class AIManager {
     this.llmProviders.register(name, options);
   }
 
-  registerTool(name: string, options: ToolOptions) {
-    this.tools.register(name, options);
+  registerTool(group: string, name: string, options: ToolOptions) {
+    this.tools.register(`${group}-${name}`, options);
   }
 
   registerWorkContext(name: string, options: WorkContextOptions) {

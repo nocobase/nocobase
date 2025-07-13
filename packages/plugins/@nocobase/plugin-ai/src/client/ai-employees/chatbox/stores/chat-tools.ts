@@ -12,29 +12,47 @@ import { Message, ToolCall } from '../../types';
 import { createSelectors } from './create-selectors';
 
 interface ChatToolsState {
-  toolsByName: Record<string, ToolCall<unknown>[]>;
+  toolsByName: Record<
+    string,
+    (ToolCall<unknown> & {
+      messageId?: string;
+    })[]
+  >;
   toolsByMessageId: Record<
     string,
     Record<
       string,
-      {
+      ToolCall<unknown> & {
         version: number;
       }
     >
   >;
+
+  openToolModal?: boolean;
+  activeTool?: ToolCall<unknown>;
+  activeMessageId?: string;
+  adjustArgs?: Record<string, any>;
 }
 
 interface ChatToolsActions {
   updateTools: (messages: Message[]) => void;
+  setOpenToolModal: (open: boolean) => void;
+  setActiveTool: (tool: ToolCall<unknown>) => void;
+  setActiveMessageId: (messageId: string) => void;
+  setAdjustArgs: (args: Record<string, any>) => void;
 }
 
 const store = create<ChatToolsState & ChatToolsActions>((set) => ({
   toolsByName: {},
   toolsByMessageId: {},
+  openToolModal: false,
+  activeTool: null,
+  activeMessageId: '',
+  adjustArgs: {},
 
   updateTools: (messages) => {
-    const toolsByName: Record<string, ToolCall<unknown>[]> = {};
-    const toolsByMessageId: Record<string, Record<string, { version: number }>> = {};
+    const toolsByName: ChatToolsState['toolsByName'] = {};
+    const toolsByMessageId: ChatToolsState['toolsByMessageId'] = {};
 
     for (const msg of messages) {
       const toolCalls = msg.content?.tool_calls || [];
@@ -44,7 +62,10 @@ const store = create<ChatToolsState & ChatToolsActions>((set) => ({
         if (!toolsByName[tool.name]) {
           toolsByName[tool.name] = [];
         }
-        toolsByName[tool.name].push(tool);
+        toolsByName[tool.name].push({
+          ...tool,
+          messageId,
+        });
         const version = toolsByName[tool.name].length;
 
         if (!messageId) {
@@ -54,6 +75,7 @@ const store = create<ChatToolsState & ChatToolsActions>((set) => ({
           toolsByMessageId[messageId] = {};
         }
         toolsByMessageId[messageId][tool.id] = {
+          ...tool,
           version,
         };
       }
@@ -61,6 +83,11 @@ const store = create<ChatToolsState & ChatToolsActions>((set) => ({
 
     set({ toolsByName, toolsByMessageId });
   },
+
+  setOpenToolModal: (open) => set({ openToolModal: open }),
+  setActiveTool: (tool) => set({ activeTool: tool }),
+  setActiveMessageId: (messageId) => set({ activeMessageId: messageId }),
+  setAdjustArgs: (args) => set({ adjustArgs: args }),
 }));
 
 export const useChatToolsStore = createSelectors(store);

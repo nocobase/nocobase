@@ -130,6 +130,7 @@ export const SkillsListItem: React.FC<{
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
+  const checked = field.value?.find((item: { name: string }) => item.name === name);
 
   return (
     <div
@@ -147,7 +148,7 @@ export const SkillsListItem: React.FC<{
         <div>{Schema.compile(title, { t })}</div>
         {!isRoot && (
           <div>
-            <Switch size="small" value={field.value?.includes(name)} disabled={field.value?.includes(name)} />
+            <Switch size="small" value={checked} disabled={checked} />
           </div>
         )}
       </div>
