@@ -869,11 +869,8 @@ describe('FlowModel', () => {
           const child1 = new FlowModel({ uid: 'child1', flowEngine });
           const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
-          // Mock applyAutoFlows and setSharedContext on child models
           child1.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child1.defineContextProperties = vi.fn();
           child2.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child2.defineContextProperties = vi.fn();
 
           parentModel.addSubModel('children', child1);
           parentModel.addSubModel('children', child2);
@@ -885,16 +882,12 @@ describe('FlowModel', () => {
 
           expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
           expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
-          expect(child1.defineContextProperties).toHaveBeenCalledWith(sharedData);
-          expect(child2.defineContextProperties).toHaveBeenCalledWith(sharedData);
         });
 
         test('should apply auto flows to single subModel', async () => {
           const child = new FlowModel({ uid: 'child', flowEngine });
 
-          // Mock applyAutoFlows and setSharedContext on child model
           child.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child.defineContextProperties = vi.fn();
 
           parentModel.setSubModel('child', child);
 

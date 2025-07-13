@@ -468,28 +468,18 @@ describe('ForkFlowModel', () => {
     test('should set shared context', () => {
       const contextData = { key1: 'value1', key2: 'value2' };
 
-      fork.defineContextProperties(contextData);
-
       // Check that the context properties are defined
       expect(fork.context.key1).toEqual('value1');
       expect(fork.context.key2).toEqual('value2');
     });
 
     test('should merge shared context', () => {
-      fork.defineContextProperties({ initial: 'value' });
-      fork.defineContextProperties({ additional: 'data', initial: 'updated' });
-
       // Check that context properties are merged correctly
       expect(fork.context.initial).toEqual('updated');
       expect(fork.context.additional).toEqual('data');
     });
 
     test('should get ctx with globals and shared', () => {
-      const sharedContext = { shared: 'data' };
-
-      // Define context properties on the fork
-      fork.defineContextProperties(sharedContext);
-
       const ctx = fork.context;
 
       // Check that shared properties are accessible through ctx

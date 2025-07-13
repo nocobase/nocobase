@@ -51,9 +51,11 @@ export const openModeAction = {
         <div>
           <FlowPage
             parentId={ctx.model.uid}
-            sharedContext={{
-              ...ctx.runtimeArgs,
-              currentDrawer,
+            onModelLoaded={(uid) => {
+              const pageModel = ctx.model.flowEngine.getModel(uid);
+              pageModel.context.defineProperty('currentDrawer', {
+                get: () => currentDrawer,
+              });
             }}
           />
         </div>

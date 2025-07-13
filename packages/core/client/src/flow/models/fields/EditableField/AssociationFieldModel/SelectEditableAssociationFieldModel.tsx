@@ -47,10 +47,6 @@ function LabelByField(props) {
   fieldModel.context.defineProperty('fieldValue', {
     get: () => option?.[fieldNames.label],
   });
-  fieldModel.defineContextProperties({
-    value: option?.[fieldNames.label],
-    currentRecord: option,
-  });
   return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
@@ -109,10 +105,6 @@ const AssociationSelect = connect(
     fieldModel.context.defineProperty('fieldValue', {
       get: () => value?.[fieldNames.label],
     });
-    fieldModel.defineContextProperties({
-      value: value?.[fieldNames.label],
-      currentRecord: value,
-    });
 
     const arrayValue = castArray(value);
 
@@ -127,10 +119,8 @@ const AssociationSelect = connect(
           fieldModel.context.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
-          fieldModel.defineContextProperties({
-            index,
-            value: v?.[fieldNames.label],
-            currentRecord: v,
+          fieldModel.context.defineProperty('index', {
+            get: () => index,
           });
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');

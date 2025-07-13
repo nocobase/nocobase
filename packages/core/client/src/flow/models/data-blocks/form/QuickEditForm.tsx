@@ -96,9 +96,6 @@ export class QuickEditForm extends FlowModel {
 
   onInit(options) {
     super.onInit(options);
-    this.defineContextProperties({
-      currentBlockModel: this,
-    });
     this.context.defineProperty('blockModel', {
       value: this,
     });
@@ -156,14 +153,7 @@ export class QuickEditForm extends FlowModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
-              return (
-                <FlowModelRenderer
-                  key={field.uid}
-                  model={field}
-                  sharedContext={{ currentRecord: this.resource.getData() }}
-                  fallback={<Skeleton.Input size="small" />}
-                />
-              );
+              return <FlowModelRenderer key={field.uid} model={field} fallback={<Skeleton.Input size="small" />} />;
             })}
           </FormLayout>
           <FormButtonGroup align="right">

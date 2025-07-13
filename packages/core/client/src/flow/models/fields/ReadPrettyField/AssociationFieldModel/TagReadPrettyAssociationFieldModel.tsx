@@ -110,10 +110,8 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
             fieldModel.context.defineProperty('fieldValue', {
               get: () => v?.[fieldNames.label],
             });
-            fieldModel.defineContextProperties({
-              index,
-              value: v?.[fieldNames.label],
-              currentRecord: v,
+            fieldModel.context.defineProperty('index', {
+              get: () => index,
             });
             this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }

@@ -66,14 +66,18 @@ export const openView = defineAction({
           <FlowPage
             parentId={ctx.model.uid}
             pageModelClass={pageModelClass}
-            sharedContext={{
-              currentFlow: ctx,
-              currentView: currentView,
-              closable: openMode !== 'page', // can't close page
-            }}
             onModelLoaded={(uid) => {
               pageModelUid = uid;
               const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+              pageModel.context.defineProperty('currentView', {
+                get: () => currentView,
+              });
+              pageModel.context.defineProperty('currentFlow', {
+                get: () => ctx,
+              });
+              pageModel.context.defineProperty('closable', {
+                get: () => openMode !== 'page',
+              });
               pageModel.invalidateAutoFlowCache();
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}

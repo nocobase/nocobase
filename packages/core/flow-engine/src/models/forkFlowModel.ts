@@ -63,8 +63,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
    */
   private localProperties: Record<string, any> = {};
 
-  /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
-  // private _sharedContext: Record<string, any> = {};
   // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
   #flowContext: FlowModelContext;
 
@@ -167,14 +165,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
       this['#flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
     }
     return this['#flowContext'] as unknown as FlowModelContext;
-  }
-
-  public defineContextProperties(ctx: Record<string, any>) {
-    for (const key in ctx) {
-      this.context.defineProperty(key, {
-        value: ctx[key],
-      });
-    }
   }
 
   /**

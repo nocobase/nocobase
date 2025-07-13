@@ -44,7 +44,6 @@ export class CreateFormModel extends FormModel {
                   key={action.uid}
                   model={action}
                   showFlowSettings={{ showBackground: false, showBorder: false }}
-                  sharedContext={{ currentRecord: this.resource.getData() }}
                   extraToolbarItems={[
                     {
                       key: 'drag-handler',

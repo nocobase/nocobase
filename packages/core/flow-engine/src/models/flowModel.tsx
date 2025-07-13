@@ -941,14 +941,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.flowEngine.translate.bind(this.flowEngine);
   }
 
-  public defineContextProperties(ctx: Record<string, any>) {
-    for (const key in ctx) {
-      this.context.defineProperty(key, {
-        value: ctx[key],
-      });
-    }
-  }
-
   // TODO: 不完整，需要考虑 sub-model 的情况
   serialize(): Record<string, any> {
     const data = {
