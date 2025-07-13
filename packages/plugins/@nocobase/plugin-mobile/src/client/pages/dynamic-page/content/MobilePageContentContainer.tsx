@@ -13,11 +13,11 @@ import React, { FC, useEffect } from 'react';
 import classnames from 'classnames';
 import { PageBackgroundColor } from '../../../constants';
 
-export const MobilePageContentContainer: FC<{ hideTabBar?: boolean; className?: string }> = ({
-  children,
-  hideTabBar,
-  className,
-}) => {
+export const MobilePageContentContainer: FC<{
+  hideTabBar?: boolean;
+  displayPageHeader?: boolean;
+  className?: string;
+}> = ({ children, hideTabBar, displayPageHeader = true, className }) => {
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
   const { token } = useToken();
@@ -34,7 +34,7 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean; className?: 
   });
   return (
     <>
-      {mobilePageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
+      {mobilePageHeader && displayPageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
       <div
         className={classnames('mobile-page-content', className)}
         data-testid="mobile-page-content"

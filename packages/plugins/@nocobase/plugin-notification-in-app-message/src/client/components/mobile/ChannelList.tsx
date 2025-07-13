@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useRef, useEffect, useState } from 'react';
-import { observer } from '@formily/reactive-react';
-import { reaction } from '@formily/reactive';
-import { List, Badge, InfiniteScroll, ListRef } from 'antd-mobile';
-import { useNavigate } from 'react-router-dom';
-import { dayjs } from '@nocobase/utils/client';
-import InfiniteScrollContent from './InfiniteScrollContent';
-import { channelListObs, channelStatusFilterObs, showChannelLoadingMoreObs, fetchChannels } from '../../observables';
 import { Schema } from '@formily/react';
+import { reaction } from '@formily/reactive';
+import { observer } from '@formily/reactive-react';
 import { useApp } from '@nocobase/client';
+import { dayjs } from '@nocobase/utils/client';
+import { Badge, InfiniteScroll, List, ListRef } from 'antd-mobile';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { channelListObs, channelStatusFilterObs, fetchChannels, showChannelLoadingMoreObs } from '../../observables';
+import InfiniteScrollContent from './InfiniteScrollContent';
 
-const InternalChannelList = () => {
+const InternalChannelList = (props: { onClickItem?: (item: any) => void }) => {
   const app = useApp();
   const navigate = useNavigate();
   const channels = channelListObs.value;
@@ -58,6 +58,9 @@ const InternalChannelList = () => {
         ref={listRef}
         style={{
           '--border-top': 'none',
+          '--font-size': 'var(--adm-font-size-6)',
+          // @ts-ignore
+          '--adm-font-size-main': 'var(--adm-font-size-4)',
         }}
       >
         {channelListObs.value.map((item) => {
@@ -66,7 +69,11 @@ const InternalChannelList = () => {
             <List.Item
               key={item.name}
               onClick={() => {
-                navigate(`/page/in-app-message/messages?channel=${item.name}`);
+                if (props.onClickItem) {
+                  props.onClickItem(item);
+                } else {
+                  navigate(`/page/in-app-message/messages?channel=${item.name}`);
+                }
               }}
               description={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

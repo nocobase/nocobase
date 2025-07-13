@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { GeneralField } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
@@ -64,7 +64,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
 export default function useServiceOptions(props) {
   const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
-  const field = useField();
+  const field = useField<Field>();
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const record = useRecord();
@@ -73,7 +73,12 @@ export default function useServiceOptions(props) {
       ? field.componentProps?.service?.params?.filter
       : fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter;
 
-  const { filter: parsedFilterParams } = useParsedFilter({ filterOption: filterParams });
+  const { filter: parsedFilterParams } = useParsedFilter({
+    filterOption: filterParams,
+    onFilterChange: () => {
+      field.reset();
+    },
+  });
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);

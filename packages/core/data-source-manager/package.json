@@ -1,16 +1,16 @@
 {
   "name": "@nocobase/data-source-manager",
-  "version": "1.7.19",
+  "version": "1.8.3",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "1.7.19",
-    "@nocobase/cache": "1.7.19",
-    "@nocobase/database": "1.7.19",
-    "@nocobase/resourcer": "1.7.19",
-    "@nocobase/utils": "1.7.19",
+    "@nocobase/actions": "1.8.3",
+    "@nocobase/cache": "1.8.3",
+    "@nocobase/database": "1.8.3",
+    "@nocobase/resourcer": "1.8.3",
+    "@nocobase/utils": "1.8.3",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^9.0.2"
   },

@@ -12,6 +12,31 @@ import { getCluster } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
+import { BackgroundJobManager, MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
+
+class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
+  setQueues(queues) {
+    this.queues = queues;
+  }
+
+  getQueues() {
+    return this.queues;
+  }
+
+  async connect() {
+    if (this.isConnected()) {
+      return;
+    }
+
+    this.setConnected(true);
+
+    setImmediate(() => {
+      for (const channel of this.events.keys()) {
+        this.consume(channel);
+      }
+    });
+  }
+}
 
 describe('workflow > cluster', () => {
   let cluster;
@@ -22,7 +47,9 @@ describe('workflow > cluster', () => {
     });
   });
 
-  afterEach(() => cluster.destroy());
+  afterEach(async () => {
+    await cluster.destroy();
+  });
 
   describe('sync message', () => {
     it('enabled status of workflow should be sync in every nodes', async () => {
@@ -68,5 +95,105 @@ describe('workflow > cluster', () => {
       expect(p2.enabledCache.get(w1.id)).toBeUndefined();
       expect(p3.enabledCache.get(w1.id)).toBeUndefined();
     });
+  });
+
+  describe('event queue', () => {
+    let sharedQueues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]>;
+
+    beforeEach(async () => {
+      sharedQueues = new Map();
+      for (const node of cluster.nodes) {
+        await node.eventQueue.close();
+        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name });
+        adapter.setQueues(sharedQueues);
+        node.eventQueue.setAdapter(adapter);
+        await node.eventQueue.connect();
+      }
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] == 'sqlite')(
+      'should be able to process executions on other nodes',
+      async () => {
+        const [app1, app2, app3] = cluster.nodes;
+
+        const p1 = app1.pm.get(Plugin) as Plugin;
+        const p2 = app2.pm.get(Plugin) as Plugin;
+
+        const w1 = await app1.db.getRepository('workflows').create({
+          values: {
+            type: 'asyncTrigger',
+            enabled: true,
+          },
+        });
+
+        const n1 = await w1.createNode({
+          type: 'timeConsume',
+          config: {
+            duration: 350,
+          },
+        });
+
+        const n2 = await w1.createNode({
+          type: 'recordAppId',
+          upstreamId: n1.id,
+        });
+        await n1.setDownstream(n2);
+
+        p1.trigger(w1, { a: 1 });
+        p1.trigger(w1, { a: 2 });
+        p1.trigger(w1, { a: 3 });
+        p1.trigger(w1, { a: 4 });
+        p2.trigger(w1, { a: 5 });
+        p2.trigger(w1, { a: 6 });
+        p2.trigger(w1, { a: 7 });
+        p2.trigger(w1, { a: 8 });
+
+        await sleep(300);
+
+        const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
+        // NOTE: app3 read one
+        expect(q1.length).toBe(5);
+
+        const e1s = await w1.getExecutions({ order: [['id', 'ASC']] });
+        expect(e1s.length).toBe(8);
+        expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
+        expect(e1s[1].status).toBe(EXECUTION_STATUS.STARTED);
+        expect(e1s[2].status).toBe(EXECUTION_STATUS.STARTED);
+
+        for (let i = 3; i < 8; i++) {
+          expect(e1s[i].status).toBe(EXECUTION_STATUS.QUEUEING);
+        }
+
+        await sleep(2000);
+
+        const e2s = await w1.getExecutions({ order: [['id', 'ASC']], include: ['jobs'] });
+        expect(e2s.length).toBe(8);
+        expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[2].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[3].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[4].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[5].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+        const appIds = e2s.map((item) =>
+          item.jobs
+            .find((job) => job.nodeId === n2.id)
+            .result.split('_')
+            .pop(),
+        );
+        const appIdsSet = new Set(appIds);
+        expect(appIdsSet.size).toBe(3);
+        // expect(appNameJobs[0].result).toBe(app1.instanceId);
+        // expect(appNameJobs[1].result).toBe(app2.instanceId);
+        // expect(appNameJobs[2].result).toBe(app3.instanceId);
+        // expect(appNameJobs[3].result).toBe(app1.instanceId);
+        // expect(appNameJobs[4].result).toBe(app2.instanceId);
+        // expect(appNameJobs[5].result).toBe(app3.instanceId);
+        // expect(appNameJobs[6].result).toBe(app1.instanceId);
+        // expect(appNameJobs[7].result).toBe(app2.instanceId);
+      },
+    );
   });
 });

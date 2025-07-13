@@ -22,8 +22,14 @@ import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
-import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
-import { removePopupLayerState, setPopupLayerState } from './popupState';
+import {
+  PopupParams,
+  getBlockService,
+  getPopupParamsFromPath,
+  getStoredPopupContext,
+  usePopupUtils,
+} from './pagePopupUtils';
+import { removePopupLayerState } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -157,7 +163,6 @@ const PagePopupsItemProvider: FC<{
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   useEffect(() => {
-    setPopupLayerState(currentLevel, true);
     return () => {
       removePopupLayerState(currentLevel);
     };
@@ -416,7 +421,29 @@ function isSubPageSchema(schema: ISchema) {
 export const useCurrentPopupContext = (): PopupProps => {
   const { currentLevel } = React.useContext(PopupParamsProviderContext) || ({} as Omit<PopupProps, 'hidden'>);
   const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
-  return allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
+  const result = allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
+
+  if (result.context) {
+    Object.setPrototypeOf(result.context, {
+      get blockService() {
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
+      },
+    });
+  } else {
+    result.context = {
+      get blockService() {
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
+      },
+    };
+  }
+
+  return result;
 };
 
 /**
