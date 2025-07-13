@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css, cx } from '@emotion/css';
 import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
+import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { Tag } from 'antd';
-import { css, cx } from '@emotion/css';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
@@ -104,6 +104,12 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
 
           if (!fieldModel) {
             fieldModel = field.createFork({}, key);
+            fieldModel.context.defineProperty('record', {
+              get: () => v,
+            });
+            fieldModel.context.defineProperty('fieldValue', {
+              get: () => v?.[fieldNames.label],
+            });
             fieldModel.setSharedContext({
               index,
               value: v?.[fieldNames.label],

@@ -399,6 +399,27 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     expect(fork.context.appName).toBe('NocoBase4');
   });
 
+  it('should isolate context property changes between different forks', () => {
+    const model = engine.createModel({
+      use: 'TestModel',
+      subModels: {
+        sub: { uid: 'sub1', use: 'TestModel' },
+      },
+    });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
+    const sub = engine.getModel<TestModel>('sub1');
+    expect(sub.context.appName).toBe('NocoBase2');
+    sub.context.defineProperty('appName', { value: 'NocoBase3' });
+    const fork = sub.createFork();
+    const fork2 = sub.createFork();
+    expect(fork.context.appName).toBe('NocoBase3');
+    expect(fork2.context.appName).toBe('NocoBase3');
+    fork.context.defineProperty('appName', { value: 'NocoBase4' });
+    fork2.context.defineProperty('appName', { value: 'NocoBase5' });
+    expect(fork.context.appName).toBe('NocoBase4');
+    expect(fork2.context.appName).toBe('NocoBase5');
+  });
+
   it('should not inherit parent context property when subModel disables delegateToParent', () => {
     const model = engine.createModel({
       use: 'TestModel',
