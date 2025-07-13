@@ -115,7 +115,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  get ctx() {
+  get context() {
     if (!this.#flowContext) {
       this.#flowContext = new FlowModelContext(this);
     }

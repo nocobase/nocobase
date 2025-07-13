@@ -41,17 +41,16 @@ function LabelByField(props) {
   const field = currentModel.subModels.field as FlowModel;
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
-  // fieldModel.defineContextProperties({
-  //   value: option?.[fieldNames.label],
-  //   currentRecord: option,
-  // });
-  fieldModel.ctx.defineProperty('value', {
-    get: () => option?.[fieldNames.label],
-  });
-  fieldModel.ctx.defineProperty('currentRecord', {
+  fieldModel.ctx.defineProperty('record', {
     get: () => option,
   });
-
+  fieldModel.ctx.defineProperty('fieldValue', {
+    get: () => option?.[fieldNames.label],
+  });
+  fieldModel.defineContextProperties({
+    value: option?.[fieldNames.label],
+    currentRecord: option,
+  });
   return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
@@ -104,15 +103,15 @@ const AssociationSelect = connect(
     const field = currentModel.subModels.field as FlowModel;
     const key = value?.[fieldNames.value];
     const fieldModel = field.createFork({}, key);
-    // fieldModel.defineContextProperties({
-    //   value: value?.[fieldNames.label],
-    //   currentRecord: value,
-    // });
-    fieldModel.ctx.defineProperty('value', {
+    fieldModel.ctx.defineProperty('record', {
+      get: () => value,
+    });
+    fieldModel.ctx.defineProperty('fieldValue', {
       get: () => value?.[fieldNames.label],
     });
-    fieldModel.ctx.defineProperty('currentRecord', {
-      get: () => value,
+    fieldModel.defineContextProperties({
+      value: value?.[fieldNames.label],
+      currentRecord: value,
     });
 
     const arrayValue = castArray(value);
@@ -122,19 +121,16 @@ const AssociationSelect = connect(
         {arrayValue.map((v, index) => {
           const key = `${index}`;
           const fieldModel = field.createFork({}, key);
-          // fieldModel.defineContextProperties({
-          //   index,
-          //   value: v?.[fieldNames.label],
-          //   currentRecord: v,
-          // });
-          fieldModel.ctx.defineProperty('index', {
-            get: () => index,
+          fieldModel.ctx.defineProperty('record', {
+            get: () => v,
           });
-          fieldModel.ctx.defineProperty('value', {
+          fieldModel.ctx.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
-          fieldModel.ctx.defineProperty('currentRecord', {
-            get: () => v,
+          fieldModel.defineContextProperties({
+            index,
+            value: v?.[fieldNames.label],
+            currentRecord: v,
           });
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');

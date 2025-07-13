@@ -19,6 +19,7 @@ export class DetailItemModel extends FieldModel<{
   subModels: { field: FieldModel };
 }> {
   decoratorProps = observable({} as any);
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
   }
@@ -26,6 +27,14 @@ export class DetailItemModel extends FieldModel<{
   showTitle(showTitle: boolean) {
     this.setDecoratorProps({
       labelStyle: { display: showTitle ? 'flex' : 'none' },
+    });
+  }
+
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('fieldValue', {
+      get: () => this.context.record?.[this.fieldPath],
+      cache: false,
     });
   }
 

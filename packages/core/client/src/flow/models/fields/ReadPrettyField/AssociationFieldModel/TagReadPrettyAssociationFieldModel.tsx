@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css, cx } from '@emotion/css';
 import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
+import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { Tag } from 'antd';
-import { css, cx } from '@emotion/css';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
@@ -104,19 +104,16 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
 
           if (!fieldModel) {
             fieldModel = field.createFork({}, key);
-            // fieldModel.defineContextProperties({
-            //   index,
-            //   value: v?.[fieldNames.label],
-            //   currentRecord: v,
-            // });
-            fieldModel.ctx.defineProperty('index', {
-              get: () => index,
+            fieldModel.ctx.defineProperty('record', {
+              get: () => v,
             });
-            fieldModel.ctx.defineProperty('value', {
+            fieldModel.ctx.defineProperty('fieldValue', {
               get: () => v?.[fieldNames.label],
             });
-            fieldModel.ctx.defineProperty('currentRecord', {
-              get: () => v,
+            fieldModel.defineContextProperties({
+              index,
+              value: v?.[fieldNames.label],
+              currentRecord: v,
             });
             this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }

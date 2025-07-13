@@ -162,7 +162,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     });
   }
 
-  get ctx() {
+  get context() {
     if (!this['#flowContext']) {
       this['#flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
     }

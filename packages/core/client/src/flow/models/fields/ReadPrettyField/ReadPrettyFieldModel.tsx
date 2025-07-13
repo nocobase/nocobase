@@ -16,8 +16,9 @@ export class ReadPrettyFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = '*' as any;
 
   getValue() {
-    return this.ctx.value;
+    return this.ctx.fieldValue;
   }
+
   @reactive
   public render() {
     const value = this.getValue();
