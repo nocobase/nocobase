@@ -29,6 +29,10 @@ const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'Mes
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
+const { AIResourceContextCollector } = lazy(
+  () => import('./ai-employees/selector/AIContextCollector'),
+  'AIResourceContextCollector',
+);
 
 export class PluginAIClient extends Plugin {
   aiManager = new AIManager();
@@ -42,6 +46,10 @@ export class PluginAIClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.use(AIEmployeesProvider);
+
+    this.app.addComponents({
+      AIResourceContextCollector,
+    });
 
     this.flowEngine.registerModels({
       AIEmployeeShortcutListModel,

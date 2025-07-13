@@ -19,7 +19,7 @@ import { useChatMessageActions } from '../hooks/useChatMessageActions';
 
 const useDefaultOnOk = () => {
   return {
-    onOk: () => {},
+    onOk: async () => {},
   };
 };
 

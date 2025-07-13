@@ -15,6 +15,8 @@ import { useChatConversationsStore } from '../../chatbox/stores/chat-conversatio
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolOptions } from '../../../manager/ai-manager';
 import { useChatMessageActions } from '../../chatbox/hooks/useChatMessageActions';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
+import { useDataSource } from '@nocobase/client';
 
 export const defineCollectionsTool: [string, string, ToolOptions] = [
   'dataModeling',
@@ -26,6 +28,10 @@ export const defineCollectionsTool: [string, string, ToolOptions] = [
         title: tval('Data modeling', { ns: 'ai' }),
         okText: tval('Finish review and apply', { ns: 'ai' }),
         useOnOk: () => {
+          const ds = useDataSource();
+          const { ctx } = useAISelectionContext();
+          const refresh = ctx['collections:list']?.service?.refresh;
+
           const currentEmployee = useChatBoxStore.use.currentEmployee();
 
           const currentConversation = useChatConversationsStore.use.currentConversation();
@@ -36,13 +42,16 @@ export const defineCollectionsTool: [string, string, ToolOptions] = [
           const { callTool } = useChatMessageActions();
 
           return {
-            onOk: () =>
-              callTool({
+            onOk: async () => {
+              await callTool({
                 sessionId: currentConversation,
                 aiEmployee: currentEmployee,
                 messageId: activeMessageId,
                 args: adjustArgs,
-              }),
+              });
+              await ds?.reload();
+              await refresh?.();
+            },
           };
         },
         Component: DataModelingModal,

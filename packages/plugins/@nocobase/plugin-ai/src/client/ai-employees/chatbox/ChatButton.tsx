@@ -76,7 +76,7 @@ export const ChatButton: React.FC = () => {
         }
       `}
     >
-      <FlowModelRenderer model={model} />
+      {/* <FlowModelRenderer model={model} /> */}
       {!selectable ? (
         <Dropdown menu={{ items }} placement="topRight">
           <FloatButton
