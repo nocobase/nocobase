@@ -18,7 +18,6 @@ import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, us
 import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
-import { useMapHeight } from '../hook';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -91,7 +90,7 @@ export interface AMapForwardedRefProps {
 
 export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
+  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions, height } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -111,7 +110,6 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const navigate = useNavigateNoUpdate();
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
-  const height = useMapHeight();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
     strokeColor: '#4e9bff',
@@ -263,6 +261,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
+    console.log(t);
     const nextOverlay = getOverlay(t, v, o);
     nextOverlay.setMap(map.current);
     return nextOverlay;

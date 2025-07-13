@@ -90,7 +90,15 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.defineContextProperties({ index, value, currentRecord: record });
+          fork.ctx.defineProperty('record', {
+            get: () => record,
+          });
+          fork.ctx.defineProperty('fieldValue', {
+            get: () => value,
+          });
+          fork.ctx.defineProperty('index', {
+            get: () => index,
+          });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
       </>
@@ -133,7 +141,7 @@ TableColumnModel.registerFlow({
           'x-reactions': (field) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useFlowSettingsContext<FieldModel>();
-            const originTitle = model.collectionField?.uiSchema?.title;
+            const originTitle = model.collectionField?.title;
             field.decoratorProps = {
               ...field.decoratorProps,
               extra: model.ctx.t('Original field title: ') + (model.ctx.t(originTitle) ?? ''),
@@ -145,7 +153,7 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const title = ctx.engine.translate(params.title || ctx.model.collectionField?.title);
+        const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
     },

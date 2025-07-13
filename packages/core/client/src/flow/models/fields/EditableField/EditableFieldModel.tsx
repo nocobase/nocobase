@@ -29,13 +29,9 @@ type Structure = {
 export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {
   static supportedFieldInterfaces = '*' as any;
   field: Field;
+
   get form() {
-    if (this.parent instanceof FormModel) {
-      return this.parent.form;
-    }
-    if (this.parent.parent instanceof FormModel) {
-      return this.parent.parent.form;
-    }
+    return this.ctx.form as Form;
   }
 
   get decorator() {

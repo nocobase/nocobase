@@ -9,7 +9,7 @@
 
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
-import { FormProvider, observer } from '@formily/react';
+import { FormProvider } from '@formily/react';
 import {
   BaseRecordResource,
   Collection,
@@ -19,22 +19,25 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { EditableFieldModel } from '../../fields/EditableField';
 
-export class QuickEditForm extends FlowModel<{
-  subModels: { fields: EditableFieldModel[] };
-}> {
-  form: Form;
+export class QuickEditForm extends FlowModel {
   fieldPath: string;
 
   declare resource: SingleRecordResource;
   declare collection: Collection;
 
   now: number = Date.now();
+
+  viewContainer: any;
+  __onSubmitSuccess;
+
+  get form() {
+    return this.ctx.form as Form;
+  }
 
   static async open(options: {
     flowEngine: FlowEngine;
@@ -77,13 +80,11 @@ export class QuickEditForm extends FlowModel<{
         },
       },
       content: (popover) => {
+        model.viewContainer = popover;
+        model.__onSubmitSuccess = onSuccess;
         console.log('QuickEditForm.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
-            sharedContext={{
-              currentView: popover,
-              __onSubmitSuccess: onSuccess,
-            }}
             fallback={<Skeleton.Input size="small" />}
             model={model}
             runtimeArgs={{ filterByTk, record }}
@@ -94,8 +95,11 @@ export class QuickEditForm extends FlowModel<{
   }
 
   onInit(options) {
-    this.defineContextProperties({
-      currentBlockModel: this,
+    this.ctx.defineProperty('blockModel', {
+      value: this,
+    });
+    this.ctx.defineProperty('form', {
+      get: () => createForm(),
     });
   }
 
@@ -127,43 +131,39 @@ export class QuickEditForm extends FlowModel<{
           const formValues = {
             [this.fieldPath]: this.form.values[this.fieldPath],
           };
-
           const originalValues = {
             [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
           };
-
-          this.resource.save(formValues, { refresh: false }).catch((error) => {
+          try {
+            this.resource.save(formValues, { refresh: false }).catch((error) => {});
+            this.__onSubmitSuccess?.(formValues);
+            this.viewContainer.close();
+          } catch (error) {
             console.error('Failed to save form data:', error);
-            this.ctx.message.error(this.translate('Failed to save form data'));
-            this.ctx.__onSubmitSuccess?.(originalValues);
-          });
-          this.ctx.__onSubmitSuccess?.(formValues);
-          this.ctx.currentView.close();
+            this.ctx.message.error(this.ctx.t('Failed to save form data'));
+            this.__onSubmitSuccess?.(originalValues);
+          }
         }}
       >
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
-              return (
-                <FlowModelRenderer
-                  key={field.uid}
-                  model={field}
-                  sharedContext={{ currentRecord: this.resource.getData() }}
-                  fallback={<Skeleton.Input size="small" />}
-                />
-              );
+              field.ctx.defineProperty('record', {
+                get: () => this.resource.getData(),
+              });
+              return <FlowModelRenderer key={field.uid} model={field} fallback={<Skeleton.Input size="small" />} />;
             })}
           </FormLayout>
           <FormButtonGroup align="right">
             <Button
               onClick={() => {
-                this.ctx.currentView.close();
+                this.viewContainer.close();
               }}
             >
-              {this.translate('Cancel')}
+              {this.ctx.t('Cancel')}
             </Button>
             <Button type="primary" htmlType="submit">
-              {this.translate('Submit')}
+              {this.ctx.t('Submit')}
             </Button>
           </FormButtonGroup>
         </FormProvider>
@@ -185,7 +185,6 @@ QuickEditForm.registerFlow({
         }
         ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-        ctx.model.form = createForm();
         const resource = new SingleRecordResource();
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);

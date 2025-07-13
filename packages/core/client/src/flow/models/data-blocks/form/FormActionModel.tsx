@@ -11,7 +11,8 @@ import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/fl
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
-import { EditFormModel, FormModel } from './FormModel';
+import { EditFormModel } from './EditFormModel';
+import { FormModel } from './FormModel';
 
 export class FormActionModel extends ActionModel {}
 
@@ -31,35 +32,38 @@ FormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
   steps: {
-    step1: {
+    saveResource: {
       async handler(ctx) {
-        if (!ctx.currentBlockModel?.resource) {
-          ctx.message.error(ctx.t('No resource selected for submission.'));
-          return;
+        if (!ctx?.resource) {
+          throw new Error('Resource is not initialized');
         }
-        const currentBlockModel = ctx.currentBlockModel as FormModel;
+        if (!ctx.blockModel) {
+          throw new Error('Block model is not initialized');
+        }
+        const resource = ctx.resource;
+        const blockModel = ctx.blockModel as FormModel;
         try {
-          await currentBlockModel.form.submit();
-          const values = currentBlockModel.form.values;
-          if (currentBlockModel.resource instanceof SingleRecordResource) {
-            if (currentBlockModel instanceof EditFormModel) {
-              const currentFilterByTk = currentBlockModel.resource.getMeta('currentFilterByTk');
+          await blockModel.form.submit();
+          const values = blockModel.form.values;
+          if (resource instanceof SingleRecordResource) {
+            if (blockModel instanceof EditFormModel) {
+              const currentFilterByTk = resource.getMeta('currentFilterByTk');
               if (!currentFilterByTk) {
-                currentBlockModel.resource.isNewRecord = true; // 设置为新记录
+                resource.isNewRecord = true; // 设置为新记录
               }
             }
-            await currentBlockModel.resource.save(values);
-            if (currentBlockModel instanceof EditFormModel) {
-              currentBlockModel.resource.isNewRecord = false;
-              await currentBlockModel.resource.refresh();
+            await resource.save(values);
+            if (blockModel instanceof EditFormModel) {
+              resource.isNewRecord = false;
+              await resource.refresh();
             }
-          } else if (currentBlockModel.resource instanceof MultiRecordResource) {
-            const currentFilterByTk = currentBlockModel.resource.getMeta('currentFilterByTk');
+          } else if (resource instanceof MultiRecordResource) {
+            const currentFilterByTk = resource.getMeta('currentFilterByTk');
             if (!currentFilterByTk) {
               ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
               return;
             }
-            await currentBlockModel.resource.update(currentFilterByTk, values);
+            await resource.update(currentFilterByTk, values);
           }
         } catch (error) {
           // 显示保存失败提示

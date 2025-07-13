@@ -120,6 +120,10 @@ export class DataSource {
     return this.collectionManager.getCollection(name);
   }
 
+  getAssocation(associationName: string): CollectionField | undefined {
+    return this.collectionManager.getAssocation(associationName);
+  }
+
   addCollection(collection: Collection | CollectionOptions) {
     return this.collectionManager.addCollection(collection);
   }
@@ -296,6 +300,15 @@ export class CollectionManager {
 
   clearCollections() {
     this.collections.clear();
+  }
+
+  getAssocation(associationName: string): CollectionField | undefined {
+    const [collectionName, fieldName] = associationName.split('.');
+    const collection = this.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`Collection ${collectionName} not found in data source ${this.dataSource.key}`);
+    }
+    return collection.getField(fieldName);
   }
 }
 
@@ -630,6 +643,10 @@ export class CollectionField {
       }
     }
     return undefined;
+  }
+
+  isAssociationField() {
+    return ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(this.type);
   }
 
   /**

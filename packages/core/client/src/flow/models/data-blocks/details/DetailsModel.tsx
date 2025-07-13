@@ -32,10 +32,10 @@ export class DetailsModel extends DataBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
-  declare resource: MultiRecordResource | SingleRecordResource;
+  // declare resource: MultiRecordResource | SingleRecordResource;
 
   createResource(ctx, params) {
-    if (this.associationField?.type === 'hasOne' || this.associationField?.type === 'belongsTo') {
+    if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
       resource.isNewRecord = false;
       return resource;
@@ -54,25 +54,38 @@ export class DetailsModel extends DataBlockModel<{
     return this.resource instanceof MultiRecordResource;
   }
 
+  getCurrentRecord() {
+    const data = this.resource.getData();
+    return Array.isArray(data) ? data[0] : data;
+  }
+
+  handlePageChange = async (page: number) => {
+    if (this.resource instanceof MultiRecordResource) {
+      const multiResource = this.resource as MultiRecordResource;
+      multiResource.setPage(page);
+      multiResource.loading = true;
+      await this.refresh();
+    }
+  };
+
+  async refresh() {
+    await this.resource.refresh();
+    const record = this.getCurrentRecord();
+    this.ctx.defineProperty('record', {
+      get: () => this.getCurrentRecord(),
+      cache: false,
+    });
+  }
+
   renderComponent() {
     const resource = this.resource as MultiRecordResource;
-    const onPageChange = async (page) => {
-      resource.setPage(page);
-      resource.loading = true;
-      await resource.refresh();
-      const data = this.resource.getData();
-      this.defineContextProperties({
-        currentRecord: Array.isArray(data) ? data[0] : data,
-      });
-    };
     return (
       <>
         <DndProvider>
           <div style={{ padding: this.ctx.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
-                const currentRecord = this.ctx.currentRecord;
-                const filterByTk = this.collection.getFilterByTK(currentRecord);
+                const filterByTk = this.collection.getFilterByTK(this.ctx.record);
 
                 return (
                   <Droppable model={action} key={action.uid}>
@@ -118,7 +131,7 @@ export class DetailsModel extends DataBlockModel<{
               showSizeChanger={false}
               defaultCurrent={resource.getPage()}
               total={resource.getTotalPage()}
-              onChange={onPageChange}
+              onChange={this.handlePageChange}
               style={{ display: 'inline-block' }}
             />
           </div>
@@ -142,11 +155,7 @@ DetailsModel.registerFlow({
         const { dataLoadingMode } = ctx.model.props;
         if (dataLoadingMode === 'auto') {
           await ctx.model.applySubModelsAutoFlows('grid');
-          await ctx.model.resource.refresh();
-          const data = ctx.model.resource.getData();
-          ctx.model.defineContextProperties({
-            currentRecord: Array.isArray(data) ? data[0] : data,
-          });
+          await ctx.model.refresh();
         } else {
           ctx.model.resource.loading = false;
         }
@@ -157,7 +166,6 @@ DetailsModel.registerFlow({
 
 DetailsModel.define({
   title: escapeT('Details'),
-  group: 'Content',
   defaultOptions: {
     use: 'DetailsModel',
     subModels: {
@@ -166,5 +174,5 @@ DetailsModel.define({
       },
     },
   },
-  sort: 300,
+  sort: 350,
 });

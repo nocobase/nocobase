@@ -17,6 +17,7 @@ import {
   DragHandler,
   Droppable,
   EMPTY_COLUMN_UID,
+  escapeT,
   findModelUidPosition,
   FlowModel,
   FlowModelRenderer,
@@ -159,7 +160,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
     const items = this.subModels.items || [];
-    console.log('mergeRowsWithItems', rows, items);
     if (!items || items.length === 0) {
       return {}; // 如果没有 items，直接返回原始 rows
     }
@@ -323,22 +323,22 @@ GridModel.registerFlow({
     grid: {
       uiSchema: {
         rows: {
-          title: tval('Rows'),
+          title: escapeT('Rows'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             autoSize: { minRows: 10, maxRows: 20 },
-            description: tval('Configure the rows and columns of the grid.'),
+            description: escapeT('Configure the rows and columns of the grid.'),
           },
         },
         sizes: {
-          title: tval('Sizes'),
+          title: escapeT('Sizes'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             rows: 5,
           },
-          description: tval(
+          description: escapeT(
             'Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.',
           ),
         },
