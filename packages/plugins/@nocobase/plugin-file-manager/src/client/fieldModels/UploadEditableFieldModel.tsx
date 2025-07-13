@@ -82,7 +82,7 @@ UploadEditableFieldModel.registerFlow({
         const fileManagerPlugin: any = ctx.globals.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.collectionField.target;
         try {
-          // ✅ 上传前检查存储策略
+          // 上传前检查存储策略
           const { data: checkData } = await ctx.globals.api.resource('storages').check({
             fileCollectionName: fileCollection,
           });
@@ -92,7 +92,7 @@ UploadEditableFieldModel.registerFlow({
             return;
           }
 
-          // ✅ 开始上传
+          // 开始上传
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
             fileCollectionName: fileCollection,
