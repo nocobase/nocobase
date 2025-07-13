@@ -39,5 +39,6 @@ export * from './url';
 export * from './i18n';
 export * from './wrap-middleware';
 export * from './object-to-cli-args';
+export * from './parsedValue';
 export * from './dateRangeUtils';
 export { Schema } from '@formily/json-schema';

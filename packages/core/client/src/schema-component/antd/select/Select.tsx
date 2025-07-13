@@ -13,12 +13,12 @@ import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps as AntdSelectProps } from 'antd';
 import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
-import React from 'react';
+import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
 import { every } from 'lodash';
+import React, { useEffect } from 'react';
+import { useCompile } from '../../';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
-import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
-import { useCompile } from '../../';
 
 export type SelectProps<
   ValueType = any,
@@ -127,6 +127,13 @@ const InternalSelect = connect(
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
+
+    useEffect(() => {
+      if (value != null && !Array.isArray(value) && (['tags', 'multiple'].includes(props.mode) || props.multiple)) {
+        props.onChange?.([value]);
+      }
+    }, [value, props.mode, props.multiple, props.onChange]);
+
     if (objectValue) {
       return (
         <ObjectSelect

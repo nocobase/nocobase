@@ -66,7 +66,7 @@ export const createFormBlockSettings = new SchemaSettings({
       useVisible() {
         const { action } = useFormBlockContext();
         const schema = useFieldSchema();
-        return !action && schema?.['x-acl-action'].includes('create');
+        return !action && schema?.['x-acl-action']?.includes('create');
       },
       useComponentProps() {
         const { name } = useCollection_deprecated();

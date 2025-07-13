@@ -10,7 +10,7 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
 import { useMemo } from 'react';
-import { useVariables } from '../../../';
+import { useApp, useVariables } from '../../../';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useAPITokenVariable } from './useAPITokenVariable';
 import { useDatetimeVariable } from './useDateVariable';
@@ -62,6 +62,19 @@ export const useVariableOptions = ({
   targetFieldSchema,
   record,
 }: Props) => {
+  const app = useApp();
+  const customVariables =
+    app
+      ?.getVariables?.()
+      .map((variable) => {
+        const { visible = true, option } = variable.useOption();
+        return {
+          visible,
+          option: option as any,
+        };
+      })
+      .filter(({ visible }) => visible) || [];
+
   const { filterVariables = () => true } = useVariables() || {};
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const { currentUserSettings } = useCurrentUserVariable({
@@ -131,7 +144,7 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { urlSearchParamsSettings, shouldDisplay: shouldDisplayURLSearchParams } = useURLSearchParamsVariable();
-  return useMemo(() => {
+  const result = useMemo(() => {
     return [
       currentUserSettings,
       currentRoleSettings,
@@ -169,4 +182,6 @@ export const useVariableOptions = ({
     shouldDisplayURLSearchParams,
     urlSearchParamsSettings,
   ]);
+
+  return [...result, ...customVariables.map(({ option }) => option)];
 };

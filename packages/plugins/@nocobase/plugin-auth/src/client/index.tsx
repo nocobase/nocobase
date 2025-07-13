@@ -14,6 +14,8 @@ import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
 import { authCheckMiddleware } from './interceptors';
 import { NAMESPACE } from './locale';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 // import { AuthProvider } from './AuthProvider';
 const { AuthProvider } = lazy(() => import('./AuthProvider'), 'AuthProvider');
 // import { Options, SignInForm, SignUpForm } from './basic';
@@ -72,11 +74,21 @@ export class PluginAuthClient extends Plugin {
       path: '/signup',
       Component: 'SignUpPage',
     });
+    this.router.add('auth.forgotPassword', {
+      path: '/forgot-password',
+      Component: 'ForgotPasswordPage',
+    });
+    this.router.add('auth.resetPassword', {
+      path: '/reset-password',
+      Component: 'ResetPasswordPage',
+    });
 
     this.app.addComponents({
       AuthLayout,
       SignInPage,
       SignUpPage,
+      ForgotPasswordPage,
+      ResetPasswordPage,
     });
 
     this.app.providers.unshift([AuthProvider, {}]);

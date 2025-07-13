@@ -270,7 +270,6 @@ const LocalPlugins = () => {
           // if (isRefresh) refresh();
         }}
       />
-
       <div style={{ width: '100%' }}>
         <div
           style={{ marginBottom: theme.marginLG }}

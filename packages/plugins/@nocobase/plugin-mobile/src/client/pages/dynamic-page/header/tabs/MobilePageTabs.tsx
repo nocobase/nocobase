@@ -13,12 +13,12 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { DndContext, DndContextProps, Icon, SortableItem, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
+import { useRouteTranslation } from '../../../../locale';
 import { useMobileRoutes } from '../../../../mobile-providers';
 import { useMobilePage } from '../../context';
 import { MobilePageTabInitializer } from './initializer';
 import { MobilePageTabsSettings } from './settings';
 import { useStyles } from './styles';
-import { useRouteTranslation } from '../../../../locale';
 
 export const MobilePageTabs: FC = () => {
   const { activeTabBarItem, resource, refresh } = useMobileRoutes();
@@ -36,7 +36,7 @@ export const MobilePageTabs: FC = () => {
   });
   const handleChange: TabsProps['onChange'] = (schemaUid) => {
     setActiveKey(schemaUid);
-    navigate(`/${activeTabBarItem.type}/${activeTabBarItem.schemaUid}/tabs/${schemaUid}`);
+    navigate(`/${activeTabBarItem.type}/${activeTabBarItem.schemaUid}/tabs/${schemaUid}`, { replace: true });
   };
 
   const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(

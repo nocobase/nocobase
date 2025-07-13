@@ -12,7 +12,7 @@ import { useForm } from '@formily/react';
 import { Input as AntInput, Space, theme } from 'antd';
 import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, isValidElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
 
@@ -129,7 +129,7 @@ function createVariableTagHTML(variable, keyLabelMap) {
 
   if (labels) {
     labels = labels.map((label) => {
-      if (isReactElement(label)) {
+      if (isReactElement(label) || isValidElement(label)) {
         return renderToString(label);
       }
       return label;
@@ -404,9 +404,9 @@ export function TextArea(props: TextAreaProps) {
           span(tagName, attribs) {
             return attribs['data-variable']
               ? {
-                  tagName: tagName,
-                  attribs,
-                }
+                tagName: tagName,
+                attribs,
+              }
               : {};
           },
         },
@@ -514,7 +514,7 @@ export function TextArea(props: TextAreaProps) {
       </Space.Compact>
       {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
       <AntInput style={{ display: 'none' }} />
-    </>,
+    </>
   );
 }
 
