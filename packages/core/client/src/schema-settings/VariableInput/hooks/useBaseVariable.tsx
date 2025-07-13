@@ -123,7 +123,7 @@ const getChildren = (
 ): Option[] => {
   const result = options
     .map((option): Option => {
-      if (!option.target || option.target === 'chinaRegions') {
+      if (!option.target || ['chinaRegions', 'attachments'].includes(option.target)) {
         return {
           key: option.name,
           value: option.name,
