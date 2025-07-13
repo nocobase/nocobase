@@ -7,6 +7,7 @@
   "homepage": "https://docs.nocobase.com/handbook/workflow-cc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
   "version": "1.8.3",
+  "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/actions": "1.x",
