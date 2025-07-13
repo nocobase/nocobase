@@ -8,7 +8,15 @@
  */
 
 import { css } from '@emotion/css';
-import { PoweredBy, ReadPretty, SwitchLanguage, useAPIClient, useRequest, useSystemSettings } from '@nocobase/client';
+import {
+  PoweredBy,
+  ReadPretty,
+  SwitchLanguage,
+  useAPIClient,
+  useRequest,
+  useSystemSettings,
+  useToken,
+} from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
@@ -46,6 +54,7 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
 
 export function AuthLayout() {
   const { data } = useSystemSettings() || {};
+  const { token } = useToken();
   return (
     <div
       style={{
@@ -67,10 +76,12 @@ export function AuthLayout() {
       <div
         className={css`
           position: absolute;
-          bottom: 24px;
+          bottom: 0;
           width: 100%;
           left: 0;
           text-align: center;
+          padding-bottom: 24px;
+          background-color: ${token.colorBgContainer};
         `}
       >
         <PoweredBy />
