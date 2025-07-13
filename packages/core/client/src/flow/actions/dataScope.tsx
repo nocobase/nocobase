@@ -28,7 +28,7 @@ export const dataScope = defineAction({
         if (collectionField) {
           fields = collectionField.targetCollection.fields;
         } else {
-          const currentBlockModel = flowContext.model.ctx.currentBlockModel;
+          const currentBlockModel = flowContext.model.context.currentBlockModel;
           fields = currentBlockModel.collection.getFields();
         }
         const ignoreFieldsNames = flowContext.model.props.ignoreFieldsNames || [];

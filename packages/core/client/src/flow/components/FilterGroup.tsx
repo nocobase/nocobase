@@ -337,7 +337,7 @@ export const FilterGroup: FC<{
       }),
       1,
       props.ignoreFieldsNames,
-      props.model.ctx.dataSourceManager,
+      props.model.context.dataSourceManager,
       t,
     ).filter(Boolean);
     const style: React.CSSProperties = props.showBorder
@@ -375,7 +375,7 @@ export const FilterGroup: FC<{
     };
 
     return (
-      <AppContext.Provider value={props.model.ctx.app}>
+      <AppContext.Provider value={props.model.context.app}>
         <div style={style}>
           {props.showBorder && (
             <a role="button" aria-label="icon-close">

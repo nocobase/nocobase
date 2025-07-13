@@ -724,7 +724,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.parent = parent as ParentFlowModel<Structure>;
     this._options.parentId = parent.uid;
     if (this._options.delegateToParent !== false) {
-      this.ctx.addDelegate(this.parent.ctx);
+      this.context.addDelegate(this.parent.context);
     }
   }
 
@@ -943,7 +943,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   public defineContextProperties(ctx: Record<string, any>) {
     for (const key in ctx) {
-      this.ctx.defineProperty(key, {
+      this.context.defineProperty(key, {
         value: ctx[key],
       });
     }

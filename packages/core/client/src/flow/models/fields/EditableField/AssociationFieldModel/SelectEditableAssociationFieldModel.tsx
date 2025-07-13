@@ -41,10 +41,10 @@ function LabelByField(props) {
   const field = currentModel.subModels.field as FlowModel;
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
-  fieldModel.ctx.defineProperty('record', {
+  fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.ctx.defineProperty('fieldValue', {
+  fieldModel.context.defineProperty('fieldValue', {
     get: () => option?.[fieldNames.label],
   });
   fieldModel.defineContextProperties({
@@ -103,10 +103,10 @@ const AssociationSelect = connect(
     const field = currentModel.subModels.field as FlowModel;
     const key = value?.[fieldNames.value];
     const fieldModel = field.createFork({}, key);
-    fieldModel.ctx.defineProperty('record', {
+    fieldModel.context.defineProperty('record', {
       get: () => value,
     });
-    fieldModel.ctx.defineProperty('fieldValue', {
+    fieldModel.context.defineProperty('fieldValue', {
       get: () => value?.[fieldNames.label],
     });
     fieldModel.defineContextProperties({
@@ -121,10 +121,10 @@ const AssociationSelect = connect(
         {arrayValue.map((v, index) => {
           const key = `${index}`;
           const fieldModel = field.createFork({}, key);
-          fieldModel.ctx.defineProperty('record', {
+          fieldModel.context.defineProperty('record', {
             get: () => v,
           });
-          fieldModel.ctx.defineProperty('fieldValue', {
+          fieldModel.context.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
           fieldModel.defineContextProperties({

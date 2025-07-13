@@ -21,10 +21,10 @@ export interface FieldSettingsInitParams {
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   onInit(options: any): void {
-    this.ctx.defineProperty('collectionField', {
+    this.context.defineProperty('collectionField', {
       get: () => {
         const params = this.getFieldSettingsInitParams();
-        const collectionField = this.ctx.dataSourceManager.getCollectionField(
+        const collectionField = this.context.dataSourceManager.getCollectionField(
           `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
         ) as CollectionField;
         return collectionField;
@@ -41,7 +41,7 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   get collectionField() {
-    return this.ctx.collectionField as CollectionField;
+    return this.context.collectionField as CollectionField;
   }
 
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;

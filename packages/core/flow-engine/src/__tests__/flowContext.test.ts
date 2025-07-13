@@ -358,28 +358,28 @@ describe('ForkFlowModel context inheritance and isolation', () => {
 
   it('should inherit engine.context property in FlowModel.context', () => {
     const model = engine.createModel({ use: 'TestModel' });
-    expect(model.ctx.appName).toBe('NocoBase');
+    expect(model.context.appName).toBe('NocoBase');
   });
 
   it('should inherit model.context property in ForkFlowModel.context', () => {
     const model = engine.createModel({ use: 'TestModel' });
     const fork = model.createFork();
-    expect(fork.ctx.appName).toBe('NocoBase');
+    expect(fork.context.appName).toBe('NocoBase');
   });
 
   it('should inherit latest value after model.context property changes in fork.context', () => {
     const model = engine.createModel({ use: 'TestModel' });
-    model.ctx.defineProperty('appName', { value: 'NocoBase2' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
     const fork = model.createFork();
-    expect(fork.ctx.appName).toBe('NocoBase2');
+    expect(fork.context.appName).toBe('NocoBase2');
   });
 
   it('should not affect model.context when fork.context property changes', () => {
     const model = engine.createModel({ use: 'TestModel' });
-    model.ctx.defineProperty('appName', { value: 'NocoBase2' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
     const fork = model.createFork();
-    fork.ctx.defineProperty('appName', { value: 'NocoBase3' });
-    expect(fork.ctx.appName).toBe('NocoBase3');
+    fork.context.defineProperty('appName', { value: 'NocoBase3' });
+    expect(fork.context.appName).toBe('NocoBase3');
   });
 
   it('should isolate fork.context property changes from subModel.context when subModel delegates to parent', () => {
@@ -389,14 +389,14 @@ describe('ForkFlowModel context inheritance and isolation', () => {
         sub: { uid: 'sub1', use: 'TestModel' },
       },
     });
-    model.ctx.defineProperty('appName', { value: 'NocoBase2' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
     const sub = engine.getModel<TestModel>('sub1');
-    expect(sub.ctx.appName).toBe('NocoBase2');
-    sub.ctx.defineProperty('appName', { value: 'NocoBase3' });
+    expect(sub.context.appName).toBe('NocoBase2');
+    sub.context.defineProperty('appName', { value: 'NocoBase3' });
     const fork = sub.createFork();
-    expect(fork.ctx.appName).toBe('NocoBase3');
-    fork.ctx.defineProperty('appName', { value: 'NocoBase4' });
-    expect(fork.ctx.appName).toBe('NocoBase4');
+    expect(fork.context.appName).toBe('NocoBase3');
+    fork.context.defineProperty('appName', { value: 'NocoBase4' });
+    expect(fork.context.appName).toBe('NocoBase4');
   });
 
   it('should isolate context property changes between different forks', () => {
@@ -427,8 +427,8 @@ describe('ForkFlowModel context inheritance and isolation', () => {
         sub: { uid: 'sub1', use: 'TestModel', delegateToParent: false },
       },
     });
-    model.ctx.defineProperty('appName', { value: 'NocoBase2' });
+    model.context.defineProperty('appName', { value: 'NocoBase2' });
     const sub = engine.getModel<TestModel>('sub1');
-    expect(sub.ctx.appName).toBe('NocoBase');
+    expect(sub.context.appName).toBe('NocoBase');
   });
 });

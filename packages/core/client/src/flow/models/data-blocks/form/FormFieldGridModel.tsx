@@ -29,7 +29,7 @@ export class FormFieldGridModel extends GridModel<{
     },
   };
   renderAddSubModelButton() {
-    const formModelInstance = this.ctx.blockModel as FormModel;
+    const formModelInstance = this.context.blockModel as FormModel;
     const fieldItems = buildFieldItems(
       formModelInstance.collection.getFields(),
       formModelInstance,
@@ -57,7 +57,7 @@ export class FormFieldGridModel extends GridModel<{
           subModelBaseClass={FormCustomFormItemModel}
           model={this}
           onSubModelAdded={async (field: EditableFieldModel) => {
-            this.ctx.blockModel.addAppends(field.fieldPath, true);
+            this.context.blockModel.addAppends(field.fieldPath, true);
           }}
         />
         {/* <FlowSettingsButton

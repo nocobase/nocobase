@@ -18,15 +18,15 @@ export class FormModel extends DataBlockModel<{
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
 }> {
   get form() {
-    return this.ctx.form as Form;
+    return this.context.form as Form;
   }
 
   onInit(options) {
     super.onInit(options);
-    this.ctx.defineProperty('form', {
+    this.context.defineProperty('form', {
       get: () => createForm(),
     });
-    this.ctx.defineProperty('record', {
+    this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
     });

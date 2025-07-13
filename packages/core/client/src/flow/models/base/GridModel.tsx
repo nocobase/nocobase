@@ -119,7 +119,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -136,7 +136,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -374,7 +374,7 @@ export class BlockGridModel extends GridModel {
   }
 
   render() {
-    return <div style={{ padding: this.ctx.themeToken.marginBlock }}>{super.render()}</div>;
+    return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
   }
 }
 

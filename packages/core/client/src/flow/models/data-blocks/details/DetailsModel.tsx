@@ -50,7 +50,7 @@ export class DetailsModel extends DataBlockModel<{
 
   onInit(options: any): void {
     super.onInit(options);
-    this.ctx.defineProperty('record', {
+    this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
     });
@@ -110,7 +110,7 @@ export class DetailsModel extends DataBlockModel<{
     return (
       <>
         <DndProvider>
-          <div style={{ padding: this.ctx.themeToken.padding, textAlign: 'right' }}>
+          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
                 return (

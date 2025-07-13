@@ -171,7 +171,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
   public defineContextProperties(ctx: Record<string, any>) {
     for (const key in ctx) {
-      this.ctx.defineProperty(key, {
+      this.context.defineProperty(key, {
         value: ctx[key],
       });
     }

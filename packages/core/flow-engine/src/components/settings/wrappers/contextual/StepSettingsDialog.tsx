@@ -37,7 +37,7 @@ const openStepSettingsDialog = async ({
   mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
-  const message = model.ctx.message;
+  const message = model.context.message;
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -127,7 +127,7 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  const view = model.ctx[mode];
+  const view = model.context[mode];
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),

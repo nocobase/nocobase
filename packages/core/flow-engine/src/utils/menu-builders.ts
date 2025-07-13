@@ -72,7 +72,7 @@ interface MenuBuilderFlowContext {
 
 function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
   try {
-    const dataSourceManager: DataSourceManager = model.ctx.dataSourceManager;
+    const dataSourceManager: DataSourceManager = model.context.dataSourceManager;
 
     if (!dataSourceManager) return [];
 
@@ -753,7 +753,7 @@ async function buildDataSourceBlockItems(
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
       if (hasCurrentFlowContext) {
-        const currentFlow = model.parent?.ctx.currentFlow;
+        const currentFlow = model.parent?.context.currentFlow;
         const collection: Collection = currentFlow?.currentBlockModel?.collection;
 
         if (currentFlow && collection) {

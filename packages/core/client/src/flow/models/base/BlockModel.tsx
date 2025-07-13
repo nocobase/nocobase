@@ -136,23 +136,23 @@ BlockModel.define({ hide: true });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   get dataSource(): DataSource {
-    return this.ctx.dataSource;
+    return this.context.dataSource;
   }
 
   get collection(): Collection {
-    return this.ctx.collection;
+    return this.context.collection;
   }
 
   get resource(): BaseRecordResource {
-    return this.ctx.resource;
+    return this.context.resource;
   }
 
   get association(): CollectionField | undefined {
-    return this.ctx.association;
+    return this.context.association;
   }
 
   get associationField(): CollectionField | undefined {
-    return this.ctx.association;
+    return this.context.association;
   }
 
   getResourceSettingsInitParams(): ResourceSettingsInitParams {
@@ -160,26 +160,26 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   onInit(options) {
-    this.ctx.defineProperty('blockModel', {
+    this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.ctx.defineProperty('dataSource', {
+    this.context.defineProperty('dataSource', {
       get: () => {
         const params = this.getResourceSettingsInitParams();
-        return this.ctx.dataSourceManager.getDataSource(params.dataSourceKey);
+        return this.context.dataSourceManager.getDataSource(params.dataSourceKey);
       },
     });
-    this.ctx.defineProperty('collection', {
+    this.context.defineProperty('collection', {
       get: () => {
         const params = this.getResourceSettingsInitParams();
-        return this.ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
+        return this.context.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
       },
     });
-    this.ctx.defineProperty('resource', {
+    this.context.defineProperty('resource', {
       get: () => {
         const params = this.getResourceSettingsInitParams();
-        const resource = this.createResource(this.ctx, params);
-        resource.setAPIClient(this.ctx.api);
+        const resource = this.createResource(this.context, params);
+        resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
         resource.on('refresh', () => {
@@ -188,7 +188,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
         return resource;
       },
     });
-    this.ctx.defineProperty('association', {
+    this.context.defineProperty('association', {
       get: () => {
         const params = this.getResourceSettingsInitParams();
         if (!params.associationName) {
@@ -204,7 +204,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   get title() {
-    return this.ctx.t(this._title) || this.defaultBlockTitle();
+    return this.context.t(this._title) || this.defaultBlockTitle();
   }
 
   protected defaultBlockTitle() {
@@ -221,7 +221,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.dataSourceManager.getCollectionField(
+    const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     ) as CollectionField;
     if (!field) {

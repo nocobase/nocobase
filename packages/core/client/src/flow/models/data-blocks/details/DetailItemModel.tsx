@@ -41,11 +41,11 @@ export class DetailItemModel extends FieldModel<{
   @reactive
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = this.ctx.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
+    const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
     // fieldModel.defineContextProperties({
     //   value,
     // });
-    fieldModel.ctx.defineProperty('value', {
+    fieldModel.context.defineProperty('value', {
       get: () => value,
     });
 

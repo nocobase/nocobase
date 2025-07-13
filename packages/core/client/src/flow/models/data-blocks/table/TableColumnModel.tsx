@@ -90,13 +90,13 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.ctx.defineProperty('record', {
+          fork.context.defineProperty('record', {
             get: () => record,
           });
-          fork.ctx.defineProperty('fieldValue', {
+          fork.context.defineProperty('fieldValue', {
             get: () => value,
           });
-          fork.ctx.defineProperty('index', {
+          fork.context.defineProperty('index', {
             get: () => index,
           });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
@@ -144,7 +144,7 @@ TableColumnModel.registerFlow({
             const originTitle = model.collectionField?.title;
             field.decoratorProps = {
               ...field.decoratorProps,
-              extra: model.ctx.t('Original field title: ') + (model.ctx.t(originTitle) ?? ''),
+              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
             };
           },
         },

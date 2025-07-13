@@ -28,10 +28,10 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
-        fork.ctx.defineProperty('record', {
+        fork.context.defineProperty('record', {
           get: () => record,
         });
-        fork.ctx.defineProperty('index', {
+        fork.context.defineProperty('index', {
           get: () => index,
         });
         return (

@@ -48,10 +48,10 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    model.ctx.defineProperty('layoutContentElement', {
+    model.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
-    model.ctx.defineProperty('currentRoute', {
+    model.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
 

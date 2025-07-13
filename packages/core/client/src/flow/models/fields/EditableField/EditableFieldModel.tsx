@@ -31,7 +31,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   field: Field;
 
   get form() {
-    return this.ctx.form as Form;
+    return this.context.form as Form;
   }
 
   get decorator() {

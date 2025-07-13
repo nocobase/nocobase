@@ -547,7 +547,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.ctx })} ${
+        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context })} ${
           hideMenu ? 'hide-parent-menu' : ''
         } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}

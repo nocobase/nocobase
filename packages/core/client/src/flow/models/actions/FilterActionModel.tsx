@@ -17,7 +17,7 @@ import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
-  const currentBlockModel = modelInstance.ctx.currentBlockModel as DataBlockModel;
+  const currentBlockModel = modelInstance.context.currentBlockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields().filter((field) => {
     // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
     return field.target !== 'attachments';
@@ -116,7 +116,7 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useFlowSettingsContext();
-            const options = model.ctx.currentBlockModel.collection.getFields().map((field) => {
+            const options = model.context.currentBlockModel.collection.getFields().map((field) => {
               return {
                 label: field.title,
                 value: field.name,
@@ -149,7 +149,7 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model: modelInstance } = useFlowSettingsContext();
-            const currentBlockModel = modelInstance.ctx.currentBlockModel;
+            const currentBlockModel = modelInstance.context.currentBlockModel;
             const fields = currentBlockModel.collection.getFields();
             const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 

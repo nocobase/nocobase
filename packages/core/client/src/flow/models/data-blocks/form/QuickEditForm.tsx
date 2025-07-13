@@ -36,7 +36,7 @@ export class QuickEditForm extends FlowModel {
   __onSubmitSuccess;
 
   get form() {
-    return this.ctx.form as Form;
+    return this.context.form as Form;
   }
 
   static async open(options: {
@@ -99,19 +99,19 @@ export class QuickEditForm extends FlowModel {
     this.defineContextProperties({
       currentBlockModel: this,
     });
-    this.ctx.defineProperty('blockModel', {
+    this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.ctx.defineProperty('form', {
+    this.context.defineProperty('form', {
       get: () => createForm(),
     });
-    this.ctx.defineProperty('record', {
+    this.context.defineProperty('record', {
       get: () => this.resource.getData(),
     });
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.ctx.dataSourceManager.getCollectionField(
+    const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
     ) as CollectionField;
     if (!field) {
@@ -148,7 +148,7 @@ export class QuickEditForm extends FlowModel {
             this.viewContainer.close();
           } catch (error) {
             console.error('Failed to save form data:', error);
-            this.ctx.message.error(this.ctx.t('Failed to save form data'));
+            this.context.message.error(this.context.t('Failed to save form data'));
             this.__onSubmitSuccess?.(originalValues);
           }
         }}
@@ -172,10 +172,10 @@ export class QuickEditForm extends FlowModel {
                 this.viewContainer.close();
               }}
             >
-              {this.ctx.t('Cancel')}
+              {this.context.t('Cancel')}
             </Button>
             <Button type="primary" htmlType="submit">
-              {this.ctx.t('Submit')}
+              {this.context.t('Submit')}
             </Button>
           </FormButtonGroup>
         </FormProvider>
