@@ -33,6 +33,7 @@ export interface AMapComponentProps {
   style?: React.CSSProperties;
   overlayCommonOptions?: AMap.PolylineOptions & AMap.PolygonOptions;
   block?: boolean;
+  height?: number;
 }
 
 const methodMapping = {
