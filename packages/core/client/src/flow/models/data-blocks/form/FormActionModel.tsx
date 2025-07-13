@@ -56,6 +56,8 @@ FormSubmitActionModel.registerFlow({
             if (blockModel instanceof EditFormModel) {
               resource.isNewRecord = false;
               await resource.refresh();
+            } else {
+              blockModel.form.reset();
             }
           } else if (resource instanceof MultiRecordResource) {
             const currentFilterByTk = resource.getMeta('currentFilterByTk');

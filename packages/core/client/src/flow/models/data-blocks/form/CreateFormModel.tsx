@@ -7,9 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
-import { escapeT, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  AddActionButton,
+  buildActionItems,
+  DndProvider,
+  DragHandler,
+  Droppable,
+  escapeT,
+  FlowModelRenderer,
+  SingleRecordResource,
+} from '@nocobase/flow-engine';
 import { FormModel } from './FormModel';
+import { FormLayout, FormButtonGroup } from '@formily/antd-v5';
+import { FormProvider } from '@formily/react';
+import React from 'react';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
@@ -17,6 +28,38 @@ export class CreateFormModel extends FormModel {
     const resource = new SingleRecordResource();
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
+  }
+
+  renderComponent() {
+    return (
+      <FormProvider form={this.form}>
+        <FormLayout layout={'vertical'}>
+          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
+        </FormLayout>
+        <DndProvider>
+          <FormButtonGroup>
+            {this.mapSubModels('actions', (action) => (
+              <Droppable model={action} key={action.uid}>
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  sharedContext={{ currentRecord: this.resource.getData() }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ))}
+            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+          </FormButtonGroup>
+        </DndProvider>
+      </FormProvider>
+    );
   }
 }
 
@@ -39,10 +82,6 @@ CreateFormModel.registerFlow({
     refresh: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('grid');
-        // 新增表单不需要刷新数据
-        ctx.model.setSharedContext({
-          currentRecord: {}, // 空记录
-        });
       },
     },
   },
