@@ -517,9 +517,9 @@ describe('Application', () => {
             value: 'test',
             label: '测试变量',
           },
-          visible: true
+          visible: true,
         }),
-        useCtx: () => ({ value: 'test-value' })
+        useCtx: () => ({ value: 'test-value' }),
       });
 
       const variables = app.getVariables();
@@ -527,7 +527,7 @@ describe('Application', () => {
       expect(variables[0]).toEqual({
         name: 'test',
         useOption: expect.any(Function),
-        useCtx: expect.any(Function)
+        useCtx: expect.any(Function),
       });
 
       const optionResult = variables[0].useOption();
@@ -554,9 +554,9 @@ describe('Application', () => {
           option: {
             value: 'test',
             label: '测试变量',
-          }
+          },
         }),
-        useCtx: () => ({ value: 'test-value' })
+        useCtx: () => ({ value: 'test-value' }),
       });
 
       app.registerVariable({
@@ -565,9 +565,9 @@ describe('Application', () => {
           option: {
             value: 'test-duplicate',
             label: '重复测试变量',
-          }
+          },
         }),
-        useCtx: () => ({ value: 'different-value' })
+        useCtx: () => ({ value: 'different-value' }),
       });
 
       const variables = app.getVariables();
@@ -589,9 +589,9 @@ describe('Application', () => {
           option: {
             value: 'var1',
             label: '变量1选项',
-          }
+          },
         }),
-        useCtx: () => ({ value: 'var1-value' })
+        useCtx: () => ({ value: 'var1-value' }),
       });
 
       app.registerVariable({
@@ -601,9 +601,9 @@ describe('Application', () => {
             value: 'var2',
             label: '变量2选项',
           },
-          visible: true
+          visible: true,
         }),
-        useCtx: () => ({ value: 'var2-value' })
+        useCtx: () => ({ value: 'var2-value' }),
       });
 
       const variables = app.getVariables();
@@ -630,9 +630,9 @@ describe('Application', () => {
           option: {
             value: 'async-var',
             label: '异步变量选项',
-          }
+          },
         }),
-        useCtx: () => asyncCtx
+        useCtx: () => asyncCtx,
       });
 
       const variables = app.getVariables();
@@ -640,7 +640,7 @@ describe('Application', () => {
       expect(variables).toHaveLength(1);
       const ctxFn = variables[0].useCtx();
 
-      return ctxFn({ variableName: 'async-var' }).then(result => {
+      return ctxFn({ variableName: 'async-var' }).then((result) => {
         expect(result).toEqual({ value: 'async-var-async-value' });
       });
     });
@@ -663,11 +663,11 @@ describe('Application', () => {
                 value: 'child2',
                 label: '子选项2',
                 disabled: true,
-              }
-            ]
-          }
+              },
+            ],
+          },
         }),
-        useCtx: () => ({ value: 'nested-value' })
+        useCtx: () => ({ value: 'nested-value' }),
       });
 
       const variables = app.getVariables();

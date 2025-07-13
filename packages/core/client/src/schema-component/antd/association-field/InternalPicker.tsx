@@ -105,7 +105,7 @@ export const InternalPicker = observer(
         return opts;
       }
       return [];
-    }, [value, fieldNames?.label]);
+    }, [value?.length, fieldNames.label]);
     const pickerProps = {
       size: 'small',
       fieldNames,

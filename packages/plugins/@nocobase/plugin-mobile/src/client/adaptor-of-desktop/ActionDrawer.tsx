@@ -10,6 +10,7 @@
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import {
   Action,
+  FlagProvider,
   NocoBaseRecursionField,
   SchemaComponent,
   useActionContext,
@@ -97,7 +98,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
               <CloseOutline />
             </span>
           </div>
-          {children}
+          <FlagProvider isInMobileDrawer>{children}</FlagProvider>
         </Popup>
       </ConfigProvider>
     </zIndexContext.Provider>
