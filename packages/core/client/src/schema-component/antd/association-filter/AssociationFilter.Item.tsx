@@ -73,7 +73,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
         setTimeout(() => {
           onSelected(fieldSchema.default);
           setSelectedKeys(fieldSchema.default);
-        });
+        }, 100);
       }
     }, [fieldSchema.default, onSelected]);
 
