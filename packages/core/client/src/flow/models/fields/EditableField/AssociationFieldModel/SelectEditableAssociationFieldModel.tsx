@@ -41,11 +41,16 @@ function LabelByField(props) {
   const field = currentModel.subModels.field as FlowModel;
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
+  fieldModel.context.defineProperty('record', {
+    get: () => option,
+  });
+  fieldModel.context.defineProperty('fieldValue', {
+    get: () => option?.[fieldNames.label],
+  });
   fieldModel.setSharedContext({
     value: option?.[fieldNames.label],
     currentRecord: option,
   });
-
   return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
@@ -98,6 +103,12 @@ const AssociationSelect = connect(
     const field = currentModel.subModels.field as FlowModel;
     const key = value?.[fieldNames.value];
     const fieldModel = field.createFork({}, key);
+    fieldModel.context.defineProperty('record', {
+      get: () => value,
+    });
+    fieldModel.context.defineProperty('fieldValue', {
+      get: () => value?.[fieldNames.label],
+    });
     fieldModel.setSharedContext({
       value: value?.[fieldNames.label],
       currentRecord: value,
@@ -109,6 +120,12 @@ const AssociationSelect = connect(
         {arrayValue.map((v, index) => {
           const key = `${index}`;
           const fieldModel = field.createFork({}, key);
+          fieldModel.context.defineProperty('record', {
+            get: () => v,
+          });
+          fieldModel.context.defineProperty('fieldValue', {
+            get: () => v?.[fieldNames.label],
+          });
           fieldModel.setSharedContext({
             index,
             value: v?.[fieldNames.label],

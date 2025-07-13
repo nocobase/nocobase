@@ -95,6 +95,7 @@ export class QuickEditForm extends FlowModel {
   }
 
   onInit(options) {
+    super.onInit(options);
     this.setSharedContext({
       currentBlockModel: this,
     });
@@ -104,20 +105,24 @@ export class QuickEditForm extends FlowModel {
     this.context.defineProperty('form', {
       get: () => createForm(),
     });
+    this.context.defineProperty('record', {
+      get: () => this.resource.getData(),
+    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
     const field = this.context.dataSourceManager.getCollectionField(
       `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-    );
+    ) as CollectionField;
     if (!field) {
       return;
     }
-    if (['belongsToMany', 'belongsTo', 'hasMany', 'hasOne'].includes(field.type)) {
-      (this.resource as BaseRecordResource).addAppends(field.name);
-      if (refresh) {
-        this.resource.refresh();
-      }
+    if (!field.isAssociationField()) {
+      return;
+    }
+    (this.resource as BaseRecordResource).addAppends(fieldPath);
+    if (refresh) {
+      this.resource.refresh();
     }
   }
 
@@ -151,9 +156,6 @@ export class QuickEditForm extends FlowModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
-              field.context.defineProperty('record', {
-                get: () => this.resource.getData(),
-              });
               return (
                 <FlowModelRenderer
                   key={field.uid}
@@ -226,7 +228,7 @@ QuickEditForm.registerFlow({
         if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {
           resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
           resource.setData(ctx.runtimeArgs.record);
-          ctx.model.form.setInitialValues(resource.getData());
+          ctx.model.form.setValues(resource.getData());
         }
       },
     },

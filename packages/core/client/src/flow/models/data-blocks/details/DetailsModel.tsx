@@ -32,8 +32,6 @@ export class DetailsModel extends DataBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
-  // declare resource: MultiRecordResource | SingleRecordResource;
-
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
@@ -48,6 +46,14 @@ export class DetailsModel extends DataBlockModel<{
     const resource = new MultiRecordResource();
     resource.setPageSize(1);
     return resource;
+  }
+
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('record', {
+      get: () => this.getCurrentRecord(),
+      cache: false,
+    });
   }
 
   isMultiRecordResource() {
@@ -71,30 +77,45 @@ export class DetailsModel extends DataBlockModel<{
   async refresh() {
     await this.resource.refresh();
     const record = this.getCurrentRecord();
-    this.context.defineProperty('record', {
-      get: () => this.getCurrentRecord(),
-      cache: false,
-    });
-    // TODO: setSharedContext 已废弃
     this.setSharedContext({
       currentRecord: record,
     });
   }
 
-  renderComponent() {
+  renderPagination() {
     const resource = this.resource as MultiRecordResource;
+    if (!this.isMultiRecordResource() || !resource.getPage()) {
+      return null;
+    }
+    return (
+      <div
+        style={{
+          textAlign: 'center',
+        }}
+      >
+        <Pagination
+          simple
+          pageSize={1}
+          showSizeChanger={false}
+          defaultCurrent={resource.getPage()}
+          total={resource.getTotalPage()}
+          onChange={this.handlePageChange}
+          style={{ display: 'inline-block' }}
+        />
+      </div>
+    );
+  }
+
+  renderComponent() {
     return (
       <>
         <DndProvider>
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
-                const filterByTk = this.collection.getFilterByTK(this.context.record);
-
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
-                      key={`${action.uid}-${filterByTk}`}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false }}
                       extraToolbarItems={[
@@ -119,27 +140,10 @@ export class DetailsModel extends DataBlockModel<{
             </Space>
           </div>
         </DndProvider>
-
         <FormLayout layout={'vertical'}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
-        {this.isMultiRecordResource() && (
-          <div
-            style={{
-              textAlign: 'center',
-            }}
-          >
-            <Pagination
-              simple
-              pageSize={1}
-              showSizeChanger={false}
-              defaultCurrent={resource.getPage()}
-              total={resource.getTotalPage()}
-              onChange={this.handlePageChange}
-              style={{ display: 'inline-block' }}
-            />
-          </div>
-        )}
+        {this.renderPagination()}
       </>
     );
   }
