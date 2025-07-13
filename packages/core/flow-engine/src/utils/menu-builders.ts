@@ -61,11 +61,6 @@ interface MenuBuilderFlowContext {
     sourceId?: string;
     associationName?: string;
   };
-  shared?: {
-    currentBlockModel?: {
-      collection?: any;
-    };
-  };
 }
 
 // ==================== 数据源工具函数 ====================
@@ -754,7 +749,7 @@ async function buildDataSourceBlockItems(
 
       if (hasCurrentFlowContext) {
         const currentFlow = model.parent?.context.currentFlow;
-        const collection: Collection = currentFlow?.currentBlockModel?.collection;
+        const collection: Collection = currentFlow?.blockModel?.collection;
 
         if (currentFlow && collection) {
           const relatedFields = collection?.getRelationshipFields() || [];

@@ -29,11 +29,11 @@ FilterFormSubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!ctx.currentBlockModel?.form) {
+        if (!ctx.blockModel?.form) {
           ctx.message.error(ctx.t('No form available for submission.'));
           return;
         }
-        const currentBlockModel = ctx.currentBlockModel;
+        const currentBlockModel = ctx.blockModel;
         await currentBlockModel.form.submit();
         const values = currentBlockModel.form.values;
         const flowEngine = ctx.engine as FlowEngine;

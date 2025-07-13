@@ -27,11 +27,11 @@ FilterFormResetActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!ctx.currentBlockModel?.form) {
+        if (!ctx.blockModel?.form) {
           ctx.message.error(ctx.t('No form available for reset.'));
           return;
         }
-        const currentBlockModel = ctx.currentBlockModel;
+        const currentBlockModel = ctx.blockModel;
         await currentBlockModel.form.reset();
         const flowEngine = ctx.engine as FlowEngine;
         flowEngine.forEachModel((model: DataBlockModel) => {

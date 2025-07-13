@@ -29,7 +29,7 @@ RefreshActionModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx, params) {
-        const currentResource = ctx.currentBlockModel?.resource;
+        const currentResource = ctx.blockModel?.resource;
         if (!currentResource) {
           ctx.message.error(ctx.t('No resource selected for refresh'));
           return;

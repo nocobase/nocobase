@@ -17,7 +17,7 @@ import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
-  const currentBlockModel = modelInstance.context.currentBlockModel as DataBlockModel;
+  const currentBlockModel = modelInstance.context.blockModel as DataBlockModel;
   const fields = currentBlockModel.collection.getFields().filter((field) => {
     // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
     return field.target !== 'attachments';
@@ -116,7 +116,7 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useFlowSettingsContext();
-            const options = model.context.currentBlockModel.collection.getFields().map((field) => {
+            const options = model.context.blockModel.collection.getFields().map((field) => {
               return {
                 label: field.title,
                 value: field.name,
@@ -131,7 +131,7 @@ FilterActionModel.registerFlow({
         },
       },
       defaultParams(ctx) {
-        const names = ctx.currentBlockModel.collection.getFields().map((field) => field.name);
+        const names = ctx.blockModel.collection.getFields().map((field) => field.name);
         return {
           filterableFieldsNames: names || [],
         };
@@ -149,7 +149,7 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model: modelInstance } = useFlowSettingsContext();
-            const currentBlockModel = modelInstance.context.currentBlockModel;
+            const currentBlockModel = modelInstance.context.blockModel;
             const fields = currentBlockModel.collection.getFields();
             const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
@@ -182,7 +182,7 @@ FilterActionModel.registerFlow({
   steps: {
     submit: {
       handler(ctx, params) {
-        const resource = ctx.currentBlockModel?.resource as MultiRecordResource;
+        const resource = ctx.blockModel?.resource as MultiRecordResource;
         if (!resource) {
           return;
         }
@@ -205,7 +205,7 @@ FilterActionModel.registerFlow({
   steps: {
     submit: {
       handler(ctx, params) {
-        const resource = ctx.currentBlockModel?.resource as MultiRecordResource;
+        const resource = ctx.blockModel?.resource as MultiRecordResource;
         if (!resource) {
           return;
         }
