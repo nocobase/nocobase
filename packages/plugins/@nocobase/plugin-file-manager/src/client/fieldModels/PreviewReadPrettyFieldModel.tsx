@@ -11,7 +11,7 @@ import { ReadPrettyFieldModel } from '@nocobase/client';
 import { castArray } from 'lodash';
 import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
-import { Image } from 'antd';
+import { Image, Space } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 
 function getFileType(file) {
@@ -40,7 +40,7 @@ function getFileType(file) {
 }
 
 const FilePreview = ({ file, width }: { file: any; width: number }) => {
-  const src = typeof file === 'string' ? file : file?.preview || file.url;
+  const src = typeof file === 'string' ? file : file?.preview || file?.url;
   if (!src) {
     return;
   }
@@ -82,12 +82,9 @@ const FilePreview = ({ file, width }: { file: any; width: number }) => {
 
 const Preview = ({ value = [] }) => {
   return (
-    <>
-      {Array.isArray(value) &&
-        value.map((file, index) => {
-          return <FilePreview file={file} width={28} key={index} />;
-        })}
-    </>
+    <Space size={5} wrap={false}>
+      {Array.isArray(value) && value.map((file, index) => <FilePreview file={file} width={28} key={index} />)}
+    </Space>
   );
 };
 export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {

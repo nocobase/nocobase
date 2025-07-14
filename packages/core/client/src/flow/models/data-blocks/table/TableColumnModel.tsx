@@ -118,6 +118,9 @@ TableColumnModel.registerFlow({
     init: {
       async handler(ctx, params) {
         const field = ctx.model.collectionField;
+        if (!field) {
+          return;
+        }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
         await ctx.model.applySubModelsAutoFlows('field');
