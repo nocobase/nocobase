@@ -13,7 +13,7 @@ import {
   mergeFlowDefinitions,
   isInheritedFrom,
   resolveDefaultParams,
-  resolveUiSchema,
+  resolveStepUiSchema,
   FlowExitException,
   defineAction,
   compileUiSchema,
@@ -30,23 +30,14 @@ import type {
   DeepPartial,
   ModelConstructor,
   StepParams,
+  StepDefinition,
 } from '../../types';
 import type { ISchema } from '@formily/json-schema';
 import type { APIClient } from '@nocobase/sdk';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
-  const mockEngine = {
-    translate: vi.fn((key: string, options?: Record<string, unknown>) => {
-      if (options?.returnOriginal) return key;
-      return `translated_${key}`;
-    }),
-    createModel: vi.fn(),
-    getModel: vi.fn(),
-    applyFlowCache: new Map(),
-  } as Partial<FlowEngine>;
-
-  return mockEngine as FlowEngine;
+  return new FlowEngine();
 };
 
 interface MockFlowModelOptions {
@@ -55,26 +46,30 @@ interface MockFlowModelOptions {
   stepParams?: StepParams;
   sortIndex?: number;
   subModels?: Record<string, FlowModel | FlowModel[]>;
+  use?: string;
 }
 
 const createMockFlowModel = (overrides: MockFlowModelOptions = {}): FlowModel => {
-  const flowEngine = createMockFlowEngine();
+  const flowEngine = overrides.flowEngine || createMockFlowEngine();
   const options = {
     uid: 'test-model-uid',
-    flowEngine,
+    use: 'FlowModel',
     stepParams: {},
     sortIndex: 0,
     subModels: {},
     ...overrides,
   };
 
-  const model = new FlowModel(options);
-  // Ensure the flowEngine is properly set
-  Object.defineProperty(model, 'flowEngine', {
-    value: flowEngine,
-    writable: true,
-    configurable: true,
+  const model = flowEngine.createModel(options);
+
+  // Mock additional methods for testing
+  flowEngine.translate = vi.fn((key: string, options?: Record<string, unknown>) => {
+    if (options?.returnOriginal) return key;
+    return `translated_${key}`;
   });
+
+  flowEngine.getAction = vi.fn().mockReturnValue(null);
+
   return model;
 };
 
@@ -109,7 +104,7 @@ let mockFlowEngine: FlowEngine;
 
 beforeEach(() => {
   mockFlowEngine = createMockFlowEngine();
-  mockModel = createMockFlowModel();
+  mockModel = createMockFlowModel({ flowEngine: mockFlowEngine });
   vi.clearAllMocks();
 });
 
@@ -537,142 +532,6 @@ describe('Utils', () => {
         const result = await resolveDefaultParams(asyncParamsFn, mockContext);
 
         expect(result).toEqual({ delayed: 'value' });
-      });
-    });
-  });
-
-  // ==================== resolveUiSchema() FUNCTION ====================
-  describe('resolveUiSchema()', () => {
-    let mockContext: ParamsContext<FlowModel>;
-
-    beforeEach(() => {
-      mockContext = {
-        model: mockModel,
-        globals: {
-          flowEngine: mockFlowEngine,
-          app: {},
-        },
-        app: {} as any,
-        runtimeArgs: { testExtra: 'value' },
-      };
-    });
-
-    describe('static schema resolution', () => {
-      test('should return static schema object directly', async () => {
-        const staticSchema: Record<string, ISchema> = {
-          field1: { type: 'string', title: 'Field 1' },
-          field2: { type: 'number', title: 'Field 2' },
-        };
-
-        const result = await resolveUiSchema(staticSchema, mockContext);
-
-        expect(result).toEqual(staticSchema);
-      });
-
-      test('should return empty object for undefined schema', async () => {
-        const result = await resolveUiSchema(undefined, mockContext);
-
-        expect(result).toEqual({});
-      });
-
-      test('should return empty object for null schema', async () => {
-        const result = await resolveUiSchema(null, mockContext);
-
-        expect(result).toEqual({});
-      });
-
-      test('should handle complex static schema', async () => {
-        const complexSchema: Record<string, ISchema> = {
-          user: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', title: 'Name' },
-              age: { type: 'number', title: 'Age' },
-            },
-          },
-          settings: {
-            type: 'object',
-            'x-component': 'FormLayout',
-            properties: {
-              theme: { type: 'string', enum: ['light', 'dark'] },
-            },
-          },
-        };
-
-        const result = await resolveUiSchema(complexSchema, mockContext);
-
-        expect(result).toEqual(complexSchema);
-      });
-    });
-
-    describe('function schema resolution', () => {
-      test('should call function with context and return result', async () => {
-        const schemaFn = vi.fn().mockReturnValue({
-          dynamicField: { type: 'string', title: 'Dynamic Field' },
-        });
-
-        const result = await resolveUiSchema(schemaFn, mockContext);
-
-        expect(schemaFn).toHaveBeenCalledWith(mockContext);
-        expect(result).toEqual({
-          dynamicField: { type: 'string', title: 'Dynamic Field' },
-        });
-      });
-
-      test('should handle function accessing context properties', async () => {
-        const schemaFn = vi.fn((ctx: ParamsContext<FlowModel>) => ({
-          modelInfo: {
-            type: 'string',
-            title: 'Model UID',
-            default: ctx.model.uid,
-          },
-          extraInfo: {
-            type: 'string',
-            title: 'Extra Data',
-            default: ctx.runtimeArgs.testExtra,
-          },
-        }));
-
-        const result = await resolveUiSchema(schemaFn, mockContext);
-
-        expect(result.modelInfo.default).toBe(mockModel.uid);
-        expect(result.extraInfo.default).toBe('value');
-      });
-    });
-
-    describe('async processing', () => {
-      test('should handle async function correctly', async () => {
-        const asyncSchemaFn = vi.fn().mockResolvedValue({
-          asyncField: { type: 'string', title: 'Async Field' },
-        });
-
-        const result = await resolveUiSchema(asyncSchemaFn, mockContext);
-
-        expect(asyncSchemaFn).toHaveBeenCalledWith(mockContext);
-        expect(result).toEqual({
-          asyncField: { type: 'string', title: 'Async Field' },
-        });
-      });
-
-      test('should handle async function with delay', async () => {
-        const asyncSchemaFn = vi.fn(
-          () =>
-            new Promise<any>((resolve) =>
-              setTimeout(
-                () =>
-                  resolve({
-                    delayedField: { type: 'number', title: 'Delayed Field' },
-                  }),
-                10,
-              ),
-            ),
-        );
-
-        const result = await resolveUiSchema(asyncSchemaFn, mockContext);
-
-        expect(result).toEqual({
-          delayedField: { type: 'number', title: 'Delayed Field' },
-        });
       });
     });
   });
@@ -1521,6 +1380,300 @@ describe('Utils', () => {
 
         expect(result).toHaveLength(1);
         expect(result[0].label).toBe('Valid Block');
+      });
+    });
+  });
+
+  // ==================== resolveStepUiSchema() FUNCTION ====================
+  describe('resolveStepUiSchema()', () => {
+    let mockFlow: any;
+    let mockStep: StepDefinition;
+    let mockAction: any;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {
+          testStep: {
+            handler: vi.fn(),
+          },
+        },
+      };
+
+      mockStep = {
+        handler: vi.fn().mockResolvedValue('step-result'),
+        title: 'Test Step',
+      };
+
+      mockAction = {
+        name: 'testAction',
+        handler: vi.fn().mockResolvedValue('action-result'),
+        title: 'Test Action',
+      };
+    });
+
+    describe('basic functionality', () => {
+      test('should return null when no uiSchema is available', async () => {
+        // Step with no uiSchema and no action
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toBeNull();
+      });
+
+      test('should return null when step and action both have empty uiSchema', async () => {
+        mockStep.uiSchema = {};
+        mockAction.uiSchema = {};
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toBeNull();
+      });
+
+      test('should return step uiSchema when only step has uiSchema', async () => {
+        const stepUiSchema = {
+          field1: { type: 'string', title: 'Field 1' },
+          field2: { type: 'number', title: 'Field 2' },
+        };
+        mockStep.uiSchema = stepUiSchema;
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual(stepUiSchema);
+      });
+
+      test('should return action uiSchema when only action has uiSchema', async () => {
+        const actionUiSchema = {
+          actionField: { type: 'string', title: 'Action Field' },
+        };
+        mockAction.uiSchema = actionUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual(actionUiSchema);
+      });
+    });
+
+    describe('merging behavior', () => {
+      test('should merge step and action uiSchemas with step taking priority', async () => {
+        const actionUiSchema = {
+          field1: { type: 'string', title: 'Action Field 1' },
+          field2: { type: 'number', title: 'Action Field 2' },
+        };
+        const stepUiSchema = {
+          field1: { type: 'string', title: 'Step Field 1' }, // Should override action
+          field3: { type: 'boolean', title: 'Step Field 3' }, // Should be added
+        };
+
+        mockAction.uiSchema = actionUiSchema;
+        mockStep.uiSchema = stepUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual({
+          field1: { type: 'string', title: 'Step Field 1' }, // Step priority
+          field2: { type: 'number', title: 'Action Field 2' }, // From action
+          field3: { type: 'boolean', title: 'Step Field 3' }, // From step
+        });
+      });
+
+      test('should deep merge field properties when both define same field', async () => {
+        const actionUiSchema = {
+          field1: {
+            type: 'string',
+            title: 'Action Field',
+            'x-component': 'Input',
+            'x-component-props': { placeholder: 'Action placeholder' },
+          },
+        };
+        const stepUiSchema = {
+          field1: {
+            title: 'Step Field', // Should override
+            required: true, // Should be added
+            'x-component-props': { disabled: true }, // Should merge
+          },
+        };
+
+        mockAction.uiSchema = actionUiSchema;
+        mockStep.uiSchema = stepUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result.field1).toEqual({
+          type: 'string',
+          title: 'Step Field', // Overridden by step
+          'x-component': 'Input',
+          required: true, // Added by step
+          'x-component-props': { disabled: true }, // Step overrides action
+        });
+      });
+    });
+
+    describe('dynamic uiSchema resolution', () => {
+      test('should resolve function-based step uiSchema', async () => {
+        const dynamicStepUiSchema = vi.fn().mockResolvedValue({
+          dynamicField: { type: 'string', title: 'Dynamic Field' },
+        });
+        mockStep.uiSchema = dynamicStepUiSchema;
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(dynamicStepUiSchema).toHaveBeenCalled();
+        expect(result).toEqual({
+          dynamicField: { type: 'string', title: 'Dynamic Field' },
+        });
+      });
+
+      test('should resolve function-based action uiSchema', async () => {
+        const dynamicActionUiSchema = vi.fn().mockResolvedValue({
+          actionDynamicField: { type: 'number', title: 'Action Dynamic Field' },
+        });
+        mockAction.uiSchema = dynamicActionUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(dynamicActionUiSchema).toHaveBeenCalled();
+        expect(result).toEqual({
+          actionDynamicField: { type: 'number', title: 'Action Dynamic Field' },
+        });
+      });
+
+      test('should resolve both dynamic step and action uiSchemas', async () => {
+        const dynamicActionUiSchema = vi.fn().mockResolvedValue({
+          actionField: { type: 'string', title: 'Action Field' },
+          sharedField: { type: 'string', title: 'Action Shared' },
+        });
+        const dynamicStepUiSchema = vi.fn().mockResolvedValue({
+          stepField: { type: 'number', title: 'Step Field' },
+          sharedField: { type: 'string', title: 'Step Shared' }, // Should override
+        });
+
+        mockAction.uiSchema = dynamicActionUiSchema;
+        mockStep.uiSchema = dynamicStepUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(dynamicActionUiSchema).toHaveBeenCalled();
+        expect(dynamicStepUiSchema).toHaveBeenCalled();
+        expect(result).toEqual({
+          actionField: { type: 'string', title: 'Action Field' },
+          stepField: { type: 'number', title: 'Step Field' },
+          sharedField: { type: 'string', title: 'Step Shared' }, // Step overrides action
+        });
+      });
+
+      test('should return null when dynamic uiSchemas resolve to empty objects', async () => {
+        const emptyActionUiSchema = vi.fn().mockResolvedValue({});
+        const emptyStepUiSchema = vi.fn().mockResolvedValue({});
+
+        mockAction.uiSchema = emptyActionUiSchema;
+        mockStep.uiSchema = emptyStepUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toBeNull();
+      });
+
+      test('should return null when dynamic uiSchemas resolve to null/undefined', async () => {
+        const nullActionUiSchema = vi.fn().mockResolvedValue(null);
+        const undefinedStepUiSchema = vi.fn().mockResolvedValue(undefined);
+
+        mockAction.uiSchema = nullActionUiSchema;
+        mockStep.uiSchema = undefinedStepUiSchema;
+        mockStep.use = 'testAction';
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('action handling', () => {
+      test('should handle missing action gracefully', async () => {
+        mockStep.use = 'nonExistentAction';
+        mockStep.uiSchema = {
+          field1: { type: 'string', title: 'Field 1' },
+        };
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(null);
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual({
+          field1: { type: 'string', title: 'Field 1' },
+        });
+      });
+
+      test('should handle action without uiSchema', async () => {
+        mockStep.use = 'testAction';
+        mockStep.uiSchema = {
+          field1: { type: 'string', title: 'Field 1' },
+        };
+        mockModel.flowEngine.getAction = vi.fn().mockReturnValue({
+          ...mockAction,
+          uiSchema: undefined,
+        });
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual({
+          field1: { type: 'string', title: 'Field 1' },
+        });
+      });
+
+      test('should handle getAction throwing error', async () => {
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        mockStep.use = 'errorAction';
+        mockStep.uiSchema = {
+          field1: { type: 'string', title: 'Field 1' },
+        };
+        mockModel.flowEngine.getAction = vi.fn(() => {
+          throw new Error('Action retrieval error');
+        });
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to get action errorAction:', expect.any(Error));
+        expect(result).toEqual({
+          field1: { type: 'string', title: 'Field 1' },
+        });
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle missing getAction method', async () => {
+        // Mock a flowEngine without getAction method
+        const originalGetAction = mockModel.flowEngine.getAction;
+        mockModel.flowEngine.getAction = undefined;
+
+        mockStep.use = 'testAction';
+        mockStep.uiSchema = {
+          field1: { type: 'string', title: 'Field 1' },
+        };
+
+        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
+
+        expect(result).toEqual({
+          field1: { type: 'string', title: 'Field 1' },
+        });
+
+        // Restore the original method
+        mockModel.flowEngine.getAction = originalGetAction;
       });
     });
   });

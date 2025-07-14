@@ -13,7 +13,7 @@ import { Button, message } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
+import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
@@ -133,35 +133,11 @@ const openRequiredParamsStepFormDialog = async ({
 
             // 只处理 paramsRequired 为 true 的步骤
             if (step.paramsRequired) {
-              // 获取步骤的 uiSchema
-              const stepUiSchema = step.uiSchema || {};
-
-              // 如果step使用了action，也获取action的uiSchema
-              let actionUiSchema = {};
-              if (step.use) {
-                const action = model.flowEngine?.getAction?.(step.use);
-                if (action && action.uiSchema) {
-                  actionUiSchema = action.uiSchema;
-                }
-              }
-
-              const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-              // 解析动态 uiSchema
-              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
-              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
-
-              // 合并uiSchema，确保step的uiSchema优先级更高
-              const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
-              Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
-                if (mergedUiSchema[fieldKey]) {
-                  mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-                } else {
-                  mergedUiSchema[fieldKey] = schema;
-                }
-              });
+              // 使用提取的工具函数解析并合并uiSchema
+              const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
 
               // 如果有可配置的UI Schema，检查是否已经有了所需的配置值
-              if (Object.keys(mergedUiSchema).length > 0) {
+              if (mergedUiSchema) {
                 // 获取当前步骤的参数
                 const currentStepParams = model.getStepParams(flowKey, stepKey) || {};
 
