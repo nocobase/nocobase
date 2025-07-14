@@ -123,7 +123,7 @@ const getChildren = (
 ): Option[] => {
   const result = options
     .map((option): Option => {
-      if (!option.target || ['chinaRegions', 'attachments'].includes(option.target)) {
+      if (!option.target || option.target === 'chinaRegions') {
         return {
           key: option.name,
           value: option.name,
@@ -212,12 +212,12 @@ export const useBaseVariable = ({
     if (!option.field?.target) {
       return Promise.resolve(void 0);
     }
-
     const target = option.field.target;
     return new Promise((resolve) => {
       setTimeout(() => {
         const usedInVariable = true;
-        const children = (
+        const children =
+          compile(option.field?.children) ||
           getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
             uiSchema,
@@ -230,29 +230,28 @@ export const useBaseVariable = ({
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField: cm.getCollectionField,
             deprecated,
-          }) || []
-        )
-          // 将叶子节点排列在上面，方便用户选择
-          .sort((a, b) => {
-            if (a.isLeaf && !b.isLeaf) {
-              return -1;
-            }
-            if (!a.isLeaf && b.isLeaf) {
-              return 1;
-            }
-            return 0;
-          })
-          // 将禁用项排列在下面，方便用户选择
-          .sort((a, b) => {
-            if (a.disabled && !b.disabled) {
-              return 1;
-            }
-            if (!a.disabled && b.disabled) {
-              return -1;
-            }
-            return 0;
-          });
-
+          }) ||
+          []
+            // 将叶子节点排列在上面，方便用户选择
+            .sort((a, b) => {
+              if (a.isLeaf && !b.isLeaf) {
+                return -1;
+              }
+              if (!a.isLeaf && b.isLeaf) {
+                return 1;
+              }
+              return 0;
+            })
+            // 将禁用项排列在下面，方便用户选择
+            .sort((a, b) => {
+              if (a.disabled && !b.disabled) {
+                return 1;
+              }
+              if (!a.disabled && b.disabled) {
+                return -1;
+              }
+              return 0;
+            });
         if (children.length === 0) {
           option.disabled = true;
           option.isLeaf = true;
