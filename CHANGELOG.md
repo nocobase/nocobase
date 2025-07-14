@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.8.4](https://github.com/nocobase/nocobase/compare/v1.8.3...v1.8.4) - 2025-07-13
+
+### 🎉 New Features
+
+- **[Multi-app manager]** Support to configure independent auth secret for sub-apps ([#7197](https://github.com/nocobase/nocobase/pull/7197)) by @mytharcher
+
+- **[Workflow: CC]** Add CC node to workflow ([#7201](https://github.com/nocobase/nocobase/pull/7201)) by @mytharcher
+
+### 🚀 Improvements
+
+- **[Notification: In-app message]** Optimize font size for mobile message page ([#7199](https://github.com/nocobase/nocobase/pull/7199)) by @zhangzhonghe
+
+- **[Auth: DingTalk]** Support configuring the callback URL’s protocol and port number by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Notification: In-app message]** Fix BigInt timestamp in string format causes dayjs issue ([#7196](https://github.com/nocobase/nocobase/pull/7196)) by @mytharcher
+
+- **[Workflow: Approval]**
+  - To avoid error when user not exists by @mytharcher
+
+  - Reload association on record by @mytharcher
+
+  - Add `try/catch` in migration when update UI schema by @mytharcher
+
+## [v1.8.3](https://github.com/nocobase/nocobase/compare/v1.8.2...v1.8.3) - 2025-07-11
+
+### 🚀 Improvements
+
+- **[Multi-app manager]** Add database and authorization options for sub-app ([#7184](https://github.com/nocobase/nocobase/pull/7184)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Custom request]** variable parsing issue in URL during route navigation after custom request success ([#7186](https://github.com/nocobase/nocobase/pull/7186)) by @katherinehhh
+
+## [v1.8.2](https://github.com/nocobase/nocobase/compare/v1.8.1...v1.8.2) - 2025-07-10
+
+### 🎉 New Features
+
+- **[Workflow: Approval]** Add initializer for trigger by @mytharcher
+
+### 🚀 Improvements
+
+- **[Workflow]** Convert operands to string before string comparison in logic calculation ([#7190](https://github.com/nocobase/nocobase/pull/7190)) by @mytharcher
+
+- **[Collection field: Code]** Add indent setting by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[database]** Fixed an issue where fields of views were not displayed in blocks. ([#7162](https://github.com/nocobase/nocobase/pull/7162)) by @aaaaaajie
+
+- **[Block: Kanban]** fix subtable UI issues in Kanban and add support for Kanban column width setting ([#7189](https://github.com/nocobase/nocobase/pull/7189)) by @katherinehhh
+
+- **[Workflow: Approval]** Fix block and association bugs by @mytharcher
+
 ## [v1.8.1](https://github.com/nocobase/nocobase/compare/v1.8.0...v1.8.1) - 2025-07-09
 
 ### 🐛 Bug Fixes

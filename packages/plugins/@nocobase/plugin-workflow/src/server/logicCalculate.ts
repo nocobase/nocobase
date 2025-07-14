@@ -61,19 +61,19 @@ function notIncludes(a, b) {
 }
 
 function startsWith(a: string, b: string) {
-  return a.startsWith(b);
+  return a.toString().startsWith(b.toString());
 }
 
 function notStartsWith(a: string, b: string) {
-  return !a.startsWith(b);
+  return !a.toString().startsWith(b.toString());
 }
 
 function endsWith(a: string, b: string) {
-  return a.endsWith(b);
+  return a.toString().endsWith(b.toString());
 }
 
 function notEndsWith(a: string, b: string) {
-  return !a.endsWith(b);
+  return !a.toString().endsWith(b.toString());
 }
 
 calculators.register('includes', includes);
@@ -95,7 +95,7 @@ type CalculationGroup = {
   };
 };
 
-type Calculation = CalculationItem | CalculationGroup;
+export type Calculation = CalculationItem | CalculationGroup;
 
 function calculate(calculation: CalculationItem = {}): boolean {
   let fn: Comparer;

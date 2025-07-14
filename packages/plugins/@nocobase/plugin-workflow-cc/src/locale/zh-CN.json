@@ -1,0 +1,15 @@
+{
+  "CC": "抄送",
+  "Information within the workflow can be freely configured into a view interface and made accessible to specific users. A CC task will be generated for them in the tasks center.": "可将流程中的信息自由配置为查看界面，提供给特定的用户查看，将在待办中心为其生成抄送任务。",
+  "Recipients": "接收人",
+  "User interface": "用户界面",
+  "View user interface": "查看用户界面",
+  "Configure user interface": "配置用户界面",
+  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "待办中心每个抄送项的标题。可以在字符串模板中使用变量。默认为节点标题。",
+  "Read": "已读",
+  "Unread": "未读",
+  "Mark as read": "标为已读",
+  "Mark as unread": "标为未读",
+  "Mark all as read": "全部标为已读",
+  "CC to me": "抄送我的"
+}

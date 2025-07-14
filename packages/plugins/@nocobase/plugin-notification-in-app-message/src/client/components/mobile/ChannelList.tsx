@@ -58,6 +58,9 @@ const InternalChannelList = (props: { onClickItem?: (item: any) => void }) => {
         ref={listRef}
         style={{
           '--border-top': 'none',
+          '--font-size': 'var(--adm-font-size-6)',
+          // @ts-ignore
+          '--adm-font-size-main': 'var(--adm-font-size-4)',
         }}
       >
         {channelListObs.value.map((item) => {

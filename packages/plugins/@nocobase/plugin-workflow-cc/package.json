@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-workflow-cc",
+  "displayName": "Workflow: CC",
+  "displayName.zh-CN": "工作流：抄送",
+  "description": "Information within the workflow can be freely configured into a view interface and made accessible to specific users. A CC task will be generated for them in the tasks center.",
+  "description.zh-CN": "可将流程中的信息自由配置为查看界面，提供给特定的用户查看，将在待办中心为其生成抄送任务。",
+  "homepage": "https://docs.nocobase.com/handbook/workflow-cc",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
+  "license": "AGPL-3.0",
+  "version": "1.8.4",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/plugin-ui-schema-storage": "1.x",
+    "@nocobase/plugin-users": "1.x",
+    "@nocobase/plugin-workflow": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
+  },
+  "keywords": [
+    "Workflow"
+  ]
+}
