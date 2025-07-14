@@ -11,7 +11,7 @@ import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
 import { castArray } from 'lodash';
 import React from 'react';
 import { reactive, escapeT } from '@nocobase/flow-engine';
-import { Image, Space } from 'antd';
+import { Image, Space, Tooltip } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 
 function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
@@ -55,11 +55,13 @@ function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
   return 'file';
 }
 
-const FilePreview = ({ file, size }: { file: any; size: number }) => {
+const FilePreview = ({ file, size, showFileName }: { file: any; size: number; showFileName: boolean }) => {
   const src = typeof file === 'string' ? file : file?.preview || file?.url;
   if (!src) {
     return;
   }
+  const fileName =
+    typeof file === 'string' ? src.split('/').pop() : file?.name || file?.filename || file?.url?.split('/').pop();
   const ext = src.split('.').pop()?.toLowerCase() || '';
   const fallbackMap: Record<string, string> = {
     pdf: '/file-placeholder/pdf-200-200.png',
@@ -85,22 +87,41 @@ const FilePreview = ({ file, size }: { file: any; size: number }) => {
       }}
     />
   );
-  if (type !== 'image') {
-    return (
-      <a href={src} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
-        {imageNode}
-      </a>
-    );
-  }
-
-  return imageNode;
+  return (
+    <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
+      {type === 'image' ? (
+        imageNode
+      ) : (
+        <a href={src} target="_blank" rel="noopener noreferrer">
+          {imageNode}
+        </a>
+      )}
+      {showFileName && (
+        <Tooltip title={fileName}>
+          <div
+            style={{
+              fontSize: 12,
+              marginTop: 4,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {fileName}
+          </div>
+        </Tooltip>
+      )}
+    </div>
+  );
 };
 
 const Preview = (props) => {
-  const { value = [], size } = props;
+  const { value = [], size, showFileName } = props;
   return (
     <Space size={5} wrap={true}>
-      {Array.isArray(value) && value.map((file, index) => <FilePreview file={file} size={size} key={index} />)}
+      {Array.isArray(value) &&
+        value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
     </Space>
   );
 };
@@ -151,6 +172,26 @@ PreviewReadPrettyFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('size', params.size);
+      },
+    },
+    showFileName: {
+      title: escapeT('Show file name'),
+      uiSchema: (ctx) => {
+        if (ctx.model.parent instanceof TableColumnModel) {
+          return null;
+        }
+        return {
+          showFileName: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        showFileName: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showFileName', params.showFileName);
       },
     },
   },
