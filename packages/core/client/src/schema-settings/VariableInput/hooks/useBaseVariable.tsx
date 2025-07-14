@@ -12,10 +12,10 @@ import { Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
+import { FlagContext } from '../../../flag-provider';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
-import { FlagContext } from '../../../flag-provider';
 
 export interface IsDisabledParams {
   option: FieldOption;
@@ -218,7 +218,7 @@ export const useBaseVariable = ({
     return new Promise((resolve) => {
       setTimeout(() => {
         const usedInVariable = true;
-        const children =
+        const children = (
           (isLeftVariable && compile(option.field?.children)) ||
           getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
@@ -234,26 +234,27 @@ export const useBaseVariable = ({
             deprecated,
           }) ||
           []
-            // 将叶子节点排列在上面，方便用户选择
-            .sort((a, b) => {
-              if (a.isLeaf && !b.isLeaf) {
-                return -1;
-              }
-              if (!a.isLeaf && b.isLeaf) {
-                return 1;
-              }
-              return 0;
-            })
-            // 将禁用项排列在下面，方便用户选择
-            .sort((a, b) => {
-              if (a.disabled && !b.disabled) {
-                return 1;
-              }
-              if (!a.disabled && b.disabled) {
-                return -1;
-              }
-              return 0;
-            });
+        )
+          // 将叶子节点排列在上面，方便用户选择
+          .sort((a, b) => {
+            if (a.isLeaf && !b.isLeaf) {
+              return -1;
+            }
+            if (!a.isLeaf && b.isLeaf) {
+              return 1;
+            }
+            return 0;
+          })
+          // 将禁用项排列在下面，方便用户选择
+          .sort((a, b) => {
+            if (a.disabled && !b.disabled) {
+              return 1;
+            }
+            if (!a.disabled && b.disabled) {
+              return -1;
+            }
+            return 0;
+          });
         if (children.length === 0) {
           option.disabled = true;
           option.isLeaf = true;
