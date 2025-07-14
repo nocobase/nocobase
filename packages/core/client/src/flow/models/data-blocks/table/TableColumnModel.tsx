@@ -52,12 +52,6 @@ export class TableColumnModel extends FieldModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
-    console.log(
-      'TableColumnModel getColumnProps',
-      this.props.dataIndex,
-      this.props.editable,
-      this.parent.props.editable,
-    );
     return {
       ...this.props,
       ellipsis: true,

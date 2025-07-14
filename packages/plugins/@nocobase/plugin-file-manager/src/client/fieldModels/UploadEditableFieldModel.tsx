@@ -13,7 +13,6 @@ import { UploadOutlined } from '@ant-design/icons';
 import React from 'react';
 
 const CardUpload = (props) => {
-  console.log(props);
   return (
     <Upload
       {...props}
@@ -30,7 +29,6 @@ const CardUpload = (props) => {
 export class UploadEditableFieldModel extends EditableFieldModel {
   static supportedFieldInterfaces = ['attachment'];
   set customRequest(fn) {
-    console.log(555);
     this.field.setComponentProps({ customRequest: fn });
   }
   get component() {
@@ -47,7 +45,6 @@ UploadEditableFieldModel.registerFlow({
     bindEvent: {
       handler(ctx, params) {
         ctx.model.customRequest = (fieldData) => {
-          console.log(fieldData);
           ctx.model.dispatchEvent('customRequest', {
             apiClient: ctx.app.apiClient,
             field: ctx.model.field,
@@ -66,7 +63,8 @@ UploadEditableFieldModel.registerFlow({
   steps: {
     default: {
       async handler(ctx) {
-        ctx.model.setComponentProps({ multiple: true });
+        const { type } = ctx.model.collectionField;
+        ctx.model.setComponentProps({ multiple: ['belongsToMany', 'hasMany'].includes(type) });
       },
     },
   },

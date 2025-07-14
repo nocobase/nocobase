@@ -12,14 +12,80 @@ import { castArray } from 'lodash';
 import React from 'react';
 import { reactive } from '@nocobase/flow-engine';
 import { Image } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
+
+function getFileType(file) {
+  const { mimetype, extname = '', url = '' } = file;
+  if (mimetype) {
+    if (mimetype.startsWith('image/')) return 'image';
+    if (mimetype.startsWith('video/')) return 'video';
+    if (mimetype.startsWith('audio/')) return 'audio';
+    if (mimetype === 'application/pdf') return 'pdf';
+  }
+
+  let ext = extname && extname.toLowerCase();
+
+  if (!ext && url) {
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const lastDotIndex = cleanUrl.lastIndexOf('.');
+    if (lastDotIndex !== -1) {
+      ext = cleanUrl.substring(lastDotIndex).toLowerCase();
+    }
+  }
+  if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'].includes(ext)) return 'image';
+  if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'].includes(ext)) return 'video';
+  if (['.mp3', '.wav', '.aac', '.ogg'].includes(ext)) return 'audio';
+  if (['.pdf'].includes(ext)) return 'pdf';
+  return 'file';
+}
+
+const FilePreview = ({ file, width }: { file: any; width: number }) => {
+  const src = typeof file === 'string' ? file : file?.preview || file.url;
+  if (!src) {
+    return;
+  }
+  const ext = src.split('.').pop()?.toLowerCase() || '';
+  const fallbackMap: Record<string, string> = {
+    pdf: '/file-placeholder/pdf-200-200.png',
+    mp4: '/file-placeholder/video-200-200.png',
+    mov: '/file-placeholder/video-200-200.png',
+    doc: '/file-placeholder/word-200-200.png',
+    docx: '/file-placeholder/word-200-200.png',
+    default: '/file-placeholder/file-200-200.png',
+  };
+  const type = getFileType(file);
+  const fallback = fallbackMap[ext] || fallbackMap.default;
+  const imageNode = (
+    <Image
+      src={src}
+      fallback={fallback}
+      width={width}
+      height={width}
+      preview={type === 'image' && { mask: <EyeOutlined /> }}
+      style={{
+        borderRadius: 4,
+        objectFit: 'cover',
+        boxShadow: '0 0 0 2px #fff',
+      }}
+    />
+  );
+  if (type !== 'image') {
+    return (
+      <a href={src} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block' }}>
+        {imageNode}
+      </a>
+    );
+  }
+
+  return imageNode;
+};
 
 const Preview = ({ value = [] }) => {
   return (
     <>
       {Array.isArray(value) &&
-        value.map((v, index) => {
-          const src = typeof v === 'string' ? v : v?.preview;
-          return src && <Image key={index} src={src} width={24} height={24} />;
+        value.map((file, index) => {
+          return <FilePreview file={file} width={28} key={index} />;
         })}
     </>
   );
