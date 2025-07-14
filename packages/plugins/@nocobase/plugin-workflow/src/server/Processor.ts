@@ -133,7 +133,8 @@ export default class Processor {
   public async start() {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status} before, could not be started again`);
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`);
+      return;
     }
     await this.prepare();
     if (this.nodes.length) {
@@ -147,7 +148,8 @@ export default class Processor {
   public async resume(job: JobModel) {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status} before, could not be resumed`);
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`);
+      return;
     }
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);

@@ -198,7 +198,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.getLogger('dispatcher').info(`(cycling) check for queueing executions`);
+      this.getLogger('dispatcher').debug(`(cycling) check for queueing executions`);
       this.dispatch();
     }, 300_000);
 
@@ -758,7 +758,7 @@ export default class PluginWorkflowServer extends Plugin {
                 execution.workflow = this.enabledCache.get(execution.workflowId);
                 next = [execution];
               } else {
-                this.getLogger('dispatcher').info(`no execution in db queued to process`);
+                this.getLogger('dispatcher').debug(`no execution in db queued to process`);
               }
             },
           );
@@ -772,7 +772,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.executing = null;
 
       if (next || this.pending.length) {
-        this.getLogger('dispatcher').info(`last process finished, will do another dispatch`);
+        this.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
         this.dispatch();
       }
     })();
