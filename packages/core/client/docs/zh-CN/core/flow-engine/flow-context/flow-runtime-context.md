@@ -165,7 +165,7 @@ class MyModel extends FlowModel {
     return new FlowRuntimeContext(this, { mode, flowKey });
   }
 
-  applyFlow(flowKey, runtimeArgs) {
+  applyFlow(flowKey, inputArgs) {
     const ctx = this.createRuntimeContext({ mode: 'runtime', flowKey });
   }
 }

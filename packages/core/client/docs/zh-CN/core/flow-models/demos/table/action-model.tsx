@@ -49,8 +49,8 @@ ActionModel.registerFlow({
         ctx.model.onClick = (e) => {
           ctx.model.dispatchEvent('click', {
             event: e,
-            record: ctx.runtimeArgs.record,
-            ...ctx.runtimeArgs,
+            record: ctx.inputArgs.record,
+            ...ctx.inputArgs,
           });
         };
       },
@@ -67,7 +67,7 @@ LinkActionModel.registerFlow({
     step1: {
       handler(ctx, params) {
         ctx.modal.confirm({
-          title: `${ctx.runtimeArgs.record?.id}`,
+          title: `${ctx.inputArgs.record?.id}`,
           content: 'Are you sure you want to perform this action?',
           onOk: async () => {},
         });
@@ -86,7 +86,7 @@ DeleteActionModel.registerFlow({
       handler(ctx, params) {
         ctx.modal.confirm({
           title: `Selected Rows`,
-          content: <pre>{JSON.stringify(ctx.runtimeArgs.currentResource?.getSelectedRows(), null, 2)}</pre>,
+          content: <pre>{JSON.stringify(ctx.inputArgs.resource?.getSelectedRows(), null, 2)}</pre>,
           // onOk: async () => {},
         });
       },

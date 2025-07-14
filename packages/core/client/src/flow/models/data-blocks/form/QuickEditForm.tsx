@@ -87,7 +87,7 @@ export class QuickEditForm extends FlowModel {
           <FlowModelRenderer
             fallback={<Skeleton.Input size="small" />}
             model={model}
-            runtimeArgs={{ filterByTk, record }}
+            inputArgs={{ filterByTk, record }}
           />
         );
       },
@@ -215,9 +215,9 @@ QuickEditForm.registerFlow({
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
         }
-        if (ctx.runtimeArgs.filterByTk || ctx.runtimeArgs.record) {
-          resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
-          resource.setData(ctx.runtimeArgs.record);
+        if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
+          resource.setFilterByTk(ctx.inputArgs.filterByTk);
+          resource.setData(ctx.inputArgs.record);
           ctx.model.form.setValues(resource.getData());
         }
       },

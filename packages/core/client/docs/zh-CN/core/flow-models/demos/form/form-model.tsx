@@ -49,7 +49,7 @@ export class FormModel extends FlowModel {
           return (
             <div>
               <FlowEngineProvider engine={this.flowEngine}>
-                <FlowModelRenderer model={this} runtimeArgs={{ form, filterByTk }} />
+                <FlowModelRenderer model={this} inputArgs={{ form, filterByTk }} />
                 <FormButtonGroup>
                   <Submit
                     onClick={async () => {
@@ -78,7 +78,7 @@ FormModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        ctx.model.form = ctx.runtimeArgs.form || createForm();
+        ctx.model.form = ctx.inputArgs.form || createForm();
         if (ctx.model.collection) {
           return;
         }
@@ -88,8 +88,8 @@ FormModel.registerFlow({
         resource.setResourceName(params.collectionName);
         resource.setAPIClient(api);
         ctx.model.resource = resource;
-        if (ctx.runtimeArgs.filterByTk) {
-          resource.setFilterByTk(ctx.runtimeArgs.filterByTk);
+        if (ctx.inputArgs.filterByTk) {
+          resource.setFilterByTk(ctx.inputArgs.filterByTk);
           await resource.refresh();
           ctx.model.form.setInitialValues(resource.getData());
         }

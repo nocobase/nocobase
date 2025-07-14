@@ -78,7 +78,7 @@ interface FlowModelRendererProps {
   skipApplyAutoFlows?: boolean; // 默认 false
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
-  runtimeArgs?: Record<string, any>;
+  inputArgs?: Record<string, any>;
 
   /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
   showErrorFallback?: boolean; // 默认 false
@@ -99,7 +99,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
-  runtimeArgs?: Record<string, any>;
+  inputArgs?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
@@ -111,13 +111,13 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     flowSettingsVariant,
     hideRemoveInSettings,
     showTitle,
-    runtimeArgs,
+    inputArgs,
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
     fallback,
   }) => {
-    const pending = useApplyAutoFlows(model, runtimeArgs);
+    const pending = useApplyAutoFlows(model, inputArgs);
 
     if (pending) {
       return <>{fallback}</>;
@@ -295,7 +295,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
- * @param {any} props.runtimeArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
+ * @param {any} props.inputArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
@@ -309,7 +309,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     hideRemoveInSettings = false,
     showTitle = false,
     skipApplyAutoFlows = false,
-    runtimeArgs,
+    inputArgs,
     showErrorFallback = false,
     settingsMenuLevel,
     extraToolbarItems,
@@ -342,7 +342,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
           showTitle={showTitle}
-          runtimeArgs={runtimeArgs}
+          inputArgs={inputArgs}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}

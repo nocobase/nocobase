@@ -214,12 +214,6 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
 }
 
 /**
- * Runtime arguments for flow execution - represents the data that will appear in ctx.runtimeArgs
- * This is the type for data passed to applyFlow that becomes ctx.runtimeArgs
- */
-export type FlowRuntimeArgs = Record<string, any>;
-
-/**
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {

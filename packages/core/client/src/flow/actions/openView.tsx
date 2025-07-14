@@ -54,12 +54,12 @@ export const openView = defineAction({
 
     const pageModelClass = params.pageModelClass;
 
-    const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
+    const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     let pageModelUid: string | null = null;
 
     await ctx.viewOpener.open({
       mode: openMode,
-      target: ctx.runtimeArgs.target || ctx.layoutContentElement,
+      target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
       content: (currentView) => {
         return (
