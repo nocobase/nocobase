@@ -14,8 +14,31 @@ import { reactive } from '@nocobase/flow-engine';
 import { Image, Space } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 
-function getFileType(file) {
-  const { mimetype, extname = '', url = '' } = file;
+function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
+  let mimetype = '';
+  let ext = '';
+
+  if (typeof file === 'string') {
+    // 是字符串（直接是 URL）
+    const cleanUrl = file.split('?')[0].split('#')[0];
+    const lastDotIndex = cleanUrl.lastIndexOf('.');
+    if (lastDotIndex !== -1) {
+      ext = cleanUrl.substring(lastDotIndex).toLowerCase();
+    }
+  } else if (typeof file === 'object' && file !== null) {
+    // 是对象
+    mimetype = file.mimetype || '';
+    ext = (file.extname || '').toLowerCase();
+    if (!ext && file.url) {
+      const cleanUrl = file.url.split('?')[0].split('#')[0];
+      const lastDotIndex = cleanUrl.lastIndexOf('.');
+      if (lastDotIndex !== -1) {
+        ext = cleanUrl.substring(lastDotIndex).toLowerCase();
+      }
+    }
+  }
+
+  // 判断 mimetype
   if (mimetype) {
     if (mimetype.startsWith('image/')) return 'image';
     if (mimetype.startsWith('video/')) return 'video';
@@ -23,19 +46,12 @@ function getFileType(file) {
     if (mimetype === 'application/pdf') return 'pdf';
   }
 
-  let ext = extname && extname.toLowerCase();
-
-  if (!ext && url) {
-    const cleanUrl = url.split('?')[0].split('#')[0];
-    const lastDotIndex = cleanUrl.lastIndexOf('.');
-    if (lastDotIndex !== -1) {
-      ext = cleanUrl.substring(lastDotIndex).toLowerCase();
-    }
-  }
+  // 判断扩展名
   if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'].includes(ext)) return 'image';
   if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'].includes(ext)) return 'video';
   if (['.mp3', '.wav', '.aac', '.ogg'].includes(ext)) return 'audio';
   if (['.pdf'].includes(ext)) return 'pdf';
+
   return 'file';
 }
 
@@ -88,7 +104,7 @@ const Preview = ({ value = [] }) => {
   );
 };
 export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['url', 'attachment'];
+  static supportedFieldInterfaces = ['url', 'attachment', 'attachmentURL'];
 
   @reactive
   public render() {
