@@ -48,6 +48,10 @@ export interface FlagProviderProps {
    */
   isInXButton?: boolean;
   isInMobileDrawer?: boolean;
+  /**
+   * 是否是联动规则左侧变量
+   */
+  isLeftVariable?: boolean;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);
