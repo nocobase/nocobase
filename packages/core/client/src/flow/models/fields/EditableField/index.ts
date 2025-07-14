@@ -26,3 +26,4 @@ export * from './InputEditableFieldModel';
 export * from './TextareaEditableFieldModel';
 export * from './TimeEditableFieldModel';
 export * from './MarkdownEditableFieldModel';
+export * from './UploadEditableFieldModel';

@@ -7,20 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '@nocobase/client';
+import { EditableFieldModel } from './EditableFieldModel';
 import { Upload } from '@formily/antd-v5';
 import { UploadOutlined } from '@ant-design/icons';
 import React from 'react';
 
 const CardUpload = (props) => {
   return (
-    <Upload
-      {...props}
-      listType="picture-card"
-      headers={{
-        authorization: 'authorization-text',
-      }}
-    >
+    <Upload {...props} listType="picture-card">
       <UploadOutlined style={{ fontSize: 20 }} />
     </Upload>
   );
@@ -64,7 +58,11 @@ UploadEditableFieldModel.registerFlow({
     default: {
       async handler(ctx) {
         const { type } = ctx.model.collectionField;
-        ctx.model.setComponentProps({ multiple: ['belongsToMany', 'hasMany'].includes(type) });
+        if (['belongsToMany', 'hasMany'].includes(type)) {
+          ctx.model.setComponentProps({ multiple: true });
+        } else {
+          ctx.model.setComponentProps({ maxCount: 1, multiple: false });
+        }
       },
     },
   },
@@ -77,11 +75,11 @@ UploadEditableFieldModel.registerFlow({
     step1: {
       async handler(ctx, params) {
         const { file, onSuccess, onError, onProgress } = ctx.runtimeArgs.fieldData;
-        const fileManagerPlugin: any = ctx.globals.app.pm.get('@nocobase/plugin-file-manager');
+        const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.collectionField.target;
         try {
           // 上传前检查存储策略
-          const { data: checkData } = await ctx.globals.api.resource('storages').check({
+          const { data: checkData } = await ctx.api.resource('storages').check({
             fileCollectionName: fileCollection,
           });
 
@@ -111,8 +109,7 @@ UploadEditableFieldModel.registerFlow({
             onError?.(new Error('上传成功但响应数据为空'));
             return;
           }
-
-          onSuccess?.(data);
+          onSuccess(data);
         } catch (err) {
           onError?.(err as Error);
         }
