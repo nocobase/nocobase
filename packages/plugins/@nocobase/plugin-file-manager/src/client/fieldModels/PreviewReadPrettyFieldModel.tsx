@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ReadPrettyFieldModel } from '@nocobase/client';
+import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
 import { castArray } from 'lodash';
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
+import { reactive, escapeT } from '@nocobase/flow-engine';
 import { Image, Space } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 
@@ -55,7 +55,7 @@ function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
   return 'file';
 }
 
-const FilePreview = ({ file, width }: { file: any; width: number }) => {
+const FilePreview = ({ file, size }: { file: any; size: number }) => {
   const src = typeof file === 'string' ? file : file?.preview || file?.url;
   if (!src) {
     return;
@@ -75,8 +75,8 @@ const FilePreview = ({ file, width }: { file: any; width: number }) => {
     <Image
       src={src}
       fallback={fallback}
-      width={width}
-      height={width}
+      width={size}
+      height={size}
       preview={type === 'image' && { mask: <EyeOutlined /> }}
       style={{
         borderRadius: 4,
@@ -96,10 +96,11 @@ const FilePreview = ({ file, width }: { file: any; width: number }) => {
   return imageNode;
 };
 
-const Preview = ({ value = [] }) => {
+const Preview = (props) => {
+  const { value = [], size } = props;
   return (
-    <Space size={5} wrap={false}>
-      {Array.isArray(value) && value.map((file, index) => <FilePreview file={file} width={28} key={index} />)}
+    <Space size={5} wrap={true}>
+      {Array.isArray(value) && value.map((file, index) => <FilePreview file={file} size={size} key={index} />)}
     </Space>
   );
 };
@@ -109,6 +110,48 @@ export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
   @reactive
   public render() {
     const value = this.getValue();
-    return <Preview value={castArray(value)} />;
+    return <Preview value={castArray(value)} {...this.props} />;
   }
 }
+
+PreviewReadPrettyFieldModel.registerFlow({
+  key: 'previewReadPrettySetting',
+  sort: 500,
+  auto: true,
+  steps: {
+    size: {
+      title: escapeT('Size'),
+      uiSchema: (ctx) => {
+        if (ctx.model.parent instanceof TableColumnModel) {
+          return null;
+        }
+        return {
+          size: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              {
+                value: 300,
+                label: escapeT('Large'),
+              },
+              {
+                value: 100,
+                label: escapeT('Middle'),
+              },
+              {
+                value: 28,
+                label: escapeT('Small'),
+              },
+            ],
+          },
+        };
+      },
+      defaultParams: {
+        size: 28,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('size', params.size);
+      },
+    },
+  },
+});
