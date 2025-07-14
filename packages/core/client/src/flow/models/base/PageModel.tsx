@@ -123,17 +123,14 @@ PageModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
-        if (!ctx.model.ctx.shared.closable) {
-          ctx.model.setProps(
-            'title',
-            ctx.t(params.title || ctx.model.ctx.shared?.currentFlow.shared?.currentRoute?.title),
-          );
+        if (!ctx.model.context.closable) {
+          ctx.model.setProps('title', ctx.t(params.title || ctx.model.context.currentFlow.currentRoute?.title));
         } else {
           ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
         }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.model.ctx.shared.closable) {
+        if (ctx.model.context.closable) {
           ctx.model.setProps('headerStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,
           });

@@ -9,10 +9,10 @@
 
 import { ISchema } from '@formily/json-schema';
 import { APIClient } from '@nocobase/sdk';
-import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
+import { FlowRuntimeContext } from './flowContext';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -153,30 +153,6 @@ export interface IModelComponentProps {
 // 定义只读版本的props类型
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;
 
-/**
- * Context object passed to handlers during flow execution.
- */
-export interface FlowContext<TModel extends FlowModel = FlowModel> {
-  exit: () => void; // Terminate the entire flow execution
-  logger: {
-    info: (message: string, meta?: any) => void;
-    warn: (message: string, meta?: any) => void;
-    error: (message: string, meta?: any) => void;
-    debug: (message: string, meta?: any) => void;
-  };
-  reactView: ReactView;
-  stepResults: Record<string, any>; // Results from previous steps
-  shared: Record<string, any>; // Shared data within the flow (read/write)
-  globals: Record<string, any> & {
-    flowEngine: FlowEngine;
-    app: any;
-    api: APIClient;
-  };
-  runtimeArgs: Record<string, any>; // Runtime arguments passed to applyFlow (read-only)
-  model: TModel; // Current model instance with specific type
-  app: any; // Application instance (required)
-}
-
 export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 
 /**
@@ -204,10 +180,10 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
   uiSchema?:
     | Record<string, ISchema>
-    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
   defaultParams?:
     | Record<string, any>
-    | ((ctx: ParamsContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
 }
 
 /**
@@ -244,25 +220,14 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
 export type FlowRuntimeArgs = Record<string, any>;
 
 /**
- * 参数解析上下文类型，用于 settings 等场景
- */
-export interface ParamsContext<TModel extends FlowModel = FlowModel> {
-  model: TModel;
-  globals: Record<string, any>;
-  shared?: Record<string, any>;
-  runtimeArgs?: Record<string, any>; // Runtime arguments passed to applyFlow
-  app: any;
-}
-
-/**
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
-  handler: (ctx: FlowContext<TModel>, params: P) => Promise<R> | R;
+  handler: (ctx: FlowRuntimeContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?:
     | Record<string, ISchema>
-    | ((ctx: ParamsContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
-  defaultParams?: Partial<P> | ((ctx: ParamsContext<TModel>) => Partial<P> | Promise<Partial<P>>);
+    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
+  defaultParams?: Partial<P> | ((ctx: FlowRuntimeContext<TModel>) => Partial<P> | Promise<Partial<P>>);
 }
 
 /**

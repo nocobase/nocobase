@@ -111,7 +111,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
     opacity: 0;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
-    border-radius: ${ctx.globals.themeToken.borderRadiusLG}px;
+    border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
 
     &.nb-in-template {
@@ -547,7 +547,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.ctx })} ${
+        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context })} ${
           hideMenu ? 'hide-parent-menu' : ''
         } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}

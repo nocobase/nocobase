@@ -49,7 +49,7 @@ RefFlowModel.registerFlow('defaultFlow', {
       },
       async handler(ctx, params) {
         waitForRefCallback(ctx.model.ref, async (el) => {
-          const echarts = await ctx.globals.requireAsync('requireEcharts');
+          const echarts = await ctx.requireAsync('requireEcharts');
           const chart = echarts.init(el);
           chart.setOption(JSON.parse(params.option));
         });
@@ -61,12 +61,10 @@ RefFlowModel.registerFlow('defaultFlow', {
 // 插件定义
 class PluginHelloModel extends Plugin {
   async load() {
-    this.flowEngine.setContext({
-      requireAsync: async (mod) => {
-        return new Promise((resolve, reject) => {
-          this.app.requirejs.requirejs([mod], (arg) => resolve(arg), reject);
-        });
-      },
+    this.flowEngine.context.defineMethod('requireAsync', async (mod) => {
+      return new Promise((resolve, reject) => {
+        this.app.requirejs.require([mod], (arg) => resolve(arg), reject);
+      });
     });
     this.flowEngine.registerAction('require', {
       handler: (ctx, params) => {

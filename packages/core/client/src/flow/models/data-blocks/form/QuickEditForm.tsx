@@ -19,10 +19,10 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { EditableFieldModel } from '../../fields/EditableField';
 
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
@@ -96,9 +96,6 @@ export class QuickEditForm extends FlowModel {
 
   onInit(options) {
     super.onInit(options);
-    this.setSharedContext({
-      currentBlockModel: this,
-    });
     this.context.defineProperty('blockModel', {
       value: this,
     });
@@ -156,14 +153,7 @@ export class QuickEditForm extends FlowModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => {
-              return (
-                <FlowModelRenderer
-                  key={field.uid}
-                  model={field}
-                  sharedContext={{ currentRecord: this.resource.getData() }}
-                  fallback={<Skeleton.Input size="small" />}
-                />
-              );
+              return <FlowModelRenderer key={field.uid} model={field} fallback={<Skeleton.Input size="small" />} />;
             })}
           </FormLayout>
           <FormButtonGroup align="right">
@@ -205,7 +195,7 @@ QuickEditForm.registerFlow({
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
-          const fieldModel = ctx.model.addSubModel('fields', {
+          const fieldModel = ctx.model.addSubModel<EditableFieldModel>('fields', {
             use,
             stepParams: {
               fieldSettings: {

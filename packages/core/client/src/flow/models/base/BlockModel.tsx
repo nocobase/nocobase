@@ -160,9 +160,6 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   onInit(options) {
-    this.setSharedContext({
-      currentBlockModel: this,
-    });
     this.context.defineProperty('blockModel', {
       value: this,
     });
@@ -254,13 +251,13 @@ DataBlockModel.registerFlow({
         // sourceId 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('sourceId')) {
           ctx.resource.setSourceId(
-            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.sourceId.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
         // filterByTk 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('filterByTk')) {
           ctx.resource.setFilterByTk(
-            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.shared.currentFlow }),
+            Schema.compile(params.filterByTk.replace('shared.currentFlow.', ''), { ctx: ctx.currentFlow }),
           );
         }
       },

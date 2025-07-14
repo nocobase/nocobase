@@ -286,13 +286,6 @@ export class Application {
       value: this.router.router,
     });
 
-    this.flowEngine.setContext({
-      app: this,
-      api: this.apiClient,
-      i18n: this.i18n,
-      router: this.router.router,
-      flowEngine: this.flowEngine,
-    });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);
   }

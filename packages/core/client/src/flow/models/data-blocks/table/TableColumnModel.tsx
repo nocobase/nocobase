@@ -15,7 +15,7 @@ import {
   escapeT,
   FlowModel,
   FlowsFloatContextMenu,
-  useStepSettingContext,
+  useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -90,12 +90,14 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.setSharedContext({ index, value, currentRecord: record });
           fork.context.defineProperty('record', {
             get: () => record,
           });
           fork.context.defineProperty('fieldValue', {
             get: () => value,
+          });
+          fork.context.defineProperty('index', {
+            get: () => index,
           });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
@@ -138,7 +140,7 @@ TableColumnModel.registerFlow({
           },
           'x-reactions': (field) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useStepSettingContext();
+            const { model } = useFlowSettingsContext<FieldModel>();
             const originTitle = model.collectionField?.title;
             field.decoratorProps = {
               ...field.decoratorProps,

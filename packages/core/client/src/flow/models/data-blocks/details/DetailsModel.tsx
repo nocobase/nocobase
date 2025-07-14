@@ -76,10 +76,6 @@ export class DetailsModel extends DataBlockModel<{
 
   async refresh() {
     await this.resource.refresh();
-    const record = this.getCurrentRecord();
-    this.setSharedContext({
-      currentRecord: record,
-    });
   }
 
   renderPagination() {

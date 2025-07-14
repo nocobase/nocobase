@@ -119,7 +119,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.globals.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -136,7 +136,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.globals.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -374,7 +374,7 @@ export class BlockGridModel extends GridModel {
   }
 
   render() {
-    return <div style={{ padding: this.ctx.globals.themeToken.marginBlock }}>{super.render()}</div>;
+    return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
   }
 }
 
@@ -384,8 +384,8 @@ BlockGridModel.registerFlow({
   steps: {
     grid: {
       handler(ctx, params) {
-        ctx.model.setProps('rowGap', ctx.globals.themeToken.marginBlock);
-        ctx.model.setProps('colGap', ctx.globals.themeToken.marginBlock);
+        ctx.model.setProps('rowGap', ctx.themeToken.marginBlock);
+        ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
       },
     },
   },

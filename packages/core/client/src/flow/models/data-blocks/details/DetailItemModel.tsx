@@ -42,10 +42,10 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.setSharedContext({
-      ...this.ctx.shared,
-      value,
+    fieldModel.context.defineProperty('value', {
+      get: () => value,
     });
+
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}

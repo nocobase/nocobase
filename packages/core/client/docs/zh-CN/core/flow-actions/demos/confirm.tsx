@@ -32,7 +32,7 @@ const myEventFlow = defineFlow({
     },
     next: {
       handler(ctx) {
-        ctx.globals.message.success(`继续执行后续操作`);
+        ctx.message.success(`继续执行后续操作`);
       },
     },
   },
@@ -61,12 +61,12 @@ const myConfirm = defineAction({
     content: 'Are you sure you want to delete this record?',
   },
   async handler(ctx, params) {
-    const confirmed = await ctx.globals.modal.confirm({
+    const confirmed = await ctx.modal.confirm({
       title: params.title,
       content: params.content,
     });
     if (!confirmed) {
-      ctx.globals.message.info('Action cancelled.');
+      ctx.message.info('Action cancelled.');
       return ctx.exit();
     }
   },

@@ -47,10 +47,6 @@ function LabelByField(props) {
   fieldModel.context.defineProperty('fieldValue', {
     get: () => option?.[fieldNames.label],
   });
-  fieldModel.setSharedContext({
-    value: option?.[fieldNames.label],
-    currentRecord: option,
-  });
   return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
@@ -109,10 +105,7 @@ const AssociationSelect = connect(
     fieldModel.context.defineProperty('fieldValue', {
       get: () => value?.[fieldNames.label],
     });
-    fieldModel.setSharedContext({
-      value: value?.[fieldNames.label],
-      currentRecord: value,
-    });
+
     const arrayValue = castArray(value);
 
     return (
@@ -126,10 +119,8 @@ const AssociationSelect = connect(
           fieldModel.context.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
-          fieldModel.setSharedContext({
-            index,
-            value: v?.[fieldNames.label],
-            currentRecord: v,
+          fieldModel.context.defineProperty('index', {
+            get: () => index,
           });
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
@@ -350,7 +341,7 @@ SelectEditableAssociationFieldModel.registerFlow({
         const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
-        resource.setAPIClient(ctx.globals.api);
+        resource.setAPIClient(ctx.api);
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {

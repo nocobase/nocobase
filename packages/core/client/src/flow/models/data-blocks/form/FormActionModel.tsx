@@ -76,12 +76,12 @@ FormSubmitActionModel.registerFlow({
 
         ctx.message.success(ctx.t('Saved successfully'));
 
-        const parentBlockModel = ctx.shared?.currentFlow?.shared?.currentBlockModel as DataBlockModel;
+        const parentBlockModel = ctx.currentFlow?.blockModel as DataBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentView && ctx.shared.closable) {
-          ctx.shared.currentView.close();
+        if (ctx.currentView && ctx.closable) {
+          ctx.currentView.close();
         }
       },
     },

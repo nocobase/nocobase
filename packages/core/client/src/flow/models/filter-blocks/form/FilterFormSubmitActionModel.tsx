@@ -29,14 +29,14 @@ FilterFormSubmitActionModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.form) {
-          ctx.globals.message.error(ctx.globals.flowEngine.translate('No form available for submission.'));
+        if (!ctx.blockModel?.form) {
+          ctx.message.error(ctx.t('No form available for submission.'));
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel;
+        const currentBlockModel = ctx.blockModel;
         await currentBlockModel.form.submit();
         const values = currentBlockModel.form.values;
-        const flowEngine = ctx.globals.flowEngine as FlowEngine;
+        const flowEngine = ctx.engine as FlowEngine;
         flowEngine.forEachModel((model: DataBlockModel) => {
           if (model.resource && model?.collection?.name === currentBlockModel.collection.name) {
             (model.resource as MultiRecordResource).addFilterGroup(currentBlockModel.uid, values);

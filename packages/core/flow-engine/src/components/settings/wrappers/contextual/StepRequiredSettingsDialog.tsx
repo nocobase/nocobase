@@ -14,7 +14,8 @@ import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
-import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -67,35 +68,16 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
   const currentStepInfo = requiredSteps[currentStepIndex];
 
   // 根据当前步骤创建上下文
-  const contextValue: StepSettingContextType = React.useMemo(() => {
-    if (!currentStepInfo) {
-      // 如果没有当前步骤信息，返回基础上下文
-      return {
-        model,
-        globals: model.flowEngine.getContext(),
-        app: model.flowEngine.getContext('app'),
-        step: null,
-        flow: null,
-        flowKey: '',
-        stepKey: '',
-      };
-    }
-
-    const { flowKey, stepKey, step } = currentStepInfo;
+  const flowRuntimeContext = React.useMemo(() => {
+    const { flowKey, step } = currentStepInfo;
     const flow = model.getFlow(flowKey);
 
-    return {
-      model,
-      globals: model.flowEngine.getContext(),
-      app: model.flowEngine.getContext('app'),
-      step,
-      flow,
-      flowKey,
-      stepKey,
-    };
-  }, [model, currentStepInfo, currentStepIndex]);
+    const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+    ctx.defineProperty('currentStep', { value: step });
+    return ctx;
+  }, [model, currentStepInfo]);
 
-  return <StepSettingContextProvider value={contextValue}>{children}</StepSettingContextProvider>;
+  return <FlowSettingsContextProvider value={flowRuntimeContext}>{children}</FlowSettingsContextProvider>;
 };
 
 /**
@@ -145,13 +127,6 @@ const openRequiredParamsStepFormDialog = async ({
           flowTitle: string;
         }> = [];
 
-        // 创建参数解析上下文用于解析动态 uiSchema
-        const paramsContext = {
-          model,
-          globals: model.flowEngine.getContext(),
-          app: model.flowEngine.getContext('app'),
-        };
-
         for (const [flowKey, flow] of allFlows) {
           for (const stepKey in flow.steps) {
             const step = flow.steps[stepKey];
@@ -170,9 +145,10 @@ const openRequiredParamsStepFormDialog = async ({
                 }
               }
 
+              const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
               // 解析动态 uiSchema
-              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
-              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+              const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
+              const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
 
               // 合并uiSchema，确保step的uiSchema优先级更高
               const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
@@ -225,9 +201,13 @@ const openRequiredParamsStepFormDialog = async ({
             const action = model.flowEngine?.getAction?.(step.use);
             actionDefaultParams = action.defaultParams || {};
           }
+          // Create flowRuntimeContext for this step
+          const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+          flowRuntimeContext.defineProperty('currentStep', { value: step });
+
           // 解析 defaultParams
-          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext as any);
-          const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
+          const resolvedActionDefaultParams = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
+          const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
           const mergedParams = {
             ...toJS(resolvedActionDefaultParams),
             ...toJS(resolvedDefaultParams),
@@ -313,7 +293,7 @@ const openRequiredParamsStepFormDialog = async ({
           formStep,
           totalSteps: requiredSteps.length,
           requiredSteps,
-          useStepSettingContext,
+          useFlowSettingsContext,
           ...flowEngine.flowSettings?.scopes,
         };
 

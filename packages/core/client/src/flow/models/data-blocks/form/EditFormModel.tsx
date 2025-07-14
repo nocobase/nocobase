@@ -137,9 +137,6 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.model.setSharedContext({
-            currentRecord,
-          });
           ctx.model.form.setValues(currentRecord);
         });
       },

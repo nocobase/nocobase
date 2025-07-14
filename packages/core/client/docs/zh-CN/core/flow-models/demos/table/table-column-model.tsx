@@ -99,7 +99,7 @@ TableColumnModel.registerFlow({
         if (ctx.model.field) {
           return;
         }
-        const field = ctx.globals.dsm.getCollectionField(params.fieldPath);
+        const field = ctx.dsm.getCollectionField(params.fieldPath);
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);

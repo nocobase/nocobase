@@ -52,21 +52,13 @@ export class FilterFormModel extends FilterBlockModel {
         <FormProvider form={this.form}>
           <FormLayout layout={'vertical'}>
             {this.mapSubModels('fields', (field) => (
-              <FlowModelRenderer
-                model={field}
-                showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
-              />
+              <FlowModelRenderer model={field} showFlowSettings={{ showBorder: false }} />
             ))}
           </FormLayout>
           <AddFieldButton items={fieldItems} subModelKey="fields" model={this} />
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
-              <FlowModelRenderer
-                model={action}
-                showFlowSettings={{ showBorder: false }}
-                sharedContext={{ currentBlockModel: this }}
-              />
+              <FlowModelRenderer model={action} showFlowSettings={{ showBorder: false }} />
             ))}
             <AddActionButton model={this} items={buildActionItems(this, 'FilterFormActionModel')} />
           </FormButtonGroup>
@@ -114,10 +106,7 @@ FilterFormModel.registerFlow({
       async handler(ctx, params) {
         ctx.model.form = ctx.runtimeArgs.form || createForm();
         if (!ctx.model.collection) {
-          ctx.model.collection = ctx.globals.dataSourceManager.getCollection(
-            params.dataSourceKey,
-            params.collectionName,
-          );
+          ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
         }
       },
     },

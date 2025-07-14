@@ -21,7 +21,6 @@ import type {
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
-  FlowContext,
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
@@ -61,11 +60,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 基于 key 的 fork 实例缓存，用于复用 fork 实例
    */
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
-
-  /**
-   * model 树的共享运行上下文
-   */
-  protected _sharedContext: Record<string, any> = {};
 
   /**
    * 上一次 applyAutoFlows 的执行参数
@@ -446,7 +440,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext();
     const flowContext = new FlowRuntimeContext(this, flowKey);
 
     flowContext.defineProperty('logger', {
@@ -459,12 +452,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
     flowContext.defineProperty('reactView', {
       value: this.reactView,
-    });
-    flowContext.defineProperty('shared', {
-      value: this.getSharedContext(),
-    });
-    flowContext.defineProperty('globals', {
-      value: globalContexts,
     });
     flowContext.defineProperty('runtimeArgs', {
       value: runtimeArgs,
@@ -741,15 +728,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
-  addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
-    let model: FlowModel;
+  addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
+    let model: T;
     if (options instanceof FlowModel) {
       if (options.parent && options.parent !== this) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
+      model = this.flowEngine.createModel<T>({ ...options, subKey, subType: 'array' });
     }
     model.setParent(this);
     const subModels = this.subModels as {
@@ -831,7 +818,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        sub.setSharedContext(shared);
         await sub.applyAutoFlows(runtimeArgs, false);
       }),
     );
@@ -950,32 +936,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  get ctx() {
-    return {
-      globals: this.flowEngine.getContext(),
-      shared: this.getSharedContext(),
-    };
-  }
-
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);
-  }
-
-  /**
-   * @deprecated
-   */
-  public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = { ...this._sharedContext, ...ctx };
-  }
-
-  public getSharedContext() {
-    if (this.async || !this.parent) {
-      return this._sharedContext;
-    }
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this._sharedContext, // 当前实例的 context 优先级最高
-    };
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况

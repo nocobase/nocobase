@@ -122,15 +122,15 @@ RecordActionModel.registerFlow({
         if (!blockModel) {
           throw new Error('Current block model is not set in context');
         }
-        const { currentRecord } = ctx.shared;
-        if (!currentRecord) {
-          throw new Error('Current record is not set in shared context');
+        const { record } = ctx;
+        if (!record) {
+          throw new Error('Current record is not set in context');
         }
         ctx.model.setProps('onClick', (event) => {
           const collection = ctx.collection as Collection;
           ctx.model.dispatchEvent('click', {
             event,
-            filterByTk: collection.getFilterByTK(currentRecord),
+            filterByTk: collection.getFilterByTK(record),
           });
         });
       },

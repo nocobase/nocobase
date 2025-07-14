@@ -41,7 +41,6 @@ const createMockFlowEngine = (): FlowEngine => {
       if (options?.returnOriginal) return key;
       return `translated_${key}`;
     }),
-    getContext: vi.fn(() => ({ app: {}, api: {} as APIClient, flowEngine: mockEngine as FlowEngine })),
     createModel: vi.fn(),
     getModel: vi.fn(),
     applyFlowCache: new Map(),

@@ -29,7 +29,7 @@
 ### 注册属性
 
 ```ts
-model.ctx.defineProps({
+model.context.defineProps({
   foo: value,
   bar: () => 'computed',
   asyncData: async () => fetchData(),
@@ -39,7 +39,7 @@ model.ctx.defineProps({
 ### 注册方法
 
 ```ts
-model.ctx.defineMethods({
+model.context.defineMethods({
   getUser() { /* ... */ },
   async fetchData() { /* ... */ },
 });
@@ -48,9 +48,9 @@ model.ctx.defineMethods({
 ### 访问上下文
 
 ```ts
-const value = model.ctx.foo;
-const data = await model.ctx.asyncData;
-const user = model.ctx.getUser();
+const value = model.context.foo;
+const data = await model.context.asyncData;
+const user = model.context.getUser();
 ```
 
 ---
@@ -62,7 +62,7 @@ const user = model.ctx.getUser();
 ```ts
 class TableModel extends FlowModel {
   onInit() {
-    this.ctx.defineProps({
+    this.context.defineProps({
       tableModel: this,
     });
   }
@@ -70,7 +70,7 @@ class TableModel extends FlowModel {
 
 class ColumnModel extends FlowModel {
   getTableName() {
-    return this.ctx.tableModel?.getName();
+    return this.context.tableModel?.getName();
   }
 }
 ```
@@ -80,7 +80,7 @@ class ColumnModel extends FlowModel {
 ```ts
 class ParentModel extends FlowModel {
   onInit() {
-    this.ctx.defineProps({
+    this.context.defineProps({
       layout: 'horizontal',
     });
   }
@@ -88,12 +88,12 @@ class ParentModel extends FlowModel {
 
 class ChildModel extends FlowModel {
   onInit() {
-    this.ctx.defineProps({
+    this.context.defineProps({
       layout: 'vertical',
     });
   }
   getLayout() {
-    return this.ctx.layout; // 'vertical'
+    return this.context.layout; // 'vertical'
   }
 }
 ```

@@ -465,7 +465,7 @@ element.innerHTML = '<div style="text-align: center; padding: 20px;">Loading use
 
 try {
   // Request users data from NocoBase API
-  const response = await ctx.globals.api.request({
+  const response = await ctx.api.request({
     url: 'users:list',
     method: 'GET',
     params: {
