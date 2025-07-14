@@ -49,7 +49,7 @@ const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }
   };
 
   // 检查是否可以下载日志
-  const canDownloadLogs = model?.ctx?.globals?.api;
+  const canDownloadLogs = model?.context?.api;
 
   const handleDownloadLogs = async () => {
     if (!canDownloadLogs) {
@@ -59,8 +59,8 @@ const FlowErrorFallbackInner: FC<FallbackProps> = ({ error, resetErrorBoundary }
 
     setLoading(true);
     try {
-      // 从 model.ctx.globals.api 获取 apiClient
-      const apiClient = model.ctx.globals.api;
+      // 从 model.context.api 获取 apiClient
+      const apiClient = model.context.api;
 
       // 从 window 对象获取位置信息
       const location = {

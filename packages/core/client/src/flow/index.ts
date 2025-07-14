@@ -30,10 +30,6 @@ export class PluginFlowEngine extends Plugin {
     // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
-    this.flowEngine.setContext({
-      flowEngine: this.flowEngine,
-      dataSourceManager: this.flowEngine.context.dataSourceManager,
-    });
     this.app.addProvider(FlowEngineRunner, {});
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,

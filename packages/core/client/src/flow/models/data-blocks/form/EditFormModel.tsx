@@ -126,6 +126,7 @@ EditFormModel.registerFlow({
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.resource.on('refresh', async () => {
           await ctx.form.reset();
+          ctx.form.values = {};
           const currentRecord = ctx.model.getCurrentRecord();
           const targetKey = ctx.association?.targetKey;
           if (targetKey) {
@@ -137,9 +138,6 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.model.setSharedContext({
-            currentRecord,
-          });
           ctx.model.form.setValues(currentRecord);
         });
       },

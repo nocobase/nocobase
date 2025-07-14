@@ -21,7 +21,6 @@ RouteModel.registerFlow({
         return {
           mode: 'page',
           pageModelClass: 'MainPageModel',
-          sharedContext: {},
         };
       },
     },

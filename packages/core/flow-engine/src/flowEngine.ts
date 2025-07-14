@@ -16,7 +16,6 @@ import {
   ActionDefinition,
   ActionOptions,
   CreateModelOptions,
-  FlowContext,
   FlowDefinition,
   IFlowModelRepository,
   ModelConstructor,
@@ -39,10 +38,9 @@ export class FlowEngine {
   private modelInstances: Map<string, any> = new Map();
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  _context: FlowContext['globals'] = {} as FlowContext['globals'];
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-  private _flowContext: FlowEngineContext;
+  #flowContext: FlowEngineContext;
 
   /**
    * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
@@ -58,10 +56,10 @@ export class FlowEngine {
   }
 
   get context() {
-    if (!this._flowContext) {
-      this._flowContext = new FlowEngineContext(this);
+    if (!this.#flowContext) {
+      this.#flowContext = new FlowEngineContext(this);
     }
-    return this._flowContext;
+    return this.#flowContext;
   }
 
   /**
@@ -77,20 +75,6 @@ export class FlowEngine {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
     }
     this.modelRepository = modelRepository;
-  }
-
-  setContext(context: any) {
-    this._context = { ...this._context, ...context };
-    if (this._context.i18n) {
-      initFlowEngineLocale(this._context.i18n);
-    }
-  }
-
-  getContext(key?: string): any {
-    if (key) {
-      return this._context[key] || null;
-    }
-    return this._context || {};
   }
 
   /**
@@ -132,8 +116,8 @@ export class FlowEngine {
    * @private
    */
   private translateKey(key: string, options?: any): string {
-    if (this._context?.i18n?.t) {
-      return this._context.i18n.t(key, options);
+    if (this.context?.i18n?.t) {
+      return this.context.i18n.t(key, options);
     }
     // 如果没有翻译函数，返回原始键值
     return key;
@@ -405,20 +389,60 @@ export class FlowEngine {
 
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
+    const model = this.findModelByParentId(options.parentId, options.subKey);
+    if (model) {
+      return model as T;
+    }
     const data = await this.modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
+  findModelByParentId<T extends FlowModel = FlowModel>(parentId: string, subKey: string): T | null {
+    if (parentId && this.modelInstances.has(parentId)) {
+      const parentModel = this.modelInstances.get(parentId) as FlowModel;
+      if (parentModel && parentModel.subModels[subKey]) {
+        const subModels = parentModel.subModels[subKey];
+        if (Array.isArray(subModels)) {
+          return subModels[0] as T; // 返回第一个子模型
+        } else {
+          return subModels as T;
+        }
+      }
+    }
+  }
+
   async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
-    const data = await this.modelRepository.findOne(options);
-    if (data?.uid) {
-      return this.createModel<T>(data as any);
-    } else {
-      const model = this.createModel<T>(options);
-      await model.save();
-      return model;
+    const { uid, parentId, subKey } = options;
+    if (uid && this.modelInstances.has(uid)) {
+      return this.modelInstances.get(uid) as T;
     }
+    const m = this.findModelByParentId<T>(parentId, subKey);
+    if (m) {
+      return m;
+    }
+    const data = await this.modelRepository.findOne(options);
+    let model: T | null = null;
+    if (data?.uid) {
+      model = this.createModel<T>(data as any);
+    } else {
+      model = this.createModel<T>(options);
+      await model.save();
+    }
+    if (model.parent) {
+      const subModel = model.parent.findSubModel(model.subKey, (m) => {
+        return m.uid === model.uid;
+      });
+      if (subModel) {
+        return model;
+      }
+      if (model.subKey === 'array') {
+        model.parent.addSubModel(model.subKey, model);
+      } else {
+        model.parent.setSubModel(model.subKey, model);
+      }
+    }
+    return model;
   }
 
   async saveModel<T extends FlowModel = FlowModel>(model: T) {

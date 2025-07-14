@@ -28,9 +28,11 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
-        fork.setSharedContext({ index, currentRecord: record });
         fork.context.defineProperty('record', {
           get: () => record,
+        });
+        fork.context.defineProperty('index', {
+          get: () => index,
         });
         return (
           <FlowModelRenderer

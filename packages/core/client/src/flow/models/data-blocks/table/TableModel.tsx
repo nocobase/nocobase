@@ -237,12 +237,14 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                     this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
-                    fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
                     fork.context.defineProperty('record', {
                       get: () => record,
                     });
                     fork.context.defineProperty('fieldValue', {
                       get: () => values[dataIndex],
+                    });
+                    fork.context.defineProperty('index', {
+                      get: () => recordIndex,
                     });
                     model.rerender();
                   },

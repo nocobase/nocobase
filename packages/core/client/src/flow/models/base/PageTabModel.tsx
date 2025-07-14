@@ -20,7 +20,7 @@ export class PageTabModel extends FlowModel<{
   render() {
     return (
       <div>
-        <RemoteFlowModelRenderer parentId={this.uid} showFlowSettings={false} />
+        <RemoteFlowModelRenderer parentId={this.uid} subKey={'grid'} showFlowSettings={false} />
       </div>
     );
   }

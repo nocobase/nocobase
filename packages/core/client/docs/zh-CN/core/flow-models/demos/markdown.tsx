@@ -1,6 +1,6 @@
 import React from 'react';
 import { Application, Plugin } from '@nocobase/client';
-import { useFlowModelById, FlowContext, FlowModel, withFlowModel, FlowsSettings } from '@nocobase/flow-engine';
+import { useFlowModelById, FlowModel, withFlowModel, FlowsSettings } from '@nocobase/flow-engine';
 import MarkdownIt from 'markdown-it';
 import Handlebars from 'handlebars';
 
@@ -52,7 +52,7 @@ const MarkdownModel = FlowModel.extends([
         defaultParams: { content: 'Hello, NocoBase! {{var1}}' },
       },
       renderMarkdown: {
-        handler: async (ctx: FlowContext) => {
+        handler: async (ctx) => {
           const props = ctx.model.getProps();
           let content = props.content;
           if (props.template === 'handlebars') {
@@ -90,7 +90,7 @@ class DemoPlugin extends Plugin {
         },
       },
       defaultParams: { template: 'plain' },
-      handler: (ctx: FlowContext, params: any) => {
+      handler: (ctx, params: any) => {
         if (params?.template != null) {
           ctx.model.setProps('template', params.template);
         }
@@ -109,7 +109,7 @@ class DemoPlugin extends Plugin {
           'x-component-props': { addonAfter: 'px' },
         },
       },
-      handler: (ctx: FlowContext, params: any) => {
+      handler: (ctx, params: any) => {
         if (params?.height != null) {
           ctx.model.setProps('height', params.height);
         }
@@ -127,7 +127,7 @@ class DemoPlugin extends Plugin {
           'x-component': 'Input.TextArea',
         },
       },
-      handler: (ctx: FlowContext, params: any) => {
+      handler: (ctx, params: any) => {
         ctx.model.setProps('content', params?.content);
       },
     });

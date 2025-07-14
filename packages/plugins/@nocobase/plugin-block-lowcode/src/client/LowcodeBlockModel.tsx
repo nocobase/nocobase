@@ -263,12 +263,12 @@ ctx.element.innerHTML = \`
             };
 
             const getModelById = (uid: string) => {
-              return flowContext.globals.flowEngine.getModel(uid);
+              return flowContext.flowEngine.getModel(uid);
             };
 
-            const flowEngine = flowContext.globals.flowEngine as FlowEngine;
+            const flowEngine = flowContext.flowEngine as FlowEngine;
 
-            const request = flowContext.globals.api.request.bind(flowContext.globals.api);
+            const request = flowContext.api.request.bind(flowContext.api);
             const api = flowContext.app.apiClient as APIClient;
 
             // Create a safe execution context for the code (as async function)
@@ -299,7 +299,7 @@ ctx.element.innerHTML = \`
                   return flowContext.model.resource;
                 }
                 const resource = new use() as APIResource;
-                resource.setAPIClient(flowContext.globals.api);
+                resource.setAPIClient(flowContext.api);
                 if (options && typeof options === 'object') {
                   Object.entries(options).forEach(([key, value]) => {
                     resource.setRequestOptions(key, value);
@@ -313,7 +313,7 @@ ctx.element.innerHTML = \`
                 role: api.auth.role,
                 locale: api.auth.locale,
                 token: api.auth.token,
-                user: flowContext.globals.user,
+                user: flowContext.user,
               },
             };
             // Execute the code

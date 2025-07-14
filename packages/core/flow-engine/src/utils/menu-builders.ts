@@ -61,19 +61,13 @@ interface MenuBuilderFlowContext {
     sourceId?: string;
     associationName?: string;
   };
-  shared?: {
-    currentBlockModel?: {
-      collection?: any;
-    };
-  };
 }
 
 // ==================== 数据源工具函数 ====================
 
 function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
   try {
-    const globalContext = model.flowEngine.getContext();
-    const dataSourceManager: DataSourceManager = globalContext?.dataSourceManager;
+    const dataSourceManager: DataSourceManager = model.context.dataSourceManager;
 
     if (!dataSourceManager) return [];
 
@@ -754,8 +748,8 @@ async function buildDataSourceBlockItems(
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
       if (hasCurrentFlowContext) {
-        const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-        const collection: Collection = currentFlow?.shared?.currentBlockModel?.collection;
+        const currentFlow = model.parent?.context.currentFlow;
+        const collection: Collection = currentFlow?.blockModel?.collection;
 
         if (currentFlow && collection) {
           const relatedFields = collection?.getRelationshipFields() || [];

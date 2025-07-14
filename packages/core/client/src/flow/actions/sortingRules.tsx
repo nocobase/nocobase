@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
+import { defineAction, escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
-import { useSortFields } from '../../';
+import { DataBlockModel, useSortFields } from '../../';
 import { useCompile } from '../../schema-component';
 
 const SelectOptions = (props) => {
-  const {
-    model: { resource },
-  } = useStepSettingContext();
+  const flowContext = useFlowSettingsContext<DataBlockModel>();
+  const resource = flowContext.model.resource;
   const compile = useCompile();
-  const sortFields = useSortFields(resource?.resourceName);
+  const sortFields = useSortFields(resource?.getResourceName());
   return <Select {...props} options={compile(sortFields)} />;
 };
 

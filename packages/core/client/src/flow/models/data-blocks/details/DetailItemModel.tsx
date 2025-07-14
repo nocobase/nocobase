@@ -42,10 +42,10 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.setSharedContext({
-      ...this.ctx.shared,
-      value,
+    fieldModel.context.defineProperty('value', {
+      get: () => value,
     });
+
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}
@@ -75,11 +75,21 @@ DetailItemModel.registerFlow({
     },
     label: {
       title: escapeT('Label'),
-      uiSchema: {
-        title: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        return {
+          label: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        };
       },
       defaultParams: (ctx) => {
         return {

@@ -70,6 +70,7 @@ export interface GoogleMapsComponentProps {
   style?: React.CSSProperties;
   overlayCommonOptions?: OverlayOptions;
   block?: boolean;
+  height?: number;
 }
 
 export interface GoogleMapForwardedRefProps {

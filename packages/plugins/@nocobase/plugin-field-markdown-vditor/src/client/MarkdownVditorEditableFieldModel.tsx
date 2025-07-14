@@ -18,7 +18,7 @@ export class MarkdownVditorEditableFieldModel extends EditableFieldModel {
     return [
       (props) => {
         return (
-          <ApplicationContext.Provider value={this.ctx.globals.app}>
+          <ApplicationContext.Provider value={this.context.app}>
             <MarkdownVditor {...props} />
           </ApplicationContext.Provider>
         );

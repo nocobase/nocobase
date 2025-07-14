@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { Button, message, Space } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
-import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 const SchemaField = createSchemaField();
 
@@ -37,7 +37,7 @@ const openStepSettingsDialog = async ({
   mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
-  const message = model.flowEngine.getContext('message');
+  const message = model.context.message;
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -60,13 +60,6 @@ const openStepSettingsDialog = async ({
 
   let title = step.title;
 
-  // 创建参数解析上下文
-  const paramsContext = {
-    model,
-    globals: model.flowEngine.getContext(),
-    app: model.flowEngine.getContext('app'),
-  };
-
   // 获取可配置的步骤信息
   const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
@@ -83,8 +76,11 @@ const openStepSettingsDialog = async ({
   }
 
   // 解析动态 uiSchema
-  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
-  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+  flowRuntimeContext.defineProperty('currentStep', { value: step });
+
+  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
+  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
 
   // 合并uiSchema，确保step的uiSchema优先级更高
   const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
@@ -104,7 +100,7 @@ const openStepSettingsDialog = async ({
 
   const flowEngine = model.flowEngine;
   const scopes = {
-    useStepSettingContext,
+    useFlowSettingsContext,
     ...flowEngine.flowSettings?.scopes,
   };
 
@@ -112,8 +108,8 @@ const openStepSettingsDialog = async ({
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
   // 解析 defaultParams
-  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext as any);
-  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext as any);
+  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
+  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
   const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
@@ -131,7 +127,7 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  const view = model.flowEngine.getContext(mode);
+  const view = model.context[mode];
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -178,20 +174,11 @@ const openStepSettingsDialog = async ({
       </Space>
     ),
     content: (currentDialog) => {
-      const contextValue: StepSettingContextType = {
-        model,
-        globals: model.flowEngine.getContext(),
-        app: model.flowEngine.getContext('app'),
-        step,
-        flow,
-        flowKey,
-        stepKey,
-      };
       // 编译 formSchema 中的表达式
       const compiledFormSchema = compileUiSchema(scopes, formSchema);
       return (
         <FormProvider form={form}>
-          <StepSettingContextProvider value={contextValue}>
+          <FlowSettingsContextProvider value={flowRuntimeContext}>
             <SchemaField
               schema={compiledFormSchema}
               components={{
@@ -199,7 +186,7 @@ const openStepSettingsDialog = async ({
               }}
               scope={scopes}
             />
-          </StepSettingContextProvider>
+          </FlowSettingsContextProvider>
         </FormProvider>
       );
     },

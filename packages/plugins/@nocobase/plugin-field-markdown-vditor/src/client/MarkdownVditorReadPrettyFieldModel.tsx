@@ -18,7 +18,7 @@ export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
   @reactive
   public render() {
     const value = this.getValue();
-    const app = this.ctx.globals.app;
+    const app = this.context.app;
     if (!value) {
       return <div></div>;
     }

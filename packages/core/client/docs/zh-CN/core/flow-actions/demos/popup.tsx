@@ -27,14 +27,14 @@ const myEventFlow = defineFlow({
   steps: {
     step1: {
       handler(ctx, params) {
-        ctx.globals.drawer.open({
+        ctx.drawer.open({
           title: '命令式 Drawer',
           content: (
             <div>
               <p>这是命令式打开的 Drawer1 内容</p>
               <Button
                 onClick={() => {
-                  ctx.globals.drawer.open({
+                  ctx.drawer.open({
                     title: '命令式 Drawer',
                     content: (
                       <div>
