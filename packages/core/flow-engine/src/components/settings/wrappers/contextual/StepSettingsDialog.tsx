@@ -13,7 +13,13 @@ import { toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  setupRuntimeContextSteps,
+} from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
@@ -82,6 +88,8 @@ const openStepSettingsDialog = async ({
 
   // 创建流程运行时上下文用于解析默认参数
   const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+
   flowRuntimeContext.defineProperty('currentStep', { value: step });
 
   const flowEngine = model.flowEngine;

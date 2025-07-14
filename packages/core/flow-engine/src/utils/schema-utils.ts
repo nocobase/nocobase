@@ -13,6 +13,7 @@ import { toJS } from '@formily/reactive';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
 import type { StepDefinition } from '../types';
+import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
  * 解析 uiSchema，支持静态值和函数形式
@@ -145,42 +146,29 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 ): Promise<Record<string, ISchema> | null> {
   // 创建运行时上下文
   const flowRuntimeContext = new FlowRuntimeContext(model, flow.key, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flow.key);
   flowRuntimeContext.defineProperty('currentStep', { value: step });
 
   // 获取步骤的uiSchema
-  const stepUiSchema = step.uiSchema || {};
+  let stepUiSchema = step.uiSchema;
 
-  // 获取action的uiSchema（如果存在）
-  let actionUiSchema = {};
   if (step.use) {
     try {
       const action = model.flowEngine?.getAction?.(step.use);
       if (action && action.uiSchema) {
-        actionUiSchema = action.uiSchema;
+        stepUiSchema = action.uiSchema;
       }
     } catch (error) {
       console.warn(`Failed to get action ${step.use}:`, error);
     }
   }
 
-  // 解析动态uiSchema
-  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
-  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
-
-  // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
-  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
-    if (mergedUiSchema[fieldKey]) {
-      mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-    } else {
-      mergedUiSchema[fieldKey] = schema;
-    }
-  });
+  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema || {}, flowRuntimeContext);
 
   // 如果解析后没有可配置的UI Schema，返回null
-  if (Object.keys(mergedUiSchema).length === 0) {
+  if (Object.keys(resolvedStepUiSchema).length === 0) {
     return null;
   }
 
-  return mergedUiSchema;
+  return resolvedStepUiSchema;
 }

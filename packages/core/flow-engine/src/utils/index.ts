@@ -38,3 +38,6 @@ export { compileUiSchema, resolveStepUiSchema } from './schema-utils';
 
 // 菜单构建器
 export { buildFieldItems, buildActionItems, buildBlockItems, processMetaChildren } from './menu-builders';
+
+// Runtime Context Steps 设置
+export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';

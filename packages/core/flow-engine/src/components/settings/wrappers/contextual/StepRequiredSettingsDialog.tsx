@@ -13,7 +13,13 @@ import { Button, message } from 'antd';
 import React from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  setupRuntimeContextSteps,
+} from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
@@ -73,6 +79,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
     const flow = model.getFlow(flowKey);
 
     const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+    setupRuntimeContextSteps(ctx, flow, model, flowKey);
     ctx.defineProperty('currentStep', { value: step });
     return ctx;
   }, [model, currentStepInfo]);
@@ -179,6 +186,10 @@ const openRequiredParamsStepFormDialog = async ({
           }
           // Create flowRuntimeContext for this step
           const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+          const flow = model.getFlow(flowKey);
+          if (flow) {
+            setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+          }
           flowRuntimeContext.defineProperty('currentStep', { value: step });
 
           // 解析 defaultParams

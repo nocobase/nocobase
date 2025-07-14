@@ -29,7 +29,13 @@ import type {
   StepParams,
 } from '../types';
 import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { FlowExitException, isInheritedFrom, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
+import {
+  FlowExitException,
+  isInheritedFrom,
+  mergeFlowDefinitions,
+  resolveDefaultParams,
+  setupRuntimeContextSteps,
+} from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -467,6 +473,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
 
+    // 使用 setupRuntimeContextSteps 来设置 steps 属性
+    setupRuntimeContextSteps(flowContext, flow, this, flowKey);
+    const steps = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
+
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
         const step: StepDefinition = flow.steps[stepKey];
@@ -516,6 +526,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
           // Store step result
           stepResults[stepKey] = lastResult;
+          // update the context
+          steps[stepKey].result = stepResults[stepKey];
         } catch (error) {
           // 检查是否是通过 ctx.exit() 正常退出
           if (error instanceof FlowExitException) {
