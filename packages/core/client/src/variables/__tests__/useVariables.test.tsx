@@ -1050,7 +1050,7 @@ describe('useVariables', () => {
             fieldOperator,
             isParsingVariable,
             variableName,
-            value: 'function result'
+            value: 'function result',
           };
         },
       });
@@ -1062,7 +1062,7 @@ describe('useVariables', () => {
         fieldOperator: undefined,
         isParsingVariable: true,
         variableName: '$func',
-        value: 'function result'
+        value: 'function result',
       });
     });
 
@@ -1072,7 +1072,7 @@ describe('useVariables', () => {
         fieldOperator: '$contains',
         isParsingVariable: true,
         variableName: '$func',
-        value: 'function result'
+        value: 'function result',
       });
     });
   });
@@ -1100,7 +1100,7 @@ describe('useVariables', () => {
       expect(value).toEqual({
         fromLevel1: true,
         fieldOperator: undefined,
-        variableName: '$nestedFunc.level1'
+        variableName: '$nestedFunc.level1',
       });
     });
 
@@ -1109,7 +1109,7 @@ describe('useVariables', () => {
       expect(value).toEqual({
         fromLevel1: true,
         fieldOperator: '$eq',
-        variableName: '$nestedFunc.level1'
+        variableName: '$nestedFunc.level1',
       });
     });
   });
@@ -1128,7 +1128,7 @@ describe('useVariables', () => {
           return {
             asyncResult: true,
             fieldOperator,
-            variableName
+            variableName,
           };
         },
       });
@@ -1139,7 +1139,7 @@ describe('useVariables', () => {
       expect(value).toEqual({
         asyncResult: true,
         fieldOperator: undefined,
-        variableName: '$asyncFunc'
+        variableName: '$asyncFunc',
       });
     });
   });

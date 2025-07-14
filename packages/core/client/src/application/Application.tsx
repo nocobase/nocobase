@@ -98,9 +98,9 @@ interface Variable {
   /** Unique identifier of the variable */
   name: string;
   /** Variable configuration options */
-  useOption: () => ({ option: VariableOption; visible?: boolean });
+  useOption: () => { option: VariableOption; visible?: boolean };
   /** Variable context */
-  useCtx: () => (any | ((param: { variableName: string }) => Promise<any>));
+  useCtx: () => any | ((param: { variableName: string }) => Promise<any>);
 }
 
 export class Application {
