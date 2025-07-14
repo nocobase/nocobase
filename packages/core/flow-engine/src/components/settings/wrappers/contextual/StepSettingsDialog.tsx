@@ -13,7 +13,13 @@ import { toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  setupRuntimeContextSteps,
+} from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
@@ -60,43 +66,31 @@ const openStepSettingsDialog = async ({
 
   let title = step.title;
 
-  // 获取可配置的步骤信息
-  const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
-
-  // 如果step使用了action，也获取action的uiSchema
-  let actionUiSchema = {};
   if (step.use) {
     const action = model.flowEngine?.getAction?.(step.use);
-    if (action && action.uiSchema) {
-      actionUiSchema = action.uiSchema;
+    if (action) {
+      actionDefaultParams = action.defaultParams || {};
+      title = title || action.title;
     }
-    actionDefaultParams = action.defaultParams || {};
-    title = title || action.title;
   }
 
-  // 解析动态 uiSchema
-  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-  flowRuntimeContext.defineProperty('currentStep', { value: step });
+  // 获取流程定义
+  const flowDefinition = model.getFlow(flowKey);
 
-  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, flowRuntimeContext);
-  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, flowRuntimeContext);
-
-  // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
-  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
-    if (mergedUiSchema[fieldKey]) {
-      mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-    } else {
-      mergedUiSchema[fieldKey] = schema;
-    }
-  });
+  const mergedUiSchema = await resolveStepUiSchema(model, flowDefinition, step);
 
   // 如果没有可配置的UI Schema，显示提示
-  if (Object.keys(mergedUiSchema).length === 0) {
+  if (!mergedUiSchema) {
     message.info(t('This step has no configurable parameters'));
     return {};
   }
+
+  // 创建流程运行时上下文用于解析默认参数
+  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+
+  flowRuntimeContext.defineProperty('currentStep', { value: step });
 
   const flowEngine = model.flowEngine;
   const scopes = {

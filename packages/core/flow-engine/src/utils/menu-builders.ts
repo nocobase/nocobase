@@ -55,7 +55,7 @@ interface CollectionInfo {
 }
 
 interface MenuBuilderFlowContext {
-  runtimeArgs?: {
+  inputArgs?: {
     filterByTk?: string;
     collectionName?: string;
     sourceId?: string;
@@ -187,7 +187,7 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
       stepParams: stepParams || {
         resourceSettings: {
           init: {
-            filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
+            filterByTk: '{{ctx.inputArgs.filterByTk}}',
             collectionName: collection.name,
             dataSourceKey: collection.dataSource.key,
           },
@@ -202,7 +202,7 @@ function createAssociationRecordsMenuItem(
   className: string,
   baseCollectionName: string,
   fields: CollectionField[],
-  sourceId = '{{ctx.runtimeArgs.filterByTk}}',
+  sourceId = '{{ctx.inputArgs.filterByTk}}',
 ) {
   let associationFields = fields.filter(
     (f) => f.target !== baseCollectionName && !!f.targetCollection && f.interface !== 'mbm',
@@ -227,7 +227,7 @@ function createAssociationRecordsMenuItem(
               collectionName: field.target,
               associationName: field.collection.name + '.' + field.name,
               sourceId,
-              // filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
+              // filterByTk: '{{ctx.inputArgs.filterByTk}}',
             },
           },
         },
@@ -281,16 +281,16 @@ function buildOtherCollectionItems(
 
   // 只为 FormModel 添加当前记录
   if (SHOW_CURRENT_MODELS.includes(className)) {
-    const targetCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
+    const targetCollection = collection.dataSource.getCollection(currentFlow.inputArgs!.collectionName!);
     if (targetCollection) {
       const customStepParams = {
         resourceSettings: {
           init: {
             dataSourceKey: collection.dataSource.key,
-            collectionName: currentFlow.runtimeArgs!.collectionName,
-            associationName: currentFlow.runtimeArgs.associationName,
-            sourceId: '{{ctx.runtimeArgs.sourceId}}',
-            filterByTk: '{{ctx.runtimeArgs.filterByTk}}',
+            collectionName: currentFlow.inputArgs!.collectionName,
+            associationName: currentFlow.inputArgs.associationName,
+            sourceId: '{{ctx.inputArgs.sourceId}}',
+            filterByTk: '{{ctx.inputArgs.filterByTk}}',
           },
         },
       };
@@ -299,10 +299,10 @@ function buildOtherCollectionItems(
   }
 
   // 添加关联记录
-  const sourceCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
+  const sourceCollection = collection.dataSource.getCollection(currentFlow.inputArgs!.collectionName!);
   if (sourceCollection) {
     const relatedFields = sourceCollection.getRelationshipFields();
-    items.push(createAssociationRecordsMenuItem(className, currentFlow.runtimeArgs!.collectionName!, relatedFields));
+    items.push(createAssociationRecordsMenuItem(className, currentFlow.inputArgs!.collectionName!, relatedFields));
   }
 
   // 添加其他记录
@@ -320,13 +320,13 @@ function buildDynamicMetaChildren(
   relatedFields: CollectionField[],
 ) {
   // 场景1：没有 filterByTk，显示集合选择
-  if (!currentFlow.runtimeArgs?.filterByTk) {
+  if (!currentFlow.inputArgs?.filterByTk) {
     return buildCollectionOnlyItems(className, collection);
   }
 
   // 判断是否使用当前集合
   const shouldUseCurrentCollection =
-    !currentFlow.runtimeArgs?.collectionName || currentFlow.runtimeArgs.collectionName === collection.name;
+    !currentFlow.inputArgs?.collectionName || currentFlow.inputArgs.collectionName === collection.name;
 
   // 场景2：当前集合上下文
   if (shouldUseCurrentCollection) {

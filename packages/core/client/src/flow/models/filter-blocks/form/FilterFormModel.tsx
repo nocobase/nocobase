@@ -104,7 +104,7 @@ FilterFormModel.registerFlow({
         dataSourceKey: 'main',
       },
       async handler(ctx, params) {
-        ctx.model.form = ctx.runtimeArgs.form || createForm();
+        ctx.model.form = ctx.inputArgs.form || createForm();
         if (!ctx.model.collection) {
           ctx.model.collection = ctx.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
         }

@@ -40,6 +40,7 @@ export class FlowEngine {
   public flowSettings: FlowSettings = new FlowSettings();
   private modelRepository: IFlowModelRepository | null = null;
   private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  private i18nLoaded = false;
   #flowContext: FlowEngineContext;
 
   /**
@@ -117,6 +118,10 @@ export class FlowEngine {
    */
   private translateKey(key: string, options?: any): string {
     if (this.context?.i18n?.t) {
+      if (!this.i18nLoaded) {
+        initFlowEngineLocale(this.context.i18n);
+        this.i18nLoaded = true;
+      }
       return this.context.i18n.t(key, options);
     }
     // 如果没有翻译函数，返回原始键值

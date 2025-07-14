@@ -90,7 +90,7 @@ export class TableColumnModel extends FieldModel {
           fork.context.defineProperty('fieldValue', {
             get: () => value,
           });
-          fork.context.defineProperty('index', {
+          fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;

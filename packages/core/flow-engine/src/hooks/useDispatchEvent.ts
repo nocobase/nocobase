@@ -9,12 +9,11 @@
 
 import { useCallback } from 'react';
 import { FlowModel } from '../models';
-import { FlowRuntimeArgs } from '../types';
 
-export function useDispatchEvent(eventName: string, model: FlowModel, context?: FlowRuntimeArgs) {
+export function useDispatchEvent(eventName: string, model: FlowModel, inputArgs?: Record<string, any>) {
   const dispatch = useCallback(() => {
-    model.dispatchEvent(eventName, context);
-  }, [model, eventName, context]);
+    model.dispatchEvent(eventName, inputArgs);
+  }, [model, eventName, inputArgs]);
 
   return { dispatch };
 }

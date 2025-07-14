@@ -59,7 +59,7 @@ export class TableModel extends FlowModel<S> {
             <FlowModelRenderer
               model={action}
               showFlowSettings
-              runtimeArgs={{ currentModel: this, currentResource: this.resource }}
+              inputArgs={{ currentModel: this, resource: this.resource }}
             />
           ))}
           <AddActionButton

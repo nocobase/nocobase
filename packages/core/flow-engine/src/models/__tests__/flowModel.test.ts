@@ -614,7 +614,7 @@ describe('FlowModel', () => {
           expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("dispatching event 'testEvent'"));
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
-              runtimeArgs: { data: 'payload' },
+              inputArgs: { data: 'payload' },
             }),
             expect.any(Object),
           );

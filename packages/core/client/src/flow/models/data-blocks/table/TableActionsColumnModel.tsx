@@ -31,7 +31,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         fork.context.defineProperty('record', {
           get: () => record,
         });
-        fork.context.defineProperty('index', {
+        fork.context.defineProperty('recordIndex', {
           get: () => index,
         });
         return (

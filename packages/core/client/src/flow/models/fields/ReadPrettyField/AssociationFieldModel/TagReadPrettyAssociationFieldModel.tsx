@@ -99,7 +99,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
     return (
       <>
         {arrayValue.map((v, index) => {
-          const key = `${index}-${this.context.index || 0}`;
+          const key = `${index}-${this.context.recordIndex || 0}`;
           let fieldModel = this.fieldModelCache[v?.[fieldNames.label] + key];
 
           if (!fieldModel) {
@@ -109,9 +109,6 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
             });
             fieldModel.context.defineProperty('fieldValue', {
               get: () => v?.[fieldNames.label],
-            });
-            fieldModel.context.defineProperty('index', {
-              get: () => index,
             });
             this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }

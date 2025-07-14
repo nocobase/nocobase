@@ -13,7 +13,7 @@ import React, { useCallback, useEffect } from 'react';
 import { observer } from '@formily/react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { resolveDefaultParams } from '../../../../utils';
+import { resolveDefaultParams, setupRuntimeContextSteps } from '../../../../utils';
 import { FlowRuntimeContext } from '../../../../flowContext';
 
 const { Item: FormItem } = Form;
@@ -140,6 +140,8 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
       const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
       const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+      const flow = model.getFlow(flowKey);
+      setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
       // 解析 defaultParams
       const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
 

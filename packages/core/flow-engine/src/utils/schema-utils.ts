@@ -9,8 +9,11 @@
 
 import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
+import { toJS } from '@formily/reactive';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
+import type { StepDefinition } from '../types';
+import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
  * 解析 uiSchema，支持静态值和函数形式
@@ -19,7 +22,7 @@ import { FlowRuntimeContext } from '../flowContext';
  * @param {FlowRuntimeContext<TModel>} ctx 上下文
  * @returns {Promise<Record<string, ISchema>>} 解析后的 UI Schema 对象
  */
-export async function resolveUiSchema<TModel extends FlowModel = FlowModel>(
+async function resolveUiSchema<TModel extends FlowModel = FlowModel>(
   uiSchema:
     | Record<string, ISchema>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
@@ -126,4 +129,46 @@ export function compileUiSchema(scope: Record<string, any>, uiSchema: any, optio
   };
 
   return compile(uiSchema);
+}
+
+/**
+ * 解析并合并步骤的完整uiSchema
+ * 这个函数提取了在多个组件中重复使用的uiSchema解析和合并逻辑
+ * @param model 模型实例
+ * @param flow 流程定义
+ * @param step 步骤定义
+ * @returns 合并后的uiSchema对象，如果为空则返回null
+ */
+export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  step: StepDefinition,
+): Promise<Record<string, ISchema> | null> {
+  // 创建运行时上下文
+  const flowRuntimeContext = new FlowRuntimeContext(model, flow.key, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flow.key);
+  flowRuntimeContext.defineProperty('currentStep', { value: step });
+
+  // 获取步骤的uiSchema
+  let stepUiSchema = step.uiSchema;
+
+  if (step.use) {
+    try {
+      const action = model.flowEngine?.getAction?.(step.use);
+      if (action && action.uiSchema) {
+        stepUiSchema = action.uiSchema;
+      }
+    } catch (error) {
+      console.warn(`Failed to get action ${step.use}:`, error);
+    }
+  }
+
+  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema || {}, flowRuntimeContext);
+
+  // 如果解析后没有可配置的UI Schema，返回null
+  if (Object.keys(resolvedStepUiSchema).length === 0) {
+    return null;
+  }
+
+  return resolvedStepUiSchema;
 }

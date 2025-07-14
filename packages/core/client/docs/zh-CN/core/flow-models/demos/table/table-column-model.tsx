@@ -79,7 +79,7 @@ export class TableColumnActionsModel extends TableColumnModel {
             key={action.uid}
             model={action.createFork({}, `${record.id || index}`)}
             showFlowSettings
-            runtimeArgs={{ record }}
+            inputArgs={{ record }}
           />
         ))}
       </Space>
