@@ -15,6 +15,7 @@ import { useCollectionManager } from '../../../data-source/collection/Collection
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
+import { FlagContext } from '../../../flag-provider';
 
 export interface IsDisabledParams {
   option: FieldOption;
@@ -206,6 +207,7 @@ export const useBaseVariable = ({
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
+  const { isLeftVariable } = useContext(FlagContext) || {};
   const cm = useCollectionManager();
 
   const loadChildren = (option: Option): Promise<void> => {
@@ -217,7 +219,7 @@ export const useBaseVariable = ({
       setTimeout(() => {
         const usedInVariable = true;
         const children =
-          compile(option.field?.children) ||
+          (isLeftVariable && compile(option.field?.children)) ||
           getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
             uiSchema,
