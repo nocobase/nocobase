@@ -167,8 +167,10 @@ PreviewReadPrettyFieldModel.registerFlow({
           },
         };
       },
-      defaultParams: {
-        size: 28,
+      defaultParams: (ctx) => {
+        return {
+          size: ctx.model.parent instanceof TableColumnModel ? 28 : 100,
+        };
       },
       handler(ctx, params) {
         ctx.model.setProps('size', params.size);
