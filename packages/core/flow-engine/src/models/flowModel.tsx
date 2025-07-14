@@ -136,6 +136,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this._options.subKey;
   }
 
+  get subType() {
+    return this._options.subType;
+  }
+
   get reactView() {
     return this.flowEngine.reactView;
   }
