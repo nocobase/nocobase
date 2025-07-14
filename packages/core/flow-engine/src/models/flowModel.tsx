@@ -423,7 +423,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.stepParams;
   }
 
-  async applyFlow(flowKey: string, runtimeArgs?: FlowRuntimeArgs): Promise<any> {
+  async applyFlow(flowKey: string, runtimeArgs?: FlowRuntimeArgs, runId?: string): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
@@ -459,6 +459,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
     flowContext.defineProperty('runtimeArgs', {
       value: runtimeArgs,
+    });
+    flowContext.defineProperty('runId', {
+      value: runId || `run-${Date.now()}`,
     });
 
     let lastResult: any;
@@ -538,6 +541,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 获取所有流程
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
+    const runId = `${this.uid}-${eventName}-${Date.now()}`;
 
     allFlows.forEach((flow) => {
       if (flow.on) {
@@ -551,7 +555,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           return; // 只处理匹配的事件
         }
         console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, runtimeArgs).catch((error) => {
+        this.applyFlow(flow.key, runtimeArgs, runId).catch((error) => {
           console.error(
             `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
             error,
@@ -664,9 +668,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 执行 autoFlows
     const executeAutoFlows = async (): Promise<any[]> => {
       const results: any[] = [];
+      const runId = `${this.uid}-autoFlow-${Date.now()}`;
       for (const flow of autoApplyFlows) {
         try {
-          const result = await this.applyFlow(flow.key, runtimeArgs);
+          const result = await this.applyFlow(flow.key, runtimeArgs, runId);
           results.push(result);
         } catch (error) {
           console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);

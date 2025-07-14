@@ -119,7 +119,7 @@ const AssociationSelect = connect(
           fieldModel.context.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
-          fieldModel.context.defineProperty('index', {
+          fieldModel.context.defineProperty('recordIndex', {
             get: () => index,
           });
 

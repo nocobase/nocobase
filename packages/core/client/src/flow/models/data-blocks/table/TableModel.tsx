@@ -243,7 +243,7 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                     fork.context.defineProperty('fieldValue', {
                       get: () => values[dataIndex],
                     });
-                    fork.context.defineProperty('index', {
+                    fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
                     });
                     model.rerender();
