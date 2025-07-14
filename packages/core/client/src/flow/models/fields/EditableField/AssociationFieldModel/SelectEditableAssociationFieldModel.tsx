@@ -47,7 +47,7 @@ function LabelByField(props) {
   fieldModel.context.defineProperty('fieldValue', {
     get: () => option?.[fieldNames.label],
   });
-  return <span key={option[fieldNames.value]}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
+  return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
 function LazySelect(props) {

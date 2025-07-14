@@ -75,11 +75,21 @@ DetailItemModel.registerFlow({
     },
     label: {
       title: escapeT('Label'),
-      uiSchema: {
-        title: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        return {
+          label: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        };
       },
       defaultParams: (ctx) => {
         return {
