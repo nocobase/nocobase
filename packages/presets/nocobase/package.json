@@ -71,6 +71,7 @@
     "@nocobase/plugin-workflow": "1.9.0-alpha.1",
     "@nocobase/plugin-workflow-action-trigger": "1.9.0-alpha.1",
     "@nocobase/plugin-workflow-aggregate": "1.9.0-alpha.1",
+    "@nocobase/plugin-workflow-cc": "1.9.0-alpha.1",
     "@nocobase/plugin-workflow-delay": "1.9.0-alpha.1",
     "@nocobase/plugin-workflow-dynamic-calculation": "1.9.0-alpha.1",
     "@nocobase/plugin-workflow-loop": "1.9.0-alpha.1",

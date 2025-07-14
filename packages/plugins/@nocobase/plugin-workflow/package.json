@@ -9,14 +9,12 @@
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow",
-  "dependencies": {
-    "@nocobase/plugin-workflow-test": "1.9.0-alpha.1"
-  },
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
+    "@nocobase/plugin-workflow-test": "1.x",
     "@types/ejs": "^3.1.1",
     "antd": "5.x",
     "classnames": "^2.3.1",

@@ -182,9 +182,11 @@ const PagePopupsItemProvider: FC<{
   if (_.isEmpty(context)) {
     return (
       <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
-        <VisibleProvider popupuid={params.popupuid}>
-          <div style={displayNone}>{children}</div>
-        </VisibleProvider>
+        <PopupTabsPropsProvider>
+          <VisibleProvider popupuid={params.popupuid}>
+            <div style={displayNone}>{children}</div>
+          </VisibleProvider>
+        </PopupTabsPropsProvider>
       </PopupParamsProvider>
     );
   }
