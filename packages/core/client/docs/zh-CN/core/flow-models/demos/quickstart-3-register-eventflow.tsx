@@ -8,37 +8,29 @@ import React from 'react';
 // 自定义模型类，继承自 FlowModel
 class MyModel extends FlowModel {
   render() {
-    console.log('Rendering MyModel with props:', this.props);
-    return (
-      <Button
-        {...this.props}
-        onClick={(event) => {
-          this.dispatchEvent('onClick', { event });
-        }}
-      />
-    );
+    return <Button {...this.props} />;
   }
 }
 
 const myPropsFlow = defineFlow({
-  key: 'myPropsFlow',
+  key: 'buttonSettings',
   auto: true,
-  title: '按钮配置',
+  title: '按钮设置',
   steps: {
-    setProps: {
-      title: '按钮属性设置',
+    general: {
+      title: '通用配置',
       uiSchema: {
         title: {
           type: 'string',
           title: '按钮标题',
-          'x-component': 'Input',
           'x-decorator': 'FormItem',
+          'x-component': 'Input',
         },
         type: {
           type: 'string',
           title: '类型',
-          'x-component': 'Select',
           'x-decorator': 'FormItem',
+          'x-component': 'Select',
           enum: [
             { label: '主要', value: 'primary' },
             { label: '次要', value: 'default' },
@@ -51,8 +43,8 @@ const myPropsFlow = defineFlow({
         icon: {
           type: 'string',
           title: '图标',
-          'x-component': 'Select',
           'x-decorator': 'FormItem',
+          'x-component': 'Select',
           enum: [
             { label: '搜索', value: 'SearchOutlined' },
             { label: '添加', value: 'PlusOutlined' },
@@ -67,36 +59,22 @@ const myPropsFlow = defineFlow({
       },
       // 步骤处理函数，设置模型属性
       handler(ctx, params) {
-        console.log('Setting props:', params);
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
         ctx.model.setProps('icon', params.icon ? React.createElement(icons[params.icon]) : undefined);
+        ctx.model.setProps('onClick', (event) => {
+          ctx.model.dispatchEvent('click', { event });
+        });
       },
     },
   },
 });
 
 const myEventFlow = defineFlow({
-  key: 'myEventFlow',
-  on: {
-    eventName: 'onClick',
-  },
+  key: 'clickSettings',
+  on: 'click',
   title: '按钮事件',
   steps: {
-    modalWidth: {
-      title: '弹窗宽度配置',
-      uiSchema: {
-        width: {
-          type: 'string',
-          title: '弹窗宽度',
-          'x-decorator': 'FormItem',
-          'x-component': 'NumberPicker',
-        },
-      },
-      handler(ctx, params) {
-        return params.width || 520;
-      },
-    },
     confirm: {
       title: '确认操作配置',
       uiSchema: {
@@ -117,11 +95,12 @@ const myEventFlow = defineFlow({
         title: '确认操作',
         content: '你点击了按钮，是否确认？',
       },
-      handler(ctx, params) {
-        Modal.confirm({
-          width: ctx.stepResults.modalWidth,
-          ...params,
+      async handler(ctx, params) {
+        const confirmed = await ctx.modal.confirm({
+          title: params.title,
+          content: params.content,
         });
+        await ctx.message.info(`你点击了按钮，确认结果：${confirmed ? '确认' : '取消'}`);
       },
     },
   },
@@ -133,14 +112,15 @@ MyModel.registerFlow(myEventFlow);
 // 插件类，负责注册模型、仓库，并加载或创建模型实例
 class PluginHelloModel extends Plugin {
   async load() {
-    // 注册自定义模型
+    // 启用 Flow Settings
+    this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ MyModel });
     const model = this.flowEngine.createModel({
       uid: 'my-model',
       use: 'MyModel',
       stepParams: {
-        myPropsFlow: {
-          setProps: {
+        buttonSettings: {
+          general: {
             title: 'Primary Button',
             type: 'primary',
           },

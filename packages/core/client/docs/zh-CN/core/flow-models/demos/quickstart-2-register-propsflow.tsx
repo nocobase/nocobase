@@ -8,18 +8,17 @@ import React from 'react';
 // 自定义模型类，继承自 FlowModel
 class MyModel extends FlowModel {
   render() {
-    console.log('Rendering MyModel with props:', this.props);
     return <Button {...this.props} />;
   }
 }
 
-const myPropsFlow = defineFlow({
-  key: 'myPropsFlow',
+const buttonSettings = defineFlow({
+  key: 'buttonSettings',
   auto: true,
-  title: '按钮配置',
+  title: '按钮设置',
   steps: {
-    setProps: {
-      title: '按钮属性设置',
+    general: {
+      title: '通用配置',
       uiSchema: {
         title: {
           type: 'string',
@@ -60,7 +59,6 @@ const myPropsFlow = defineFlow({
       },
       // 步骤处理函数，设置模型属性
       handler(ctx, params) {
-        console.log('Setting props:', params);
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
         ctx.model.setProps('icon', params.icon ? React.createElement(icons[params.icon]) : undefined);
@@ -69,19 +67,20 @@ const myPropsFlow = defineFlow({
   },
 });
 
-MyModel.registerFlow(myPropsFlow);
+MyModel.registerFlow(buttonSettings);
 
 // 插件类，负责注册模型、仓库，并加载或创建模型实例
 class PluginHelloModel extends Plugin {
   async load() {
-    // 注册自定义模型
+    // 启用 Flow Settings
+    this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ MyModel });
     const model = this.flowEngine.createModel({
       uid: 'my-model',
       use: 'MyModel',
       stepParams: {
-        myPropsFlow: {
-          setProps: {
+        buttonSettings: {
+          general: {
             title: 'Primary Button',
             type: 'primary',
           },
@@ -91,7 +90,7 @@ class PluginHelloModel extends Plugin {
     // 注册路由，渲染模型
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} showFlowSettings />,
+      element: <FlowModelRenderer model={model} showFlowSettings={true} />,
     });
   }
 }

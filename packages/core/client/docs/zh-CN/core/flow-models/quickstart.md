@@ -74,22 +74,25 @@ const model = this.flowEngine.createModel({
 #### 1. 定义按钮属性的 Flow
 
 ```tsx | pure
-const myPropsFlow = defineFlow({
-  key: 'myPropsFlow',
+
+const buttonSettings = defineFlow({
+  key: 'buttonSettings',
   auto: true,
-  title: '按钮配置',
+  title: '按钮设置',
   steps: {
     setProps: {
-      title: '按钮属性设置',
+      title: '通用配置',
       uiSchema: {
         title: {
           type: 'string',
           title: '按钮标题',
+          'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         type: {
           type: 'string',
           title: '类型',
+          'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
             { label: '主要', value: 'primary' },
@@ -103,6 +106,7 @@ const myPropsFlow = defineFlow({
         icon: {
           type: 'string',
           title: '图标',
+          'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
             { label: '搜索', value: 'SearchOutlined' },
@@ -116,17 +120,17 @@ const myPropsFlow = defineFlow({
       defaultParams: {
         type: 'primary',
       },
+      // 步骤处理函数，设置模型属性
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
-        const icon = params.icon ? React.createElement(icons[params.icon]) : undefined;
-        ctx.model.setProps('icon', icon);
+        ctx.model.setProps('icon', params.icon ? React.createElement(icons[params.icon]) : undefined);
       },
     },
   },
 });
 
-MyModel.registerFlow(myPropsFlow);
+MyModel.registerFlow(buttonSettings);
 ```
 
 #### 2. 使用 `stepParams` 替代静态 `props`
@@ -140,8 +144,8 @@ const model = this.flowEngine.createModel({
 -   children: 'Primary Button',
 - },
 + stepParams: {
-+   myPropsFlow: {
-+     setProps: {
++   buttonSettings: {
++     general: {
 +       title: 'Primary Button',
 +       type: 'primary',
 +     },
@@ -167,31 +171,33 @@ const model = this.flowEngine.createModel({
 
 ### 🎯 场景：点击按钮后弹出确认框
 
-#### 1. 在模型中派发事件
+#### 1. 监听 onClick 事件
 
-```tsx | pure
-class MyModel extends FlowModel {
-  render() {
-    return (
-      <Button
-        {...this.props}
-        onClick={(event) => {
-          this.dispatchEvent('onClick', { event });
-        }}
-      />
-    );
-  }
-}
+使用无入侵的方式，添加 onClick
+
+```diff
+const myPropsFlow = defineFlow({
+  key: 'buttonSettings',
+  steps: {
+    general: {
+      // ... 省略
+      handler(ctx, params) {
+        // ... 省略
++       ctx.model.setProps('onClick', (event) => {
++         ctx.model.dispatchEvent('click', { event });
++       });
+      },
+    },
+  },
+});
 ```
 
 #### 2. 定义事件流
 
 ```ts
 const myEventFlow = defineFlow({
-  key: 'myEventFlow',
-  on: {
-    eventName: 'onClick',
-  },
+  key: 'clickSettings',
+  on: 'click',
   title: '按钮事件',
   steps: {
     confirm: {
@@ -200,11 +206,13 @@ const myEventFlow = defineFlow({
         title: {
           type: 'string',
           title: '弹窗提示标题',
+          'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         content: {
           type: 'string',
           title: '弹窗提示内容',
+          'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
       },
@@ -212,10 +220,44 @@ const myEventFlow = defineFlow({
         title: '确认操作',
         content: '你点击了按钮，是否确认？',
       },
-      handler(ctx, params) {
-        Modal.confirm({
-          ...params,
+      async handler(ctx, params) {
+        // 弹窗
+        const confirmed = await ctx.modal.confirm({
+          title: params.title,
+          content: params.content,
         });
+        // 消息
+        await ctx.message.info(`你点击了按钮，确认结果：${confirmed ? '确认' : '取消'}`);
+      },
+    },
+  },
+});
+MyModel.registerFlow(myEventFlow);
+```
+
+**补充说明：**
+- 事件流（EventFlow）可以让按钮的行为通过流程灵活配置，比如弹窗、消息、API 调用等。
+- 你可以为不同事件（如 `onClick`, `onMouseEnter` 等）注册不同的事件流，满足复杂业务需求。
+
+#### 3. 配置事件流参数
+
+在创建模型时，可以通过 `stepParams` 配置事件流的默认参数：
+
+```ts
+const model = this.flowEngine.createModel({
+  uid: 'my-model',
+  use: 'MyModel',
+  stepParams: {
+    buttonSettings: {
+      general: {
+        title: 'Primary Button',
+        type: 'primary',
+      },
+    },
+    clickSettings: {
+      confirm: {
+        title: '确认操作',
+        content: '你点击了按钮，是否确认？',
       },
     },
   },
@@ -255,8 +297,6 @@ graph TD
   Props --> icon[icon]
   Events --> onClick[onClick]
 ```
-
----
 
 ## 总结
 

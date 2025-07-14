@@ -89,7 +89,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     this.uid = options.uid;
-    this.props = {};
+    this.props = {
+      ...options.props,
+    };
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.sortIndex = options.sortIndex || 0;
@@ -967,6 +969,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       uid: this.uid,
       ..._.omit(this._options, ['props', 'flowEngine']),
       // props: this.props,
+      props: { ...this._options.props },
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };

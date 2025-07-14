@@ -8,15 +8,16 @@
  */
 
 import { define, observable } from '@formily/reactive';
+import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
-import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
   public enabled: boolean;
+  #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
 
   constructor() {
@@ -202,13 +203,26 @@ export class FlowSettings {
     this.enabled = true;
   }
 
+  public forceEnable() {
+    this.#forceEnabled = true;
+    this.enabled = true;
+  }
+
   /**
    * 禁用流程设置组件的显示
    * @example
    * flowSettings.disable();
    */
   public disable(): void {
+    if (this.#forceEnabled) {
+      return;
+    }
     this.enabled = false;
+  }
+
+  public forceDisable() {
+    this.#forceEnabled = true;
+    this.enabled = true;
   }
 
   /**
