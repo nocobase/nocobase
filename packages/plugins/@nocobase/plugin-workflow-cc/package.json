@@ -6,6 +6,7 @@
   "description.zh-CN": "可将流程中的信息自由配置为查看界面，提供给特定的用户查看，将在待办中心为其生成抄送任务。",
   "homepage": "https://docs.nocobase.com/handbook/workflow-cc",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-cc",
+  "license": "AGPL-3.0",
   "version": "1.8.4",
   "main": "dist/server/index.js",
   "peerDependencies": {
