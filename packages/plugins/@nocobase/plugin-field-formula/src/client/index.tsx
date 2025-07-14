@@ -28,6 +28,7 @@ export class PluginFieldFormulaClient extends Plugin {
     'date',
     'datetime',
     'datetimeNoTz',
+    'unixTimestamp',
     'createdAt',
     'updatedAt',
     'radioGroup',
