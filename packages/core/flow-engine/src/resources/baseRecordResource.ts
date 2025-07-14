@@ -166,7 +166,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   getFilterByTk(): any {
-    return this.request.params.filterByTk || this.getMeta('currentFilterByTk');
+    return this.request.params.filterByTk;
   }
 
   setFields(fields: string[] | string) {

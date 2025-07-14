@@ -50,6 +50,8 @@ FormSubmitActionModel.registerFlow({
               const currentFilterByTk = resource.getMeta('currentFilterByTk');
               if (!currentFilterByTk) {
                 resource.isNewRecord = true; // 设置为新记录
+              } else {
+                resource.setFilterByTk(currentFilterByTk);
               }
             }
             await resource.save(values);
