@@ -175,6 +175,11 @@ export class CollectionRepository extends Repository {
   async db2cm(collectionName: string) {
     const collection = this.database.getCollection(collectionName);
 
+    // skip if collection already exists
+    if (await this.findOne({ filter: { name: collectionName } })) {
+      return;
+    }
+
     const options = collection.options;
     const fields = [];
 
@@ -191,55 +196,12 @@ export class CollectionRepository extends Repository {
       delete collectionOptions.schema;
     }
 
-    const existCollection = await this.findOne({ filter: { name: collectionName } });
-
-    if (existCollection) {
-      delete collectionOptions.fields;
-      await this.update({
-        filter: { key: existCollection.key },
-        values: {
-          ...collectionOptions,
-          from: 'db2cm',
-        },
-      });
-
-      const existingFields = await existCollection.getFields();
-      const existingFieldMap = new Map(existingFields.map((field) => [field.name, field]));
-
-      const fieldsToUpdate = [];
-      const fieldsToCreate = [];
-
-      for (const field of fields) {
-        if (existingFieldMap.has(field.name)) {
-          fieldsToUpdate.push({
-            filter: { name: field.name, collectionName },
-            values: field,
-          });
-        } else {
-          fieldsToCreate.push({
-            ...field,
-            collectionName,
-          });
-        }
-      }
-
-      if (fieldsToUpdate.length > 0) {
-        await Promise.all(fieldsToUpdate.map((updateData) => this.database.getRepository('fields').update(updateData)));
-      }
-
-      if (fieldsToCreate.length > 0) {
-        await Promise.all(
-          fieldsToCreate.map((createData) => this.database.getRepository('fields').create({ values: createData })),
-        );
-      }
-    } else {
-      await this.create({
-        values: {
-          ...collectionOptions,
-          fields,
-          from: 'db2cm',
-        },
-      });
-    }
+    await this.create({
+      values: {
+        ...collectionOptions,
+        fields,
+        from: 'db2cm',
+      },
+    });
   }
 }

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Database } from '@nocobase/database';
 import { FieldIsDependedOnByOtherError } from '../errors/field-is-depended-on-by-other';
 
@@ -5,6 +14,11 @@ export function beforeDestoryField(db: Database) {
   return async (model, opts) => {
     const { transaction } = opts;
     const { name, type, collectionName } = model.get();
+
+    const collection = db.getCollection(model.get('collectionName'));
+    if (collection.options.uiManageable) {
+      throw new Error('Cannot remove a UI manageable field');
+    }
 
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(type)) {
       return;

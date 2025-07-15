@@ -121,6 +121,9 @@ export class PluginDataSourceMainServer extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      if (model.options.uiManageable) {
+        throw new Error('Cannot remove a UI manageable collection');
+      }
       const removeOptions = {};
       if (options.transaction) {
         removeOptions['transaction'] = options.transaction;
