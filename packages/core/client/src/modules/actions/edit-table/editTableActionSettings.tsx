@@ -9,10 +9,32 @@
 
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
+import { RemoveButton, ButtonEditor } from '../../../schema-component/antd/action/Action.Designer';
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
+import { useCollection_deprecated } from '../../../collection-manager';
 export const editTableActionSettings = new SchemaSettings({
   name: 'actionSettings:editTable',
   items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
     {
       name: 'delete',
       sort: 100,
