@@ -9,10 +9,10 @@
 
 import { ISchema } from '@formily/json-schema';
 import { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { ReactView } from './ReactView';
-import { FlowRuntimeContext } from './flowContext';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -345,6 +345,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   uid?: string;
   use?: string;
   async?: boolean; // 是否异步加载模型
+  props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
   flowEngine?: FlowEngine;
