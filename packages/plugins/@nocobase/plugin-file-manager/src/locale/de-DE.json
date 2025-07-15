@@ -28,6 +28,8 @@
   "Aliyun OSS": "Aliyun OSS",
   "Amazon S3": "Amazon S3",
   "Tencent COS": "Tencent COS",
+  "MinIO": "MinIO",
+  "MinIO 对象存储": "MinIO Objektspeicher",
   "Region": "Region",
   "Bucket": "Bucket",
   "Path": "Pfad",
@@ -37,5 +39,17 @@
   "Default storage will be used when not selected": "Wenn nicht ausgewählt, wird der Standardspeicher verwendet",
   "Keep file in storage when destroy record": "Datei im Speicher behalten, wenn Datensatz gelöscht wird",
   "See more": "Mehr anzeigen",
-  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS-Regionsteil des Buckets. Zum Beispiel: \"oss-cn-beijing\"."
+  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS-Regionsteil des Buckets. Zum Beispiel: \"oss-cn-beijing\".",
+  "Endpoint": "Endpunkt",
+  "MinIO server endpoint (e.g., http://localhost:9000)": "MinIO-Server-Endpunkt (z.B. http://localhost:9000)",
+  "Access Key ID": "Zugangsschlüssel-ID",
+  "Secret Access Key": "Geheimer Zugangsschlüssel",
+  "AccessKey": "AccessKey",
+  "SecretKey": "SecretKey",
+  "MinIO region (default: us-east-1)": "MinIO-Region (Standard: us-east-1)",
+  "MinIO access key ID for authentication": "MinIO-Zugangsschlüssel-ID für die Authentifizierung",
+  "MinIO secret access key for authentication": "MinIO-Geheimer Zugangsschlüssel für die Authentifizierung",
+  "MinIO AccessKey for authentication": "MinIO AccessKey für die Authentifizierung",
+  "MinIO SecretKey for authentication": "MinIO SecretKey für die Authentifizierung",
+  "MinIO bucket name for file storage": "MinIO-Bucket-Name für die Dateispeicherung"
 }

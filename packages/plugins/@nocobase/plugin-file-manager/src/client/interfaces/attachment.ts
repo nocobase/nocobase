@@ -102,9 +102,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
     children: [
       {
         name: 'id',
-        value: 'id',
         title: '{{t("Exists")}}',
-        label: '{{t("Exists")}}',
         operators: [
           { label: '{{t("exists")}}', value: '$exists', noValue: true },
           { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
@@ -117,9 +115,7 @@ export class AttachmentFieldInterface extends CollectionFieldInterface {
       },
       {
         name: 'filename',
-        value: 'filename',
         title: `{{t("Filename", { ns: "${NAMESPACE}" })}}`,
-        label: `{{t("Filename", { ns: "${NAMESPACE}" })}}`,
         operators: interfacesProperties.operators.string,
         schema: {
           title: `{{t("Filename", { ns: "${NAMESPACE}" })}}`,
