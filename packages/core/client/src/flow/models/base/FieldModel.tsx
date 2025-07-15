@@ -45,6 +45,7 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
+  static supportsField(field: FieldSchema): boolean;
 }
 
 FieldModel.registerFlow({

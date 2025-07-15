@@ -21,7 +21,25 @@ const CardUpload = (props) => {
 };
 
 export class UploadEditableFieldModel extends EditableFieldModel {
-  static supportedFieldInterfaces = ['attachment'];
+  static supportedFieldInterfaces = [
+    'attachment',
+    'm2m',
+    'm2o',
+    'o2o',
+    'o2m',
+    'oho',
+    'obo',
+    'updatedBy',
+    'createdBy',
+    'mbm',
+  ];
+
+  public static acceptsField(field): boolean {
+    if (field.targetCollection) {
+      return field.targetCollection.template === 'file';
+    }
+    return true;
+  }
   set customRequest(fn) {
     this.field.setComponentProps({ customRequest: fn });
   }
