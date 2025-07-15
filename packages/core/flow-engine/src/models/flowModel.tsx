@@ -112,7 +112,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // });
     this.createSubModels(options.subModels);
 
-    this.observerDispose = observe(this.stepParams, () => {
+    this.observerDispose = observe(this.stepParams, (changed) => {
+      // if doesn't change, skip
+      if (changed.type === 'set' && _.isEqual(changed.value, changed.oldValue)) {
+        return;
+      }
+
       if (this.flowEngine) {
         this.invalidateAutoFlowCache();
       }
