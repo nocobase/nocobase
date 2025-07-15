@@ -8,13 +8,27 @@
  */
 
 import { EditableFieldModel } from './EditableFieldModel';
-import { Upload } from '@formily/antd-v5';
+import { Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import React from 'react';
+import { castArray } from 'lodash';
 
 const CardUpload = (props) => {
+  const value = castArray(props.value || []);
   return (
-    <Upload {...props} listType="picture-card">
+    <Upload
+      {...props}
+      listType="picture-card"
+      defaultFileList={value}
+      onChange={({ fileList }) => {
+        if (props.maxCount === 1) {
+          const firstFile = fileList[0];
+          props.onChange(firstFile ? firstFile.response : null);
+        } else {
+          props.onChange(fileList.map((file) => file.response).filter(Boolean));
+        }
+      }}
+    >
       <UploadOutlined style={{ fontSize: 20 }} />
     </Upload>
   );
@@ -56,11 +70,11 @@ UploadEditableFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        ctx.model.customRequest = (fieldData) => {
+        ctx.model.customRequest = (fileData) => {
           ctx.model.dispatchEvent('customRequest', {
             apiClient: ctx.app.apiClient,
             field: ctx.model.field,
-            fieldData,
+            fileData,
           });
         };
       },
@@ -92,7 +106,7 @@ UploadEditableFieldModel.registerFlow({
   steps: {
     step1: {
       async handler(ctx, params) {
-        const { file, onSuccess, onError, onProgress } = ctx.runtimeArgs.fieldData;
+        const { file, onSuccess, onError, onProgress } = ctx.inputArgs.fileData;
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.collectionField.target;
         try {
@@ -127,6 +141,7 @@ UploadEditableFieldModel.registerFlow({
             onError?.(new Error('上传成功但响应数据为空'));
             return;
           }
+
           onSuccess(data);
         } catch (err) {
           onError?.(err as Error);
