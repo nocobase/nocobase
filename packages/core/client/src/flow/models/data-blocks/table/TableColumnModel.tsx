@@ -240,6 +240,7 @@ TableColumnModel.registerFlow({
             },
           },
         });
+        ctx.model.invalidateAutoFlowCache(true);
       },
     },
   },

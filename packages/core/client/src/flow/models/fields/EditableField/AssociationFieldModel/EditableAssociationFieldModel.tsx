@@ -15,8 +15,8 @@ export class EditableAssociationFieldModel extends EditableFieldModel {
 }
 
 EditableAssociationFieldModel.registerFlow({
-  auto: true,
   key: 'AssociationFieldSetting',
+  auto: true,
   steps: {
     fieldModel: {
       title: escapeT('Set field model'),
@@ -42,18 +42,19 @@ EditableAssociationFieldModel.registerFlow({
         };
       },
       handler: (ctx, params) => {
-        // ctx.model.parent.setSubModel('items', {
-        //   use: params.fieldModel,
-        //   stepParams: {
-        //     fieldSettings: {
-        //       init: {
-        //         dataSourceKey: ctx.model.collectionField.dataSourceKey,
-        //         collectionName: ctx.model.collectionField.collection.name,
-        //         fieldPath: ctx.model.fieldPath,
-        //       },
-        //     },
-        //   },
-        // });
+        if (ctx.model.constructor.name !== params.fieldModel) {
+          ctx.model.flowEngine.replaceModel(ctx.model.uid, params.fieldModel, {
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                  collectionName: ctx.model.collectionField.collection.name,
+                  fieldPath: ctx.model.fieldPath,
+                },
+              },
+            },
+          });
+        }
       },
     },
   },
