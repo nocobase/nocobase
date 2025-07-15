@@ -12,7 +12,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { reactive } from '@nocobase/flow-engine';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL'] as any;
 
   @reactive
   public render() {
