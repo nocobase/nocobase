@@ -29,6 +29,14 @@ export const getResource = (packageName: string, lang: string, isPlugin = true) 
     } catch (error) {
       // empty
     }
+    try {
+      require.resolve('@nocobase/flow-engine/src');
+      if (packageName === '@nocobase/plugin-flow-engine') {
+        packageName = '@nocobase/flow-engine';
+      }
+    } catch (error) {
+      // empty
+    }
     prefixes.unshift('src');
   }
   for (const prefix of prefixes) {
