@@ -57,11 +57,11 @@ const AIEmployeeForm: React.FC<{
           label: t('Skills'),
           children: <SkillSettings />,
         },
-        {
-          key: 'dataSources',
-          label: t('Data sources'),
-          children: <DataSourceSettings />,
-        },
+        // {
+        //   key: 'dataSources',
+        //   label: t('Data sources'),
+        //   children: <DataSourceSettings />,
+        // },
       ]}
     />
   );

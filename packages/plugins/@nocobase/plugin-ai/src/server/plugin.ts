@@ -21,7 +21,14 @@ import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
-import { defineCollections, formFiller, getCollectionMetadata, getCollectionNames, getWorkflowCallers } from './tools';
+import {
+  dataModelingIntentRouter,
+  defineCollections,
+  formFiller,
+  getCollectionMetadata,
+  getCollectionNames,
+  getWorkflowCallers,
+} from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
@@ -84,6 +91,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: frontendGroupName,
         tool: formFiller,
+      },
+      {
+        groupName: dataModelingGroupName,
+        tool: dataModelingIntentRouter,
       },
       {
         groupName: dataModelingGroupName,

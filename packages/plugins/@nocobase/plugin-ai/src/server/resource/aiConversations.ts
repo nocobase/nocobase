@@ -114,10 +114,12 @@ export default {
         return ctx.throw(403);
       }
 
-      const { sessionId, cursor, paginate = true } = ctx.action.params || {};
+      const { sessionId, cursor } = ctx.action.params || {};
       if (!sessionId) {
         ctx.throw(400);
       }
+
+      const paginate = ctx.action.params?.paginate === 'false' ? false : true;
 
       const conversation = await ctx.db.getRepository('aiConversations').findOne({
         filter: {
