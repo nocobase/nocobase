@@ -101,10 +101,22 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     });
   }
 
+  async destroy() {
+    // 在销毁模型前，先清理 Formily Field
+    if (this.field) {
+      this.field.destroy();
+      this.field = null;
+    }
+    // 调用父类的 destroy 方法
+    return super.destroy();
+  }
+
   render() {
     return (
       <FieldContext.Provider value={this.field}>
-        <ReactiveField field={this.field}>{this.props.children}</ReactiveField>
+        <ReactiveField key={this.uid} field={this.field}>
+          {this.props.children}
+        </ReactiveField>
       </FieldContext.Provider>
     );
   }

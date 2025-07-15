@@ -505,7 +505,7 @@ export class FlowEngine {
     // 3. 合并用户选项和关键属性
     const newOptions = {
       ...userOptions, // 用户提供的新options
-      uid, // 保持相同的UID
+      // uid, // 保持相同的UID
       flowEngine: this,
       parentId: currentParent?.uid,
       subKey: currentSubKey,
@@ -537,7 +537,7 @@ export class FlowEngine {
     if (currentParent) {
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
     }
-
+    await newModel.save();
     return newModel;
   }
 
