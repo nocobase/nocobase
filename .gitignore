@@ -2,7 +2,7 @@ node_modules/
 lib/
 esm/
 es/
-.env
+#.env
 .env.e2e
 .DS_Store
 yarn-error.log
