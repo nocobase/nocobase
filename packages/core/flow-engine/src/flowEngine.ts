@@ -17,6 +17,7 @@ import {
   ActionOptions,
   CreateModelOptions,
   FlowDefinition,
+  FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
@@ -460,6 +461,84 @@ export class FlowEngine {
       await this.modelRepository.destroy(uid);
     }
     return this.removeModel(uid);
+  }
+
+  /**
+   * 将指定的模型实例替换为新的类创建的实例
+   * @template T 新模型的类型
+   * @param {string} uid 要替换的模型的UID
+   * @param {ModelConstructor<T>} ModelClass 新模型的类
+   * @param {Partial<FlowModelOptions> | ((oldModel: FlowModel) => Partial<FlowModelOptions>)} [optionsOrFn]
+   *        创建新模型的选项，支持两种形式：
+   *        1. 直接传入options
+   *        2. 传入函数，接收当前选项作为参数，返回新的options
+   * @returns {Promise<T>} 创建的新模型实例
+   */
+  async replaceModel<T extends FlowModel = FlowModel>(
+    uid: string,
+    ModelClass: ModelConstructor<T>,
+    optionsOrFn?: Partial<FlowModelOptions> | ((currentOptions: FlowModelOptions) => Partial<FlowModelOptions>),
+  ): Promise<T | null> {
+    const oldModel = this.getModel(uid);
+    if (!oldModel) {
+      console.warn(`FlowEngine: Cannot replace model. Model with UID '${uid}' not found.`);
+      return null;
+    }
+
+    // 1. 保存当前模型的关键信息
+    const currentParent = oldModel.parent;
+    const currentSubKey = oldModel.subKey;
+    const currentSubType = oldModel.subType;
+    const currentSortIndex = oldModel.sortIndex;
+
+    // 2. 确定新的选项
+    let userOptions: Partial<FlowModelOptions>;
+
+    if (typeof optionsOrFn === 'function') {
+      // 函数模式：传入当前options，获取新的options
+      userOptions = optionsOrFn(oldModel);
+    } else {
+      // 对象模式：直接使用提供的options替换
+      userOptions = optionsOrFn || {};
+    }
+
+    // 3. 合并用户选项和关键属性
+    const newOptions = {
+      ...userOptions, // 用户提供的新options
+      uid, // 保持相同的UID
+      flowEngine: this,
+      parentId: currentParent?.uid,
+      subKey: currentSubKey,
+      subType: currentSubType,
+      sortIndex: currentSortIndex,
+    } as FlowModelOptions & { uid: string };
+
+    // 4. 销毁当前模型（这会处理所有清理工作：持久化删除、内存清理、父模型引用等）
+    await oldModel.destroy();
+
+    // 5. 使用createModel创建新的模型实例
+    const newModel = this.createModel<T>({
+      ...newOptions,
+      use: ModelClass,
+    });
+
+    // 6. 如果有父模型，将新模型添加到父模型的subModels中
+    if (currentParent && currentSubKey) {
+      if (currentSubType === 'array') {
+        // 对于数组类型，使用addSubModel方法
+        currentParent.addSubModel(currentSubKey, newModel);
+      } else {
+        // 对于对象类型，使用setSubModel方法
+        currentParent.setSubModel(currentSubKey, newModel);
+      }
+    }
+
+    // 7. 触发事件以通知其他部分模型已替换
+    if (currentParent) {
+      currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
+    }
+
+    return newModel;
   }
 
   async moveModel(sourceId: any, targetId: any): Promise<void> {
