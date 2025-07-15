@@ -209,7 +209,6 @@ export const useBaseVariable = ({
   const { isDisabled } = useContext(BaseVariableContext) || {};
   const { isLeftVariable } = useContext(FlagContext) || {};
   const cm = useCollectionManager();
-
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
       return Promise.resolve(void 0);
@@ -219,7 +218,7 @@ export const useBaseVariable = ({
       setTimeout(() => {
         const usedInVariable = true;
         const children = (
-          (isLeftVariable && compile(option.field?.children)) ||
+          (isLeftVariable && target === 'attachments' && compile(option.field?.children)) ||
           getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
             uiSchema,
