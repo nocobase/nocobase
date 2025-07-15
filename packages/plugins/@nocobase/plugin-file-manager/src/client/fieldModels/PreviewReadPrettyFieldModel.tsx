@@ -117,7 +117,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 };
 
 const Preview = (props) => {
-  const { value = [], size, showFileName } = props;
+  const { value = [], size = 28, showFileName } = props;
   return (
     <Space size={5} wrap={true}>
       {Array.isArray(value) &&

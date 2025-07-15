@@ -204,6 +204,44 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('editable', params.editable);
       },
     },
+    fieldModel: {
+      title: escapeT('Set field model'),
+      uiSchema: (ctx) => {
+        const data = ctx.model.collectionField.getSubclassesOf('ReadPrettyFieldModel');
+        const options = Array.from(data.keys()).map((v) => {
+          return {
+            value: v,
+            label: v,
+          };
+        });
+        return {
+          fieldModel: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: options,
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          fieldModel: ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel'),
+        };
+      },
+      handler: (ctx, params) => {
+        ctx.model.setSubModel('field', {
+          use: params.fieldModel,
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                collectionName: ctx.model.collectionField.collection.name,
+                fieldPath: ctx.model.fieldPath,
+              },
+            },
+          },
+        });
+      },
+    },
   },
 });
 
