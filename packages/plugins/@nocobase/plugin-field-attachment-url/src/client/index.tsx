@@ -10,7 +10,7 @@
 import { Plugin, lazy } from '@nocobase/client';
 import { AttachmentURLFieldInterface } from './interfaces/attachment-url';
 import { useAttachmentUrlFieldProps } from './hook';
-import { AttachmentUrlEditableFieldModel } from './AttachmentUrlEditableFieldModel';
+import { AttachmentURLEditableFieldModel } from './AttachmentURLEditableFieldModel';
 const { AttachmentUrl } = lazy(() => import('./component/AttachmentUrl'), 'AttachmentUrl');
 
 import { attachmentUrlComponentFieldSettings } from './settings';
@@ -27,7 +27,7 @@ export class PluginFieldAttachmentUrlClient extends Plugin {
     this.app.addComponents({ AttachmentUrl });
     this.app.schemaSettingsManager.add(attachmentUrlComponentFieldSettings);
     this.flowEngine.registerModels({
-      AttachmentUrlEditableFieldModel,
+      AttachmentURLEditableFieldModel,
     });
   }
 }

@@ -8,34 +8,24 @@
  */
 
 import { UploadEditableFieldModel } from '@nocobase/client';
-import { Upload } from 'antd';
+import { Upload } from '@formily/antd-v5';
 import { UploadOutlined } from '@ant-design/icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { FieldContext } from '@formily/react';
+import { castArray } from 'lodash';
+import { useField } from '@formily/react';
 
-const transformValue = (value) => {
-  if (!value) return [];
-  const name = value.split('/').pop() || 'file';
-  const ext = name.split('.').pop()?.toLowerCase();
-  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
-  return [
-    {
-      uid: '-1',
-      name,
-      status: 'done',
-      url: value,
-      preview: value,
-      thumbUrl: isImage ? value : `/file-placeholder/${ext}-200-200.png`,
-    },
-  ];
-};
 const CardUpload = (props) => {
-  const [fileList, setFileList] = useState(() => transformValue(props.value));
-  useEffect(() => {
-    setFileList(transformValue(props.value));
-  }, [props.value]);
-  const handleChange = ({ file, fileList: newFileList }) => {
-    setFileList(newFileList);
+  const outerField: any = useField();
+  const [fileList, setFileList] = useState(
+    castArray(props.value || []).map((v) => {
+      return { url: v };
+    }),
+  );
 
+  const handleChange = (newFileList) => {
+    setFileList(newFileList);
+    const file = newFileList[0];
     if (file.status === 'done') {
       const url = file.response?.url || file.url;
       props.onChange?.(url);
@@ -44,13 +34,19 @@ const CardUpload = (props) => {
     }
   };
   return (
-    <Upload {...props} listType="picture-card" fileList={fileList} onChange={handleChange}>
-      <UploadOutlined style={{ fontSize: 20 }} />
-    </Upload>
+    <FieldContext.Provider
+      value={{
+        ...outerField,
+        value: fileList,
+      }}
+    >
+      <Upload {...props} listType="picture-card" fileList={fileList} onChange={handleChange}>
+        <UploadOutlined style={{ fontSize: 20 }} />
+      </Upload>
+    </FieldContext.Provider>
   );
 };
-
-export class AttachmentUrlEditableFieldModel extends UploadEditableFieldModel {
+export class AttachmentURLEditableFieldModel extends UploadEditableFieldModel {
   static supportedFieldInterfaces = ['attachmentURL'];
 
   get component() {

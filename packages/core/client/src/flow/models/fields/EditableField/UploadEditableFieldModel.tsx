@@ -10,7 +10,7 @@
 import { EditableFieldModel } from './EditableFieldModel';
 import { UploadOutlined } from '@ant-design/icons';
 import { useField } from '@formily/react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { castArray } from 'lodash';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext } from '@formily/react';
