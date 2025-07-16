@@ -9,8 +9,14 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DragHandler, Droppable, escapeT, FlowModel, FlowsFloatContextMenu } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import {
+  DragHandler,
+  Droppable,
+  escapeT,
+  FlowModel,
+  FlowsFloatContextMenu,
+  useFlowSettingsContext,
+} from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
@@ -22,7 +28,7 @@ export class TableColumnModel extends FieldModel {
       <Droppable model={this}>
         <FlowsFloatContextMenu
           model={this}
-          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          containerStyle={{ display: 'block', padding: '11px 7px', margin: '-11px -7px' }}
           showBorder={false}
           settingsMenuLevel={2}
           extraToolbarItems={[
@@ -84,7 +90,15 @@ export class TableColumnModel extends FieldModel {
       <>
         {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
           const fork = action.createFork({}, `${index}`);
-          fork.setSharedContext({ index, value, currentRecord: record });
+          fork.context.defineProperty('record', {
+            get: () => record,
+          });
+          fork.context.defineProperty('fieldValue', {
+            get: () => value,
+          });
+          fork.context.defineProperty('recordIndex', {
+            get: () => index,
+          });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
       </>
@@ -115,7 +129,7 @@ TableColumnModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
       },
     },
-    editColumTitle: {
+    title: {
       title: escapeT('Column title'),
       uiSchema: {
         title: {
@@ -124,35 +138,38 @@ TableColumnModel.registerFlow({
           'x-component-props': {
             placeholder: escapeT('Column title'),
           },
+          'x-reactions': (field) => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const { model } = useFlowSettingsContext<FieldModel>();
+            const originTitle = model.collectionField?.title;
+            field.decoratorProps = {
+              ...field.decoratorProps,
+              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+            };
+          },
         },
       },
-      defaultParams: (ctx) => {
-        return {
-          title: ctx.model.collectionField?.title,
-        };
-      },
+      defaultParams: (ctx) => ({
+        title: ctx.model.collectionField?.title,
+      }),
       handler(ctx, params) {
-        console.log('editColumTitle params:', params);
-        const title = ctx.engine.translate(params.title || ctx.model.collectionField?.title);
+        const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
     },
-    editTooltip: {
-      title: escapeT('Edit tooltip'),
+    tooltip: {
+      title: escapeT('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Edit tooltip'),
-          },
         },
       },
       handler(ctx, params) {
         ctx.model.setProps('tooltip', params.tooltip);
       },
     },
-    editColumnWidth: {
+    width: {
       title: escapeT('Column width'),
       uiSchema: {
         width: {
@@ -167,22 +184,26 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('width', params.width);
       },
     },
-    enableEditable: {
-      title: tval('Editable'),
-      uiSchema: {
+    quickEdit: {
+      title: escapeT('Enable quick edit'),
+      uiSchema: (ctx) => ({
         editable: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
+          'x-disabled': ctx.model.collectionField.readonly,
         },
-      },
+      }),
       defaultParams(ctx) {
-        console.log('enableEditable11 params:', ctx.model.parent.props.editable || false);
+        if (ctx.model.collectionField.readonly) {
+          return {
+            editable: false,
+          };
+        }
         return {
           editable: ctx.model.parent.props.editable || false,
         };
       },
       handler(ctx, params) {
-        console.log('enableEditable1 params:', params);
         ctx.model.setProps('editable', params.editable);
       },
     },
@@ -196,14 +217,14 @@ TableCustomColumnModel.registerFlow({
   auto: true,
   title: escapeT('Table column settings'),
   steps: {
-    editColumTitle: {
-      title: tval('Column title'),
+    title: {
+      title: escapeT('Column title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: tval('Column title'),
+            placeholder: escapeT('Column title'),
           },
         },
       },
@@ -217,28 +238,24 @@ TableCustomColumnModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        console.log('editColumTitle params:', params);
         const title = ctx.engine.translate(params.title);
         ctx.model.setProps('title', title);
       },
     },
-    editTooltip: {
-      title: tval('Edit tooltip'),
+    tooltip: {
+      title: escapeT('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: tval('Edit tooltip'),
-          },
         },
       },
       handler(ctx, params) {
         ctx.model.setProps('tooltip', params.tooltip);
       },
     },
-    editColumnWidth: {
-      title: tval('Column width'),
+    width: {
+      title: escapeT('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',

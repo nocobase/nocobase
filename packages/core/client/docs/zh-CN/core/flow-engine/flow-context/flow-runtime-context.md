@@ -2,7 +2,40 @@
 
 > FlowRuntimeContext 继承自 FlowContext，详见 [FlowContext](./flow-context)
 
-`FlowRuntimeContext` 是流引擎在每次执行流（Flow）时创建的运行时上下文对象，继承自 `FlowContext`。它贯穿整个流执行周期，负责管理流程级别的数据、状态、步骤结果和日志等。通过 `ctx`，可以在各个步骤中访问和操作本次流程实例的上下文，实现流程控制、数据传递和复杂业务编排。
+`FlowRuntimeContext` 是流引擎在每次执行流（Flow）时创建的运行时上下文对象，贯穿整个流执行周期，负责管理流程级别的数据、状态、步骤结果和日志等。通过 `ctx`，可以在各个步骤中访问和操作本次流程实例的上下文，实现流程控制、数据传递和复杂业务编排。
+
+---
+
+## mode: 'runtime' | 'settings'
+
+`FlowRuntimeContext` 支持两种模式，通过 `mode` 参数区分：
+
+- `mode: 'runtime'`（运行态）：用于流实际执行阶段，属性和方法返回真实数据。例如：
+  ```js
+  console.log(runtimeCtx.steps.step1.result); // 42
+  ```
+- `mode: 'settings'`（配置态）：用于流设计和配置阶段，属性访问返回变量模板字符串，便于表达式和变量选择。例如：
+  ```js
+  console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
+  ```
+
+这种双模式设计，既保证了运行时的数据可用性，也方便了配置时的变量引用和表达式生成，提升了流引擎的灵活性和易用性。
+
+---
+
+## 在 uiSchema 中使用 ctx 的注意事项
+
+- **uiSchema 主要用于配置 params**：uiSchema 用于描述参数（params）的结构、表单、校验等，最终生成的 params 会传递给 handler 进行业务处理。
+- **settings 模式下 ctx 变量为字符串模板**：在 uiSchema 设计阶段（settings 模式），ctx 的所有属性（如 runId、steps、inputArgs 等）都是字符串模板。例如：
+  ```js
+  console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
+  ```
+- **变量引用为字符串模板**：在 uiSchema 的表达式、默认值、联动条件等地方，使用 `{{ ctx.xxx }}` 形式引用流程变量，实现动态表单和参数配置。
+- **不要在 uiSchema 里直接依赖真实数据**：settings 模式下 ctx 仅用于变量占位和表达式生成，不能获取到运行时的实际值。实际值只会在 handler（运行时）中通过 params 获取和处理。
+- **典型用法**：在 uiSchema 的表达式、默认值、联动条件等地方，使用 `{{ ctx.xxx }}` 形式引用流程变量，实现动态表单和参数配置。
+
+**总结**：  
+uiSchema 里 ctx 只用于变量引用和表达式生成，所有 ctx 变量都是字符串模板，最终会在流程运行时由 handler 通过 params 获取真实数据。不要在 uiSchema 里依赖 ctx 的实际值。
 
 ---
 
@@ -27,13 +60,12 @@
 
 | 属性/方法         | 说明                                                                                  |
 |------------------|---------------------------------------------------------------------------------------|
-| `ctx.traceId`    | 本次流执行的唯一标识，便于日志追踪和问题排查。                                         |
+| `ctx.runId`      | 本次流执行的唯一标识，便于日志追踪和问题排查。每个 Flow 实例应有唯一的 runId。           |
 | `ctx.flowKey`    | 当前执行的流程 key。                                                                   |
 | `ctx.model`      | 当前流关联的数据模型实例，通常用于在流步骤中访问和操作业务数据。                        |
 | `ctx.exit()`     | 立即终止整个流的执行，后续步骤不再执行。适用于遇到致命错误或业务条件不满足时主动中断流。|
 | `ctx.logger`     | 日志记录工具，支持 `info`、`warn`、`error`、`debug` 等方法。用于输出调试信息和业务日志。|
 | `ctx.steps`      | 存储每个步骤的详细信息，结构为 `{ 步骤名: { params, uiSchema, result } }`。             |
-| `ctx.currentStep`| 当前正在执行的步骤对象，包含 stepKey、params、uiSchema、result 等。                    |
 | `ctx.inputArgs`  | 流入口参数，执行 flow 时传入的参数对象。                                               |
 
 ---
@@ -82,11 +114,75 @@ ctx.logger.error('发生错误', error);
 ### 5. 在 uiSchema 组件中使用
 
 ```ts
-import { useFlowRuntimeContext } from '@nocobase/flow-engine';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
 function MyComponent() {
-  const ctx = useFlowRuntimeContext();
-  // 现在可以访问 ctx.steps, ctx.currentStep, ctx.inputArgs, ctx.exit() 等
-  const { params, uiSchema, result } = ctx.currentStep;
+  const ctx = useFlowSettingsContext();
+  ctx.getPropertyMetaTree();
+
+  console.log(ctx.runId); // '{{ ctx.runId }}'
+}
+```
+
+### 6. ctx 字符串变量示例
+
+在 uiSchema 配置参数时，ctx 变量会以字符串模板的形式存在，实际运行时会被替换为真实值。常见用法如下：
+
+```ts
+{
+  steps: {
+    step1: {
+      uiSchema: {
+        runId: {
+          'x-component': 'Input', // 表单中展示 runId 字段
+        },
+      },
+      defaultParams: {
+        runId: '{{ctx.runId}}', // 配置阶段为字符串模板
+      },
+      handler(ctx, params) {
+        // 运行时 params.runId 会被替换为实际的 runId，如 'a3afl8...'
+        console.log(params.runId); // 例如 'a3afl8...'
+      }
+    },
+  }
+}
+```
+
+**说明：**
+- 在 `uiSchema` 阶段，`runId` 字段的默认值是字符串模板 `'{{ctx.runId}}'`，用于占位和表达式引用。
+- 在流程实际运行时（handler 执行时），`params.runId` 会自动被替换为当前流程实例的真实 runId。
+- 这种机制适用于所有 ctx 变量（如 `ctx.steps.step1.result`、`ctx.inputArgs.xxx` 等），便于在表单、参数、联动等场景下灵活引用流程上下文数据。
+
+> 提示：`{{ctx.xxx}}` 在 uiSchema（settings 模式）中仅作为变量占位符，实际数据会在 handler（runtime 模式）中自动解析和注入。
+
+
+### 7. 自定义 FlowRuntimeContext
+
+```ts
+class MyModel extends FlowModel {
+  createRuntimeContext({ model, flowKey }) {
+    return new FlowRuntimeContext(this, { mode, flowKey });
+  }
+
+  applyFlow(flowKey, inputArgs) {
+    const ctx = this.createRuntimeContext({ mode: 'runtime', flowKey });
+  }
+}
+```
+
+uiSchema 里使用
+
+```ts
+function useFlowSettingsContext() {
+  // ...coding
+  return model.createRuntimeContext({ mode: 'settings', flowKey });
+}
+
+function MyComponent() {
+  const ctx = useFlowSettingsContext();
+  ctx.getPropertyMetaTree();
+
+  console.log(ctx.runId); // '{{ ctx.runId }}'
 }
 ```

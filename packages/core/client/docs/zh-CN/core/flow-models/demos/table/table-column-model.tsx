@@ -79,7 +79,7 @@ export class TableColumnActionsModel extends TableColumnModel {
             key={action.uid}
             model={action.createFork({}, `${record.id || index}`)}
             showFlowSettings
-            runtimeArgs={{ record }}
+            inputArgs={{ record }}
           />
         ))}
       </Space>
@@ -99,7 +99,7 @@ TableColumnModel.registerFlow({
         if (ctx.model.field) {
           return;
         }
-        const field = ctx.globals.dsm.getCollectionField(params.fieldPath);
+        const field = ctx.dsm.getCollectionField(params.fieldPath);
         ctx.model.fieldPath = params.fieldPath;
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);

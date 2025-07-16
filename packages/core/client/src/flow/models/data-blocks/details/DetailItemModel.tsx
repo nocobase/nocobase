@@ -10,26 +10,42 @@
 import { BaseItem } from '@formily/antd-v5';
 import { observable } from '@formily/reactive';
 import { escapeT, reactive } from '@nocobase/flow-engine';
-import { castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
+import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailItemModel extends FieldModel {
+export class DetailItemModel extends FieldModel<{
+  parent: DetailsFieldGridModel;
+  subModels: { field: FieldModel };
+}> {
   decoratorProps = observable({} as any);
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
   }
 
+  showTitle(showTitle: boolean) {
+    this.setDecoratorProps({
+      labelStyle: { display: showTitle ? 'flex' : 'none' },
+    });
+  }
+
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('fieldValue', {
+      get: () => this.context.record?.[this.fieldPath],
+      cache: false,
+    });
+  }
+
   @reactive
   render() {
-    const resource = (this.parent as any).resource;
-    const fieldModel = this.subModels.field as any;
-    const values = castArray(resource.getData()).filter(Boolean);
-    const value = values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.setSharedContext({
-      ...this.ctx.shared,
-      value,
+    const fieldModel = this.subModels.field as FieldModel;
+    const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
+    fieldModel.context.defineProperty('value', {
+      get: () => value,
     });
+
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}
@@ -39,7 +55,6 @@ export class DetailItemModel extends FieldModel {
 }
 
 DetailItemModel.define({
-  title: escapeT('Detail item'),
   icon: 'DetailFormItem',
   defaultOptions: {
     use: 'DetailItemModel',
@@ -53,30 +68,42 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
-    editTitle: {
-      title: escapeT('Edit title'),
-      uiSchema: {
-        title: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Enter field title'),
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+      },
+    },
+    label: {
+      title: escapeT('Label'),
+      uiSchema: (ctx) => {
+        return {
+          label: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
           },
-        },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          title: ctx.collectionField.title,
+        };
       },
       handler(ctx, params) {
         ctx.model.setDecoratorProps({ title: params.title });
       },
-      defaultParams: (ctx) => {
-        return {
-          title: ctx.model.collectionField?.title,
-        };
-      },
     },
-    displayLabel: {
-      title: escapeT('Display label'),
+    showLabel: {
+      title: escapeT('Show label'),
       uiSchema: {
-        displayLabel: {
+        showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -86,26 +113,14 @@ DetailItemModel.registerFlow({
         },
       },
       defaultParams: {
-        displayLabel: true,
+        showLabel: true,
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ displayLabel: params.displayLabel === undefined ? true : params.displayLabel });
+        ctx.model.showTitle(params.showLabel);
       },
     },
-    editDescription: {
-      title: escapeT('Edit description'),
-      uiSchema: {
-        description: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setDecoratorProps({ description: params.description });
-      },
-    },
-    editTooltip: {
-      title: escapeT('Edit tooltip'),
+    tooltip: {
+      title: escapeT('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -114,6 +129,18 @@ DetailItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setDecoratorProps({ tooltip: params.tooltip });
+      },
+    },
+    description: {
+      title: escapeT('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setDecoratorProps({ description: params.description });
       },
     },
   },

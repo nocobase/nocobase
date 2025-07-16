@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { Collection, DataSource, DataSourceManager } from '../data-source';
+import { Collection, CollectionField, DataSource, DataSourceManager } from '../data-source';
 import type { FlowModel } from '../models';
 import type { ModelConstructor } from '../types';
 import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
@@ -55,15 +55,11 @@ interface CollectionInfo {
 }
 
 interface MenuBuilderFlowContext {
-  runtimeArgs?: {
+  inputArgs?: {
     filterByTk?: string;
     collectionName?: string;
     sourceId?: string;
-  };
-  shared?: {
-    currentBlockModel?: {
-      collection?: any;
-    };
+    associationName?: string;
   };
 }
 
@@ -71,8 +67,7 @@ interface MenuBuilderFlowContext {
 
 function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
   try {
-    const globalContext = model.flowEngine.getContext();
-    const dataSourceManager: DataSourceManager = globalContext?.dataSourceManager;
+    const dataSourceManager: DataSourceManager = model.context.dataSourceManager;
 
     if (!dataSourceManager) return [];
 
@@ -192,7 +187,7 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
       stepParams: stepParams || {
         resourceSettings: {
           init: {
-            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+            filterByTk: '{{ctx.inputArgs.filterByTk}}',
             collectionName: collection.name,
             dataSourceKey: collection.dataSource.key,
           },
@@ -206,37 +201,49 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
 function createAssociationRecordsMenuItem(
   className: string,
   baseCollectionName: string,
-  collections: Collection[],
-  sourceId = '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+  fields: CollectionField[],
+  sourceId = '{{ctx.inputArgs.filterByTk}}',
 ) {
+  let associationFields = fields.filter(
+    (f) => f.target !== baseCollectionName && !!f.targetCollection && f.interface !== 'mbm',
+  );
+  const toManyInterfaces = ['o2m', 'm2m'];
+
+  if (className !== 'DetailsModel' && className !== 'EditFormModel') {
+    associationFields = associationFields.filter((f) => toManyInterfaces.includes(f.interface));
+  }
+
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
-    defaultOptions: (_parentModel: any, extra: any) => ({
-      use: className,
-      stepParams: {
-        resourceSettings: {
-          init: {
-            dataSourceKey: extra.dataSourceKey,
-            collectionName: '',
-            associationName: baseCollectionName + '.' + extra.collectionName,
-            sourceId,
+    fields: associationFields,
+    defaultOptions: (_parentModel: any, field: CollectionField) => {
+      return {
+        use: className,
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: field.collection.dataSource.key,
+              collectionName: field.target,
+              associationName: field.collection.name + '.' + field.name,
+              sourceId,
+              // filterByTk: '{{ctx.inputArgs.filterByTk}}',
+            },
           },
         },
-      },
-    }),
-    collections,
+      };
+    },
   };
 }
 
 // 场景1：没有 filterByTk 的情况
 function buildCollectionOnlyItems(className: string, collection: Collection): any[] {
   return [
-    createBasicMenuItem(MENU_KEYS.OTHER_COLLECTIONS, 'Other collections', className),
     {
       ...createBasicMenuItem(MENU_KEYS.CURRENT_COLLECTIONS, 'Current collection', className),
       collections: [collection],
     },
+    createBasicMenuItem(MENU_KEYS.OTHER_COLLECTIONS, 'Other collections', className),
   ];
 }
 
@@ -244,7 +251,7 @@ function buildCollectionOnlyItems(className: string, collection: Collection): an
 function buildCurrentCollectionItems(
   className: string,
   collection: Collection,
-  relatedCollections: Collection[],
+  relatedFields: CollectionField[],
 ): any[] {
   const items: any[] = [];
 
@@ -254,8 +261,8 @@ function buildCurrentCollectionItems(
   }
 
   // 添加关联记录（如果有）
-  if (relatedCollections.length > 0) {
-    items.push(createAssociationRecordsMenuItem(className, collection.name, relatedCollections));
+  if (relatedFields.length > 0) {
+    items.push(createAssociationRecordsMenuItem(className, collection.name, relatedFields));
   }
 
   // 添加其他记录
@@ -274,16 +281,16 @@ function buildOtherCollectionItems(
 
   // 只为 FormModel 添加当前记录
   if (SHOW_CURRENT_MODELS.includes(className)) {
-    const targetCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
+    const targetCollection = collection.dataSource.getCollection(currentFlow.inputArgs!.collectionName!);
     if (targetCollection) {
       const customStepParams = {
         resourceSettings: {
           init: {
             dataSourceKey: collection.dataSource.key,
-            collectionName: '',
-            associationName: `${collection.name}.${currentFlow.runtimeArgs!.collectionName}`,
-            sourceId: '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
-            filterByTk: '{{ctx.shared.currentFlow.runtimeArgs.filterByTk}}',
+            collectionName: currentFlow.inputArgs!.collectionName,
+            associationName: currentFlow.inputArgs.associationName,
+            sourceId: '{{ctx.inputArgs.sourceId}}',
+            filterByTk: '{{ctx.inputArgs.filterByTk}}',
           },
         },
       };
@@ -292,17 +299,10 @@ function buildOtherCollectionItems(
   }
 
   // 添加关联记录
-  const sourceCollection = collection.dataSource.getCollection(currentFlow.runtimeArgs!.collectionName!);
+  const sourceCollection = collection.dataSource.getCollection(currentFlow.inputArgs!.collectionName!);
   if (sourceCollection) {
-    const relatedCollections = sourceCollection.getRelatedCollections();
-    items.push(
-      createAssociationRecordsMenuItem(
-        className,
-        currentFlow.runtimeArgs!.collectionName!,
-        relatedCollections,
-        '{{ctx.shared.currentFlow.runtimeArgs.sourceId}}',
-      ),
-    );
+    const relatedFields = sourceCollection.getRelationshipFields();
+    items.push(createAssociationRecordsMenuItem(className, currentFlow.inputArgs!.collectionName!, relatedFields));
   }
 
   // 添加其他记录
@@ -317,20 +317,20 @@ function buildDynamicMetaChildren(
   className: string,
   currentFlow: MenuBuilderFlowContext,
   collection: Collection,
-  relatedCollections: Collection[],
+  relatedFields: CollectionField[],
 ) {
   // 场景1：没有 filterByTk，显示集合选择
-  if (!currentFlow.runtimeArgs?.filterByTk) {
+  if (!currentFlow.inputArgs?.filterByTk) {
     return buildCollectionOnlyItems(className, collection);
   }
 
   // 判断是否使用当前集合
   const shouldUseCurrentCollection =
-    !currentFlow.runtimeArgs?.collectionName || currentFlow.runtimeArgs.collectionName === collection.name;
+    !currentFlow.inputArgs?.collectionName || currentFlow.inputArgs.collectionName === collection.name;
 
   // 场景2：当前集合上下文
   if (shouldUseCurrentCollection) {
-    return buildCurrentCollectionItems(className, collection, relatedCollections);
+    return buildCurrentCollectionItems(className, collection, relatedFields);
   }
 
   // 场景3：其他集合上下文
@@ -423,46 +423,94 @@ async function processDataBlockChildren(
         children: nestedChildren,
       });
     } else {
-      const menuItems = await Promise.all(
-        dataSources.map(async (dataSource) => ({
-          key: `${childKey}.${dataSource.key}`,
-          label: dataSource.displayName,
-          children: await Promise.all(
-            dataSource.collections
-              .filter((c) => {
-                return (
-                  !child.collections ||
-                  child.collections.find((col: any) => col.name === c.name && col.dataSource.key === dataSource.key)
-                );
-              })
-              .map(async (collection) => {
-                const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
-                  dataSourceKey: dataSource.key,
-                  collectionName: collection.name,
-                });
-                return {
-                  key: `${childKey}.${dataSource.key}.${collection.name}`,
-                  label: collection.title || collection.name,
-                  createModelOptions: {
-                    ..._.cloneDeep(defaultOptions),
-                    use:
-                      typeof defaultOptions?.use === 'string'
-                        ? defaultOptions.use
-                        : (defaultOptions?.use as any)?.name || childKey,
-                    stepParams: {
-                      ...createDataSourceStepParams(dataSource.key, collection.name),
-                      ...defaultOptions?.stepParams,
-                    },
-                  },
-                };
-              }),
-          ),
-        })),
-      );
+      let menuItems;
 
-      // 如果只有一个集合，扁平化结构
+      // 对于关联记录，构建 datasource -> field 层级
+      if (child.key === MENU_KEYS.ASSOCIATION_RECORDS && child.fields) {
+        // 按数据源分组关联字段
+        const fieldsByDataSource = new Map<string, CollectionField[]>();
+        for (const field of child.fields) {
+          const dataSourceKey = field.collection.dataSource.key;
+          if (!fieldsByDataSource.has(dataSourceKey)) {
+            fieldsByDataSource.set(dataSourceKey, []);
+          }
+          fieldsByDataSource.get(dataSourceKey)!.push(field);
+        }
+
+        menuItems = await Promise.all(
+          Array.from(fieldsByDataSource.entries()).map(async ([dataSourceKey, fields]) => {
+            const dataSource = dataSources.find((ds) => ds.key === dataSourceKey);
+            return {
+              key: `${childKey}.${dataSourceKey}`,
+              label: dataSource?.displayName || dataSourceKey,
+              children: await Promise.all(
+                fields.map(async (field) => {
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, field);
+                  return {
+                    key: `${childKey}.${dataSourceKey}.${field.name}`,
+                    label: field.uiSchema?.title || field.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use:
+                        typeof defaultOptions?.use === 'string'
+                          ? defaultOptions.use
+                          : (defaultOptions?.use as any)?.name || childKey,
+                    },
+                  };
+                }),
+              ),
+            };
+          }),
+        );
+      } else {
+        // 原有的逻辑处理其他类型的菜单项
+        let filteredDataSources = dataSources;
+        if (child.collections && child.collections.length > 0) {
+          const currentDataSource = child.collections[0].dataSource;
+          filteredDataSources = dataSources.filter((ds) => ds.key === currentDataSource.key);
+        }
+
+        menuItems = await Promise.all(
+          filteredDataSources.map(async (dataSource) => ({
+            key: `${childKey}.${dataSource.key}`,
+            label: dataSource.displayName,
+            children: await Promise.all(
+              dataSource.collections
+                .filter((c) => {
+                  return (
+                    !child.collections ||
+                    child.collections.find((col: any) => col.name === c.name && col.dataSource.key === dataSource.key)
+                  );
+                })
+                .map(async (collection) => {
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
+                    dataSourceKey: dataSource.key,
+                    collectionName: collection.name,
+                  });
+                  return {
+                    key: `${childKey}.${dataSource.key}.${collection.name}`,
+                    label: collection.title || collection.name,
+                    createModelOptions: {
+                      ..._.cloneDeep(defaultOptions),
+                      use:
+                        typeof defaultOptions?.use === 'string'
+                          ? defaultOptions.use
+                          : (defaultOptions?.use as any)?.name || childKey,
+                      stepParams: {
+                        ...createDataSourceStepParams(dataSource.key, collection.name),
+                        ...defaultOptions?.stepParams,
+                      },
+                    },
+                  };
+                }),
+            ),
+          })),
+        );
+      }
+
+      // 对于关联记录，即使只有一个选项也不要隐藏collection选择
       const totalCollections = menuItems.reduce((sum, item) => sum + item.children.length, 0);
-      if (totalCollections === 1) {
+      if (totalCollections === 1 && child.key !== MENU_KEYS.ASSOCIATION_RECORDS) {
         const singleItem = menuItems[0].children[0];
         result.push({
           key: childKey,
@@ -471,12 +519,22 @@ async function processDataBlockChildren(
           createModelOptions: singleItem.createModelOptions,
         });
       } else if (totalCollections > 0) {
-        result.push({
-          key: childKey,
-          label: child.title,
-          icon: child.icon,
-          children: menuItems,
-        });
+        // 如果只有一个数据源，直接显示collections，隐藏数据源层
+        if (menuItems.length === 1) {
+          result.push({
+            key: childKey,
+            label: child.title,
+            icon: child.icon,
+            children: menuItems[0].children,
+          });
+        } else {
+          result.push({
+            key: childKey,
+            label: child.title,
+            icon: child.icon,
+            children: menuItems,
+          });
+        }
       }
     }
   }
@@ -642,14 +700,20 @@ export function buildBlockItems(
 
   const result: MenuItem[] = [];
 
+  const sortFn = (Model1, Model2) => {
+    const meta1 = (Model1.ModelClass as any).meta;
+    const meta2 = (Model2.ModelClass as any).meta;
+    return (meta1?.sort || 500) - (meta2?.sort || 500);
+  };
+
   if (dataBlocks.length > 0) {
-    result.push(buildBlockGroup('data', dataBlocks, model));
+    result.push(buildBlockGroup('data', dataBlocks.sort(sortFn), model));
   }
   if (filterBlocks.length > 0) {
-    result.push(buildBlockGroup('filter', filterBlocks, model));
+    result.push(buildBlockGroup('filter', filterBlocks.sort(sortFn), model));
   }
   if (otherBlocks.length > 0) {
-    result.push(buildBlockGroup('other', otherBlocks, model));
+    result.push(buildBlockGroup('other', otherBlocks.sort(sortFn), model));
   }
 
   return result;
@@ -681,15 +745,22 @@ async function buildDataSourceBlockItems(
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
       const meta = hasCurrentFlowContext ? _.cloneDeep((ModelClass as any).meta) : (ModelClass as any).meta;
+      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
-      // 增强流程上下文
       if (hasCurrentFlowContext) {
-        const currentFlow = model.parent?.getSharedContext()?.currentFlow;
-        const collection: Collection = currentFlow?.shared?.currentBlockModel?.collection;
+        const currentFlow = model.parent?.context.currentFlow;
+        const collection: Collection = currentFlow?.blockModel?.collection;
 
         if (currentFlow && collection) {
-          const relatedCollections = collection?.getRelatedCollections() || [];
-          meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedCollections);
+          const relatedFields = collection?.getRelationshipFields() || [];
+          meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedFields);
+          meta.children.forEach(async (child) => {
+            const childDefault = child.defaultOptions;
+            child.defaultOptions = async (model, extra) => {
+              const options = await resolveDefaultOptions(childDefault, model, extra);
+              return _.merge(_.cloneDeep(defaultOptions), options);
+            };
+          });
         }
       }
 
@@ -702,32 +773,35 @@ async function buildDataSourceBlockItems(
         };
       }
 
-      // 简单区块处理
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+      const dataSourceMenuItems = dataSources.map((dataSource) => ({
+        key: `${className}.${dataSource.key}`,
+        label: dataSource.displayName,
+        children: dataSource.collections.map((collection) => ({
+          key: `${className}.${dataSource.key}.${collection.name}`,
+          label: collection.title || collection.name,
+          createModelOptions: {
+            ..._.cloneDeep(defaultOptions),
+            use: className,
+            stepParams: {
+              ..._.cloneDeep(defaultOptions?.stepParams),
+              ...createDataSourceStepParams(
+                dataSource.key,
+                collection.name,
+                defaultOptions?.stepParams?.resourceSettings?.init,
+              ),
+            },
+          },
+        })),
+      }));
+
+      // 如果只有一个数据源，直接显示collections，隐藏数据源层
+      const children = dataSourceMenuItems.length === 1 ? dataSourceMenuItems[0].children : dataSourceMenuItems;
+
       return {
         key: className,
         label: meta?.title || className,
         icon: meta?.icon,
-        children: dataSources.map((dataSource) => ({
-          key: `${className}.${dataSource.key}`,
-          label: dataSource.displayName,
-          children: dataSource.collections.map((collection) => ({
-            key: `${className}.${dataSource.key}.${collection.name}`,
-            label: collection.title || collection.name,
-            createModelOptions: {
-              ..._.cloneDeep(defaultOptions),
-              use: className,
-              stepParams: {
-                ..._.cloneDeep(defaultOptions?.stepParams),
-                ...createDataSourceStepParams(
-                  dataSource.key,
-                  collection.name,
-                  defaultOptions?.stepParams?.resourceSettings?.init,
-                ),
-              },
-            },
-          })),
-        })),
+        children,
       };
     }),
   );

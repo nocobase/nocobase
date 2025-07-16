@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { result } from 'lodash';
+import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
-import { FlowModel, ForkFlowModel } from './models';
+import { FlowI18n } from './flowI18n';
+import { FlowModel } from './models';
 import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -42,8 +43,8 @@ interface PropertyOptions {
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
-  private _cache: Record<string, any> = {};
-  private _delegates: FlowContext[] = [];
+  protected _cache: Record<string, any> = {};
+  protected _delegates: FlowContext[] = [];
   [key: string]: any;
 
   constructor() {
@@ -187,7 +188,7 @@ export class FlowContext {
   }
 
   // 只查找自身 _props
-  private _getOwnProperty(key: string): any {
+  protected _getOwnProperty(key: string): any {
     const options = this._props[key];
     if (!options) return undefined;
 
@@ -212,7 +213,7 @@ export class FlowContext {
   }
 
   // 只查找自身 _methods
-  private _getOwnMethod(key: string): any {
+  protected _getOwnMethod(key: string): any {
     const fn = this._methods[key];
     if (typeof fn === 'function') {
       return fn.bind(this);
@@ -286,8 +287,9 @@ export class FlowEngineContext extends FlowContext {
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
     });
+    const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
-      return this.engine.translate(keyOrTemplate, options);
+      return i18n.translate(keyOrTemplate, options);
     });
   }
 }
@@ -318,9 +320,37 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   constructor(
     public model: TModel,
     public flowKey: string,
+    protected mode: 'runtime' | 'settings' = 'runtime',
   ) {
     super();
     this.addDelegate(this.model.context);
+  }
+
+  protected _getOwnProperty(key: string): any {
+    if (this.mode === 'runtime') {
+      return super._getOwnProperty(key);
+    }
+
+    const options = this._props[key];
+    if (!options) return undefined;
+
+    // 静态值
+    if ('value' in options) {
+      return ContextPathProxy.create()[key];
+    }
+
+    // get 方法
+    if (options.get) {
+      if (options.cache === false) {
+        return ContextPathProxy.create()[key];
+      }
+      if (!(key in this._cache)) {
+        this._cache[key] = ContextPathProxy.create()[key];
+      }
+      return this._cache[key];
+    }
+
+    return undefined;
   }
 
   exit() {

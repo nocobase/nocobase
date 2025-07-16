@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import flat from 'flat';
 
 export const isString = (value: any): value is string => {
   return typeof value === 'string';
@@ -128,3 +129,31 @@ export function sortTree(tree: any[], sortBy: string | Function, childrenKey = '
     return node;
   });
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function isEmptyFilter(obj) {
+  if (!obj) return true;
+
+  if (('$and' in obj && _.isEmpty(obj.$and)) || ('$or' in obj && _.isEmpty(obj.$or))) {
+    return true;
+  }
+
+  return false;
+}
+
+export const removeNullCondition = (filter, customFlat = flat) => {
+  const items = customFlat(filter || {});
+  const values = {};
+  for (const key in items) {
+    const value = items[key];
+    if (value != null && !isEmpty(value)) {
+      values[key] = value;
+    }
+  }
+  return customFlat.unflatten(values);
+};

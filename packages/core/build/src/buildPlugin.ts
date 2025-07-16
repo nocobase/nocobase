@@ -557,8 +557,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                   parser: {
                     syntax: 'typescript',
                     tsx: true,
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },
@@ -581,8 +585,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 jsc: {
                   parser: {
                     syntax: 'typescript',
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },

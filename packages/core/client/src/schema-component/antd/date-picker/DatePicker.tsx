@@ -19,6 +19,7 @@ import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
 import { autorun } from '@formily/reactive';
+import { useFlowEngine } from '@nocobase/flow-engine';
 interface IDatePickerProps {
   utc?: boolean;
 }
@@ -170,7 +171,7 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
   const compile = useCompile();
-  const isFilterAction: any = !fieldSchema['x-filter-operator']; // 在筛选按钮中使用
+  const isFilterAction: any = !fieldSchema?.['x-filter-operator']; // 在筛选按钮中使用
   const presets = [
     { label: t('Today'), value: rangesValue.today },
     { label: t('Last week'), value: rangesValue.lastWeek },
@@ -216,39 +217,43 @@ DatePicker.RangePicker = function RangePicker(props: any) {
           defaultValue={targetPicker}
           options={compile([
             {
-              label: '{{t("Date")}}',
+              label: t('Date'),
               value: 'date',
             },
 
             {
-              label: '{{t("Month")}}',
+              label: t('Month'),
               value: 'month',
             },
             {
-              label: '{{t("Quarter")}}',
+              label: t('Quarter'),
               value: 'quarter',
             },
             {
-              label: '{{t("Year")}}',
+              label: t('Year'),
               value: 'year',
             },
           ])}
           onChange={(value) => {
             const format = getPickerFormat(value);
             const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
-            field.setComponentProps({
+            field?.setComponentProps({
               picker: value,
               format,
             });
             newProps.picker = value;
             newProps.format = dateTimeFormat;
             setStateProps(newProps);
-            fieldSchema['x-component-props'] = {
-              ...props,
-              picker: value,
-              format: dateTimeFormat,
-            };
-            field.value = undefined;
+            if (fieldSchema) {
+              fieldSchema['x-component-props'] = {
+                ...props,
+                picker: value,
+                format: dateTimeFormat,
+              };
+            }
+            if (field) {
+              field.value = undefined;
+            }
           }}
         />
         <InternalRangePicker {...stateProps} value={value} />
@@ -263,11 +268,12 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
-  const compile = useCompile();
   const fieldSchema = useFieldSchema();
   const initPicker = value ? inferPickerType(value, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const targetDateFormat = getPickerFormat(initPicker) || format;
+  const { t } = useTranslation();
+
   const newProps = {
     utc,
     inputReadOnly: isMobileMedia,
@@ -294,42 +300,46 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
         style={{ width: '100px' }}
         popupMatchSelectWidth={false}
         value={targetPicker}
-        options={compile([
+        options={[
           {
-            label: '{{t("Date")}}',
+            label: t('Date'),
             value: 'date',
           },
 
           {
-            label: '{{t("Month")}}',
+            label: t('Month'),
             value: 'month',
           },
           {
-            label: '{{t("Quarter")}}',
+            label: t('Quarter'),
             value: 'quarter',
           },
           {
-            label: '{{t("Year")}}',
+            label: t('Year'),
             value: 'year',
           },
-        ])}
+        ]}
         onChange={(value) => {
           setTargetPicker(value);
           const format = getPickerFormat(value);
           const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
-          field.setComponentProps({
+          field?.setComponentProps({
             picker: value,
             format,
           });
           newProps.picker = value;
           newProps.format = dateTimeFormat;
           setStateProps(newProps);
-          fieldSchema['x-component-props'] = {
-            ...props,
-            picker: value,
-            format: dateTimeFormat,
-          };
-          field.value = null;
+          if (fieldSchema?.['x-component-props']) {
+            fieldSchema['x-component-props'] = {
+              ...props,
+              picker: value,
+              format: dateTimeFormat,
+            };
+          }
+          if (field) {
+            field.value = null;
+          }
         }}
       />
       <InternalDatePicker {...stateProps} value={value} />

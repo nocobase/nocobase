@@ -28,14 +28,18 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
-        fork.setSharedContext({ index, currentRecord: record });
+        fork.context.defineProperty('record', {
+          get: () => record,
+        });
+        fork.context.defineProperty('recordIndex', {
+          get: () => index,
+        });
         return (
           <FlowModelRenderer
             showFlowSettings={{ showBorder: false }}
             key={fork.uid}
             model={fork}
             fallback={<Skeleton.Button size="small" />}
-            sharedContext={{ currentRecord: record }}
           />
         );
       })}
@@ -45,7 +49,17 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton model={model} items={buildActionItems(model, 'RecordActionModel')} subModelKey="actions">
+    <AddActionButton
+      model={model}
+      items={buildActionItems(model, 'RecordActionModel')}
+      subModelKey="actions"
+      onModelCreated={async (actionModel) => {
+        actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
+      }}
+      // onSubModelAdded={async (model) => {
+      //   await model.applyAutoFlows();
+      // }}
+    >
       <PlusOutlined />
     </AddActionButton>
   );

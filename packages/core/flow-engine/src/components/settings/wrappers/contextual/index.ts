@@ -13,4 +13,3 @@ export * from './StepSettingsDialog';
 export * from './StepSettingsDrawer';
 export * from './StepSettings';
 export * from './StepRequiredSettingsDialog';
-export * from './StepSettingContext';

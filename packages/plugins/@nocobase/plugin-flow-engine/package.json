@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-flow-engine",
+  "displayName": "Flow engine",
+  "displayName.zh-CN": "前端流引擎",
+  "description": "",
+  "description.zh-CN": "",
+  "version": "1.9.0-alpha.1",
+  "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "antd": "5.x",
+    "cronstrue": "^2.11.0",
+    "koa-send": "^5.0.1",
+    "koa-static": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/plugin-localization": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}

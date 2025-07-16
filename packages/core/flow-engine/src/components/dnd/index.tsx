@@ -46,7 +46,7 @@ export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({
         position: 'relative',
         opacity: isActiveDroppable ? 0.3 : 1,
         outline: isActiveDroppable ? '2px solid var(--colorBorderSettingsHover)' : 'none',
-        borderRadius: isActiveDroppable ? model.ctx.globals.themeToken.borderRadiusLG : 'none',
+        borderRadius: isActiveDroppable ? model.context.themeToken.borderRadiusLG : 'none',
       }}
     >
       {children}
@@ -106,7 +106,7 @@ export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restP
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
           >
-            拖拽中
+            {flowEngine.translate('Dragging')}
           </span>
         )}
       </DragOverlay>

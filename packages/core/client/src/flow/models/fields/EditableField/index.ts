@@ -22,7 +22,7 @@ export * from './PercentEditableFieldModel';
 export * from './RadioGroupEditableFieldModel';
 export * from './RichTextEditableFieldModel';
 export * from './SelectEditableFieldModel';
-export * from './SingleTextEditableFieldModel';
+export * from './InputEditableFieldModel';
 export * from './TextareaEditableFieldModel';
 export * from './TimeEditableFieldModel';
 export * from './MarkdownEditableFieldModel';

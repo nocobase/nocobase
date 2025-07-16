@@ -21,7 +21,6 @@ import type {
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
-  FlowContext,
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
@@ -29,8 +28,14 @@ import type {
   StepDefinition,
   StepParams,
 } from '../types';
-import { ExtendedFlowDefinition, FlowRuntimeArgs, IModelComponentProps, ReadonlyModelProps } from '../types';
-import { FlowExitException, isInheritedFrom, mergeFlowDefinitions, resolveDefaultParams } from '../utils';
+import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps } from '../types';
+import {
+  FlowExitException,
+  isInheritedFrom,
+  mergeFlowDefinitions,
+  resolveDefaultParams,
+  setupRuntimeContextSteps,
+} from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -63,16 +68,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
 
   /**
-   * model 树的共享运行上下文
-   */
-  protected _sharedContext: Record<string, any> = {};
-
-  /**
    * 上一次 applyAutoFlows 的执行参数
    */
   private _lastAutoRunParams: any[] | null = null;
   private observerDispose: () => void;
-  private _flowContext: FlowModelContext;
+  #flowContext: FlowModelContext;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -89,7 +89,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     this.uid = options.uid;
-    this.props = {};
+    this.props = {
+      ...options.props,
+    };
     this.stepParams = options.stepParams || {};
     this.subModels = {};
     this.sortIndex = options.sortIndex || 0;
@@ -110,19 +112,27 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // });
     this.createSubModels(options.subModels);
 
-    this.observerDispose = observe(this.stepParams, () => {
+    this.observerDispose = observe(this.stepParams, (changed) => {
+      // if doesn't change, skip
+      if (changed.type === 'set' && _.isEqual(changed.value, changed.oldValue)) {
+        return;
+      }
+
       if (this.flowEngine) {
         this.invalidateAutoFlowCache();
       }
       this._rerunLastAutoRun();
+      this.forks.forEach((fork) => {
+        fork.rerender();
+      });
     });
   }
 
   get context() {
-    if (!this._flowContext) {
-      this._flowContext = new FlowModelContext(this);
+    if (!this.#flowContext) {
+      this.#flowContext = new FlowModelContext(this);
     }
-    return this._flowContext;
+    return this.#flowContext;
   }
 
   on(eventName: string, listener: (...args: any[]) => void) {
@@ -135,8 +145,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this._options.async || false;
   }
 
+  get use() {
+    return this._options.use;
+  }
+
   get subKey() {
     return this._options.subKey;
+  }
+
+  get subType() {
+    return this._options.subType;
   }
 
   get reactView() {
@@ -422,7 +440,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.stepParams;
   }
 
-  async applyFlow(flowKey: string, runtimeArgs?: FlowRuntimeArgs): Promise<any> {
+  async applyFlow(flowKey: string, inputArgs?: Record<string, any>, runId?: string): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
@@ -443,7 +461,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console[level.toLowerCase()](logMessage, logMeta);
     };
 
-    const globalContexts = currentFlowEngine.getContext();
     const flowContext = new FlowRuntimeContext(this, flowKey);
 
     flowContext.defineProperty('logger', {
@@ -457,18 +474,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     flowContext.defineProperty('reactView', {
       value: this.reactView,
     });
-    flowContext.defineProperty('shared', {
-      value: this.getSharedContext(),
+    flowContext.defineProperty('inputArgs', {
+      value: inputArgs,
     });
-    flowContext.defineProperty('globals', {
-      value: globalContexts,
-    });
-    flowContext.defineProperty('runtimeArgs', {
-      value: runtimeArgs,
+    flowContext.defineProperty('runId', {
+      value: runId || `run-${Date.now()}`,
     });
 
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
+
+    // 使用 setupRuntimeContextSteps 来设置 steps 属性
+    setupRuntimeContextSteps(flowContext, flow, this, flowKey);
+    const steps = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
     for (const stepKey in flow.steps) {
       if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
@@ -519,6 +537,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
           // Store step result
           stepResults[stepKey] = lastResult;
+          // update the context
+          steps[stepKey].result = stepResults[stepKey];
         } catch (error) {
           // 检查是否是通过 ctx.exit() 正常退出
           if (error instanceof FlowExitException) {
@@ -534,7 +554,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return Promise.resolve(stepResults);
   }
 
-  dispatchEvent(eventName: string, runtimeArgs?: FlowRuntimeArgs): void {
+  dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -544,6 +564,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 获取所有流程
     const constructor = this.constructor as typeof FlowModel;
     const allFlows = constructor.getFlows();
+    const runId = `${this.uid}-${eventName}-${Date.now()}`;
 
     allFlows.forEach((flow) => {
       if (flow.on) {
@@ -557,7 +578,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           return; // 只处理匹配的事件
         }
         console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, runtimeArgs).catch((error) => {
+        this.applyFlow(flow.key, inputArgs, runId).catch((error) => {
           console.error(
             `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
             error,
@@ -628,19 +649,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   /**
    * 执行所有自动应用流程
-   * @param {FlowRuntimeArgs} [runtimeArgs] 可选的运行时参数
+   * @param {Record<string, any>} [inputArgs] 可选的运行时参数
    * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
-  async applyAutoFlows(runtimeArgs?: FlowRuntimeArgs, useCache?: boolean): Promise<any[]>;
+  async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: any[]): Promise<any[]> {
-    const [runtimeArgs, useCache = true] = args;
+    const [inputArgs, useCache = true] = args;
     // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
 
-    if (!_.isEqual(runtimeArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
+    if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
 
@@ -670,9 +691,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 执行 autoFlows
     const executeAutoFlows = async (): Promise<any[]> => {
       const results: any[] = [];
+      const runId = `${this.uid}-autoFlow-${Date.now()}`;
       for (const flow of autoApplyFlows) {
         try {
-          const result = await this.applyFlow(flow.key, runtimeArgs);
+          const result = await this.applyFlow(flow.key, inputArgs, runId);
           results.push(result);
         } catch (error) {
           console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
@@ -738,15 +760,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
-  addSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
-    let model: FlowModel;
+  addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
+    let model: T;
     if (options instanceof FlowModel) {
       if (options.parent && options.parent !== this) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel({ ...options, subKey, subType: 'array' });
+      model = this.flowEngine.createModel<T>({ ...options, subKey, subType: 'array' });
     }
     model.setParent(this);
     const subModels = this.subModels as {
@@ -790,10 +812,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: R[] = [];
 
-    _.castArray(model).forEach((item, index) => {
-      const result = (callback as (model: any, index: number) => R)(item, index);
-      results.push(result);
-    });
+    _.castArray(model)
+      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
+      .forEach((item, index) => {
+        const result = (callback as (model: any, index: number) => R)(item, index);
+        results.push(result);
+      });
 
     return results;
   }
@@ -821,13 +845,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
     subKey: K,
-    runtimeArgs?: Record<string, any>,
+    inputArgs?: Record<string, any>,
     shared?: Record<string, any>,
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        sub.setSharedContext(shared);
-        await sub.applyAutoFlows(runtimeArgs, false);
+        await sub.applyAutoFlows(inputArgs, false);
       }),
     );
   }
@@ -945,29 +968,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  get ctx() {
-    return {
-      globals: this.flowEngine.getContext(),
-      shared: this.getSharedContext(),
-    };
-  }
-
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);
-  }
-
-  public setSharedContext(ctx: Record<string, any>) {
-    this._sharedContext = { ...this._sharedContext, ...ctx };
-  }
-
-  public getSharedContext() {
-    if (this.async || !this.parent) {
-      return this._sharedContext;
-    }
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this._sharedContext, // 当前实例的 context 优先级最高
-    };
   }
 
   // TODO: 不完整，需要考虑 sub-model 的情况
@@ -976,6 +978,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       uid: this.uid,
       ..._.omit(this._options, ['props', 'flowEngine']),
       // props: this.props,
+      props: { ...this._options.props },
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
     };
@@ -994,6 +997,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
     }
     return data;
+  }
+}
+
+export class ErrorFlowModel extends FlowModel {
+  public errorMessage: string;
+
+  setErrorMessage(msg: string) {
+    this.errorMessage = msg;
+  }
+
+  public render() {
+    throw new Error(this.errorMessage);
   }
 }
 

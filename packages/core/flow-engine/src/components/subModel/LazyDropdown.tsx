@@ -389,9 +389,26 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
           // 过滤原始 children
           const filteredChildren = currentSearchValue
-            ? children.filter(
-                (child) => child.label?.toString().toLowerCase().includes(currentSearchValue.toLowerCase()),
-              )
+            ? children.filter((child) => {
+                const searchText = currentSearchValue.toLowerCase();
+
+                // 检查 label
+                const labelText = child.label;
+                let labelMatch = false;
+                if (labelText) {
+                  try {
+                    const labelStr = typeof labelText === 'string' ? labelText : String(labelText);
+                    labelMatch = labelStr.toLowerCase().includes(searchText);
+                  } catch (e) {
+                    // 如果转换失败，忽略这个匹配
+                  }
+                }
+
+                // 检查 key（通常是字段名）
+                const keyMatch = child.key && String(child.key).toLowerCase().includes(searchText);
+
+                return labelMatch || keyMatch;
+              })
             : children;
 
           // 重新解析过滤后的 children

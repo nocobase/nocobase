@@ -7,9 +7,41 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { reactive } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static readonly supportedFieldInterfaces = '*';
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
+
+  @reactive
+  public render() {
+    const value = this.getValue();
+    const { prefix, suffix } = this.props;
+
+    return (
+      <span>
+        {prefix}
+        {this.translate(value)}
+        {suffix}
+      </span>
+    );
+  }
+}
+
+export class InputReadPrettyFieldModel2 extends ReadPrettyFieldModel {
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
+
+  @reactive
+  public render() {
+    const value = this.getValue();
+    const { prefix, suffix } = this.props;
+
+    return (
+      <span>
+        {prefix}
+        {this.translate(value)}2{suffix}
+      </span>
+    );
+  }
 }

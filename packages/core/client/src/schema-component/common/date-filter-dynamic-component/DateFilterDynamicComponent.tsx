@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { InputNumber, Select, Space, Divider, DatePickerProps, theme } from 'antd';
 import dayjs from 'dayjs';
 import { css } from '@emotion/css';
@@ -15,28 +15,28 @@ import { useCompile } from '../../../schema-component';
 import { useTranslation } from 'react-i18next';
 import { DatePicker } from '../../antd/date-picker';
 
-const options = [
+const getOptions = (t) => [
   {
     value: 'exact',
-    label: '{{t("Exact day")}}',
+    label: t('Exact day'),
   },
-  { value: 'past', label: '{{t("Past")}}' },
-  { value: 'next', label: '{{t("Next")}}' },
-  { value: 'today', label: '{{t("Today")}}' },
-  { value: 'yesterday', label: '{{t("Yesterday")}}' },
-  { value: 'tomorrow', label: '{{t("Tomorrow")}}' },
-  { value: 'thisWeek', label: '{{t("This Week")}}' },
-  { value: 'lastWeek', label: '{{t("Last Week")}}' },
-  { value: 'nextWeek', label: '{{t("Next Week")}}' },
-  { value: 'thisMonth', label: '{{t("This Month")}}' },
-  { value: 'lastMonth', label: '{{t("Last Month")}}' },
-  { value: 'nextMonth', label: '{{t("Next Month")}}' },
-  { value: 'thisQuarter', label: '{{t("This Quarter")}}' },
-  { value: 'lastQuarter', label: '{{t("Last Quarter")}}' },
-  { value: 'nextQuarter', label: '{{t("Next Quarter")}}' },
-  { value: 'thisYear', label: '{{t("This Year")}}' },
-  { value: 'lastYear', label: '{{t("Last Year")}}' },
-  { value: 'nextYear', label: '{{t("Next Year")}}' },
+  { value: 'past', label: t('Past') },
+  { value: 'next', label: t('Next') },
+  { value: 'today', label: t('Today') },
+  { value: 'yesterday', label: t('Yesterday') },
+  { value: 'tomorrow', label: t('Tomorrow') },
+  { value: 'thisWeek', label: t('This Week') },
+  { value: 'lastWeek', label: t('Last Week') },
+  { value: 'nextWeek', label: t('Next Week') },
+  { value: 'thisMonth', label: t('This Month') },
+  { value: 'lastMonth', label: t('Last Month') },
+  { value: 'nextMonth', label: t('Next Month') },
+  { value: 'thisQuarter', label: t('This Quarter') },
+  { value: 'lastQuarter', label: t('Last Quarter') },
+  { value: 'nextQuarter', label: t('Next Quarter') },
+  { value: 'thisYear', label: t('This Year') },
+  { value: 'lastYear', label: t('Last Year') },
+  { value: 'nextYear', label: t('Next Year') },
 ];
 
 type SmartDatePickerProps = {
@@ -63,6 +63,7 @@ export const DateFilterDynamicComponent = (props) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
+  const options = useMemo(() => getOptions(t), [t]);
   const handleSelect = (val) => {
     setOpen(false);
     if (val === 'exact') {
@@ -115,7 +116,7 @@ export const DateFilterDynamicComponent = (props) => {
   return (
     <Space.Compact style={{ ...props.style, width: '100%' }}>
       <Select
-        options={compile(options)}
+        options={options}
         open={open}
         onDropdownVisibleChange={setOpen}
         {...props}
@@ -144,7 +145,7 @@ export const DateFilterDynamicComponent = (props) => {
         <Select
           key="unit"
           value={value?.unit}
-          style={{ maxWidth: 140 }}
+          style={{ minWidth: 130, maxWidth: 140 }}
           onChange={(val) => {
             const obj = {
               ...value,

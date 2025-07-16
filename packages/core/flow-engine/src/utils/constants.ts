@@ -48,7 +48,7 @@ export const BLOCK_GROUP_CONFIGS: Record<string, BlockBuilderConfig> = {
 };
 
 // 流程上下文条件
-export const SHOW_CURRENT_MODELS = ['FormModel', 'DetailsModel'];
+export const SHOW_CURRENT_MODELS = ['EditFormModel', 'DetailsModel'];
 
 // 菜单键值常量
 export const MENU_KEYS = {

@@ -38,10 +38,10 @@ export const NanoIDInput = Object.assign(
       }
 
       useEffect(() => {
-        if (!field.initialValue && customAlphabet && !isInFilterFormBlock) {
-          field.setInitialValue(Alphabet(customAlphabet, size)());
+        if (!field?.initialValue && customAlphabet && !isInFilterFormBlock) {
+          field?.setInitialValue(Alphabet(customAlphabet, size)());
         }
-        form.setFieldState(field.props.name, (state) => {
+        form?.setFieldState(field?.props?.name, (state) => {
           state.validator = isValidNanoid;
         });
       }, [isInFilterFormBlock]);

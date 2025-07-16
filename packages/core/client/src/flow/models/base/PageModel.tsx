@@ -73,7 +73,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
   render() {
     return (
       <>
-        {this.props.title && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
+        {this.props.displayTitle && <PageHeader title={this.props.title} style={this.props.headerStyle} />}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>
     );
@@ -85,36 +85,52 @@ PageModel.registerFlow({
   title: escapeT('Page settings'),
   auto: true,
   steps: {
-    settings: {
-      title: escapeT('Edit page'),
+    general: {
+      title: escapeT('General'),
       uiSchema: {
         title: {
           type: 'string',
-          title: escapeT('Page Title'),
+          title: escapeT('Page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-component-props': {
-            placeholder: escapeT('Enter page title'),
+          'x-reactions': {
+            dependencies: ['displayTitle'],
+            fulfill: {
+              state: {
+                visible: '{{$deps[0]}}',
+              },
+            },
           },
         },
-        enableTabs: {
+        displayTitle: {
           type: 'boolean',
-          title: escapeT('Enable tabs'),
+          title: escapeT('Display page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
+        // enableTabs: {
+        //   type: 'boolean',
+        //   title: escapeT('Enable tabs'),
+        //   'x-decorator': 'FormItem',
+        //   'x-component': 'Switch',
+        // },
       },
       defaultParams(ctx) {
         return {
-          // title: 'Page title',
-          enableTabs: !!ctx.shared.currentDrawer,
+          displayTitle: true,
+          enableTabs: false,
         };
       },
       async handler(ctx, params) {
-        ctx.model.setProps('title', ctx.t(params.title));
+        ctx.model.setProps('displayTitle', params.displayTitle);
+        if (!ctx.model.context.closable) {
+          ctx.model.setProps('title', ctx.t(params.title || ctx.model.context.currentFlow.currentRoute?.title));
+        } else {
+          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+        }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.shared.currentDrawer) {
+        if (ctx.model.context.closable) {
           ctx.model.setProps('headerStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,
           });
@@ -137,3 +153,6 @@ PageModel.registerFlow({
     },
   },
 });
+
+export class MainPageModel extends PageModel {}
+export class SubPageModel extends PageModel {}

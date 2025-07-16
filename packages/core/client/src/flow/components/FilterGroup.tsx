@@ -10,7 +10,7 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
-import { CollectionField } from '@nocobase/flow-engine';
+import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 import { Cascader, Input, Select, Space, theme } from 'antd';
 import _ from 'lodash';
 import React, { FC, useContext } from 'react';
@@ -105,7 +105,7 @@ function findFieldInOptions(options, fieldNames) {
   }, options);
 }
 
-const field2option = (field: CollectionField, depth, nonfilterable, dataSourceManager) => {
+const field2option = (field: CollectionField, depth, nonfilterable, dataSourceManager, t) => {
   if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
     return;
   }
@@ -124,12 +124,18 @@ const field2option = (field: CollectionField, depth, nonfilterable, dataSourceMa
     name: field.name,
     type: field.type,
     target: field.target,
-    title: field.title,
+    title: t(field.title),
     schema: field?.uiSchema,
-    operators:
+    operators: (
       operators?.filter?.((operator) => {
         return !operator?.visible || operator.visible(field);
-      }) || [],
+      }) || []
+    ).map((operator) => {
+      return {
+        ...operator,
+        label: t(operator.label),
+      };
+    }),
   };
   if (field.target && depth > 2) {
     return;
@@ -141,18 +147,21 @@ const field2option = (field: CollectionField, depth, nonfilterable, dataSourceMa
     option['children'] = children;
   }
   if (nested) {
-    const targetFields = field.getFields();
-    const options = getOptions(targetFields, depth + 1, nonfilterable, dataSourceManager).filter(Boolean);
+    const targetFields = field.getFields().filter((f) => {
+      // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+      return f.target !== 'attachments' && f.interface !== 'formula';
+    });
+    const options = getOptions(targetFields, depth + 1, nonfilterable, dataSourceManager, t).filter(Boolean);
     option['children'] = option['children'] || [];
     option['children'].push(...options);
   }
   return option;
 };
 
-const getOptions = (fields, depth, nonfilterable, dataSourceManager) => {
+const getOptions = (fields, depth, nonfilterable, dataSourceManager, t) => {
   const options = [];
   fields.forEach((field) => {
-    const option = field2option(field, depth, nonfilterable, dataSourceManager);
+    const option = field2option(field, depth, nonfilterable, dataSourceManager, t);
     if (option) {
       options.push(option);
     }
@@ -198,10 +207,17 @@ const FilterItem: FC<{
         return;
       }
 
+      const filed = findFieldInOptions(props.options, value);
+      const defaultOperator = (filed?.operators || [])[0];
+
       const newFieldPath = value.join('.');
 
       delete props.value[fieldNames[0]];
-      _.set(props.value, newFieldPath, {});
+      _.set(
+        props.value,
+        newFieldPath,
+        defaultOperator ? { [defaultOperator.value]: defaultOperator.noValue ? true : undefined } : {},
+      );
 
       props.onChange?.(props.value);
     };
@@ -221,7 +237,13 @@ const FilterItem: FC<{
       const fieldPath = fieldNames.join('.');
       const operatorObject = _.get(props.value, fieldPath);
       const prevOperator = Object.keys(operatorObject || {})[0];
-      _.set(props.value, `${fieldPath}.${value}`, _.get(props.value, `${fieldPath}.${prevOperator}`));
+      const operatorOption = operators.find((op) => op.value === value) || {};
+
+      if (operatorOption.noValue) {
+        _.set(props.value, `${fieldPath}.${value}`, true);
+      } else {
+        _.set(props.value, `${fieldPath}.${value}`, undefined);
+      }
 
       if (prevOperator) {
         delete operatorObject[prevOperator];
@@ -274,9 +296,11 @@ const FilterItem: FC<{
           />
           {!operatorOption.noValue ? (
             <FieldComponent
+              style={{ minWidth: 150 }}
               component={component}
               value={fieldValue}
               onChange={onChangeFieldValue}
+              options={filed?.schema?.enum}
               {...componentProps}
             />
           ) : null}
@@ -295,7 +319,7 @@ const FilterItem: FC<{
 export const FilterGroup: FC<{
   value: any;
   fields: CollectionField[];
-  ctx: any;
+  model: FlowModel;
   ignoreFieldsNames?: string[];
   showBorder?: boolean;
   onRemove?: () => void;
@@ -303,12 +327,19 @@ export const FilterGroup: FC<{
 }> = observer(
   (props) => {
     const { token } = theme.useToken();
-    const { t } = useTranslation();
+    const t = props.model.translate;
     const logic = Object.keys(props.value).includes('$or') ? '$or' : '$and';
     const items = props.value[logic] || [];
-    const options = getOptions(props.fields, 1, props.ignoreFieldsNames, props.ctx.globals.dataSourceManager).filter(
-      Boolean,
-    );
+    const options = getOptions(
+      props.fields.filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments' && field.interface !== 'formula';
+      }),
+      1,
+      props.ignoreFieldsNames,
+      props.model.context.dataSourceManager,
+      t,
+    ).filter(Boolean);
     const style: React.CSSProperties = props.showBorder
       ? {
           position: 'relative',
@@ -344,7 +375,7 @@ export const FilterGroup: FC<{
     };
 
     return (
-      <AppContext.Provider value={props.ctx.globals.app}>
+      <AppContext.Provider value={props.model.context.app}>
         <div style={style}>
           {props.showBorder && (
             <a role="button" aria-label="icon-close">
@@ -385,7 +416,7 @@ export const FilterGroup: FC<{
                   showBorder
                   fields={props.fields}
                   ignoreFieldsNames={props.ignoreFieldsNames}
-                  ctx={props.ctx}
+                  model={props.model}
                   onRemove={() => {
                     items.splice(index, 1);
                   }}

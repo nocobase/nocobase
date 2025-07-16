@@ -23,13 +23,14 @@ export class FlowResource<TData = any> {
     return this._data.value;
   }
 
-  getListDataWithRowKey(): TDataItemWithKey[] {
+  hasData(): boolean {
     const data = this.getData();
-    if (!Array.isArray(data)) return [];
-    return data.map((item, index) => ({
-      ...item,
-      _rowKey: `${item.id}_${index}`,
-    }));
+    if (Array.isArray(data)) {
+      return data.length > 0;
+    } else if (data && typeof data === 'object') {
+      return Object.keys(data).length > 0;
+    }
+    return false;
   }
 
   setData(value: TData) {

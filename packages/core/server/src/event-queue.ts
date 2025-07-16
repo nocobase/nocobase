@@ -13,6 +13,11 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import Application from './application';
+import { sleep } from '@nocobase/utils';
+
+export const QUEUE_DEFAULT_INTERVAL = 250;
+export const QUEUE_DEFAULT_CONCURRENCY = 1;
+export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
 export type QueueCallbackOptions = {
   id?: string;
@@ -23,6 +28,9 @@ export type QueueCallbackOptions = {
 export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void> | void;
 
 export type QueueEventOptions = {
+  /**
+   * @experimental
+   */
   interval?: number;
   concurrency?: number;
   idle(): boolean;
@@ -49,10 +57,6 @@ export interface EventQueueOptions {
   channelPrefix?: string;
 }
 
-export const QUEUE_DEFAULT_INTERVAL = 1_000;
-export const QUEUE_DEFAULT_CONCURRENCY = 1;
-export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
-
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
 
@@ -60,7 +64,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   private reading: Map<string, Promise<void>> = new Map();
 
-  private events: Map<string, QueueEventOptions> = new Map();
+  protected events: Map<string, QueueEventOptions> = new Map();
 
   protected queues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
 
@@ -74,7 +78,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return null;
   }
 
-  get storagePath() {
+  private get storagePath() {
     return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
   }
 
@@ -93,6 +97,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
     if (!event.idle()) {
       console.debug(`memory queue (${channel}) is not idle, skipping...`);
+      // setTimeout(() => {
+      //   this.emitter.emit(channel, channel);
+      // }, event.interval || QUEUE_DEFAULT_INTERVAL);
       return;
     }
     const reading = this.read(channel);
@@ -108,7 +115,11 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return this.connected;
   }
 
-  private async loadFromStorage() {
+  setConnected(connected: boolean) {
+    this.connected = connected;
+  }
+
+  async loadFromStorage() {
     let queues = {};
     let exists = false;
     try {
@@ -157,16 +168,16 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     this.connected = true;
 
     setImmediate(() => {
-      // for (const channel of this.events.keys()) {
-      //   this.consume(channel);
-      // }
-      for (const channel of this.queues.keys()) {
-        const queue = this.queues.get(channel);
-        if (!queue?.length) {
-          continue;
-        }
-        this.emitter.emit(channel, channel);
+      for (const channel of this.events.keys()) {
+        this.consume(channel);
       }
+      // for (const channel of this.queues.keys()) {
+      //   const queue = this.queues.get(channel);
+      //   if (!queue?.length) {
+      //     continue;
+      //   }
+      //   this.emitter.emit(channel, channel);
+      // }
     });
   }
 
@@ -193,16 +204,19 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
     this.emitter.on(channel, this.listen);
 
-    // if (this.connected) {
-    //   this.consume(channel);
-    // }
+    if (this.connected) {
+      this.consume(channel);
+    }
   }
+
   unsubscribe(channel: string) {
     if (!this.events.has(channel)) {
       return;
     }
     this.events.delete(channel);
+    this.emitter.off(channel, this.listen);
   }
+
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
     const event = this.events.get(channel);
     if (!event) {
@@ -212,13 +226,32 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    queue.push({ id: randomUUID(), content, options });
+    const message = { id: randomUUID(), content, options };
+    queue.push(message);
     console.debug(`memory queue (${channel}) published message`, content);
 
     setImmediate(() => {
       this.emitter.emit(channel, channel);
     });
   }
+
+  async consume(channel: string, once = false) {
+    while (this.connected && this.events.get(channel)) {
+      const event = this.events.get(channel);
+      const interval = event.interval || QUEUE_DEFAULT_INTERVAL;
+
+      const queue = this.queues.get(channel);
+      if (event.idle() && queue?.length) {
+        await this.listen(channel);
+      }
+
+      if (once) {
+        break;
+      }
+      await sleep(interval);
+    }
+  }
+
   async read(channel: string) {
     const event = this.events.get(channel);
     if (!event) {
@@ -227,7 +260,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
     const queue = this.queues.get(channel);
 
-    while (queue?.length) {
+    if (queue?.length) {
       const messages = queue.slice(0, event.concurrency || QUEUE_DEFAULT_CONCURRENCY);
       console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
       queue.splice(0, messages.length);
@@ -237,7 +270,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     this.reading.delete(channel);
   }
 
-  async process(channel, { id, message }) {
+  async process(channel: string, { id, message }) {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
     try {
@@ -277,15 +310,13 @@ export class EventQueue {
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    this.events = new Map();
-
     this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
 
     app.on('afterStart', async () => {
       await this.connect();
     });
     app.on('beforeStop', async () => {
-      app.logger.info('[queue] gracefully shuting down...');
+      app.logger.info('[queue] gracefully shutting down...');
       await this.close();
     });
   }
@@ -350,7 +381,11 @@ export class EventQueue {
     }
     const c = this.getFullChannel(channel);
     this.app.logger.debug('event queue publishing:', { channel: c, message });
-    await this.adapter.publish(c, message, { timeout: QUEUE_DEFAULT_ACK_TIMEOUT, ...options, timestamp: Date.now() });
+    await this.adapter.publish(c, message, {
+      timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
+      ...options,
+      timestamp: Date.now(),
+    });
   }
 }
 

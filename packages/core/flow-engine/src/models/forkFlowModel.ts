@@ -63,10 +63,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
    */
   private localProperties: Record<string, any> = {};
 
-  /** 用于共享上下文的对象，存储跨 fork 的共享数据 */
-  // private _sharedContext: Record<string, any> = {};
   // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
-  // private _flowContext: FlowModelContext;
+  #flowContext: FlowModelContext;
 
   constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
     void this.localProperties; // 避免 IDE 提示 unused
@@ -163,31 +161,10 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   get context() {
-    if (!this['_flowContext']) {
-      this['_flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
+    if (!this['#flowContext']) {
+      this['#flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
     }
-    return this['_flowContext'] as unknown as FlowModelContext;
-  }
-
-  public setSharedContext(ctx: Record<string, any>) {
-    this['_sharedContext'] = { ...this['_sharedContext'], ...ctx };
-  }
-
-  public getSharedContext() {
-    if (this.async || !this.parent) {
-      return this['_sharedContext'] || {};
-    }
-    return {
-      ...this.parent?.getSharedContext(),
-      ...this['_sharedContext'], // 当前实例的 context 优先级最高
-    };
-  }
-
-  get ctx() {
-    return {
-      globals: this.flowEngine.getContext(),
-      shared: this.getSharedContext(),
-    };
+    return this['#flowContext'] as unknown as FlowModelContext;
   }
 
   /**
@@ -274,5 +251,5 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 }
 
 // 类型断言：让 ForkFlowModel 可以被当作 FlowModel 使用
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-unsafe-declaration-merging
 export interface ForkFlowModel<TMaster extends FlowModel = FlowModel> extends FlowModel {}

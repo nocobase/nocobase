@@ -7,23 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, useFlowModel, useStepSettingContext } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, useFlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
 import { GlobalActionModel } from '../base/ActionModel';
 import { DataBlockModel } from '../base/BlockModel';
+import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
-  const currentBlockModel = modelInstance.ctx.shared.currentBlockModel as DataBlockModel;
-  const fields = currentBlockModel.collection.getFields();
-  const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
+  const currentBlockModel = modelInstance.context.blockModel as DataBlockModel;
+  const fields = currentBlockModel.collection.getFields().filter((field) => {
+    // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+    return field.target !== 'attachments';
+  });
+
+  const ignoreFieldsNames = getIgnoreFieldsNames(
+    modelInstance.props.filterableFieldsNames || [],
+    fields.map((field) => field.name),
+  );
   const t = modelInstance.translate;
 
   return (
     <>
-      <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} ctx={modelInstance.ctx} />
+      <FilterGroup value={props.value} fields={fields} ignoreFieldsNames={ignoreFieldsNames} model={modelInstance} />
       <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
         <Button onClick={() => modelInstance.dispatchEvent('reset')}>{t('Reset')}</Button>
         <Button type="primary" onClick={() => modelInstance.dispatchEvent('submit')}>
@@ -47,16 +55,21 @@ export class FilterActionModel extends GlobalActionModel {
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
     filterValue: { $and: [] },
-    ignoreFieldsNames: [],
   };
 
   render() {
     return (
       <Popover
         open={this.props.open}
-        content={<FilterContent value={this.props.filterValue || this.defaultProps.filterValue} />}
+        content={<FilterContent value={this.props.filterValue} />}
         trigger="click"
         placement="bottomLeft"
+        onOpenChange={(open) => {
+          // 解决当鼠标点击其他地方时，Popover 不关闭的问题
+          if (open === false) {
+            this.setProps('open', undefined);
+          }
+        }}
       >
         {super.render()}
       </Popover>
@@ -66,6 +79,22 @@ export class FilterActionModel extends GlobalActionModel {
 
 FilterActionModel.define({
   title: escapeT('Filter'),
+  toggleDetector: (model) => {
+    let ret = false;
+    model.findSubModel('actions', (action) => {
+      if (action.constructor === FilterActionModel) {
+        ret = true;
+      }
+    });
+    return ret;
+  },
+  customRemove: async (model, item) => {
+    model.findSubModel('actions', (action) => {
+      if (action instanceof FilterActionModel) {
+        action.destroy();
+      }
+    });
+  },
 });
 
 FilterActionModel.registerFlow({
@@ -78,16 +107,16 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('position', params.position || 'left');
       },
     },
-    ignoreFieldsNames: {
+    filterableFieldsNames: {
       title: escapeT('Filterable fields'),
       uiSchema: {
-        ignoreFieldsNames: {
+        filterableFieldsNames: {
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useStepSettingContext();
-            const options = model.ctx.shared.currentBlockModel.collection.getFields().map((field) => {
+            const { model } = useFlowSettingsContext();
+            const options = model.context.blockModel.collection.getFields().map((field) => {
               return {
                 label: field.title,
                 value: field.name,
@@ -102,12 +131,13 @@ FilterActionModel.registerFlow({
         },
       },
       defaultParams(ctx) {
+        const names = ctx.blockModel.collection.getFields().map((field) => field.name);
         return {
-          ignoreFieldsNames: ctx.model.defaultProps.ignoreFieldsNames || [],
+          filterableFieldsNames: names || [],
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('ignoreFieldsNames', params.ignoreFieldsNames);
+        ctx.model.setProps('filterableFieldsNames', params.filterableFieldsNames);
       },
     },
     defaultFilter: {
@@ -118,8 +148,8 @@ FilterActionModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model: modelInstance } = useStepSettingContext();
-            const currentBlockModel = modelInstance.ctx.shared.currentBlockModel;
+            const { model: modelInstance } = useFlowSettingsContext();
+            const currentBlockModel = modelInstance.context.blockModel;
             const fields = currentBlockModel.collection.getFields();
             const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
@@ -128,7 +158,7 @@ FilterActionModel.registerFlow({
                 value={props.value || {}}
                 fields={fields}
                 ignoreFieldsNames={ignoreFieldsNames}
-                ctx={modelInstance.ctx}
+                model={modelInstance}
               />
             );
           },
@@ -136,7 +166,7 @@ FilterActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          filterValue: ctx.model.defaultProps.filterValue,
+          defaultFilter: ctx.model.defaultProps.filterValue,
         };
       },
       handler(ctx, params) {
@@ -152,11 +182,15 @@ FilterActionModel.registerFlow({
   steps: {
     submit: {
       handler(ctx, params) {
-        const resource = ctx.shared?.currentBlockModel?.resource as MultiRecordResource;
+        const resource = ctx.blockModel?.resource as MultiRecordResource;
         if (!resource) {
           return;
         }
-        resource.addFilterGroup(ctx.model.uid, ctx.model.props.filterValue);
+
+        if (!isEmptyFilter(ctx.model.props.filterValue)) {
+          resource.addFilterGroup(ctx.model.uid, removeNullCondition(ctx.model.props.filterValue));
+          resource.setPage(1);
+        }
         resource.refresh();
         ctx.model.setProps('open', false);
       },
@@ -171,13 +205,14 @@ FilterActionModel.registerFlow({
   steps: {
     submit: {
       handler(ctx, params) {
-        const resource = ctx.shared?.currentBlockModel?.resource as MultiRecordResource;
+        const resource = ctx.blockModel?.resource as MultiRecordResource;
         if (!resource) {
           return;
         }
         resource.removeFilterGroup(ctx.model.uid);
         resource.refresh();
         ctx.model.setProps('open', false);
+        ctx.model.setProps('filterValue', clearInputValue(ctx.model.props.filterValue));
       },
     },
   },
@@ -194,3 +229,22 @@ FilterActionModel.registerFlow({
     },
   },
 });
+
+function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
+  return allFields.filter((field) => !filterableFieldsNames.includes(field));
+}
+
+function clearInputValue(value: any) {
+  if (Array.isArray(value)) {
+    return value.map((item) => clearInputValue(item));
+  } else if (typeof value === 'object' && value !== null) {
+    const newValue: any = {};
+    for (const key in value) {
+      newValue[key] = clearInputValue(value[key]);
+    }
+    return newValue;
+  } else if (typeof value === 'string') {
+    return '';
+  }
+  return undefined;
+}

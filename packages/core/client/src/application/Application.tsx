@@ -285,13 +285,11 @@ export class Application {
     this.flowEngine.context.defineProperty('router', {
       value: this.router.router,
     });
-
-    this.flowEngine.setContext({
-      app: this,
-      api: this.apiClient,
-      i18n: this.i18n,
-      router: this.router.router,
-      flowEngine: this.flowEngine,
+    this.flowEngine.context.defineProperty('role', {
+      get: () => this.apiClient.auth.role,
+    });
+    this.flowEngine.context.defineProperty('documentTitle', {
+      get: () => document.title,
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);

@@ -10,7 +10,7 @@
 import { APIClient } from '@nocobase/sdk';
 import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowContext, FlowDefinition, FlowModelOptions } from '../../types';
+import type { DefaultStructure, FlowDefinition, FlowModelOptions } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
 
@@ -62,7 +62,6 @@ const createMockFlowEngine = (): FlowEngine => {
     saveModel: vi.fn().mockResolvedValue({ success: true }),
     destroyModel: vi.fn().mockResolvedValue({ success: true }),
     getAction: vi.fn(),
-    getContext: vi.fn(() => ({ app: {}, api: {} as APIClient, flowEngine: mockEngine as FlowEngine })),
     translate: vi.fn((key: string) => key),
     reactView: null as any,
     applyFlowCache,
@@ -433,7 +432,7 @@ describe('FlowModel', () => {
           key: 'exitFlow',
           steps: {
             step1: {
-              handler: (ctx: FlowContext<any>) => {
+              handler: (ctx) => {
                 ctx.exit();
                 return 'should-not-reach';
               },
@@ -615,7 +614,7 @@ describe('FlowModel', () => {
           expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("dispatching event 'testEvent'"));
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
-              runtimeArgs: { data: 'payload' },
+              inputArgs: { data: 'payload' },
             }),
             expect.any(Object),
           );
@@ -870,32 +869,24 @@ describe('FlowModel', () => {
           const child1 = new FlowModel({ uid: 'child1', flowEngine });
           const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
-          // Mock applyAutoFlows and setSharedContext on child models
           child1.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child1.setSharedContext = vi.fn();
           child2.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child2.setSharedContext = vi.fn();
 
           parentModel.addSubModel('children', child1);
           parentModel.addSubModel('children', child2);
 
           const runtimeData = { test: 'extra' };
-          const sharedData = { shared: 'data' };
 
-          await parentModel.applySubModelsAutoFlows('children', runtimeData, sharedData);
+          await parentModel.applySubModelsAutoFlows('children', runtimeData);
 
           expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
           expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
-          expect(child1.setSharedContext).toHaveBeenCalledWith(sharedData);
-          expect(child2.setSharedContext).toHaveBeenCalledWith(sharedData);
         });
 
         test('should apply auto flows to single subModel', async () => {
           const child = new FlowModel({ uid: 'child', flowEngine });
 
-          // Mock applyAutoFlows and setSharedContext on child model
           child.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child.setSharedContext = vi.fn();
 
           parentModel.setSubModel('child', child);
 

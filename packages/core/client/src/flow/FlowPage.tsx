@@ -12,7 +12,7 @@ import { useRequest } from 'ahooks';
 import { Card, Skeleton, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useKeepAlive } from '../route-switch';
+import { useCurrentRoute, useKeepAlive } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 
 function InternalFlowPage({ uid, ...props }) {
@@ -32,6 +32,7 @@ export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
   const params = useParams();
+  const currentRoute = useCurrentRoute();
   // console.log('FlowRoute params:', params);
   // const { active } = useKeepAlive();
   const model = useMemo(() => {
@@ -47,16 +48,20 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    model.setSharedContext({
-      layoutContentElement: layoutContentRef.current,
+    model.context.defineProperty('layoutContentElement', {
+      get: () => layoutContentRef.current,
     });
-    model.dispatchEvent('click', { target: layoutContentRef.current, activeTab: params.tabUid });
-  }, [model, params.name, params.tabUid]);
+    model.context.defineProperty('currentRoute', {
+      get: () => currentRoute,
+    });
+
+    model.dispatchEvent('click', { mode: 'page', target: layoutContentRef.current, activeTab: params.tabUid });
+  }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { parentId, onModelLoaded, ...rest } = props;
+  const { pageModelClass = 'SubPageModel', parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
@@ -65,7 +70,7 @@ export const FlowPage = (props) => {
         parentId,
         subKey: 'page',
         subType: 'object',
-        use: 'PageModel',
+        use: pageModelClass,
         subModels: {
           tabs: [
             {

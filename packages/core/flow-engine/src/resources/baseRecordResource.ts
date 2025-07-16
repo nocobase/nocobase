@@ -19,14 +19,14 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     // url: null as string | null,
     method: 'get' as string,
     params: {
-      filter: {} as Record<string, any>,
-      filterByTk: null as string | number | string[] | number[] | null,
-      appends: null as string[] | null,
-      fields: null as string[] | null,
-      sort: null as string[] | null,
-      except: null as string[] | null,
-      whitelist: null as string[] | null,
-      blacklist: null as string[] | null,
+      // filter: {} as Record<string, any>,
+      // filterByTk: null as string | number | string[] | number[] | null,
+      // appends: null as string[] | null,
+      // fields: null as string[] | null,
+      // sort: null as string[] | null,
+      // except: null as string[] | null,
+      // whitelist: null as string[] | null,
+      // blacklist: null as string[] | null,
     } as Record<string, any>,
     headers: {} as Record<string, any>,
   };
@@ -106,8 +106,14 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   getFilter(): Record<string, any> {
+    const value = [...this.filterGroups.values()].filter(Boolean);
+
+    if (value.length === 0) {
+      return;
+    }
+
     return {
-      $and: [...this.filterGroups.values()].filter(Boolean),
+      $and: value,
     };
   }
 
@@ -155,11 +161,11 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this;
   }
 
-  setFilterByTk(filterByTk: string | number | string[] | number[]) {
+  setFilterByTk(filterByTk: any) {
     return this.addRequestParameter('filterByTk', filterByTk);
   }
 
-  getFilterByTk(): string | number | string[] | number[] {
+  getFilterByTk(): any {
     return this.request.params.filterByTk;
   }
 

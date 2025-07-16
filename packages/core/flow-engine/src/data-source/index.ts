@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
+import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 
 export interface DataSourceOptions extends Record<string, any> {
@@ -119,6 +120,10 @@ export class DataSource {
     return this.collectionManager.getCollection(name);
   }
 
+  getAssocation(associationName: string): CollectionField | undefined {
+    return this.collectionManager.getAssocation(associationName);
+  }
+
   addCollection(collection: Collection | CollectionOptions) {
     return this.collectionManager.addCollection(collection);
   }
@@ -215,7 +220,7 @@ export class CollectionManager {
   }
 
   upsertCollections(collections: CollectionOptions[]) {
-    for (const collection of collections) {
+    for (const collection of this.sortCollectionsByInherits(collections)) {
       if (this.collections.has(collection.name)) {
         this.updateCollection(collection);
       } else {
@@ -224,16 +229,86 @@ export class CollectionManager {
     }
   }
 
+  sortCollectionsByInherits(collections: CollectionOptions[]): CollectionOptions[] {
+    // 1. 构建 name -> CollectionOptions 映射
+    const map = new Map<string, CollectionOptions>();
+    for (const col of collections) {
+      map.set(col.name, col);
+    }
+
+    // 2. 构建依赖图和入度表
+    const graph: Record<string, Set<string>> = {};
+    const inDegree: Record<string, number> = {};
+    for (const col of collections) {
+      graph[col.name] = new Set();
+      inDegree[col.name] = 0;
+    }
+    for (const col of collections) {
+      const inherits = col.inherits || [];
+      for (const parent of inherits) {
+        if (!graph[parent]) graph[parent] = new Set();
+        graph[parent].add(col.name);
+        inDegree[col.name] = (inDegree[col.name] || 0) + 1;
+      }
+    }
+
+    // 3. Kahn 算法拓扑排序
+    const queue: string[] = [];
+    for (const name in inDegree) {
+      if (inDegree[name] === 0) queue.push(name);
+    }
+
+    const result: CollectionOptions[] = [];
+    while (queue.length) {
+      const curr = queue.shift();
+      if (map.has(curr)) {
+        result.push(map.get(curr));
+      }
+      for (const child of graph[curr] || []) {
+        inDegree[child]--;
+        if (inDegree[child] === 0) queue.push(child);
+      }
+    }
+
+    // 4. 检查是否有环
+    if (result.length !== collections.length) {
+      throw new Error('Collection inherits has circular dependency!');
+    }
+
+    return result;
+  }
+
   getCollection(name: string): Collection | undefined {
+    if (name.includes('.')) {
+      const [collectionName, fieldName] = name.split('.');
+      const collection = this.getCollection(collectionName);
+      if (!collection) {
+        throw new Error(`Collection ${collectionName} not found in data source ${this.dataSource.key}`);
+      }
+      const field = collection.getField(fieldName);
+      if (!field) {
+        throw new Error(`Field ${fieldName} not found in collection ${collectionName}`);
+      }
+      return field.targetCollection;
+    }
     return this.collections.get(name);
   }
 
   getCollections(): Collection[] {
-    return Array.from(this.collections.values());
+    return _.sortBy(Array.from(this.collections.values()), 'sort');
   }
 
   clearCollections() {
     this.collections.clear();
+  }
+
+  getAssocation(associationName: string): CollectionField | undefined {
+    const [collectionName, fieldName] = associationName.split('.');
+    const collection = this.getCollection(collectionName);
+    if (!collection) {
+      throw new Error(`Collection ${collectionName} not found in data source ${this.dataSource.key}`);
+    }
+    return collection.getField(fieldName);
   }
 }
 
@@ -251,12 +326,32 @@ export class Collection {
     this.setFields(options.fields || []);
   }
 
+  getFilterByTK(record) {
+    if (!record) {
+      throw new Error('Record is required to get filterByTk');
+    }
+    if (Array.isArray(record)) {
+      return record.map((r) => this.getFilterByTK(r));
+    }
+    if (!this.filterTargetKey) {
+      throw new Error(`filterTargetKey is not defined for collection ${this.name}`);
+    }
+    if (typeof this.filterTargetKey === 'string') {
+      return record[this.filterTargetKey];
+    }
+    return _.pick(record, this.filterTargetKey);
+  }
+
   get flowEngine() {
     return this.dataSource.flowEngine;
   }
 
   get collectionManager() {
     return this.dataSource.collectionManager;
+  }
+
+  get sort() {
+    return this.options.sort || 0;
   }
 
   get filterTargetKey() {
@@ -446,6 +541,10 @@ export class CollectionField {
     return this.collection.dataSourceKey;
   }
 
+  get readonly() {
+    return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
+  }
+
   get fullpath() {
     return this.collection.dataSource.key + '.' + this.collection.name + '.' + this.name;
   }
@@ -456,6 +555,22 @@ export class CollectionField {
 
   get type() {
     return this.options.type;
+  }
+
+  get dataType() {
+    return this.options.dataType;
+  }
+
+  get foreignKey() {
+    return this.options.foreignKey;
+  }
+
+  get targetKey() {
+    return this.options.targetKey || this.targetCollection.filterTargetKey;
+  }
+
+  get sourceKey() {
+    return this.options.sourceKey;
   }
 
   get target() {
@@ -473,6 +588,10 @@ export class CollectionField {
 
   get enum(): any[] {
     return this.options.uiSchema?.enum || [];
+  }
+
+  get defaultValue() {
+    return this.options.defaultValue;
   }
 
   get interface() {
@@ -506,7 +625,7 @@ export class CollectionField {
   }
 
   getInterfaceOptions() {
-    const app = this.flowEngine.getContext('app');
+    const app = this.flowEngine.context.app;
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 
@@ -524,6 +643,10 @@ export class CollectionField {
       }
     }
     return undefined;
+  }
+
+  isAssociationField() {
+    return ['belongsToMany', 'belongsTo', 'hasMany', 'hasOne', 'belongsToArray'].includes(this.type);
   }
 
   /**

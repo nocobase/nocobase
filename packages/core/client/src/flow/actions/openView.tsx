@@ -13,7 +13,7 @@ import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('Edit popup'),
+  title: escapeT('General'),
   uiSchema: {
     mode: {
       type: 'string',
@@ -21,7 +21,7 @@ export const openView = defineAction({
       enum: [
         { label: escapeT('Drawer'), value: 'drawer' },
         { label: escapeT('Dialog'), value: 'dialog' },
-        { label: escapeT('Page'), value: 'page' },
+        // { label: escapeT('Page'), value: 'page' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -41,6 +41,7 @@ export const openView = defineAction({
   defaultParams: {
     mode: 'drawer',
     size: 'medium',
+    pageModelClass: 'SubPageModel',
   },
   async handler(ctx, params) {
     // eslint-disable-next-line prefer-const
@@ -51,24 +52,34 @@ export const openView = defineAction({
       large: 1200,
     };
 
-    const openMode = ctx.runtimeArgs.mode || params.mode || 'drawer';
+    const pageModelClass = params.pageModelClass;
+
+    const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     let pageModelUid: string | null = null;
 
     await ctx.viewOpener.open({
       mode: openMode,
-      target: ctx.runtimeArgs.target || ctx.shared.layoutContentElement,
+      target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],
       content: (currentView) => {
         return (
           <FlowPage
             parentId={ctx.model.uid}
-            sharedContext={{
-              currentFlow: ctx,
-              currentView: currentView,
-              closable: openMode !== 'page', // can't close page
-            }}
+            pageModelClass={pageModelClass}
             onModelLoaded={(uid) => {
               pageModelUid = uid;
+              const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+              pageModel.context.defineProperty('currentView', {
+                get: () => currentView,
+              });
+              pageModel.context.defineProperty('currentFlow', {
+                get: () => ctx,
+              });
+              pageModel.context.defineProperty('closable', {
+                get: () => openMode !== 'page',
+              });
+              pageModel.invalidateAutoFlowCache();
+              pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
           />
         );

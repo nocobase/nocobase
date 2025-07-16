@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
 import { DataBlockModel } from '../../base/BlockModel';
+import { EditFormModel } from './EditFormModel';
 import { FormModel } from './FormModel';
 
 export class FormActionModel extends ActionModel {}
@@ -31,23 +32,58 @@ FormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
   steps: {
-    step1: {
-      async handler(ctx, params) {
-        if (!ctx.shared?.currentBlockModel?.resource) {
-          ctx.globals.message.error(ctx.model.flowEngine.translate('No resource selected for submission.'));
+    saveResource: {
+      async handler(ctx) {
+        if (!ctx?.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        if (!ctx.blockModel) {
+          throw new Error('Block model is not initialized');
+        }
+        const resource = ctx.resource;
+        const blockModel = ctx.blockModel as FormModel;
+        try {
+          await blockModel.form.submit();
+          const values = blockModel.form.values;
+          if (resource instanceof SingleRecordResource) {
+            if (blockModel instanceof EditFormModel) {
+              const currentFilterByTk = resource.getMeta('currentFilterByTk');
+              if (!currentFilterByTk) {
+                resource.isNewRecord = true; // 设置为新记录
+              } else {
+                resource.setFilterByTk(currentFilterByTk);
+              }
+            }
+            await resource.save(values);
+            if (blockModel instanceof EditFormModel) {
+              resource.isNewRecord = false;
+              await resource.refresh();
+            } else {
+              blockModel.form.reset();
+            }
+          } else if (resource instanceof MultiRecordResource) {
+            const currentFilterByTk = resource.getMeta('currentFilterByTk');
+            if (!currentFilterByTk) {
+              ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
+              return;
+            }
+            await resource.update(currentFilterByTk, values);
+          }
+        } catch (error) {
+          // 显示保存失败提示
+          ctx.message.error(ctx.t('Save failed'));
+          console.error('Form submission error:', error);
           return;
         }
-        const currentBlockModel = ctx.shared.currentBlockModel as FormModel;
-        await currentBlockModel.form.submit();
-        const values = currentBlockModel.form.values;
-        await currentBlockModel.resource.save(values);
-        await currentBlockModel.form.reset();
-        const parentBlockModel = ctx.shared?.currentFlow?.shared?.currentBlockModel as DataBlockModel;
+
+        ctx.message.success(ctx.t('Saved successfully'));
+
+        const parentBlockModel = ctx.currentFlow?.blockModel as DataBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.shared.currentView && ctx.shared.closable) {
-          ctx.shared.currentView.close();
+        if (ctx.currentView && ctx.closable) {
+          ctx.currentView.close();
         }
       },
     },

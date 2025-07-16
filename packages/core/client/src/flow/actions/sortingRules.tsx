@@ -7,25 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, MultiRecordResource, useStepSettingContext } from '@nocobase/flow-engine';
-import React from 'react';
+import { defineAction, escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
-import { tval } from '@nocobase/utils/client';
+import React from 'react';
+import { DataBlockModel, useSortFields } from '../../';
 import { useCompile } from '../../schema-component';
-import { useSortFields } from '../../';
 
 const SelectOptions = (props) => {
-  const {
-    model: { resource },
-  } = useStepSettingContext();
+  const flowContext = useFlowSettingsContext<DataBlockModel>();
+  const resource = flowContext.model.resource;
   const compile = useCompile();
-  const sortFields = useSortFields(resource?.resourceName);
+  const sortFields = useSortFields(resource?.getResourceName());
   return <Select {...props} options={compile(sortFields)} />;
 };
 
 export const sortingRule = defineAction({
   name: 'sortingRule',
-  title: tval('Set default sorting rules'),
+  title: escapeT('Default sorting'),
   uiSchema: {
     sort: {
       type: 'array',
@@ -63,11 +61,11 @@ export const sortingRule = defineAction({
                 },
                 enum: [
                   {
-                    label: tval('ASC'),
+                    label: escapeT('ASC'),
                     value: 'asc',
                   },
                   {
-                    label: tval('DESC'),
+                    label: escapeT('DESC'),
                     value: 'desc',
                   },
                 ],
@@ -84,7 +82,7 @@ export const sortingRule = defineAction({
       properties: {
         add: {
           type: 'void',
-          title: tval('Add sort field'),
+          title: escapeT('Add sort field'),
           'x-component': 'ArrayItems.Addition',
         },
       },

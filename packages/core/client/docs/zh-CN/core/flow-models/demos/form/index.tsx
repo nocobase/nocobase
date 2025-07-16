@@ -10,7 +10,9 @@ import { SubmitActionModel } from './submit-action-model';
 
 class PluginDemo extends Plugin {
   async load() {
-    this.flowEngine.setContext({ dsm });
+    this.flowEngine.context.defineProperty('dsm', {
+      value: dsm,
+    });
     this.flowEngine.registerModels({
       FormModel,
       FormItemModel,
@@ -59,7 +61,7 @@ class PluginDemo extends Plugin {
     });
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} runtimeArgs={{ filterByTk: 1 }} />,
+      element: <FlowModelRenderer model={model} inputArgs={{ filterByTk: 1 }} />,
     });
   }
 }

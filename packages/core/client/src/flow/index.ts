@@ -10,6 +10,7 @@
 import { DataSource, DataSourceManager, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
+import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
@@ -29,11 +30,10 @@ export class PluginFlowEngine extends Plugin {
     // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
-    this.flowEngine.setContext({
-      flowEngine: this.flowEngine,
-      dataSourceManager: this.flowEngine.context.dataSourceManager,
-    });
     this.app.addProvider(FlowEngineRunner, {});
+    this.flowEngine.flowSettings.registerComponents({
+      IconPicker,
+    });
   }
 }
 

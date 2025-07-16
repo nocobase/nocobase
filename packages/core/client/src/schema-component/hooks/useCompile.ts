@@ -62,7 +62,7 @@ export const useCompile = ({ noCache }: Props = { noCache: false }) => {
     }
 
     if (shouldCompile) {
-      const mergedScope = { ...options.scope, ...scope, ...ext };
+      const mergedScope = { ...options?.scope, ...scope, ...ext };
       if (!cacheKey) {
         return Schema.compile(source, mergedScope);
       }

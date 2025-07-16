@@ -9,7 +9,7 @@
 
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { Migration } from '@nocobase/server';
-import { MANUAL_TASK_TYPE } from '../../common/constants';
+import { TASK_TYPE_MANUAL } from '../../common/constants';
 
 export default class extends Migration {
   appVersion = '<1.6.0';
@@ -27,7 +27,7 @@ export default class extends Migration {
         transaction,
       });
       const records = tasks.map((item) => ({
-        type: MANUAL_TASK_TYPE,
+        type: TASK_TYPE_MANUAL,
         key: `${item.id}`,
         userId: item.userId,
         workflowId: item.workflowId,

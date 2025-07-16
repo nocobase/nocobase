@@ -43,16 +43,16 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Spin } from 'antd';
+import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
 import React, { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useApplyAutoFlows, FlowModelProvider } from '../hooks';
+import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
 import { FlowModel } from '../models';
 import { ToolbarItemConfig } from '../types';
+import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import { FlowErrorFallback } from './FlowErrorFallback';
 
 interface FlowModelRendererProps {
   model?: FlowModel;
@@ -78,10 +78,7 @@ interface FlowModelRendererProps {
   skipApplyAutoFlows?: boolean; // 默认 false
 
   /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
-  runtimeArgs?: Record<string, any>;
-
-  /** Model 共享运行上下文，会沿着 model 树向下传递 */
-  sharedContext?: Record<string, any>;
+  inputArgs?: Record<string, any>;
 
   /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
   showErrorFallback?: boolean; // 默认 false
@@ -98,12 +95,11 @@ interface FlowModelRendererProps {
  */
 const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
-  runtimeArgs?: Record<string, any>;
-  sharedContext?: Record<string, any>;
+  inputArgs?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
@@ -115,14 +111,13 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     flowSettingsVariant,
     hideRemoveInSettings,
     showTitle,
-    runtimeArgs,
-    sharedContext,
+    inputArgs,
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
     fallback,
   }) => {
-    const pending = useApplyAutoFlows(model, runtimeArgs);
+    const pending = useApplyAutoFlows(model, inputArgs);
 
     if (pending) {
       return <>{fallback}</>;
@@ -150,11 +145,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
  */
 const FlowModelRendererWithoutAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean };
+  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
-  sharedContext?: Record<string, any>;
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
@@ -165,7 +159,6 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     flowSettingsVariant,
     hideRemoveInSettings,
     showTitle,
-    sharedContext,
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
@@ -192,7 +185,9 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
  */
 const FlowModelRendererCore: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean };
+  showFlowSettings:
+    | boolean
+    | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean; style?: React.CSSProperties };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -239,6 +234,7 @@ const FlowModelRendererCore: React.FC<{
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -275,6 +271,7 @@ const FlowModelRendererCore: React.FC<{
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
             {wrapWithErrorBoundary(modelContent)}
           </FlowsFloatContextMenu>
@@ -298,8 +295,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
- * @param {any} props.runtimeArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
- * @param {any} props.sharedContext - Shared context to pass to the model.
+ * @param {any} props.inputArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
@@ -307,14 +303,13 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
-    fallback = <Spin />,
+    fallback = <Skeleton.Button size="small" />,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
     showTitle = false,
     skipApplyAutoFlows = false,
-    runtimeArgs,
-    sharedContext,
+    inputArgs,
     showErrorFallback = false,
     settingsMenuLevel,
     extraToolbarItems,
@@ -325,10 +320,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
-    useEffect(() => {
-      model.setSharedContext(sharedContext);
-    }, [model, sharedContext]);
-
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {
       return (
@@ -338,7 +329,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
           showTitle={showTitle}
-          sharedContext={sharedContext}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
@@ -352,8 +342,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           flowSettingsVariant={flowSettingsVariant}
           hideRemoveInSettings={hideRemoveInSettings}
           showTitle={showTitle}
-          runtimeArgs={runtimeArgs}
-          sharedContext={sharedContext}
+          inputArgs={inputArgs}
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}

@@ -7,15 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { Button, message, Space } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveUiSchema } from '../../../../utils';
-import { StepSettingContextProvider, StepSettingContextType, useStepSettingContext } from './StepSettingContext';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  setupRuntimeContextSteps,
+} from '../../../../utils';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 const SchemaField = createSchemaField();
 
@@ -37,7 +43,7 @@ const openStepSettingsDialog = async ({
   mode = 'dialog',
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
-  const message = model.flowEngine.getContext('message');
+  const message = model.context.message;
 
   if (!model) {
     message.error(t('Invalid model provided'));
@@ -60,51 +66,35 @@ const openStepSettingsDialog = async ({
 
   let title = step.title;
 
-  // 创建参数解析上下文
-  const paramsContext = {
-    model,
-    globals: model.flowEngine.getContext(),
-    app: model.flowEngine.getContext('app'),
-  };
-
-  // 获取可配置的步骤信息
-  const stepUiSchema = step.uiSchema || {};
   let actionDefaultParams = {};
-
-  // 如果step使用了action，也获取action的uiSchema
-  let actionUiSchema = {};
   if (step.use) {
     const action = model.flowEngine?.getAction?.(step.use);
-    if (action && action.uiSchema) {
-      actionUiSchema = action.uiSchema;
+    if (action) {
+      actionDefaultParams = action.defaultParams || {};
+      title = title || action.title;
     }
-    actionDefaultParams = action.defaultParams || {};
-    title = title || action.title;
   }
 
-  // 解析动态 uiSchema
-  const resolvedActionUiSchema = await resolveUiSchema(actionUiSchema, paramsContext);
-  const resolvedStepUiSchema = await resolveUiSchema(stepUiSchema, paramsContext);
+  // 获取流程定义
+  const flowDefinition = model.getFlow(flowKey);
 
-  // 合并uiSchema，确保step的uiSchema优先级更高
-  const mergedUiSchema = { ...toJS(resolvedActionUiSchema) };
-  Object.entries(toJS(resolvedStepUiSchema)).forEach(([fieldKey, schema]) => {
-    if (mergedUiSchema[fieldKey]) {
-      mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-    } else {
-      mergedUiSchema[fieldKey] = schema;
-    }
-  });
+  const mergedUiSchema = await resolveStepUiSchema(model, flowDefinition, step);
 
   // 如果没有可配置的UI Schema，显示提示
-  if (Object.keys(mergedUiSchema).length === 0) {
+  if (!mergedUiSchema) {
     message.info(t('This step has no configurable parameters'));
     return {};
   }
 
+  // 创建流程运行时上下文用于解析默认参数
+  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+
+  flowRuntimeContext.defineProperty('currentStep', { value: step });
+
   const flowEngine = model.flowEngine;
   const scopes = {
-    useStepSettingContext,
+    useFlowSettingsContext,
     ...flowEngine.flowSettings?.scopes,
   };
 
@@ -112,8 +102,8 @@ const openStepSettingsDialog = async ({
   const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
   // 解析 defaultParams
-  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, paramsContext);
-  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, paramsContext);
+  const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
+  const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
   const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 构建表单Schema
@@ -131,7 +121,7 @@ const openStepSettingsDialog = async ({
     },
   };
 
-  const view = model.flowEngine.getContext(mode);
+  const view = model.context[mode];
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -178,20 +168,11 @@ const openStepSettingsDialog = async ({
       </Space>
     ),
     content: (currentDialog) => {
-      const contextValue: StepSettingContextType = {
-        model,
-        globals: model.flowEngine.getContext(),
-        app: model.flowEngine.getContext('app'),
-        step,
-        flow,
-        flowKey,
-        stepKey,
-      };
       // 编译 formSchema 中的表达式
       const compiledFormSchema = compileUiSchema(scopes, formSchema);
       return (
         <FormProvider form={form}>
-          <StepSettingContextProvider value={contextValue}>
+          <FlowSettingsContextProvider value={flowRuntimeContext}>
             <SchemaField
               schema={compiledFormSchema}
               components={{
@@ -199,7 +180,7 @@ const openStepSettingsDialog = async ({
               }}
               scope={scopes}
             />
-          </StepSettingContextProvider>
+          </FlowSettingsContextProvider>
         </FormProvider>
       );
     },

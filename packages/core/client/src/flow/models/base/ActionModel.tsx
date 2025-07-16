@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { Collection, FlowModel, escapeT } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
-import IconPicker from '../../../schema-component/antd/icon-picker/IconPicker';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;
@@ -27,7 +25,6 @@ export class ActionModel extends FlowModel {
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
-
     return (
       <Button {...props} icon={icon} style={{ ...linkStyle, ...props.style }}>
         {props.children || props.title}
@@ -41,8 +38,8 @@ ActionModel.registerFlow({
   title: escapeT('Button settings'),
   auto: true,
   steps: {
-    buttonProps: {
-      title: escapeT('Edit button'),
+    general: {
+      title: escapeT('General'),
       uiSchema: {
         title: {
           'x-decorator': 'FormItem',
@@ -51,23 +48,44 @@ ActionModel.registerFlow({
         },
         icon: {
           'x-decorator': 'FormItem',
-          'x-component': IconPicker,
+          'x-component': 'IconPicker',
           title: escapeT('Button icon'),
+        },
+        type: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          title: escapeT('Button type'),
+          enum: [
+            { value: 'default', label: '{{t("Default")}}' },
+            { value: 'primary', label: '{{t("Primary")}}' },
+            { value: 'dashed', label: '{{t("Dashed")}}' },
+            { value: 'link', label: '{{t("Link")}}' },
+            { value: 'text', label: '{{t("Text")}}' },
+          ],
+        },
+        danger: {
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+          title: escapeT('Danger action'),
         },
       },
       defaultParams(ctx) {
         return {
           title: ctx.model.defaultProps.title,
           icon: ctx.model.defaultProps.icon,
+          type: ctx.model.props.type || ctx.model.defaultProps.type,
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('title', ctx.t(params.title));
-        ctx.model.setProps('icon', params.icon);
-        ctx.model.setProps('onClick', (event) => {
-          ctx.model.dispatchEvent('click', {
-            event,
-          });
+        const { title, icon, type, danger } = params;
+        ctx.model.setProps({
+          title: ctx.t(title),
+          icon,
+          type: type,
+          danger,
+          onClick: (event) => {
+            ctx.model.dispatchEvent('click', { event });
+          },
         });
       },
     },
@@ -79,15 +97,15 @@ export class GlobalActionModel extends ActionModel {}
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
-    children: tval('Action'),
+    children: escapeT('Action'),
   };
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
+    const isLink = props.type === 'link';
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-
     return (
-      <Button style={{ padding: 0, height: 'auto' }} {...props} icon={icon}>
+      <Button style={isLink ? { padding: 0, height: 'auto' } : undefined} {...props} icon={icon}>
         {props.children || props.title}
       </Button>
     );
@@ -98,19 +116,21 @@ RecordActionModel.registerFlow({
   key: 'recordActionSettings',
   auto: true,
   steps: {
-    buttonProps: {
+    interaction: {
       handler(ctx, params) {
-        const { currentRecord, currentBlockModel } = ctx.shared;
-        if (!currentRecord) {
-          throw new Error('Current record is not set in shared context');
+        const blockModel = ctx.blockModel;
+        if (!blockModel) {
+          throw new Error('Current block model is not set in context');
         }
-        if (!currentBlockModel) {
-          throw new Error('Current block model is not set in shared context');
+        const { record } = ctx;
+        if (!record) {
+          throw new Error('Current record is not set in context');
         }
         ctx.model.setProps('onClick', (event) => {
+          const collection = ctx.collection as Collection;
           ctx.model.dispatchEvent('click', {
             event,
-            filterByTk: currentRecord[currentBlockModel.collection.filterTargetKey],
+            filterByTk: collection.getFilterByTK(record),
           });
         });
       },

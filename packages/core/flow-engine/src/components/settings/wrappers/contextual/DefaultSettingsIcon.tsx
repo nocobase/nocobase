@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { Dropdown, Modal, App } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -20,7 +20,7 @@ import {
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { openStepSettings } from './StepSettings';
-import { getT } from '../../../../utils';
+import { getT, resolveStepUiSchema } from '../../../../utils';
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -210,78 +210,97 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   );
 
   // 获取单个模型的可配置flows和steps
-  const getModelConfigurableFlowsAndSteps = useCallback((targetModel: FlowModel, modelKey?: string): FlowInfo[] => {
-    try {
-      const ModelClass = targetModel.constructor as typeof FlowModel;
-      const flows = ModelClass.getFlows();
+  const getModelConfigurableFlowsAndSteps = useCallback(
+    async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
+      try {
+        const ModelClass = targetModel.constructor as typeof FlowModel;
+        const flows = ModelClass.getFlows();
 
-      const flowsArray = Array.from(flows.values());
+        const flowsArray = Array.from(flows.values());
 
-      return flowsArray
-        .map((flow) => {
-          const configurableSteps = Object.entries(flow.steps)
-            .map(([stepKey, stepDefinition]) => {
-              const actionStep = stepDefinition;
+        const flowsWithSteps = await Promise.all(
+          flowsArray.map(async (flow) => {
+            const configurableSteps = await Promise.all(
+              Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
+                const actionStep = stepDefinition;
 
-              // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-              if (actionStep.hideInSettings) {
-                return null;
-              }
-
-              // 检查是否有uiSchema（静态或动态）
-              const hasStepUiSchema = actionStep.uiSchema != null;
-
-              // 如果step使用了action，检查action是否有uiSchema
-              let hasActionUiSchema = false;
-              let stepTitle = actionStep.title;
-              if (actionStep.use) {
-                try {
-                  const action = targetModel.flowEngine?.getAction?.(actionStep.use);
-                  hasActionUiSchema = action && action.uiSchema != null;
-                  stepTitle = stepTitle || action.title;
-                } catch (error) {
-                  console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
+                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
+                if (actionStep.hideInSettings) {
+                  return null;
                 }
-              }
 
-              // 如果都没有uiSchema（静态或动态），返回null
-              if (!hasStepUiSchema && !hasActionUiSchema) {
-                return null;
-              }
+                // 检查是否有uiSchema（静态或动态）
+                const hasStepUiSchema = actionStep.uiSchema != null;
 
-              // 对于动态uiSchema，我们假设它总是有内容
-              // 实际的解析在设置对话框中进行
-              const mergedUiSchema = { placeholder: true };
+                // 如果step使用了action，检查action是否有uiSchema
+                let hasActionUiSchema = false;
+                let stepTitle = actionStep.title;
+                if (actionStep.use) {
+                  try {
+                    const action = targetModel.flowEngine?.getAction?.(actionStep.use);
+                    hasActionUiSchema = action && action.uiSchema != null;
+                    stepTitle = stepTitle || action.title;
+                  } catch (error) {
+                    console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
+                  }
+                }
 
-              return {
-                stepKey,
-                step: actionStep,
-                uiSchema: mergedUiSchema,
-                title: t(stepTitle) || stepKey,
-                modelKey, // 添加模型标识
-              };
-            })
-            .filter(Boolean);
+                // 如果都没有uiSchema（静态或动态），返回null
+                if (!hasStepUiSchema && !hasActionUiSchema) {
+                  return null;
+                }
 
-          return configurableSteps.length > 0 ? ({ flow, steps: configurableSteps, modelKey } as FlowInfo) : null;
-        })
-        .filter(Boolean);
-    } catch (error) {
-      console.error(
-        t('Failed to get configurable flows for model {{model}}', { model: targetModel?.uid || 'unknown' }),
-        ':',
-        error,
-      );
-      return [];
-    }
-  }, []);
+                // 对于动态uiSchema，需要实际解析以确定是否有内容
+                let mergedUiSchema = {};
+
+                try {
+                  // 使用提取的工具函数解析并合并uiSchema
+                  const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
+
+                  // 如果解析后没有可配置的UI Schema，跳过此步骤
+                  if (!resolvedSchema) {
+                    return null;
+                  }
+
+                  mergedUiSchema = resolvedSchema;
+                } catch (error) {
+                  console.warn(t('Failed to resolve uiSchema for step {{stepKey}}', { stepKey }), ':', error);
+                  return null;
+                }
+
+                return {
+                  stepKey,
+                  step: actionStep,
+                  uiSchema: mergedUiSchema,
+                  title: t(stepTitle) || stepKey,
+                  modelKey, // 添加模型标识
+                };
+              }),
+            ).then((steps) => steps.filter(Boolean));
+
+            return configurableSteps.length > 0 ? ({ flow, steps: configurableSteps, modelKey } as FlowInfo) : null;
+          }),
+        ).then((flows) => flows.filter(Boolean));
+
+        return flowsWithSteps;
+      } catch (error) {
+        console.error(
+          t('Failed to get configurable flows for model {{model}}', { model: targetModel?.uid || 'unknown' }),
+          ':',
+          error,
+        );
+        return [];
+      }
+    },
+    [],
+  );
 
   // 获取可配置的flows和steps
-  const getConfigurableFlowsAndSteps = useCallback((): FlowInfo[] => {
+  const getConfigurableFlowsAndSteps = useCallback(async (): Promise<FlowInfo[]> => {
     const result: FlowInfo[] = [];
     const processedModels = new Set<string>(); // 防止循环引用
 
-    const processModel = (targetModel: FlowModel, depth: number, modelKey?: string) => {
+    const processModel = async (targetModel: FlowModel, depth: number, modelKey?: string) => {
       // 限制递归深度为menuLevels
       if (depth > menuLevels) {
         return;
@@ -295,34 +314,56 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       processedModels.add(modelId);
 
       try {
-        const modelFlows = getModelConfigurableFlowsAndSteps(targetModel, modelKey);
+        const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
         result.push(...modelFlows);
 
         // 如果需要，处理子模型
         if (depth < menuLevels && targetModel.subModels) {
-          Object.entries(targetModel.subModels).forEach(([subKey, subModelValue]) => {
-            if (Array.isArray(subModelValue)) {
-              subModelValue.forEach((subModel, index) => {
-                if (subModel instanceof FlowModel && index < 50) {
-                  // 合理的限制
-                  processModel(subModel, depth + 1, `${subKey}[${index}]`);
-                }
-              });
-            } else if (subModelValue instanceof FlowModel) {
-              processModel(subModelValue, depth + 1, subKey);
-            }
-          });
+          await Promise.all(
+            Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
+              if (Array.isArray(subModelValue)) {
+                await Promise.all(
+                  subModelValue.map(async (subModel, index) => {
+                    if (subModel instanceof FlowModel && index < 50) {
+                      // 合理的限制
+                      await processModel(subModel, depth + 1, `${subKey}[${index}]`);
+                    }
+                  }),
+                );
+              } else if (subModelValue instanceof FlowModel) {
+                await processModel(subModelValue, depth + 1, subKey);
+              }
+            }),
+          );
         }
       } finally {
         processedModels.delete(modelId);
       }
     };
 
-    processModel(model, 1);
+    await processModel(model, 1);
     return result;
   }, [model, menuLevels, getModelConfigurableFlowsAndSteps]);
 
-  const configurableFlowsAndSteps = getConfigurableFlowsAndSteps();
+  const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadConfigurableFlowsAndSteps = async () => {
+      setIsLoading(true);
+      try {
+        const flows = await getConfigurableFlowsAndSteps();
+        setConfigurableFlowsAndSteps(flows);
+      } catch (error) {
+        console.error('Failed to load configurable flows and steps:', error);
+        setConfigurableFlowsAndSteps([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConfigurableFlowsAndSteps();
+  }, [getConfigurableFlowsAndSteps]);
 
   // 构建菜单项，包含错误处理和记忆化
   const menuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -468,8 +509,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     return items;
   }, [menuItems, showCopyUidButton, showDeleteButton, configurableFlowsAndSteps.length, model.uid, model.destroy]);
 
-  // 如果没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
-  if (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton) {
+  // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
+  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {
     return null;
   }
 

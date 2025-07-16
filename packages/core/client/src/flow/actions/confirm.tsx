@@ -7,44 +7,41 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, escapeT } from '@nocobase/flow-engine';
 
 export const confirm = defineAction({
   name: 'confirm',
-  title: tval('Secondary confirmation'),
+  title: escapeT('Confirmation'),
   uiSchema: {
     enable: {
       type: 'boolean',
-      title: tval('Enable secondary confirmation'),
+      title: escapeT('Enable secondary confirmation'),
       'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
+      'x-component': 'Switch',
     },
     title: {
       type: 'string',
-      title: tval('Title'),
-      default: tval('Delete record'),
+      title: escapeT('Title'),
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
     content: {
       type: 'string',
-      title: tval('Content'),
-      default: tval('Are you sure you want to delete it?'),
+      title: escapeT('Content'),
       'x-decorator': 'FormItem',
       'x-component': 'Input.TextArea',
     },
   },
   defaultParams: {
     enable: true,
-    title: tval('Delete record'),
-    content: tval('Are you sure you want to delete it?'),
+    title: 'Please Confirm',
+    content: 'Are you sure you want to proceed with this action?',
   },
   async handler(ctx, params) {
     if (params.enable) {
-      const confirmed = await ctx.globals.modal.confirm({
-        title: ctx.model.translate(params.title),
-        content: ctx.model.translate(params.content),
+      const confirmed = await ctx.modal.confirm({
+        title: ctx.t(params.title),
+        content: ctx.t(params.content),
       });
 
       if (!confirmed) {

@@ -92,25 +92,26 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
 
   /* 正常的hover行为 */
   &:hover > .general-schema-designer {
-    display: block;
+    opacity: 1;
   }
 
   /* 当有.hide-parent-menu类时隐藏菜单 */
   &.hide-parent-menu > .general-schema-designer {
-    display: none !important;
+    opacity: 0 !important;
   }
 
   > .general-schema-designer {
+    transition: opacity 0.2s ease;
     position: absolute;
     z-index: 999;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
-    display: none;
+    opacity: 0;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
-    border-radius: ${ctx.globals.themeToken.borderRadiusLG}px;
+    border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
 
     &.nb-in-template {
@@ -260,6 +261,7 @@ interface ModelProvidedProps {
   showDeleteButton?: boolean;
   showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
+  toolbarStyle?: React.CSSProperties;
   className?: string;
   /**
    * @default true
@@ -363,10 +365,11 @@ const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((pr
   }
 });
 
-const ResizeHandles: React.FC<{ model: FlowModel }> = (props) => {
+const ResizeHandles: React.FC<{ model: FlowModel; onDragStart: () => void; onDragEnd: () => void }> = (props) => {
   const isDraggingRef = useRef<boolean>(false);
   const dragTypeRef = useRef<'left' | 'right' | 'bottom' | 'corner' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const { onDragStart, onDragEnd } = props;
 
   // 拖拽移动处理函数
   const handleDragMove = useCallback(
@@ -420,7 +423,8 @@ const ResizeHandles: React.FC<{ model: FlowModel }> = (props) => {
     document.removeEventListener('mouseup', handleDragEnd);
 
     props.model.parent.emitter.emit('onResizeEnd');
-  }, [handleDragMove, props.model]);
+    onDragEnd?.();
+  }, [handleDragMove, props.model, onDragEnd]);
 
   // 拖拽开始处理函数
   const handleDragStart = useCallback(
@@ -435,8 +439,10 @@ const ResizeHandles: React.FC<{ model: FlowModel }> = (props) => {
       // 添加全局事件监听
       document.addEventListener('mousemove', handleDragMove);
       document.addEventListener('mouseup', handleDragEnd);
+
+      onDragStart?.();
     },
-    [handleDragMove, handleDragEnd],
+    [handleDragMove, handleDragEnd, onDragStart],
   );
 
   return (
@@ -477,11 +483,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
+    toolbarStyle,
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const flowEngine = useFlowEngine();
+    const [style, setStyle] = useState<React.CSSProperties>({});
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -539,7 +547,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.ctx })} ${
+        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context })} ${
           hideMenu ? 'hide-parent-menu' : ''
         } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
@@ -549,7 +557,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         {children}
 
         {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div className="general-schema-designer">
+        <div className="general-schema-designer" style={{ ...toolbarStyle, ...style }}>
           {showTitle && model.title && (
             <div className="general-schema-designer-title">
               <span className="title-tag">{model.title}</span>
@@ -569,7 +577,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           </div>
 
           {/* 拖拽把手 */}
-          {showDragHandle && <ResizeHandles model={model} />}
+          {showDragHandle && (
+            <ResizeHandles model={model} onDragStart={() => setStyle({ opacity: 1 })} onDragEnd={() => setStyle({})} />
+          )}
         </div>
       </div>
     );

@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, useStepSettingContext } from '@nocobase/flow-engine';
+import { defineAction, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
 import { getUniqueKeyFromCollection } from '../../collection-manager/interfaces/utils';
 import { isTitleField } from '../../data-source';
 import { useCompile } from '../../schema-component';
+import { FieldModel } from '../models/base/FieldModel';
 
 const SelectOptions = (props) => {
-  const {
-    model: { collectionField },
-    app,
-  } = useStepSettingContext();
+  const flowContext = useFlowSettingsContext<FieldModel>();
   const compile = useCompile();
+  const collectionField = flowContext.model.collectionField;
+  const app = flowContext.app;
   const collectionManager = collectionField?.collection?.collectionManager;
   const dataSourceManager = app.dataSourceManager;
   const target = collectionField?.options?.target;
@@ -38,7 +38,7 @@ const SelectOptions = (props) => {
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: tval('Title field'),
+  title: tval('Label field'),
   uiSchema: {
     label: {
       'x-component': SelectOptions,
@@ -49,7 +49,11 @@ export const titleField = defineAction({
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
-      label: ctx.model.props.fieldNames?.label || targetCollection.options.titleField || filterKey,
+      label:
+        ctx.model.field?.componentProps?.fieldNames?.label ||
+        ctx.model.props.fieldNames?.label ||
+        targetCollection.options.titleField ||
+        filterKey,
     };
   },
   async handler(ctx: any, params) {

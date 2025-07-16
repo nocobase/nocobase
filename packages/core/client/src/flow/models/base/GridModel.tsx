@@ -17,6 +17,7 @@ import {
   DragHandler,
   Droppable,
   EMPTY_COLUMN_UID,
+  escapeT,
   findModelUidPosition,
   FlowModel,
   FlowModelRenderer,
@@ -32,21 +33,24 @@ import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
-import { BlockModel } from './BlockModel';
 
-type GridModelStructure = {
+export const GRID_FLOW_KEY = 'gridSettings';
+export const GRID_STEP = 'grid';
+
+interface DefaultStructure {
+  parent?: FlowModel;
   subModels: {
-    items: BlockModel[];
+    items: FlowModel[];
   };
-};
+}
 
-const GRID_FLOW_KEY = 'gridSettings';
-const GRID_STEP = 'grid';
-
-export class GridModel extends FlowModel<GridModelStructure> {
+export class GridModel<T extends { subModels: { items: FlowModel[] } } = DefaultStructure> extends FlowModel<T> {
   subModelBaseClass = 'BlockModel';
   gridContainerRef = React.createRef<HTMLDivElement>();
   prevMoveDistance = 0;
+  // 设置项菜单的层级，默认为 1
+  itemSettingsMenuLevel = 1;
+  itemFlowSettings = {};
 
   onInit(options: any): void {
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
@@ -115,7 +119,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.globals.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -132,7 +136,7 @@ export class GridModel extends FlowModel<GridModelStructure> {
         prevMoveDistance: this.prevMoveDistance,
         oldRows: this.props.rows || {},
         oldSizes: this.props.sizes || {},
-        gutter: this.ctx.globals.themeToken.marginBlock,
+        gutter: this.context.themeToken.marginBlock,
         gridContainerWidth,
       });
       this.prevMoveDistance = moveDistance;
@@ -156,7 +160,6 @@ export class GridModel extends FlowModel<GridModelStructure> {
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
     const items = this.subModels.items || [];
-    console.log('mergeRowsWithItems', rows, items);
     if (!items || items.length === 0) {
       return {}; // 如果没有 items，直接返回原始 rows
     }
@@ -253,19 +256,24 @@ export class GridModel extends FlowModel<GridModelStructure> {
     this.saveGridLayout();
   }
 
+  renderAddSubModelButton(): JSX.Element {
+    throw new Error('renderAddSubModelButton method must be implemented in subclasses of GridModel');
+  }
+
   render() {
-    const t = this.translate;
     return (
-      <div style={{ padding: this.ctx.globals.themeToken.marginBlock }}>
-        <Space
-          ref={this.gridContainerRef}
-          direction={'vertical'}
-          style={{ width: '100%' }}
-          size={this.ctx.globals.themeToken.marginBlock}
-        >
-          {this.subModels.items?.length > 0 && (
+      <>
+        {this.subModels.items?.length > 0 && (
+          <Space
+            ref={this.gridContainerRef}
+            direction={'vertical'}
+            style={{ width: '100%', marginBottom: this.props.rowGap }}
+            size={this.props.rowGap}
+          >
             <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
               <Grid
+                rowGap={this.props.rowGap}
+                colGap={this.props.colGap}
                 rows={this.props.rows || {}}
                 sizes={this.props.sizes || {}}
                 renderItem={(uid) => {
@@ -276,8 +284,9 @@ export class GridModel extends FlowModel<GridModelStructure> {
                         model={item}
                         key={item.uid}
                         fallback={<SkeletonFallback />}
-                        showFlowSettings={{ showBackground: false, showDragHandle: true }}
+                        showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.itemFlowSettings }}
                         showErrorFallback
+                        settingsMenuLevel={this.itemSettingsMenuLevel}
                         showTitle
                         extraToolbarItems={[
                           {
@@ -292,21 +301,12 @@ export class GridModel extends FlowModel<GridModelStructure> {
                 }}
               />
             </DndProvider>
-          )}
-          <Space>
-            <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
-              <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-            </AddBlockButton>
-            <FlowSettingsButton
-              onClick={() => {
-                this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
-              }}
-            >
-              {t('Configure rows')}
-            </FlowSettingsButton>
           </Space>
-        </Space>
-      </div>
+        )}
+        {this.flowEngine.flowSettings.enabled && (
+          <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>
+        )}
+      </>
     );
   }
 }
@@ -323,22 +323,22 @@ GridModel.registerFlow({
     grid: {
       uiSchema: {
         rows: {
-          title: tval('Rows'),
+          title: escapeT('Rows'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             autoSize: { minRows: 10, maxRows: 20 },
-            description: tval('Configure the rows and columns of the grid.'),
+            description: escapeT('Configure the rows and columns of the grid.'),
           },
         },
         sizes: {
-          title: tval('Sizes'),
+          title: escapeT('Sizes'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             rows: 5,
           },
-          description: tval(
+          description: escapeT(
             'Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.',
           ),
         },
@@ -354,7 +354,42 @@ GridModel.registerFlow({
 
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
+
+  renderAddSubModelButton() {
+    const t = this.translate;
+    return (
+      <>
+        <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
+          <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
+        </AddBlockButton>
+        {/* <FlowSettingsButton
+          onClick={() => {
+            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
+          }}
+        >
+          {t('Configure rows')}
+        </FlowSettingsButton> */}
+      </>
+    );
+  }
+
+  render() {
+    return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
+  }
 }
+
+BlockGridModel.registerFlow({
+  key: 'blockGridSettings',
+  auto: true,
+  steps: {
+    grid: {
+      handler(ctx, params) {
+        ctx.model.setProps('rowGap', ctx.themeToken.marginBlock);
+        ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
+      },
+    },
+  },
+});
 
 function recalculateGridSizes({
   position,

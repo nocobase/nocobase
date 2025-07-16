@@ -25,8 +25,7 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
-import { Space, Spin, Table } from 'antd';
+import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
@@ -128,8 +127,7 @@ const AddFieldColumn = ({ model }) => {
       },
       subModels: {
         field: {
-          // @ts-ignore
-          use: defaultOptions.use as any,
+          use: defaultOptions.use,
           stepParams: {
             fieldSettings: {
               init: {
@@ -160,7 +158,13 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends DataBlockModel<TableModelStructure> {
-  declare resource: MultiRecordResource;
+  get resource() {
+    return super.resource as MultiRecordResource;
+  }
+
+  createResource(ctx, params) {
+    return new MultiRecordResource();
+  }
 
   getColumns() {
     return this.mapSubModels('columns', (column) => {
@@ -184,7 +188,6 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
   EditableCell = observer<any>((props) => {
     const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
     const ref = useRef(null);
-    console.log('EditableCell props:', props);
     if (editable) {
       return (
         <td
@@ -226,15 +229,24 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
                   dataSourceKey: this.collection.dataSourceKey,
                   collectionName: this.collection.name,
                   fieldPath: dataIndex,
-                  filterByTk: record.id,
+                  filterByTk: this.collection.getFilterByTK(record),
                   record: record,
+                  fieldProps: model.subModels.field.props,
                   onSuccess: (values) => {
                     record[dataIndex] = values[dataIndex];
                     this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
-                    fork.setSharedContext({ index: recordIndex, value: values[dataIndex], currentRecord: record });
-                    fork.rerender();
+                    fork.context.defineProperty('record', {
+                      get: () => record,
+                    });
+                    fork.context.defineProperty('fieldValue', {
+                      get: () => values[dataIndex],
+                    });
+                    fork.context.defineProperty('recordIndex', {
+                      get: () => recordIndex,
+                    });
+                    model.rerender();
                   },
                 });
                 // await this.resource.refresh();
@@ -371,27 +383,29 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
           components={this.components}
           tableLayout="fixed"
           size={this.props.size}
-          rowKey="_rowKey"
-          rowSelection={
-            this.props.showIndex && {
-              columnWidth: 50,
-              type: 'checkbox',
-              onChange: (_, selectedRows) => {
-                this.resource.setSelectedRows(selectedRows);
-              },
-              selectedRowKeys: this.resource.getSelectedRows().map((row) => row._rowKey),
-              renderCell: this.renderCell,
-            }
-          }
+          rowKey={this.collection.filterTargetKey}
+          rowSelection={{
+            columnWidth: 50,
+            type: 'checkbox',
+            onChange: (_, selectedRows) => {
+              this.resource.setSelectedRows(selectedRows);
+            },
+            selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
+            renderCell: this.renderCell,
+          }}
           loading={this.resource.loading}
           virtual={this.props.virtual}
-          scroll={{ x: 'max-content', y: '100%' }}
-          dataSource={this.resource.getListDataWithRowKey()}
+          scroll={{ x: 'max-content' }}
+          dataSource={this.resource.getData()}
           columns={this.getColumns()}
           pagination={{
             current: this.resource.getPage(),
             pageSize: this.resource.getPageSize(),
             total: this.resource.getMeta('count'),
+            showTotal: (total) => {
+              return this.translate('Total {{count}} items', { count: total });
+            },
+            showSizeChanger: true,
           }}
           onChange={(pagination) => {
             console.log('onChange pagination:', pagination);
@@ -418,70 +432,23 @@ TableModel.registerFlow({
   sort: 500,
   title: escapeT('Table settings'),
   steps: {
-    init: {
-      paramsRequired: true,
-      hideInSettings: true,
+    showRowNumbers: {
+      title: escapeT('Show row numbers'),
       uiSchema: {
-        dataSourceKey: {
-          type: 'string',
-          title: tval('Data Source Key'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter data source key'),
-          },
-        },
-        collectionName: {
-          type: 'string',
-          title: tval('Collection Name'),
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-component-props': {
-            placeholder: tval('Enter collection name'),
-          },
-        },
-      },
-      defaultParams: {
-        dataSourceKey: 'main',
-      },
-      handler: async (ctx, params) => {
-        ctx.model.resource = ctx.model.resource || new MultiRecordResource();
-        const {
-          dataSourceKey = params.dataSourceKey, // 先兼容一下旧的数据, TODO: remove
-          collectionName = params.collectionName, // 先兼容一下旧的数据, TODO: remove
-          associationName,
-          sourceId,
-          filterByTk,
-        } = ctx.model.props.dataSourceOptions;
-        const collection = ctx.dataSourceManager.getCollection(
-          dataSourceKey,
-          associationName ? associationName.split('.').slice(-1)[0] : collectionName,
-        );
-        ctx.model.collection = collection;
-        ctx.model.resource.setDataSourceKey(dataSourceKey);
-        ctx.model.resource.setResourceName(associationName || collectionName);
-        ctx.model.resource.setSourceId(sourceId);
-        ctx.model.resource.setAPIClient(ctx.api);
-        ctx.model.resource.setPageSize(20);
-      },
-    },
-    virtual: {
-      title: tval('Virtual'),
-      uiSchema: {
-        virtual: {
+        showIndex: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
         },
       },
       defaultParams: {
-        virtual: false,
+        showIndex: true,
       },
       handler(ctx, params) {
-        ctx.model.setProps('virtual', params.virtual);
+        ctx.model.setProps('showIndex', params.showIndex);
       },
     },
-    enableEditable: {
-      title: tval('Editable'),
+    quickEdit: {
+      title: escapeT('Enable quick edit'),
       uiSchema: {
         editable: {
           'x-component': 'Switch',
@@ -492,17 +459,17 @@ TableModel.registerFlow({
         editable: false,
       },
       handler(ctx, params) {
-        console.log('enableEditable params:', params);
         ctx.model.setProps('editable', params.editable);
       },
     },
-    editPageSize: {
-      title: tval('Edit page size'),
+    pageSize: {
+      title: escapeT('Page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
+            { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
             { label: '50', value: 50 },
@@ -522,41 +489,26 @@ TableModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: tval('Set data scope'),
+      title: escapeT('Data scope'),
     },
-    sortingRule: {
+    defaultSorting: {
       use: 'sortingRule',
-      title: tval('Set default sorting rules'),
+      title: escapeT('Default sorting'),
     },
     dataLoadingMode: {
       use: 'dataLoadingMode',
-      title: tval('Set data loading mode'),
+      title: escapeT('Data loading mode'),
     },
-    enabledIndexColumn: {
-      title: tval('Enable index column'),
-      uiSchema: {
-        showIndex: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        showIndex: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('showIndex', params.showIndex);
-      },
-    },
-    tableSize: {
-      title: tval('Table size'),
+    tableDensity: {
+      title: escapeT('Table density'),
       uiSchema: {
         size: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
-            { label: tval('Large'), value: 'large' },
-            { label: tval('Middle'), value: 'middle' },
-            { label: tval('Small'), value: 'small' },
+            { label: escapeT('Large'), value: 'large' },
+            { label: escapeT('Middle'), value: 'middle' },
+            { label: escapeT('Small'), value: 'small' },
           ],
         },
       },
@@ -567,23 +519,39 @@ TableModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
-    refresh: {
+    virtualScrolling: {
+      title: escapeT('Enable virtual scrolling'),
+      uiSchema: {
+        virtual: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: {
+        virtual: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('virtual', params.virtual);
+      },
+    },
+    refreshData: {
+      title: escapeT('Refresh data'),
       async handler(ctx, params) {
+        await ctx.model.applySubModelsAutoFlows('columns');
         const { dataLoadingMode } = ctx.model.props;
         if (dataLoadingMode === 'auto') {
           await ctx.model.resource.refresh();
         } else {
           ctx.model.resource.loading = false;
         }
-        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },
 });
 
 TableModel.define({
-  title: tval('Table'),
-  group: tval('Content'),
+  title: escapeT('Table'),
+  group: escapeT('Content'),
   defaultOptions: {
     use: 'TableModel',
     subModels: {
@@ -594,4 +562,5 @@ TableModel.define({
       ],
     },
   },
+  sort: 300,
 });
