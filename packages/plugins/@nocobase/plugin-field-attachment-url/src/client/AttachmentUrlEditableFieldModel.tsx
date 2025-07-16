@@ -10,23 +10,41 @@
 import { UploadEditableFieldModel } from '@nocobase/client';
 import { Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
+const transformValue = (value) => {
+  if (!value) return [];
+  const name = value.split('/').pop() || 'file';
+  const ext = name.split('.').pop()?.toLowerCase();
+  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
+  return [
+    {
+      uid: '-1',
+      name,
+      status: 'done',
+      url: value,
+      preview: value,
+      thumbUrl: isImage ? value : `/file-placeholder/${ext}-200-200.png`,
+    },
+  ];
+};
 const CardUpload = (props) => {
+  const [fileList, setFileList] = useState(() => transformValue(props.value));
+  useEffect(() => {
+    setFileList(transformValue(props.value));
+  }, [props.value]);
+  const handleChange = ({ file, fileList: newFileList }) => {
+    setFileList(newFileList);
+
+    if (file.status === 'done') {
+      const url = file.response?.url || file.url;
+      props.onChange?.(url);
+    } else if (file.status === 'removed') {
+      props.onChange?.(undefined);
+    }
+  };
   return (
-    <Upload
-      {...props}
-      listType="picture-card"
-      defaultFileList={props.data || []}
-      onChange={({ file }) => {
-        if (file.status === 'done') {
-          const url = file.response?.url || file.url;
-          props.onChange(url);
-        } else if (file.status === 'removed') {
-          props.onChange?.(undefined);
-        }
-      }}
-    >
+    <Upload {...props} listType="picture-card" fileList={fileList} onChange={handleChange}>
       <UploadOutlined style={{ fontSize: 20 }} />
     </Upload>
   );
@@ -34,38 +52,8 @@ const CardUpload = (props) => {
 
 export class AttachmentUrlEditableFieldModel extends UploadEditableFieldModel {
   static supportedFieldInterfaces = ['attachmentURL'];
-  transformValue(value) {
-    if (!value) return [];
-    const name = value.split('/').pop() || 'file';
-    const ext = name.split('.').pop()?.toLowerCase();
-    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
-    return [
-      {
-        uid: '-1',
-        name,
-        status: 'done',
-        url: value,
-        preview: value,
-        thumbUrl: isImage ? value : `/file-placeholder/${ext}-200-200.png`,
-      },
-    ];
-  }
 
   get component() {
     return [CardUpload, {}];
   }
 }
-
-AttachmentUrlEditableFieldModel.registerFlow({
-  key: 'attachmentURLSetting',
-  sort: 600,
-  auto: true,
-  steps: {
-    default: {
-      async handler(ctx) {
-        ctx.model.field.value &&
-          ctx.model.field.setComponentProps({ data: ctx.model.transformValue(ctx.model.field.value) });
-      },
-    },
-  },
-});
