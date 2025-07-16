@@ -39,6 +39,7 @@
     "file-saver": "^2.0.5",
     "filesize": "9.0.11",
     "flat": "^5.0.2",
+    "html5-qrcode": "^2.3.8",
     "i18next": "^22.4.9",
     "i18next-http-backend": "^2.1.1",
     "ignore": "^5.2.0",
@@ -52,6 +53,7 @@
     "mime": "^4.0.4",
     "mime-match": "^1.0.2",
     "react-beautiful-dnd": "^13.1.0",
+    "react-device-detect": "2.2.3",
     "react-drag-listview": "^0.1.9",
     "react-error-boundary": "^4.0.10",
     "react-helmet": "^6.1.0",
@@ -65,9 +67,7 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
-    "use-deep-compare-effect": "^1.8.1",
-    "react-device-detect": "2.2.3",
-    "html5-qrcode": "^2.3.8"
+    "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
