@@ -38,7 +38,6 @@ export default class extends StorageType {
     const data = super.getFileData(file, meta);
     // 对于 MinIO，不设置 url 字段，让系统在查询时动态生成
     // 这样可以确保使用我们重写的 getFileURL 方法
-    delete data.url;
     return data;
   }
 
