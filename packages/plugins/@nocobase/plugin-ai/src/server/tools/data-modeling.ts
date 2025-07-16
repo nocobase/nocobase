@@ -52,21 +52,21 @@ const updatedAtField = {
   },
 };
 
-const createPrompt = `## New Schema Creation Flow
+const createPrompt = `You are now entering the **New Schema Creation Flow**. Follow these rules:
 
 1. **Design Tables and Fields**
-   - Define the business entities and their attributes.
+   - Define business entities and their attributes.
 
 2. **Design Table Relationships**
-   - Identify and define relationships between tables: one-to-one, one-to-many, or many-to-many.
+   - Specify relationships: one-to-one, one-to-many, or many-to-many.
 
 3. **Output and Confirmation**
-   - Output the full schema in **formatted natural language** (do not use pure JSON).
-   - Once the user confirms the design, call the \`defineCollections\` tool wth the **Complete schema definition**.
-   - Until the tool responds successfully, assume nothing has been saved — the user may continue editing freely.
-   - **Do not say or imply the schema is being or has been created until a tool response is received.**
+   - Present the full schema in **formatted natural language** (not plain JSON).
+   - Wait for user confirmation, then call the \`defineCollections\` tool with the **complete schema definition**.
+   - Until the tool responds, **assume the schema is not saved** — user may continue editing.
+   - **Do not say or imply the schema has been created without tool response.**
 
-Note: Only \`defineCollections\` tool can be used.`;
+Only the \`defineCollections\` tool may be used.`;
 
 const editPrompt = `## Existing Schema Editing Flow
 

@@ -254,17 +254,17 @@ export class AIEmployee {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
       let content = msg.content.content;
-      if (typeof content === 'string') {
-        content = `<user_query>${content}</user_query>`;
-        if (workContext?.length) {
-          content = `<work_context>${JSON.stringify(workContext)}</work_context>
-${content}`;
-        }
-      }
       if (!content && !attachments && !msg.toolCalls?.length) {
         continue;
       }
       if (msg.role === 'user') {
+        if (typeof content === 'string') {
+          content = `<user_query>${content}</user_query>`;
+          if (workContext?.length) {
+            content = `<work_context>${JSON.stringify(workContext)}</work_context>
+${content}`;
+          }
+        }
         const contents = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
@@ -462,75 +462,64 @@ ${content}`;
         .filter(({ tool }) => tool.execution === 'frontend');
 
       if (!_.isEmpty(backendTools)) {
-        const parallelToolCall = backendTools.map(
-          (toolCall) =>
-            new Promise<void>(async (resolve) => {
-              const [updated] = await this.aiToolMessagesModel.update(
-                {
-                  invokeStatus: 'pending',
-                  invokeStartTime: new Date(),
-                },
-                {
-                  where: {
-                    messageId,
-                    toolCallId: toolCall.id,
-                    invokeStatus: 'init',
-                  },
-                },
-              );
-              if (updated === 0) {
-                return resolve();
-              }
-              const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
-              await this.aiToolMessagesModel.update(
-                {
-                  invokeStatus: 'done',
-                  invokeEndTime: new Date(),
-                  status: result.status,
-                  content: result.content,
-                },
-                {
-                  where: {
-                    messageId,
-                    toolCallId: toolCall.id,
-                    invokeStatus: 'pending',
-                  },
-                },
-              );
-              return resolve();
-            }),
-        );
+        const parallelToolCall = backendTools.map(async (toolCall) => {
+          const [updated] = await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'pending',
+              invokeStartTime: new Date(),
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'init',
+              },
+            },
+          );
+          if (updated === 0) {
+            return;
+          }
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'done',
+              invokeEndTime: new Date(),
+              status: result.status,
+              content: result.content,
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'pending',
+              },
+            },
+          );
+        });
         await Promise.all(parallelToolCall);
       }
 
       if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(
-          (toolCall) =>
-            new Promise<{
-              id: string;
-              name: string;
-              args: unknown;
-            } | null>(async (resolve) => {
-              const [updated] = await this.aiToolMessagesModel.update(
-                {
-                  invokeStatus: 'pending',
-                  invokeStartTime: new Date(),
-                },
-                {
-                  where: {
-                    messageId,
-                    toolCallId: toolCall.id,
-                    invokeStatus: 'init',
-                  },
-                },
-              );
-              if (updated === 0) {
-                return resolve(null);
-              } else {
-                return resolve(toolCall);
-              }
-            }),
-        );
+        const parallelToolCall = frontendTools.map(async (toolCall) => {
+          const [updated] = await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'pending',
+              invokeStartTime: new Date(),
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'init',
+              },
+            },
+          );
+          if (updated === 0) {
+            return null;
+          } else {
+            return toolCall;
+          }
+        });
 
         const type = 'tool';
         const body = (await Promise.all(parallelToolCall)).filter((x) => !_.isNull(x));
@@ -553,28 +542,24 @@ ${content}`;
       const tools = await this.withTool(toolCallList.filter((x) => toolCallIds.includes(x.id)));
       const frontendTools = tools.filter(({ tool }) => tool.execution === 'frontend');
       if (!_.isEmpty(frontendTools)) {
-        const parallelToolCall = frontendTools.map(
-          (toolCall) =>
-            new Promise<void>(async (resolve) => {
-              const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
-              await this.aiToolMessagesModel.update(
-                {
-                  invokeStatus: 'done',
-                  invokeEndTime: new Date(),
-                  status: result.status,
-                  content: result.content,
-                },
-                {
-                  where: {
-                    messageId,
-                    toolCallId: toolCall.id,
-                    invokeStatus: 'pending',
-                  },
-                },
-              );
-              return resolve();
-            }),
-        );
+        const parallelToolCall = frontendTools.map(async (toolCall) => {
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'done',
+              invokeEndTime: new Date(),
+              status: result.status,
+              content: result.content,
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'pending',
+              },
+            },
+          );
+        });
         await Promise.all(parallelToolCall);
       }
     }
@@ -617,7 +602,7 @@ ${content}`;
     const { model, service } = await this.getLLMService(formattedMessages);
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
-    const toolMessageContent = 'The tool call has been cancelled.';
+    const toolMessageContent = 'The user rejected this tool invocation and needs to continue modifying the parameters.';
     await this.db.sequelize.transaction(async (transaction) => {
       for (const toolCall of toolCalls) {
         const [updated] = await this.aiToolMessagesModel.update(
