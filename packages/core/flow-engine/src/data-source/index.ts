@@ -279,7 +279,6 @@ export class CollectionManager {
   }
 
   getCollection(name: string): Collection | undefined {
-    console.log(name);
     if (name.includes('.')) {
       const [collectionName, fieldName] = name.split('.');
       const collection = this.getCollection(collectionName);
