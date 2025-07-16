@@ -85,6 +85,7 @@ export class ToolManager implements AIToolRegister {
         }
         const toolName = `${x.groupName}-${x.tool.name}`;
         x.tool.name = toolName;
+        x.tool.execution = x.tool.execution ?? 'backend';
         this.tools.register(x.tool.name, x);
       });
   }
@@ -103,6 +104,7 @@ export class ToolManager implements AIToolRegister {
             ...tool,
           };
           item.tool.name = `${groupName}-${item.tool.name}`;
+          item.tool.execution = item.tool.execution ?? 'backend';
           delegateTools.register(item.tool.name, item);
         }
       }
@@ -126,6 +128,7 @@ export class ToolManager implements AIToolRegister {
         tool: {
           ...item.tool,
           name: `${delegate.groupName}-${item.tool.name}`,
+          execution: item.tool.execution ?? 'backend',
         },
       }));
       toolRegisters.push(...delegateTools);

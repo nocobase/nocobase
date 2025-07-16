@@ -90,5 +90,10 @@
   "Parameter description": "Parameter description",
   "The parameters required by the tool": "Parameters required by the tool",
   "New from template": "New from template",
-  "Editing message for AI employee": "Editing message"
+  "Editing message for AI employee": "Editing message",
+  "Call": "Call",
+  "invoke-status-init": "init",
+  "invoke-status-pending": "pending",
+  "invoke-status-error": "error",
+  "invoke-status-success": "success"
 }

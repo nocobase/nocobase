@@ -16,11 +16,10 @@ import { ToolCall } from '../../types';
 export const ToolCard: React.FC<{
   messageId: string;
   tools: ToolCall<unknown>[];
-  autoCallTools?: string[];
-}> = ({ tools, messageId, autoCallTools }) => {
+}> = ({ tools, messageId }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   if (tools.length > 1) {
-    return <DefaultToolCard tools={tools} messageId={messageId} autoCallTools={autoCallTools} />;
+    return <DefaultToolCard tools={tools} messageId={messageId} />;
   }
   const tool = tools[0];
   const toolOption = plugin.aiManager.tools.get(tool.name);
@@ -28,5 +27,5 @@ export const ToolCard: React.FC<{
   if (C) {
     return <C messageId={messageId} tool={tool} />;
   }
-  return <DefaultToolCard tools={[tool]} messageId={messageId} autoCallTools={autoCallTools} />;
+  return <DefaultToolCard tools={[tool]} messageId={messageId} />;
 };

@@ -44,6 +44,9 @@ export type ToolCall<T> = {
   id: string;
   type: string;
   name: string;
+  status?: 'success' | 'error';
+  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  auto: boolean;
   args: T;
 };
 
@@ -67,8 +70,8 @@ export type Message = Omit<BubbleProps, 'content'> & {
         output_tokens: number;
         total_tokens: number;
       };
+      autoCallTools?: string[];
     };
-    autoCallTools?: string[];
   };
 };
 export type Action = {

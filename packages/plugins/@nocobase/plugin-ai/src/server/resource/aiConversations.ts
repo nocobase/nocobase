@@ -153,8 +153,33 @@ export default {
       const data = hasMore ? rows.slice(0, -1) : rows;
       const newCursor = data.length ? data[data.length - 1].messageId : null;
 
+      const toolCallIds = data
+        .filter((row: Model) => row?.toolCalls?.length ?? 0 > 0)
+        .flatMap((row: Model) => row.toolCalls)
+        .map((toolCall: any) => toolCall.id);
+      const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
+        filter: {
+          sessionId,
+          toolCallId: {
+            $in: toolCallIds,
+          },
+        },
+      });
+      const toolMessageMap = new Map<string, any>(
+        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+      );
+
       ctx.body = {
         rows: data.map((row: Model) => {
+          if (row?.toolCalls?.length ?? 0 > 0) {
+            for (const toolCall of row.toolCalls) {
+              const toolMessage = toolMessageMap.get(toolCall.id);
+              toolCall.invokeStatus = toolMessage?.invokeStatus;
+              toolCall.auto = toolMessage?.auto;
+              toolCall.status = toolMessage?.status;
+            }
+          }
+
           const providerOptions = plugin.aiManager.llmProviders.get(row.metadata?.provider);
           if (!providerOptions) {
             return parseResponseMessage(row);
@@ -438,10 +463,62 @@ export default {
         }
 
         const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
-        await aiEmployee.callTool(tools[0]);
+        await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, 'Tool call error');
+      }
+      await next();
+    },
+    async confirmToolCall(ctx: Context, next: Next) {
+      setupSSEHeaders(ctx);
+
+      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return next();
+      }
+      try {
+        const conversation = await ctx.db.getRepository('aiConversations').findOne({
+          filter: {
+            sessionId,
+            userId: ctx.auth?.user.id,
+          },
+        });
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
+        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
+        if (!employee) {
+          sendErrorResponse(ctx, 'AI employee not found');
+          return next();
+        }
+
+        let message: Model;
+        if (messageId) {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              messageId,
+            },
+          });
+        } else {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            sort: ['-messageId'],
+          });
+        }
+
+        if (!message) {
+          sendErrorResponse(ctx, 'message not found');
+          return next();
+        }
+
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, 'Tool call confirm error');
       }
       await next();
     },

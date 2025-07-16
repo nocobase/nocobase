@@ -59,9 +59,7 @@ const AITextMessageRenderer: React.FC<{
         }}
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? (
-          <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCallTools={msg.metadata?.autoCallTools} />
-        ) : null}
+        {msg.tool_calls?.length ? <ToolCard tools={msg.tool_calls} messageId={msg.messageId} /> : null}
       </div>
     );
   }

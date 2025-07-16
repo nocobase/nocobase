@@ -8,9 +8,16 @@
  */
 
 import React from 'react';
-import { Button, Collapse, Tooltip, Tag } from 'antd';
+import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
 import { useT } from '../../../locale';
-import { CaretRightOutlined, QuestionCircleOutlined, ToolOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  CaretRightOutlined,
+  QuestionCircleOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -21,6 +28,8 @@ import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
+import _ from 'lodash';
+import { ToolCall } from '../../types';
 
 const useDefaultAction = (messageId: string) => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -42,16 +51,10 @@ const useDefaultAction = (messageId: string) => {
 
 const CallButton: React.FC<{
   messageId: string;
-  name: string;
-  args: any;
-}> = ({ name, messageId, args }) => {
+}> = ({ messageId }) => {
   const t = useT();
-  const { ctx } = useAISelectionContext();
-  const plugin = usePlugin('ai') as PluginAIClient;
-  const tool = plugin.aiManager.tools.get(name);
   const { invoke: invokeDefault } = useDefaultAction(messageId);
   const invoke = async () => {
-    await tool?.invoke?.(ctx, args);
     invokeDefault();
   };
 
@@ -71,14 +74,39 @@ const CallButton: React.FC<{
   );
 };
 
+const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
+  const t = useT();
+  switch (tool.invokeStatus) {
+    case 'init':
+      return (
+        <Tooltip title={t('invoke-status-init')}>
+          <CaretRightOutlined />
+        </Tooltip>
+      );
+    case 'pending':
+      return (
+        <Tooltip title={t('invoke-status-pending')}>
+          <ClockCircleOutlined />
+        </Tooltip>
+      );
+    case 'done':
+    case 'confirmed':
+      return tool.status === 'error' ? (
+        <Tooltip title={t('invoke-status-error')}>
+          <CloseCircleOutlined />
+        </Tooltip>
+      ) : (
+        <Tooltip title={t('invoke-status-success')}>
+          <CheckCircleOutlined />
+        </Tooltip>
+      );
+  }
+};
+
 export const DefaultToolCard: React.FC<{
   messageId: string;
-  tools: {
-    name: string;
-    args: any;
-  }[];
-  autoCallTools?: string[];
-}> = ({ tools, messageId, autoCallTools }) => {
+  tools: ToolCall<unknown>[];
+}> = ({ tools, messageId }) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
@@ -104,32 +132,29 @@ export const DefaultToolCard: React.FC<{
   );
 
   const items = tools.map((tool) => ({
-    key: tool.name,
+    key: tool.id,
     label: (
       <div
         style={{
           fontSize: token.fontSize,
         }}
       >
-        <span>
-          <ToolOutlined /> {t('Use skill')}
-        </span>
-        <Tag
-          style={{
-            marginLeft: 8,
-          }}
-        >
-          {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
-          {data?.[tool.name]?.description && (
-            <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
-              <QuestionCircleOutlined />
-            </Tooltip>
-          )}
-        </Tag>
+        <Flex justify="space-between">
+          <Tag
+            style={{
+              marginLeft: 8,
+            }}
+          >
+            {data?.[tool.name]?.title ? Schema.compile(data[tool.name].title, { t }) : tool.name}{' '}
+            {data?.[tool.name]?.description && (
+              <Tooltip title={Schema.compile(data[tool.name].description, { t })}>
+                <QuestionCircleOutlined />
+              </Tooltip>
+            )}
+          </Tag>
+          <InvokeStatus tool={tool} />
+        </Flex>
       </div>
-    ),
-    extra: !autoCallTools?.includes(tool.name) && (
-      <CallButton messageId={messageId} name={tool.name} args={tool.args} />
     ),
     children: (
       <ReactMarkdown
@@ -157,5 +182,20 @@ export const DefaultToolCard: React.FC<{
     },
   }));
 
-  return <Collapse items={items} size="small" bordered={false} />;
+  const showCallButton =
+    !tools.every((tool) => tool.auto) &&
+    !tools.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
+
+  return (
+    <Card
+      title={
+        <span>
+          <ToolOutlined /> {t('Use skill')}
+        </span>
+      }
+      extra={showCallButton && <CallButton messageId={messageId} />}
+    >
+      <Collapse items={items} size="small" bordered={false} />
+    </Card>
+  );
 };

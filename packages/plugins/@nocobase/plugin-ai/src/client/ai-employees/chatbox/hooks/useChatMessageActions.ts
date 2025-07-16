@@ -83,10 +83,11 @@ export const useChatMessageActions = () => {
     const decoder = new TextDecoder();
     let result = '';
     let error = false;
-    let tool: {
+    let tools: {
+      id: string;
       name: string;
-      args: any;
-    };
+      args: unknown;
+    }[];
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -111,7 +112,7 @@ export const useChatMessageActions = () => {
               error = true;
             }
             if (data.type === 'tool') {
-              tool = data.body;
+              tools = data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -151,15 +152,20 @@ export const useChatMessageActions = () => {
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
-    if (!error && tool) {
-      const t = plugin.aiManager.tools.get(tool.name);
-      if (t) {
-        await t.invoke(ctxRef.current, tool.args);
-        await callTool({
-          sessionId,
-          aiEmployee,
-        });
+    if (!error && tools && tools.length > 0) {
+      const toolCallIds: string[] = [];
+      for (const tool of tools) {
+        toolCallIds.push(tool.id);
+        const t = plugin.aiManager.tools.get(tool.name);
+        if (t) {
+          await t.invoke(ctxRef.current, tool.args);
+        }
       }
+      await confirmToolCall({
+        sessionId,
+        aiEmployee,
+        toolCallIds,
+      });
     }
   };
 
@@ -341,6 +347,50 @@ export const useChatMessageActions = () => {
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
           data: { sessionId, messageId, args },
+          responseType: 'stream',
+          adapter: 'fetch',
+        });
+
+        if (!sendRes?.data) {
+          setResponseLoading(false);
+          return;
+        }
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        setResponseLoading(false);
+        throw err;
+      }
+    },
+    [],
+  );
+
+  const confirmToolCall = useCallback(
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      toolCallIds,
+    }: {
+      sessionId: string;
+      messageId?: string;
+      aiEmployee: AIEmployee;
+      toolCallIds?: string[];
+    }) => {
+      setResponseLoading(true);
+      addMessage({
+        key: uid(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:confirmToolCall',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId, messageId, toolCallIds },
           responseType: 'stream',
           adapter: 'fetch',
         });
