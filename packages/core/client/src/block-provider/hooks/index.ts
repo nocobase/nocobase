@@ -1251,17 +1251,11 @@ export const useTableColumns = (): ColumnInfo[] => {
     // Find the root schema or table parent schema
     const findRootOrTableParent = (schema: any): any => {
       let current = schema;
-      let tableParent = null;
 
       // Travel up the schema tree
       while (current) {
-        // Check if current schema is or contains a table
-        if (
-          current['x-component']?.includes?.('Table') ||
-          current['x-decorator']?.includes?.('Table') ||
-          (current.type === 'void' && current.properties)
-        ) {
-          tableParent = current;
+        if (current?.['x-component'] === 'ActionBar') {
+          break;
         }
 
         // If we reached the root, break
@@ -1271,8 +1265,17 @@ export const useTableColumns = (): ColumnInfo[] => {
 
         current = current.parent;
       }
-
-      return tableParent || current; // Return table parent if found, otherwise root
+      const parent = current.parent;
+      if (parent) {
+        const schema = parent?.reduceProperties((buf, s) => {
+          if (s?.['x-component'] === 'TableV2') {
+            return buf.concat([s]);
+          }
+          return buf;
+        }, []);
+        return schema?.[0];
+      }
+      return null;
     };
 
     // More comprehensive search for table columns
