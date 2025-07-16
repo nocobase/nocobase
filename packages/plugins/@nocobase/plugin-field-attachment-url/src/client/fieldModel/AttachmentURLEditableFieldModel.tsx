@@ -22,7 +22,6 @@ const CardUpload = (props) => {
       return { url: v };
     }),
   );
-
   const handleChange = (newFileList) => {
     setFileList(newFileList);
     const file = newFileList[0];
