@@ -38,9 +38,8 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     Object.assign(this.decoratorProps, props);
   }
 
-  renderComponent() {
+  renderComponent(): any {
     throw new Error('renderComponent method must be implemented in subclasses of BlockModel');
-    return null;
   }
 
   render() {
