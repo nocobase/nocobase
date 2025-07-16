@@ -365,7 +365,9 @@ export class Collection {
   get name() {
     return this.options.name;
   }
-
+  get template() {
+    return this.options.template;
+  }
   get title() {
     return this.options.title ? this.flowEngine.translate(this.options.title) : this.name;
   }
@@ -607,7 +609,7 @@ export class CollectionField {
   }
 
   get targetCollection() {
-    return this.collection.collectionManager.getCollection(this.options.target);
+    return this.options.target && this.collection.collectionManager.getCollection(this.options.target);
   }
 
   getComponentProps() {
@@ -631,7 +633,9 @@ export class CollectionField {
 
   getSubclassesOf(baseClass: string) {
     return this.flowEngine.getSubclassesOf(baseClass, (M, name) => {
-      return isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
+      const interfaceMatch = isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
+      const fieldAccepted = typeof M['filterSupportedFields'] !== 'function' || M['filterSupportedFields'](this);
+      return interfaceMatch && fieldAccepted;
     });
   }
 

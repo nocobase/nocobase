@@ -52,12 +52,6 @@ export class TableColumnModel extends FieldModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
-    console.log(
-      'TableColumnModel getColumnProps',
-      this.props.dataIndex,
-      this.props.editable,
-      this.parent.props.editable,
-    );
     return {
       ...this.props,
       ellipsis: true,
@@ -124,6 +118,9 @@ TableColumnModel.registerFlow({
     init: {
       async handler(ctx, params) {
         const field = ctx.model.collectionField;
+        if (!field) {
+          return;
+        }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
         await ctx.model.applySubModelsAutoFlows('field');
