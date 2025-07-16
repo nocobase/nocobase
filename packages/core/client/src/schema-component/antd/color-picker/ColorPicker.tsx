@@ -41,7 +41,7 @@ export const ColorPicker = connect(
                 '#FADB14',
                 '#E6F4FF',
                 '#fff1f0',
-                '#f6ffed',
+                '#F6FFED',
                 '#e6fffb',
                 '#FA8C164D',
                 '#FADB144D',
