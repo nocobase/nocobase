@@ -12,7 +12,6 @@ import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { FormFieldGridModel, FormModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
