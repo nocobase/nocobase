@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "main": "dist/server/index.js",
   "displayName": "Public forms",
   "displayName.zh-CN": "公开表单",
@@ -15,5 +15,8 @@
     "@nocobase/plugin-ui-schema-storage": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
+  },
+  "devDependencies": {
+    "react-device-detect": "2.2.3"
   }
 }

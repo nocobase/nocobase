@@ -122,6 +122,9 @@ export class MagicAttributeModel extends Model {
       return this;
     }
     if (!options) options = {};
+    if (this.dataValues.options === null) {
+      this.dataValues.options = {};
+    }
     if (!options.raw) {
       // @ts-ignore
       originalValue = this.dataValues[key];
