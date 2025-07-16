@@ -41,9 +41,9 @@ EditableAssociationFieldModel.registerFlow({
           fieldModel: ctx.model.collectionField.getFirstSubclassNameOf('EditableFieldModel'),
         };
       },
-      handler: (ctx, params) => {
+      handler: async (ctx, params) => {
         if (ctx.model.constructor.name !== params.fieldModel) {
-          ctx.model.flowEngine.replaceModel(ctx.model.uid, params.fieldModel, {
+          await ctx.model.flowEngine.replaceModel(ctx.model.uid, params.fieldModel, {
             stepParams: {
               fieldSettings: {
                 init: {
@@ -54,6 +54,7 @@ EditableAssociationFieldModel.registerFlow({
               },
             },
           });
+          ctx.exit();
         }
       },
     },
