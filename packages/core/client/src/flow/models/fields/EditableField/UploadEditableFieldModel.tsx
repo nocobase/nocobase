@@ -8,32 +8,43 @@
  */
 
 import { EditableFieldModel } from './EditableFieldModel';
-import { Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import React from 'react';
+import { useField } from '@formily/react';
+import React, { useState, useEffect } from 'react';
 import { castArray } from 'lodash';
+import { Upload } from '@formily/antd-v5';
+import { FieldContext } from '@formily/react';
 
-const CardUpload = (props) => {
-  const value = castArray(props.value || []);
+export const CardUpload = (props) => {
+  const outerField: any = useField();
+  const [fileList, setFileList] = useState(castArray(props.value || []));
   return (
-    <Upload
-      {...props}
-      listType="picture-card"
-      defaultFileList={value}
-      onChange={({ fileList }) => {
-        if (props.maxCount === 1) {
-          const firstFile = fileList[0];
-          props.onChange(firstFile ? firstFile.response : null);
-        } else {
-          props.onChange(fileList.map((file) => file.response).filter(Boolean));
-        }
+    <FieldContext.Provider
+      value={{
+        ...outerField,
+        value: fileList,
       }}
     >
-      <UploadOutlined style={{ fontSize: 20 }} />
-    </Upload>
+      <Upload
+        {...props}
+        listType="picture-card"
+        fileList={fileList}
+        onChange={(newFileList) => {
+          setFileList(newFileList);
+          const doneFiles = newFileList.filter((f) => f.status === 'done');
+          if (props.maxCount === 1) {
+            const firstFile = doneFiles[0];
+            props.onChange(firstFile ? firstFile.response : null);
+          } else {
+            props.onChange(doneFiles.map((file) => file.response).filter(Boolean));
+          }
+        }}
+      >
+        <UploadOutlined style={{ fontSize: 20 }} />
+      </Upload>
+    </FieldContext.Provider>
   );
 };
-
 export class UploadEditableFieldModel extends EditableFieldModel {
   static supportedFieldInterfaces = [
     'attachment',
