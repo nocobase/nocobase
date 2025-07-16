@@ -30,13 +30,13 @@ export const ChatButton: React.FC = () => {
 
   const { stopSelect, selectable } = useAISelectionContext();
   const { token } = useToken();
-  const flowEngine = useFlowEngine();
-
-  const model = useMemo(() => {
-    return flowEngine.createModel({
-      use: 'AIEmployeeShortcutListModel',
-    });
-  }, [flowEngine]);
+  // const flowEngine = useFlowEngine();
+  //
+  // const model = useMemo(() => {
+  //   return flowEngine.createModel({
+  //     use: 'AIEmployeeShortcutListModel',
+  //   });
+  // }, [flowEngine]);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
