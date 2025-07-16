@@ -8,9 +8,10 @@
  */
 
 import { z } from 'zod';
-import { ToolOptions } from '../manager/ai-manager';
+import { ToolOptions } from '../manager/tool-manager';
 
 export const formFiller: ToolOptions = {
+  name: 'formFiller',
   title: '{{t("Form filler")}}',
   description: '{{t("Fill the form with the given content")}}',
   execution: 'frontend',

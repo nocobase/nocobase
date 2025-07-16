@@ -119,6 +119,8 @@ export default {
         ctx.throw(400);
       }
 
+      const paginate = ctx.action.params?.paginate === 'false' ? false : true;
+
       const conversation = await ctx.db.getRepository('aiConversations').findOne({
         filter: {
           sessionId,
@@ -131,29 +133,55 @@ export default {
       }
 
       const pageSize = 10;
+      const maxLimit = 200;
       const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
       const filter = {
         role: {
           $notIn: ['tool'],
         },
       };
-      if (cursor) {
+      if (paginate && cursor) {
         filter['messageId'] = {
           $lt: cursor,
         };
       }
       const rows = await messageRepository.find({
         sort: ['-messageId'],
-        limit: pageSize + 1,
+        limit: paginate ? pageSize + 1 : maxLimit,
         filter,
       });
 
-      const hasMore = rows.length > pageSize;
+      const hasMore = paginate && rows.length > pageSize;
       const data = hasMore ? rows.slice(0, -1) : rows;
       const newCursor = data.length ? data[data.length - 1].messageId : null;
 
+      const toolCallIds = data
+        .filter((row: Model) => row?.toolCalls?.length ?? 0 > 0)
+        .flatMap((row: Model) => row.toolCalls)
+        .map((toolCall: any) => toolCall.id);
+      const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
+        filter: {
+          sessionId,
+          toolCallId: {
+            $in: toolCallIds,
+          },
+        },
+      });
+      const toolMessageMap = new Map<string, any>(
+        toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
+      );
+
       ctx.body = {
         rows: data.map((row: Model) => {
+          if (row?.toolCalls?.length ?? 0 > 0) {
+            for (const toolCall of row.toolCalls) {
+              const toolMessage = toolMessageMap.get(toolCall.id);
+              toolCall.invokeStatus = toolMessage?.invokeStatus;
+              toolCall.auto = toolMessage?.auto;
+              toolCall.status = toolMessage?.status;
+            }
+          }
+
           const providerOptions = plugin.aiManager.llmProviders.get(row.metadata?.provider);
           if (!providerOptions) {
             return parseResponseMessage(row);
@@ -164,20 +192,26 @@ export default {
           });
           return provider.parseResponseMessage(row);
         }),
-        hasMore,
-        cursor: newCursor,
+        ...(paginate && {
+          hasMore,
+          cursor: newCursor,
+        }),
       };
 
       await next();
     },
 
-    async updateMessage(ctx: Context, next: Next) {
+    async updateToolArgs(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
       }
 
-      const { sessionId, messageId, content } = ctx.action.params.values || {};
+      const {
+        sessionId,
+        messageId,
+        tool: { id, args },
+      } = ctx.action.params.values || {};
       if (!sessionId) {
         ctx.throw(400);
       }
@@ -194,12 +228,22 @@ export default {
       }
 
       const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
+      const message = await messageRepository.findOne({
+        filter: { messageId },
+      });
+      const toolCalls = message.toolCalls || [];
+      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
+      if (index === -1) {
+        return next();
+      }
+      toolCalls[index] = {
+        ...toolCalls[index],
+        args,
+      };
       await messageRepository.update({
-        filter: {
-          messageId,
-        },
+        filter: { messageId },
         values: {
-          content,
+          toolCalls,
         },
       });
       await next();
@@ -210,7 +254,7 @@ export default {
 
       setupSSEHeaders(ctx);
 
-      const { sessionId, aiEmployee: employeeName, messages } = ctx.action.params.values || {};
+      const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
         return next();
@@ -250,15 +294,33 @@ export default {
           return next();
         }
 
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        await aiEmployee.cancelToolCall();
+
+        let persistenceMessages: Model[] = [];
         try {
-          await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-            values: messages.map((message: any) => ({
-              messageId: plugin.snowflake.generate(),
-              role: message.role,
-              content: message.content,
-              attachments: message.attachments,
-              workContext: message.workContext,
-            })),
+          persistenceMessages = await ctx.db.sequelize.transaction(async (transaction) => {
+            if (editingMessageId) {
+              await ctx.db.getRepository('aiMessages').destroy({
+                filter: {
+                  sessionId,
+                  messageId: {
+                    $gte: editingMessageId,
+                  },
+                },
+                transaction,
+              });
+            }
+            return await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+              values: messages.map((message: any) => ({
+                messageId: plugin.snowflake.generate(),
+                role: message.role,
+                content: message.content,
+                attachments: message.attachments,
+                workContext: message.workContext,
+              })),
+              transaction,
+            });
           });
         } catch (err) {
           ctx.log.error(err);
@@ -266,8 +328,8 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
-        await aiEmployee.processMessages(messages);
+        const [msg] = persistenceMessages;
+        await aiEmployee.processMessages(messages, msg?.messageId);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, 'Chat error warning');
@@ -357,7 +419,7 @@ export default {
       const toolNames = tools.map((tool: any) => tool.name);
       const result = {};
       for (const toolName of toolNames) {
-        const tool = await plugin.aiManager.getTool(toolName);
+        const tool = await plugin.aiManager.toolManager.getTool(toolName);
         if (tool) {
           result[toolName] = {
             name: tool.name,
@@ -421,10 +483,62 @@ export default {
         }
 
         const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
-        await aiEmployee.callTool(tools[0]);
+        await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, 'Tool call error');
+      }
+      await next();
+    },
+    async confirmToolCall(ctx: Context, next: Next) {
+      setupSSEHeaders(ctx);
+
+      const { sessionId, messageId, toolCallIds } = ctx.action.params.values || {};
+      if (!sessionId) {
+        sendErrorResponse(ctx, 'sessionId is required');
+        return next();
+      }
+      try {
+        const conversation = await ctx.db.getRepository('aiConversations').findOne({
+          filter: {
+            sessionId,
+            userId: ctx.auth?.user.id,
+          },
+        });
+        if (!conversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
+        const employee = await getAIEmployee(ctx, conversation.aiEmployeeUsername);
+        if (!employee) {
+          sendErrorResponse(ctx, 'AI employee not found');
+          return next();
+        }
+
+        let message: Model;
+        if (messageId) {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            filter: {
+              messageId,
+            },
+          });
+        } else {
+          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+            sort: ['-messageId'],
+          });
+        }
+
+        if (!message) {
+          sendErrorResponse(ctx, 'message not found');
+          return next();
+        }
+
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
+      } catch (err) {
+        ctx.log.error(err);
+        sendErrorResponse(ctx, 'Tool call confirm error');
       }
       await next();
     },

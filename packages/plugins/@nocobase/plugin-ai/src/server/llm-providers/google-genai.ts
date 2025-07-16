@@ -30,7 +30,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      verbose: true,
+      // verbose: true,
     });
   }
 
@@ -68,7 +68,6 @@ export class GoogleGenAIProvider extends LLMProvider {
 
   parseResponseMessage(message: Model) {
     const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
-    const autoCallTool = metadata?.autoCallTool;
     const content = {
       ...rawContent,
       messageId,
@@ -81,7 +80,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       content.tool_calls = toolCalls;
     }
 
-    if (Array.isArray(content.content) && autoCallTool) {
+    if (Array.isArray(content.content)) {
       const textMessage = content.content.find((msg) => msg.type === 'text');
       content.content = textMessage?.text;
     }

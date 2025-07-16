@@ -14,11 +14,13 @@ import { Card, Modal, Row, Col, Alert } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import { useT } from '../../../locale';
 import { SchemaComponent, useGlobalTheme, useToken } from '@nocobase/client';
-import { useChatMessages } from '../ChatMessagesProvider';
 import { Generating } from './Generating';
 import { uid } from '@formily/shared';
 import { createForm, onFieldValueChange } from '@formily/core';
-import { useChatConversations } from '../ChatConversationsProvider';
+import { useChatMessageActions } from '../hooks/useChatMessageActions';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { Message } from '../../types';
 
 const download =
   'M505.7 661a8 8 0 0 0 12.6 0l112-141.7c4.1-5.2.4-12.9-6.3-12.9h-74.1V168c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v338.3H400c-6.7 0-10.4 7.7-6.3 12.9l112 141.8zM878 626h-60c-4.4 0-8 3.6-8 8v154H214V634c0-4.4-3.6-8-8-8h-60c-4.4 0-8 3.6-8 8v198c0 17.7 14.3 32 32 32h684c17.7 0 32-14.3 32-32V634c0-4.4-3.6-8-8-8z';
@@ -46,18 +48,18 @@ export function replaceTagBlockByIndex(
 const EditModal: React.FC<{
   open: boolean;
   setOpen: (open: boolean) => void;
-  message: {
-    content: string;
-    messageId: string;
-  };
+  message: Message['content'];
   index: number;
   optionStr: string;
 }> = ({ open, setOpen, optionStr, message, index }) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
-  const { updateMessage } = useChatMessages();
-  const { currentConversation } = useChatConversations();
+
+  // const { updateMessage } = useChatMessageActions();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
   let initialOption: any;
   try {
     initialOption = JSON.parse(optionStr);
@@ -100,14 +102,14 @@ const EditModal: React.FC<{
       }}
       onOk={async () => {
         const content = replaceTagBlockByIndex(message.content, 'echarts', index, JSON.stringify(option));
-        await updateMessage({
-          sessionId: currentConversation,
-          messageId: message.messageId,
-          content: {
-            type: 'text',
-            content,
-          },
-        });
+        // await updateMessage({
+        //   sessionId: currentConversation,
+        //   messageId: message.messageId,
+        //   content: {
+        //     type: 'text',
+        //     content,
+        //   },
+        // });
       }}
       okText={t('Save')}
       width="80%"
@@ -194,7 +196,9 @@ export const Echarts = (props: any) => {
   const t = useT();
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
-  const { responseLoading } = useChatMessages();
+
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+
   const iconStyle = {
     fontSize: token.fontSizeSM,
     color: token.colorText,

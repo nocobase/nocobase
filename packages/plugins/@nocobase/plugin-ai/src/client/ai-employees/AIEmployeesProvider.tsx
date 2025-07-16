@@ -9,13 +9,11 @@
 
 import React, { useContext, useMemo } from 'react';
 import { createContext } from 'react';
-import { ChatBoxProvider } from './chatbox/ChatBoxProvider';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { AIEmployee } from './types';
 import { AISelectionProvider } from './selector/AISelectorProvider';
-import { ChatMessagesProvider } from './chatbox/ChatMessagesProvider';
-import { ChatConversationsProvider } from './chatbox/ChatConversationsProvider';
 import { AISettingsProvider } from './AISettingsProvider';
+import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
 
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];
@@ -51,11 +49,7 @@ export const AIEmployeesProvider: React.FC<{
     <AISelectionProvider>
       <AISettingsProvider>
         <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees, service, aiEmployeesMap }}>
-          <ChatConversationsProvider>
-            <ChatMessagesProvider>
-              <ChatBoxProvider>{props.children}</ChatBoxProvider>
-            </ChatMessagesProvider>
-          </ChatConversationsProvider>
+          <ChatBoxLayout>{props.children}</ChatBoxLayout>
         </AIEmployeesContext.Provider>
       </AISettingsProvider>
     </AISelectionProvider>

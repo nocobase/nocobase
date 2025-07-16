@@ -10,22 +10,28 @@
 import React, { useContext } from 'react';
 import { CurrentUserContext } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
-import { ChatBoxContext, useSetChatBoxContext } from './ChatBoxContext';
 import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';
+import { useChatBoxEffect } from './hooks/useChatBoxEffect';
+import { useChatBoxStore } from './stores/chat-box';
+import { ToolModal } from './generative-ui/ToolModal';
+import { useChatToolsStore } from './stores/chat-tools';
 
-export const ChatBoxProvider: React.FC<{
+export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
   const currentUserCtx = useContext(CurrentUserContext);
-  const chatBoxCtx = useSetChatBoxContext();
-  const { open, expanded } = chatBoxCtx;
+  const open = useChatBoxStore.use.open();
+  const expanded = useChatBoxStore.use.expanded();
+  const activeTool = useChatToolsStore.use.activeTool();
+
+  useChatBoxEffect();
 
   if (!currentUserCtx?.data?.data) {
     return <>{props.children}</>;
   }
   return (
-    <ChatBoxContext.Provider value={chatBoxCtx}>
+    <div>
       {props.children}
       <ChatButton />
       {open && !expanded ? (
@@ -57,6 +63,7 @@ html body {
         </Helmet>
       ) : null}
       {open ? <ChatBoxWrapper /> : null}
-    </ChatBoxContext.Provider>
+      {activeTool && <ToolModal />}
+    </div>
   );
 };

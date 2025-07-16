@@ -8,15 +8,17 @@
  */
 
 import React, { useMemo } from 'react';
-import { useChatMessages } from './ChatMessagesProvider';
-import { useUploadFiles } from './useUploadFiles';
+import { useUploadFiles } from './hooks/useUploadFiles';
 import { Upload } from 'antd';
 import { css } from '@emotion/css';
 import { Attachment } from './Attachment';
+import { useChatMessagesStore } from './stores/chat-messages';
 
 export const AttachmentsHeader: React.FC = () => {
   const uploadProps = useUploadFiles();
-  const { attachments } = useChatMessages();
+
+  const attachments = useChatMessagesStore.use.attachments();
+
   const items = useMemo(() => {
     return attachments?.map((item) => ({
       uid: item.filename,

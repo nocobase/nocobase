@@ -12,17 +12,19 @@ import { Button, Space, App, Alert, Flex } from 'antd';
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
-import { useChatMessages } from './ChatMessagesProvider';
-import { useChatBoxContext } from './ChatBoxContext';
-import { useChatConversations } from './ChatConversationsProvider';
 import { usePlugin, useToken } from '@nocobase/client';
 import { Markdown } from './markdown/Markdown';
-import { ToolCard } from './ToolCard';
 import PluginAIClient from '../..';
 import { cx, css } from '@emotion/css';
-import { Task } from '../types';
+import { Message, Task } from '../types';
 import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
+import { ToolCard } from './generative-ui/ToolCard';
+import { useChatConversationsStore } from './stores/chat-conversations';
+import { useChatMessageActions } from './hooks/useChatMessageActions';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -42,7 +44,7 @@ const MessageWrapper = React.forwardRef<
 });
 
 const AITextMessageRenderer: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = ({ msg }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
   const provider = plugin.aiManager.llmProviders.get(msg.metadata?.provider);
@@ -56,9 +58,7 @@ const AITextMessageRenderer: React.FC<{
         }}
       >
         {typeof msg.content === 'string' && <Markdown message={msg} />}
-        {msg.tool_calls?.length ? (
-          <ToolCard tools={msg.tool_calls} messageId={msg.messageId} autoCall={msg.metadata?.autoCallTool} />
-        ) : null}
+        {msg.tool_calls?.length ? <ToolCard tools={msg.tool_calls} messageId={msg.messageId} /> : null}
       </div>
     );
   }
@@ -67,7 +67,7 @@ const AITextMessageRenderer: React.FC<{
 };
 
 const AIMessageRenderer: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = ({ msg }) => {
   switch (msg.type) {
     case 'greeting':
@@ -89,7 +89,7 @@ const AIMessageRenderer: React.FC<{
 };
 
 export const AIMessage: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
   const { token } = useToken();
@@ -98,9 +98,12 @@ export const AIMessage: React.FC<{
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
   };
-  const { currentConversation } = useChatConversations();
-  const { resendMessages } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const { resendMessages } = useChatMessageActions();
   const usageMetadata = msg.metadata?.usage_metadata;
   return (
     <MessageWrapper
@@ -168,12 +171,16 @@ export const AIMessage: React.FC<{
 });
 
 export const UserMessage: React.FC<{
-  msg: any;
+  msg: Message['content'];
 }> = memo(({ msg }) => {
   const t = useT();
   const { message } = App.useApp();
-  const setSenderValue = useChatBoxContext('setSenderValue');
-  const senderRef = useChatBoxContext('senderRef');
+
+  const setSenderValue = useChatBoxStore.use.setSenderValue();
+  const senderRef = useChatBoxStore.use.senderRef();
+
+  const { startEditingMessage } = useChatMessageActions();
+
   const copy = () => {
     navigator.clipboard.writeText(msg.content);
     message.success(t('Copied'));
@@ -205,6 +212,7 @@ export const UserMessage: React.FC<{
             icon={
               <EditOutlined
                 onClick={() => {
+                  startEditingMessage(msg);
                   setSenderValue(msg.content);
                   senderRef.current?.focus();
                 }}
@@ -247,9 +255,13 @@ export const UserMessage: React.FC<{
 export const ErrorMessage: React.FC<{
   msg: any;
 }> = memo(({ msg }) => {
-  const { currentConversation } = useChatConversations();
-  const { resendMessages, messages } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const messages = useChatMessagesStore.use.messages();
+
+  const { resendMessages } = useChatMessageActions();
 
   return (
     <Alert
@@ -285,9 +297,11 @@ export const TaskMessage: React.FC<{
 }> = memo(({ msg }) => {
   const t = useT();
   const tasks = msg.content;
-  const taskVariables = useChatBoxContext('taskVariables');
-  const triggerTask = useChatBoxContext('triggerTask');
-  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  const taskVariables = useChatBoxStore.use.taskVariables();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const { triggerTask } = useChatBoxActions();
 
   return (
     <Flex align="flex-start" gap="middle" wrap={true}>

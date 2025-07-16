@@ -31,6 +31,7 @@
     "@xyflow/react": "^12.7.0",
     "elkjs": "^0.10.0",
     "@dicebear/core": "^9.2.3",
-    "@dicebear/notionists": "^9.2.3"
+    "@dicebear/notionists": "^9.2.3",
+    "zustand": "^5.0.6"
   }
 }

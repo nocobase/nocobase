@@ -7,28 +7,47 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
-import { useChatBoxContext } from './ChatBoxContext';
-import { SenderPrefix } from './SenderPrefix';
+import { GetRef } from 'antd';
 import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
-import { useChatConversations } from './ChatConversationsProvider';
-import { useChatMessages } from './ChatMessagesProvider';
 import { SenderHeader } from './SenderHeader';
 import { AttachmentsHeader } from './AttachmentsHeader';
+import { useChatConversationsStore } from './stores/chat-conversations';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatMessageActions } from './hooks/useChatMessageActions';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
 
 export const Sender: React.FC = () => {
   const t = useT();
-  const { currentConversation } = useChatConversations();
-  const { responseLoading, cancelRequest, attachments, contextItems, systemMessage } = useChatMessages();
-  const senderValue = useChatBoxContext('senderValue');
-  const setSenderValue = useChatBoxContext('setSenderValue');
-  const senderPlaceholder = useChatBoxContext('senderPlaceholder');
-  const send = useChatBoxContext('send');
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const senderRef = useChatBoxContext('senderRef');
+  const senderRef = useRef<GetRef<typeof AntSender> | null>(null);
+
+  const senderValue = useChatBoxStore.use.senderValue();
+  const setSenderValue = useChatBoxStore.use.setSenderValue();
+  const senderPlaceholder = useChatBoxStore.use.senderPlaceholder();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setSenderRef = useChatBoxStore.use.setSenderRef();
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
+  const editingMessageId = useChatBoxStore.use.editingMessageId();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const attachments = useChatMessagesStore.use.attachments();
+  const contextItems = useChatMessagesStore.use.contextItems();
+  const systemMessage = useChatMessagesStore.use.systemMessage();
+
+  const { cancelRequest, finishEditingMessage } = useChatMessageActions();
+
+  const { send } = useChatBoxActions();
+
   const [value, setValue] = useState(senderValue);
+
+  useEffect(() => {
+    setSenderRef(senderRef);
+  }, []);
 
   useEffect(() => {
     if (value !== senderValue) {
@@ -50,7 +69,7 @@ export const Sender: React.FC = () => {
       onChange={(value) => {
         setValue(value);
       }}
-      onSubmit={(content) =>
+      onSubmit={(content) => {
         send({
           sessionId: currentConversation,
           aiEmployee: currentEmployee,
@@ -63,8 +82,13 @@ export const Sender: React.FC = () => {
           ],
           attachments,
           workContext: contextItems,
-        })
-      }
+          editingMessageId: isEditingMessage ? editingMessageId : undefined,
+        });
+
+        if (isEditingMessage) {
+          finishEditingMessage();
+        }
+      }}
       onCancel={cancelRequest}
       header={<SenderHeader />}
       loading={responseLoading}

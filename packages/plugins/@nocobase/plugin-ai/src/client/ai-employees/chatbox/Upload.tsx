@@ -9,19 +9,22 @@
 
 import React, { useMemo } from 'react';
 import { Attachments } from '@ant-design/x';
-import { useChatBoxContext } from './ChatBoxContext';
 import { UploadOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { useT } from '../../locale';
-import { useUploadFiles } from './useUploadFiles';
-import { useChatMessages } from './ChatMessagesProvider';
+import { useUploadFiles } from './hooks/useUploadFiles';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatMessagesStore } from './stores/chat-messages';
 
 export const Upload: React.FC = () => {
   const t = useT();
   const uploadProps = useUploadFiles();
-  const chatBoxRef = useChatBoxContext('chatBoxRef');
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const { attachments } = useChatMessages();
+
+  const chatBoxRef = useChatBoxStore.use.chatBoxRef();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const attachments = useChatMessagesStore.use.attachments();
+
   const items = useMemo(() => {
     return attachments?.map((item, index) => ({
       uid: index.toString(),

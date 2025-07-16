@@ -7,3 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import profile from './profile';
+
+export const dataModeling = {
+  profile,
+  skills: ['system.data-modeling'],
+};

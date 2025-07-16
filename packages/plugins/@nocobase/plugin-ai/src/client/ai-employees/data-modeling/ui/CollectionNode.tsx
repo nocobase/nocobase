@@ -11,7 +11,7 @@ import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { List, Card, Flex } from 'antd';
 import { useApp, useToken } from '@nocobase/client';
-import { useT } from '../../locale';
+import { useT } from '../../../locale';
 import { Schema } from '@formily/react';
 import { KeyOutlined } from '@ant-design/icons';
 
@@ -32,7 +32,12 @@ export const CollectionNode = ({ data }) => {
     <Card
       size="small"
       title={
-        <>
+        <div
+          style={{
+            position: 'relative',
+          }}
+        >
+          <Handle type="target" position={Position.Left} id={data.name} style={handleStyle} />
           {data.title}{' '}
           <span
             style={{
@@ -42,7 +47,8 @@ export const CollectionNode = ({ data }) => {
           >
             {data.name}
           </span>
-        </>
+          <Handle type="source" position={Position.Right} id={data.name} style={handleStyle} />
+        </div>
       }
       styles={{
         body: {
@@ -70,31 +76,7 @@ export const CollectionNode = ({ data }) => {
                   width: '100%',
                 }}
               >
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id={`${data.name}-${item.name}-source-right`}
-                  style={handleStyle}
-                />
-                <Handle
-                  type="source"
-                  position={Position.Left}
-                  id={`${data.name}-${item.name}-source-left`}
-                  style={handleStyle}
-                />
-
-                <Handle
-                  type="target"
-                  position={Position.Left}
-                  id={`${data.name}-${item.name}-target-left`}
-                  style={handleStyle}
-                />
-                <Handle
-                  type="target"
-                  position={Position.Right}
-                  id={`${data.name}-${item.name}-target-right`}
-                  style={handleStyle}
-                />
+                <Handle type="source" position={Position.Right} id={`${data.name}-${item.name}`} style={handleStyle} />
                 <Flex vertical={true}>
                   <div>
                     {item.title}

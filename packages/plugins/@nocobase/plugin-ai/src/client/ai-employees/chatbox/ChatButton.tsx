@@ -11,20 +11,32 @@ import React, { useMemo } from 'react';
 import { FloatButton, Avatar, Dropdown } from 'antd';
 import icon from '../icon.png';
 import { css } from '@emotion/css';
-import { useChatBoxContext } from './ChatBoxContext';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { PauseCircleFilled } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
+import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
 
 export const ChatButton: React.FC = () => {
   const { aiEmployees } = useAIEmployeesContext();
-  const open = useChatBoxContext('open');
-  const setOpen = useChatBoxContext('setOpen');
-  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
+
+  const open = useChatBoxStore.use.open();
+  const setOpen = useChatBoxStore.use.setOpen();
+
+  const { switchAIEmployee } = useChatBoxActions();
+
   const { stopSelect, selectable } = useAISelectionContext();
   const { token } = useToken();
+  const flowEngine = useFlowEngine();
+
+  const model = useMemo(() => {
+    return flowEngine.createModel({
+      use: 'AIEmployeeShortcutListModel',
+    });
+  }, [flowEngine]);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -64,6 +76,7 @@ export const ChatButton: React.FC = () => {
         }
       `}
     >
+      {/* <FlowModelRenderer model={model} /> */}
       {!selectable ? (
         <Dropdown menu={{ items }} placement="topRight">
           <FloatButton
