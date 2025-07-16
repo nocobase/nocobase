@@ -64,7 +64,9 @@ const createPrompt = `## New Schema Creation Flow
    - Output the full schema in **formatted natural language** (do not use pure JSON).
    - Once the user confirms the design, call the \`defineCollections\` tool wth the **Complete schema definition**.
    - Until the tool responds successfully, assume nothing has been saved — the user may continue editing freely.
-   - **Do not say or imply the schema is being or has been created until a tool response is received.**`;
+   - **Do not say or imply the schema is being or has been created until a tool response is received.**
+
+Note: Only \`defineCollections\` tool can be used.`;
 
 const editPrompt = `## Existing Schema Editing Flow
 

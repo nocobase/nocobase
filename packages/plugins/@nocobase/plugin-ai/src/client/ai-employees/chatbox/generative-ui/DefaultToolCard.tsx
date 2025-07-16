@@ -11,11 +11,12 @@ import React from 'react';
 import { Button, Card, Collapse, Tooltip, Tag, Flex } from 'antd';
 import { useT } from '../../../locale';
 import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  CloseCircleOutlined,
-  CaretRightOutlined,
+  CheckCircleTwoTone,
+  ClockCircleTwoTone,
+  CloseCircleTwoTone,
+  PlayCircleTwoTone,
   QuestionCircleOutlined,
+  PlaySquareOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -67,7 +68,7 @@ const CallButton: React.FC<{
       variant="link"
       color="primary"
       size="small"
-      icon={<CaretRightOutlined />}
+      icon={<PlaySquareOutlined />}
     >
       {t('Call')}
     </Button>
@@ -80,24 +81,24 @@ const InvokeStatus: React.FC<{ tool: ToolCall<unknown> }> = ({ tool }) => {
     case 'init':
       return (
         <Tooltip title={t('invoke-status-init')}>
-          <CaretRightOutlined />
+          <PlayCircleTwoTone />
         </Tooltip>
       );
     case 'pending':
       return (
         <Tooltip title={t('invoke-status-pending')}>
-          <ClockCircleOutlined />
+          <ClockCircleTwoTone />
         </Tooltip>
       );
     case 'done':
     case 'confirmed':
       return tool.status === 'error' ? (
         <Tooltip title={t('invoke-status-error')}>
-          <CloseCircleOutlined />
+          <CloseCircleTwoTone twoToneColor="#eb2f96" />
         </Tooltip>
       ) : (
         <Tooltip title={t('invoke-status-success')}>
-          <CheckCircleOutlined />
+          <CheckCircleTwoTone twoToneColor="#52c41a" />
         </Tooltip>
       );
   }
@@ -188,9 +189,11 @@ export const DefaultToolCard: React.FC<{
 
   return (
     <Card
+      variant="borderless"
+      size="small"
       title={
         <span>
-          <ToolOutlined /> {t('Use skill')}
+          <ToolOutlined /> {t('Use skills')}
         </span>
       }
       extra={showCallButton && <CallButton messageId={messageId} />}
