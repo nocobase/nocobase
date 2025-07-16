@@ -415,7 +415,7 @@ export class PluginDataSourceMainServer extends Plugin {
     });
 
     this.app.db.on('afterDefineCollection', async (collection) => {
-      if (collection.options.uiManageable) {
+      if (collection?.options?.uiManageable) {
         this.db2cmCollections.push(collection.name);
       }
     });

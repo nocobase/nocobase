@@ -16,7 +16,7 @@ export function beforeDestoryField(db: Database) {
     const { name, type, collectionName } = model.get();
 
     const collection = db.getCollection(model.get('collectionName'));
-    if (collection.options.uiManageable) {
+    if (collection?.options?.uiManageable) {
       throw new Error('Cannot remove a UI manageable field');
     }
 
