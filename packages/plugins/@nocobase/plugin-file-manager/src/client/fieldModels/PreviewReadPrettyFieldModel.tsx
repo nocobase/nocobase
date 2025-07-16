@@ -126,7 +126,25 @@ const Preview = (props) => {
   );
 };
 export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['url', 'attachment', 'attachmentURL'];
+  static supportedFieldInterfaces = [
+    'url',
+    'attachment',
+    'attachmentURL',
+    'm2m',
+    'm2o',
+    'o2o',
+    'o2m',
+    'oho',
+    'obo',
+    'mbm',
+  ];
+
+  public static acceptsField(field): boolean {
+    if (field.targetCollection) {
+      return field.targetCollection.template === 'file';
+    }
+    return true;
+  }
 
   @reactive
   public render() {

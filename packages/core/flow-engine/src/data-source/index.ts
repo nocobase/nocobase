@@ -279,6 +279,7 @@ export class CollectionManager {
   }
 
   getCollection(name: string): Collection | undefined {
+    console.log(name);
     if (name.includes('.')) {
       const [collectionName, fieldName] = name.split('.');
       const collection = this.getCollection(collectionName);
@@ -609,7 +610,7 @@ export class CollectionField {
   }
 
   get targetCollection() {
-    return this.collection.collectionManager.getCollection(this.options.target);
+    return this.options.target && this.collection.collectionManager.getCollection(this.options.target);
   }
 
   getComponentProps() {
