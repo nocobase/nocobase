@@ -65,7 +65,9 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "react-device-detect": "2.2.3",
+    "html5-qrcode": "^2.3.8"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -79,7 +81,6 @@
     "@types/react-big-calendar": "^1.6.4",
     "axios-mock-adapter": "^1.20.0",
     "dumi": "2.2.14",
-    "dumi-theme-nocobase": "^0.2.28",
-    "html5-qrcode": "^2.3.8"
+    "dumi-theme-nocobase": "^0.2.28"
   }
 }
