@@ -294,6 +294,9 @@ export default {
           return next();
         }
 
+        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        await aiEmployee.cancelToolCall();
+
         let persistenceMessages: Model[] = [];
         try {
           persistenceMessages = await ctx.db.sequelize.transaction(async (transaction) => {
@@ -326,7 +329,6 @@ export default {
         }
 
         const [msg] = persistenceMessages;
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
         await aiEmployee.processMessages(messages, msg?.messageId);
       } catch (err) {
         ctx.log.error(err);
