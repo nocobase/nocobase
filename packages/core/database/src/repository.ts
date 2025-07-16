@@ -14,6 +14,7 @@ import {
   BulkCreateOptions,
   ModelStatic,
   Op,
+  QueryTypes,
   Sequelize,
   FindAndCountOptions as SequelizeAndCountOptions,
   CountOptions as SequelizeCountOptions,
@@ -300,6 +301,49 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ...queryOptions,
       transaction,
     });
+  }
+
+  async getEstimatedRowCount() {
+    const dialect = this.database.options.dialect;
+    let results;
+    switch (dialect) {
+      case 'mysql':
+      case 'mariadb':
+        results = await this.database.sequelize.query(
+          `
+        SELECT table_rows FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = ?
+      `,
+          { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.table_rows ?? 0);
+      case 'postgres':
+        results = await this.database.sequelize.query(
+          `
+        SELECT reltuples::BIGINT AS estimate
+        FROM pg_class WHERE relname = ?
+      `,
+          { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+
+      case 'sqlite':
+        return 0;
+
+      case 'mssql':
+        results = await this.database.sequelize.query(
+          `
+        SELECT SUM(row_count) AS estimate
+        FROM sys.dm_db_partition_stats
+        WHERE object_id = OBJECT_ID(?) AND (index_id = 0 OR index_id = 1)
+      `,
+          { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      default:
+        throw new Error(`Unsupported dialect: ${dialect}`);
+    }
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {

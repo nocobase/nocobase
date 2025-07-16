@@ -10,6 +10,9 @@
 import { Context } from '..';
 import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../constants';
+import _ from 'lodash';
+
+const DEFAULT_PAGE_LIMIT = 50000;
 
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
@@ -33,7 +36,7 @@ async function listWithPagination(ctx: Context) {
 
   const repository = getRepositoryFromParams(ctx);
 
-  const { simplePaginate } = repository.collection?.options || {};
+  let { simplePaginate } = repository.collection?.options || {};
 
   const options = {
     context: ctx,
@@ -46,6 +49,25 @@ async function listWithPagination(ctx: Context) {
       delete options[key];
     }
   });
+
+  if (!simplePaginate && _.isFunction(repository['getEstimatedRowCount'])) {
+    const count = await repository['getEstimatedRowCount']();
+    if (count > DEFAULT_PAGE_LIMIT) {
+      const resourceName = ctx.action.resourceName;
+      const [collectionName] = resourceName.split('.');
+
+      await ctx.app.db.getRepository('collections').update({
+        filter: { name: collectionName },
+        values: {
+          options: {
+            ...repository.collection?.options,
+            simplePaginate: true,
+          },
+        },
+      });
+      simplePaginate = true;
+    }
+  }
 
   if (simplePaginate) {
     options.limit = options.limit + 1;
