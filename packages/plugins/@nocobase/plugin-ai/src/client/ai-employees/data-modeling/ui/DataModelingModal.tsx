@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Tabs } from 'antd';
 import { DatabaseOutlined, FileTextOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import { useT } from '../../../locale';
@@ -17,15 +17,16 @@ import { Table } from './Table';
 import { useAPIClient, useApp } from '@nocobase/client';
 import { ToolCall } from '../../types';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
+import { CollectionDataType, FieldDataType } from '../types';
 
-const useCollections = (collections: any[]) => {
+const useCollections = (collections: CollectionDataType[]) => {
   const app = useApp();
   const fim = app.dataSourceManager.collectionFieldInterfaceManager;
   return useMemo(() => {
     const result = [];
     for (const collection of collections) {
       const fields =
-        collection.fields?.map((field: any) => {
+        collection.fields?.map((field) => {
           const fieldInterface = fim.getFieldInterface(field.interface);
           if (fieldInterface) {
             field.type = fieldInterface.default?.type || field.type;
@@ -68,17 +69,59 @@ const TabPane: React.FC<{
   );
 };
 
+const useUpdateTool = (
+  tool: ToolCall<{
+    collections: CollectionDataType[];
+  }>,
+  saveToolArgs: (args: unknown) => Promise<void>,
+) => {
+  const updateCollectionRecord = useCallback(
+    async (collectionIndex: number, collection: CollectionDataType) => {
+      const collections = [...tool.args.collections];
+      if (!collections[collectionIndex]) {
+        return;
+      }
+      collections[collectionIndex] = {
+        ...collections[collectionIndex],
+        ...collection,
+      };
+      saveToolArgs({ collections });
+    },
+    [tool, saveToolArgs],
+  );
+
+  const updateFieldRecord = useCallback(
+    async (collectionIndex: number, fieldIndex: number, field: FieldDataType) => {
+      const collections = [...tool.args.collections];
+      if (!collections[collectionIndex]?.fields?.[fieldIndex]) {
+        return;
+      }
+      const oldField = collections[collectionIndex].fields[fieldIndex];
+      collections[collectionIndex].fields[fieldIndex] = {
+        ...oldField,
+        ...field,
+      };
+      saveToolArgs({ collections });
+    },
+    [tool, saveToolArgs],
+  );
+
+  return {
+    updateCollectionRecord,
+    updateFieldRecord,
+  };
+};
+
 export const DataModelingModal: React.FC<{
   tool: ToolCall<{
-    collections: any[];
+    collections: CollectionDataType[];
   }>;
-}> = ({ tool }) => {
+  saveToolArgs: (args: unknown) => Promise<void>;
+}> = ({ tool, saveToolArgs }) => {
   const t = useT();
-  const api = useAPIClient();
-  const app = useApp();
   const collections = useCollections(tool.args.collections);
-  const fim = app.dataSourceManager.collectionFieldInterfaceManager;
   const setAdjustArgs = useChatToolsStore.use.setAdjustArgs();
+  const { updateCollectionRecord, updateFieldRecord } = useUpdateTool(tool, saveToolArgs);
 
   useEffect(() => {
     setAdjustArgs({
@@ -91,7 +134,13 @@ export const DataModelingModal: React.FC<{
       key: 'collections',
       label: t('Collections'),
       icon: <DatabaseOutlined />,
-      children: <Table collections={collections} />,
+      children: (
+        <Table
+          collections={collections}
+          updateCollectionRecord={updateCollectionRecord}
+          updateFieldRecord={updateFieldRecord}
+        />
+      ),
     },
     {
       key: 'graph',

@@ -56,7 +56,7 @@ const EditModal: React.FC<{
   const { token } = useToken();
   const { isDarkTheme } = useGlobalTheme();
 
-  const { updateMessage } = useChatMessageActions();
+  // const { updateMessage } = useChatMessageActions();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
@@ -102,14 +102,14 @@ const EditModal: React.FC<{
       }}
       onOk={async () => {
         const content = replaceTagBlockByIndex(message.content, 'echarts', index, JSON.stringify(option));
-        await updateMessage({
-          sessionId: currentConversation,
-          messageId: message.messageId,
-          content: {
-            type: 'text',
-            content,
-          },
-        });
+        // await updateMessage({
+        //   sessionId: currentConversation,
+        //   messageId: message.messageId,
+        //   content: {
+        //     type: 'text',
+        //     content,
+        //   },
+        // });
       }}
       okText={t('Save')}
       width="80%"

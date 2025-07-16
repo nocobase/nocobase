@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Modal, Select } from 'antd';
+import React, { useCallback } from 'react';
+import { Modal, Select, message } from 'antd';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { usePlugin } from '@nocobase/client';
 import PluginAIClient from '../../..';
@@ -16,6 +16,7 @@ import { ToolCall } from '../../types';
 import { Schema } from '@formily/react';
 import { useT } from '../../../locale';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 const useDefaultOnOk = () => {
   return {
@@ -31,8 +32,13 @@ export const ToolModal: React.FC = () => {
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const activeTool = useChatToolsStore.use.activeTool();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
+  const activeMessageId = useChatToolsStore.use.activeMessageId();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByName = useChatToolsStore.use.toolsByName();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const { updateToolArgs, messagesService } = useChatMessageActions();
 
   const toolOption = plugin.aiManager.tools.get(activeTool?.name);
   const modal = toolOption?.ui?.modal;
@@ -49,6 +55,29 @@ export const ToolModal: React.FC = () => {
       label: `Version ${index + 1}`,
     };
   });
+
+  const saveToolArgs = useCallback(
+    async (args: Record<string, any>) => {
+      if (!activeTool || !currentConversation || !activeMessageId) {
+        return;
+      }
+      await updateToolArgs({
+        sessionId: currentConversation,
+        messageId: activeMessageId,
+        tool: {
+          id: activeTool.id,
+          args,
+        },
+      });
+      message.success(t('Saved successfully'));
+      setActiveTool({
+        ...activeTool,
+        args,
+      });
+      // messagesService.run(currentConversation);
+    },
+    [messagesService, activeMessageId, activeTool, currentConversation, updateToolArgs],
+  );
 
   return (
     <Modal
@@ -83,7 +112,7 @@ export const ToolModal: React.FC = () => {
         setOpen(false);
       }}
     >
-      {C ? <C tool={activeTool} /> : null}
+      {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
     </Modal>
   );
 };

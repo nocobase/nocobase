@@ -15,6 +15,8 @@ import { useApp, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useFieldInterfaceOptions } from './useFieldInterfaceOptions';
+import { ToolCall } from '../../types';
+import { CollectionDataType, FieldDataType } from '../types';
 
 const editableRowClassName = cx(
   'editable-row',
@@ -41,6 +43,10 @@ const editableRowClassName = cx(
 );
 
 type FormInstance<T> = GetRef<typeof Form<T>>;
+
+type FieldColumnTypes = Exclude<TableProps<FieldDataType>['columns'], undefined>;
+
+type CollectionColumnTypes = Exclude<TableProps<CollectionDataType>['columns'], undefined>;
 
 const EditableContext = React.createContext<FormInstance<any> | null>(null);
 
@@ -71,6 +77,7 @@ const EditableRow: React.FC<EditableRowProps> = ({ index, ...props }) => {
 };
 
 interface EditableCellProps {
+  collectionIndex: number;
   title: React.ReactNode;
   editable: boolean;
   EditComponent?: (
@@ -82,7 +89,7 @@ interface EditableCellProps {
   ReadComponent?: (record: CollectionItem | FieldItem) => React.ReactNode;
   dataIndex: keyof CollectionItem | keyof FieldItem;
   record: CollectionItem | FieldItem;
-  handleSave: (record: CollectionItem | FieldItem) => void;
+  handleSave: (collectionIndex: number, record: CollectionItem | FieldItem) => void;
 }
 
 const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
@@ -93,6 +100,7 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
   children,
   dataIndex,
   record,
+  collectionIndex,
   handleSave,
   ...restProps
 }) => {
@@ -140,33 +148,9 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
   return <td {...restProps}>{childNode}</td>;
 };
 
-interface FieldDataType {
-  key: React.Key;
-  title: string;
-  name: string;
-  interface?: string;
-  description?: string;
-  enum?: { label: string; value: string }[];
-  [key: string]: any; // Allow additional properties
-}
-type FieldColumnTypes = Exclude<TableProps<FieldDataType>['columns'], undefined>;
-
-interface CollectionDataType {
-  key: React.Key;
-  title: string;
-  name: string;
-  fields: FieldDataType[];
-  template?: string;
-  autoGenId?: boolean;
-  createdAt?: boolean;
-  updatedAt?: boolean;
-  createdBy?: boolean;
-  updatedBy?: boolean;
-  description?: string;
-}
-type CollectionColumnTypes = Exclude<TableProps<CollectionDataType>['columns'], undefined>;
-
-const useColumns = () => {
+const useColumns = (
+  updateCollectionRecord: (collectionIndex: number, collection: CollectionDataType) => Promise<void>,
+) => {
   const t = useT();
   const columns: (CollectionColumnTypes[number] & { editable?: boolean; dataIndex?: string })[] = [
     {
@@ -260,17 +244,21 @@ const useColumns = () => {
     }
     return {
       ...col,
-      onCell: (record: CollectionDataType) => ({
+      onCell: (record: CollectionDataType, collectionIndex: number) => ({
         record,
         editable: col.editable,
         dataIndex: col.dataIndex,
         title: col.title,
+        handleSave: (record: CollectionDataType) => updateCollectionRecord(collectionIndex, record),
       }),
     };
   });
 };
 
-const useExpandColumns = () => {
+const useExpandColumns = (
+  collectionIndex: number,
+  updateFieldRecord: (collectionIndex: number, fieldIndex: number, field: FieldDataType) => Promise<void>,
+) => {
   const t = useT();
   const app = useApp();
   const fim = app.dataSourceManager.collectionFieldInterfaceManager;
@@ -339,13 +327,14 @@ const useExpandColumns = () => {
     }
     return {
       ...col,
-      onCell: (record: FieldDataType) => ({
+      onCell: (record: FieldDataType, fieldIndex: number) => ({
         record,
         editable: col.editable,
         dataIndex: col.dataIndex,
         title: col.title,
         EditComponent: col.EditComponent,
         ReadComponent: col.ReadComponent,
+        handleSave: (record: FieldDataType) => updateFieldRecord(collectionIndex, fieldIndex, record),
       }),
     };
   });
@@ -449,8 +438,12 @@ const ExpandedFieldRowRender: React.FC<{
   );
 };
 
-const ExpandedCollectionRowRender = (record: CollectionDataType) => {
-  const expandColumns = useExpandColumns();
+const ExpandedCollectionRowRender: React.FC<{
+  record: CollectionDataType;
+  collectionIndex: number;
+  updateFieldRecord: (collectionIndex: number, fieldIndex: number, field: FieldDataType) => Promise<void>;
+}> = ({ record, collectionIndex, updateFieldRecord }) => {
+  const expandColumns = useExpandColumns(collectionIndex, updateFieldRecord);
 
   return (
     <AntdTable<FieldDataType>
@@ -475,8 +468,10 @@ const ExpandedCollectionRowRender = (record: CollectionDataType) => {
 
 export const Table: React.FC<{
   collections: any[];
-}> = ({ collections }) => {
-  const columns = useColumns();
+  updateCollectionRecord: (collectionIndex: number, collection: CollectionDataType) => Promise<void>;
+  updateFieldRecord: (collectionIndex: number, fieldIndex: number, field: FieldDataType) => Promise<void>;
+}> = ({ collections, updateCollectionRecord, updateFieldRecord }) => {
+  const columns = useColumns(updateCollectionRecord);
 
   return (
     <AntdTable<CollectionDataType>
@@ -497,7 +492,13 @@ export const Table: React.FC<{
         },
       }}
       expandable={{
-        expandedRowRender: ExpandedCollectionRowRender,
+        expandedRowRender: (record, collectionIndex) => (
+          <ExpandedCollectionRowRender
+            record={record}
+            collectionIndex={collectionIndex}
+            updateFieldRecord={updateFieldRecord}
+          />
+        ),
         rowExpandable: (record) => record.fields && record.fields.length > 0,
       }}
     />

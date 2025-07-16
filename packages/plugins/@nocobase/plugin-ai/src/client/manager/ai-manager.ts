@@ -35,6 +35,7 @@ export type ToolOptions = {
       };
       Component?: ComponentType<{
         tool: ToolCall<unknown>;
+        saveToolArgs?: (args: unknown) => Promise<void>;
       }>;
     };
   };

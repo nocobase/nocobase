@@ -24,6 +24,7 @@ import '@xyflow/react/dist/style.css';
 import { CollectionNode } from './CollectionNode';
 import { css } from '@emotion/css';
 import { useGlobalTheme } from '@nocobase/client';
+import { CollectionDataType } from '../types';
 
 const elk = new ELK();
 
@@ -143,7 +144,7 @@ const getDiagramData = (collections: any[]) => {
 };
 
 export const Diagram: React.FC<{
-  collections: any[];
+  collections: CollectionDataType[];
 }> = ({ collections }) => {
   const { isDarkTheme } = useGlobalTheme();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);

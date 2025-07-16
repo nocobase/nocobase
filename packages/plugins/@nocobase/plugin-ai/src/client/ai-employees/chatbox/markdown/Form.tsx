@@ -61,7 +61,7 @@ export const Form = (props: any) => {
 
   const responseLoading = useChatMessagesStore.use.responseLoading();
 
-  const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
+  // const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
   const { children, node, message } = props;
   const { uid: formUid, datasource: dataSource, collection } = node.properties;
   const fieldSchema = ctx[formUid]?.fieldSchema;
@@ -183,14 +183,14 @@ export const Form = (props: any) => {
                             formUid,
                             JSON.stringify(form.values),
                           );
-                          await updateMessage({
-                            sessionId: currentConversation,
-                            messageId: message.messageId,
-                            content: {
-                              type: 'text',
-                              content,
-                            },
-                          });
+                          // await updateMessage({
+                          //   sessionId: currentConversation,
+                          //   messageId: message.messageId,
+                          //   content: {
+                          //     type: 'text',
+                          //     content,
+                          //   },
+                          // });
                         },
                       },
                     },

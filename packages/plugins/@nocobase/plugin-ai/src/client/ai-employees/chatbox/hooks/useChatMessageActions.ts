@@ -418,13 +418,13 @@ export const useChatMessageActions = () => {
   }, [currentConversation]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
-  const updateMessage = useCallback(async ({ sessionId, messageId, content }) => {
+  const updateToolArgs = useCallback(async ({ sessionId, messageId, tool }) => {
     const messagesService = messagesServiceRef.current;
-    await api.resource('aiConversations').updateMessage({
+    await api.resource('aiConversations').updateToolArgs({
       values: {
         sessionId,
         messageId,
-        content,
+        tool,
       },
     });
     messagesService.run(sessionId);
@@ -460,7 +460,7 @@ export const useChatMessageActions = () => {
     resendMessages,
     cancelRequest,
     callTool,
-    updateMessage,
+    updateToolArgs,
     lastMessageRef,
     startEditingMessage,
     finishEditingMessage,

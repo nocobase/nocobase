@@ -201,13 +201,17 @@ export default {
       await next();
     },
 
-    async updateMessage(ctx: Context, next: Next) {
+    async updateToolArgs(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
       }
 
-      const { sessionId, messageId, content } = ctx.action.params.values || {};
+      const {
+        sessionId,
+        messageId,
+        tool: { id, args },
+      } = ctx.action.params.values || {};
       if (!sessionId) {
         ctx.throw(400);
       }
@@ -224,12 +228,22 @@ export default {
       }
 
       const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
+      const message = await messageRepository.findOne({
+        filter: { messageId },
+      });
+      const toolCalls = message.toolCalls || [];
+      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
+      if (index === -1) {
+        return next();
+      }
+      toolCalls[index] = {
+        ...toolCalls[index],
+        args,
+      };
       await messageRepository.update({
-        filter: {
-          messageId,
-        },
+        filter: { messageId },
         values: {
-          content,
+          toolCalls,
         },
       });
       await next();

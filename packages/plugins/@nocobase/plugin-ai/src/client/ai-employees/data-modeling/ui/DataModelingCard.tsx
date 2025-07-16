@@ -14,11 +14,12 @@ import { useT } from '../../../locale';
 import { useToken } from '@nocobase/client';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolCall } from '../../types';
+import { CollectionDataType } from '../types';
 
 export const DataModelingCard: React.FC<{
   messageId: string;
   tool: ToolCall<{
-    collections: [];
+    collections: CollectionDataType[];
   }>;
 }> = ({ messageId, tool }) => {
   const t = useT();
