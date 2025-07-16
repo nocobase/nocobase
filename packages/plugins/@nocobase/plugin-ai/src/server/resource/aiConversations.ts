@@ -280,8 +280,9 @@ export default {
           return next();
         }
 
+        let persistenceMessages: Model[] = [];
         try {
-          await ctx.db.sequelize.transaction(async (transaction) => {
+          persistenceMessages = await ctx.db.sequelize.transaction(async (transaction) => {
             if (editingMessageId) {
               await ctx.db.getRepository('aiMessages').destroy({
                 filter: {
@@ -293,7 +294,7 @@ export default {
                 transaction,
               });
             }
-            await ctx.db.getRepository('aiConversations.messages', sessionId).create({
+            return await ctx.db.getRepository('aiConversations.messages', sessionId).create({
               values: messages.map((message: any) => ({
                 messageId: plugin.snowflake.generate(),
                 role: message.role,
@@ -310,8 +311,9 @@ export default {
           return next();
         }
 
+        const [msg] = persistenceMessages;
         const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
-        await aiEmployee.processMessages(messages);
+        await aiEmployee.processMessages(messages, msg?.messageId);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, 'Chat error warning');

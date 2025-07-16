@@ -15,9 +15,7 @@ import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
-import { AIMessageChunk } from '@langchain/core/messages';
 import _ from 'lodash';
-import a from 'packages/core/database/src/__tests__/fixtures/c0/a';
 
 export class AIEmployee {
   private employee: Model;
@@ -642,10 +640,10 @@ ${content}`;
     this.ctx.res.end();
   }
 
-  async processMessages(userMessages: any[]) {
+  async processMessages(userMessages: any[], messageId?: string) {
     try {
       const formattedUserMessages = await this.formatMessages(userMessages);
-      const historyMessages = await this.getHistoryMessages();
+      const historyMessages = await this.getHistoryMessages(messageId);
       const formattedMessages = [...historyMessages, ...formattedUserMessages];
 
       const { provider, model, service } = await this.getLLMService(formattedMessages);

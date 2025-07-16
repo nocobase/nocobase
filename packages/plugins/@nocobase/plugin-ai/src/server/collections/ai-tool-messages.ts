@@ -43,12 +43,14 @@ export default defineCollection({
     },
     {
       name: 'invokeStartTime',
-      type: 'datetime',
+      type: 'unixTimestamp',
+      accuracy: 'millisecond',
       allowNull: true,
     },
     {
       name: 'invokeEndTime',
-      type: 'datetime',
+      type: 'unixTimestamp',
+      accuracy: 'millisecond',
       allowNull: true,
     },
     {
