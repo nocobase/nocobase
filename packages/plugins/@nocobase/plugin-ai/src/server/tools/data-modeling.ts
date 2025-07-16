@@ -52,6 +52,68 @@ const updatedAtField = {
   },
 };
 
+const createPrompt = `## New Schema Creation Flow
+
+1. **Design Tables and Fields**
+   - Define the business entities and their attributes.
+
+2. **Design Table Relationships**
+   - Identify and define relationships between tables: one-to-one, one-to-many, or many-to-many.
+
+3. **Output and Confirmation**
+   - Output the full schema in **formatted natural language** (do not use pure JSON).
+   - Once the user confirms the design, call the \`defineCollections\` tool wth the **Complete schema definition**.
+   - Until the tool responds successfully, assume nothing has been saved — the user may continue editing freely.
+   - **Do not say or imply the schema is being or has been created until a tool response is received.**`;
+
+const editPrompt = `## Existing Schema Editing Flow
+
+1. **Clarify What Needs to Be Changed**
+   - Identify which tables are affected by the requested changes.
+   - If needed, call \`getCollectionNames\` to retrieve the list of all tables (ID and title).
+
+2. **Fetch Table Metadata**
+   - Analyze the current structure and identify what needs to be added, removed, or updated.
+   - If needed, use the \`getCollectionMetadata\` tool to retrieve schema details of the target table(s).
+
+3. **Propose Changes**
+   - Output your change suggestions in clear **natural language**.
+   - Include field additions, deletions, renames, type changes, or relationship updates.
+   - Wait for user confirmation before applying any changes.
+
+4. **Apply Changes**
+   - Once confirmed, call the \`defineCollections\` tool with **only the modified parts** of the schema.
+   - Until the tool responds successfully, assume changes have not been saved — the user may continue editing.
+   - **Do not say or imply the schema is being or has been updated until a tool response is received.**`;
+
+export const dataModelingIntentRouter: ToolOptions = {
+  name: 'intentRouter',
+  title: '{{t("Intent Router")}}',
+  description: '{{t("Route intents to appropriate workflow")}}',
+  schema: z.object({
+    workflow: z.enum(['create', 'edit']),
+  }),
+  invoke: async (ctx: Context, args: { workflow: 'create' | 'edit' }) => {
+    const { workflow } = args || {};
+    if (workflow === 'create') {
+      return {
+        status: 'success',
+        content: createPrompt,
+      };
+    }
+    if (workflow === 'edit') {
+      return {
+        status: 'success',
+        content: editPrompt,
+      };
+    }
+    return {
+      status: 'error',
+      content: 'Please describe your requirement clearly.',
+    };
+  },
+};
+
 export const getCollectionNames: ToolOptions = {
   name: 'getCollectionNames',
   title: '{{t("Get collection names")}}',
