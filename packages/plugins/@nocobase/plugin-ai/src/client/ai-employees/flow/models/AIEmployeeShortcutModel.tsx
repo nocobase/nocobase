@@ -14,15 +14,15 @@ import { avatars } from '../../avatars';
 
 export class AIEmployeeShortcutModel extends FlowModel {
   render() {
-    const { avatar } = this.props;
-    console.log(this.props, this.stepParams, this.getProps());
-    return (
-      <FloatButton
-        icon={<Avatar src={avatars(avatar)} size={56} />}
-        style={{
-          insetInlineEnd: '94px',
-        }}
-      />
-    );
+    // const { avatar } = this.props;
+    // console.log(this.props, this.stepParams, this.getProps());
+    // return (
+    //   <FloatButton
+    //     icon={<Avatar src={avatars(avatar)} size={56} />}
+    //     style={{
+    //       insetInlineEnd: '94px',
+    //     }}
+    //   />
+    // );
   }
 }

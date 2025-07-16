@@ -89,7 +89,7 @@ interface EditableCellProps {
   ReadComponent?: (record: CollectionItem | FieldItem) => React.ReactNode;
   dataIndex: keyof CollectionItem | keyof FieldItem;
   record: CollectionItem | FieldItem;
-  handleSave: (collectionIndex: number, record: CollectionItem | FieldItem) => void;
+  handleSave: (record: CollectionItem | FieldItem) => void;
 }
 
 const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({

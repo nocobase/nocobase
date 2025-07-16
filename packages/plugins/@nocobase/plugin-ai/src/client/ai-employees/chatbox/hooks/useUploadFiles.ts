@@ -10,7 +10,6 @@
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import PluginFileManagerClient from '@nocobase/plugin-file-manager/client';
 import { useAISettingsContext } from '../../AISettingsProvider';
-import { usePopover } from 'packages/core/flow-engine/src/views';
 import { useChatMessagesStore } from '../stores/chat-messages';
 
 export function useStorage(storage: string) {

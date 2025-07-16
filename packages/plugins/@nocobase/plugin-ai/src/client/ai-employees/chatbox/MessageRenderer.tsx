@@ -20,7 +20,6 @@ import { Message, Task } from '../types';
 import { Attachment } from './Attachment';
 import { ContextItem } from './ContextItem';
 import { ToolCard } from './generative-ui/ToolCard';
-import { userDataSyncSourcesSchema } from 'packages/plugins/@nocobase/plugin-user-data-sync/src/client/schemas/user-data-sync-sources';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';

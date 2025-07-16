@@ -20,7 +20,7 @@ import {
   withDynamicSchemaProps,
 } from '@nocobase/client';
 import { useFieldSchema } from '@formily/react';
-import { useChatBoxContext } from '../../chatbox/ChatBoxContext';
+// import { useChatBoxContext } from '../../chatbox/ChatBoxContext';
 import { ProfileCard } from '../../ProfileCard';
 import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 
@@ -41,8 +41,8 @@ export const AIEmployeeButton: React.FC<{
   const { ctx } = useContextVariable();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const triggerTask = useChatBoxContext('triggerTask');
-  const setTaskVariables = useChatBoxContext('setTaskVariables');
+  // const triggerTask = useChatBoxContext('triggerTask');
+  // const setTaskVariables = useChatBoxContext('setTaskVariables');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
   const {
@@ -64,11 +64,11 @@ export const AIEmployeeButton: React.FC<{
       onClick={async () => {
         const selectedRecord = field?.data?.selectedRowData ? field?.data?.selectedRowData : ctx;
         const local = [...localVariables, { name: '$nSelectedRecord', ctx: selectedRecord }];
-        setTaskVariables({
-          variables,
-          localVariables: local,
-        });
-        triggerTask({ aiEmployee, tasks, variables, localVariables: local });
+        // setTaskVariables({
+        //   variables,
+        //   localVariables: local,
+        // });
+        // triggerTask({ aiEmployee, tasks, variables, localVariables: local });
       }}
     >
       <Spin spinning={loading}>

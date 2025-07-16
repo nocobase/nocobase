@@ -9,25 +9,11 @@
 
 import React from 'react';
 import { Markdown } from '../../ai-employees/chatbox/markdown/Markdown';
-import { ToolRenderer } from '../../ai-employees/chatbox/generative-ui/ToolRenderer';
+import { ToolCard } from '../../ai-employees/chatbox/generative-ui/ToolCard';
+import { Message } from '../../ai-employees/types';
 
 export const MessageRenderer: React.FC<{
-  msg: {
-    messageId: string;
-    content:
-      | string
-      | (
-          | {
-              type: 'text';
-              text: string;
-            }
-          | any
-        )[];
-    tool_calls?: any[];
-    metadata: {
-      autoCallTool?: boolean;
-    };
-  };
+  msg: Message['content'];
 }> = ({ msg }) => {
   let content = msg.content;
   if (Array.isArray(content)) {
@@ -50,7 +36,7 @@ export const MessageRenderer: React.FC<{
           }}
         />
       )}
-      {msg.tool_calls?.length && <ToolRenderer tools={msg.tool_calls} messageId={msg.messageId} />}
+      {msg.tool_calls?.length && <ToolCard tools={msg.tool_calls} messageId={msg.messageId} />}
     </div>
   );
 };
