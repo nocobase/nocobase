@@ -14,7 +14,7 @@
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
-    "@nocobase/plugin-workflow-test": "1.8.5",
+    "@nocobase/plugin-workflow-test": "1.8.6",
     "@types/ejs": "^3.1.1",
     "antd": "5.x",
     "classnames": "^2.3.1",
