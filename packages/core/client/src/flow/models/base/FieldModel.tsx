@@ -13,6 +13,8 @@ import { DataBlockModel } from './BlockModel';
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
 export type SupportedFieldInterfaces = string[] | '*' | null;
 
+export type FilterSupportedFields = (field: CollectionField) => boolean;
+
 export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
@@ -45,7 +47,7 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
-  static supportsField(field: FieldSchema): boolean;
+  public static filterSupportedFields: FilterSupportedFields = () => true;
 }
 
 FieldModel.registerFlow({

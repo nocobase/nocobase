@@ -634,7 +634,7 @@ export class CollectionField {
   getSubclassesOf(baseClass: string) {
     return this.flowEngine.getSubclassesOf(baseClass, (M, name) => {
       const interfaceMatch = isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
-      const fieldAccepted = typeof M['acceptsField'] !== 'function' || M['acceptsField'](this);
+      const fieldAccepted = typeof M['filterSupportedFields'] !== 'function' || M['filterSupportedFields'](this);
       return interfaceMatch && fieldAccepted;
     });
   }

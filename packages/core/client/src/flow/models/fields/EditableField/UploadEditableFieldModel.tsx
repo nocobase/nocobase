@@ -59,7 +59,7 @@ export class UploadEditableFieldModel extends EditableFieldModel {
     'mbm',
   ];
 
-  public static acceptsField(field): boolean {
+  public static filterSupportedFields(field): boolean {
     if (field.targetCollection) {
       return field.targetCollection.template === 'file';
     }
