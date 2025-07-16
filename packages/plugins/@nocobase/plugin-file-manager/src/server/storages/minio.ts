@@ -42,14 +42,6 @@ export default class extends StorageType {
   }
 
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
-    console.log('MinIO getFileURL called:', {
-      baseUrl: this.storage.baseUrl,
-      endpoint: this.storage.options.endpoint,
-      bucket: this.storage.options.bucket,
-      filename: file.filename,
-      path: file.path,
-    });
-
     // 强制使用 endpoint + bucket 构建，忽略 baseUrl
     const { endpoint, bucket } = this.storage.options;
     if (endpoint && bucket) {
@@ -62,12 +54,8 @@ export default class extends StorageType {
         preview && this.storage.options.thumbnailRule,
       ].filter(Boolean);
       const result = urlJoin(keys);
-      console.log('MinIO generated URL:', result);
       return result;
     }
-
-    // 如果没有 endpoint 或 bucket，使用父类的默认实现
-    console.log('MinIO fallback to parent getFileURL');
     return super.getFileURL(file, preview);
   }
 
