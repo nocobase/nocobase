@@ -596,7 +596,7 @@ ${content}`;
       filter: {
         messageId,
         invokeStatus: {
-          $in: ['init', 'pending'],
+          $ne: 'confirmed',
         },
       },
     });
@@ -626,7 +626,7 @@ ${content}`;
             status: 'error',
             content: toolMessageContent,
             invokeStartTime: toolCall.invokeStartTime ?? now,
-            invokeEndTime: now,
+            invokeEndTime: toolCall.invokeEndTime ?? now,
           },
           {
             where: {
