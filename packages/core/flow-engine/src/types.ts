@@ -217,6 +217,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel> {
  * Action options for registering actions with generic model type support
  */
 export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R = any> {
+  name: string; // Unique identifier for the action
   handler: (ctx: FlowRuntimeContext<TModel>, params: P) => Promise<R> | R;
   uiSchema?:
     | Record<string, ISchema>

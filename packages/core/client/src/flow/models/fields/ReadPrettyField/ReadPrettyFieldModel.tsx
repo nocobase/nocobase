@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { reactive } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 
@@ -86,7 +85,7 @@ export class ReadPrettyFieldModel extends FieldModel {
 ReadPrettyFieldModel.registerFlow({
   key: 'readPrettyFieldSettings',
   auto: true,
-  title: tval('Read pretty field settings'),
+  title: escapeT('Read pretty field settings'),
   sort: 100,
   steps: {
     init: {
@@ -95,6 +94,53 @@ ReadPrettyFieldModel.registerFlow({
         ctx.model.setProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {
           ctx.model.setProps({ dataSource: collectionField.enum });
+        }
+      },
+    },
+    model: {
+      title: escapeT('Field component'),
+      uiSchema: (ctx) => {
+        const classes = [...ctx.model.collectionField.getSubclassesOf('ReadPrettyFieldModel').keys()];
+        if (classes.length === 1) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => ({
+              label: model,
+              value: model,
+            })),
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.use,
+        };
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
+        }
+        if (ctx.model.use !== params.use) {
+          const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
+            use: params.use,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+              readPrettyFieldSettings: {
+                model: {
+                  use: params.use,
+                },
+              },
+            },
+          });
+          await newModel.applyAutoFlows(ctx);
         }
       },
     },
