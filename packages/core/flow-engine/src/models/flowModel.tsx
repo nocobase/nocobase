@@ -145,6 +145,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this._options.async || false;
   }
 
+  get use() {
+    return this._options.use;
+  }
+
   get subKey() {
     return this._options.subKey;
   }

@@ -10,6 +10,7 @@
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
+import { FlowI18n } from './flowI18n';
 import { FlowModel } from './models';
 import { FlowExitException } from './utils';
 
@@ -286,8 +287,9 @@ export class FlowEngineContext extends FlowContext {
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
     });
+    const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
-      return this.engine.translate(keyOrTemplate, options);
+      return i18n.translate(keyOrTemplate, options);
     });
   }
 }

@@ -11,14 +11,13 @@ import { FormItem } from '@formily/antd-v5';
 import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
-import { escapeT } from '@nocobase/flow-engine';
+import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { FormFieldGridModel, FormModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
-import { DefaultStructure } from '@nocobase/flow-engine';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -282,6 +281,54 @@ EditableFieldModel.registerFlow({
       }),
       handler(ctx, params) {
         ctx.model.setPattern(params.pattern);
+      },
+    },
+    model: {
+      title: escapeT('Field component'),
+      uiSchema: (ctx) => {
+        const classes = [...ctx.model.collectionField.getSubclassesOf('EditableFieldModel').keys()];
+        if (classes.length === 1) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => ({
+              label: model,
+              value: model,
+            })),
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.use,
+        };
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
+        }
+        if (ctx.model.use !== params.use) {
+          const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
+            use: params.use,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+              formItemSettings: {
+                model: {
+                  use: params.use,
+                },
+              },
+            },
+          });
+          await ctx.model.destroy();
+          await newModel.applyAutoFlows(ctx);
+        }
       },
     },
   },

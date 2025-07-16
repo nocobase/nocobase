@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
+import _ from 'lodash';
 import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
-import { initFlowEngineLocale } from './locale';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
 import {
@@ -37,12 +37,12 @@ export class FlowEngine {
   private modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
   /** @private Stores created model instances. */
   private modelInstances: Map<string, any> = new Map();
+  #modelRepository: IFlowModelRepository | null = null;
+  #applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+  #flowContext: FlowEngineContext;
+
   /** @public Stores flow settings including components and scopes for formily settings. */
   public flowSettings: FlowSettings = new FlowSettings();
-  private modelRepository: IFlowModelRepository | null = null;
-  private _applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
-  private i18nLoaded = false;
-  #flowContext: FlowEngineContext;
 
   /**
    * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
@@ -64,6 +64,10 @@ export class FlowEngine {
     return this.#flowContext;
   }
 
+  get applyFlowCache() {
+    return this.#applyFlowCache;
+  }
+
   /**
    * 设置模型仓库，用于持久化和查询模型实例。
    * 如果之前已设置过模型仓库，将会覆盖原有设置，并输出警告。
@@ -73,144 +77,33 @@ export class FlowEngine {
    * flowEngine.setModelRepository(new MyFlowModelRepository());
    */
   setModelRepository(modelRepository: IFlowModelRepository) {
-    if (this.modelRepository) {
+    if (this.#modelRepository) {
       console.warn('FlowEngine: Model repository is already set and will be overwritten.');
     }
-    this.modelRepository = modelRepository;
+    this.#modelRepository = modelRepository;
   }
 
-  /**
-   * 翻译函数，支持简单翻译和模板编译
-   * @param keyOrTemplate 翻译键或包含 {{t('key', options)}} 的模板字符串
-   * @param options 翻译选项（如命名空间、参数等）
-   * @returns 翻译后的文本
-   *
-   * @example
-   * // 简单翻译
-   * flowEngine.t('Hello World')
-   * flowEngine.t('Hello {name}', { name: 'John' })
-   *
-   * // 模板编译
-   * flowEngine.t("{{t('Hello World')}}")
-   * flowEngine.t("{{ t( 'User Name' ) }}")
-   * flowEngine.t("{{  t  (  'Email'  ,  { ns: 'fields' }  )  }}")
-   * flowEngine.t("前缀 {{ t('User Name') }} 后缀")
-   * flowEngine.t("{{t('Hello {name}', {name: 'John'})}}")
-   */
-  public translate(keyOrTemplate: string, options?: any): string {
-    if (!keyOrTemplate || typeof keyOrTemplate !== 'string') {
-      return keyOrTemplate;
-    }
-
-    // 先尝试一次翻译
-    let result = this.translateKey(keyOrTemplate, options);
-
-    // 检查翻译结果是否包含模板语法，如果有则进行模板编译
-    if (this.isTemplate(result)) {
-      result = this.compileTemplate(result);
-    }
-
-    return result;
-  }
-
-  /**
-   * 内部翻译方法
-   * @private
-   */
-  private translateKey(key: string, options?: any): string {
-    if (this.context?.i18n?.t) {
-      if (!this.i18nLoaded) {
-        initFlowEngineLocale(this.context.i18n);
-        this.i18nLoaded = true;
-      }
-      return this.context.i18n.t(key, options);
-    }
-    // 如果没有翻译函数，返回原始键值
-    return key;
-  }
-
-  /**
-   * 检查字符串是否包含模板语法
-   * @private
-   */
-  private isTemplate(str: string): boolean {
-    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
-  }
-
-  /**
-   * 编译模板字符串
-   * @private
-   */
-  private compileTemplate(template: string): string {
-    return template.replace(
-      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
-      (match, key, optionsStr) => {
-        try {
-          let templateOptions = {};
-          if (optionsStr) {
-            optionsStr = optionsStr.trim();
-            if (optionsStr.startsWith('{') && optionsStr.endsWith('}')) {
-              // 使用受限的 Function 构造器解析
-              try {
-                templateOptions = new Function('$root', `with($root) { return (${optionsStr}); }`)({});
-              } catch (parseError) {
-                return match;
-              }
-            }
-          }
-          return this.translateKey(key, templateOptions);
-        } catch (error) {
-          console.warn(`FlowEngine: Failed to compile template "${match}":`, error);
-          return match;
-        }
-      },
-    );
-  }
-
-  get applyFlowCache() {
-    return this._applyFlowCache;
+  translate(keyOrTemplate: string, options?: any): string {
+    return this.context.t(keyOrTemplate, options);
   }
 
   registerActions(actions: Record<string, ActionDefinition>): void {
     for (const [, definition] of Object.entries(actions)) {
-      this.registerAction(definition);
+      this.#registerAction(definition);
     }
   }
 
   /**
-   * 注册一个 Action。支持泛型以确保正确的模型类型推导。
-   * Action 是流程中的可复用操作单元。
-   * @template TModel 具体的FlowModel子类类型
-   * @param {string | ActionDefinition<TModel>} nameOrDefinition Action 名称或 ActionDefinition 对象。
-   *        如果为字符串，则为 Action 名称，需要配合 options 参数。
-   *        如果为对象，则为完整的 ActionDefinition。
-   * @param {ActionOptions<TModel>} [options] 当第一个参数为 Action 名称时，此参数为 Action 的选项。
-   * @returns {void}
-   * @example
-   * // 方式一: 传入名称和选项
-   * flowEngine.registerAction<MyModel>('myAction', { handler: async (ctx, params) => { ... } });
-   * // 方式二: 传入 ActionDefinition 对象
-   * flowEngine.registerAction<MyModel>({ name: 'myAction', handler: async (ctx, params) => { ... } });
+   * 注册一个 Action 定义。
+   * @template TModel 具体的FlowModel子类类型，默认为 FlowModel。
+   * @param {ActionDefinition<TModel>} definition Action 定义对象，包含名称、处理函数等。
    */
-  public registerAction<TModel extends FlowModel = FlowModel>(
-    nameOrDefinition: string | ActionDefinition<TModel>,
-    options?: ActionOptions<TModel>,
-  ): void {
-    let definition: ActionDefinition<TModel>;
-
-    if (typeof nameOrDefinition === 'string' && options) {
-      definition = {
-        ...options,
-        name: nameOrDefinition,
-      } as any;
-    } else if (typeof nameOrDefinition === 'object') {
-      definition = nameOrDefinition as ActionDefinition<TModel>;
-    } else {
-      throw new Error('Invalid arguments for registerAction');
+  #registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
+    if (!definition.name) {
+      throw new Error('FlowEngine: Action must have a name.');
     }
-
     if (this.actions.has(definition.name)) {
-      console.warn(`FlowEngine: Action with name '${definition.name}' is already registered and will be overwritten.`);
+      throw new Error(`FlowEngine: Action with name '${definition.name}' is already registered.`);
     }
     this.actions.set(definition.name, definition as ActionDefinition);
   }
@@ -225,7 +118,7 @@ export class FlowEngine {
     return this.actions.get(name) as ActionDefinition<TModel> | undefined;
   }
 
-  private registerModel(name: string, modelClass: ModelConstructor): void {
+  #registerModel(name: string, modelClass: ModelConstructor): void {
     if (this.modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
@@ -238,14 +131,14 @@ export class FlowEngine {
    * @returns {void}
    * @example
    * flowEngine.registerModels({
-   *   'UserModel': UserModel,
-   *   'OrderModel': OrderModel,
-   *   'ProductModel': ProductModel
+   *   UserModel,
+   *   OrderModel,
+   *   ProductModel
    * });
    */
   public registerModels(models: Record<string, ModelConstructor | typeof FlowModel<any>>) {
     for (const [name, modelClass] of Object.entries(models)) {
-      this.registerModel(name, modelClass);
+      this.#registerModel(name, modelClass);
     }
   }
 
@@ -386,7 +279,7 @@ export class FlowEngine {
   }
 
   private ensureModelRepository(): boolean {
-    if (!this.modelRepository) {
+    if (!this.#modelRepository) {
       // 不抛错，直接返回 false
       return false;
     }
@@ -399,7 +292,7 @@ export class FlowEngine {
     if (model) {
       return model as T;
     }
-    const data = await this.modelRepository.findOne(options);
+    const data = await this.#modelRepository.findOne(options);
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
@@ -427,7 +320,7 @@ export class FlowEngine {
     if (m) {
       return m;
     }
-    const data = await this.modelRepository.findOne(options);
+    const data = await this.#modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
       model = this.createModel<T>(data as any);
@@ -453,12 +346,12 @@ export class FlowEngine {
 
   async saveModel<T extends FlowModel = FlowModel>(model: T) {
     if (!this.ensureModelRepository()) return;
-    return await this.modelRepository.save(model);
+    return await this.#modelRepository.save(model);
   }
 
   async destroyModel(uid: string) {
     if (this.ensureModelRepository()) {
-      await this.modelRepository.destroy(uid);
+      await this.#modelRepository.destroy(uid);
     }
     return this.removeModel(uid);
   }
@@ -467,7 +360,6 @@ export class FlowEngine {
    * 将指定的模型实例替换为新的类创建的实例
    * @template T 新模型的类型
    * @param {string} uid 要替换的模型的UID
-   * @param {ModelConstructor<T>} ModelClass 新模型的类
    * @param {Partial<FlowModelOptions> | ((oldModel: FlowModel) => Partial<FlowModelOptions>)} [optionsOrFn]
    *        创建新模型的选项，支持两种形式：
    *        1. 直接传入options
@@ -476,7 +368,6 @@ export class FlowEngine {
    */
   async replaceModel<T extends FlowModel = FlowModel>(
     uid: string,
-    ModelClass: ModelConstructor<T>,
     optionsOrFn?: Partial<FlowModelOptions> | ((currentOptions: FlowModelOptions) => Partial<FlowModelOptions>),
   ): Promise<T | null> {
     const oldModel = this.getModel(uid);
@@ -489,7 +380,7 @@ export class FlowEngine {
     const currentParent = oldModel.parent;
     const currentSubKey = oldModel.subKey;
     const currentSubType = oldModel.subType;
-    const currentSortIndex = oldModel.sortIndex;
+    const currentOptions = oldModel.serialize();
 
     // 2. 确定新的选项
     let userOptions: Partial<FlowModelOptions>;
@@ -504,23 +395,15 @@ export class FlowEngine {
 
     // 3. 合并用户选项和关键属性
     const newOptions = {
-      ...userOptions, // 用户提供的新options
-      // uid, // 保持相同的UID
-      flowEngine: this,
-      parentId: currentParent?.uid,
-      subKey: currentSubKey,
-      subType: currentSubType,
-      sortIndex: currentSortIndex,
-    } as FlowModelOptions & { uid: string };
+      ..._.omit(currentOptions, ['subModels']),
+      ...userOptions,
+    } as CreateModelOptions;
 
     // 4. 销毁当前模型（这会处理所有清理工作：持久化删除、内存清理、父模型引用等）
     await oldModel.destroy();
 
     // 5. 使用createModel创建新的模型实例
-    const newModel = this.createModel<T>({
-      ...newOptions,
-      use: ModelClass,
-    });
+    const newModel = this.createModel<T>(newOptions);
 
     // 6. 如果有父模型，将新模型添加到父模型的subModels中
     if (currentParent && currentSubKey) {
@@ -590,7 +473,7 @@ export class FlowEngine {
     move(sourceModel, targetModel);
     if (this.ensureModelRepository()) {
       const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
-      await this.modelRepository.move(sourceId, targetId, position);
+      await this.#modelRepository.move(sourceId, targetId, position);
     }
     // 触发事件以通知其他部分模型已移动
     sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
