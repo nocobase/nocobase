@@ -26,6 +26,7 @@ import useDialect from '../hooks/useDialect';
 import * as components from './components';
 import { useFieldInterfaceOptions } from './interfaces';
 import { ItemType, MenuItemType } from 'antd/es/menu/interface';
+import { css } from '@nocobase/client';
 
 const getSchema = (schema: CollectionFieldInterface, record: any, compile) => {
   if (!schema) {
@@ -275,10 +276,6 @@ export const AddFieldAction = (props) => {
   }, [getFieldOptions]);
   const menu = useMemo<MenuProps>(() => {
     return {
-      style: {
-        maxHeight: '60vh',
-        overflow: 'auto',
-      },
       onClick: (e) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
@@ -308,7 +305,22 @@ export const AddFieldAction = (props) => {
     record.template !== 'sql' && (
       <RecordProvider record={record}>
         <ActionContextProvider value={{ visible, setVisible }}>
-          <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
+          <Dropdown
+            getPopupContainer={getContainer}
+            trigger={trigger}
+            align={align}
+            menu={menu}
+            overlayClassName={css`
+              .ant-dropdown-menu-root {
+                max-height: 80vh;
+                overflow-y: auto;
+              }
+              .ant-dropdown-menu-item-group-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+              }
+            `}
+          >
             {children || (
               <Button icon={<PlusOutlined />} type={'primary'}>
                 {t('Add field')}
