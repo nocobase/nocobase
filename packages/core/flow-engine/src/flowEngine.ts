@@ -516,6 +516,12 @@ export class FlowEngine {
       ...userOptions,
     } as CreateModelOptions;
 
+    // 暂停父模型的事件触发,
+    // TODO: find a better way to do this
+    if (currentParent) {
+      currentParent.emitter.setPaused(true);
+    }
+
     // 4. 销毁当前模型（这会处理所有清理工作：持久化删除、内存清理、父模型引用等）
     await oldModel.destroy();
 
@@ -535,6 +541,8 @@ export class FlowEngine {
 
     // 7. 触发事件以通知其他部分模型已替换
     if (currentParent) {
+      currentParent.emitter.setPaused(false);
+      currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
     }
     await newModel.save();
