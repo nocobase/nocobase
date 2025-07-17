@@ -301,7 +301,7 @@ EditableFieldModel.registerFlow({
           },
         };
       },
-      onParamsChanged: async (params, oldParams, ctx) => {
+      afterParamsChange: async (params, oldParams, ctx) => {
         if (params.use !== oldParams.use) {
           await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,

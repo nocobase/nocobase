@@ -65,7 +65,7 @@ const openStepSettingsDialog = async ({
   }
 
   let title = step.title;
-  let onParamsChanged = step.onParamsChanged;
+  let afterParamsChange = step.afterParamsChange;
 
   let actionDefaultParams = {};
   if (step.use) {
@@ -73,7 +73,7 @@ const openStepSettingsDialog = async ({
     if (action) {
       actionDefaultParams = action.defaultParams || {};
       title = title || action.title;
-      onParamsChanged = onParamsChanged || action.onParamsChanged;
+      afterParamsChange = afterParamsChange || action.afterParamsChange;
     }
   }
 
@@ -155,8 +155,8 @@ const openStepSettingsDialog = async ({
               model.setStepParams(flowKey, stepKey, currentValues);
               let skipSave = false;
               // Call onParamsChange callback if it exists
-              if (onParamsChanged) {
-                skipSave = await onParamsChanged(currentValues, oldParams, flowRuntimeContext);
+              if (afterParamsChange) {
+                skipSave = await afterParamsChange(currentValues, oldParams, flowRuntimeContext);
               }
 
               currentDialog.close();
