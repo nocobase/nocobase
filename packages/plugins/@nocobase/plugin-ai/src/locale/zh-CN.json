@@ -90,5 +90,11 @@
   "Parameter description": "参数描述",
   "The parameters required by the tool": "工具所需的参数",
   "Default greeting message": "你好, 我是 {{ nickname }}",
-  "New from template": "从模板新建"
+  "New from template": "从模板新建",
+  "Editing message for AI employee": "正在编辑消息",
+  "Call": "执行",
+  "invoke-status-init": "待执行",
+  "invoke-status-pending": "执行中",
+  "invoke-status-error": "执行失败",
+  "invoke-status-success": "执行成功"
 }

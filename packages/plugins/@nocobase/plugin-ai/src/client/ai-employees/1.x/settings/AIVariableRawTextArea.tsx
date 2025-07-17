@@ -9,13 +9,13 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import { VariableSelect } from '@nocobase/client';
-import { useT } from '../../locale';
+import { useT } from '../../../locale';
 import { connect } from '@formily/react';
 import { Button, Input, Space } from 'antd';
 import { BuildOutlined, BlockOutlined } from '@ant-design/icons';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { css } from '@emotion/css';
-import { useOnInsert } from '../useOnInsert';
+import { useOnInsert } from '../../useOnInsert';
 import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
 
 export const UISchemaSelector: React.FC<{

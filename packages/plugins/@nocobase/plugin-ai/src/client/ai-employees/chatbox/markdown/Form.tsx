@@ -13,12 +13,13 @@ import { uid } from '@formily/shared';
 import { createForm } from '@formily/core';
 import { useT } from '../../../locale';
 import { useAISelectionContext } from '../../selector/AISelectorProvider';
-import { useChatConversations } from '../ChatConversationsProvider';
-import { useChatMessages } from '../ChatMessagesProvider';
-import { useChatBoxContext } from '../ChatBoxContext';
 import { Generating } from './Generating';
 import { Alert } from 'antd';
 import { CodeInternal } from './Code';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChatMessageActions } from '../hooks/useChatMessageActions';
+import { useChatBoxStore } from '../stores/chat-box';
 
 function getFormV2Properties(schema) {
   const result: Record<string, any> = {};
@@ -53,9 +54,14 @@ function replaceFormContentByUid(content: string, uid: string, values: string): 
 export const Form = (props: any) => {
   const t = useT();
   const { ctx } = useAISelectionContext();
-  const { currentConversation } = useChatConversations();
-  const { resendMessages, messagesService, responseLoading, updateMessage } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+
+  // const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
   const { children, node, message } = props;
   const { uid: formUid, datasource: dataSource, collection } = node.properties;
   const fieldSchema = ctx[formUid]?.fieldSchema;
@@ -177,14 +183,14 @@ export const Form = (props: any) => {
                             formUid,
                             JSON.stringify(form.values),
                           );
-                          await updateMessage({
-                            sessionId: currentConversation,
-                            messageId: message.messageId,
-                            content: {
-                              type: 'text',
-                              content,
-                            },
-                          });
+                          // await updateMessage({
+                          //   sessionId: currentConversation,
+                          //   messageId: message.messageId,
+                          //   content: {
+                          //     type: 'text',
+                          //     content,
+                          //   },
+                          // });
                         },
                       },
                     },

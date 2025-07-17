@@ -8,14 +8,14 @@
  */
 
 import React, { useMemo } from 'react';
-import { useChatMessages } from './ChatMessagesProvider';
 import { usePlugin } from '@nocobase/client';
 import { Button } from 'antd';
 import { Schema } from '@formily/react';
 import PluginAIClient from '../..';
 import { useT } from '../../locale';
 import { ActionOptions, ContextItem, Message } from '../types';
-import { useChatBoxContext } from './ChatBoxContext';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatBoxStore } from './stores/chat-box';
 
 export const Actions: React.FC<{
   message: Message & { messageId: string };
@@ -24,8 +24,12 @@ export const Actions: React.FC<{
 }> = ({ responseType, message, value }) => {
   const t = useT();
   const plugin = usePlugin('ai') as PluginAIClient;
-  const { messages, responseLoading } = useChatMessages();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+
+  const messages = useChatMessagesStore.use.messages();
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
   const reversedMessages = [...messages].reverse();
   const lastMessage = reversedMessages.find((msg) => msg.role === currentEmployee.username);
   const actions: (ActionOptions & { context: ContextItem })[] = useMemo(() => {

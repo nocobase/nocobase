@@ -13,9 +13,9 @@ import { useT } from '../../locale';
 import { Button, Popover, Card, Alert, App, Typography } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
-import { useChatBoxContext } from './ChatBoxContext';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { uid } from '@formily/shared';
+import { useChatBoxStore } from './stores/chat-box';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -35,8 +35,10 @@ const useEditActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const t = useT();
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const setCurrentEmployee = useChatBoxContext('setCurrentEmployee');
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
+
   const {
     service: { refresh },
   } = useAIEmployeesContext();
@@ -68,7 +70,7 @@ const useEditActionProps = () => {
 
 const Edit: React.FC = () => {
   const t = useT();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   return (
     <SchemaComponent
@@ -134,7 +136,8 @@ const Edit: React.FC = () => {
 export const UserPrompt: React.FC = () => {
   const t = useT();
   const { token } = useToken();
-  const currentEmployee = useChatBoxContext('currentEmployee');
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+
   return (
     <Popover
       styles={{

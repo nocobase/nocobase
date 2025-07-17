@@ -40,15 +40,38 @@ export type ContextItem = {
   content: string;
 };
 
+export type ToolCall<T> = {
+  id: string;
+  type: string;
+  name: string;
+  status?: 'success' | 'error';
+  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  auto: boolean;
+  args: T;
+};
+
 export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
   content: {
-    type?: MessageType;
     content: any;
+    ref?: React.MutableRefObject<any>;
+    type?: MessageType;
+    messageId?: string;
     attachments?: Attachment[];
     workContext?: ContextItem[];
+    tool_calls?: ToolCall<unknown>[];
+    metadata?: {
+      model: string;
+      provider: string;
+      usage_metadata?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+      };
+      autoCallTools?: string[];
+    };
   };
 };
 export type Action = {
@@ -67,6 +90,7 @@ export type SendOptions = {
   }[];
   attachments?: Attachment[];
   workContext: ContextItem[];
+  editingMessageId?: string;
 };
 
 export type ResendOptions = {
@@ -94,11 +118,16 @@ export type TriggerTaskOptions = {
 };
 
 export type Tool = {
-  name: string;
-  title: string;
-  description: string;
-  schema?: any;
-  children?: Tool[];
+  group: {
+    groupName: string;
+    title?: string;
+    description?: string;
+  };
+  tools: {
+    name: string;
+    title: string;
+    description: string;
+  }[];
 };
 
 export type Attachment = any;

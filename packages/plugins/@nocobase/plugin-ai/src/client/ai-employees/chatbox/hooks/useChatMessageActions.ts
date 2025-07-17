@@ -7,62 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
-import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions } from '../types';
-import React, { useState } from 'react';
-import { uid } from '@formily/shared';
-import { useT } from '../../locale';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
-import { useChatConversations } from './ChatConversationsProvider';
+import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
+import PluginAIClient from '../../..';
+import { uid } from '@formily/shared';
+import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
-import PluginAIClient from '../..';
+import { useT } from '../../../locale';
+import { useChatConversationsStore } from '../stores/chat-conversations';
+import { useChatBoxStore } from '../stores/chat-box';
 
-interface ChatMessagesContextValue {
-  responseLoading: boolean;
-  messages: Message[];
-  addMessage: (message: Message) => void;
-  addMessages: (messages: Message[]) => void;
-  setMessages: (messages: Message[]) => void;
-  sendMessages: (
-    options: SendOptions & {
-      onConversationCreate?: (sessionId: string) => void;
-    },
-  ) => Promise<void>;
-  resendMessages: (options: ResendOptions) => void;
-  cancelRequest: () => void;
-  callTool: (options: { sessionId: string; messageId: string; aiEmployee: AIEmployee }) => void;
-  updateMessage: (options: { sessionId: string; messageId: string; content: any }) => Promise<void>;
-  messagesService: any;
-  lastMessageRef: (node: HTMLElement | null) => void;
-  attachments: Attachment[];
-  setAttachments: React.Dispatch<React.SetStateAction<any[]>>;
-  addAttachments: (attachments: Attachment | Attachment[]) => void;
-  removeAttachment: (filename: string) => void;
-  contextItems: ContextItem[];
-  setContextItems: React.Dispatch<React.SetStateAction<ContextItem[]>>;
-  addContextItems: (items: ContextItem | ContextItem[]) => void;
-  removeContextItem: (type: string, uid: string) => void;
-  systemMessage: string;
-  setSystemMessage: React.Dispatch<React.SetStateAction<string>>;
-}
-
-export const ChatMessagesContext = createContext<ChatMessagesContextValue | null>(null);
-
-export const useChatMessages = () => useContext(ChatMessagesContext);
-
-export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useChatMessageActions = () => {
   const t = useT();
   const api = useAPIClient();
   const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
-  const [contextItems, setContextItems] = useState<ContextItem[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [systemMessage, setSystemMessage] = useState<string>('');
-  const [responseLoading, setResponseLoading] = useState(false);
-  const { currentConversation } = useChatConversations();
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
+  const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
+
+  const messages = useChatMessagesStore.use.messages();
+  const setMessages = useChatMessagesStore.use.setMessages();
+  const addMessage = useChatMessagesStore.use.addMessage();
+  const addMessages = useChatMessagesStore.use.addMessages();
+  const updateLastMessage = useChatMessagesStore.use.updateLastMessage();
+  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
+  const setAbortController = useChatMessagesStore.use.setAbortController();
+  const setAttachments = useChatMessagesStore.use.setAttachments();
+  const setContextItems = useChatMessagesStore.use.setContextItems();
+
+  const currentConversation = useChatConversationsStore.use.currentConversation();
   const ctxRef = useRef(ctx);
 
   const messagesService = useRequest<{
@@ -78,100 +54,40 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .getMessages({
           sessionId,
           cursor,
+          paginate: false,
         })
-        .then((res) => res?.data),
+        .then((res) => {
+          const data = res?.data;
+          if (!data?.data) {
+            return;
+          }
+          const newMessages = [...data.data].reverse();
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            const result = cursor ? [...newMessages, ...prev] : newMessages;
+            if (last?.role === 'error') {
+              result.push(last);
+            }
+            return result;
+          });
+        }),
     {
       manual: true,
-      onSuccess: (data, params) => {
-        const cursor = params[1];
-        if (!data?.data) {
-          return;
-        }
-        const newMessages = [...data.data].reverse();
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          const result = cursor ? [...newMessages, ...prev] : newMessages;
-          if (last?.role === 'error') {
-            result.push(last);
-          }
-          return result;
-        });
-      },
     },
   );
   const messagesServiceRef = useRef<any>();
   messagesServiceRef.current = messagesService;
-
-  const addMessage = (message: Message) => {
-    setMessages((prev) => [...prev, message]);
-  };
-
-  const addMessages = (newMessages: Message[]) => {
-    setMessages((prev) => [...prev, ...newMessages]);
-  };
-
-  const updateLastMessage = (updater: (message: Message) => Message) => {
-    setMessages((prev) => {
-      const lastIndex = prev.length - 1;
-      if (lastIndex < 0) return prev;
-      const updated = [...prev];
-      updated[lastIndex] = updater(updated[lastIndex]);
-      return updated;
-    });
-  };
-
-  const addAttachments = (attachments: Attachment | Attachment[]) => {
-    setAttachments((prev) => {
-      if (Array.isArray(attachments)) {
-        return [...prev, ...attachments];
-      }
-      return [...prev, attachments];
-    });
-  };
-
-  const removeAttachment = (filename: string) => {
-    setAttachments((prev) => {
-      const newAttachments = [...prev];
-      const index = newAttachments.findIndex((item) => item.filename === filename);
-      newAttachments.splice(index, 1);
-      return newAttachments;
-    });
-  };
-
-  const addContextItems = (items: ContextItem | ContextItem[]) => {
-    setContextItems((prev) => {
-      const next = Array.isArray(items) ? items : [items];
-      const map = new Map<string, ContextItem>();
-      for (const item of prev) {
-        map.set(`${item.type}:${item.uid}`, item);
-      }
-      for (const item of next) {
-        map.set(`${item.type}:${item.uid}`, item);
-      }
-      return Array.from(map.values());
-    });
-  };
-
-  const removeContextItem = (type: string, uid: string) => {
-    setContextItems((prev) => {
-      const newItems = [...prev];
-      const index = newItems.findIndex((item) => item.type === type && item.uid === uid);
-      if (index !== -1) {
-        newItems.splice(index, 1);
-      }
-      return newItems;
-    });
-  };
 
   const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
     let result = '';
     let error = false;
-    let tool: {
+    let tools: {
+      id: string;
       name: string;
-      args: any;
-    };
+      args: unknown;
+    }[];
 
     try {
       // eslint-disable-next-line no-constant-condition
@@ -196,7 +112,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
               error = true;
             }
             if (data.type === 'tool') {
-              tool = data.body;
+              tools = data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
@@ -236,15 +152,20 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await messagesServiceRef.current.runAsync(sessionId);
-    if (!error && tool) {
-      const t = plugin.aiManager.tools.get(tool.name);
-      if (t) {
-        await t.invoke(ctxRef.current, tool.args);
-        await callTool({
-          sessionId,
-          aiEmployee,
-        });
+    if (!error && tools && tools.length > 0) {
+      const toolCallIds: string[] = [];
+      for (const tool of tools) {
+        toolCallIds.push(tool.id);
+        const t = plugin.aiManager.tools.get(tool.name);
+        if (t) {
+          await t.invoke(ctxRef.current, tool.args);
+        }
       }
+      await confirmToolCall({
+        sessionId,
+        aiEmployee,
+        toolCallIds,
+      });
     }
   };
 
@@ -255,6 +176,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     messages: sendMsgs,
     attachments,
     workContext,
+    editingMessageId,
     onConversationCreate,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
@@ -303,16 +225,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       loading: true,
     });
 
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:sendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs },
+        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs, systemMessage, editingMessageId },
         responseType: 'stream',
         adapter: 'fetch',
-        signal: abortControllerRef.current?.signal,
+        signal: controller?.signal,
         skipNotify: (err) => err.name === 'CanceledError',
       });
 
@@ -329,7 +252,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setResponseLoading(false);
       throw err;
     } finally {
-      abortControllerRef.current = null;
+      setAbortController(null);
     }
   };
 
@@ -349,7 +272,8 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       },
     ]);
 
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:resendMessages',
@@ -358,7 +282,7 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
         data: { sessionId, messageId },
         responseType: 'stream',
         adapter: 'fetch',
-        signal: abortControllerRef.current?.signal,
+        signal: controller?.signal,
         skipNotify: (err) => err.name === 'CanceledError',
       });
 
@@ -375,16 +299,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setResponseLoading(false);
       throw err;
     } finally {
-      abortControllerRef.current = null;
+      setAbortController(null);
     }
   };
 
   const cancelRequest = useCallback(async () => {
-    if (!abortControllerRef.current) {
+    const controller = useChatMessagesStore.getState().abortController;
+    if (!controller) {
       return;
     }
-    abortControllerRef.current.abort();
-    abortControllerRef.current = null;
+    controller.abort();
+    setAbortController(null);
     await api.resource('aiConversations').abort({
       values: {
         sessionId: currentConversation,
@@ -397,7 +322,17 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [currentConversation]);
 
   const callTool = useCallback(
-    async ({ sessionId, messageId, aiEmployee }: { sessionId: string; messageId?: string; aiEmployee: AIEmployee }) => {
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      args,
+    }: {
+      sessionId: string;
+      messageId?: string;
+      aiEmployee: AIEmployee;
+      args?: Record<string, any>;
+    }) => {
       setResponseLoading(true);
       addMessage({
         key: uid(),
@@ -411,7 +346,51 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
           url: 'aiConversations:callTool',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId },
+          data: { sessionId, messageId, args },
+          responseType: 'stream',
+          adapter: 'fetch',
+        });
+
+        if (!sendRes?.data) {
+          setResponseLoading(false);
+          return;
+        }
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        setResponseLoading(false);
+        throw err;
+      }
+    },
+    [],
+  );
+
+  const confirmToolCall = useCallback(
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      toolCallIds,
+    }: {
+      sessionId: string;
+      messageId?: string;
+      aiEmployee: AIEmployee;
+      toolCallIds?: string[];
+    }) => {
+      setResponseLoading(true);
+      addMessage({
+        key: uid(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:confirmToolCall',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId, messageId, toolCallIds },
           responseType: 'stream',
           adapter: 'fetch',
         });
@@ -439,50 +418,51 @@ export const ChatMessagesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [currentConversation]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
-  const updateMessage = useCallback(async ({ sessionId, messageId, content }) => {
+  const updateToolArgs = useCallback(async ({ sessionId, messageId, tool }) => {
     const messagesService = messagesServiceRef.current;
-    await api.resource('aiConversations').updateMessage({
+    await api.resource('aiConversations').updateToolArgs({
       values: {
         sessionId,
         messageId,
-        content,
+        tool,
       },
     });
     messagesService.run(sessionId);
+  }, []);
+
+  const startEditingMessage = useCallback((msg: any) => {
+    const index = messages.findIndex((m) => m.key === msg.messageId);
+    setIsEditingMessage(true);
+    setEditingMessageId(msg.messageId);
+    setMessages(messages.slice(0, index));
+    if (msg.attachments) {
+      setAttachments(msg.attachments);
+    }
+    if (msg.workContext) {
+      setContextItems(msg.workContext);
+    }
+  }, []);
+
+  const finishEditingMessage = useCallback(() => {
+    setIsEditingMessage(false);
+    setEditingMessageId(undefined);
+    setAttachments([]);
+    setContextItems([]);
   }, []);
 
   useEffect(() => {
     ctxRef.current = ctx;
   }, [ctx]);
 
-  return (
-    <ChatMessagesContext.Provider
-      value={{
-        responseLoading,
-        messages,
-        addMessage,
-        addMessages,
-        setMessages,
-        sendMessages,
-        resendMessages,
-        cancelRequest,
-        callTool,
-        updateMessage,
-        messagesService,
-        lastMessageRef,
-        attachments,
-        setAttachments,
-        addAttachments,
-        removeAttachment,
-        contextItems,
-        setContextItems,
-        addContextItems,
-        removeContextItem,
-        systemMessage,
-        setSystemMessage,
-      }}
-    >
-      {children}
-    </ChatMessagesContext.Provider>
-  );
+  return {
+    messagesService,
+    sendMessages,
+    resendMessages,
+    cancelRequest,
+    callTool,
+    updateToolArgs,
+    lastMessageRef,
+    startEditingMessage,
+    finishEditingMessage,
+  };
 };

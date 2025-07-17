@@ -121,6 +121,13 @@ export const collectionSchema: ISchema = {
           type: 'void',
           'x-component': 'ConfigurationTabs',
         },
+        __aiCollector__: {
+          type: 'void',
+          'x-component': 'AIResourceContextCollector',
+          'x-component-props': {
+            uid: `collections:list`,
+          },
+        },
       },
     },
   },

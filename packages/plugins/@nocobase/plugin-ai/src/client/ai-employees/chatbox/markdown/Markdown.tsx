@@ -17,10 +17,9 @@ import { Message } from '../../types';
 import { Code } from './Code';
 import { Echarts } from './ECharts';
 import { Form } from './Form';
-import { Collections } from '../../data-modeling/Collections';
 
 export const Markdown: React.FC<{
-  message: Message;
+  message: Message['content'];
 }> = ({ message }) => {
   const tagIndexes: Record<string, number> = {};
   const getIndex = (tagName: string): number => {
@@ -44,9 +43,9 @@ export const Markdown: React.FC<{
           echarts: (props) => {
             return <Echarts {...props} index={getIndex('echarts')} message={message} />;
           },
-          collections: (props) => {
-            return <Collections {...props} message={message} />;
-          },
+          // collections: (props) => {
+          //   return <Collections {...props} message={message} />;
+          // },
         }}
         rehypePlugins={[
           rehypeRaw,

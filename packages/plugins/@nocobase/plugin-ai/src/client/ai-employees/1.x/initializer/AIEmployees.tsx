@@ -9,10 +9,10 @@
 
 import React from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useToken } from '@nocobase/client';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { Spin } from 'antd';
 import { tval } from '@nocobase/utils/client';
-import { AIEmployeeListItem } from '../AIEmployeeListItem';
+import { AIEmployeeListItem } from '../../AIEmployeeListItem';
 
 const getAIEmployeesInitializer = () => ({
   name: 'aiEmployees',

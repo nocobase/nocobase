@@ -11,7 +11,6 @@ import React, { useMemo } from 'react';
 import { Button, Dropdown, Tag, Avatar, Popover, Flex } from 'antd';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { useT } from '../../locale';
-import { useChatBoxContext } from './ChatBoxContext';
 import { useToken } from '@nocobase/client';
 import { UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
@@ -19,7 +18,10 @@ import { avatars } from '../avatars';
 import { ProfileCard } from '../ProfileCard';
 import { AttachmentsHeader } from './AttachmentsHeader';
 import { ContextItemsHeader } from './ContextItemsHeader';
-import { useChatMessages } from './ChatMessagesProvider';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatMessagesStore } from './stores/chat-messages';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { EditMessageHeader } from './EditMessageHeader';
 
 export const SenderHeader: React.FC = () => {
   const {
@@ -28,9 +30,14 @@ export const SenderHeader: React.FC = () => {
   } = useAIEmployeesContext();
   const { token } = useToken();
   const t = useT();
-  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const { responseLoading } = useChatMessages();
+
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
+
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+
+  const { switchAIEmployee } = useChatBoxActions();
+
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
       key: employee.username,
@@ -66,6 +73,11 @@ export const SenderHeader: React.FC = () => {
       }}
     >
       <div>
+        {isEditingMessage ? (
+          <div style={{ marginBottom: 8 }}>
+            <EditMessageHeader />
+          </div>
+        ) : null}
         {!currentEmployee ? (
           <Button variant="dashed" color="default" size="small">
             <span

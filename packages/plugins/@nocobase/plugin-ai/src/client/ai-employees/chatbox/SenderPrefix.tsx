@@ -8,13 +8,15 @@
  */
 
 import React from 'react';
-import { useChatBoxContext } from './ChatBoxContext';
 import { avatars } from '../avatars';
 import { Avatar } from 'antd';
+import { useChatBoxStore } from './stores/chat-box';
+import { useChatBoxActions } from './hooks/useChatBoxActions';
 
 export const SenderPrefix: React.FC = () => {
-  const currentEmployee = useChatBoxContext('currentEmployee');
-  const switchAIEmployee = useChatBoxContext('switchAIEmployee');
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const { switchAIEmployee } = useChatBoxActions();
+
   return currentEmployee ? (
     <Avatar
       src={avatars(currentEmployee.avatar)}

@@ -15,6 +15,22 @@ import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
+import _ from 'lodash';
+
+type ToolMessage = {
+  id: string;
+  sessionId: string;
+  messageId: string;
+  toolCallId: string;
+  status: 'success' | 'error';
+  content: string;
+  invokeStatus: 'init' | 'pending' | 'done' | 'confirmed';
+  invokeStartTime: Date;
+  invokeEndTime: Date;
+  toolName: string;
+  auto: boolean;
+  execution: 'backend' | 'frontend';
+};
 
 export class AIEmployee {
   private employee: Model;
@@ -59,7 +75,7 @@ export class AIEmployee {
     const skills = this.employee.skillSettings?.skills || [];
     if (skills?.length) {
       for (const skill of skills) {
-        const tool = await this.plugin.aiManager.getTool(skill);
+        const tool = await this.plugin.aiManager.toolManager.getTool(skill.name);
         if (tool) {
           tools.push(tool);
         }
@@ -127,12 +143,14 @@ export class AIEmployee {
 
     const message = gathered?.content;
     const toolCalls = gathered?.tool_calls;
+    const skills = this.employee.skillSettings?.skills;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
       this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
       this.ctx.res.end();
       return;
     }
 
+    let _msgId = messageId;
     if (message || toolCalls?.length) {
       const values = {
         content: {
@@ -142,7 +160,6 @@ export class AIEmployee {
         metadata: {
           model,
           provider: service.provider,
-          autoCallTool: this.employee.skillSettings?.autoCall,
           usage_metadata: {},
         },
         toolCalls: null,
@@ -154,6 +171,11 @@ export class AIEmployee {
 
       if (toolCalls?.length) {
         values.toolCalls = toolCalls;
+        values.metadata['autoCallTools'] = toolCalls
+          .filter((tool: { name: string }) => {
+            return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+          })
+          .map((tool: { name: string }) => tool.name);
       }
 
       if (gathered?.usage_metadata) {
@@ -179,20 +201,30 @@ export class AIEmployee {
             },
             transaction,
           });
+          await this.aiToolMessagesRepo.destroy({
+            filter: {
+              sessionId: this.sessionId,
+              messageId: {
+                $gte: messageId,
+              },
+            },
+          });
         });
       } else {
-        await this.db.getRepository('aiConversations.messages', this.sessionId).create({
+        const entity = await this.db.getRepository('aiConversations.messages', this.sessionId).create({
           values: {
             messageId: this.plugin.snowflake.generate(),
             role: this.employee.username,
             ...values,
           },
         });
+        _msgId = entity.messageId;
       }
     }
 
-    if (gathered?.tool_calls?.length && this.employee.skillSettings?.autoCall) {
-      await this.callTool(gathered.tool_calls[0], true);
+    if (toolCalls?.length) {
+      await this.initToolCall(_msgId, toolCalls);
+      await this.callTool(_msgId, true);
     }
 
     this.ctx.res.end();
@@ -222,17 +254,17 @@ export class AIEmployee {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
       let content = msg.content.content;
-      if (typeof content === 'string') {
-        content = `<user_query>${content}</user_query>`;
-        if (workContext?.length) {
-          content = `<work_context>${JSON.stringify(workContext)}</work_context>
-${content}`;
-        }
-      }
       if (!content && !attachments && !msg.toolCalls?.length) {
         continue;
       }
       if (msg.role === 'user') {
+        if (typeof content === 'string') {
+          content = `<user_query>${content}</user_query>`;
+          if (workContext?.length) {
+            content = `<work_context>${JSON.stringify(workContext)}</work_context>
+${content}`;
+          }
+        }
         const contents = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
@@ -389,73 +421,299 @@ ${content}`;
     return historyMessages;
   }
 
-  async callTool(
-    toolCall: {
+  async initToolCall(
+    messageId: string,
+    toolCalls: {
       id: string;
       name: string;
       args: any;
-    },
-    autoCall = false,
+    }[],
   ) {
+    const nowTime = new Date();
+    const tools = await this.withTool(toolCalls);
+    await this.aiToolMessagesRepo.create({
+      values: tools.map((toolCall) => ({
+        id: this.plugin.snowflake.generate(),
+        sessionId: this.sessionId,
+        messageId: messageId,
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        status: toolCall.toolExist ? null : 'error',
+        content: toolCall.toolExist ? null : `Tool ${toolCall.name} not found`,
+        invokeStatus: toolCall.toolExist ? 'init' : 'done',
+        invokeStartTime: toolCall.toolExist ? null : nowTime,
+        invokeEndTime: toolCall.toolExist ? null : nowTime,
+        auto: toolCall.auto,
+        execution: toolCall?.tool?.execution ?? 'backend',
+      })),
+    });
+  }
+
+  async callTool(messageId: string, autoCall: boolean) {
     try {
-      const tool = await this.plugin.aiManager.getTool(toolCall.name);
-      if (!tool) {
-        this.sendErrorResponse('Tool not found');
-        return;
+      const toolCalls = await this.getToolCallList(messageId);
+      const tools = await this.withTool(toolCalls);
+
+      const backendTools = tools
+        .filter(({ auto }) => auto === autoCall)
+        .filter(({ tool }) => tool.execution === 'backend');
+      const frontendTools = tools
+        .filter(({ auto }) => auto === autoCall)
+        .filter(({ tool }) => tool.execution === 'frontend');
+
+      if (!_.isEmpty(backendTools)) {
+        const parallelToolCall = backendTools.map(async (toolCall) => {
+          const [updated] = await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'pending',
+              invokeStartTime: new Date(),
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'init',
+              },
+            },
+          );
+          if (updated === 0) {
+            return;
+          }
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'done',
+              invokeEndTime: new Date(),
+              status: result.status,
+              content: result.content,
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'pending',
+              },
+            },
+          );
+        });
+        await Promise.all(parallelToolCall);
       }
 
-      if (tool.execution === 'frontend' && autoCall) {
-        this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool', body: toolCall })} \n\n`);
+      if (!_.isEmpty(frontendTools)) {
+        const parallelToolCall = frontendTools.map(async (toolCall) => {
+          const [updated] = await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'pending',
+              invokeStartTime: new Date(),
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'init',
+              },
+            },
+          );
+          if (updated === 0) {
+            return null;
+          } else {
+            return toolCall;
+          }
+        });
+
+        const type = 'tool';
+        const body = (await Promise.all(parallelToolCall)).filter((x) => !_.isNull(x));
+        if (!_.isEmpty(body)) {
+          this.ctx.res.write(`data: ${JSON.stringify({ type, body })} \n\n`);
+        }
         this.ctx.res.end();
-        return;
+      } else {
+        await this.sendToolMessage(messageId);
       }
-
-      const result = await tool.invoke(this.ctx, toolCall.args);
-      if (result.status === 'error') {
-        this.sendErrorResponse(result.content);
-      }
-
-      const historyMessages = await this.getHistoryMessages();
-      const formattedMessages = [
-        ...historyMessages,
-        {
-          role: 'tool',
-          name: toolCall.name,
-          content: result.content,
-          tool_call_id: toolCall.id,
-        },
-      ];
-
-      const { provider, model, service } = await this.getLLMService(formattedMessages);
-      await this.db.getRepository('aiConversations.messages', this.sessionId).create({
-        values: {
-          messageId: this.plugin.snowflake.generate(),
-          role: 'tool',
-          content: {
-            type: 'text',
-            content: result.content,
-          },
-          metadata: {
-            model,
-            provider: service.provider,
-            autoCallTool: this.employee.skillSettings?.autoCall,
-            toolCall,
-          },
-        },
-      });
-
-      const { stream, signal } = await this.prepareChatStream(provider);
-      await this.processChatStream(stream, {
-        signal,
-        model,
-        service,
-        provider,
-        allowEmpty: true,
-      });
     } catch (err) {
       this.ctx.log.error(err);
       this.sendErrorResponse('Tool call error');
     }
+  }
+
+  async confirmToolCall(messageId: string, toolCallIds: string[] = []) {
+    if (!_.isEmpty(toolCallIds)) {
+      const toolCallList = await this.getToolCallList(messageId);
+      const tools = await this.withTool(toolCallList.filter((x) => toolCallIds.includes(x.id)));
+      const frontendTools = tools.filter(({ tool }) => tool.execution === 'frontend');
+      if (!_.isEmpty(frontendTools)) {
+        const parallelToolCall = frontendTools.map(async (toolCall) => {
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          await this.aiToolMessagesModel.update(
+            {
+              invokeStatus: 'done',
+              invokeEndTime: new Date(),
+              status: result.status,
+              content: result.content,
+            },
+            {
+              where: {
+                messageId,
+                toolCallId: toolCall.id,
+                invokeStatus: 'pending',
+              },
+            },
+          );
+        });
+        await Promise.all(parallelToolCall);
+      }
+    }
+    await this.sendToolMessage(messageId);
+  }
+
+  async cancelToolCall() {
+    let messageId;
+    const historyMessages = await this.db.getRepository('aiConversations.messages', this.sessionId).find({
+      sort: ['-messageId'],
+    });
+    const [lastMessage] = historyMessages;
+    if (lastMessage?.toolCalls?.length ?? 0 > 0) {
+      messageId = lastMessage.messageId;
+    } else {
+      return;
+    }
+    const toolCalls: ToolMessage[] = await this.aiToolMessagesRepo.find({
+      filter: {
+        messageId,
+        invokeStatus: {
+          $ne: 'confirmed',
+        },
+      },
+    });
+    if (!toolCalls || _.isEmpty(toolCalls)) {
+      return;
+    }
+
+    const toolMessages = toolCalls.map((toolCall) => ({
+      role: 'tool',
+      name: toolCall.toolName,
+      content: toolCall.content,
+      tool_call_id: toolCall.toolCallId,
+    }));
+
+    const formattedHistoryMessages = await this.getHistoryMessages();
+    const formattedMessages = [...formattedHistoryMessages, ...toolMessages];
+
+    const { model, service } = await this.getLLMService(formattedMessages);
+    const toolCallMap = await this.getToolCallMap(messageId);
+    const now = new Date();
+    const toolMessageContent = 'The user rejected this tool invocation and needs to continue modifying the parameters.';
+    await this.db.sequelize.transaction(async (transaction) => {
+      for (const toolCall of toolCalls) {
+        const [updated] = await this.aiToolMessagesModel.update(
+          {
+            invokeStatus: 'done',
+            status: 'error',
+            content: toolMessageContent,
+            invokeStartTime: toolCall.invokeStartTime ?? now,
+            invokeEndTime: toolCall.invokeEndTime ?? now,
+          },
+          {
+            where: {
+              id: toolCall.id,
+              invokeStatus: toolCall.invokeStatus,
+            },
+            transaction,
+          },
+        );
+        if (updated === 0) {
+          continue;
+        }
+        await this.db.getRepository('aiConversations.messages', this.sessionId).create({
+          values: toolCalls.map((toolCall) => ({
+            messageId: this.plugin.snowflake.generate(),
+            role: 'tool',
+            content: {
+              type: 'text',
+              content: toolMessageContent,
+            },
+            metadata: {
+              model,
+              provider: service.provider,
+              toolCall: toolCallMap.get(toolCall.toolCallId),
+              autoCall: toolCall.auto,
+            },
+            transaction,
+          })),
+        });
+        await this.aiToolMessagesRepo.update({
+          filter: {
+            messageId,
+            toolCallId: toolCall.toolCallId,
+          },
+          values: {
+            invokeStatus: 'confirmed',
+          },
+          transaction,
+        });
+      }
+    });
+  }
+
+  private async sendToolMessage(messageId: string) {
+    const toolCalls: ToolMessage[] = await this.aiToolMessagesRepo.find({ filter: { messageId } });
+    if (_.isEmpty(toolCalls) || !toolCalls.every((item) => item.invokeStatus === 'done')) {
+      this.ctx.res.end();
+      return;
+    }
+
+    const toolMessages = toolCalls.map((toolCall) => ({
+      role: 'tool',
+      name: toolCall.toolName,
+      content: toolCall.content,
+      tool_call_id: toolCall.toolCallId,
+    }));
+
+    const historyMessages = await this.getHistoryMessages();
+    const formattedMessages = [...historyMessages, ...toolMessages];
+
+    const { provider, model, service } = await this.getLLMService(formattedMessages);
+    const toolCallMap = await this.getToolCallMap(messageId);
+    await this.db.sequelize.transaction(async (transaction) => {
+      await this.db.getRepository('aiConversations.messages', this.sessionId).create({
+        values: toolCalls.map((toolCall) => ({
+          messageId: this.plugin.snowflake.generate(),
+          role: 'tool',
+          content: {
+            type: 'text',
+            content: toolCall.content,
+          },
+          metadata: {
+            model,
+            provider: service.provider,
+            toolCall: toolCallMap.get(toolCall.toolCallId),
+            autoCall: toolCall.auto,
+          },
+          transaction,
+        })),
+      });
+      for (const toolCall of toolCalls) {
+        await this.aiToolMessagesRepo.update({
+          filter: {
+            messageId,
+            toolCallId: toolCall.toolCallId,
+          },
+          values: {
+            invokeStatus: 'confirmed',
+          },
+          transaction,
+        });
+      }
+    });
+
+    const { stream, signal } = await this.prepareChatStream(provider);
+    await this.processChatStream(stream, {
+      signal,
+      model,
+      service,
+      provider,
+      allowEmpty: true,
+    });
   }
 
   sendErrorResponse(errorMessage: string) {
@@ -463,10 +721,10 @@ ${content}`;
     this.ctx.res.end();
   }
 
-  async processMessages(userMessages: any[]) {
+  async processMessages(userMessages: any[], messageId?: string) {
     try {
       const formattedUserMessages = await this.formatMessages(userMessages);
-      const historyMessages = await this.getHistoryMessages();
+      const historyMessages = await this.getHistoryMessages(messageId);
       const formattedMessages = [...historyMessages, ...formattedUserMessages];
 
       const { provider, model, service } = await this.getLLMService(formattedMessages);
@@ -507,5 +765,73 @@ ${content}`;
       this.sendErrorResponse('Chat error warning');
       return false;
     }
+  }
+
+  private getAutoSkillNames(): string[] {
+    const skills = this.getSkills();
+    return skills.filter(({ autoCall }) => autoCall ?? false).map(({ name }) => name);
+  }
+
+  private getSkills(): { name: string; autoCall?: boolean }[] {
+    return this.employee.skillSettings?.skills ?? [];
+  }
+
+  private async getToolCallList(messageId: string): Promise<
+    Array<{
+      id: string;
+      args: unknown;
+      name: string;
+      type: string;
+    }>
+  > {
+    const { toolCalls } = await this.aiMessagesRepo.findByTargetKey(messageId);
+    return toolCalls;
+  }
+
+  private async getToolCallMap(messageId: string): Promise<
+    Map<
+      string,
+      {
+        id: string;
+        args: unknown;
+        name: string;
+        type: string;
+      }
+    >
+  > {
+    const result = new Map();
+    const { toolCalls } = await this.aiMessagesRepo.findById(messageId);
+    if (!toolCalls) {
+      return result;
+    }
+    for (const toolCall of toolCalls) {
+      result.set(toolCall.id, toolCall);
+    }
+    return result;
+  }
+
+  private async withTool(toolCalls: { id: string; args: unknown; name: string }[]) {
+    const autoSkillNames = this.getAutoSkillNames();
+    const toolGroupList = await this.plugin.aiManager.toolManager.listTools();
+    const toolList = toolGroupList.flatMap(({ tools }) => tools);
+    const toolMap = new Map(toolList.map((tool) => [tool.name, tool]));
+    return toolCalls.map((toolCall) => ({
+      ...toolCall,
+      toolExist: toolMap.has(toolCall.name),
+      tool: toolMap.get(toolCall.name),
+      auto: autoSkillNames.includes(toolCall.name),
+    }));
+  }
+
+  private get aiMessagesRepo() {
+    return this.ctx.db.getRepository('aiMessages');
+  }
+
+  private get aiToolMessagesRepo() {
+    return this.ctx.db.getRepository('aiToolMessages');
+  }
+
+  private get aiToolMessagesModel() {
+    return this.ctx.db.getModel('aiToolMessages');
   }
 }
