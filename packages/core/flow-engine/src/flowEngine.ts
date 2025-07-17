@@ -123,6 +123,7 @@ export class FlowEngine {
   /**
    * Get the flow application cache.
    * @returns {Map<string, ApplyFlowCacheEntry>} Flow application cache map
+   * @internal
    */
   get applyFlowCache() {
     return this.#applyFlowCache;
@@ -626,6 +627,7 @@ export class FlowEngine {
    * @param {string} flowKey Flow key
    * @param {string} modelUid Model UID
    * @returns {string} Unique cache key
+   * @internal
    */
   static generateApplyFlowCacheKey(prefix: string, flowKey: string, modelUid: string): string {
     return `${prefix}:${flowKey}:${modelUid}`;
