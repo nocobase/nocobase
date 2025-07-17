@@ -15,26 +15,62 @@ export const calculators = new Registry<Comparer>();
 
 // built-in functions
 function equal(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() === new Date(b).getTime();
+  }
   return a == b;
 }
 
 function notEqual(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return true;
+    }
+    return new Date(a).getTime() !== new Date(b).getTime();
+  }
   return a != b;
 }
 
 function gt(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() > new Date(b).getTime();
+  }
   return a > b;
 }
 
 function gte(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() >= new Date(b).getTime();
+  }
   return a >= b;
 }
 
 function lt(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() < new Date(b).getTime();
+  }
   return a < b;
 }
 
 function lte(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() <= new Date(b).getTime();
+  }
   return a <= b;
 }
 
