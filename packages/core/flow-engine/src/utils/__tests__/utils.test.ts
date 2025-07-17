@@ -25,15 +25,13 @@ import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
 import type {
   FlowDefinition,
-  ParamsContext,
   ActionDefinition,
   DeepPartial,
   ModelConstructor,
   StepParams,
   StepDefinition,
 } from '../../types';
-import type { ISchema } from '@formily/json-schema';
-import type { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from '../../flowContext';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -441,18 +439,11 @@ describe('Utils', () => {
 
   // ==================== resolveDefaultParams() FUNCTION ====================
   describe('resolveDefaultParams()', () => {
-    let mockContext: ParamsContext<FlowModel>;
+    let mockContext: FlowRuntimeContext<FlowModel>;
 
     beforeEach(() => {
-      mockContext = {
-        model: mockModel,
-        globals: {
-          flowEngine: mockFlowEngine,
-          app: {},
-        },
-        app: {} as any,
-        inputArgs: { testExtra: 'value' },
-      };
+      mockContext = new FlowRuntimeContext(mockModel, 'testFlow', 'runtime');
+      mockContext.defineProperty('inputArgs', { value: { testExtra: 'testExtra' } });
     });
 
     describe('static parameter resolution', () => {
@@ -500,7 +491,7 @@ describe('Utils', () => {
       });
 
       test('should handle function accessing context properties', async () => {
-        const paramsFn = vi.fn((ctx: ParamsContext<FlowModel>) => ({
+        const paramsFn = vi.fn((ctx: FlowRuntimeContext<FlowModel>) => ({
           modelUid: ctx.model.uid,
           extraData: ctx.inputArgs.testExtra,
         }));
@@ -509,7 +500,7 @@ describe('Utils', () => {
 
         expect(result).toEqual({
           modelUid: mockModel.uid,
-          extraData: 'value',
+          extraData: 'testExtra',
         });
       });
     });
