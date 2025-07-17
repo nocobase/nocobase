@@ -741,11 +741,24 @@ async function buildDataSourceBlockItems(
   hasCurrentFlowContext = false,
 ): Promise<MenuItem[]> {
   const dataSources = getDataSourcesWithCollections(model);
+  const CollectionBlockModelClass = model.flowEngine.getModelClass('CollectionBlockModel');
 
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
       const meta = _.cloneDeep(ModelClass.meta) || { title: className };
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+
+      if (!isInheritedFrom(ModelClass, CollectionBlockModelClass)) {
+        return {
+          key: className,
+          label: meta?.title || className,
+          icon: meta?.icon,
+          createModelOptions: {
+            ..._.cloneDeep(defaultOptions),
+            use: className,
+          },
+        };
+      }
 
       if (hasCurrentFlowContext) {
         const currentFlow = model.parent?.context.currentFlow;
