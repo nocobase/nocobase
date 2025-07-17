@@ -67,7 +67,12 @@ describe('FlowEngine', () => {
   });
 
   it('registerAction/getAction should work', () => {
-    engine.registerAction('testAction', { handler: vi.fn(), name: 'testAction' });
+    engine.registerActions({
+      testAction: {
+        name: 'testAction',
+        handler: vi.fn(),
+      },
+    });
     const action = engine.getAction('testAction');
     expect(action).toBeDefined();
     expect(action?.name).toBe('testAction');

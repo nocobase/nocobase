@@ -12,51 +12,107 @@ import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
-import {
+import type {
   ActionDefinition,
-  ActionOptions,
+  ApplyFlowCacheEntry,
   CreateModelOptions,
-  FlowDefinition,
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
 } from './types';
 import { isInheritedFrom } from './utils';
 
-interface ApplyFlowCacheEntry {
-  status: 'pending' | 'resolved' | 'rejected';
-  promise: Promise<any>;
-  data?: any;
-  error?: any;
-}
-
+/**
+ * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
+ * It provides capabilities for registering, creating, finding, persisting, replacing, and moving models.
+ * Supports flow definitions, action definitions, model class inheritance and filtering.
+ * Integrates FlowEngineContext, FlowSettings, and ReactView for context, configuration, and view rendering.
+ *
+ * Main features:
+ * - Register, get, and find model classes and model instances
+ * - Register and get action definitions
+ * - Persist and query models via the model repository
+ * - Register flow definitions
+ * - Create, find, replace, move, and destroy model instances
+ * - Support for model class inheritance and filtering
+ * - Internationalization support
+ * - Integration with React view rendering
+ *
+ * @example
+ * const engine = new FlowEngine();
+ * engine.registerModels({ MyModel });
+ * engine.setModelRepository(new MyRepository());
+ * const model = engine.createModel({ use: 'MyModel', uid: 'xxx' });
+ */
 export class FlowEngine {
-  /** @private Stores registered action definitions. */
-  private actions: Map<string, ActionDefinition> = new Map();
-  /** @private Stores registered model constructors. */
-  private modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
-  /** @private Stores created model instances. */
-  private modelInstances: Map<string, any> = new Map();
+  /**
+   * Registered action definitions.
+   * Key is the action name, value is ActionDefinition.
+   * @private
+   */
+  #actions: Map<string, ActionDefinition> = new Map();
+
+  /**
+   * Registered model classes.
+   * Key is the model class name, value is the model class constructor.
+   * @private
+   */
+  #modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
+
+  /**
+   * Created model instances.
+   * Key is the model instance UID, value is the model instance object.
+   * @private
+   */
+  #modelInstances: Map<string, any> = new Map();
+
+  /**
+   * The current model repository instance, implements IFlowModelRepository.
+   * Used for model persistence and queries.
+   * @private
+   */
   #modelRepository: IFlowModelRepository | null = null;
+
+  /**
+   * Flow application cache.
+   * Key is the cache key, value is ApplyFlowCacheEntry.
+   * @private
+   */
   #applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
+
+  /**
+   * Flow engine context object.
+   * @private
+   */
   #flowContext: FlowEngineContext;
 
-  /** @public Stores flow settings including components and scopes for formily settings. */
+  /**
+   * Flow settings, including components and form scopes.
+   * @public
+   */
   public flowSettings: FlowSettings = new FlowSettings();
 
   /**
-   * 实验性 API：用于在 FlowEngine 中集成 React 视图渲染能力。
-   * 该属性未来可能发生重大变更或被移除，请谨慎依赖。
+   * Experimental API: Integrates React view rendering capability into FlowEngine.
+   * This property may change or be removed in the future. Use with caution.
    * @experimental
+   * @public
    */
   public reactView: ReactView;
 
+  /**
+   * Constructor. Initializes React view, registers default model and form scopes.
+   */
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
     this.registerModels({ FlowModel });
   }
 
+  /**
+   * Get the flow engine context object.
+   * @returns {FlowEngineContext} Flow engine context
+   */
   get context() {
     if (!this.#flowContext) {
       this.#flowContext = new FlowEngineContext(this);
@@ -64,15 +120,19 @@ export class FlowEngine {
     return this.#flowContext;
   }
 
+  /**
+   * Get the flow application cache.
+   * @returns {Map<string, ApplyFlowCacheEntry>} Flow application cache map
+   * @internal
+   */
   get applyFlowCache() {
     return this.#applyFlowCache;
   }
 
   /**
-   * 设置模型仓库，用于持久化和查询模型实例。
-   * 如果之前已设置过模型仓库，将会覆盖原有设置，并输出警告。
-   *
-   * @param modelRepository 要设置的模型仓库实例，实现 IFlowModelRepository 接口。
+   * Set the model repository for persisting and querying model instances.
+   * If a model repository was already set, it will be overwritten and a warning will be printed.
+   * @param {IFlowModelRepository} modelRepository The model repository instance implementing IFlowModelRepository.
    * @example
    * flowEngine.setModelRepository(new MyFlowModelRepository());
    */
@@ -83,10 +143,20 @@ export class FlowEngine {
     this.#modelRepository = modelRepository;
   }
 
+  /**
+   * Internationalization translation method, calls the context's t method.
+   * @param {string} keyOrTemplate Translation key or template string
+   * @param {any} [options] Optional parameters
+   * @returns {string} Translated string
+   */
   translate(keyOrTemplate: string, options?: any): string {
     return this.context.t(keyOrTemplate, options);
   }
 
+  /**
+   * Register multiple actions.
+   * @param {Record<string, ActionDefinition>} actions Action definition object collection
+   */
   registerActions(actions: Record<string, ActionDefinition>): void {
     for (const [, definition] of Object.entries(actions)) {
       this.#registerAction(definition);
@@ -94,47 +164,50 @@ export class FlowEngine {
   }
 
   /**
-   * 注册一个 Action 定义。
-   * @template TModel 具体的FlowModel子类类型，默认为 FlowModel。
-   * @param {ActionDefinition<TModel>} definition Action 定义对象，包含名称、处理函数等。
+   * Register a single action.
+   * @template TModel Specific FlowModel subclass type, defaults to FlowModel.
+   * @param {ActionDefinition<TModel>} definition Action definition object, including name and handler.
+   * @private
    */
   #registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
     if (!definition.name) {
       throw new Error('FlowEngine: Action must have a name.');
     }
-    if (this.actions.has(definition.name)) {
+    if (this.#actions.has(definition.name)) {
       throw new Error(`FlowEngine: Action with name '${definition.name}' is already registered.`);
     }
-    this.actions.set(definition.name, definition as ActionDefinition);
+    this.#actions.set(definition.name, definition as ActionDefinition);
   }
 
   /**
-   * 获取已注册的 Action 定义。
-   * @template TModel 具体的FlowModel子类类型
-   * @param {string} name Action 名称。
-   * @returns {ActionDefinition<TModel> | undefined} Action 定义，如果未找到则返回 undefined。
+   * Get a registered action definition.
+   * @template TModel Specific FlowModel subclass type
+   * @param {string} name Action name
+   * @returns {ActionDefinition<TModel> | undefined} Action definition, or undefined if not found
    */
   public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
-    return this.actions.get(name) as ActionDefinition<TModel> | undefined;
-  }
-
-  #registerModel(name: string, modelClass: ModelConstructor): void {
-    if (this.modelClasses.has(name)) {
-      console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
-    }
-    this.modelClasses.set(name, modelClass);
+    return this.#actions.get(name) as ActionDefinition<TModel> | undefined;
   }
 
   /**
-   * 注册 Model 类。
-   * @param {Record<string, ModelConstructor>} models 要注册的 Model 类映射表，键为 Model 名称，值为 Model 构造函数。
+   * Register a single model class.
+   * @param {string} name Model class name
+   * @param {ModelConstructor} modelClass Model class constructor
+   * @private
+   */
+  #registerModel(name: string, modelClass: ModelConstructor): void {
+    if (this.#modelClasses.has(name)) {
+      console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
+    }
+    this.#modelClasses.set(name, modelClass);
+  }
+
+  /**
+   * Register multiple model classes.
+   * @param {Record<string, ModelConstructor>} models Model class map, key is model name, value is model constructor
    * @returns {void}
    * @example
-   * flowEngine.registerModels({
-   *   UserModel,
-   *   OrderModel,
-   *   ProductModel
-   * });
+   * flowEngine.registerModels({ UserModel, OrderModel });
    */
   public registerModels(models: Record<string, ModelConstructor | typeof FlowModel<any>>) {
     for (const [name, modelClass] of Object.entries(models)) {
@@ -142,28 +215,32 @@ export class FlowEngine {
     }
   }
 
+  /**
+   * Get all registered model classes.
+   * @returns {Map<string, ModelConstructor>} Model class map
+   */
   getModelClasses() {
-    return this.modelClasses;
+    return this.#modelClasses;
   }
 
   /**
-   * 获取已注册的 Model 类 (构造函数)。
-   * @param {string} name Model 类名称。
-   * @returns {ModelConstructor | undefined} Model 构造函数，如果未找到则返回 undefined。
+   * Get a registered model class (constructor).
+   * @param {string} name Model class name
+   * @returns {ModelConstructor | undefined} Model constructor, or undefined if not found
    */
   public getModelClass(name: string): ModelConstructor | undefined {
-    return this.modelClasses.get(name);
+    return this.#modelClasses.get(name);
   }
 
   /**
-   * 根据条件查找已注册的 Model 类。
-   * @param predicate 回调函数，参数为 (name, ModelClass)，返回 true 时即为命中。
-   * @returns [name, ModelConstructor] | undefined
+   * Find a registered model class by predicate.
+   * @param predicate Callback function, arguments are (name, ModelClass), returns true if matched
+   * @returns {[string, ModelConstructor] | undefined} Matched model class and name
    */
   public findModelClass(
     predicate: (name: string, ModelClass: ModelConstructor) => boolean,
   ): [string, ModelConstructor] | undefined {
-    for (const [name, ModelClass] of this.modelClasses) {
+    for (const [name, ModelClass] of this.#modelClasses) {
       if (predicate(name, ModelClass)) {
         return [name, ModelClass];
       }
@@ -172,10 +249,10 @@ export class FlowEngine {
   }
 
   /**
-   * 根据父类过滤模型类（支持多层继承），可选自定义过滤器
-   * @param {string | ModelConstructor} baseClass 父类名称或构造函数
-   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] 过滤函数
-   * @returns {Map<string, ModelConstructor>} 继承自指定父类且通过过滤的模型类映射
+   * Filter model classes by base class (supports multi-level inheritance), with optional custom filter.
+   * @param {string | ModelConstructor} baseClass Base class name or constructor
+   * @param {(ModelClass: ModelConstructor, className: string) => boolean} [filter] Optional filter function
+   * @returns {Map<string, ModelConstructor>} Model classes inherited from base class and passed the filter
    */
   public getSubclassesOf(
     baseClass: string | ModelConstructor,
@@ -184,7 +261,7 @@ export class FlowEngine {
     const parentModelClass = typeof baseClass === 'string' ? this.getModelClass(baseClass) : baseClass;
     const result = new Map<string, ModelConstructor>();
     if (!parentModelClass) return result;
-    for (const [className, ModelClass] of this.modelClasses) {
+    for (const [className, ModelClass] of this.#modelClasses) {
       if (isInheritedFrom(ModelClass, parentModelClass)) {
         if (!filter || filter(ModelClass, className)) {
           result.set(className, ModelClass);
@@ -195,18 +272,18 @@ export class FlowEngine {
   }
 
   /**
-   * 创建并注册一个 Model 实例。
-   * 如果具有相同 UID 的实例已存在，则返回现有实例。
-   * @template T FlowModel 的子类型，默认为 FlowModel。
-   * @param {CreateModelOptions} options 创建模型的选项
-   * @returns {T} 创建的 Model 实例。
+   * Create and register a model instance.
+   * If an instance with the same UID exists, returns the existing instance.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {CreateModelOptions} options Model creation options
+   * @returns {T} Created model instance
    */
   public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
-    if (uid && this.modelInstances.has(uid)) {
-      return this.modelInstances.get(uid) as T;
+    if (uid && this.#modelInstances.has(uid)) {
+      return this.#modelInstances.get(uid) as T;
     }
 
     let modelInstance;
@@ -220,40 +297,45 @@ export class FlowEngine {
 
     modelInstance.onInit(options);
 
-    if (parentId && this.modelInstances.has(parentId)) {
-      modelInstance.setParent(this.modelInstances.get(parentId));
+    if (parentId && this.#modelInstances.has(parentId)) {
+      modelInstance.setParent(this.#modelInstances.get(parentId));
     }
 
-    this.modelInstances.set(modelInstance.uid, modelInstance);
+    this.#modelInstances.set(modelInstance.uid, modelInstance);
 
     return modelInstance;
   }
 
   /**
-   * 根据 UID 获取 Model 实例。
-   * @template T FlowModel 的子类型，默认为 FlowModel。
-   * @param {string} uid Model 实例的唯一标识符。
-   * @returns {T | undefined} Model 实例，如果未找到则返回 undefined。
+   * Get a model instance by UID.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {string} uid Model instance UID
+   * @returns {T | undefined} Model instance, or undefined if not found
    */
   public getModel<T extends FlowModel = FlowModel>(uid: string): T | undefined {
-    return this.modelInstances.get(uid) as T | undefined;
-  }
-
-  forEachModel<T extends FlowModel = FlowModel>(callback: (model: T) => void): void {
-    this.modelInstances.forEach(callback);
+    return this.#modelInstances.get(uid) as T | undefined;
   }
 
   /**
-   * 移除一个本地模型实例。
-   * @param {string} uid 要销毁的 Model 实例的唯一标识符。
-   * @returns {boolean} 如果成功销毁则返回 true，否则返回 false (例如，实例不存在)。
+   * Iterate all registered model instances.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {(model: T) => void} callback Callback function
+   */
+  forEachModel<T extends FlowModel = FlowModel>(callback: (model: T) => void): void {
+    this.#modelInstances.forEach(callback);
+  }
+
+  /**
+   * Remove a local model instance.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise (e.g. instance does not exist)
    */
   public removeModel(uid: string): boolean {
-    if (!this.modelInstances.has(uid)) {
+    if (!this.#modelInstances.has(uid)) {
       console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
       return false;
     }
-    const modelInstance = this.modelInstances.get(uid) as FlowModel;
+    const modelInstance = this.#modelInstances.get(uid) as FlowModel;
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -274,10 +356,15 @@ export class FlowEngine {
         }
       }
     }
-    this.modelInstances.delete(uid);
+    this.#modelInstances.delete(uid);
     return false;
   }
 
+  /**
+   * Check if the model repository is set.
+   * @returns {boolean} Returns true if set, false otherwise.
+   * @private
+   */
   private ensureModelRepository(): boolean {
     if (!this.#modelRepository) {
       // 不抛错，直接返回 false
@@ -286,6 +373,12 @@ export class FlowEngine {
     return true;
   }
 
+  /**
+   * Load a model instance (prefers local, falls back to repository).
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {any} options Load options
+   * @returns {Promise<T | null>} Loaded model instance or null
+   */
   async loadModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const model = this.findModelByParentId(options.parentId, options.subKey);
@@ -296,9 +389,16 @@ export class FlowEngine {
     return data?.uid ? this.createModel<T>(data as any) : null;
   }
 
+  /**
+   * Find a sub-model by parent model ID and subKey.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {string} parentId Parent model UID
+   * @param {string} subKey Sub-model key
+   * @returns {T | null} Found sub-model or null
+   */
   findModelByParentId<T extends FlowModel = FlowModel>(parentId: string, subKey: string): T | null {
-    if (parentId && this.modelInstances.has(parentId)) {
-      const parentModel = this.modelInstances.get(parentId) as FlowModel;
+    if (parentId && this.#modelInstances.has(parentId)) {
+      const parentModel = this.#modelInstances.get(parentId) as FlowModel;
       if (parentModel && parentModel.subModels[subKey]) {
         const subModels = parentModel.subModels[subKey];
         if (Array.isArray(subModels)) {
@@ -310,11 +410,17 @@ export class FlowEngine {
     }
   }
 
+  /**
+   * Load or create a model instance.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {any} options Load or create options
+   * @returns {Promise<T | null>} Model instance or null
+   */
   async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
-    if (uid && this.modelInstances.has(uid)) {
-      return this.modelInstances.get(uid) as T;
+    if (uid && this.#modelInstances.has(uid)) {
+      return this.#modelInstances.get(uid) as T;
     }
     const m = this.findModelByParentId<T>(parentId, subKey);
     if (m) {
@@ -344,11 +450,22 @@ export class FlowEngine {
     return model;
   }
 
+  /**
+   * Persist and save a model instance.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {T} model Model instance to save
+   * @returns {Promise<any>} Repository save result
+   */
   async saveModel<T extends FlowModel = FlowModel>(model: T) {
     if (!this.ensureModelRepository()) return;
     return await this.#modelRepository.save(model);
   }
 
+  /**
+   * Destroy a model instance (persistently delete and remove local instance).
+   * @param {string} uid UID of the model to destroy
+   * @returns {Promise<boolean>} Whether destroyed successfully
+   */
   async destroyModel(uid: string) {
     if (this.ensureModelRepository()) {
       await this.#modelRepository.destroy(uid);
@@ -357,14 +474,14 @@ export class FlowEngine {
   }
 
   /**
-   * 将指定的模型实例替换为新的类创建的实例
-   * @template T 新模型的类型
-   * @param {string} uid 要替换的模型的UID
+   * Replace a model instance with a new instance of a class.
+   * @template T New model type
+   * @param {string} uid UID of the model to replace
    * @param {Partial<FlowModelOptions> | ((oldModel: FlowModel) => Partial<FlowModelOptions>)} [optionsOrFn]
-   *        创建新模型的选项，支持两种形式：
-   *        1. 直接传入options
-   *        2. 传入函数，接收当前选项作为参数，返回新的options
-   * @returns {Promise<T>} 创建的新模型实例
+   *        Options for creating the new model, supports two forms:
+   *        1. Pass options directly
+   *        2. Pass a function that receives current options and returns new options
+   * @returns {Promise<T | null>} Newly created model instance
    */
   async replaceModel<T extends FlowModel = FlowModel>(
     uid: string,
@@ -424,6 +541,12 @@ export class FlowEngine {
     return newModel;
   }
 
+  /**
+   * Move a model instance within its parent model.
+   * @param {any} sourceId Source model UID
+   * @param {any} targetId Target model UID
+   * @returns {Promise<void>} No return value
+   */
   async moveModel(sourceId: any, targetId: any): Promise<void> {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
@@ -480,41 +603,9 @@ export class FlowEngine {
   }
 
   /**
-   * 注册一个流程 (Flow)。支持泛型以确保正确的模型类型推导。
-   * 流程是一系列步骤的定义，可以由事件触发或手动应用。
-   * @template TModel 具体的FlowModel子类类型
-   * @param {string} modelClassName 模型类名称。
-   * @param {FlowDefinition<TModel>} flowDefinition 流程定义。
-   * @returns {void}
-   */
-  public registerFlow<TModel extends FlowModel = FlowModel>(
-    modelClassName: string,
-    flowDefinition: FlowDefinition<TModel>,
-  ): void {
-    const ModelClass = this.getModelClass(modelClassName);
-
-    // 检查ModelClass是否存在
-    if (!ModelClass) {
-      console.warn(
-        `FlowEngine: Model class '${modelClassName}' not found. Flow '${flowDefinition.key}' will not be registered.`,
-      );
-      return;
-    }
-
-    if (typeof (ModelClass as any).registerFlow !== 'function') {
-      console.warn(
-        `FlowEngine: Model class '${modelClassName}' does not have a static registerFlow method. Flow '${flowDefinition.key}' will not be registered.`,
-      );
-      return;
-    }
-
-    (ModelClass as any).registerFlow(flowDefinition);
-  }
-
-  /**
-   * 根据父类过滤模型类（支持多层继承）
-   * @param {string | ModelConstructor} parentClass 父类名称或构造函数
-   * @returns {Map<string, ModelConstructor>} 继承自指定父类的模型类映射
+   * Filter model classes by parent class (supports multi-level inheritance).
+   * @param {string | ModelConstructor} parentClass Parent class name or constructor
+   * @returns {Map<string, ModelConstructor>} Model classes inherited from the specified parent class
    */
   public filterModelClassByParent(parentClass: string | ModelConstructor) {
     const parentModelClass = typeof parentClass === 'string' ? this.getModelClass(parentClass) : parentClass;
@@ -522,7 +613,7 @@ export class FlowEngine {
       return new Map();
     }
     const modelClasses = new Map<string, ModelConstructor>();
-    for (const [className, ModelClass] of this.modelClasses) {
+    for (const [className, ModelClass] of this.#modelClasses) {
       if (isInheritedFrom(ModelClass, parentModelClass)) {
         modelClasses.set(className, ModelClass);
       }
@@ -530,6 +621,14 @@ export class FlowEngine {
     return modelClasses;
   }
 
+  /**
+   * Generate a unique key for the flow application cache.
+   * @param {string} prefix Prefix
+   * @param {string} flowKey Flow key
+   * @param {string} modelUid Model UID
+   * @returns {string} Unique cache key
+   * @internal
+   */
   static generateApplyFlowCacheKey(prefix: string, flowKey: string, modelUid: string): string {
     return `${prefix}:${flowKey}:${modelUid}`;
   }

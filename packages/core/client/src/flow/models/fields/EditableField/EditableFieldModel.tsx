@@ -325,7 +325,6 @@ EditableFieldModel.registerFlow({
               },
             },
           });
-          await ctx.model.destroy();
           await newModel.applyAutoFlows(ctx);
         }
       },

@@ -8,11 +8,9 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { APIClient } from '@nocobase/sdk';
 import { FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
-import { ReactView } from './ReactView';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -473,4 +471,11 @@ export interface ToolbarItemConfig {
   visible?: (model: FlowModel) => boolean;
   /** 排序权重，数字越小越靠右（先添加的在右边） */
   sort?: number;
+}
+
+export interface ApplyFlowCacheEntry {
+  status: 'pending' | 'resolved' | 'rejected';
+  promise: Promise<any>;
+  data?: any;
+  error?: any;
 }
