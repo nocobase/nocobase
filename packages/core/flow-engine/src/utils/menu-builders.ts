@@ -744,7 +744,7 @@ async function buildDataSourceBlockItems(
 
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
-      const meta = hasCurrentFlowContext ? _.cloneDeep((ModelClass as any).meta) : (ModelClass as any).meta;
+      const meta = _.cloneDeep(ModelClass.meta) || { title: className };
       const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
 
       if (hasCurrentFlowContext) {
