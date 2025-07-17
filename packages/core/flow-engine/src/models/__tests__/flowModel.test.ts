@@ -1208,6 +1208,8 @@ describe('FlowModel', () => {
           subModels: {},
         });
 
+        emptyModel.setProps('foo', 'bar');
+
         const serialized = emptyModel.serialize();
 
         expect(serialized).toEqual({
@@ -1216,8 +1218,6 @@ describe('FlowModel', () => {
           sortIndex: expect.any(Number),
           subModels: expect.any(Object),
         });
-        // props should be excluded from serialization
-        expect(serialized.props).toBeUndefined();
         expect(serialized.flowEngine).toBeUndefined();
       });
     });

@@ -126,6 +126,7 @@ ReadPrettyFieldModel.registerFlow({
         if (!params.use) {
           throw new Error('model use is a required parameter');
         }
+        console.log('ctx.model', ctx.model);
         if (ctx.model.use !== params.use) {
           const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
