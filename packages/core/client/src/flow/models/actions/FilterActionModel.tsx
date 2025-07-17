@@ -8,16 +8,16 @@
  */
 
 import { escapeT, MultiRecordResource, useFlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { FilterGroup } from '../../components/FilterGroup';
-import { GlobalActionModel } from '../base/ActionModel';
-import { DataBlockModel } from '../base/BlockModel';
-import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
+import { CollectionActionModel } from '../base/ActionModel';
+import { CollectionBlockModel } from '../base/BlockModel';
 
 const FilterContent: FC<{ value: any }> = (props) => {
   const modelInstance = useFlowModel();
-  const currentBlockModel = modelInstance.context.blockModel as DataBlockModel;
+  const currentBlockModel = modelInstance.context.blockModel as CollectionBlockModel;
   const fields = currentBlockModel.collection.getFields().filter((field) => {
     // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
     return field.target !== 'attachments';
@@ -42,7 +42,7 @@ const FilterContent: FC<{ value: any }> = (props) => {
   );
 };
 
-export class FilterActionModel extends GlobalActionModel {
+export class FilterActionModel extends CollectionActionModel {
   declare props: ButtonProps & {
     filterValue?: any;
     ignoreFieldsNames?: string[];

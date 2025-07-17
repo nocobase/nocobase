@@ -9,9 +9,9 @@
 
 import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
+import { CollectionActionModel } from '../base/ActionModel';
 
-export class BulkDeleteActionModel extends GlobalActionModel {
+export class BulkDeleteActionModel extends CollectionActionModel {
   defaultProps: ButtonProps = {
     title: escapeT('Delete'),
     icon: 'DeleteOutlined',

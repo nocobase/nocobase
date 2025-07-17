@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { tval } from '@nocobase/utils/client';
 import { Card } from 'antd';
 import React, { createRef } from 'react';
-import { tval } from '@nocobase/utils/client';
 import { BlockModel } from '../../base/BlockModel';
 
 function waitForRefCallback<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {

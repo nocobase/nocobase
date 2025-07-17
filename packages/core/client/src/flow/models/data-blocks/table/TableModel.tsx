@@ -30,7 +30,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
 import { ActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex } from './utils';
@@ -157,7 +157,7 @@ const AddFieldColumn = ({ model }) => {
   );
 };
 
-export class TableModel extends DataBlockModel<TableModelStructure> {
+export class TableModel extends CollectionBlockModel<TableModelStructure> {
   get resource() {
     return super.resource as MultiRecordResource;
   }
@@ -375,7 +375,11 @@ export class TableModel extends DataBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton model={this} items={buildActionItems(this, 'GlobalActionModel')} subModelKey="actions" />
+              <AddActionButton
+                model={this}
+                items={buildActionItems(this, 'CollectionActionModel')}
+                subModelKey="actions"
+              />
             </Space>
           </div>
         </DndProvider>

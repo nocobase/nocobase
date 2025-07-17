@@ -10,7 +10,6 @@ import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
 import {
-  APIResource,
   BaseRecordResource,
   Collection,
   CollectionField,
@@ -133,7 +132,9 @@ BlockModel.registerFlow({
 
 BlockModel.define({ hide: true });
 
-export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
+export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
+
+export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   get dataSource(): DataSource {
     return this.context.dataSource;
   }
@@ -199,7 +200,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
-    throw new Error('createResource method must be implemented in subclasses of DataBlockModel');
+    throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
 
   get title() {
@@ -235,7 +236,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 }
 
-DataBlockModel.registerFlow({
+CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
   auto: true,
   steps: {
@@ -271,7 +272,7 @@ DataBlockModel.registerFlow({
   },
 });
 
-DataBlockModel.define({ hide: true });
+CollectionBlockModel.define({ hide: true });
 
 export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
