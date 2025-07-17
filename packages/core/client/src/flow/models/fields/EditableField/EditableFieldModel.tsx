@@ -91,12 +91,14 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     });
   }
   createField() {
-    return this.form.createField({
+    const field = this.form.createField({
       name: this.collectionField.name,
+      basePath: this.basePath,
       ...this.props,
       decorator: this.decorator,
       component: this.component,
     });
+    return field;
   }
 
   async destroy() {
