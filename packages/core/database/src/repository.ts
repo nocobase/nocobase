@@ -305,7 +305,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
   async getEstimatedRowCount() {
     if (this.database.isMySQLCompatibleDialect()) {
-      await this.database.sequelize.query(`ANALYZE ${this.collection.name}`);
+      await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
       const results: any[] = await this.database.sequelize.query(
         `
         SELECT table_rows FROM information_schema.tables
