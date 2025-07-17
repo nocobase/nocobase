@@ -122,8 +122,8 @@ export class MagicAttributeModel extends Model {
       return this;
     }
     if (!options) options = {};
-    if (this.dataValues.options === null) {
-      this.dataValues.options = {};
+    if (this.dataValues[this.magicAttribute] === null) {
+      this.dataValues[this.magicAttribute] = {};
     }
     if (!options.raw) {
       // @ts-ignore
