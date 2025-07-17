@@ -62,9 +62,11 @@ async function listWithPagination(ctx: Context) {
     if (count > SIMPLE_PAGINATION_LIMIT) {
       const resourceName = ctx.action.resourceName;
       const collection = ctx.dataSource.collectionManager.getCollection(resourceName);
-      await ctx.app.db.getRepository('dataSourcesCollections').update({
-        filter: { name: collection.name },
+      await ctx.app.db.getRepository('dataSourcesCollections').updateOrCreate({
+        filterKeys: ['name', 'dataSourceKey'],
         values: {
+          name: collection.name,
+          dataSourceKey: ctx.dataSource.options.name,
           options: {
             ...repository.collection?.options,
             simplePaginate: true,
