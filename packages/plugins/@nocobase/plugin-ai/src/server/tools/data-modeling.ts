@@ -6,7 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { z } from 'zod';
 import { ToolOptions } from '../manager/tool-manager';
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
@@ -92,9 +91,16 @@ export const dataModelingIntentRouter: ToolOptions = {
   name: 'intentRouter',
   title: '{{t("Intent Router")}}',
   description: '{{t("Route intents to appropriate workflow")}}',
-  schema: z.object({
-    workflow: z.enum(['create', 'edit']),
-  }),
+  schema: {
+    type: 'object',
+    properties: {
+      workflow: {
+        type: 'string',
+        enum: ['create', 'edit'],
+      },
+    },
+    required: ['workflow'],
+  },
   invoke: async (ctx: Context, args: { workflow: 'create' | 'edit' }) => {
     const { workflow } = args || {};
     if (workflow === 'create') {
@@ -120,7 +126,11 @@ export const getCollectionNames: ToolOptions = {
   name: 'getCollectionNames',
   title: '{{t("Get collection names")}}',
   description: '{{t("Retrieve names and titles map of all collections")}}',
-  schema: z.object({}),
+  schema: {
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  },
   invoke: async (ctx: Context) => {
     let names: { name: string; title: string }[] = [];
     try {
@@ -153,9 +163,20 @@ export const getCollectionMetadata: ToolOptions = {
   name: 'getCollectionMetadata',
   title: '{{t("Get collection metadata")}}',
   description: '{{t("Retrieve metadata for specified collections and their fields")}}',
-  schema: z.object({
-    collectionNames: z.array(z.string()).describe('An array of collection names to retrieve metadata for.'),
-  }),
+  schema: {
+    type: 'object',
+    properties: {
+      collectionNames: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+        description: 'An array of collection names to retrieve metadata for.',
+      },
+    },
+    required: ['collectionNames'],
+    additionalProperties: false,
+  },
   invoke: async (
     ctx: Context,
     args: {
@@ -199,9 +220,21 @@ export const defineCollections: ToolOptions = {
   name: 'defineCollections',
   title: '{{t("Define collections")}}',
   description: '{{t("Create or edit collections")}}',
-  schema: z.object({
-    collections: z.array(z.record(z.any())).describe('An array of collections to be defined or edited.'),
-  }),
+  schema: {
+    type: 'object',
+    properties: {
+      collections: {
+        type: 'array',
+        description: 'An array of collections to be defined or edited.',
+        items: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+    },
+    required: ['collections'],
+    additionalProperties: false,
+  },
   invoke: async (ctx: Context) => {
     const {
       args: { collections },
@@ -266,6 +299,7 @@ export const defineCollections: ToolOptions = {
               filterByTk: options.name,
               values: _.omit(options, ['fields']),
               transaction,
+              context: ctx,
             });
             for (const field of baseFields) {
               const fieldRepo = ctx.db.getRepository('collections.fields', options.name);
@@ -278,12 +312,14 @@ export const defineCollections: ToolOptions = {
                 await fieldRepo.create({
                   values: field,
                   transaction,
+                  context: ctx,
                 });
               } else {
                 await fieldRepo.update({
                   filterByTk: field.name,
                   values: _.omit(field, ['key']),
                   transaction,
+                  context: ctx,
                 });
               }
             }
@@ -308,12 +344,14 @@ export const defineCollections: ToolOptions = {
               await fieldRepo.create({
                 values: field,
                 transaction,
+                context: ctx,
               });
             } else {
               await fieldRepo.update({
                 filterByTk: field.name,
                 values: _.omit(field, ['key']),
                 transaction,
+                context: ctx,
               });
             }
           }
