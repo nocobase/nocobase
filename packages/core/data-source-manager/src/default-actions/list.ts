@@ -57,7 +57,7 @@ async function listWithPagination(ctx: Context) {
     }
   });
 
-  if (_.isUndefined(simplePaginate)) {
+  if (_.isUndefined(simplePaginate) && _.isFunction(repository['getEstimatedRowCount'])) {
     const count = await repository.getEstimatedRowCount();
     if (count > SIMPLE_PAGINATION_LIMIT) {
       const resourceName = ctx.action.resourceName;
