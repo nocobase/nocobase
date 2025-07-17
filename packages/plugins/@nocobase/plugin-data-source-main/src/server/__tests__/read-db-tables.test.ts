@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
-import Application, { Plugin } from '@nocobase/server';
+import Database, { parseDatabaseOptionsFromEnv } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import { createApp } from '.';
+import { Sequelize, DataTypes } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
@@ -85,6 +86,59 @@ describe('db2cm test', () => {
       expect(response.status).toBe(500);
       const fields = await db.getRepository('fields').find({ filter: { collectionName: 'hello' } });
       expect(fields.some((c) => c.name === 'name')).toBeTruthy();
+    });
+  });
+
+  describe('read db tables', async () => {
+    beforeEach(async () => {
+      app = await createApp();
+      db = app.db;
+      const dbOptions = await parseDatabaseOptionsFromEnv();
+      const sequelize = new Sequelize(dbOptions);
+      sequelize.define('table1', {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        name: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+      });
+
+      sequelize.define('table2', {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        description: {
+          type: DataTypes.TEXT,
+        },
+      });
+
+      sequelize.define('table3', {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        createdAt: {
+          type: DataTypes.DATE,
+          defaultValue: DataTypes.NOW,
+        },
+      });
+      await sequelize.sync({ force: true });
+    });
+
+    it('get selectable tables', async () => {
+      const response = await app.agent().resource('collections').selectable();
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data.some((x) => x.name === 'table1s')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table2s')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table3s')).toBeTruthy();
     });
   });
 });

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Collection, Database, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
 
 export default {
@@ -131,5 +131,16 @@ export default {
     }
 
     await next();
+  },
+
+  async ['collections:selectable'](ctx, next) {
+    const allTables = await ctx.app.db.sequelize.getQueryInterface().showAllTables();
+    const underscored = ctx.app.db.options.underscored;
+    const existsCollections = Array.from(ctx.app.db.collections.values()).map((x: Collection) =>
+      underscored ? snakeCase(x.name) : x.name,
+    );
+    const diffTables = allTables.filter((table) => !existsCollections.includes(table));
+
+    ctx.body = diffTables.map((name) => ({ name }));
   },
 };
