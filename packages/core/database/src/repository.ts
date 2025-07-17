@@ -341,7 +341,37 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       return Number(results?.[0]?.estimate ?? 0);
     }
 
+    if (this.database.sequelize.getDialect() === 'oracle') {
+      const tableName = this.collection.name.toUpperCase();
+      const schemaName = (await this.getOracleSchema()).toUpperCase();
+
+      await this.database.sequelize.query(`BEGIN DBMS_STATS.GATHER_TABLE_STATS(:schema, :table); END;`, {
+        replacements: { schema: schemaName, table: tableName },
+        type: QueryTypes.RAW,
+      });
+
+      const results: any[] = await this.database.sequelize.query(
+        `
+      SELECT NUM_ROWS AS estimate
+      FROM ALL_TABLES
+      WHERE TABLE_NAME = :table AND OWNER = :schema
+      `,
+        {
+          replacements: { table: tableName, schema: schemaName },
+          type: QueryTypes.SELECT,
+        },
+      );
+      return Number(results?.[0]?.estimate ?? 0);
+    }
+
     return 0;
+  }
+
+  private async getOracleSchema(): Promise<string> {
+    const [result] = await this.database.sequelize.query(`SELECT USER FROM DUAL`, {
+      type: QueryTypes.SELECT,
+    });
+    return result?.['USER'] ?? '';
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
