@@ -9,9 +9,9 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
+import { CollectionActionModel } from '../base/ActionModel';
 
-export class RefreshActionModel extends GlobalActionModel {
+export class RefreshActionModel extends CollectionActionModel {
   defaultProps: ButtonProps = {
     title: escapeT('Refresh'),
     icon: 'ReloadOutlined',

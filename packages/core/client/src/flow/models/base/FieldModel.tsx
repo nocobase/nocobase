@@ -8,7 +8,7 @@
  */
 
 import { CollectionField, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
-import { DataBlockModel } from './BlockModel';
+import { CollectionBlockModel } from './BlockModel';
 
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
 export type SupportedFieldInterfaces = string[] | '*' | null;
@@ -70,7 +70,7 @@ FieldModel.registerFlow({
         if (!fieldPath) {
           throw new Error('fieldPath is a required parameter');
         }
-        const blockModel = ctx.blockModel as DataBlockModel;
+        const blockModel = ctx.blockModel as CollectionBlockModel;
         if (!blockModel) {
           throw new Error('Current block model is not set in model context');
         }

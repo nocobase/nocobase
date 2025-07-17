@@ -9,9 +9,9 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { GlobalActionModel } from '../base/ActionModel';
+import { CollectionActionModel } from '../base/ActionModel';
 
-export class AddNewActionModel extends GlobalActionModel {
+export class AddNewActionModel extends CollectionActionModel {
   defaultProps: ButtonProps = {
     type: 'primary',
     title: escapeT('Add new'),

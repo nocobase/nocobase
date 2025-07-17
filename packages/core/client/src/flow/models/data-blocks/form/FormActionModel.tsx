@@ -10,7 +10,7 @@
 import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { EditFormModel } from './EditFormModel';
 import { FormModel } from './FormModel';
 
@@ -78,7 +78,7 @@ FormSubmitActionModel.registerFlow({
 
         ctx.message.success(ctx.t('Saved successfully'));
 
-        const parentBlockModel = ctx.currentFlow?.blockModel as DataBlockModel;
+        const parentBlockModel = ctx.currentFlow?.blockModel as CollectionBlockModel;
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }

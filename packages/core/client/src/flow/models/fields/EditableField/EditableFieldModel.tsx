@@ -303,18 +303,9 @@ EditableFieldModel.registerFlow({
           },
         };
       },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-        if (ctx.model.use !== params.use) {
-          const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
+      onParamsChanged: async (params, oldParams, ctx) => {
+        if (params.use !== oldParams.use) {
+          await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
             stepParams: {
               fieldSettings: {
@@ -327,7 +318,18 @@ EditableFieldModel.registerFlow({
               },
             },
           });
-          await newModel.applyAutoFlows(ctx);
+        }
+        return true;
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.use,
+        };
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
         }
       },
     },

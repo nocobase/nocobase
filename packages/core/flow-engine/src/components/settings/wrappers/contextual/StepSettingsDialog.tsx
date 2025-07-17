@@ -65,6 +65,7 @@ const openStepSettingsDialog = async ({
   }
 
   let title = step.title;
+  let onParamsChanged = step.onParamsChanged;
 
   let actionDefaultParams = {};
   if (step.use) {
@@ -72,6 +73,7 @@ const openStepSettingsDialog = async ({
     if (action) {
       actionDefaultParams = action.defaultParams || {};
       title = title || action.title;
+      onParamsChanged = onParamsChanged || action.onParamsChanged;
     }
   }
 
@@ -105,6 +107,9 @@ const openStepSettingsDialog = async ({
   const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
   const resolveActionDefaultParams = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
   const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
+
+  // 保存旧参数用于 onParamsChange 回调
+  const oldParams = { ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -148,15 +153,22 @@ const openStepSettingsDialog = async ({
               await form.submit();
               const currentValues = form.values;
               model.setStepParams(flowKey, stepKey, currentValues);
+              let skipSave = false;
+              // Call onParamsChange callback if it exists
+              if (onParamsChanged) {
+                skipSave = await onParamsChanged(currentValues, oldParams, flowRuntimeContext);
+              }
+
               currentDialog.close();
-              model
-                .save()
-                .then(() => {
-                  message.success(t('Configuration saved'));
-                })
-                .catch((_error) => {
-                  message.error(t('Error saving configuration, please check console'));
-                });
+              !skipSave &&
+                model
+                  .save()
+                  .then(() => {
+                    message.success(t('Configuration saved'));
+                  })
+                  .catch((_error) => {
+                    message.error(t('Error saving configuration, please check console'));
+                  });
             } catch (error) {
               console.error(t('Error saving configuration'), ':', error);
               message.error(t('Error saving configuration, please check console'));

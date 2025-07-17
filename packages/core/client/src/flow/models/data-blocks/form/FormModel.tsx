@@ -8,12 +8,12 @@
  */
 
 import { createForm, Form } from '@formily/core';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { FormActionModel } from './FormActionModel';
 import { FormFieldGridModel } from './FormFieldGridModel';
 
-export class FormModel extends DataBlockModel<{
+export class FormModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
 }> {

@@ -24,11 +24,11 @@ import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { RecordActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailsModel extends DataBlockModel<{
+export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {

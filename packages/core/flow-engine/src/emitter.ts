@@ -9,6 +9,12 @@
 
 export class Emitter {
   private events: Record<string, Array<(...args: any[]) => void>> = {};
+  private paused = false;
+
+  // TODO: this was used only by replaceModel, better find a new approach and remove this
+  setPaused(paused: boolean) {
+    this.paused = paused;
+  }
 
   on(event: string, callback: (...args: any[]) => void) {
     (this.events[event] ||= []).push(callback);
@@ -19,6 +25,9 @@ export class Emitter {
   }
 
   emit(event: string, ...args: any[]) {
+    if (this.paused) {
+      return;
+    }
     (this.events[event] || []).forEach((fn) => fn(...args));
   }
 }

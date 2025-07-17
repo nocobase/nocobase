@@ -182,28 +182,18 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   defaultParams?:
     | Record<string, any>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+  onParamsChanged?: (params: any, oldParams: any, ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>;
 }
 
 /**
  * Step definition with unified support for both registered actions and inline handlers
+ * Extends ActionDefinition but makes some properties optional and adds step-specific properties
  */
-export interface StepDefinition<TModel extends FlowModel = FlowModel> {
-  // Basic step properties
-  title?: string;
+export interface StepDefinition<TModel extends FlowModel = FlowModel>
+  extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
-  // Action reference (optional)
   use?: string; // Name of the registered ActionDefinition to use as base
-
-  // Handler (optional, but required if 'use' is not provided)
-  handler?: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
-
-  // UI and params configuration
-  uiSchema?:
-    | Record<string, ISchema>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition if 'use' is provided
 
   // Step configuration
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
