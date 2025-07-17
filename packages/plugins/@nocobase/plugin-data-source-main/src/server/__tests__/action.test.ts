@@ -110,5 +110,6 @@ describe('action test', () => {
       });
     const updatedPosts = await collectionRepository.findOne({ where: { name: 'posts' } });
     expect(updatedPosts.options.simplePaginate).toBeFalsy();
+    vi.restoreAllMocks();
   });
 });
