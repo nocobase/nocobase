@@ -111,6 +111,9 @@ export const ToolModal: React.FC = () => {
         await onOk?.();
         setOpen(false);
       }}
+      okButtonProps={{
+        disabled: activeTool.invokeStatus !== 'init',
+      }}
     >
       {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
     </Modal>
