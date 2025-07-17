@@ -727,7 +727,7 @@ function buildBlockGroup(type: 'data' | 'filter' | 'other', blocks: BlockInfo[],
     label: config.label,
     type: 'group' as const,
     children: async () => {
-      if (type === 'other') {
+      if (type === 'other' || type === 'filter') {
         return buildOtherBlockItems(blocks, model);
       }
       return buildDataSourceBlockItems(blocks, model, config.hasCurrentFlowContext);
