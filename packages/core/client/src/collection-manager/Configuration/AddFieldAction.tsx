@@ -11,8 +11,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd-v5';
 import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, MenuProps } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Button, Input, Dropdown, MenuProps } from 'antd';
+import { cloneDeep, throttle } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
@@ -168,6 +168,8 @@ export const AddFieldAction = (props) => {
   const { getInterface, getTemplate, collections, getCollection } = useCollectionManager_deprecated();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
+  const [searching, setSearching] = useState('');
+  const searchInputRef = React.useRef(null);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
@@ -252,7 +254,10 @@ export const AddFieldAction = (props) => {
                   key: child.name,
                   dataTargetScope: child.targetScope,
                 };
-              }),
+              })
+              .filter((item) =>
+                searching?.length ? item.label.toLowerCase().includes(searching.toLowerCase()) : true,
+              ),
           };
         }
         return {
@@ -269,11 +274,12 @@ export const AddFieldAction = (props) => {
                 key: child.name,
                 dataTargetScope: child.targetScope,
               };
-            }),
+            })
+            .filter((item) => (searching?.length ? item.label.toLowerCase().includes(searching.toLowerCase()) : true)),
         };
       })
       .filter((v) => v?.children?.length);
-  }, [getFieldOptions]);
+  }, [getFieldOptions, searching]);
   const menu = useMemo<MenuProps>(() => {
     return {
       onClick: (e) => {
@@ -307,17 +313,36 @@ export const AddFieldAction = (props) => {
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown
             getPopupContainer={getContainer}
-            trigger={trigger}
+            trigger={['click']}
             align={align}
             menu={menu}
+            onOpenChange={(open) => {
+              if (open) {
+                setTimeout(() => {
+                  searchInputRef?.current?.focus();
+                });
+              }
+            }}
+            popupRender={(menu) => {
+              return (
+                <>
+                  <Input
+                    ref={searchInputRef}
+                    placeholder={t('Search field')}
+                    style={{ width: 200, marginBottom: 8 }}
+                    onChange={(e) => {
+                      const value = e.target.value?.trim();
+                      throttle(setSearching, 300)(value);
+                    }}
+                  />
+                  {menu}
+                </>
+              );
+            }}
             overlayClassName={css`
               .ant-dropdown-menu-root {
                 max-height: 80vh;
                 overflow-y: auto;
-              }
-              .ant-dropdown-menu-item-group-list {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
               }
             `}
           >
