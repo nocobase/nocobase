@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-gantt",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "displayName": "Block: Gantt",
   "displayName.zh-CN": "区块：甘特图",
   "description": "Provides Gantt block.",
