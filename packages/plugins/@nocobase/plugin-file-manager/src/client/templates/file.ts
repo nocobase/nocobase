@@ -132,6 +132,7 @@ export class FileCollectionTemplate extends CollectionTemplate {
         target: 'storages',
         foreignKey: 'storageId',
         deletable: false,
+        interface: 'm2o',
         uiSchema: {
           type: 'string',
           title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
