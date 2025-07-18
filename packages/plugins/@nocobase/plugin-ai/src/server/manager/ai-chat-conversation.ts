@@ -62,15 +62,16 @@ class AiChatConversationImpl implements AiChatConversation {
     return isArray ? instances : instances[0];
   }
   async removeMessages({ messageId }: AiMessageRemoveOptions): Promise<void> {
+    const filter: Filter = {
+      sessionId: this.sessionId,
+    };
+    if (messageId) {
+      filter.messageId = {
+        $gte: messageId,
+      };
+    }
     await this.aiMessagesRepo.destroy({
-      filter: {
-        sessionId: this.sessionId,
-        messageId: messageId
-          ? {
-              $gte: messageId,
-            }
-          : undefined,
-      },
+      filter,
       transaction: this.transaction,
     });
   }
@@ -78,7 +79,9 @@ class AiChatConversationImpl implements AiChatConversation {
     return await this.aiMessagesRepo.findByTargetKey(messageId);
   }
   async listMessages(query: AiMessageQuery): Promise<AiMessage[]> {
-    const filter: Filter = {};
+    const filter: Filter = {
+      sessionId: this.sessionId,
+    };
     if (query?.messageId) {
       filter.messageId = {
         $lt: query.messageId,
