@@ -345,10 +345,9 @@ const useTableColumns = (
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, active, over } = useSortable({
+  const { setNodeRef, active, isOver, over } = useSortable({
     id,
   });
-  const isOver = over?.id == id;
   const { rowIndex, ...others } = props;
 
   const classObj = useMemo(() => {
@@ -969,7 +968,7 @@ export const Table: any = withDynamicSchemaProps(
               })
               .join('-');
           } else if (typeof rowKey === 'string') {
-            return record[rowKey];
+            return record[rowKey].toString();
           } else {
             // 如果 rowKey 是函数或未提供，使用 defaultRowKey
             return (rowKey ?? defaultRowKey)(record)?.toString();
@@ -1006,7 +1005,7 @@ export const Table: any = withDynamicSchemaProps(
             </DndContext>
           );
         };
-      }, [field, onRowDragEnd]); // Don't put 'value' in dependencies, otherwise it will cause the performance issue
+      }, [field, onRowDragEnd, value]); // Don't put 'value' in dependencies, otherwise it will cause the performance issue
 
       // @ts-ignore
       BodyWrapperComponent.displayName = 'BodyWrapperComponent';
@@ -1128,7 +1127,7 @@ export const Table: any = withDynamicSchemaProps(
               )
             : React.createElement(React.Fragment, {}, children);
         },
-        [dragSort, getRowKey], // Don't put 'value' in dependencies, otherwise it will cause the dropdown component to disappear immediately when adding association fields to the table
+        [dragSort, getRowKey, value], // Don't put 'value' in dependencies, otherwise it will cause the dropdown component to disappear immediately when adding association fields to the table
       );
 
       const { height: tableHeight, tableSizeRefCallback } = useTableSize();
