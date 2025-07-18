@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Collection, Database, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
+import { CollectionService } from '../services/collection-service';
 
 export default {
   async ['collections:listMeta'](ctx, next) {
@@ -131,5 +132,30 @@ export default {
     }
 
     await next();
+  },
+
+  async ['collections:selectable'](ctx, next) {
+    const allTables = await ctx.app.db.sequelize.getQueryInterface().showAllTables();
+    const underscored = ctx.app.db.options.underscored;
+    const existsCollections = Array.from(ctx.app.db.collections.values()).map((x: Collection) =>
+      underscored ? snakeCase(x.name) : x.name,
+    );
+    const diffTables = allTables.filter((table) => !existsCollections.includes(table));
+
+    ctx.body = diffTables.map((name) => ({ name }));
+  },
+
+  async ['collections:add'](ctx, next) {
+    const { values } = ctx.action.params;
+    const existsCollections = await ctx.app.db.getRepository('collections').find({
+      filter: { name: values },
+    });
+    const existsCollectionNames = existsCollections.map((c) => c.name);
+    const addToCollections = values.filter((table) => !existsCollectionNames.includes(table));
+    if (addToCollections.length) {
+      const collectionService = new CollectionService(ctx.app.db);
+      await collectionService.addCollections(addToCollections);
+    }
+    ctx.body = true;
   },
 };
