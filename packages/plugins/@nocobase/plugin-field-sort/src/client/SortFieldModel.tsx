@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '@nocobase/client';
 import { NumberPicker } from '@formily/antd-v5';
+import { FormFieldModel } from '@nocobase/client';
 
-export class SortFieldModel extends EditableFieldModel {
+export class SortFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['sort'];
 
   get component() {

@@ -8,9 +8,9 @@
  */
 import { escapeT } from '@nocobase/flow-engine';
 
-import { EditableFieldModel } from '../EditableFieldModel';
+import { FormFieldModel } from '../FormFieldModel';
 
-export class EditableAssociationFieldModel extends EditableFieldModel {
+export class EditableAssociationFieldModel extends FormFieldModel {
   public static readonly supportedFieldInterfaces = null;
 }
 

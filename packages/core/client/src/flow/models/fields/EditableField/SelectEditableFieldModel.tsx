@@ -8,9 +8,9 @@
  */
 
 import { Select } from '@formily/antd-v5';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class SelectEditableFieldModel extends EditableFieldModel {
+export class SelectEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {

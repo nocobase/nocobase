@@ -22,7 +22,7 @@ import {
 import { Button, Skeleton } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { EditableFieldModel } from '../../fields/EditableField';
+import { FormFieldModel } from '../../fields';
 
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
@@ -194,8 +194,8 @@ QuickEditForm.registerFlow({
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          const use = collectionField.getFirstSubclassNameOf('EditableFieldModel') || 'EditableFieldModel';
-          const fieldModel = ctx.model.addSubModel<EditableFieldModel>('fields', {
+          const use = collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          const fieldModel = ctx.model.addSubModel<FormFieldModel>('fields', {
             use,
             stepParams: {
               fieldSettings: {

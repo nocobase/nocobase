@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '@nocobase/client';
 import { onFormValuesChange } from '@formily/core';
-import { useFormEffects, useForm, useField } from '@formily/react';
+import { useField, useForm, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import { Checkbox, DatePicker, InputNumber, Input as InputString } from '@nocobase/client';
-import _ from 'lodash';
+import { Checkbox, DatePicker, FormFieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
+import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 
 import { toDbType } from '../utils';
@@ -119,7 +118,7 @@ function Result(props) {
 
 export default Result;
 
-export class FormulaFieldModel extends EditableFieldModel {
+export class FormulaFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['formula'];
 
   get component() {

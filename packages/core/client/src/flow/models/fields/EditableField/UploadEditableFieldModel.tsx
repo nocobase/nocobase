@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from './EditableFieldModel';
 import { UploadOutlined } from '@ant-design/icons';
-import { useField } from '@formily/react';
-import React, { useState } from 'react';
-import { castArray } from 'lodash';
 import { Upload } from '@formily/antd-v5';
-import { FieldContext } from '@formily/react';
+import { FieldContext, useField } from '@formily/react';
+import { castArray } from 'lodash';
+import React, { useState } from 'react';
+import { FormFieldModel } from './FormFieldModel';
 
 export const CardUpload = (props) => {
   const outerField: any = useField();
@@ -45,7 +44,7 @@ export const CardUpload = (props) => {
     </FieldContext.Provider>
   );
 };
-export class UploadEditableFieldModel extends EditableFieldModel {
+export class UploadEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = [
     'attachment',
     'm2m',

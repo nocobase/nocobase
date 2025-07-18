@@ -8,9 +8,9 @@
  */
 
 import { connect, mapProps } from '@formily/react';
-import { ColorPicker as AntdColorPicker } from 'antd';
 import { tval } from '@nocobase/utils/client';
-import { EditableFieldModel } from './EditableFieldModel';
+import { ColorPicker as AntdColorPicker } from 'antd';
+import { FormFieldModel } from './FormFieldModel';
 
 const ColorPicker = connect(
   AntdColorPicker,
@@ -45,7 +45,7 @@ const ColorPicker = connect(
     };
   }),
 );
-export class ColorEditableFieldModel extends EditableFieldModel {
+export class ColorEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['color'];
 
   get component() {
