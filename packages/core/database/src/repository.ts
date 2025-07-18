@@ -304,6 +304,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async getEstimatedRowCount() {
+    if (_.isFunction(this.collection['isSql']) && this.collection['isSql']()) {
+      return 0;
+    }
+    if (this.collection.isView()) {
+      return 0;
+    }
     if (this.database.isMySQLCompatibleDialect()) {
       await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
       const results: any[] = await this.database.sequelize.query(
@@ -352,7 +358,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       const results: any[] = await this.database.sequelize.query(
         `
-      SELECT NUM_ROWS AS estimate
+      SELECT NUM_ROWS AS "estimate"
       FROM ALL_TABLES
       WHERE TABLE_NAME = :table AND OWNER = :schema
       `,
