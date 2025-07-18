@@ -93,13 +93,13 @@ test.describe('where to open a popup and what can be added to it', () => {
     await addBlock(['Form (Edit)']);
     await addBlock(['Markdown']);
 
-    await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
-    await expect(page.getByText('GeneralConfigure fieldsConfigure actions')).toBeVisible();
-    await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-details')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-Markdown.Void-')).toBeVisible();
 
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
-    await page.getByText('GeneralConfigure actionsConfigure fields').hover();
+    await page.getByLabel('block-item-CardItem-general-details').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:details-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -124,10 +124,13 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     async function addBlock(names: string[]) {
       await page.getByLabel('schema-initializer-Grid-popup').hover();
+      await page.waitForTimeout(500);
       for (let i = 0; i < names.length - 1; i++) {
         const name = names[i];
         await page.getByRole('menuitem', { name }).hover();
+        await page.waitForTimeout(500);
       }
+      await expect(page.getByRole('menuitem', { name: names[names.length - 1] })).toHaveCount(1);
       await page.getByRole('menuitem', { name: names[names.length - 1] }).click();
       await page.mouse.move(300, 0);
     }
@@ -206,13 +209,14 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Associated records' })).toHaveCount(1);
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);
@@ -272,13 +276,14 @@ test.describe('where to open a popup and what can be added to it', () => {
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).hover();
-    await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+    await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).click();
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-')).toBeVisible();
 
     await page.getByLabel('schema-initializer-Grid-popup:common:addBlock-general').hover();
-    await page.getByRole('menuitem', { name: 'Table right' }).hover();
+    await page.getByRole('menuitem', { name: 'Table right' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Associated records' })).toHaveCount(1);
     await page.getByRole('menuitem', { name: 'Associated records' }).hover();
     await page.getByRole('menuitem', { name: 'One to many' }).click();
     await page.mouse.move(300, 0);

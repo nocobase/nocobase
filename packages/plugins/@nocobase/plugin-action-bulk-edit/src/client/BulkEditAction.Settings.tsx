@@ -21,9 +21,10 @@ import {
   SecondConFirm,
   AfterSuccess,
   RefreshDataBlockRequest,
+  SchemaSettingsLinkageRules,
+  useDataBlockProps,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
-import { isValid } from '@formily/shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -97,6 +98,16 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
       useComponentProps() {
@@ -114,6 +125,16 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
     {
       name: 'updateMode',
       Component: UpdateMode,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
     },
     {
       name: 'remove',
@@ -139,6 +160,16 @@ export const bulkEditActionSettings = new SchemaSettings({
       },
     },
     {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+        };
+      },
+    },
+    {
       name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
       useComponentProps() {
@@ -158,6 +189,7 @@ export const bulkEditActionSettings = new SchemaSettings({
       name: 'updateMode',
       Component: UpdateMode,
     },
+
     {
       name: 'remove',
       sort: 100,
@@ -190,6 +222,17 @@ export const bulkEditFormSubmitActionSettings = new SchemaSettings({
     {
       name: 'afterSuccessfulSubmission',
       Component: AfterSuccess,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+        };
+      },
     },
     {
       name: 'refreshDataBlockRequest',

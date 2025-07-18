@@ -25,6 +25,35 @@ import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-set
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
+import { SchemaSettingsItemType } from '../../../../application';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
+import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
+
+const enabledIndexColumn: SchemaSettingsItemType = {
+  name: 'enableIndexColumn',
+  type: 'switch',
+  useComponentProps: () => {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable index column'),
+      checked: field.decoratorProps.enableIndexColumn !== false,
+      onChange: async (enableIndexColumn) => {
+        field.decoratorProps = field.decoratorProps || {};
+        field.decoratorProps.enableIndexColumn = enableIndexColumn;
+        fieldSchema['x-decorator-props'].enableIndexColumn = enableIndexColumn;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+      },
+    };
+  },
+};
 
 export const tableBlockSettings = new SchemaSettings({
   name: 'blockSettings:table',
@@ -36,6 +65,19 @@ export const tableBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'treeTable',
@@ -111,7 +153,6 @@ export const tableBlockSettings = new SchemaSettings({
         const { resource } = field.decoratorProps;
         const collectionField = resource && getCollectionField(resource);
         const api = useAPIClient();
-
         return {
           title: t('Enable drag and drop sorting'),
           checked: field.decoratorProps.dragSort,
@@ -147,6 +188,7 @@ export const tableBlockSettings = new SchemaSettings({
         return field.decoratorProps.dragSort;
       },
     },
+    enabledIndexColumn,
     setTheDataScopeSchemaSettingsItem,
     setDefaultSortingRulesSchemaSettingsItem,
     setDataLoadingModeSettingsItem,

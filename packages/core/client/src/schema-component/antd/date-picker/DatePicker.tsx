@@ -7,43 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, observer } from '@formily/react';
-import { DatePicker as AntdDatePicker, DatePickerProps as AntdDatePickerProps, Space, Select } from 'antd';
-import { RangePickerProps } from 'antd/es/date-picker';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { DatePicker as AntdDatePicker, Space, Select } from 'antd';
 import dayjs from 'dayjs';
+import { last, first } from 'lodash';
 import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
-import { ReadPretty, ReadPrettyComposed } from './ReadPretty';
+import { ReadPretty } from './ReadPretty';
 import { getDateRanges, mapDatePicker, mapRangePicker, inferPickerType, isMobile } from './util';
 import { useCompile } from '../../';
 import { useVariables, useLocalVariables, isVariable } from '../../../variables';
 import { autorun } from '@formily/reactive';
-import { log10 } from 'mathjs';
 interface IDatePickerProps {
   utc?: boolean;
 }
-
-type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
-  ReadPretty?: ReadPrettyComposed['DatePicker'];
-  RangePicker?: ComposedRangePicker;
-  FilterWithPicker?: any;
-};
-
-type ComposedRangePicker = React.FC<RangePickerProps> & {
-  ReadPretty?: ReadPrettyComposed['DateRangePicker'];
-};
 
 const DatePickerContext = React.createContext<IDatePickerProps>({ utc: true });
 
 export const useDatePickerContext = () => React.useContext(DatePickerContext);
 export const DatePickerProvider = DatePickerContext.Provider;
 
-const InternalDatePicker: ComposedDatePicker = connect(
-  AntdDatePicker,
-  mapProps(mapDatePicker()),
-  mapReadPretty(ReadPretty.DatePicker),
-);
+const InternalDatePicker = connect(AntdDatePicker, mapProps(mapDatePicker()), mapReadPretty(ReadPretty.DatePicker));
 
 const InternalRangePicker = connect(
   AntdDatePicker.RangePicker,
@@ -51,7 +36,7 @@ const InternalRangePicker = connect(
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
-export const DatePicker: ComposedDatePicker = (props: any) => {
+export const DatePicker = (props: any) => {
   const { utc = true } = useDatePickerContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const { parseVariable } = useVariables() || {};
@@ -73,86 +58,98 @@ export const DatePicker: ComposedDatePicker = (props: any) => {
   }, [props._maxDate, props._minDate, localVariables, parseVariable]);
 
   const limitDate = async () => {
-    //dayjs()如果传入undefined可能会被解析成当前时间
-    let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
+    // 直接将 UTC 时间字符串转换成 dayjs 对象（注意不转成本地时间）
+    let minDateTimePromise = props._minDate
+      ? Promise.resolve(dayjs(props._minDate)) // 保持 UTC 时间
+      : Promise.resolve(null);
     let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
 
     if (isVariable(props._maxDate)) {
-      maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+      maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => {
+        console.log(dayjs(Array.isArray(result.value) ? last(result.value) : result.value));
+        return dayjs(Array.isArray(result.value) ? last(result.value) : result.value);
+      });
     }
     if (isVariable(props._minDate)) {
-      minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+      minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) =>
+        dayjs(Array.isArray(result.value) ? first(result.value) : result.value),
+      );
     }
 
     const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
 
     const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
 
-    // 根据最小日期和最大日期限定日期时间
+    // disabledDate 只禁用日期，不要管时间部分
     const disabledDate = (current) => {
       if (!dayjs.isDayjs(current)) return false;
 
-      const currentDate = dayjs(current);
-      const min = minDateTime ? dayjs(minDateTime) : null;
-      const max = maxDateTime ? dayjs(maxDateTime).endOf('day') : null; // 设为 23:59:59
+      // 把 current 转成本地时间（不加 .utc()，因为 current 就是本地时间）
+      // 然后和 maxDateTime（同为本地时间）做比较
+      const min = minDateTime ? minDateTime.startOf('day') : null;
+      const max = maxDateTime ? maxDateTime.endOf('day') : null;
 
-      return (min && currentDate.isBefore(min, 'minute')) || (max && currentDate.isAfter(max, 'minute'));
+      return (min && current.isBefore(min, 'day')) || (max && current.isAfter(max, 'day'));
     };
 
-    // 禁用时分秒
     const disabledTime = (current) => {
       if (!current || (!minDateTime && !maxDateTime)) {
         return { disabledHours: () => [], disabledMinutes: () => [], disabledSeconds: () => [] };
       }
 
-      const currentDate = dayjs(current);
-      const isCurrentMinDay = currentDate.isSame(minDateTime, 'day');
-      const isCurrentMaxDay = currentDate.isSame(maxDateTime, 'day');
+      // current 是本地时间，转成 UTC 时间
+      const currentUtc = current.utc();
+
+      // 判断是不是 minDate 和 maxDate 的同一天（UTC）
+      const isCurrentMinDay = minDateTime && currentUtc.isSame(minDateTime, 'day');
+      const isCurrentMaxDay = maxDateTime && currentUtc.isSame(maxDateTime, 'day');
 
       const disabledHours = () => {
         const hours = [];
         if (isCurrentMinDay) {
-          hours.push(...Array.from({ length: minDateTime.hour() }, (_, i) => i));
+          for (let h = 0; h < minDateTime.hour(); h++) {
+            hours.push(h);
+          }
         }
         if (isCurrentMaxDay) {
-          hours.push(...Array.from({ length: 24 - maxDateTime.hour() }, (_, i) => i + maxDateTime.hour() + 1));
+          for (let h = maxDateTime.hour() + 1; h < 24; h++) {
+            hours.push(h);
+          }
         }
         return hours;
       };
 
-      const getDisabledMinutes = (selectedHour: number) => {
+      const disabledMinutes = (selectedHour) => {
         if (isCurrentMinDay && selectedHour === minDateTime.hour()) {
-          return fullTimeArr.filter((i) => i < minDateTime.minute());
+          return fullTimeArr.filter((m) => m < minDateTime.minute());
         }
         if (isCurrentMaxDay && selectedHour === maxDateTime.hour()) {
-          return fullTimeArr.filter((i) => i > maxDateTime.minute());
+          return fullTimeArr.filter((m) => m > maxDateTime.minute());
         }
         return [];
       };
 
-      const getDisabledSeconds = (selectedHour: number, selectedMinute: number) => {
+      const disabledSeconds = (selectedHour, selectedMinute) => {
         if (isCurrentMinDay && selectedHour === minDateTime.hour() && selectedMinute === minDateTime.minute()) {
-          return fullTimeArr.filter((i) => i < minDateTime.second());
+          return fullTimeArr.filter((s) => s < minDateTime.second());
         }
         if (isCurrentMaxDay && selectedHour === maxDateTime.hour() && selectedMinute === maxDateTime.minute()) {
-          return fullTimeArr.filter((i) => i > maxDateTime.second());
+          return fullTimeArr.filter((s) => s > maxDateTime.second());
         }
         return [];
       };
 
       return {
         disabledHours,
-        disabledMinutes: getDisabledMinutes,
-        disabledSeconds: getDisabledSeconds,
+        disabledMinutes,
+        disabledSeconds,
       };
     };
-    setDisabledDate(() => {
-      return disabledDate;
-    });
-    setDisabledTime(() => {
-      return disabledTime;
-    });
+
+    setDisabledDate(() => disabledDate);
+    setDisabledTime(() => disabledTime);
   };
+
   const newProps = {
     utc,
     ...props,

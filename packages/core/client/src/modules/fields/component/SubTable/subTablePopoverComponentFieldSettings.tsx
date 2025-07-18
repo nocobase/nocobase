@@ -29,7 +29,33 @@ import { useIsAssociationField } from '../../../../schema-component/antd/form-it
 import { FormLinkageRules } from '../../../../schema-settings/LinkageRules';
 import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 import { useColumnSchema } from '../../../../schema-component';
+import { SchemaSettingsItemType } from '../../../../application';
 
+const enabledIndexColumn: SchemaSettingsItemType = {
+  name: 'enableIndexColumn',
+  type: 'switch',
+  useComponentProps: () => {
+    const field = useField();
+    const fieldSchema = useFieldSchema();
+    const { t } = useTranslation();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable index column'),
+      checked: field.componentProps.enableIndexColumn !== false,
+      onChange: async (enableIndexColumn) => {
+        field.componentProps = field.componentProps || {};
+        field.componentProps.enableIndexColumn = enableIndexColumn;
+        fieldSchema['x-component-props'].enableIndexColumn = enableIndexColumn;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': fieldSchema['x-component-props'],
+          },
+        });
+      },
+    };
+  },
+};
 const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
@@ -319,7 +345,6 @@ export const linkageRules = {
     const cm = useCollectionManager();
     const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
     const { rerenderDataBlock } = useRerenderDataBlock();
-
     return {
       collectionName: collectionField?.target,
       Component: LinkageRulesComponent,
@@ -368,6 +393,7 @@ export const subTablePopoverComponentFieldSettings = new SchemaSettings({
     allowSelectExistingRecord,
     allowDisassociation,
     setDefaultSortingRules,
+    enabledIndexColumn,
     linkageRules,
     recordPerPage,
   ],

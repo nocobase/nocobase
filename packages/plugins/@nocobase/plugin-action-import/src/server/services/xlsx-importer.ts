@@ -10,12 +10,23 @@
 import * as XLSX from 'xlsx';
 import lodash from 'lodash';
 import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
-import { Collection as DBCollection, Database } from '@nocobase/database';
-import { Transaction } from 'sequelize';
+import {
+  Collection as DBCollection,
+  Database,
+  Model,
+  MultipleRelationRepository,
+  RelationRepository,
+  Repository,
+  UpdateGuard,
+  updateAssociations,
+} from '@nocobase/database';
+import { MultiAssociationAccessors, Transaction } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
+import { Logger } from '@nocobase/logger';
+import { LoggerService } from '../utils';
 
 export type ImportColumn = {
   dataIndex: Array<string>;
@@ -32,6 +43,7 @@ export type ImporterOptions = {
   chunkSize?: number;
   explain?: string;
   repository?: any;
+  logger?: Logger;
 };
 
 export type RunOptions = {
@@ -40,11 +52,14 @@ export type RunOptions = {
 };
 
 export class XlsxImporter extends EventEmitter {
-  private repository;
+  private repository: Repository;
+
+  protected loggerService: LoggerService;
+
+  protected logger: Logger;
 
   constructor(protected options: ImporterOptions) {
     super();
-
     if (typeof options.columns === 'string') {
       options.columns = JSON.parse(options.columns);
     }
@@ -54,6 +69,12 @@ export class XlsxImporter extends EventEmitter {
     }
 
     this.repository = options.repository ? options.repository : options.collection.repository;
+    this.logger = options.logger;
+    this.loggerService = new LoggerService({ logger: this.logger });
+  }
+
+  async beforePerformImport(data: string[][], options: RunOptions): Promise<string[][]> {
+    return data;
   }
 
   async validate(ctx?: Context) {
@@ -83,12 +104,24 @@ export class XlsxImporter extends EventEmitter {
     }
 
     try {
-      await this.validate(options.context);
-      const imported = await this.performImport(options);
+      const data = await this.loggerService.measureExecutedTime(
+        async () => this.validate(options.context),
+        'Validation completed in {time}ms',
+      );
+
+      const imported = await this.loggerService.measureExecutedTime(
+        async () => this.performImport(data, options),
+        'Data import completed in {time}ms',
+      );
+
+      this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
       // @ts-ignore
       if (this.options.collectionManager.db) {
-        await this.resetSeq(options);
+        await this.loggerService.measureExecutedTime(
+          async () => this.resetSeq(options),
+          'Sequence reset completed in {time}ms',
+        );
       }
 
       transaction && (await transaction.commit());
@@ -96,6 +129,9 @@ export class XlsxImporter extends EventEmitter {
       return imported;
     } catch (error) {
       transaction && (await transaction.rollback());
+      this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
+        originalError: error.stack || error.toString(),
+      });
       throw error;
     }
   }
@@ -162,10 +198,9 @@ export class XlsxImporter extends EventEmitter {
     );
   }
 
-  async performImport(options?: RunOptions): Promise<any> {
-    const transaction = options?.transaction;
-    const data = await this.getData(options?.context);
-    const chunks = lodash.chunk(data.slice(1), this.options.chunkSize || 200);
+  async performImport(data: string[][], options?: RunOptions): Promise<any> {
+    const chunkSize = this.options.chunkSize || 1000;
+    const chunks = lodash.chunk(data.slice(1), chunkSize);
 
     let handingRowIndex = 1;
     let imported = 0;
@@ -178,93 +213,204 @@ export class XlsxImporter extends EventEmitter {
     }
 
     for (const chunkRows of chunks) {
-      for (const row of chunkRows) {
-        const rowValues = {};
-        handingRowIndex += 1;
-        try {
-          for (let index = 0; index < this.options.columns.length; index++) {
-            const column = this.options.columns[index];
-
-            const field = this.options.collection.getField(column.dataIndex[0]);
-
-            if (!field) {
-              throw new ImportValidationError('Import validation.Field not found', {
-                field: column.dataIndex[0],
-              });
-            }
-
-            const str = row[index];
-
-            const dataKey = column.dataIndex[0];
-
-            const fieldOptions = field.options;
-
-            const interfaceName = fieldOptions.interface;
-
-            const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
-
-            if (!InterfaceClass) {
-              rowValues[dataKey] = str;
-              continue;
-            }
-
-            const interfaceInstance = new InterfaceClass(field.options);
-
-            const ctx: any = {
-              transaction,
-              field,
-            };
-
-            if (column.dataIndex.length > 1) {
-              ctx.associationField = field;
-              ctx.targetCollection = (field as IRelationField).targetCollection();
-              ctx.filterKey = column.dataIndex[1];
-            }
-
-            rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
-          }
-
-          await this.performInsert({
-            values: rowValues,
-            transaction,
-            context: options?.context,
-          });
-
-          imported += 1;
-
-          // Emit progress event
-          this.emit('progress', {
-            total,
-            current: imported,
-          });
-
-          await new Promise((resolve) => setTimeout(resolve, 5));
-        } catch (error) {
-          throw new ImportError(`Import failed at row ${handingRowIndex}`, {
-            rowIndex: handingRowIndex,
-            rowData: Object.entries(rowValues)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join(', '),
-            cause: error,
-          });
-        }
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
+      imported += chunkRows.length;
+      this.emit('progress', {
+        total,
+        current: imported,
+      });
     }
 
     return imported;
   }
 
-  async performInsert(insertOptions: { values: any; transaction: Transaction; context: any; hooks?: boolean }) {
-    const { values, transaction, context } = insertOptions;
+  protected getModel(): typeof Model {
+    return (this.repository instanceof RelationRepository ? this.repository.targetModel : this.repository.model) as any;
+  }
 
-    return this.repository.create({
-      values,
-      context,
-      transaction,
-      hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
+  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions) {
+    for (let index = 0; index < this.options.columns.length; index++) {
+      const column = this.options.columns[index];
+      const field = this.options.collection.getField(column.dataIndex[0]);
+      if (!field) {
+        throw new ImportValidationError('Import validation.Field not found', {
+          field: column.dataIndex[0],
+        });
+      }
+
+      const str = row[index];
+      const dataKey = column.dataIndex[0];
+      const fieldOptions = field.options;
+      const interfaceName = fieldOptions.interface;
+      const InterfaceClass = this.options.collectionManager.getFieldInterface(interfaceName);
+      if (!InterfaceClass) {
+        rowValues[dataKey] = str;
+        continue;
+      }
+
+      const interfaceInstance = new InterfaceClass(field.options);
+
+      const ctx: any = {
+        transaction: options.transaction,
+        field,
+      };
+
+      if (column.dataIndex.length > 1) {
+        ctx.associationField = field;
+        ctx.targetCollection = (field as IRelationField).targetCollection();
+        ctx.filterKey = column.dataIndex[1];
+      }
+
+      rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+    }
+    const model = this.getModel();
+    const guard = UpdateGuard.fromOptions(model, {
+      ...options,
+      action: 'create',
+      underscored: this.repository.collection.options.underscored,
     });
+
+    rowValues =
+      this.repository instanceof RelationRepository
+        ? model.callSetters(guard.sanitize(rowValues || {}), options)
+        : guard.sanitize(rowValues);
+  }
+
+  async handleChuckRows(
+    chunkRows: string[][],
+    runOptions?: RunOptions,
+    options?: {
+      handingRowIndex: number;
+      context: any;
+    },
+  ) {
+    let { handingRowIndex = 1 } = options;
+    const { transaction } = runOptions;
+    const rows = [];
+    for (const row of chunkRows) {
+      const rowValues = {};
+      handingRowIndex += 1;
+      await this.handleRowValuesWithColumns(row, rowValues, runOptions);
+      rows.push(rowValues);
+    }
+
+    try {
+      await this.loggerService.measureExecutedTime(
+        async () =>
+          this.performInsert({
+            values: rows,
+            transaction,
+            context: options?.context,
+          }),
+        'Record insertion completed in {time}ms',
+      );
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    } catch (error) {
+      this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
+        rowIndex: handingRowIndex,
+        rowData: rows[handingRowIndex],
+        originalError: error.stack || error.toString(),
+      });
+
+      throw new ImportError(`Import failed at row ${handingRowIndex}`, {
+        rowIndex: handingRowIndex,
+        rowData: rows[handingRowIndex],
+        cause: error,
+      });
+    }
+
+    return;
+  }
+
+  async performInsert(insertOptions: { values: any[]; transaction: Transaction; context: any; hooks?: boolean }) {
+    const { values, transaction, context } = insertOptions;
+    const instances = await this.loggerService.measureExecutedTime(
+      async () =>
+        this.getModel().bulkCreate(values, {
+          transaction,
+          hooks: insertOptions.hooks == undefined ? true : insertOptions.hooks,
+          returning: true,
+          context,
+        } as any),
+      'Row {{rowIndex}}: bulkCreate completed in {time}ms',
+    );
+
+    if (this.repository instanceof RelationRepository) {
+      await this.associateRecords(instances, _.omit(insertOptions, 'values'));
+    }
+    // @ts-ignore
+    const db = this.options.collectionManager.db as Database;
+    for (let i = 0; i < instances.length; i++) {
+      const instance = instances[i];
+      const value = values[i];
+
+      await this.loggerService.measureExecutedTime(
+        async () => updateAssociations(instance, value, { transaction }),
+        `Row ${i + 1}: updateAssociations completed in {time}ms`,
+        'debug',
+      );
+      if (insertOptions.hooks !== false) {
+        await this.loggerService.measureExecutedTime(
+          async () => {
+            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+              transaction,
+            });
+            await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
+              transaction,
+            });
+            instance.clearChangedWithAssociations();
+          },
+          `Row ${i + 1}: afterSave event emitted in {time}ms`,
+          'debug',
+        );
+      }
+      if (context?.skipWorkflow !== true) {
+        await this.loggerService.measureExecutedTime(
+          async () => {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreateWithAssociations`, instance, {
+              transaction,
+            });
+            await db.emitAsync(`${this.repository.collection.name}.afterSaveWithAssociations`, instance, {
+              transaction,
+            });
+            instance.clearChangedWithAssociations();
+          },
+          `Row ${i + 1}: afterCreate event emitted in {time}ms`,
+          'debug',
+        );
+      }
+    }
+    return instances;
+  }
+
+  async associateRecords(targets: Model[], options: any = {}) {
+    if (!(this.repository instanceof RelationRepository)) {
+      return;
+    }
+    const accessors = this.repository.accessors();
+    const sourceModel = await this.repository.getSourceModel();
+
+    if (!accessors || !sourceModel) {
+      throw new Error('Missing accessors or source model.');
+    }
+
+    if ((accessors as MultiAssociationAccessors).addMultiple) {
+      // For hasMany, belongsToMany
+      await sourceModel[(accessors as MultiAssociationAccessors).addMultiple](targets, options);
+    } else if ((accessors as MultiAssociationAccessors).add) {
+      // Also works for hasMany / belongsToMany
+      await Promise.all(
+        targets.map((target) => sourceModel[(accessors as MultiAssociationAccessors).add](target, options)),
+      );
+    } else if (accessors.set) {
+      // set accessor（hasOne, belongsTo）
+      if (targets.length > 1) {
+        throw new Error('Cannot associate multiple records to a single-valued relation.');
+      }
+      await sourceModel[accessors.set](targets[0], options);
+    } else {
+      throw new Error(`Unsupported association or no usable accessor on ${this.repository['association']}`);
+    }
   }
 
   renderErrorMessage(error) {

@@ -1,0 +1,22 @@
+{
+    "Synchronize": "Synchroniseren",
+    "Source name": "Bronnaam",
+    "Source display name": "Weergavenaam van de bron",
+    "Type": "Type",
+    "Sync": "Synchroniseren",
+    "Tasks": "Taken",
+    "Batch": "Batch",
+    "Status": "Status",
+    "Message": "Bericht",
+    "Init": "Initialiseren",
+    "Processing": "Verwerken",
+    "Success": "Succes",
+    "Failed": "Mislukt",
+    "Authenticator": "Authenticator",
+    "default": "Standaard",
+    "Retry": "Opnieuw proberen",
+    "No user data source plugin installed": "Geen gebruikersgegevensbron-plugin geïnstalleerd",
+    "View documentation": "Bekijk documentatie",
+    "The synchronization has started. You can click on 'Tasks' to view the synchronization status.": "De synchronisatie is gestart. Je kunt op 'Taken' klikken om de synchronisatiestatus te bekijken.",
+    "The sync source API call failed. Please check the logs to troubleshoot the issue.": "De API-aanroep voor de synchronisatiebron is mislukt. Controleer de logbestanden om het probleem op te lossen."
+}

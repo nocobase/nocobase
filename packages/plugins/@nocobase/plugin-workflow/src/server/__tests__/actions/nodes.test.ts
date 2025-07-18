@@ -50,20 +50,30 @@ describe('workflow > actions > workflows', () => {
       expect(data.type).toBe('echo');
     });
 
-    it('create in executed workflow', async () => {
+    it.skipIf(process.env.DB_DIALECT === 'sqlite')('create in executed workflow', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
-        executed: 1,
-        allExecuted: 1,
       });
+      await workflow.stats.update({ executed: 1 });
+      await workflow.versionStats.update({ executed: 1 });
 
-      const { status } = await agent.resource('workflows.nodes', workflow.id).create({
+      const res1 = await agent.resource('workflows.nodes', workflow.id).create({
         values: {
           type: 'echo',
         },
       });
-      expect(status).toBe(400);
+      expect(res1.status).toBe(400);
+
+      await workflow.stats.update({ executed: '10000000000000001' });
+      await workflow.versionStats.update({ executed: '10000000000000001' });
+
+      const res2 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res2.status).toBe(400);
     });
 
     it('create as head', async () => {

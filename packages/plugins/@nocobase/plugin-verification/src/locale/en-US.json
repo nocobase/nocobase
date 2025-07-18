@@ -18,5 +18,22 @@
   "Not a valid cellphone number, please re-enter": "Not a valid cellphone number, please re-enter",
   "Please don't retry in {{time}} seconds": "Please don't retry in {{time}} seconds",
   "You are trying so frequently, please slow down": "You are trying so frequently, please slow down",
-  "Verification code is invalid": "Verification code is invalid"
+  "Verification code is invalid": "Verification code is invalid",
+  "SMS OTP": "SMS OTP",
+  "Get one-time codes sent to your phone via SMS to complete authentication requests.": "Get one-time codes sent to your phone via SMS to complete authentication requests.",
+  "Unbind": "Unbind",
+  "Bind": "Bind",
+  "Configured": "Configured",
+  "Unbind verifier": "Unbind verifier",
+  "Not configured": "Not configured",
+  "Unbound successfully": "Unbound successfully",
+  "Bound successfully": "Bound successfully",
+  "Verification type": "Verification type",
+  "Provider": "Provider",
+  "Verifier": "Verifier",
+  "Verifiers": "Verifiers",
+  "The following types of verifiers are available:": "The following types of verifiers are available: ",
+  "Go to": "Go to",
+  "create verifiers": "create verifiers",
+  "Too many failed attempts. Please request a new verification code.": "Too many failed attempts. Please request a new verification code."
 }

@@ -82,6 +82,27 @@ export interface ApplicationOptions {
   disableAcl?: boolean;
 }
 
+/**
+ * Reference: https://ant.design/components/cascader-cn#option
+ */
+interface VariableOption {
+  /** Unique identifier of the variable */
+  value: string | number;
+  /** Variable name displayed in UI */
+  label?: React.ReactNode;
+  disabled?: boolean;
+  children?: VariableOption[];
+}
+
+interface Variable {
+  /** Unique identifier of the variable */
+  name: string;
+  /** Variable configuration options */
+  useOption: () => { option: VariableOption; visible?: boolean };
+  /** Variable context */
+  useCtx: () => any | ((param: { variableName: string }) => Promise<any>);
+}
+
 export class Application {
   public eventBus = new EventTarget();
 
@@ -108,6 +129,7 @@ export class Application {
   public name: string;
   public favicon: string;
   public globalVars: Record<string, any> = {};
+  public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   loading = true;
   maintained = false;
@@ -116,6 +138,7 @@ export class Application {
   hasLoadError = false;
 
   private wsAuthorized = false;
+  private variables: Variable[] = [];
 
   get pm() {
     return this.pluginManager;
@@ -494,12 +517,36 @@ export class Application {
     );
   }
 
-  addGlobalVar(key: string, value: any) {
+  /**
+   * 为指定的字段接口添加操作符选项
+   *
+   * @param name 字段接口的名称
+   * @param operatorOption 要添加的操作符选项
+   *
+   * @example
+   * // 为"单行文本"类型字段添加"等于任意一个"操作符
+   * app.addFieldInterfaceOperator('input', {
+   *   label: '{{t("equals any of")}}',
+   *   value: '$in',
+   * });
+   */
+  addFieldInterfaceOperator(name: string, operatorOption: any) {
+    return this.dataSourceManager.collectionFieldInterfaceManager.addFieldInterfaceOperator(name, operatorOption);
+  }
+
+  addGlobalVar(key: string, value: any, varCtx?: any) {
     set(this.globalVars, key, value);
+    if (varCtx) {
+      set(this.globalVarCtxs, key, varCtx);
+    }
   }
 
   getGlobalVar(key) {
     return get(this.globalVars, key);
+  }
+
+  getGlobalVarCtx(key) {
+    return get(this.globalVarCtxs, key);
   }
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);
@@ -516,5 +563,28 @@ export class Application {
       ...item,
       useVisible: useVisible,
     });
+  }
+
+  /**
+   * Register a variable for use in the frontend
+   *
+   * Note: It is not recommended to register variables in components as it may cause rendering errors
+   * @param variable
+   * @returns
+   */
+  registerVariable(variable: Variable) {
+    if (this.variables.find((item) => item.name === variable.name)) {
+      console.warn(`Variable ${variable.name} already registered`);
+      return;
+    }
+    this.variables.push(variable);
+  }
+
+  /**
+   * Get all registered variables
+   * @returns
+   */
+  getVariables() {
+    return this.variables;
   }
 }

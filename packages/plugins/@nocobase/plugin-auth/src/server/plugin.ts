@@ -98,7 +98,7 @@ export class PluginAuthServer extends Plugin {
             return {
               ...item,
               uiSchema: {
-                ...field.options?.uiSchema,
+                ...field?.options?.uiSchema,
                 required: item.required,
               },
             };
@@ -119,6 +119,9 @@ export class PluginAuthServer extends Plugin {
     // Set up ACL
     ['signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
     ['check', 'signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
+    ['lostPassword', 'resetPassword', 'checkResetToken'].forEach((action) =>
+      this.app.acl.allow('auth', action, 'public'),
+    );
     this.app.acl.allow('authenticators', 'publicList');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.authenticators`,

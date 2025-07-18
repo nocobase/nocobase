@@ -16,27 +16,29 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
 import { reaction } from '@formily/reactive';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
-import { createStyles } from 'antd-style';
-import { Icon } from '@nocobase/client';
-import { InboxContent } from './InboxContent';
-import { useLocalTranslation } from '../../locale';
-import { fetchChannels } from '../observables';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext } from '@nocobase/client';
+import { Icon, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
+import { MobilePopup } from '@nocobase/plugin-mobile/client';
+import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
+import { createStyles } from 'antd-style';
+import React, { FC, useCallback, useEffect, useState } from 'react';
+import { useLocalTranslation } from '../../locale';
+import { Channel } from '../../types';
 import {
-  updateUnreadMsgsCount,
-  unreadMsgsCountObs,
-  startMsgSSEStreamWithRetry,
+  fetchChannels,
   inboxVisible,
-  userIdObs,
   liveSSEObs,
   messageMapObs,
   selectedChannelNameObs,
+  startMsgSSEStreamWithRetry,
+  unreadMsgsCountObs,
+  updateUnreadMsgsCount,
+  userIdObs,
 } from '../observables';
+import { InboxContent } from './InboxContent';
+import { MobileChannelPage } from './mobile/ChannelPage';
+import { MobileMessagePage } from './mobile/MessagePage';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -46,11 +48,52 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
+const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> = (props) => {
+  const { token } = theme.useToken();
+  const { isMobileLayout } = useMobileLayout();
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+
+  if (isMobileLayout) {
+    return (
+      <>
+        <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
+          <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
+        </MobilePopup>
+        <MobilePopup
+          title={selectedChannel?.title}
+          visible={props.visible && !!selectedChannel}
+          onClose={() => setSelectedChannel(null)}
+          minHeight={'60vh'}
+        >
+          <MobileMessagePage displayPageHeader={false} />
+        </MobilePopup>
+      </>
+    );
+  }
+
+  return (
+    <Drawer
+      title={<div style={{ padding: '0', paddingLeft: token.padding }}>{props.title}</div>}
+      open={props.visible}
+      width={900}
+      onClose={props.onClose}
+      styles={{
+        header: {
+          paddingLeft: token.paddingMD,
+        },
+      }}
+    >
+      <InboxContent />
+    </Drawer>
+  );
+};
+
 const InnerInbox = (props) => {
   const { t } = useLocalTranslation();
   const { styles } = useStyles();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
+  const { token } = theme.useToken();
 
   useEffect(() => {
     updateUnreadMsgsCount();
@@ -88,12 +131,6 @@ const InnerInbox = (props) => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
-  const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
-  const CloseIcon = (
-    <div style={{ marginLeft: '15px' }}>
-      <CloseOutlined />
-    </div>
-  );
   useEffect(() => {
     const dispose = reaction(
       () => liveSSEObs.value,
@@ -142,17 +179,13 @@ const InnerInbox = (props) => {
           </Badge>
         </Button>
       </Tooltip>
-      <Drawer
-        title={DrawerTitle}
-        open={inboxVisible.value}
-        closeIcon={CloseIcon}
-        width={900}
+      <InboxPopup
+        title={t('Message')}
+        visible={inboxVisible.value}
         onClose={() => {
           inboxVisible.value = false;
         }}
-      >
-        <InboxContent />
-      </Drawer>
+      />
     </ConfigProvider>
   );
 };

@@ -11,7 +11,8 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { createStyles } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -29,13 +30,14 @@ import {
   RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
+  useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
+  useRouterBasename,
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
-  useRouterBasename,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -44,19 +46,22 @@ import {
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useLocationNoUpdate,
+  useNavigateNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
+import { VariableScope } from '../../../variables/VariableScope';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { navigateWithinSelf } from '../../../block-provider/hooks';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 
+export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
@@ -175,7 +180,6 @@ const layoutContentClass = css`
 `;
 
 const className1 = css`
-  width: 168px;
   height: var(--nb-header-height);
   margin-right: 4px;
   display: inline-flex;
@@ -183,6 +187,15 @@ const className1 = css`
   color: #fff;
   padding: 0;
   align-items: center;
+`;
+const className1WithFixedWidth = css`
+  ${className1}
+  width: 168px;
+`;
+const className1WithAutoWidth = css`
+  ${className1}
+  width: auto;
+  min-width: 168px;
 `;
 const className2 = css`
   object-fit: contain;
@@ -225,10 +238,29 @@ const ShowTipWhenNoPages = () => {
   return null;
 };
 
+// 移动端中需要使用 dvh 单位来计算高度，否则会出现滚动不到最底部的问题
+const mobileHeight = {
+  height: `calc(100dvh - var(--nb-header-height))`,
+};
+
+function isDvhSupported() {
+  // 创建一个测试元素
+  const testEl = document.createElement('div');
+
+  // 尝试设置 dvh 单位
+  testEl.style.height = '1dvh';
+
+  // 如果浏览器支持 dvh，则会解析这个值
+  // 如果不支持，height 将保持为空字符串或被设置为无效值
+  return testEl.style.height === '1dvh';
+}
+
 export const LayoutContent = () => {
+  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}>
+    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
       <div style={pageContentStyle}>
         <Outlet />
         <ShowTipWhenNoPages />
@@ -242,7 +274,8 @@ const NocoBaseLogo = () => {
   const { token } = useToken();
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
-  const logo = result?.data?.data?.logo?.url ? (
+  const hasLogo = result?.data?.data?.logo?.url;
+  const logo = hasLogo ? (
     <img className={className2} src={result?.data?.data?.logo?.url} />
   ) : (
     <span style={fontSizeStyle} className={className3}>
@@ -250,7 +283,9 @@ const NocoBaseLogo = () => {
     </span>
   );
 
-  return <div className={className1}>{result?.loading ? null : logo}</div>;
+  return (
+    <div className={hasLogo ? className1WithFixedWidth : className1WithAutoWidth}>{result?.loading ? null : logo}</div>
+  );
 };
 
 /**
@@ -273,9 +308,12 @@ const MenuSchemaToolbarWithContainer = () => {
   );
 };
 
+const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+
 const GroupItem: FC<{ item: any }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -283,24 +321,34 @@ const GroupItem: FC<{ item: any }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
+          {badgeCount != null && (
+            <Badge
+              {...item._route.options.badge}
+              count={badgeCount}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              dot={false}
+            ></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
 };
 
-const WithTooltip: FC<{ title: string; hidden: boolean }> = (props) => {
-  const { inHeader } = useContext(headerContext);
+const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (props) => {
+  const { inHeader } = useContext(HeaderContext);
 
   return (
     <RouteContext.Consumer>
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            {props.children}
+            <Badge {...props.badgeProps} style={{ transform: 'none' }} dot={false}>
+              {props.children}
+            </Badge>
           </Tooltip>
         ) : (
           props.children
@@ -315,6 +363,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
   const { parseURLAndParams } = useParseURLAndParams();
   const divRef = useRef(null);
   const location = useLocation();
+  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
   const navigate = useNavigateNoUpdate();
   const basenameOfCurrentRouter = useRouterBasename();
 
@@ -377,7 +426,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema}>
+          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
               <Link to={location.pathname} aria-label={item.name}>
@@ -385,6 +434,14 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               </Link>
             </div>
             <MenuSchemaToolbar />
+            {badgeCount != null && (
+              <Badge
+                {...item._route.options?.badge}
+                count={badgeCount}
+                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+                dot={false}
+              ></Badge>
+            )}
           </SortableItem>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
@@ -393,20 +450,29 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
 
   // 如果点击的是一个 group，直接跳转到第一个子页面
   const path = item.redirect || item.path;
+  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema}>
+        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
           <WithTooltip
             title={item.name}
             hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
+            badgeProps={badgeProps}
           >
             <Link to={path} aria-label={item.name}>
               {props.children}
             </Link>
           </WithTooltip>
           <MenuSchemaToolbar />
+          {badgeCount != null && (
+            <Badge
+              {...badgeProps}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              dot={false}
+            ></Badge>
+          )}
         </SortableItem>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
@@ -439,7 +505,7 @@ const contentStyle = {
   paddingInline: 0,
 };
 
-const headerContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
+const HeaderContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
 
 const popoverStyle = css`
   .ant-popover-inner {
@@ -450,9 +516,22 @@ const popoverStyle = css`
 
 const MobileActions: FC = (props) => {
   const { token } = useToken();
+  const [open, setOpen] = useState(false);
+
+  // 点击时立即关闭 Popover，避免影响用户操作
+  const handleContentClick = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   return (
-    <Popover rootClassName={popoverStyle} content={<PinnedPluginList />} color={token.colorBgHeader}>
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList onClick={handleContentClick} />}
+      color={token.colorBgHeader}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+    >
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
@@ -481,21 +560,27 @@ const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
   return (
-    <MenuItem item={item} options={options}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </MenuItem>
+    <VariableScope scopeId={item._route.schemaUid} type="menuItem">
+      <MenuItem item={item} options={options}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </MenuItem>
+    </VariableScope>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
   return (
-    <GroupItem item={item}>
-      <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-    </GroupItem>
+    <VariableScope scopeId={item._route.schemaUid} type="groupItem">
+      <GroupItem item={item}>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+      </GroupItem>
+    </VariableScope>
   );
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
+  const { token } = useToken();
+
   return (
     <RouteContext.Consumer>
       {(context) =>
@@ -508,7 +593,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
                 // Fix the issue where the collapse/expand button is covered by subpages
                 .ant-pro-sider-collapsed-button {
                   top: 64px;
-                  left: ${props.collapsed ? 52 : 188}px;
+                  left: ${props.collapsed ? 52 : (token.siderWidth || 200) - 12}px;
                   z-index: 200;
                   transition: left 0.2s;
                 }
@@ -528,34 +613,86 @@ const collapsedButtonRender = (collapsed, dom) => {
   return <CollapsedButton collapsed={collapsed}>{dom}</CollapsedButton>;
 };
 
+/**
+ * 这个问题源自 antd 的一个 bug，等 antd 修复了这个问题后，可以删除这个样式。
+ * - issue: https://github.com/ant-design/pro-components/issues/8593
+ * - issue: https://github.com/ant-design/pro-components/issues/8522
+ * - issue: https://github.com/ant-design/pro-components/issues/8432
+ */
+const useHeaderStyle = createStyles(({ token }: any) => {
+  return {
+    headerPopup: {
+      '&.ant-menu-submenu-popup>.ant-menu': {
+        backgroundColor: `${token.colorBgHeader}`,
+      },
+    },
+    headerMenuActive: {
+      '& .ant-menu-submenu-selected>.ant-menu-submenu-title': {
+        color: token.colorTextHeaderMenuActive,
+      },
+    },
+  };
+});
 const headerContextValue = { inHeader: true };
+const HeaderWrapper: FC = (props) => {
+  const { styles } = useHeaderStyle();
+
+  return (
+    <span className={styles.headerMenuActive}>
+      <HeaderContext.Provider value={headerContextValue}>{props.children}</HeaderContext.Provider>
+    </span>
+  );
+};
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
-  return <headerContext.Provider value={headerContextValue}>{defaultDom}</headerContext.Provider>;
+  return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
+};
+
+const IsMobileLayoutContext = React.createContext<{
+  isMobileLayout: boolean;
+  setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
+}>({
+  isMobileLayout: false,
+  setIsMobileLayout: () => {},
+});
+
+const MobileLayoutProvider: FC = (props) => {
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
+
+  return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
+};
+
+export const useMobileLayout = () => {
+  const { isMobileLayout, setIsMobileLayout } = useContext(IsMobileLayoutContext);
+  return { isMobileLayout, setIsMobileLayout };
 };
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable } = useDesignable();
+  const { designable: _designable } = useDesignable();
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
-  const [isMobile, setIsMobile] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
+  const [collapsed, setCollapsed] = useState(isMobileLayout);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
+  const designable = isMobileLayout ? false : _designable;
+  const { styles } = useHeaderStyle();
+
   const route = useMemo(() => {
     return {
       path: '/',
-      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile, t }),
+      children: convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t }),
     };
-  }, [allAccessRoutes, designable, isMobile, t]);
+  }, [allAccessRoutes, designable, isMobileLayout, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
         colorBgHeader: token.colorBgHeader,
         colorTextMenu: token.colorTextHeaderMenu,
         colorTextMenuSelected: token.colorTextHeaderMenuActive,
-        colorTextMenuActive: token.colorTextHeaderMenuActive,
+        colorTextMenuActive: token.colorTextHeaderMenuHover,
         colorBgMenuItemHover: token.colorBgHeaderMenuHover,
         colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
         heightLayoutHeader: 46,
@@ -572,6 +709,21 @@ export const InternalAdminLayout = () => {
       bgLayout: token.colorBgLayout,
     };
   }, [token]);
+  const { theme, isDarkTheme } = useGlobalTheme();
+  const mobileTheme = useMemo(() => {
+    return {
+      ...theme,
+      token: {
+        ...theme.token,
+        paddingPageHorizontal: 8, // Horizontal page padding
+        paddingPageVertical: 8, // Vertical page padding
+        marginBlock: 12, // Spacing between blocks
+        borderRadiusBlock: 8, // Block border radius
+        fontSize: 16, // Font size
+      },
+      algorithm: isDarkTheme ? [antdTheme.compactAlgorithm, antdTheme.darkAlgorithm] : antdTheme.compactAlgorithm, // Set mobile mode to always use compact algorithm
+    };
+  }, [theme, isDarkTheme]);
 
   const onCollapse = useCallback((collapsed: boolean) => {
     if (doNotChangeCollapsedRef.current) {
@@ -587,11 +739,17 @@ export const InternalAdminLayout = () => {
     });
   }, []);
 
+  const menuProps = useMemo(() => {
+    return {
+      overflowedIndicatorPopupClassName: styles.headerPopup,
+    };
+  }, [styles.headerPopup]);
+
   return (
     <DndContext onDragEnd={onDragEnd}>
       <ProLayout
         contentStyle={contentStyle}
-        siderWidth={200}
+        siderWidth={token.siderWidth || 200}
         className={resetStyle}
         location={location}
         route={route}
@@ -608,16 +766,21 @@ export const InternalAdminLayout = () => {
         onCollapse={onCollapse}
         collapsed={collapsed}
         onPageChange={onPageChange}
+        menuProps={menuProps}
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {
             const { isMobile: _isMobile } = value;
 
-            if (_isMobile !== isMobile) {
-              setIsMobile(_isMobile);
+            if (_isMobile !== isMobileLayout) {
+              setIsMobileLayout(_isMobile);
             }
 
-            return <LayoutContent />;
+            return (
+              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
+                <LayoutContent />
+              </ConfigProvider>
+            );
           }}
         </RouteContext.Consumer>
       </ProLayout>
@@ -718,6 +881,7 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
+    this.app.use(MobileLayoutProvider);
   }
 }
 
@@ -758,7 +922,7 @@ const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
     );
   }
 
-  return props.title;
+  return <>{props.title}</>;
 };
 
 function convertRoutesToLayout(

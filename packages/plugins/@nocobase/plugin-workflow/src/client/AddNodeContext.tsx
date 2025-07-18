@@ -23,13 +23,14 @@ import {
   usePlugin,
 } from '@nocobase/client';
 
-import WorkflowPlugin, { Instruction, useStyles } from '.';
+import WorkflowPlugin, { Instruction, useStyles, useWorkflowExecuted } from '.';
 import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { MenuItemGroupType } from 'antd/es/menu/interface';
 
 interface AddButtonProps {
   upstream;
@@ -46,10 +47,11 @@ export function AddButton(props: AddButtonProps) {
   const { styles } = useStyles();
   const { onCreate, creating } = useAddNodeContext();
   const groupOptions = engine.useInstructionGroupOptions();
+  const executed = useWorkflowExecuted();
 
   const groups = useMemo(() => {
     return groupOptions
-      .map((group) => {
+      .map((group): MenuItemGroupType => {
         const groupInstructions = instructionList.filter(
           (item) =>
             item.group === group.key &&
@@ -90,7 +92,7 @@ export function AddButton(props: AddButtonProps) {
           items: groups,
           onClick,
         }}
-        disabled={workflow.executed}
+        disabled={Boolean(executed)}
         overlayClassName={css`
           .ant-dropdown-menu-root {
             max-height: 30em;

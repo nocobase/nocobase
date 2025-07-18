@@ -13,6 +13,9 @@
 Using a Universal Module Loader that should be browser, require, and AMD friendly
 http://ricostacruz.com/cheatsheets/umdjs.html
 */
+
+import { getDayRangeByParams } from '@nocobase/utils/client';
+
 export function getOperators() {
   'use strict';
   /* globals console:false */
@@ -152,27 +155,53 @@ export function getOperators() {
       }
       return false;
     },
+    //日期比较操作符
     $dateOn: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      return a === b;
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        return operations.$dateBetween(a, b);
+      }
+
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      if (!dateA || !dateB) {
+        return false;
+      }
+
+      return dateA.getTime() === dateB.getTime();
     },
     $dateBefore: function (a, b) {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        b = b[0];
+      }
       // Parse both date strings
       const dateA = parseDate(a);
       const dateB = parseDate(b);
       if (!dateA || !dateB) {
-        throw new Error('Invalid date format');
+        return false;
       }
-      return dateA < dateB;
+      return dateA.getTime() < dateB.getTime();
     },
     $dateNotBefore: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        b = b[0];
       }
       const dateA = parseDate(a);
       const dateB = parseDate(b);
@@ -182,21 +211,33 @@ export function getOperators() {
       }
 
       // Compare the two dates
-      return dateA >= dateB;
+      return dateA.getTime() >= dateB.getTime();
     },
     $dateAfter: function (a, b) {
       if (!a || !b) {
         return false;
       }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        b = b[1];
+      }
       // Parse both date strings
       const dateA = parseDate(a);
       const dateB = parseDate(b);
 
-      return dateA > dateB;
+      return dateA.getTime() > dateB.getTime();
     },
     $dateNotAfter: function (a, b) {
       if (!a || !b) {
         return false;
+      }
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        b = b[1];
       }
       const dateA = parseDate(a);
       const dateB = parseDate(b);
@@ -204,26 +245,36 @@ export function getOperators() {
       if (!dateA || !dateB) {
         throw new Error('Invalid date format');
       }
-      return dateA <= dateB;
+      return dateA.getTime() <= dateB.getTime();
     },
     $dateBetween: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      const dateA = parseFullDate(a);
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      const dateA = parseDate(a);
       const dateBStart = parseFullDate(b[0]);
       const dateBEnd = parseFullDate(b[1]);
-
       if (!dateA || !dateBStart || !dateBEnd) {
         throw new Error('Invalid date format');
       }
-      return dateA >= dateBStart && dateA <= dateBEnd;
+      return dateA.getTime() >= dateBStart.getTime() && dateA.getTime() <= dateBEnd.getTime();
     },
     $dateNotOn: function (a, b) {
       if (!a || !b) {
         return false;
       }
-      return a !== b;
+      if (b.type) {
+        b = getDayRangeByParams(b);
+      }
+      if (Array.isArray(b)) {
+        return !operations.$dateBetween(a, b);
+      }
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      return dateA.getTime() !== dateB.getTime();
     },
     $isTruly: function (a) {
       if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
@@ -340,7 +391,8 @@ export function getOperators() {
       typeof logic === 'object' && // An object
       logic !== null && // but not null
       !Array.isArray(logic) && // and not an array
-      Object.keys(logic).length === 1 // with exactly one key
+      Object.keys(logic).length === 1 &&
+      !logic.type // with exactly one key
     );
   };
 
@@ -507,7 +559,6 @@ export function getOperators() {
       }
       return false; // None were truthy
     }
-
     // Everyone else gets immediate depth-first recursion
     values = values.map(function (val) {
       return jsonLogic.apply(val, data);
@@ -529,10 +580,8 @@ export function getOperators() {
         // Descending into operations
         operation = operation[sub_ops[i]];
       }
-
       return operation.apply(data, values);
     }
-
     throw new Error('Unrecognized operation ' + op);
   };
 
@@ -629,7 +678,18 @@ export function getOperators() {
 }
 
 function parseFullDate(dateStr) {
-  return new Date(dateStr);
+  if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+    // ISO 格式，包含时区（如 '2025-06-05T16:00:00.000Z'）
+    return new Date(dateStr);
+  }
+
+  if (dateStr.includes(' ')) {
+    // 有日期+时间（如 '2025-06-06 23:59:59'）
+    return new Date(dateStr.replace(' ', 'T'));
+  }
+
+  // 只有日期（如 '2025-06-06'）
+  return new Date(`${dateStr}T00:00:00`);
 }
 
 function parseMonth(dateStr) {
@@ -650,10 +710,11 @@ function parseYear(dateStr) {
 }
 
 function parseDate(targetDateStr) {
-  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] : targetDateStr;
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(dateStr)) {
-    // ISO 8601 格式：YYYY-MM-DDTHH:mm:ss.sssZ
-    return new Date(dateStr); // 直接解析为 Date 对象
+  let dateStr = Array.isArray(targetDateStr) ? targetDateStr[1] ?? targetDateStr[0] : targetDateStr;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(dateStr)) {
+    return new Date(dateStr);
+  } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    return new Date(dateStr.replace(' ', 'T'));
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     // YYYY-MM-DD 格式
     return parseFullDate(dateStr);
@@ -667,5 +728,6 @@ function parseDate(targetDateStr) {
     // YYYY 格式
     return parseYear(dateStr);
   }
-  return null; // Invalid format
+
+  return null;
 }

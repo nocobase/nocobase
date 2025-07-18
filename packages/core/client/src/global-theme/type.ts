@@ -30,6 +30,8 @@ export interface CustomToken extends AliasToken {
   colorSettings: string;
   /** 鼠标悬浮时显示的背景色 */
   colorBgSettingsHover: string;
+  /** 鼠标悬浮模板区块时显示的背景色 */
+  colorTemplateBgSettingsHover: string;
   /** 鼠标悬浮时显示的边框色 */
   colorBorderSettingsHover: string;
 
@@ -47,6 +49,8 @@ export interface CustomToken extends AliasToken {
   marginBlock: number;
   /** 区块的圆角 */
   borderRadiusBlock: number;
+
+  siderWidth: number;
 }
 
 export interface ThemeConfig extends _ThemeConfig {

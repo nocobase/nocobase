@@ -14,65 +14,58 @@ import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 
 import { useActionContext, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import executionCollection from '../../common/collections/executions';
 
 import { ExecutionStatusOptions, EXECUTION_STATUS } from '../constants';
 import { NAMESPACE } from '../locale';
 import { getWorkflowDetailPath } from '../utils';
 
-export const executionCollection = {
-  name: 'execution-executions',
-  fields: [
-    {
-      interface: 'id',
-      type: 'bigInt',
-      name: 'id',
-      uiSchema: {
-        type: 'number',
-        title: '{{t("ID")}}',
-        'x-component': 'Input',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      } as ISchema,
-    },
-    {
-      interface: 'createdAt',
-      type: 'datetime',
-      name: 'createdAt',
-      uiSchema: {
-        type: 'datetime',
-        title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
-        'x-component': 'DatePicker',
-        'x-component-props': {},
-        'x-read-pretty': true,
-      } as ISchema,
-    },
-    {
-      interface: 'm2o',
-      type: 'belongsTo',
-      name: 'workflowId',
-      uiSchema: {
-        type: 'number',
-        title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
-        ['x-component']({ value }) {
-          const { setVisible } = useActionContext();
-          return <Link to={getWorkflowDetailPath(value)} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
-        },
-      } as ISchema,
-    },
-    {
-      type: 'number',
-      name: 'status',
-      interface: 'select',
-      uiSchema: {
-        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-        type: 'string',
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: ExecutionStatusOptions,
-      } as ISchema,
-    },
-  ],
-};
+// export const executionCollection = {
+//   name: 'executions',
+//   fields: [
+//     {
+//       interface: 'id',
+//       type: 'bigInt',
+//       name: 'id',
+//       uiSchema: {
+//         type: 'number',
+//         title: '{{t("ID")}}',
+//         'x-component': 'Input',
+//         'x-component-props': {},
+//         'x-read-pretty': true,
+//       } as ISchema,
+//     },
+//     {
+//       interface: 'createdAt',
+//       type: 'datetime',
+//       name: 'createdAt',
+//       uiSchema: {
+//         type: 'datetime',
+//         title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
+//         'x-component': 'DatePicker',
+//         'x-component-props': {},
+//         'x-read-pretty': true,
+//       } as ISchema,
+//     },
+//     {
+//       interface: 'm2o',
+//       type: 'belongsTo',
+//       name: 'workflowId',
+//       uiSchema: {
+//         type: 'number',
+//         title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
+//         ['x-component']({ value }) {
+//           const { setVisible } = useActionContext();
+//           return <Link to={getWorkflowDetailPath(value)} onClick={() => setVisible(false)}>{`#${value}`}</Link>;
+//         },
+//       } as ISchema,
+//     },
+//     {
+//       type: 'number',
+//       name: 'status', as ISchema,
+//     },
+//   ],
+// };
 
 export const executionSchema = {
   type: 'void',
@@ -93,6 +86,7 @@ export const executionSchema = {
             appends: ['workflow.id', 'workflow.title'],
             pageSize: 20,
             sort: ['-createdAt'],
+            except: ['context', 'output'],
             filter: {},
           },
         },
@@ -185,7 +179,7 @@ export const executionSchema = {
               'x-component': 'Table.Column',
               properties: {
                 createdAt: {
-                  type: 'datetime',
+                  type: 'string',
                   'x-component': 'CollectionField',
                   'x-component-props': {
                     showTime: true,
@@ -198,10 +192,16 @@ export const executionSchema = {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
+              title: `{{t("Version", { ns: "${NAMESPACE}" })}}`,
               properties: {
                 workflowId: {
                   type: 'number',
-                  'x-component': 'CollectionField',
+                  ['x-component']({ value }) {
+                    const { setVisible } = useActionContext();
+                    return (
+                      <Link to={getWorkflowDetailPath(value)} onClick={() => setVisible(false)}>{`#${value}`}</Link>
+                    );
+                  },
                   'x-read-pretty': true,
                 },
               },

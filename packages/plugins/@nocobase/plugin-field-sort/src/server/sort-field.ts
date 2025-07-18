@@ -19,38 +19,44 @@ export class SortField extends Field {
     return DataTypes.BIGINT;
   }
 
-  setSortValue = async (instance, options) => {
+  setSortValue = async (instances, options, from: 'create' | 'update') => {
     const { name, scopeKey } = this.options;
     const { model } = this.context.collection;
 
-    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
-      return;
-    }
-
-    const where = {};
-
-    if (scopeKey) {
-      const value = instance.get(scopeKey);
-      if (value !== undefined && value !== null) {
-        where[scopeKey] = value;
+    instances = Array.isArray(instances) ? instances : [instances];
+    for (const instance of instances) {
+      if (from == 'create' && isNumber(instance.get(name))) {
+        continue;
       }
-    }
+      if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+        continue;
+      }
 
-    await (<typeof SortField>this.constructor).lockManager.runExclusive(
-      this.context.collection.name,
-      async () => {
-        const max = await model.max<number, any>(name, { ...options, where });
-        const newValue = (max || 0) + 1;
-        instance.set(name, newValue);
-      },
-      2000,
-    );
+      const where = {};
+
+      if (scopeKey) {
+        const value = instance.get(scopeKey);
+        if (value !== undefined && value !== null) {
+          where[scopeKey] = value;
+        }
+      }
+
+      await (<typeof SortField>this.constructor).lockManager.runExclusive(
+        this.context.collection.name,
+        async () => {
+          const max = await model.max<number, any>(name, { ...options, where });
+          const newValue = (max || 0) + 1;
+          instance.set(name, newValue);
+        },
+        2000,
+      );
+    }
   };
 
   onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
-      await this.setSortValue(instance, options);
+      await this.setSortValue(instance, options, 'update');
     }
   };
 
@@ -204,18 +210,22 @@ export class SortField extends Field {
     }
   };
 
+  setSortValueListener = async (instances, options) => await this.setSortValue(instances, options, 'create');
+
   bind() {
     super.bind();
     this.on('afterSync', this.initRecordsSortValue);
     this.on('beforeUpdate', this.onScopeChange);
-    this.on('beforeCreate', this.setSortValue);
+    this.on('beforeCreate', this.setSortValueListener);
+    this.on('beforeBulkCreate', this.setSortValueListener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeUpdate', this.onScopeChange);
-    this.off('beforeCreate', this.setSortValue);
+    this.off('beforeCreate', this.setSortValueListener);
     this.off('afterSync', this.initRecordsSortValue);
+    this.off('beforeBulkCreate', this.setSortValueListener);
   }
 }
 

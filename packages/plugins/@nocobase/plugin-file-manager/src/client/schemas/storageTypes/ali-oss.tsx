@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
 import { NAMESPACE } from '../../locale';
 import common from './common';
-import { useTranslation } from 'react-i18next';
 
 export default {
   title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
@@ -53,6 +50,14 @@ export default {
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
+        },
+        timeout: {
+          title: `{{t("Timeout", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t('Upload timeout for a single file in milliseconds. Default is 600000.', { ns: "${NAMESPACE}" })}}`,
+          type: 'number',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          default: 600_000,
         },
         thumbnailRule: {
           title: 'Thumbnail rule',

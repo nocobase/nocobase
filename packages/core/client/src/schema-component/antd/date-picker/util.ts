@@ -10,6 +10,7 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;
@@ -75,7 +76,7 @@ export const moment2str = (value?: Dayjs | null, options: Moment2strOptions = {}
 };
 
 const handleChangeOnFilter = (value, picker, showTime) => {
-  const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
+  const format = showTime && picker === 'date' ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
   if (value) {
     return dayjs(value).format(format);
   }
@@ -89,7 +90,7 @@ export const handleDateChangeOnForm = (value, dateOnly, utc, picker, showTime, g
     return value;
   }
   if (dateOnly) {
-    return dayjs(value).startOf(picker).format('YYYY-MM-DD');
+    return formatDayjsValue(value, 'YYYY-MM-DD');
   }
   if (utc) {
     if (gmt) {
@@ -114,6 +115,7 @@ export const mapDatePicker = function () {
     const { dateOnly, showTime, picker = 'date', utc, gmt, underFilter } = props;
     const format = getDefaultFormat(props);
     const onChange = props.onChange;
+
     return {
       ...props,
       inputReadOnly: isMobileMedia,
@@ -266,6 +268,21 @@ export const getDateRanges = (props?: {
   };
 };
 
+export const getDateExact = () => {
+  return {
+    nowUtc: () => dayjs().toISOString(),
+    nowLocal: () => dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    todayUtc: () => dayjs().startOf('day').utc().toISOString(),
+    todayLocal: () => dayjs().startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    todayDate: () => dayjs().format('YYYY-MM-DD'),
+    yesterdayUtc: () => dayjs().subtract(1, 'day').startOf('day').utc().toISOString(),
+    yesterdayLocal: () => dayjs().subtract(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    yesterdayDate: () => dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
+    tomorrowUtc: () => dayjs().add(1, 'day').startOf('day').utc().toISOString(),
+    tomorrowLocal: () => dayjs().add(1, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss'),
+    tomorrowDate: () => dayjs().add(1, 'day').format('YYYY-MM-DD'),
+  };
+};
 function withParams(value: any[], params: { fieldOperator?: string; isParsingVariable?: boolean }) {
   if (params?.isParsingVariable && params?.fieldOperator && params.fieldOperator !== '$dateBetween') {
     return value[0];

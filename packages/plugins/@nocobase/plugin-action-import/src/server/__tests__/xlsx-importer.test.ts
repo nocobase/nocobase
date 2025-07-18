@@ -13,6 +13,7 @@ import { XlsxImporter } from '../services/xlsx-importer';
 import XLSX from 'xlsx';
 import * as process from 'node:process';
 import moment from 'moment';
+import { PasswordField } from '@nocobase/database';
 
 describe('xlsx importer', () => {
   let app: MockServer;
@@ -2273,5 +2274,106 @@ describe('xlsx importer', () => {
     await importer.run();
     const count = await TimeCollection.repository.count();
     expect(count).toBe(1);
+  });
+
+  it('should throw error when import textarea field, value is date', async () => {
+    const TextareaCollection = app.db.collection({
+      name: 'textarea_tests',
+      fields: [
+        {
+          interface: 'textarea',
+          type: 'text',
+          name: 'long_text',
+        },
+      ],
+    });
+
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: TextareaCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['long_text'],
+          defaultTitle: '多行文本',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [[new Date()]], {
+      origin: 'A3',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: TextareaCollection,
+      explain: 'test',
+      columns: [
+        {
+          dataIndex: ['long_text'],
+          defaultTitle: '多行文本',
+        },
+      ],
+      workbook: template,
+    });
+
+    expect(importer.run()).rejects.toThrow();
+  });
+
+  it('should import password field, insert data is encrypt', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'password', name: 'password' },
+      ],
+    });
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['password'],
+          defaultTitle: '密码',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan', '123456']], {
+      origin: 'A2',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+        {
+          dataIndex: ['password'],
+          defaultTitle: '密码',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    const pwd = User.getField<PasswordField>('password');
+    const user = await User.model.findOne({ where: { name: 'zhangsan' } });
+    expect(await pwd.verify('123456', user.password)).toBeTruthy();
   });
 });

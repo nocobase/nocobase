@@ -12,7 +12,6 @@ import { useField } from '@formily/react';
 import {
   ACLCustomContext,
   Action,
-  APIClient,
   APIClientProvider,
   AssociationField,
   CollectionManager,
@@ -24,21 +23,21 @@ import {
   PoweredBy,
   SchemaComponent,
   SchemaComponentContext,
-  useAPIClient,
   useApp,
+  useCompile,
   useRequest,
   VariablesProvider,
-  useCompile,
 } from '@nocobase/client';
 import { Input, Modal, Spin } from 'antd';
+import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { isDesktop } from 'react-device-detect';
+import { isDesktop, isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { usePublicSubmitActionProps } from '../hooks';
-import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
-import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
 import { MobileDateTimePicker } from './components/MobileDatePicker';
 import { MobilePicker } from './components/MobilePicker';
+import { UnEnabledFormPlaceholder, UnFoundFormPlaceholder } from './UnEnabledFormPlaceholder';
+
 class PublicDataSource extends DataSource {
   async getDataSource() {
     return {};
@@ -69,18 +68,21 @@ function PublicPublicFormProvider(props) {
 
 function PublicAPIClientProvider({ children }) {
   const app = useApp();
-  const apiClient = useMemo(() => {
-    const apiClient = new APIClient(app.getOptions().apiClient as any);
-    apiClient.app = app;
-    apiClient.axios.interceptors.request.use((config) => {
+
+  useEffect(() => {
+    const interceptor = app.apiClient.axios.interceptors.request.use((config) => {
       if (config.headers) {
         config.headers['X-Form-Token'] = localStorage.getItem('NOCOBASE_FORM_TOKEN') || '';
       }
       return config;
     });
-    return apiClient;
-  }, [app]);
-  return <APIClientProvider apiClient={apiClient}>{children}</APIClientProvider>;
+
+    return () => {
+      app.apiClient.axios.interceptors.request.eject(interceptor);
+    };
+  }, [app.apiClient.axios.interceptors.request]);
+
+  return <APIClientProvider apiClient={app.apiClient}>{children}</APIClientProvider>;
 }
 
 function useTitle(data) {
@@ -126,9 +128,6 @@ const PublicFormMessageProvider = ({ children }) => {
     </PublicFormMessageContext.Provider>
   );
 };
-function isMobile() {
-  return window.matchMedia('(max-width: 768px)').matches;
-}
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -161,8 +160,6 @@ const mobileComponents = {
 };
 function InternalPublicForm() {
   const params = useParams();
-  const apiClient = useAPIClient();
-  const isMobileMedia = isMobile();
   const { error, data, loading, run } = useRequest<any>(
     {
       url: `publicForms:getMeta/${params.name}`,
@@ -171,12 +168,6 @@ function InternalPublicForm() {
     {
       onSuccess(data) {
         localStorage.setItem('NOCOBASE_FORM_TOKEN', data?.data?.token);
-        apiClient.axios.interceptors.request.use((config) => {
-          if (config.headers) {
-            config.headers['X-Form-Token'] = data?.data?.token || '';
-          }
-          return config;
-        });
       },
     },
   );
@@ -240,7 +231,7 @@ function InternalPublicForm() {
   if (!data?.data) {
     return <UnEnabledFormPlaceholder />;
   }
-  const components = isMobileMedia ? mobileComponents : {};
+  const components = isMobile ? mobileComponents : {};
   return (
     <ACLCustomContext.Provider value={{ allowAll: true }}>
       <PublicAPIClientProvider>

@@ -14,21 +14,25 @@ import {
   IField,
   IModel,
   IRelationField,
+  IRepository,
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
-import _ from 'lodash';
-import os from 'os';
-import path from 'path';
 import { deepGet } from '../utils/deep-get';
+import path from 'path';
+import os from 'os';
+import { Logger } from '@nocobase/logger';
+import _ from 'lodash';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
-  repository?: any;
+  repository?: IRepository;
   fields: Array<Array<string>>;
   findOptions?: FindOptions;
   chunkSize?: number;
   limit?: number;
+  logger?: Logger;
+  outputPath?: string;
 };
 
 abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends EventEmitter {
@@ -45,9 +49,14 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
    */
   protected limit: number;
 
+  protected logger: Logger;
+
+  protected _batchQueryStartTime: [number, number] | null = null;
+
   protected constructor(protected options: T) {
     super();
     this.limit = options.limit ?? (process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000);
+    this.logger = options.logger;
   }
 
   abstract init(ctx?): Promise<void>;
@@ -55,30 +64,75 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   abstract handleRow(row: any, ctx?): Promise<void>;
 
   async run(ctx?): Promise<any> {
-    await this.init(ctx);
+    try {
+      this.logger?.info('Export started......');
+      await this.init(ctx);
 
-    const { collection, chunkSize, repository } = this.options;
+      const { collection, chunkSize, repository } = this.options;
+      const repo = repository || collection.repository;
+      const total = (await repo.count(this.getFindOptions(ctx))) as number;
+      this.logger?.info(`Found ${total} records to export from collection [${collection.name}]`);
+      const totalCountStartTime = process.hrtime();
+      let current = 0;
 
-    const total = await (repository || collection.repository).count(this.getFindOptions(ctx));
-    let current = 0;
-
-    await (repository || collection.repository).chunk({
-      ...this.getFindOptions(ctx),
-      chunkSize: chunkSize || 200,
-      callback: async (rows, options) => {
-        for (const row of rows) {
-          await this.handleRow(row, ctx);
-          current += 1;
-
+      // gt 200000, offset + limit will be slow,so use cursor
+      const chunkHandle = (total > 200000 ? repo.chunkWithCursor : repo.chunk).bind(repo);
+      const findOptions = {
+        ...this.getFindOptions(ctx),
+        chunkSize: chunkSize || 200,
+        beforeFind: async (options) => {
+          this._batchQueryStartTime = process.hrtime();
+        },
+        afterFind: async (rows, options) => {
+          if (this._batchQueryStartTime) {
+            const diff = process.hrtime(this._batchQueryStartTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 1200) {
+              this.logger?.warn(
+                `Query took too long: ${executionTime}ms, fetched ${rows.length} records, options: ${JSON.stringify(
+                  options,
+                )}`,
+              );
+            } else {
+              this.logger?.info(`Query completed in ${executionTime}ms, fetched ${rows.length} records`);
+            }
+            this._batchQueryStartTime = null;
+          }
+        },
+        callback: async (rows, options) => {
+          for (const row of rows) {
+            const startTime = process.hrtime();
+            await this.handleRow(row, ctx);
+            const diff = process.hrtime(startTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 500) {
+              this.logger?.info(`HandleRow took too long, completed in ${executionTime}ms`);
+            } else {
+              this.logger?.info(`HandleRow completed, ${executionTime}ms`);
+            }
+          }
           this.emit('progress', {
             total,
-            current,
+            current: (current += rows.length),
           });
-        }
-      },
-    });
+          const totalDiff = process.hrtime(totalCountStartTime);
+          const elapsedSeconds = totalDiff[0] + totalDiff[1] / 1e9;
+          const estimatedTimeRemaining = (elapsedSeconds * (total - current)) / current;
 
-    return this.finalize();
+          this.logger?.info(
+            `Processed ${current}/${total} records (${Math.round((current / total) * 100)}%), ` +
+              `elapsed time: ${elapsedSeconds.toFixed(2)}s, ` +
+              `estimated remaining: ${estimatedTimeRemaining.toFixed(2)}s`,
+          );
+        },
+      };
+      await chunkHandle(findOptions);
+      this.logger?.info(`Export completed...... processed ${current} records in total`);
+      return this.finalize();
+    } catch (error) {
+      this.logger?.error(`Export failed: ${error.message}`, { error });
+      throw error;
+    }
   }
 
   private removePathAfterFileField(fieldPath: string[]): string[] {

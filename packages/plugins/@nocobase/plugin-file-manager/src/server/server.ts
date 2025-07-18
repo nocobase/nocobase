@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { basename } from 'path';
 import fs from 'fs';
+import { basename } from 'path';
 import match from 'mime-match';
 
-import { Plugin } from '@nocobase/server';
-import { isURL, Registry } from '@nocobase/utils';
 import { Collection, Model, Transactionable } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
+import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
 import { AttachmentInterface } from './interfaces/attachment-interface';
@@ -316,6 +317,48 @@ export class PluginFileManagerServer extends Plugin {
       file,
       Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
     );
+  }
+  async isPublicAccessStorage(storageName) {
+    const storageRepository = this.db.getRepository('storages');
+    const storages = await storageRepository.findOne({
+      filter: { default: true },
+    });
+    let storage;
+    if (!storageName) {
+      storage = storages;
+    } else {
+      storage = await storageRepository.findOne({
+        filter: {
+          name: storageName,
+        },
+      });
+    }
+    storage = this.parseStorage(storage);
+    if (['local', 'ali-oss', 's3', 'tx-cos'].includes(storage.type)) {
+      return true;
+    }
+    return !!storage.options?.public;
+  }
+  async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
+    if (!file.storageId) {
+      throw new Error('File storageId not found');
+    }
+    const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
+
+    const StorageType = this.storageTypes.get(storage.type);
+    if (!StorageType) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
+    const storageInstance = new StorageType(storage);
+
+    if (!storageInstance) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
+
+    return storageInstance.getFileStream(file);
   }
 }
 

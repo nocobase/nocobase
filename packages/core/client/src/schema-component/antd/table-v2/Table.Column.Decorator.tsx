@@ -7,11 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import {
+  BlockContext,
   CollectionFieldContext,
   SortableItem,
+  useBlockContext,
   useCollection_deprecated,
   useCollectionManager_deprecated,
   useCompile,
@@ -77,6 +80,15 @@ export const TableColumnDecorator = (props) => {
   const compile = useCompile();
   const { isInSubTable } = useFlag() || {};
   const { token } = useToken();
+  const { name } = useBlockContext?.() || {};
+
+  let required = fieldSchema?.required;
+
+  if (isInSubTable) {
+    const path = field.path?.splice(field.path?.length - 1, 1);
+    const realField = field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).take() as Field;
+    required = typeof realField?.required === 'boolean' ? realField.required : fieldSchema?.required;
+  }
 
   useEffect(() => {
     if (field.title) {
@@ -95,7 +107,7 @@ export const TableColumnDecorator = (props) => {
       <CollectionFieldContext.Provider value={collectionField}>
         <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
         <span role="button">
-          {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
+          {required && <span className="ant-formily-item-asterisk">*</span>}
           <span>{field?.title || compile(uiSchema?.title)}</span>
         </span>
       </CollectionFieldContext.Provider>
@@ -110,11 +122,13 @@ export const TableColumnDecorator = (props) => {
       })}
     >
       <CollectionFieldContext.Provider value={collectionField}>
-        <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
-        <span role="button">
-          {fieldSchema?.required && <span className="ant-formily-item-asterisk">*</span>}
-          <span>{field?.title || compile(uiSchema?.title)}</span>
-        </span>
+        <BlockContext.Provider value={{ name: isInSubTable ? name : 'taleColumn' }}>
+          <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
+          <span role="button">
+            {required && <span className="ant-formily-item-asterisk">*</span>}
+            <span>{field?.title || compile(uiSchema?.title)}</span>
+          </span>
+        </BlockContext.Provider>
       </CollectionFieldContext.Provider>
     </SortableItem>
   );

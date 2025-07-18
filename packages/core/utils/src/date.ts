@@ -15,6 +15,7 @@ export interface Str2momentOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
   utcOffset?: number;
   utc?: boolean;
+  dateOnly?: boolean;
 }
 
 export type Str2momentValue = string | string[] | dayjs.Dayjs | dayjs.Dayjs[];
@@ -83,10 +84,19 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     return;
   }
   const offset = options.utcOffset;
-  const { gmt, picker, utc = true } = options;
+  const { gmt, picker, utc = true, dateOnly } = options;
+
   if (dayjs(val).isValid()) {
+    if (dateOnly) {
+      const date = dayjs(val);
+
+      if (!date.isValid()) return val;
+
+      const dateString = date.format('YYYY-MM-DD');
+      return dayjs.utc(dateString, 'YYYY-MM-DD');
+    }
     if (!utc) {
-      return dayjs(val);
+      return dayjs.utc(val);
     }
 
     if (dayjs.isDayjs(val)) {
@@ -236,3 +246,13 @@ export const getDateTimeFormat = (picker, format, showTime, timeFormat) => {
   }
   return format;
 };
+
+export function getFormatFromDateStr(dateStr: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) return 'YYYY-MM-DD HH:mm:ss';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return 'YYYY-MM-DD';
+  if (/^\d{4}-\d{2}$/.test(dateStr)) return 'YYYY-MM';
+  if (/^\d{4}$/.test(dateStr)) return 'YYYY';
+  if (/^\d{4}Q[1-4]$/.test(dateStr)) return 'YYYY[Q]Q';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dateStr)) return 'YYYY-MM-DDTHH:mm:ss.SSSZ';
+  return null;
+}

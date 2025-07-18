@@ -34,6 +34,7 @@ import {
 import { useFlowContext } from '../FlowContext';
 import { useWorkflowVariableOptions } from '../variable';
 import { Card } from 'antd';
+import { useWorkflowExecuted } from '../hooks';
 
 function reduceSchema(s, fn) {
   fn(s);
@@ -54,9 +55,8 @@ function createNewSchema() {
 }
 
 export function AssignedFieldsFormSchemaConfig(props) {
-  const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const { setFormValueChanged } = useActionContext();
-  const api = useAPIClient();
   const scope = useWorkflowVariableOptions();
 
   const { values, setValuesIn, disabled } = useForm();
@@ -73,7 +73,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
     () =>
       createForm({
         initialValues: params.values,
-        disabled: workflow.executed,
+        disabled: Boolean(executed),
         effects() {
           onFormValuesChange((f) => {
             setValuesIn('params.values', toJS(f.values));
@@ -81,7 +81,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
           });
         },
       }),
-    [workflow.executed],
+    [executed],
   );
 
   useFormEffects(() => {
@@ -115,7 +115,7 @@ export function AssignedFieldsFormSchemaConfig(props) {
       });
       setValuesIn('params.values', nextValues);
     },
-    [collectionName, props.onChange],
+    [collectionName, form.values, props, setValuesIn],
   );
 
   return (

@@ -37,8 +37,8 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByRole('menuitem', { name: 'After successful submission' }).click();
     await page.getByLabel('Manually close').check();
     await page.getByLabel('Redirect to').check();
-    await page.locator('input[type="text"]').click();
-    await page.locator('input[type="text"]').fill('/admin/pm/list/local/');
+    await page.getByLabel('textbox').click();
+    await page.getByLabel('textbox').fill('/admin/pm/list/local/');
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').click();
     const [request] = await Promise.all([

@@ -89,6 +89,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
               condition: v.condition,
               variables,
               localVariables,
+              conditionType: v.conditionType,
             },
             app.jsonLogic,
           );
@@ -208,6 +209,7 @@ export const CreateAction = observer(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
@@ -242,7 +244,7 @@ function FinallyButton({
   inheritsCollections,
   linkageFromForm,
   allowAddToCurrent,
-  props,
+  props: { onlyIcon, ...props },
   componentType,
   menu,
   onClick,
@@ -355,12 +357,12 @@ function FinallyButton({
       }}
       style={{
         ...props?.style,
-        display: !designable && field?.data?.hidden && 'none',
+        display: !designable && field?.data?.hidden ? 'none' : 'inline-block',
         opacity: designable && field?.data?.hidden && 0.1,
         ...buttonStyle,
       }}
     >
-      {props.children}
+      {onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }

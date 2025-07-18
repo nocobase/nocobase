@@ -19,11 +19,19 @@ import { useDetailsProps } from '../modules/blocks/data-blocks/details-single/ho
 import { FormItemSchemaToolbar } from '../modules/blocks/data-blocks/form/FormItemSchemaToolbar';
 import { useCreateFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockDecoratorProps';
 import { useCreateFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useCreateFormBlockProps';
+import { useDataFormItemProps } from '../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
 import { useEditFormBlockDecoratorProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockDecoratorProps';
 import { useEditFormBlockProps } from '../modules/blocks/data-blocks/form/hooks/useEditFormBlockProps';
-import { useDataFormItemProps } from '../modules/blocks/data-blocks/form/hooks/useDataFormItemProps';
-import { useGridCardBlockDecoratorProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
-import { useListBlockDecoratorProps } from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
+import { useGridCardActionBarProps } from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardActionBarProps';
+import {
+  useGridCardBlockDecoratorProps,
+  useGridCardBlockItemProps,
+  useGridCardBlockProps,
+} from '../modules/blocks/data-blocks/grid-card/hooks/useGridCardBlockDecoratorProps';
+import {
+  useListBlockDecoratorProps,
+  useListBlockProps,
+} from '../modules/blocks/data-blocks/list/hooks/useListBlockDecoratorProps';
 import { useTableSelectorDecoratorProps } from '../modules/blocks/data-blocks/table-selector/hooks/useTableSelectorDecoratorProps';
 import { TableColumnSchemaToolbar } from '../modules/blocks/data-blocks/table/TableColumnSchemaToolbar';
 import { useTableBlockDecoratorProps } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
@@ -80,13 +88,17 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableSelectorProps,
         useTableBlockDecoratorProps,
         useListBlockDecoratorProps,
+        useListBlockProps,
         useTableSelectorDecoratorProps,
         useCollapseBlockDecoratorProps,
         useFilterFormBlockProps,
         useFilterFormBlockDecoratorProps,
         useGridCardBlockDecoratorProps,
+        useGridCardBlockItemProps,
+        useGridCardBlockProps,
         useFormItemProps,
         useDataFormItemProps,
+        useGridCardActionBarProps,
       }}
     >
       {props.children}
@@ -141,13 +153,17 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableSelectorProps,
       useTableBlockDecoratorProps,
       useListBlockDecoratorProps,
+      useListBlockProps,
       useTableSelectorDecoratorProps,
       useCollapseBlockDecoratorProps,
       useFilterFormBlockProps,
       useFilterFormBlockDecoratorProps,
       useGridCardBlockDecoratorProps,
+      useGridCardBlockProps,
+      useGridCardBlockItemProps,
       useFormItemProps,
       useDataFormItemProps,
+      useGridCardActionBarProps,
     });
   }
 }

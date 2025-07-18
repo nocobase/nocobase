@@ -152,9 +152,12 @@ export const apiGetWorkflow = async (id: number) => {
   const state = await api.storageState();
   const headers = getHeaders(state);
 
-  const result = await api.get(`/api/workflows:get?filterByTk=${id}`, {
-    headers,
-  });
+  const result = await api.get(
+    `/api/workflows:get?filterByTk=${id}&appends[]=stats.executed&appends[]=versionStats.executed`,
+    {
+      headers,
+    },
+  );
 
   if (!result.ok()) {
     throw new Error(await result.text());
@@ -172,10 +175,16 @@ export const apiGetWorkflow = async (id: number) => {
             "type": "collection",
             "config": { },
             "useTransaction": true,
-            "executed": 0,
-            "allExecuted": 0,
+            // "executed": 0,
+            // "allExecuted": 0,
             "current": true,
             "options": { }
+            "versionStats": {
+                "executed": 0,
+            },
+            "stats": {
+                "executed": 0,
+            }
         }
     }
     */

@@ -74,7 +74,6 @@ export const ACLRolesCheckProvider = (props) => {
       url: 'roles:check',
     },
     {
-      manual: !api.auth.token,
       onSuccess(data) {
         if (!data?.data?.snippets.includes('ui.*')) {
           setDesignable(false);
@@ -101,6 +100,11 @@ export const useRoleRecheck = () => {
     }
     ctx.refresh();
   };
+};
+
+export const useCurrentRoleMode = () => {
+  const ctx = useContext(ACLContext);
+  return ctx?.data?.data?.roleMode;
 };
 
 export const useACLContext = () => {

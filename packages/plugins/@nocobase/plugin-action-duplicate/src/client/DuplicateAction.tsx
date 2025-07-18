@@ -32,8 +32,9 @@ import {
   useCollection,
   useDataSourceHeaders,
   useDataSourceKey,
+  Icon,
 } from '@nocobase/client';
-import { App, Button } from 'antd';
+import { App, Button, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,10 @@ export const actionDesignerCss = css`
     left: 0;
     right: 0;
     pointer-events: none;
+    '&.nb-in-template': {
+      background: 'var(--colorTemplateBgSettingsHover)';
+    }
+    ,
     > .general-schema-designer-icons {
       position: absolute;
       right: 2px;
@@ -79,8 +84,8 @@ export const actionDesignerCss = css`
 `;
 
 export const DuplicateAction = observer(
-  (props: any) => {
-    const { children, ...others } = props;
+  ({ onlyIcon, ...props }: any) => {
+    const { children, icon, title, ...others } = props;
     const { message } = App.useApp();
     const field = useField();
     const fieldSchema = useFieldSchema();
@@ -89,6 +94,7 @@ export const DuplicateAction = observer(
     const { designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [formValueChanged, setFormValueChanged] = useState(false);
     const { service, __parent, block, resource } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
@@ -158,7 +164,6 @@ export const DuplicateAction = observer(
         }
       }
     };
-
     return (
       <div
         ref={others.setNodeRef}
@@ -199,7 +204,12 @@ export const DuplicateAction = observer(
                 }}
                 onClick={handelDuplicate}
               >
-                {loading ? t('Duplicating') : children || t('Duplicate')}
+                <Tooltip title={title}>
+                  <span style={{ marginRight: 3 }}>
+                    {icon && typeof icon === 'string' ? <Icon type={icon} /> : icon}
+                  </span>
+                </Tooltip>
+                {onlyIcon ? children[1] : loading ? t('Duplicating') : children || t('Duplicate')}
               </a>
             ) : (
               <Button
@@ -220,7 +230,7 @@ export const DuplicateAction = observer(
               <CollectionProvider_deprecated name={duplicateCollection || name}>
                 {/* 这里的 record 就是弹窗中创建表单的 sourceRecord */}
                 <RecordProvider record={{ ...parentRecordData, __collection: duplicateCollection || __collection }}>
-                  <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+                  <ActionContextProvider value={{ ...ctx, visible, setVisible, formValueChanged, setFormValueChanged }}>
                     <PopupSettingsProvider enableURL={false}>
                       <RefreshComponentProvider refresh={_.noop}>
                         <NocoBaseRecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />

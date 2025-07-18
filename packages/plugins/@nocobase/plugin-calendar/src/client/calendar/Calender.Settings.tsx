@@ -25,6 +25,9 @@ import {
   useFormBlockContext,
   usePopupSettings,
   useApp,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
+  useCollection_deprecated,
 } from '@nocobase/client';
 import React, { useMemo } from 'react';
 import { useTranslation } from '../../locale';
@@ -64,6 +67,19 @@ export const calendarBlockSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
     },
     {
       name: 'titleField',
@@ -261,11 +277,11 @@ export const calendarBlockSettings = new SchemaSettings({
         const { name } = useCollection();
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { dateTimeFields } = plugin;
+        const { dateTimeFieldInterfaces } = plugin;
         return {
           title: t('Start date field'),
           value: fieldNames.start,
-          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
+          options: getCollectionFieldsOptions(name, null, dateTimeFieldInterfaces, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (start) => {
@@ -299,11 +315,11 @@ export const calendarBlockSettings = new SchemaSettings({
         const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
         const app = useApp();
         const plugin = app.pm.get('calendar') as any;
-        const { dateTimeFields } = plugin;
+        const { dateTimeFieldInterfaces } = plugin;
         return {
           title: t('End date field'),
           value: fieldNames.end,
-          options: getCollectionFieldsOptions(name, null, dateTimeFields, {
+          options: getCollectionFieldsOptions(name, null, dateTimeFieldInterfaces, {
             association: ['o2o', 'obo', 'oho', 'm2o'],
           }),
           onChange: (end) => {
@@ -349,6 +365,35 @@ export const calendarBlockSettings = new SchemaSettings({
                 'x-decorator-props': field.decoratorProps,
               },
             });
+          },
+        };
+      },
+    },
+    {
+      name: 'weekStart',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Week start day'),
+          value: field['decoratorProps']['weekStart'] || '1',
+          options: [
+            { value: '1', label: t('Monday') },
+            { value: '0', label: t('Sunday') },
+          ],
+          onChange: (v) => {
+            field.decoratorProps.weekStart = v;
+            fieldSchema['x-decorator-props']['weekStart'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
           },
         };
       },

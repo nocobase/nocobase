@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseCircleFilled } from '@ant-design/icons';
+import { CloseCircleFilled, DownOutlined } from '@ant-design/icons';
 import { Tag, TreeSelect } from 'antd';
-import type { DefaultOptionType, TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
+import type { TreeSelectProps } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions_deprecated, parseCollectionName, useApp, useCompile } from '../../..';
+import { DefaultOptionType } from 'antd/es/select';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -26,6 +27,7 @@ export type AppendsTreeSelectProps = {
     label: string;
     value: string;
   };
+  includeFieldPaths: boolean;
 };
 
 type TreeOptionType = Omit<DefaultOptionType, 'value'> & { value: string };
@@ -53,7 +55,11 @@ function loadChildren(this, option) {
 }
 
 function isAssociation(field) {
-  return field.target && field.interface;
+  return (
+    ['belongsTo', 'hasMany', 'hasOne', 'belongsToMany', 'belongsToArray'].includes(field.type) &&
+    field.target &&
+    field.interface
+  );
 }
 
 function trueFilter(field) {
@@ -61,7 +67,7 @@ function trueFilter(field) {
 }
 
 function getCollectionFieldOptions(this: CallScope, collection, parentNode?): TreeOptionType[] {
-  const fields = this.getCollectionFields(collection).filter(isAssociation);
+  const fields = this.getCollectionFields(collection);
   const boundLoadChildren = loadChildren.bind(this);
   return fields.filter(this.filter).map((field) => {
     const key = parentNode ? `${parentNode.value ? `${parentNode.value}.` : ''}${field.name}` : field.name;
@@ -81,7 +87,7 @@ function getCollectionFieldOptions(this: CallScope, collection, parentNode?): Tr
   });
 }
 
-export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProps> = (props) => {
+export const FieldsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProps> = (props) => {
   const {
     title,
     value: propsValue,
@@ -91,6 +97,7 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
     filter = trueFilter,
     rootOption,
     loadData: propsLoadData,
+    includeFieldPaths,
     ...restProps
   } = props;
   const compile = useCompile();
@@ -204,14 +211,16 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
           }
         });
       } else {
-        newValue.forEach((v) => {
-          const paths = v.split('.');
-          if (paths.length) {
-            for (let i = 1; i <= paths.length; i++) {
-              valueSet.add(paths.slice(0, i).join('.'));
+        if (includeFieldPaths) {
+          newValue.forEach((v) => {
+            const paths = v.split('.');
+            if (paths.length) {
+              for (let i = 1; i <= paths.length; i++) {
+                valueSet.add(paths.slice(0, i).join('.'));
+              }
             }
-          }
-        });
+          });
+        }
       }
       onChange(Array.from(valueSet));
     },
@@ -261,6 +270,11 @@ export const AppendsTreeSelect: React.FC<TreeSelectProps & AppendsTreeSelectProp
       treeData={treeData}
       loadData={loadData}
       {...restProps}
+      suffixIcon={<DownOutlined />}
     />
   );
+};
+
+export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
+  return <FieldsTreeSelect filter={isAssociation} includeFieldPaths {...props} />;
 };

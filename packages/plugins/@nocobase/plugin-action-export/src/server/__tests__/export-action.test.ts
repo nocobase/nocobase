@@ -1,8 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { createMockServer, MockServer } from '@nocobase/test';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import XLSX from 'xlsx';
+import { Workbook } from 'exceljs';
 
 describe('export action', () => {
   let app: MockServer;
@@ -79,11 +85,14 @@ describe('export action', () => {
     expect(res.status).toBe(200);
 
     const buffer = res.body;
-
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    const workbook = new Workbook();
+    await workbook.xlsx.load(buffer);
+    const worksheet = workbook.getWorksheet(1);
+    const sheetData = worksheet
+      .getSheetValues()
+      .slice(1)
+      .map((row: any[]) => row?.slice(1));
+    const rows = sheetData[0];
     expect(rows.length).toBe(1);
   });
 });

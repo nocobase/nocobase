@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
+import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -216,7 +216,7 @@ export class PluginClientServer extends Plugin {
       const tabIds = tabs.map((x) => x.get('id'));
       const where = { desktopRouteId: tabIds, roleName };
       if (action === 'create') {
-        const exists = await repository.find({ where });
+        const exists = await repository.find({ where, transaction });
         const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
@@ -252,7 +252,7 @@ export class PluginClientServer extends Plugin {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
           ...ctx.query,
@@ -260,26 +260,12 @@ export class PluginClientServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['desktopRoutes'],
       });
 
-      // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
-      // 2. 如果 page 的 children 不为空，不需要做特殊处理
-      const desktopRoutesId = role.get('desktopRoutes').map(async (item, index, items) => {
-        if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
-          const children = await desktopRoutesRepository.find({
-            filter: {
-              parentId: item.id,
-            },
-          });
-
-          return [item.id, ...(children || []).map((child) => child.id)];
-        }
-
-        return item.id;
-      });
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
 
       if (desktopRoutesId) {
         const ids = (await Promise.all(desktopRoutesId)).flat();
@@ -294,6 +280,24 @@ export class PluginClientServer extends Plugin {
         ctx.body = result;
       }
 
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('roles.desktopRoutes:set', async (ctx, next) => {
+      let { values } = ctx.action.params;
+      if (values.length) {
+        const instances = await this.app.db.getRepository('desktopRoutes').find({
+          filter: {
+            $or: [{ id: { $in: values } }, { parentId: { $in: values } }],
+          },
+        });
+        values = instances.map((instance) => instance.get('id'));
+      }
+      const { resourceName, sourceId } = ctx.action;
+      const repository = this.app.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
+      await repository['set'](values);
+
+      ctx.status = 200;
       await next();
     });
   }

@@ -9,6 +9,7 @@
 
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { ICollectionManager, IModel } from '@nocobase/data-source-manager/src/types';
+import { UNION_ROLE_KEY } from '@nocobase/plugin-acl';
 import { MockServer, createMockServer } from '@nocobase/test';
 import os from 'os';
 import { SuperAgentTest } from 'supertest';
@@ -408,7 +409,6 @@ describe('data source with acl', () => {
     const checkData = checkRep.body;
 
     expect(checkData.meta.dataSources.mockInstance1).toBeDefined();
-    console.log(JSON.stringify(checkData, null, 2));
   });
 
   it('should update roles strategy', async () => {
@@ -451,5 +451,178 @@ describe('data source with acl', () => {
     });
 
     expect(adminRoleResp2.body.data.strategy.actions).toHaveLength(0);
+  });
+
+  it(`should list response meta include new data sources`, async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'testRole',
+        title: '测试角色',
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    const adminAgent: any = await app.agent().login(adminUser);
+
+    // create user resource permission
+    const createConnectionResourceResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').create({
+      values: {
+        dataSourceKey: 'mockInstance1',
+        usingActionsConfig: true,
+        strategy: {
+          actions: ['view'],
+        },
+        name: 'posts',
+      },
+    });
+
+    expect(createConnectionResourceResp.status).toBe(200);
+
+    const createResourceResp = await adminAgent.resource('dataSources.roles', 'mockInstance1').update({
+      filterByTk: 'testRole',
+      values: {
+        strategy: {
+          actions: ['view'],
+        },
+      },
+    });
+
+    expect(createResourceResp.status).toBe(200);
+
+    // call roles check
+    let checkRep = await (await app.agent().login(testUser)).resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    let checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).exist;
+    expect(checkData.meta.dataSources.mockInstance1.strategy).toEqual({ actions: ['view'] });
+
+    const testUserAgent = await app.agent().login(testUser, UNION_ROLE_KEY);
+    checkRep = await testUserAgent.resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).exist;
+    expect(checkData.meta.dataSources.mockInstance1.strategy).toEqual({ actions: ['view'] });
+  });
+
+  it(`should update data sources`, async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    const adminAgent: any = await app.agent().login(adminUser);
+
+    await adminAgent.resource('roles').create({
+      values: {
+        name: 'testRole',
+        snippets: ['!ui.*', '!pm', '!pm.*'],
+        title: 'testRole',
+      },
+    });
+
+    const testUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['testRole'],
+      },
+    });
+
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const createScopeResp = await adminAgent
+      .post('/dataSources/main/rolesResourcesScopes:create')
+      .send({ scope: { $and: [{ title: { $includes: '456' } }] }, resourceName: 'posts', name: 't2' });
+
+    expect(createScopeResp.status).toBe(200);
+    const scope = createScopeResp.body.data;
+
+    const createRoleScopeResp = await adminAgent
+      .post('/roles/testRole/dataSourceResources:create')
+      .query({
+        filterByTk: 'posts',
+        filter: {
+          dataSourceKey: 'main',
+          name: 'posts',
+        },
+      })
+      .send({
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title'],
+            scope: {
+              id: scope.id,
+              createdAt: '2025-06-13T09:19:38.000Z',
+              updatedAt: '2025-06-13T09:19:38.000Z',
+              key: 'i50ffsy0aky',
+              dataSourceKey: 'main',
+              name: 't2',
+              resourceName: 'posts',
+              scope: { $and: [{ title: { $includes: '456' } }] },
+            },
+          },
+        ],
+        name: 'posts',
+        dataSourceKey: 'main',
+      });
+
+    expect(createRoleScopeResp.status).toBe(200);
+
+    await app.db.getRepository('posts').create({
+      values: [{ title: '123' }, { title: '123456' }],
+    });
+
+    const testUserAgent: any = await app.agent().login(testUser, 'testRole');
+    const listRes1 = await testUserAgent.resource('posts').list({
+      filter: {},
+      pageSize: 10,
+    });
+
+    expect(listRes1.status).toBe(200);
+    expect(listRes1.body.data).toHaveLength(1);
+
+    const updateScopeResp = await adminAgent
+      .post('/dataSources/main/rolesResourcesScopes:update')
+      .query({
+        filterByTk: scope.id,
+      })
+      .send({ scope: { $and: [{ title: { $includes: '123' } }] }, resourceName: 'posts', name: 't2' });
+
+    expect(updateScopeResp.status).toBe(200);
+
+    const listRes2 = await testUserAgent.resource('posts').list({
+      filter: {},
+      pageSize: 10,
+    });
+
+    expect(listRes2.status).toBe(200);
+    expect(listRes2.body.data).toHaveLength(2);
   });
 });

@@ -64,43 +64,78 @@ export const datetime = [
     label: "{{ t('is') }}",
     value: '$dateOn',
     selected: true,
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true, //schema 仅在Filter.Action生效，筛选表单中不生效
   },
   {
     label: "{{ t('is not') }}",
     value: '$dateNotOn',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is before') }}",
     value: '$dateBefore',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is after') }}",
     value: '$dateAfter',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is on or after') }}",
     value: '$dateNotBefore',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is on or before') }}",
     value: '$dateNotAfter',
-    schema: { 'x-component': 'DatePicker.FilterWithPicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: false,
+      },
+    },
     onlyFilterAction: true,
   },
   {
     label: "{{ t('is between') }}",
     value: '$dateBetween',
-    schema: { 'x-component': 'DatePicker.RangePicker' },
+    schema: {
+      'x-component': 'DateFilterDynamicComponent',
+      'x-component-props': {
+        isRange: true,
+      },
+    },
   },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
@@ -207,6 +242,8 @@ export const boolean = [
       },
     },
   },
+  { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
+  { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
 
 export const tableoid = [

@@ -157,6 +157,8 @@ export const useCollectionFilterOptions = (collection: any, dataSource?: string)
       const option = {
         name: field.name,
         title: field?.uiSchema?.title || field.name,
+        label: field?.uiSchema?.title || field.name,
+        value: field.name,
         schema: field?.uiSchema,
         operators:
           operators?.filter?.((operator) => {
@@ -396,7 +398,7 @@ export const useFilterAction = () => {
   };
 };
 
-export const useCreateAction = (actionCallback?: (values: any) => void) => {
+export const useCreateAction = (actionCallback?: (values: any, collections: any[]) => void) => {
   const form = useForm();
   const field = useField();
   const ctx = useActionContext();
@@ -408,9 +410,14 @@ export const useCreateAction = (actionCallback?: (values: any) => void) => {
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
+        let collections = [];
+        if (!form.values.addAllCollections) {
+          collections = form.values.collections;
+        }
+        delete form.values.collections;
         const res = await resource.create({ values: form.values });
         ctx.setVisible(false);
-        actionCallback?.(res?.data?.data);
+        await actionCallback?.(res?.data?.data, collections);
         await form.reset();
         field.data.loading = false;
         refresh();

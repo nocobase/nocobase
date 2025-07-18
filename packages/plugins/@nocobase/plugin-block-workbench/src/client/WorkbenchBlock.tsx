@@ -53,11 +53,7 @@ const ResponsiveSpace = () => {
     return (
       <Grid columns={itemsPerRow} gap={gap}>
         {fieldSchema.mapProperties((s, key) => {
-          return (
-            <Grid.Item style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} key={key}>
-              <NocoBaseRecursionField name={key} schema={s} />
-            </Grid.Item>
-          );
+          return <NocoBaseRecursionField name={key} schema={s} key={key} />;
         })}
       </Grid>
     );
@@ -66,7 +62,7 @@ const ResponsiveSpace = () => {
   return (
     <Space wrap size={gap} align="start">
       {fieldSchema.mapProperties((s, key) => {
-        return <NocoBaseRecursionField name={key} schema={s} />;
+        return <NocoBaseRecursionField name={key} schema={s} key={key} />;
       })}
     </Space>
   );
@@ -101,6 +97,7 @@ const InternalIcons = () => {
                   key={key}
                   prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
                   onClick={() => {}}
+                  style={{ marginTop: '5px' }}
                 >
                   <NocoBaseRecursionField name={key} schema={s} />
                 </List.Item>
@@ -113,7 +110,7 @@ const InternalIcons = () => {
   );
 };
 
-export const WorkbenchBlockContext = createContext({ layout: 'grid' });
+export const WorkbenchBlockContext = createContext({ layout: 'grid', ellipsis: true });
 
 const useStyles = createStyles(({ token, css }) => ({
   containerClass: css`
@@ -138,6 +135,7 @@ const useStyles = createStyles(({ token, css }) => ({
             margin: -12px -32px;
             width: calc(100% + 64px);
             text-align: start;
+            justify-content: start !important;
             color: ${token.colorText};
           }
         }
@@ -154,7 +152,7 @@ const useStyles = createStyles(({ token, css }) => ({
 export const WorkbenchBlock: any = withDynamicSchemaProps(
   (props) => {
     const fieldSchema = useFieldSchema();
-    const { layout = 'grid' } = fieldSchema['x-component-props'] || {};
+    const { layout = 'grid', ellipsis } = fieldSchema['x-component-props'] || {};
     const { styles } = useStyles();
     const { title } = fieldSchema['x-decorator-props'] || {};
     const targetHeight = useBlockHeight();
@@ -183,7 +181,7 @@ export const WorkbenchBlock: any = withDynamicSchemaProps(
 
     return (
       <div className={`nb-action-penal-container ${layout} ${styles.containerClass} ${heightClass}`}>
-        <WorkbenchBlockContext.Provider value={{ layout }}>
+        <WorkbenchBlockContext.Provider value={{ layout, ellipsis }}>
           <DataSourceContext.Provider value={undefined}>
             <CollectionContext.Provider value={undefined}>{props.children}</CollectionContext.Provider>
           </DataSourceContext.Provider>

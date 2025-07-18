@@ -9,7 +9,6 @@
 
 export const mobilePageHeaderStyle: any = {
   position: 'absolute',
-  top: 0,
   left: 0,
   right: 0,
   borderBottom: '1px solid var(--adm-color-border)',

@@ -41,6 +41,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
+import { useDeleteRouteSchema } from './useDeleteRouteSchema';
 
 const components = { TreeSelect };
 
@@ -113,6 +114,7 @@ export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
+  const { deleteRouteSchema } = useDeleteRouteSchema();
   const currentRoute = useCurrentRoute();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const navigate = useNavigateNoUpdate();
@@ -128,7 +130,9 @@ export const RemoveRoute: FC = () => {
           content: t('Are you sure you want to delete it?'),
           onOk: async () => {
             // 删除对应菜单的路由
-            currentRoute?.id != null && (await deleteRoute(currentRoute.id));
+            if (currentRoute?.id != null) {
+              await Promise.all([deleteRoute(currentRoute.id), deleteRouteSchema(currentRoute.schemaUid)]);
+            }
 
             if (
               currentPageUid !== currentRoute?.schemaUid &&
@@ -445,17 +449,18 @@ const HiddenMenuItem = () => {
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
-        const [, type] = field?.value?.split?.('||') || [];
+        const [id, type] = field?.value?.split?.('||') || [];
         field.query('position').take((f: Field) => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
                   { label: t('Before'), value: 'beforeBegin' },
                   { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
+                  { label: t('Inner'), value: 'beforeEnd', disabled: currentRoute?.id == id },
                 ]
               : [
                   { label: t('Before'), value: 'beforeBegin' },
@@ -468,7 +473,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -498,7 +507,6 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];
@@ -602,22 +610,27 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'edit',
       Component: EditMenuItem,
+      sort: 100,
     },
     {
       name: 'editTooltip',
       Component: EditTooltip,
+      sort: 200,
     },
     {
       name: 'hidden',
       Component: HiddenMenuItem,
+      sort: 300,
     },
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+      sort: 400,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 500,
     },
     {
       name: 'insertbeforeBegin',
@@ -627,6 +640,7 @@ export const menuItemSettings = new SchemaSettings({
           <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
         );
       },
+      sort: 600,
     },
     {
       name: 'insertafterEnd',
@@ -634,6 +648,7 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />;
       },
+      sort: 700,
     },
     {
       name: 'insertbeforeEnd',
@@ -641,14 +656,16 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
       },
+      sort: 800,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 900,
     },
     {
       name: 'delete',
-      sort: 100,
+      sort: 1000,
       Component: RemoveRoute,
     },
   ],

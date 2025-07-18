@@ -21,10 +21,12 @@ import {
   useDesignable,
   useFormBlockContext,
   SchemaSettingsLayoutItem,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
-
+import { SchemaSettingsColumnWidthItem } from './SchemaSettingsColumnWidthItem';
 export const kanbanSettings = new SchemaSettings({
   name: 'blockSettings:kanban',
   items: [
@@ -35,6 +37,24 @@ export const kanbanSettings = new SchemaSettings({
     {
       name: 'setTheBlockHeight',
       Component: SchemaSettingsBlockHeightItem,
+    },
+
+    {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection_deprecated();
+        const { t } = useTranslation();
+        return {
+          collectionName: name,
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
+    },
+    {
+      name: 'columnWidth',
+      Component: SchemaSettingsColumnWidthItem,
     },
     {
       name: 'dataScope',

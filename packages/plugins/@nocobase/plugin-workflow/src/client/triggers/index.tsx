@@ -28,7 +28,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import WorkflowPlugin from '..';
+import WorkflowPlugin, { useWorkflowExecuted } from '..';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
@@ -39,11 +39,12 @@ function useUpdateConfigAction() {
   const form = useForm();
   const api = useAPIClient();
   const { workflow } = useFlowContext() ?? {};
+  const executed = useWorkflowExecuted();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {
     async run() {
-      if (workflow.executed) {
+      if (executed) {
         message.error(lang('Trigger in executed workflow cannot be modified'));
         return;
       }
@@ -171,6 +172,7 @@ export const TriggerConfig = () => {
   const { styles } = useStyles();
   const compile = useCompile();
   const trigger = useTrigger();
+  const executed = useWorkflowExecuted();
 
   useEffect(() => {
     if (workflow) {
@@ -182,7 +184,7 @@ export const TriggerConfig = () => {
     const values = cloneDeep(workflow.config);
     return createForm({
       initialValues: values,
-      disabled: workflow.executed,
+      disabled: Boolean(executed),
     });
   }, [workflow]);
 
@@ -229,7 +231,6 @@ export const TriggerConfig = () => {
     }
   }, []);
 
-  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = lang('Trigger');
 
   if (!trigger) {
@@ -284,7 +285,7 @@ export const TriggerConfig = () => {
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
-          disabled={workflow.executed}
+          disabled={Boolean(executed)}
         />
       </div>
       <ActionContextProvider
@@ -349,7 +350,7 @@ export const TriggerConfig = () => {
                       properties: fieldset,
                     },
                     actions: {
-                      ...(workflow.executed
+                      ...(executed
                         ? {}
                         : {
                             type: 'void',

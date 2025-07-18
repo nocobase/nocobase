@@ -27,6 +27,7 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
+  SchemaSettingsLinkageRules,
 } from '../../../schema-settings';
 import { SchemaSettingsBlockHeightItem } from '../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../schema-settings/SchemaSettingsBlockTitleItem';
@@ -127,10 +128,12 @@ export const TableBlockDesigner = () => {
     [dn, field.decoratorProps, fieldSchema, service],
   );
   const api = useAPIClient();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsBlockHeightItem />
+      <SchemaSettingsLinkageRules category="block" title={t('Block Linkage rules')} />
       {collection?.tree && collectionField?.collectionName === collectionField?.target && (
         <SchemaSettingsSwitchItem
           title={t('Tree table')}
@@ -168,6 +171,21 @@ export const TableBlockDesigner = () => {
           field.decoratorProps.dragSort = dragSort;
           fieldSchema['x-decorator-props'].dragSort = dragSort;
           // service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
+      <SchemaSettingsSwitchItem
+        title={t('Enable index column')}
+        checked={field.decoratorProps?.enableSelectColumn !== false}
+        onChange={async (enableIndexColumn) => {
+          field.decoratorProps = field.decoratorProps || {};
+          field.decoratorProps.enableIndexColumn = enableIndexColumn;
+          fieldSchema['x-decorator-props'].enableIndexColumn = enableIndexColumn;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -328,14 +346,14 @@ export const TableBlockDesigner = () => {
         }}
       />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
-      {supportTemplate && <SchemaSettingsDivider />}
+      {/* {supportTemplate && <SchemaSettingsDivider />}
       {supportTemplate && (
         <SchemaSettingsTemplate
           componentName={`${componentNamePrefix}Table`}
           collectionName={name}
           resourceName={defaultResource}
         />
-      )}
+      )} */}
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

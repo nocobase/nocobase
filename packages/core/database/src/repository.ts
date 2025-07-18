@@ -26,7 +26,10 @@ import {
   WhereOperators,
 } from 'sequelize';
 
+import _ from 'lodash';
+import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { Collection } from './collection';
+import { SmartCursorBuilder } from './cursor-builder';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import injectTargetCollection from './decorators/target-collection-decorator';
@@ -38,7 +41,6 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
-import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -240,17 +242,21 @@ export interface FirstOrCreateOptions extends Transactionable {
   values?: Values;
   hooks?: boolean;
   context?: any;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
   database: Database;
   collection: Collection;
   model: ModelStatic<Model>;
+  cursorBuilder: SmartCursorBuilder;
 
   constructor(collection: Collection) {
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+
+    this.cursorBuilder = new SmartCursorBuilder(this.database.sequelize, this.model.tableName, this.collection);
   }
 
   public static valuesToFilter = valuesToFilter;
@@ -353,9 +359,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async chunk(
-    options: FindOptions & { chunkSize: number; callback: (rows: Model[], options: FindOptions) => Promise<void> },
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions & { offset: number }) => Promise<void>;
+    },
   ) {
-    const { chunkSize, callback, limit: overallLimit } = options;
+    const { chunkSize, callback, limit: overallLimit, beforeFind, afterFind } = options;
     const transaction = await this.getTransaction(options);
 
     let offset = 0;
@@ -365,20 +376,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     while (true) {
       // Calculate the limit for the current chunk
       const currentLimit = overallLimit !== undefined ? Math.min(chunkSize, overallLimit - totalProcessed) : chunkSize;
-
-      const rows = await this.find({
+      const findOptions = {
         ...options,
         limit: currentLimit,
         offset,
         transaction,
-      });
-
+      };
+      if (beforeFind) {
+        await beforeFind(findOptions);
+      }
+      const rows = await this.find(findOptions);
+      if (afterFind) {
+        await afterFind(rows, { ...findOptions, offset });
+      }
       if (rows.length === 0) {
         break;
       }
 
       await callback(rows, options);
-
       offset += currentLimit;
       totalProcessed += rows.length;
 
@@ -386,6 +401,29 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         break;
       }
     }
+  }
+
+  /**
+   * Cursor-based pagination query function.
+   * Ideal for large datasets (e.g., millions of rows)
+   * Note:
+   *  1. does not support jumping to arbitrary pages (e.g., "Page 5")
+   *  2. Requires a stable, indexed sort field (e.g. ID, createdAt)
+   *  3. If custom orderBy is used, it must match the cursor field(s) and direction, otherwise results may be incorrect or unstable.
+   * @param options
+   */
+  async chunkWithCursor(
+    options: FindOptions & {
+      chunkSize: number;
+      callback: (rows: Model[], options: FindOptions) => Promise<void>;
+      beforeFind?: (options: FindOptions) => Promise<void>;
+      afterFind?: (rows: Model[], options: FindOptions) => Promise<void>;
+    },
+  ) {
+    return await this.cursorBuilder.chunk({
+      ...options,
+      find: this.find.bind(this),
+    });
   }
 
   /**
@@ -484,7 +522,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -493,11 +531,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       return instance;
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
+
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -507,12 +546,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
         values,
         transaction,
-        hooks,
         context,
+        ...rest,
       });
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   /**
@@ -815,7 +854,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       collection: this.collection,
     });
 
-    const params = parser.toSequelizeParams();
+    const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {

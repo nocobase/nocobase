@@ -20,11 +20,11 @@ test.describe('list block schema settings', () => {
         await page.getByLabel('designer-schema-settings-CardItem-List.Designer-general').hover();
       },
       supportedOptions: [
-        'Edit block title',
+        'Edit block title & description',
         'Set the data scope',
         'Set default sorting rules',
         'Records per page',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });

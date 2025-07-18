@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "1.6.36",
+  "version": "1.8.7",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
@@ -26,12 +26,14 @@
     "@vercel/ncc": "0.36.1",
     "babel-loader": "^9.2.1",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
+    "bundle-require": "^5.1.0",
     "chalk": "2.4.2",
     "css-loader": "^6.8.1",
     "esbuild-register": "^3.4.2",
     "fast-glob": "^3.3.1",
     "gulp": "4.0.2",
     "gulp-typescript": "6.0.0-alpha.1",
+    "javascript-obfuscator": "^4.1.1",
     "less": "^4.2.0",
     "less-loader": "^12.2.0",
     "postcss": "^8.4.29",
@@ -49,7 +51,8 @@
   },
   "license": "AGPL-3.0",
   "scripts": {
-    "build": "tsup"
+    "build": "tsup",
+    "build:watch": "tsup --watch"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }
