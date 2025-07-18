@@ -30,12 +30,16 @@ const ArrayNester = observer((props) => {
         {value.map((_, index) => {
           const gridModel = model.subModels.grid as FlowModel;
           const fork = gridModel.createFork({}, `${index}`);
-          fork.context.defineProperty('basePath', {
-            value: `${fieldPath}.${index}`,
+          gridModel.context.defineProperty('basePath', {
+            get: () => {
+              const basePath = model?.context.basePath;
+              const finalPath = basePath ? `${basePath}.${fieldPath}.${index}` : `${fieldPath}.${index}`;
+              return finalPath;
+            },
           });
           return (
             <Card key={index} style={{ marginBottom: 12 }}>
-              <FlowModelRenderer model={fork} showFlowSettings={false} key={`${fieldPath}.${index}`} />
+              <FlowModelRenderer model={fork} showFlowSettings={false} key={index} />
             </Card>
           );
         })}
@@ -67,11 +71,6 @@ const ArrayNester = observer((props) => {
 
 const ObjectNester = (props) => {
   const model: any = useFlowModel();
-  const basePath = model.context.basePath;
-  // model.context.defineProperty('basePath', {
-  //   value: basePath ? `${basePath}.${model.fieldPath}` : model.fieldPath,
-  // });
-  // console.log(1111,model.parent.context.basePath);
   return (
     <Card>
       <FormLayout layout={'vertical'}>
@@ -97,8 +96,6 @@ export class ObjectFormEditableAssociationFieldModel extends FormEditableAssocia
     this.context.defineProperty('basePath', {
       get: () => {
         const basePath = this.parent?.context.basePath;
-        console.log(basePath ? `${basePath}.${this.fieldPath}` : this.fieldPath);
-        console.log(1111);
         return basePath ? `${basePath}.${this.fieldPath}` : this.fieldPath;
       },
     });
