@@ -17,7 +17,7 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
-import { Alert, Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Badge, Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { useCurrentAppInfo } from '@nocobase/client';
@@ -25,6 +25,9 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useT } from '../locale';
+import { TASK_STATUS, TASK_STATUS_OPTIONS } from '../../common/constants';
+import { TaskStatus } from '../../common/types';
+import PluginAsyncTaskManagerClient from '..';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -38,12 +41,14 @@ const useStyles = createStyles(({ token }) => {
 // Configure dayjs
 dayjs.extend(relativeTime);
 
-const renderTaskResult = (status, t) => {
-  if (status.type !== 'success' || !status.payload?.message?.messageId) {
+const TaskResult = ({ record }) => {
+  const t = useT();
+
+  if (record.status !== TASK_STATUS.SUCCEEDED || !record.result?.message?.messageId) {
     return null;
   }
 
-  const { messageId, messageValues } = status.payload.message;
+  const { messageId, messageValues } = record.result.message;
 
   return (
     <div style={{ marginLeft: 8 }}>
@@ -52,21 +57,12 @@ const renderTaskResult = (status, t) => {
   );
 };
 
-const useAsyncTask = () => {
-  const { data, refreshAsync, loading } = useRequest<any>({
-    url: 'asyncTasks:list',
-  });
-  return { loading, tasks: data?.data || [], refresh: refreshAsync };
-};
-
 const AsyncTasksButton = (props) => {
   const { popoverVisible, setPopoverVisible, tasks, refresh, loading, hasProcessingTasks } = props;
-  const app = useApp();
   const api = useAPIClient();
-  const appInfo = useCurrentAppInfo();
   const t = useT();
   const { styles } = useStyles();
-  const plugin = usePlugin<any>('async-task-manager');
+  const plugin = usePlugin<PluginAsyncTaskManagerClient>('async-task-manager');
   const cm = useCollectionManager();
   const compile = useCompile();
   const showTaskResult = (task) => {
@@ -87,65 +83,15 @@ const AsyncTasksButton = (props) => {
       title: t('Task'),
       dataIndex: 'title',
       key: 'title',
-      render: (_, record: any) => {
-        const title = record.title;
-        if (!title) {
-          return '-';
-        }
-        const collection = cm.getCollection(title.collection);
-        const actionTypeMap = {
-          export: t('Export'),
-          import: t('Import'),
-          'export-attachments': t('Export attachments'),
-        };
-
-        const actionText = actionTypeMap[title.actionType] || title.actionType;
-
-        const taskTypeMap = {
-          'export-attachments': t('Export {collection} attachments'),
-          export: t('Export {collection} data'),
-          import: t('Import {collection} data'),
-        };
-
-        const taskTemplate = taskTypeMap[title.actionType] || `${actionText}`;
-        return taskTemplate.replace('{collection}', compile(collection?.title || title.collection));
-      },
     },
     {
       title: t('Status'),
       dataIndex: 'status',
       key: 'status',
       width: 160,
-      render: (status: any, record: any) => {
-        const statusMap = {
-          pending: {
-            color: 'default',
-            text: t('Waiting'),
-            icon: 'ClockCircleOutlined',
-          },
-          running: {
-            color: 'processing',
-            text: t('Processing'),
-            icon: 'LoadingOutlined',
-          },
-          success: {
-            color: 'success',
-            text: t('Completed'),
-            icon: 'CheckCircleOutlined',
-          },
-          failed: {
-            color: 'error',
-            text: t('Failed'),
-            icon: 'CloseCircleOutlined',
-          },
-          cancelled: {
-            color: 'warning',
-            text: t('Cancelled'),
-            icon: 'StopOutlined',
-          },
-        };
-
-        const { color, text } = statusMap[status.type] || {};
+      render: (status: TaskStatus, record: any) => {
+        const option = TASK_STATUS_OPTIONS[status] || ({} as (typeof TASK_STATUS_OPTIONS)[TaskStatus]);
+        const { color, label } = option;
 
         const renderProgress = () => {
           const commonStyle = {
@@ -153,22 +99,22 @@ const AsyncTasksButton = (props) => {
             margin: 0,
           };
 
-          switch (status.indicator) {
-            case 'spinner':
-              return <Alert showIcon={false} message={text} banner />;
-            case 'progress':
+          switch (status) {
+            case TASK_STATUS.PENDING:
+              return <Alert showIcon={false} message={compile(label)} banner />;
+            case TASK_STATUS.RUNNING:
               return (
                 <Progress
                   type="line"
                   size="small"
                   strokeWidth={4}
-                  percent={Number(((record.progress?.current / record.progress?.total) * 100).toFixed(2))}
+                  percent={Number((((record.progressCurrent ?? 0) / (record.progressTotal ?? 1)) * 100).toFixed(2))}
                   status="active"
                   style={commonStyle}
                   format={(percent) => `${percent.toFixed(1)}%`}
                 />
               );
-            case 'success':
+            case TASK_STATUS.SUCCEEDED:
               return (
                 <Progress
                   type="line"
@@ -180,7 +126,7 @@ const AsyncTasksButton = (props) => {
                   format={() => ''}
                 />
               );
-            case 'error':
+            case TASK_STATUS.FAILED:
               return (
                 <Progress
                   type="line"
@@ -202,10 +148,10 @@ const AsyncTasksButton = (props) => {
             <div style={{ flex: 1 }}>{renderProgress()}</div>
             <Tag
               color={color}
-              icon={statusMap[status.type]?.icon ? <Icon type={statusMap[status.type].icon} /> : null}
+              icon={option?.icon ? <Icon type={option.icon} /> : null}
               style={{ margin: 0, padding: '0 4px', height: 22, width: 22 }}
             />
-            {renderTaskResult(status, t)}
+            <TaskResult record={record} />
           </div>
         );
       },
@@ -216,67 +162,41 @@ const AsyncTasksButton = (props) => {
       width: 180,
       render: (_, record: any) => {
         const actions = [];
-        const isTaskCancelling = false;
+        const stopping = false;
+        const { Result, ResultButton } = plugin.taskOrigins.get(record.origin);
 
-        if ((record.status.type === 'running' || record.status.type === 'pending') && record.cancelable) {
+        if (record.cancelable && (record.status === TASK_STATUS.RUNNING || record.status === TASK_STATUS.PENDING)) {
           actions.push(
             <Popconfirm
               key="cancel"
               title={t('Confirm cancel')}
               description={t('Confirm cancel description')}
               onConfirm={async () => {
-                await api.request({
-                  url: 'asyncTasks:cancel',
-                  params: {
-                    filterByTk: record.taskId,
-                  },
+                await api.resource('asyncTasks').stop({
+                  filterByTk: record.id,
                 });
                 refresh();
               }}
               okText={t('Confirm')}
               cancelText={t('Cancel')}
-              disabled={isTaskCancelling}
+              disabled={stopping}
             >
               <Button
                 type="link"
                 size="small"
-                icon={<Icon type={isTaskCancelling ? 'LoadingOutlined' : 'StopOutlined'} />}
-                disabled={isTaskCancelling}
+                icon={<Icon type={stopping ? 'LoadingOutlined' : 'StopOutlined'} />}
+                disabled={stopping}
               >
-                {isTaskCancelling ? t('Cancelling') : t('Cancel')}
+                {stopping ? t('Stopping...') : t('Stop')}
               </Button>
             </Popconfirm>,
           );
         }
 
-        if (record.status.type === 'success') {
-          if (record.status.resultType === 'file') {
-            actions.push(
-              <Button
-                key="download"
-                type="link"
-                size="small"
-                icon={<Icon type="DownloadOutlined" />}
-                onClick={() => {
-                  const token = app.apiClient.auth.token;
-                  const collection = cm.getCollection(record.title.collection);
-                  const compiledTitle = compile(collection?.title);
-                  const suffix = record?.title?.actionType === 'export-attachments' ? '-attachments.zip' : '.xlsx';
-                  const fileText = `${compiledTitle}${suffix}`;
-                  const filename =
-                    record?.title?.actionType !== 'create migration' ? encodeURIComponent(fileText) : null;
-                  const url = app.getApiUrl(
-                    `asyncTasks:fetchFile/${record.taskId}?token=${token}&__appName=${encodeURIComponent(
-                      appInfo?.data?.name || app.name,
-                    )}${filename ? `&filename=${filename}` : ''}`,
-                  );
-                  window.open(url);
-                }}
-              >
-                {t('Download')}
-              </Button>,
-            );
-          } else if (record.status.payload) {
+        if (record.status === TASK_STATUS.SUCCEEDED && record.result) {
+          if (ResultButton) {
+            actions.push(<ResultButton key="result-button" task={record} />);
+          } else {
             actions.push(
               <Button
                 key="view"
@@ -285,14 +205,12 @@ const AsyncTasksButton = (props) => {
                 icon={<Icon type="EyeOutlined" />}
                 onClick={() => {
                   showTaskResult(record);
-                  const { payload } = record.status;
-                  const renderer = plugin.taskResultRendererManager.get(record.title.actionType);
                   Modal.info({
                     title: t('Task result'),
-                    content: renderer ? (
-                      React.createElement(renderer, { payload, task: record })
+                    content: Result ? (
+                      <Result payload={record.result} task={record} />
                     ) : (
-                      <div>{t(`No renderer available for this task type, payload: ${payload}`)}</div>
+                      <div>{t(`No renderer available for this task type, payload: ${record.result}`)}</div>
                     ),
                   });
                 }}
@@ -303,7 +221,7 @@ const AsyncTasksButton = (props) => {
           }
         }
 
-        if (record.status.type === 'failed') {
+        if (record.status === TASK_STATUS.FAILED && record.result?.length > 0) {
           actions.push(
             <Button
               key="error"
@@ -314,7 +232,7 @@ const AsyncTasksButton = (props) => {
                 setPopoverVisible(false);
                 Modal.info({
                   title: t('Error Details'),
-                  content: record.status.errors?.map((error, index) => (
+                  content: record.result?.map((error, index) => (
                     <div key={index} style={{ marginBottom: 16 }}>
                       <div style={{ color: '#ff4d4f', marginBottom: 8 }}>{error.message}</div>
                       {error.code && (
@@ -339,6 +257,8 @@ const AsyncTasksButton = (props) => {
     },
   ];
 
+  const count = tasks.filter((item) => [TASK_STATUS.SUCCEEDED, TASK_STATUS.FAILED].includes(item.status)).length;
+
   const content = (
     <div style={{ maxHeight: '70vh', overflow: 'auto', width: tasks.length > 0 ? 800 : 200 }}>
       {tasks.length > 0 ? (
@@ -355,15 +275,15 @@ const AsyncTasksButton = (props) => {
     <>
       <Popover
         content={content}
-        trigger="hover"
+        trigger="click"
         placement="bottom"
         open={popoverVisible}
         onOpenChange={setPopoverVisible}
       >
         <Button
           className={['sync-task-button', styles.button].join(' ')}
-          icon={<Icon type={'SyncOutlined'} spin={hasProcessingTasks} />}
           onClick={() => setPopoverVisible(!popoverVisible)}
+          icon={<Icon type={'SyncOutlined'} spin={tasks.some((task) => TASK_STATUS.RUNNING === task.status)} />}
         />
       </Popover>
     </>
@@ -371,23 +291,38 @@ const AsyncTasksButton = (props) => {
 };
 
 export const AsyncTasks = () => {
-  const { tasks, refresh, ...others } = useAsyncTask();
   const app = useApp();
+  const { data, refresh, loading } = useRequest<any>({
+    resource: 'asyncTasks',
+    action: 'list',
+    params: {
+      sort: '-createdAt',
+    },
+  });
+
+  const [tasks, setTasks] = useState(data?.data || []);
   const [popoverVisible, setPopoverVisible] = useState(false);
-  const [hasProcessingTasks, setHasProcessingTasks] = useState(false);
 
   useEffect(() => {
-    setHasProcessingTasks(tasks.some((task) => task.status.type !== 'success' && task.status.type !== 'failed'));
-  }, [tasks]);
+    setTasks(data?.data || []);
+  }, [data]);
 
   const handleTaskCreated = useCallback(async () => {
     setPopoverVisible(true);
     refresh();
     console.log('handleTaskCreated');
   }, []);
-  const handleTaskProgress = useCallback(() => {
-    refresh();
-    console.log('handleTaskProgress');
+  const handleTaskProgress = useCallback((event) => {
+    const { detail } = event;
+    setTasks((prevTasks) => {
+      const index = prevTasks.findIndex((task) => task.id === detail.id);
+      if (index === -1) {
+        prevTasks.unshift(detail);
+      } else {
+        prevTasks.splice(index, 1, detail);
+      }
+      return [...prevTasks];
+    });
   }, []);
   const handleTaskStatus = useCallback(() => {
     refresh();
@@ -412,9 +347,5 @@ export const AsyncTasks = () => {
     };
   }, [app, handleTaskCancelled, handleTaskCreated, handleTaskProgress, handleTaskStatus]);
 
-  return (
-    tasks?.length > 0 && (
-      <AsyncTasksButton {...{ tasks, refresh, popoverVisible, setPopoverVisible, hasProcessingTasks, ...others }} />
-    )
-  );
+  return tasks?.length > 0 && <AsyncTasksButton {...{ tasks, refresh, popoverVisible, setPopoverVisible }} />;
 };
