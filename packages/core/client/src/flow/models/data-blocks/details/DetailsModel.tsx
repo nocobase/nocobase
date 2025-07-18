@@ -151,20 +151,20 @@ DetailsModel.registerFlow({
   auto: true,
   sort: 150,
   steps: {
-    dataLoadingMode: {
-      use: 'dataLoadingMode',
-    },
-    refresh: {
-      async handler(ctx, params) {
-        const { dataLoadingMode } = ctx.model.props;
-        if (dataLoadingMode === 'auto') {
-          await ctx.model.applySubModelsAutoFlows('grid');
-          await ctx.model.refresh();
-        } else {
-          ctx.model.resource.loading = false;
-        }
-      },
-    },
+    // dataLoadingMode: {
+    //   use: 'dataLoadingMode',
+    // },
+    // refresh: {
+    //   async handler(ctx, params) {
+    //     const { dataLoadingMode } = ctx.model.props;
+    //     if (dataLoadingMode === 'auto') {
+    //       await ctx.model.applySubModelsAutoFlows('grid');
+    //       await ctx.model.refresh();
+    //     } else {
+    //       ctx.model.resource.loading = false;
+    //     }
+    //   },
+    // },
   },
 });
 

@@ -15,6 +15,7 @@ import {
   Plugin,
   RecordActionModel,
 } from '@nocobase/client';
+import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import React from 'react';
 
@@ -40,7 +41,16 @@ class HelloDataBlockModel extends DataBlockModel {
   }
 }
 
+HelloDataBlockModel.define({
+  title: 'Hello Data Block Model',
+  children: [],
+});
+
 class HelloCollectionBlockModel extends CollectionBlockModel {
+  createResource() {
+    return new MultiRecordResource();
+  }
+
   renderComponent() {
     return (
       <div>
