@@ -16,11 +16,10 @@ describe('db2cm test', () => {
   let db: Database;
   let app: any;
 
-  afterEach(async () => {
-    await app.destroy();
-  });
-
   describe('uiManageable test', async () => {
+    afterEach(async () => {
+      await app.destroy();
+    });
     class Plugin1 extends Plugin {
       static collection = {
         name: 'hello',
@@ -132,6 +131,10 @@ describe('db2cm test', () => {
       await sequelize.sync({ force: true });
     });
 
+    afterEach(async () => {
+      await app.destroy();
+    });
+
     it('get selectable tables', async () => {
       const response = await app.agent().resource('collections').selectable();
       expect(response.status).toBe(200);
@@ -139,6 +142,29 @@ describe('db2cm test', () => {
       expect(response.body.data.some((x) => x.name === 'table1s')).toBeTruthy();
       expect(response.body.data.some((x) => x.name === 'table2s')).toBeTruthy();
       expect(response.body.data.some((x) => x.name === 'table3s')).toBeTruthy();
+    });
+
+    it('add tables to collections', async () => {
+      let collections = await db.getRepository('collections').find({
+        where: { name: ['table1s', 'table2s', 'table3s'] },
+      });
+      expect(collections.length).toBe(0);
+      const response = await app
+        .agent()
+        .resource('collections')
+        .add({
+          values: ['table1s', 'table2s', 'table3s'],
+        });
+      expect(response.status).toBe(200);
+      collections = await db.getRepository('collections').find({
+        where: { name: ['table1s', 'table2s', 'table3s'] },
+      });
+      expect(collections.length).toBe(3);
+      const listReponse = await app.agent().resource('collections').list();
+      expect(listReponse.status).toBe(200);
+      expect(listReponse.body.data.some((x) => x.name === 'table1s')).toBeTruthy();
+      expect(listReponse.body.data.some((x) => x.name === 'table2s')).toBeTruthy();
+      expect(listReponse.body.data.some((x) => x.name === 'table3s')).toBeTruthy();
     });
   });
 });

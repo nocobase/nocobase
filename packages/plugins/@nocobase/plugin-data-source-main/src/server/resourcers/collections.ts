@@ -9,6 +9,7 @@
 
 import { Collection, Database, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
+import { CollectionService } from '../services/collection-service';
 
 export default {
   async ['collections:listMeta'](ctx, next) {
@@ -142,5 +143,19 @@ export default {
     const diffTables = allTables.filter((table) => !existsCollections.includes(table));
 
     ctx.body = diffTables.map((name) => ({ name }));
+  },
+
+  async ['collections:add'](ctx, next) {
+    const { values } = ctx.action.params;
+    const existsCollections = await ctx.app.db.getRepository('collections').find({
+      filter: { name: values },
+    });
+    const existsCollectionNames = existsCollections.map((c) => c.name);
+    const addToCollections = values.filter((table) => !existsCollectionNames.includes(table));
+    if (addToCollections.length) {
+      const collectionService = new CollectionService(ctx.app.db);
+      await collectionService.addCollections(addToCollections);
+    }
+    ctx.body = true;
   },
 };
