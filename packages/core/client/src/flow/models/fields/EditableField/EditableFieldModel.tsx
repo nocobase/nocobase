@@ -93,7 +93,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   createField() {
     const field = this.form.createField({
       name: this.collectionField.name,
-      basePath: this.basePath,
+      basePath: this.parent.context.basePath,
       ...this.props,
       decorator: this.decorator,
       component: this.component,

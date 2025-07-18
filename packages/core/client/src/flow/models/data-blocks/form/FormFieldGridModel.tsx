@@ -31,25 +31,26 @@ export class FormFieldGridModel extends GridModel<{
   renderAddSubModelButton() {
     const formModelInstance = this.context.blockModel as FormModel;
     const collection = this.context.currentCollection || formModelInstance.collection;
-    const basePath = this.context.basePath;
     const fieldItems = buildFieldItems(
       collection.getFields(),
       formModelInstance,
       'EditableFieldModel',
       'items',
-      ({ defaultOptions, fieldPath }) => ({
-        use: defaultOptions.use,
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: collection.dataSourceKey,
-              collectionName: collection.name,
-              fieldPath,
-              basePath,
+      ({ defaultOptions, fieldPath }) => {
+        return {
+          ...defaultOptions,
+          use: defaultOptions.use,
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
             },
           },
-        },
-      }),
+        };
+      },
     );
 
     return (

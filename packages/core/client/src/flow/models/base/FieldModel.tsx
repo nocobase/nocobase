@@ -42,9 +42,6 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   get fieldPath(): string {
     return this.getFieldSettingsInitParams().fieldPath;
   }
-  get basePath(): string {
-    return this.getFieldSettingsInitParams().basePath || '';
-  }
   get collectionField() {
     return this.context.collectionField as CollectionField;
   }

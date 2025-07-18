@@ -7,43 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { ObjectField, ArrayField, observer, useField } from '@formily/react';
+import { observer, useField } from '@formily/react';
 import { tval } from '@nocobase/utils/client';
-import {
-  AddFieldButton,
-  buildFieldItems,
-  escapeT,
-  FlowModel,
-  FlowModelRenderer,
-  useFlowModel,
-} from '@nocobase/flow-engine';
+import { escapeT, FlowModel, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { each } from '@formily/shared';
 import { action } from '@formily/reactive';
-import { castArray } from 'lodash';
 import { FormLayout } from '@formily/antd-v5';
 import { Card } from 'antd';
 import React from 'react';
 import { ArrayField as ArrayFieldType } from '@formily/core';
 import { EditableAssociationFieldModel } from './EditableAssociationFieldModel';
 
-const ArrayNester = (props) => {
+const ArrayNester = observer((props) => {
   const model = useFlowModel();
   const { fieldPath } = model;
   const arrayField = useField<ArrayFieldType>();
-  const value = arrayField.value || [];
+  const value = [...(arrayField.value || [{}])];
+
   return (
     <>
       <FormLayout layout="vertical">
         {value.map((_, index) => {
-          console.log(`${fieldPath}.${index}`);
           const gridModel = model.subModels.grid as FlowModel;
-          // const fork = gridModel.createFork({}, `${index}`);
-          gridModel.context.defineProperty('basePath', {
-            get: () => `${fieldPath}.${index}`,
+          const fork = gridModel.createFork({}, `${index}`);
+          fork.context.defineProperty('basePath', {
+            value: `${fieldPath}.${index}`,
           });
           return (
             <Card key={index} style={{ marginBottom: 12 }}>
-              <FlowModelRenderer model={gridModel} showFlowSettings={false} />
+              <FlowModelRenderer model={fork} showFlowSettings={false} key={`${fieldPath}.${index}`} />
             </Card>
           );
         })}
@@ -51,9 +43,9 @@ const ArrayNester = (props) => {
       {arrayField.editable && (
         <a
           onClick={() => {
-            action(async () => {
+            action(() => {
               if (!Array.isArray(arrayField.value)) {
-                arrayField.value = [];
+                arrayField.value = [{}];
               }
               const index = arrayField.value.length;
               arrayField.value.splice(index, 0, {});
@@ -62,7 +54,7 @@ const ArrayNester = (props) => {
                   delete arrayField.form.fields[key];
                 }
               });
-              return arrayField.onInput(arrayField.value);
+              arrayField.onInput(arrayField.value);
             });
           }}
         >
@@ -71,10 +63,15 @@ const ArrayNester = (props) => {
       )}
     </>
   );
-};
+});
 
 const ObjectNester = (props) => {
-  const model = useFlowModel();
+  const model: any = useFlowModel();
+  const basePath = model.context.basePath;
+  // model.context.defineProperty('basePath', {
+  //   value: basePath ? `${basePath}.${model.fieldPath}` : model.fieldPath,
+  // });
+  // console.log(1111,model.parent.context.basePath);
   return (
     <Card>
       <FormLayout layout={'vertical'}>
@@ -84,48 +81,67 @@ const ObjectNester = (props) => {
   );
 };
 
-const AssociationNester = connect((props: any) => {
-  if (['hasOne', 'belongs'].includes(props.type)) {
-    return <ObjectNester {...props} />;
-  }
-  return <ArrayNester {...props} />;
-});
-export class FormEditableAssociationFieldModel extends EditableAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
-
-  get component() {
-    return [
-      AssociationNester,
-      {
-        type: this.collectionField.type,
-      },
-    ];
-  }
+class FormEditableAssociationFieldModel extends EditableAssociationFieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('currentCollection', {
       value: this.collectionField.targetCollection,
     });
-    this.context.defineProperty('basePath', {
-      value: this.basePath ? `${this.basePath}.${this.fieldPath}` : this.fieldPath,
-    });
   }
 }
 
-FormEditableAssociationFieldModel.registerFlow({
-  auto: true,
-  key: 'subFormSetting',
-  sort: 600,
-  steps: {
-    init: {
-      async handler(ctx) {
-        if (ctx.model.subModels.grid) {
-          return;
-        }
-        const model = ctx.model.setSubModel('grid', {
-          use: 'FormFieldGridModel',
-        });
-        await model.applyAutoFlows();
+export class ObjectFormEditableAssociationFieldModel extends FormEditableAssociationFieldModel {
+  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineProperty('basePath', {
+      get: () => {
+        const basePath = this.parent?.context.basePath;
+        console.log(basePath ? `${basePath}.${this.fieldPath}` : this.fieldPath);
+        console.log(1111);
+        return basePath ? `${basePath}.${this.fieldPath}` : this.fieldPath;
+      },
+    });
+  }
+  get component() {
+    return [
+      ObjectNester,
+      {
+        type: this.collectionField.type,
+      },
+    ];
+  }
+}
+
+ObjectFormEditableAssociationFieldModel.define({
+  defaultOptions: {
+    use: 'ObjectFormEditableAssociationFieldModel',
+    subModels: {
+      grid: {
+        use: 'FormFieldGridModel',
+      },
+    },
+  },
+});
+
+export class ArrayFormEditableAssociationFieldModel extends FormEditableAssociationFieldModel {
+  static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+  get component() {
+    return [
+      ArrayNester,
+      {
+        type: this.collectionField.type,
+      },
+    ];
+  }
+}
+
+ArrayFormEditableAssociationFieldModel.define({
+  defaultOptions: {
+    use: 'ArrayFormEditableAssociationFieldModel',
+    subModels: {
+      grid: {
+        use: 'FormFieldGridModel',
       },
     },
   },
