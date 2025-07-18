@@ -8,37 +8,42 @@
  */
 
 import { Logger } from '@nocobase/logger';
-import { TaskStatus } from './async-task-manager';
 import { EventEmitter } from 'events';
 import { Application } from '@nocobase/server';
+import { Model } from '@nocobase/database';
+import { TaskId, TaskStatus } from '../../common/types';
 
-export interface ITask extends EventEmitter {
-  taskId: string;
+export class TaskModel extends Model {
+  id: TaskId;
+  origin: string;
+  type: string;
+  title?: string;
+  params: Record<string, any>;
+  tags?: Record<string, string>;
   status: TaskStatus;
-  progress: {
-    total: number;
-    current: number;
-  };
-  startedAt: Date;
-  fulfilledAt: Date;
-  tags: Record<string, string>;
-  createdAt: Date;
-  title?: any;
-  isCancelled: boolean;
-  context?: any;
+  progressTotal?: number;
+  progressCurrent?: number;
+  createdAt?: Date;
+  startedAt?: Date;
+  doneAt?: Date;
+  createdById?: number;
+  // Additional fields can be added as needed
+}
+
+export interface ITask {
+  record: TaskModel;
+  onProgress: (record: TaskModel) => void;
   setLogger(logger: Logger): void;
   setApp(app: Application): void;
-  setContext(context: any): void;
 
-  cancel(): Promise<boolean>;
-  statusChange: (status: TaskStatus) => Promise<void>;
+  cancel(options?: { silent?: boolean });
   execute(): Promise<any>;
   reportProgress(progress: { total: number; current: number }): void;
   run(): Promise<void>;
-  toJSON(options?: { raw?: boolean }): any;
+  toJSON<TaskModelAttributes>(): TaskModelAttributes;
 }
 
 export interface TaskConstructor {
   type: string;
-  new (options: any, tags?: Record<string, string>): ITask;
+  new (model: TaskModel): ITask;
 }
