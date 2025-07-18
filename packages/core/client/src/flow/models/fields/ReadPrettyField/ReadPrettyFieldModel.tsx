@@ -121,8 +121,8 @@ ReadPrettyFieldModel.registerFlow({
           use: ctx.model.use,
         };
       },
-      afterParamsChange: async (params, oldParams, ctx) => {
-        if (params.use !== oldParams.use) {
+      afterParamsChange: async (ctx, params, previousParams) => {
+        if (params.use !== previousParams.use) {
           await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
             stepParams: {

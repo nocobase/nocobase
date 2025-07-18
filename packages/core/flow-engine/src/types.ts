@@ -182,7 +182,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   defaultParams?:
     | Record<string, any>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
-  afterParamsChange?: (params: any, oldParams: any, ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>;
+  afterParamsChange?: (ctx: FlowRuntimeContext<TModel>, params: any, previousParams: any) => boolean | Promise<boolean>;
 }
 
 /**

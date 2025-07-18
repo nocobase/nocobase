@@ -499,10 +499,10 @@ TableModel.registerFlow({
       use: 'sortingRule',
       title: escapeT('Default sorting'),
     },
-    dataLoadingMode: {
-      use: 'dataLoadingMode',
-      title: escapeT('Data loading mode'),
-    },
+    // dataLoadingMode: {
+    //   use: 'dataLoadingMode',
+    //   title: escapeT('Data loading mode'),
+    // },
     tableDensity: {
       title: escapeT('Table density'),
       uiSchema: {
@@ -542,12 +542,6 @@ TableModel.registerFlow({
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
-        const { dataLoadingMode } = ctx.model.props;
-        if (dataLoadingMode === 'auto') {
-          await ctx.model.resource.refresh();
-        } else {
-          ctx.model.resource.loading = false;
-        }
       },
     },
   },
