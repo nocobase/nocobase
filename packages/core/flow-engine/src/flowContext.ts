@@ -330,7 +330,10 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     if (this.mode === 'runtime') {
       return super._getOwnProperty(key);
     }
+    return this._getSettingsModeOwnProperty(key);
+  }
 
+  protected _getSettingsModeOwnProperty(key: string): any {
     const options = this._props[key];
     if (!options) return undefined;
 
@@ -351,6 +354,22 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     }
 
     return undefined;
+  }
+
+  toSettingsMode(): FlowRuntimeContext<TModel> {
+    // 只在 runtime 模式下才允许调用此方法
+    if (this.mode !== 'runtime') {
+      return this;
+    }
+
+    // 创建一个新的 settings 模式实例
+    const settingsInstance = new FlowRuntimeContext(this.model, this.flowKey, 'settings');
+    // 共享属性定义和委托链
+    settingsInstance._props = this._props;
+    settingsInstance._delegates = this._delegates;
+    settingsInstance.stepResults = this.stepResults;
+
+    return settingsInstance;
   }
 
   exit() {

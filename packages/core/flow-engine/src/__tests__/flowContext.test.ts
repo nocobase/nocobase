@@ -9,7 +9,7 @@
 
 import { FlowEngine, FlowModel, ForkFlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext } from '../flowContext';
+import { FlowContext, FlowRuntimeContext } from '../flowContext';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -430,5 +430,86 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     model.context.defineProperty('appName', { value: 'NocoBase2' });
     const sub = engine.getModel<TestModel>('sub1');
     expect(sub.context.appName).toBe('NocoBase');
+  });
+});
+
+describe('FlowRuntimeContext toSettingsMode', () => {
+  let engine: FlowEngine;
+  class TestModel extends FlowModel {}
+
+  beforeEach(() => {
+    engine = new FlowEngine();
+    engine.registerModels({ TestModel });
+  });
+
+  it('should return different values for runtime and settings mode', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    const runtimeContext = new FlowRuntimeContext(model, 'test-flow', 'runtime');
+
+    // 定义一个使用 getter 的属性
+    runtimeContext.defineProperty('dynamicProp', {
+      get: () => 'runtime-dynamic-value',
+    });
+
+    const settingsContext = runtimeContext.toSettingsMode();
+
+    // 在 runtime 模式下应该返回实际值
+    expect(runtimeContext.dynamicProp).toBe('runtime-dynamic-value');
+
+    // 在 settings 模式下应该返回 ContextPathProxy
+    const settingsValue = settingsContext.dynamicProp;
+    expect(settingsValue).toBeDefined();
+    expect(settingsValue.toString()).toBe('{{ctx.dynamicProp}}');
+  });
+
+  it('should allow chained property access in settings mode', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+    const runtimeContext = new FlowRuntimeContext(model, 'test-flow', 'runtime');
+
+    // 定义嵌套属性
+    runtimeContext.defineProperty('nested', {
+      get: () => ({
+        level1: {
+          level2: 'deep-value',
+        },
+      }),
+    });
+
+    // 在 runtime 模式下访问
+    expect(runtimeContext.nested.level1.level2).toBe('deep-value');
+
+    // 在 settings 模式下访问
+    const settingsContext = runtimeContext.toSettingsMode();
+    const settingsNested = settingsContext.nested;
+    expect(settingsNested.toString()).toBe('{{ctx.nested}}');
+
+    // 链式访问
+    const level1 = settingsNested.level1;
+    expect(level1.toString()).toBe('{{ctx.nested.level1}}');
+
+    const level2 = level1.level2;
+    expect(level2.toString()).toBe('{{ctx.nested.level1.level2}}');
+  });
+
+  it('should handle delegated properties in settings mode', () => {
+    const model = engine.createModel({ use: 'TestModel' });
+
+    // 在 model context 中定义属性
+    model.context.defineProperty('modelProp', { value: 'model-value' });
+
+    const runtimeContext = new FlowRuntimeContext(model, 'test-flow', 'runtime');
+
+    // runtime 模式下可以访问委托的属性
+    expect(runtimeContext.modelProp).toBe('model-value');
+
+    // settings 模式下，委托的静态值属性仍然返回实际值（因为委托对象不是 FlowRuntimeContext）
+    const settingsContext = runtimeContext.toSettingsMode();
+    const settingsValue = settingsContext.modelProp;
+    expect(settingsValue).toBe('model-value');
+
+    // 但是如果在 FlowRuntimeContext 自身定义的属性，在 settings 模式下会返回 ContextPathProxy
+    runtimeContext.defineProperty('ownProp', { value: 'own-value' });
+    const ownSettingsValue = settingsContext.ownProp;
+    expect(ownSettingsValue.toString()).toBe('{{ctx.ownProp}}');
   });
 });
