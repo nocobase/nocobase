@@ -102,7 +102,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
           icon: meta.icon,
           type: 'group',
           children: async () => {
-            return await processMetaChildren(meta.children, model, `${className}.`);
+            return await processMetaChildren(meta.children, model.context, `${className}.`);
           },
         };
 
@@ -114,7 +114,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
           label: meta?.title || className,
           icon: meta?.icon,
           createModelOptions: async () => {
-            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
 
             return {
               ...defaultOptions,

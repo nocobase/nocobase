@@ -33,8 +33,20 @@ export interface ResourceSettingsInitParams {
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
+  }
+
+  get title() {
+    if (!this._title) {
+      this._title = this.defaultBlockTitle();
+    }
+    return this._title;
+  }
+
+  protected defaultBlockTitle() {
+    return `${this.translate(this.constructor['meta']?.title || this.constructor.name)}`;
   }
 
   renderComponent(): any {
@@ -135,6 +147,8 @@ BlockModel.define({ hide: true });
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
+  isManualRefresh = false;
+
   get dataSource(): DataSource {
     return this.context.dataSource;
   }
@@ -203,10 +217,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
 
-  get title() {
-    return this.context.t(this._title) || this.defaultBlockTitle();
-  }
-
   protected defaultBlockTitle() {
     let collectionTitle = this.collection?.title;
     if (this.association) {
@@ -266,6 +276,23 @@ CollectionBlockModel.registerFlow({
               { ctx: ctx.currentFlow },
             ),
           );
+        }
+      },
+    },
+  },
+});
+
+CollectionBlockModel.registerFlow({
+  key: 'refreshSettings',
+  auto: true,
+  sort: 10000,
+  steps: {
+    refresh: {
+      async handler(ctx) {
+        if (ctx.model.isManualRefresh) {
+          ctx.model.resource.loading = false;
+        } else {
+          await ctx.model.resource.refresh();
         }
       },
     },

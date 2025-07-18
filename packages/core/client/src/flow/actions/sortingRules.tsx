@@ -10,11 +10,11 @@
 import { defineAction, escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
-import { DataBlockModel, useSortFields } from '../../';
+import { CollectionBlockModel, useSortFields } from '../../';
 import { useCompile } from '../../schema-component';
 
 const SelectOptions = (props) => {
-  const flowContext = useFlowSettingsContext<DataBlockModel>();
+  const flowContext = useFlowSettingsContext<CollectionBlockModel>();
   const resource = flowContext.model.resource;
   const compile = useCompile();
   const sortFields = useSortFields(resource?.getResourceName());

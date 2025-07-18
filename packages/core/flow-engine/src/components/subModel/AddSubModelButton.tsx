@@ -10,6 +10,7 @@
 import React, { useMemo } from 'react';
 import { Switch } from 'antd';
 import { FlowModel } from '../../models';
+import { FlowModelContext } from '../../flowContext';
 import { ModelConstructor } from '../../types';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
@@ -32,11 +33,11 @@ export interface SubModelItem {
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
-  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
-  customRemove?: (model: FlowModel, item: SubModelItem) => Promise<void>;
+  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
+  customRemove?: (ctx: FlowModelContext, item: SubModelItem) => Promise<void>;
 }
 
-export type SubModelItemsType = SubModelItem[] | ((model: FlowModel) => SubModelItem[] | Promise<SubModelItem[]>);
+export type SubModelItemsType = SubModelItem[] | ((ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
 
 export interface MergeSubModelItemsOptions {
   addDividers?: boolean;
@@ -126,11 +127,11 @@ export function mergeSubModelItems(
   if (validSources.length === 0) return [];
   if (validSources.length === 1) return validSources[0];
 
-  return async (model: FlowModel) => {
+  return async (ctx: FlowModelContext) => {
     const result: SubModelItem[] = [];
     for (let i = 0; i < validSources.length; i++) {
       const source = validSources[i];
-      const items: SubModelItem[] = Array.isArray(source) ? source : await source(model);
+      const items: SubModelItem[] = Array.isArray(source) ? source : await source(ctx);
 
       if (i > 0 && addDividers && items.length > 0) {
         result.push({ key: `divider-${i}`, type: 'divider' } as SubModelItem);
@@ -178,7 +179,7 @@ const transformSubModelItems = async (items: SubModelItem[], model: FlowModel): 
   }
 
   // 批量执行 toggleDetector
-  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(model)));
+  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(model.context)));
 
   const toggleMap = new Map<number, boolean>();
   toggleItems.forEach(({ index }, i) => {
@@ -204,8 +205,8 @@ const transformSubModelItems = async (items: SubModelItem[], model: FlowModel): 
     if (item.children) {
       if (typeof item.children === 'function') {
         transformedItem.children = async () => {
-          const childrenFn = item.children as (model: FlowModel) => SubModelItem[] | Promise<SubModelItem[]>;
-          const childrenResult = await childrenFn(model);
+          const childrenFn = item.children as (ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
+          const childrenResult = await childrenFn(model.context);
           return transformSubModelItems(childrenResult, model);
         };
       } else {
@@ -233,7 +234,7 @@ const transformSubModelItems = async (items: SubModelItem[], model: FlowModel): 
 const transformItems = (items: SubModelItemsType, model: FlowModel): ItemsType => {
   if (typeof items === 'function') {
     return async () => {
-      const result = await items(model);
+      const result = await items(model.context);
       return transformSubModelItems(result, model);
     };
   }
@@ -347,7 +348,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     if (item.toggleDetector && isToggled) {
       try {
         if (item.customRemove) {
-          await item.customRemove(model, item);
+          await item.customRemove(model.context, item);
         } else {
           await removeHandler(item, model);
         }

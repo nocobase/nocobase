@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { FlowRuntimeContext } from './flowContext';
+import { FlowModelContext, FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 
@@ -182,7 +182,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   defaultParams?:
     | Record<string, any>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
-  onParamsChanged?: (params: any, oldParams: any, ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>;
+  afterParamsChange?: (ctx: FlowRuntimeContext<TModel>, params: any, previousParams: any) => boolean | Promise<boolean>;
 }
 
 /**
@@ -353,22 +353,22 @@ export interface FlowModelMeta {
    * 默认选项配置，支持静态对象或动态函数形式
    *
    * 当为静态对象时，将直接使用该配置作为默认值
-   * 当为函数时，将在创建菜单项时调用，可根据父模型动态生成配置
+   * 当为函数时，将在创建菜单项时调用，可根据父模型上下文动态生成配置
    *
    * @example
    * // 静态配置
    * defaultOptions: { someProperty: 'value' }
    *
    * // 动态配置
-   * defaultOptions: (parentModel) => {
+   * defaultOptions: (ctx) => {
    *   return {
-   *     someProperty: parentModel.someData ? 'valueA' : 'valueB'
+   *     someProperty: ctx.model.someData ? 'valueA' : 'valueB'
    *   };
    * }
    */
   defaultOptions?:
     | Record<string, any>
-    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>);
+    | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
   // uniqueSub?: boolean;
   /**
@@ -409,24 +409,24 @@ export interface FlowModelMeta {
    * ]
    *
    * // 动态配置
-   * children: (parentModel) => {
-   *   const hasPermission = parentModel.checkPermission('advanced');
+   * children: (ctx) => {
+   *   const hasPermission = ctx.model.checkPermission('advanced');
    *   return [
    *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
    *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
    *   ];
    * }
    */
-  children?: FlowModelMeta[] | ((parentModel: FlowModel) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
+  children?: FlowModelMeta[] | ((ctx: FlowModelContext) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
   /**
    * 切换检测器函数，用于判断该模型是否已存在
    * 主要用于支持切换式的 UI 交互
    */
-  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
+  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
   /**
    * 自定义移除函数，用于处理该项的删除逻辑
    */
-  customRemove?: (model: FlowModel, item: any) => Promise<void>;
+  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
 }
 
 /**
