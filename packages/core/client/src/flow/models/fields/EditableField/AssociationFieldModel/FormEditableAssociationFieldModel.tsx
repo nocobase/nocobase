@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { ArrayField, ObjectField, observer, useField } from '@formily/react';
+import { ObjectField, ArrayField, observer, useField } from '@formily/react';
 import { tval } from '@nocobase/utils/client';
 import {
   AddFieldButton,
@@ -17,68 +17,59 @@ import {
   FlowModelRenderer,
   useFlowModel,
 } from '@nocobase/flow-engine';
+import { each } from '@formily/shared';
+import { action } from '@formily/reactive';
 import { castArray } from 'lodash';
 import { FormLayout } from '@formily/antd-v5';
 import { Card } from 'antd';
 import React from 'react';
+import { ArrayField as ArrayFieldType } from '@formily/core';
 import { EditableAssociationFieldModel } from './EditableAssociationFieldModel';
-import { FormCustomFormItemModel } from '../../../data-blocks/form/FormCustomFormItemModel';
-import { EditableFieldModel } from '../../EditableField/EditableFieldModel';
-import { FormModel } from '../../../data-blocks/form/FormModel';
 
 const ArrayNester = (props) => {
-  const model: any = useFlowModel();
-  const { fieldPath } = props;
-  const formModelInstance = model.context.blockModel as FormModel;
-  const fieldItems = buildFieldItems(
-    formModelInstance.collectionField.targetCollection.getFields(),
-    formModelInstance,
-    'EditableFieldModel',
-    'items',
-    ({ defaultOptions, fieldPath }) => ({
-      use: defaultOptions.use,
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: formModelInstance.collection.dataSourceKey,
-            collectionName: formModelInstance.collection.name,
-            fieldPath,
-          },
-        },
-      },
-    }),
-  );
+  const model = useFlowModel();
+  const { fieldPath } = model;
+  const arrayField = useField<ArrayFieldType>();
+  const value = arrayField.value || [];
   return (
-    <FormLayout layout="vertical">
-      <ArrayField name={fieldPath}>
-        {(field) => (
-          <div>
-            {field.value?.map((item, index) => {
-              return (
-                <div key={index}>
-                  {model.mapSubModels('items', (subModel) => {
-                    const fork = subModel.createFork({}, `${index}`);
-                    fork.context.defineProperty('basePath', {
-                      get: () => index,
-                    });
-                    return <FlowModelRenderer key={subModel.key || index} model={fork} />;
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </ArrayField>
-      <AddFieldButton
-        model={model}
-        items={fieldItems}
-        subModelKey={'items'}
-        subModelBaseClass={FormCustomFormItemModel}
-        onSubModelAdded={async (field: EditableFieldModel) => {
-          model.context.blockModel.addAppends(field.fieldPath, true);
-        }}
-      />
-    </FormLayout>
+    <>
+      <FormLayout layout="vertical">
+        {value.map((_, index) => {
+          console.log(`${fieldPath}.${index}`);
+          const gridModel = model.subModels.grid as FlowModel;
+          // const fork = gridModel.createFork({}, `${index}`);
+          gridModel.context.defineProperty('basePath', {
+            get: () => `${fieldPath}.${index}`,
+          });
+          return (
+            <Card key={index} style={{ marginBottom: 12 }}>
+              <FlowModelRenderer model={gridModel} showFlowSettings={false} />
+            </Card>
+          );
+        })}
+      </FormLayout>
+      {arrayField.editable && (
+        <a
+          onClick={() => {
+            action(async () => {
+              if (!Array.isArray(arrayField.value)) {
+                arrayField.value = [];
+              }
+              const index = arrayField.value.length;
+              arrayField.value.splice(index, 0, {});
+              each(arrayField.form.fields, (targetField, key) => {
+                if (!targetField) {
+                  delete arrayField.form.fields[key];
+                }
+              });
+              return arrayField.onInput(arrayField.value);
+            });
+          }}
+        >
+          {escapeT('Add new')}
+        </a>
+      )}
+    </>
   );
 };
 
@@ -99,7 +90,7 @@ const AssociationNester = connect((props: any) => {
   }
   return <ArrayNester {...props} />;
 });
-export class SubFormEditableAssociationFieldModel extends EditableAssociationFieldModel {
+export class FormEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
 
   get component() {
@@ -121,7 +112,7 @@ export class SubFormEditableAssociationFieldModel extends EditableAssociationFie
   }
 }
 
-SubFormEditableAssociationFieldModel.registerFlow({
+FormEditableAssociationFieldModel.registerFlow({
   auto: true,
   key: 'subFormSetting',
   sort: 600,

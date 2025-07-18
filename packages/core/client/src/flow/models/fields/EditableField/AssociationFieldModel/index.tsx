@@ -9,5 +9,5 @@
 
 export * from './EditableAssociationFieldModel';
 export * from './SelectEditableAssociationFieldModel';
-export * from './SubFormEditableAssociationFieldModel';
+export * from './FormEditableAssociationFieldModel';
 //
