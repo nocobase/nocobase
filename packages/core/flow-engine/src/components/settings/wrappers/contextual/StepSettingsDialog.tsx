@@ -109,7 +109,7 @@ const openStepSettingsDialog = async ({
   const initialValues = { ...toJS(resolveActionDefaultParams), ...toJS(resolvedDefaultParams), ...toJS(stepParams) };
 
   // 保存旧参数用于 onParamsChange 回调
-  const oldParams = { ...toJS(stepParams) };
+  const previousParams = { ...toJS(stepParams) };
 
   // 构建表单Schema
   const formSchema: ISchema = {
@@ -156,7 +156,7 @@ const openStepSettingsDialog = async ({
               let skipSave = false;
               // Call onParamsChange callback if it exists
               if (afterParamsChange) {
-                skipSave = await afterParamsChange(currentValues, oldParams, flowRuntimeContext);
+                skipSave = await afterParamsChange(flowRuntimeContext, currentValues, previousParams);
               }
 
               currentDialog.close();
