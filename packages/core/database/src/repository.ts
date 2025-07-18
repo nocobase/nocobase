@@ -307,7 +307,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (_.isFunction(this.collection['isSql']) && this.collection['isSql']()) {
       return 0;
     }
-    if (this.collection.isView()) {
+    if (_.isFunction(this.collection['isView']) && this.collection['isView']()) {
       return 0;
     }
     if (this.database.isMySQLCompatibleDialect()) {
