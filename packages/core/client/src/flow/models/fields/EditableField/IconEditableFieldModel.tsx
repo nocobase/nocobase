@@ -15,7 +15,7 @@ import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, hasIcon, icons } from '../../../../icon';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
 const { Search } = Input;
 interface IconPickerProps {
@@ -168,7 +168,7 @@ const IconPicker = connect(
   }),
 );
 
-export class IconEditableFieldModel extends EditableFieldModel {
+export class IconEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['icon'];
 
   get component() {

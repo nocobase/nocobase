@@ -648,6 +648,38 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }, 100);
 
   /**
+   * 在所有自动流程执行前调用的钩子方法
+   * 子类可以覆盖此方法来实现自定义逻辑，可以通过抛出 FlowExitException 来终止流程
+   * @param {Record<string, any>} [inputArgs] 输入参数
+   * @protected
+   */
+  protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {
+    // 默认实现为空，子类可以覆盖
+  }
+
+  /**
+   * 在所有自动流程执行后调用的钩子方法
+   * 子类可以覆盖此方法来实现自定义逻辑
+   * @param {any[]} results 所有自动流程的执行结果
+   * @param {Record<string, any>} [inputArgs] 输入参数
+   * @protected
+   */
+  protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {
+    // 默认实现为空，子类可以覆盖
+  }
+
+  /**
+   * 在自动流程执行出错时调用的钩子方法
+   * 子类可以覆盖此方法来实现自定义错误处理逻辑
+   * @param {Error} error 捕获的错误
+   * @param {Record<string, any>} [inputArgs] 输入参数
+   * @protected
+   */
+  protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {
+    // 默认实现为空，子类可以覆盖
+  }
+
+  /**
    * 执行所有自动应用流程
    * @param {Record<string, any>} [inputArgs] 可选的运行时参数
    * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
@@ -692,16 +724,47 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const executeAutoFlows = async (): Promise<any[]> => {
       const results: any[] = [];
       const runId = `${this.uid}-autoFlow-${Date.now()}`;
-      for (const flow of autoApplyFlows) {
-        try {
-          const result = await this.applyFlow(flow.key, inputArgs, runId);
-          results.push(result);
-        } catch (error) {
-          console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
-          throw error;
+
+      try {
+        // 调用 beforeApplyAutoFlows 钩子
+        await this.beforeApplyAutoFlows(inputArgs);
+
+        // 如果没有自动流程，记录警告但仍然继续执行钩子
+        if (autoApplyFlows.length === 0) {
+          console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
+        } else {
+          // 执行所有自动流程
+          for (const flow of autoApplyFlows) {
+            try {
+              const result = await this.applyFlow(flow.key, inputArgs, runId);
+              results.push(result);
+            } catch (error) {
+              console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
+              throw error;
+            }
+          }
         }
+
+        // 调用 afterApplyAutoFlows 钩子
+        await this.afterApplyAutoFlows(results, inputArgs);
+
+        return results;
+      } catch (error) {
+        // 检查是否是通过 FlowExitException 正常退出
+        if (error instanceof FlowExitException) {
+          console.log(`[FlowEngine.applyAutoFlows] ${error.message}`);
+          return results; // 返回已执行的结果
+        }
+
+        // 调用 onApplyAutoFlowsError 钩子
+        try {
+          await this.onApplyAutoFlowsError(error, inputArgs);
+        } catch (hookError) {
+          console.error('FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:', hookError);
+        }
+
+        throw error;
       }
-      return results;
     };
 
     // 如果不使用缓存，直接执行

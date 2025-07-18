@@ -10,7 +10,7 @@
 import { connect, mapProps } from '@formily/react';
 import React from 'react';
 import { lazy } from '../../../../../lazy-helper';
-import { EditableFieldModel } from '../EditableFieldModel';
+import { FormFieldModel } from '../FormFieldModel';
 import { useRichTextStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));
@@ -60,7 +60,7 @@ const RichTextField = connect(
     };
   }),
 );
-export class RichTextEditableFieldModel extends EditableFieldModel {
+export class RichTextEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['richText'];
 
   get component() {

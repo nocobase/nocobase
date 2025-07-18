@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NumberPicker } from '@formily/antd-v5';
 import { connect } from '@formily/react';
 import { InputNumberProps as AntdInputNumberProps } from 'antd';
-import { NumberPicker } from '@formily/antd-v5';
 
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
@@ -48,7 +48,7 @@ const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) =
   }
   return <NumberPicker {...inputNumberProps} />;
 });
-export class NumberEditableFieldModel extends EditableFieldModel {
+export class NumberEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['number', 'integer', 'id'];
 
   get component() {

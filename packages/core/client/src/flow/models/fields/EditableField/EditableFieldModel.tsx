@@ -287,7 +287,7 @@ EditableFieldModel.registerFlow({
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('EditableFieldModel').keys()];
+        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
         if (classes.length === 1) {
           return null;
         }

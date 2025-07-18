@@ -13,6 +13,23 @@ import { FlowEngine } from '../../flowEngine';
 import type { DefaultStructure, FlowDefinition, FlowModelOptions } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
+import { FlowExitException } from '../../utils';
+
+// 全局处理测试中的未处理 Promise rejection
+const originalUnhandledRejection = process.listeners('unhandledRejection');
+process.removeAllListeners('unhandledRejection');
+process.on('unhandledRejection', (reason, promise) => {
+  // 如果是我们测试中故意抛出的错误，就忽略它
+  if (reason instanceof Error && reason.message === 'Test error') {
+    return;
+  }
+  // 其他错误仍然需要处理
+  originalUnhandledRejection.forEach((listener) => {
+    if (typeof listener === 'function') {
+      listener(reason, promise);
+    }
+  });
+});
 
 // // Mock dependencies
 // vi.mock('uid/secure', () => ({
@@ -595,6 +612,149 @@ describe('FlowModel', () => {
 
         expect(results).toEqual([]);
         // Note: Log output may be captured in stderr, not console.log
+      });
+
+      describe('lifecycle hooks', () => {
+        let TestFlowModelWithHooks: any;
+        let beforeHookSpy: any;
+        let afterHookSpy: any;
+        let errorHookSpy: any;
+
+        beforeEach(() => {
+          beforeHookSpy = vi.fn();
+          afterHookSpy = vi.fn();
+          errorHookSpy = vi.fn();
+          TestFlowModelWithHooks = class extends TestFlowModel {
+            protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+              beforeHookSpy(inputArgs);
+            }
+
+            protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+              afterHookSpy(results, inputArgs);
+            }
+
+            protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+              errorHookSpy(error, inputArgs);
+            }
+          };
+        });
+
+        test('should call lifecycle hooks in correct order', async () => {
+          const autoFlow = createAutoFlowDefinition();
+          TestFlowModelWithHooks.registerFlow(autoFlow);
+
+          const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
+          const inputArgs = { test: 'value' };
+
+          const results = await modelWithHooks.applyAutoFlows(inputArgs);
+
+          // Verify hooks were called
+          expect(beforeHookSpy).toHaveBeenCalledTimes(1);
+          expect(afterHookSpy).toHaveBeenCalledTimes(1);
+          expect(errorHookSpy).not.toHaveBeenCalled();
+
+          // Verify hook parameters
+          expect(beforeHookSpy).toHaveBeenCalledWith(inputArgs);
+
+          expect(afterHookSpy).toHaveBeenCalledWith(
+            expect.arrayContaining([expect.objectContaining({ autoStep: 'auto-result' })]),
+            inputArgs,
+          );
+        });
+
+        test('should allow beforeApplyAutoFlows to terminate flow via ctx.exit()', async () => {
+          const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
+          const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
+
+          const TestFlowModelWithExitHooks = class extends TestFlowModel {
+            protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+              beforeHookSpy(inputArgs);
+              throw new FlowExitException('autoFlows', this.uid);
+            }
+
+            protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+              afterHookSpy(results, inputArgs);
+            }
+
+            protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+              errorHookSpy(error, inputArgs);
+            }
+          };
+
+          // 在正确的类上注册流程
+          TestFlowModelWithExitHooks.registerFlow(autoFlow1);
+          TestFlowModelWithExitHooks.registerFlow(autoFlow2);
+
+          const modelWithHooks = new TestFlowModelWithExitHooks(modelOptions);
+          const results = await modelWithHooks.applyAutoFlows();
+
+          // Should have called beforeApplyAutoFlows but not afterApplyAutoFlows
+          expect(beforeHookSpy).toHaveBeenCalledTimes(1);
+          expect(afterHookSpy).not.toHaveBeenCalled();
+          expect(errorHookSpy).not.toHaveBeenCalled();
+
+          // Should return empty results since flow was terminated early
+          expect(results).toEqual([]);
+
+          // Auto flows should not have been executed
+          expect(autoFlow1.steps.autoStep.handler).not.toHaveBeenCalled();
+          expect(autoFlow2.steps.autoStep.handler).not.toHaveBeenCalled();
+        });
+
+        test('should call onApplyAutoFlowsError when flow execution fails', async () => {
+          const errorFlow = {
+            key: 'errorFlow',
+            auto: true,
+            steps: {
+              errorStep: {
+                handler: vi.fn().mockImplementation(() => {
+                  throw new Error('Test error');
+                }),
+              },
+            },
+          };
+          TestFlowModelWithHooks.registerFlow(errorFlow);
+
+          const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
+
+          // 测试错误处理钩子功能
+          await expect(modelWithHooks.applyAutoFlows()).rejects.toThrow('Test error');
+
+          // Verify hooks were called
+          expect(beforeHookSpy).toHaveBeenCalledTimes(1);
+          expect(afterHookSpy).not.toHaveBeenCalled();
+          expect(errorHookSpy).toHaveBeenCalledTimes(1);
+
+          // Verify error hook parameters
+          expect(errorHookSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              message: 'Test error',
+            }),
+            undefined, // inputArgs was not provided
+          );
+        });
+
+        test('should provide access to step results in afterApplyAutoFlows', async () => {
+          const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
+          const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
+          TestFlowModelWithHooks.registerFlow(autoFlow1);
+          TestFlowModelWithHooks.registerFlow(autoFlow2);
+
+          const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
+          await modelWithHooks.applyAutoFlows();
+
+          expect(afterHookSpy).toHaveBeenCalledTimes(1);
+
+          const [results, inputArgs] = afterHookSpy.mock.calls[0];
+
+          // Verify results array contains results from both flows
+          expect(results).toHaveLength(2);
+          expect(results[0]).toEqual({ autoStep: 'auto-result' });
+          expect(results[1]).toEqual({ autoStep: 'auto-result' });
+
+          // Verify inputArgs is undefined since none was provided
+          expect(inputArgs).toBeUndefined();
+        });
       });
     });
 

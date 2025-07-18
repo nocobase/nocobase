@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from './EditableFieldModel';
 import { JsonInput } from '../../common/JsonInput';
+import { FormFieldModel } from './FormFieldModel';
 
-export class JsonEditableFieldModel extends EditableFieldModel {
+export class JsonEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['json'];
 
   get component() {

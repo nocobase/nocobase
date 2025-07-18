@@ -11,7 +11,7 @@ import { AddFieldButton, buildFieldItems } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
-import { EditableFieldModel } from '../../fields';
+import { FormFieldModel } from '../../fields';
 import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { FormModel } from './FormModel';
 
@@ -34,7 +34,7 @@ export class FormFieldGridModel extends GridModel<{
     const fieldItems = buildFieldItems(
       collection.getFields(),
       formModelInstance,
-      'EditableFieldModel',
+      'FormFieldModel',
       'items',
       ({ defaultOptions, fieldPath }) => {
         return {
@@ -60,7 +60,7 @@ export class FormFieldGridModel extends GridModel<{
           subModelKey="items"
           subModelBaseClass={FormCustomFormItemModel}
           model={this}
-          onSubModelAdded={async (field: EditableFieldModel) => {
+          onSubModelAdded={async (field: FormFieldModel) => {
             this.context.blockModel.addAppends(field.fieldPath, true);
           }}
         />

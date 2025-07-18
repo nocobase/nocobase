@@ -8,9 +8,9 @@
  */
 
 import { TimePicker } from '@formily/antd-v5';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class TimeEditableFieldModel extends EditableFieldModel {
+export class TimeEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['time'];
 
   get component() {

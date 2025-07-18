@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '@nocobase/client';
 import { Input } from '@formily/antd-v5';
+import { FormFieldModel } from '@nocobase/client';
 
-export class SequenceFieldModel extends EditableFieldModel {
+export class SequenceFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['sequence'];
 
   get component() {
