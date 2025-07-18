@@ -34,6 +34,7 @@ import {
   isInheritedFrom,
   mergeFlowDefinitions,
   resolveDefaultParams,
+  resolveTemplateParams,
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
@@ -526,6 +527,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         if (modelStepParams !== undefined) {
           combinedParams = { ...combinedParams, ...modelStepParams };
         }
+
+        // 解析参数中的模板表达式
+        combinedParams = await resolveTemplateParams(combinedParams, flowContext);
 
         try {
           const currentStepResult = handler!(flowContext, combinedParams);

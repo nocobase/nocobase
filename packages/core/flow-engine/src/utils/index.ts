@@ -31,7 +31,7 @@ export { mergeFlowDefinitions, defineAction } from './flow-definitions';
 export { isInheritedFrom } from './inheritance';
 
 // 参数解析器
-export { resolveDefaultParams, resolveDefaultOptions } from './params-resolvers';
+export { resolveDefaultParams, resolveDefaultOptions, resolveTemplateParams } from './params-resolvers';
 
 // Schema 工具
 export { compileUiSchema, resolveStepUiSchema } from './schema-utils';
