@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRuntimeContext } from '../flowContext';
+import { FlowRuntimeContext, FlowModelContext } from '../flowContext';
 import type { FlowModel } from '../models';
 
 /**
@@ -40,15 +40,15 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
 /**
  * 解析 FlowModelMeta 中的 defaultOptions，支持静态值和函数形式
  * @param defaultOptions - 可以是静态对象或返回对象的函数
- * @param parentModel - 父模型实例，用于传递给函数形式的 defaultOptions
+ * @param ctx - 模型上下文实例，用于传递给函数形式的 defaultOptions
  * @returns 解析后的选项对象
  */
 export async function resolveDefaultOptions(
   defaultOptions:
     | Record<string, any>
-    | ((parentModel: FlowModel, extra?: any) => Record<string, any> | Promise<Record<string, any>>)
+    | ((ctx: FlowModelContext, extra?: any) => Record<string, any> | Promise<Record<string, any>>)
     | undefined,
-  parentModel: FlowModel,
+  ctx: FlowModelContext,
   extra?: any,
 ): Promise<Record<string, any>> {
   if (!defaultOptions) {
@@ -57,7 +57,7 @@ export async function resolveDefaultOptions(
 
   if (typeof defaultOptions === 'function') {
     try {
-      const result = await defaultOptions(parentModel, extra);
+      const result = await defaultOptions(ctx, extra);
       return result || {};
     } catch (error) {
       console.error('Error resolving defaultOptions function:', error);

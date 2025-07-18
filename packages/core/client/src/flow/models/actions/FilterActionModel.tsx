@@ -79,7 +79,7 @@ export class FilterActionModel extends CollectionActionModel {
 
 FilterActionModel.define({
   title: escapeT('Filter'),
-  toggleDetector: (model) => {
+  toggleDetector: ({ model }) => {
     let ret = false;
     model.findSubModel('actions', (action) => {
       if (action.constructor === FilterActionModel) {
@@ -88,7 +88,7 @@ FilterActionModel.define({
     });
     return ret;
   },
-  customRemove: async (model, item) => {
+  customRemove: async ({ model }, item) => {
     model.findSubModel('actions', (action) => {
       if (action instanceof FilterActionModel) {
         action.destroy();

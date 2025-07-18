@@ -295,7 +295,7 @@ export class FlowEngineContext extends FlowContext {
 }
 
 export class FlowModelContext extends FlowContext {
-  constructor(protected model: FlowModel) {
+  constructor(public model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }
@@ -305,7 +305,7 @@ export class FlowModelContext extends FlowContext {
 }
 
 export class FlowForkModelContext extends FlowContext {
-  constructor(protected model: FlowModel) {
+  constructor(public model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }

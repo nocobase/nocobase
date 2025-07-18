@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import { Collection, CollectionField, DataSource, DataSourceManager } from '../data-source';
 import type { FlowModel } from '../models';
+import type { FlowModelContext } from '../flowContext';
 import type { ModelConstructor } from '../types';
 import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
 import { isInheritedFrom } from './inheritance';
@@ -32,8 +33,8 @@ interface MenuGroup extends MenuItemBase {
 
 interface MenuItem extends MenuItemBase {
   createModelOptions?: (() => Promise<any>) | any;
-  toggleDetector?: (model: FlowModel) => boolean;
-  customRemove?: (model: FlowModel, item: any) => Promise<void>;
+  toggleDetector?: (ctx: FlowModelContext) => boolean;
+  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
   children?: MenuItem[] | (() => Promise<MenuItem[]>);
 }
 
@@ -65,9 +66,9 @@ interface MenuBuilderFlowContext {
 
 // ==================== 数据源工具函数 ====================
 
-function getDataSourcesWithCollections(model: FlowModel): DataSourceInfo[] {
+function getDataSourcesWithCollections(ctx: FlowModelContext): DataSourceInfo[] {
   try {
-    const dataSourceManager: DataSourceManager = model.context.dataSourceManager;
+    const dataSourceManager: DataSourceManager = ctx.dataSourceManager;
 
     if (!dataSourceManager) return [];
 
@@ -114,14 +115,14 @@ function buildMenuItem(className: string, meta: any, model: FlowModel): MenuItem
   if (meta?.children) {
     return {
       ...baseItem,
-      children: async () => processMetaChildren(meta.children, model, `${className}.`),
+      children: async () => processMetaChildren(meta.children, model.context, `${className}.`),
     };
   }
 
   const item: MenuItem = {
     ...baseItem,
     createModelOptions: async () => {
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
       return {
         ...defaultOptions,
         use: className,
@@ -217,7 +218,7 @@ function createAssociationRecordsMenuItem(
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
     fields: associationFields,
-    defaultOptions: (_parentModel: any, field: CollectionField) => {
+    defaultOptions: (_ctx: any, field: CollectionField) => {
       return {
         use: className,
         stepParams: {
@@ -340,14 +341,14 @@ function buildDynamicMetaChildren(
 // ==================== 子项处理函数 ====================
 
 async function resolveMetaChildren(
-  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>) | undefined,
-  parentModel: FlowModel,
+  children: any[] | ((ctx: FlowModelContext) => any[] | Promise<any[]>) | undefined,
+  ctx: FlowModelContext,
 ): Promise<any[]> {
   if (!children) return [];
 
   if (typeof children === 'function') {
     try {
-      const result = await children(parentModel);
+      const result = await children(ctx);
       return result || [];
     } catch (error) {
       console.error('Error resolving meta children function:', error);
@@ -359,11 +360,11 @@ async function resolveMetaChildren(
 }
 
 export async function processMetaChildren(
-  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>),
-  parentModel: FlowModel,
+  children: any[] | ((ctx: FlowModelContext) => any[] | Promise<any[]>),
+  ctx: FlowModelContext,
   keyPrefix = '',
 ): Promise<MenuItem[]> {
-  const resolvedChildren = await resolveMetaChildren(children, parentModel);
+  const resolvedChildren = await resolveMetaChildren(children, ctx);
   const result: MenuItem[] = [];
 
   for (let i = 0; i < resolvedChildren.length; i++) {
@@ -371,7 +372,7 @@ export async function processMetaChildren(
     const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
 
     if (child.children) {
-      const nestedChildren = await processMetaChildren(child.children, parentModel, `${childKey}.`);
+      const nestedChildren = await processMetaChildren(child.children, ctx, `${childKey}.`);
       result.push({
         key: childKey,
         label: child.title,
@@ -379,7 +380,7 @@ export async function processMetaChildren(
         children: nestedChildren,
       });
     } else {
-      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel);
+      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx);
       result.push({
         key: childKey,
         label: child.title,
@@ -402,12 +403,12 @@ export async function processMetaChildren(
 
 // 处理数据块子项
 async function processDataBlockChildren(
-  children: any[] | ((parentModel: FlowModel) => any[] | Promise<any[]>),
-  parentModel: FlowModel,
+  children: any[] | ((ctx: FlowModelContext) => any[] | Promise<any[]>),
+  ctx: FlowModelContext,
   dataSources: DataSourceInfo[],
   keyPrefix = '',
 ): Promise<MenuItem[]> {
-  const resolvedChildren = await resolveMetaChildren(children, parentModel);
+  const resolvedChildren = await resolveMetaChildren(children, ctx);
   const result: MenuItem[] = [];
 
   for (let i = 0; i < resolvedChildren.length; i++) {
@@ -415,7 +416,7 @@ async function processDataBlockChildren(
     const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
 
     if (child.children) {
-      const nestedChildren = await processDataBlockChildren(child.children, parentModel, dataSources, `${childKey}.`);
+      const nestedChildren = await processDataBlockChildren(child.children, ctx, dataSources, `${childKey}.`);
       result.push({
         key: childKey,
         label: child.title,
@@ -445,7 +446,7 @@ async function processDataBlockChildren(
               label: dataSource?.displayName || dataSourceKey,
               children: await Promise.all(
                 fields.map(async (field) => {
-                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, field);
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx, field);
                   return {
                     key: `${childKey}.${dataSourceKey}.${field.name}`,
                     label: field.uiSchema?.title || field.name,
@@ -483,7 +484,7 @@ async function processDataBlockChildren(
                   );
                 })
                 .map(async (collection) => {
-                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, parentModel, {
+                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx, {
                     dataSourceKey: dataSource.key,
                     collectionName: collection.name,
                   });
@@ -574,7 +575,9 @@ function getFieldModelClass(fieldInterface: string, fieldClasses: any[], default
 }
 
 function createFieldToggleDetector(fieldName: string, subModelKey: string) {
-  return (model: FlowModel) => {
+  return (ctx: FlowModelContext) => {
+    // FlowModelContext has a model property
+    const model = ctx.model;
     const subModels = model.subModels?.[subModelKey];
 
     if (Array.isArray(subModels)) {
@@ -587,7 +590,9 @@ function createFieldToggleDetector(fieldName: string, subModelKey: string) {
 }
 
 function createFieldCustomRemove(fieldName: string, subModelKey: string) {
-  return async (model: FlowModel, _item: any) => {
+  return async (ctx: FlowModelContext, _item: any) => {
+    // FlowModelContext has a model property
+    const model = ctx.model;
     const subModels = model.subModels?.[subModelKey];
 
     if (Array.isArray(subModels)) {
@@ -740,13 +745,13 @@ async function buildDataSourceBlockItems(
   model: FlowModel,
   hasCurrentFlowContext = false,
 ): Promise<MenuItem[]> {
-  const dataSources = getDataSourcesWithCollections(model);
+  const dataSources = getDataSourcesWithCollections(model.context);
   const CollectionBlockModelClass = model.flowEngine.getModelClass('CollectionBlockModel');
 
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
       const meta = _.cloneDeep(ModelClass.meta) || { title: className };
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model);
+      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
 
       if (!isInheritedFrom(ModelClass, CollectionBlockModelClass)) {
         return {
@@ -769,8 +774,8 @@ async function buildDataSourceBlockItems(
           meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedFields);
           meta.children.forEach(async (child) => {
             const childDefault = child.defaultOptions;
-            child.defaultOptions = async (model, extra) => {
-              const options = await resolveDefaultOptions(childDefault, model, extra);
+            child.defaultOptions = async (ctx, extra) => {
+              const options = await resolveDefaultOptions(childDefault, ctx, extra);
               return _.merge(_.cloneDeep(defaultOptions), options);
             };
           });
@@ -782,7 +787,7 @@ async function buildDataSourceBlockItems(
           key: className,
           label: meta.title || className,
           icon: meta.icon,
-          children: await processDataBlockChildren(meta.children, model, dataSources, `${className}.`),
+          children: await processDataBlockChildren(meta.children, model.context, dataSources, `${className}.`),
         };
       }
 
