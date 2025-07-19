@@ -635,6 +635,7 @@
   "Dragging": "Dragging",
   "Popup": "Popup",
   "Column Settings": "Column Settings",
+  "visible": "visible",
   "Trigger workflow": "Trigger workflow",
   "Request API": "Request API",
   "Assign field values": "Assign field values",

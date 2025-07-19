@@ -9,14 +9,15 @@
 
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Button, Space } from 'antd';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { observer, useField, useFieldSchema } from '@formily/react';
+import { Typography } from 'antd';
+import React, { createContext, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { FormProvider, SchemaComponent } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
+import { useToken } from '../../../style';
 import { Action, ActionProps } from '../action';
 import { StablePopover } from '../popover';
 
@@ -105,12 +106,23 @@ export const EditTableAction = withDynamicSchemaProps((props: EditTableActionPro
 
 EditTableAction.displayName = 'EditTableAction';
 
-// Removed SaveColumnSettings component as per user request
-
-const className1 = css`
+const createHeaderStyle = (token: any) => css`
   display: flex;
-  justify-content: flex-end;
-  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${token.paddingSM}px ${token.padding}px;
+  border-bottom: 1px solid ${token.colorBorderSecondary};
+  margin-bottom: 0;
+`;
+
+const createStatsTextStyle = (token: any) => css`
+  font-size: ${token.fontSize}px;
+  color: ${token.colorTextSecondary};
+  font-weight: ${token.fontWeightStrong};
+`;
+
+const contentStyle = css`
+  padding: 0;
 `;
 
 const EditTableActionContent = observer(
@@ -133,9 +145,19 @@ const EditTableActionContent = observer(
   }) => {
     const compile = useCompile();
     const { t } = useTranslation();
+    const { token } = useToken();
+    const [currentColumns, setCurrentColumns] = useState(columns);
+
+    // Calculate stats for header
+    const visibleCount = useMemo(() => {
+      return currentColumns.filter((col) => col.visible).length;
+    }, [currentColumns]);
+    const totalCount = useMemo(() => {
+      return currentColumns.length;
+    }, [currentColumns]);
 
     const schema = useMemo(() => {
-      const finalColumns = columns || field.dataSource || [];
+      const finalColumns = currentColumns || field.dataSource || [];
 
       return {
         type: 'object',
@@ -146,41 +168,43 @@ const EditTableActionContent = observer(
             'x-component': 'EditTable',
             'x-component-props': {
               columns: finalColumns,
+              onChange: (columns) => {
+                onSubmit?.({ columns });
+                setCurrentColumns(columns);
+              },
             },
           },
         },
       };
-    }, [field?.dataSource, fieldSchema?.default, columns]);
+    }, [field?.dataSource, fieldSchema?.default, currentColumns]);
 
     return (
       <form>
         <FormProvider form={form}>
-          <SchemaComponent schema={schema} />
-          <div className={className1}>
-            <Space>
-              <Button
-                onClick={async () => {
-                  await form.reset();
-                  onReset?.(form.values);
-                  field.title = compile(fieldSchema.title) || t('Column Settings');
-                  setVisible(false);
-                }}
-              >
-                {t('Reset')}
-              </Button>
-              <Button
-                type={'primary'}
-                htmlType={'submit'}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSubmit?.(form.values);
-                  setVisible(false);
-                }}
-              >
-                {t('Save')}
-              </Button>
-            </Space>
+          <div className={createHeaderStyle(token)}>
+            <span className={createStatsTextStyle(token)}>
+              {t('visible')} {visibleCount}/{totalCount}
+            </span>
+            <Typography.Link
+              onClick={async () => {
+                await form.reset();
+                onReset?.(form.values);
+                field.title = compile(fieldSchema.title) || t('Column Settings');
+                setVisible(false);
+              }}
+            >
+              {t('Reset')}
+            </Typography.Link>
+          </div>
+          <div
+            className={contentStyle}
+            style={{
+              maxHeight: 'calc(100vh - 300px)',
+              overflowY: 'auto',
+              contain: 'layout style',
+            }}
+          >
+            <SchemaComponent schema={schema} />
           </div>
         </FormProvider>
       </form>
