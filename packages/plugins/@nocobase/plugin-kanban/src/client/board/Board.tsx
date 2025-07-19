@@ -36,8 +36,9 @@ Columns.displayName = 'Columns';
 const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
+  const { columnWidth } = props;
   const height = useKanbanBlockHeight();
-  const { styles } = useStyles();
+  const { styles } = useStyles({ columnWidth });
 
   return (
     <div className={styles.nbBord}>

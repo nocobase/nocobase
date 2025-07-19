@@ -22,6 +22,7 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 import { i18nText } from '../../utils';
+import { NAMESPACE } from '../../../locale';
 
 const collection = {
   name: 'applications',
@@ -147,6 +148,21 @@ export const formSchema: ISchema = {
     pinned: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
+    },
+    'options.authManager': {
+      type: 'object',
+      'x-decorator': 'FormItem',
+      'x-component': 'Fieldset',
+      title: `{{t("Authentication options", { ns: "${NAMESPACE}" })}}`,
+      properties: {
+        'jwt.secret': {
+          type: 'string',
+          title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t("An independent JWT secret ensures data and session isolation from other applications.", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'JwtSecretInput',
+        },
+      },
     },
   },
 };

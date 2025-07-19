@@ -24,7 +24,7 @@ export class JwtService {
   ) {
     const { secret, expiresIn } = options;
     this.options = {
-      secret: secret,
+      secret: secret || process.env.APP_KEY,
       expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }

@@ -33,6 +33,8 @@ import {
 import { AppNotFound } from '../../../common/AppNotFound';
 import { useDocumentTitle } from '../../../document-title';
 import { useGlobalTheme } from '../../../global-theme';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { Icon } from '../../../icon';
 import {
   NocoBaseDesktopRouteType,
@@ -40,8 +42,10 @@ import {
   useCurrentRoute,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
+import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { RemoteSchemaComponent, SchemaComponent, SchemaComponentOptions } from '../../core';
@@ -53,10 +57,6 @@ import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
-import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
-import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
-import { VariableScope } from '../../../variables/VariableScope';
 
 interface PageProps {
   currentTabUid: string;
@@ -413,6 +413,7 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   const { t } = useTranslation();
   const { t: routeT } = useRouteTranslation();
   const [pageTitle, setPageTitle] = useState(() => t(fieldSchema.title));
+  const { active } = useKeepAlive();
 
   const disablePageHeader = fieldSchema['x-component-props']?.disablePageHeader;
   const currentRoute = useCurrentRoute();
@@ -424,11 +425,11 @@ const NocoBasePageHeader = React.memo(({ activeKey, className }: { activeKey: st
   useEffect(() => {
     const title =
       t(fieldSchema.title, { ns: NAMESPACE_UI_SCHEMA }) || t(currentRoute?.title, { ns: NAMESPACE_UI_SCHEMA });
-    if (title) {
+    if (title && active) {
       setDocumentTitle(title);
       setPageTitle(title);
     }
-  }, [fieldSchema.title, pageTitle, setDocumentTitle, t, currentRoute?.title]);
+  }, [fieldSchema.title, pageTitle, setDocumentTitle, t, currentRoute?.title, active]);
 
   return (
     <>
