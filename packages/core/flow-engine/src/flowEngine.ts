@@ -199,6 +199,7 @@ export class FlowEngine {
     if (this.#modelClasses.has(name)) {
       console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
     }
+    Object.defineProperty(modelClass, 'name', { value: name });
     this.#modelClasses.set(name, modelClass);
   }
 
