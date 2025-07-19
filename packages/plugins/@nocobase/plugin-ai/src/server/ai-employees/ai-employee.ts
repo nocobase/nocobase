@@ -79,7 +79,7 @@ export class AIEmployee {
     const provider = new Provider({
       app: this.ctx.app,
       serviceOptions: service.options,
-      chatOptions: {
+      modelOptions: {
         ...modelSettings,
       },
     });

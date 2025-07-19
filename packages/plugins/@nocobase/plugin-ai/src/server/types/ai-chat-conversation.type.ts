@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Transaction } from '@nocobase/database';
 
 export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
@@ -24,7 +33,13 @@ export type AIChatContext = {
     tool_call_id?: string;
     tool_calls?: AIToolCall[];
   }[];
-  tools: any[];
+  tools?: any[];
+  structuredOutput?: {
+    name: string;
+    description?: string;
+    schema: any;
+    strict?: boolean;
+  };
 };
 
 export type AIMessage = {

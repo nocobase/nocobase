@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import _ from 'lodash';
 import {
   AIChatContext,
@@ -94,7 +103,7 @@ class AIChatConversationImpl implements AIChatConversation {
   }
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
-    const messages = await this.formatMessages(aiMessages);
+    const messages = this.formatMessages(aiMessages);
     if (options?.systemPrompt) {
       messages.unshift({
         role: 'system',

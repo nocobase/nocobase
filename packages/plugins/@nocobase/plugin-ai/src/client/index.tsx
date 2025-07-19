@@ -26,6 +26,7 @@ const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesPro
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
+const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
@@ -102,6 +103,11 @@ export class PluginAIClient extends Plugin {
       title: tval('Messages'),
       Component: MessagesSettings,
     });
+    this.aiManager.chatSettings.set('structured-output', {
+      title: tval('Structured output'),
+      Component: StructuredOutputSettings,
+    });
+
     // this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
     // this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
     this.aiManager.registerTool(...defineCollectionsTool);
