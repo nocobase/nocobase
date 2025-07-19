@@ -646,7 +646,7 @@
   "Are you sure you don't want to save?": "저장하지 않으려고 하시겠습니까?",
   "Dragging": "드래깅 중",
   "Popup": "팝업",
-  "Edit table": "테이블 편집",
+  "Column Settings": "열 설정",
   "Trigger workflow": "워크플로우 트리거",
   "Request API": "API 요청",
   "Assign field values": "필드 값 할당",

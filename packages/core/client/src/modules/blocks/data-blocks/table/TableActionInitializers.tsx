@@ -96,7 +96,7 @@ const commonOptions = {
     },
     {
       type: 'item',
-      title: "{{t('Edit table')}}",
+      title: "{{t('Column Settings')}}",
       name: 'editTable',
       Component: 'EditTableActionInitializer',
       schema: {
