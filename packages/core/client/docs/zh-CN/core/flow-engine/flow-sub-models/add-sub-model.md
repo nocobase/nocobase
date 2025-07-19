@@ -1,56 +1,75 @@
-# AddSubModel
+# AddSubModelButton
 
-## 参数说明
+用于在指定的 `FlowModel` 中添加子模型（subModel）。支持异步加载、分组、子菜单、自定义模型继承规则等多种配置方式。
+
+---
+
+## Props
 
 ```ts
-export interface AddSubModelButtonProps {
-  // 往哪个 model 里添加子 model
+interface AddSubModelButtonProps {
   model: FlowModel;
-  // 子 model 的 key，也就是 model.subModels.subModelKey
   subModelKey: string;
-  // 子 model 是对象还是数组
   subModelType?: 'object' | 'array';
-  // 可以使用的子 model 列表
   items?: SubModelItemsType;
-  // 继承此基类的 Model 都会罗列出来
   subModelBaseClass?: string | ModelConstructor;
-  // 继承此基类的 Model 都会罗列出来，并按基类分组展示
   subModelBaseClasses?: Array<string | ModelConstructor>;
-  // 子 model 初始化时触发
   afterSubModelInit?: (subModel: FlowModel) => Promise<void>;
-  // 子 model 添加之后触发
   afterSubModelAdd?: (subModel: FlowModel) => Promise<void>;
-  // 子 model 移除之后触发
   afterSubModelRemove?: (subModel: FlowModel) => Promise<void>;
-  // 按钮的标题
   children?: React.ReactNode;
   keepDropdownOpen?: boolean;
 }
+```
 
-export type SubModelItemsType = SubModelItem[] | ((ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
+| 参数                    | 类型                                                            | 说明                                  |
+| --------------------- | ------------------------------------------------------------- | ----------------------------------- |
+| `model`               | `FlowModel`                                                   | **必填**。要添加子模型的目标模型。                 |
+| `subModelKey`         | `string`                                                      | **必填**。子模型在 `model.subModels` 中的键名。 |
+| `subModelType`        | `'object' \| 'array'`                                         | 子模型的数据结构类型，默认为 `'array'`。           |
+| `items`               | `SubModelItem[]` \| `(ctx) => SubModelItem[] \| Promise<...>` | 菜单项定义，支持静态或异步生成。                    |
+| `subModelBaseClass`   | `string` \| `ModelConstructor`                                | 指定一个基类，列出继承该类的所有模型作为菜单项。            |
+| `subModelBaseClasses` | `(string \| ModelConstructor)[]`                              | 指定多个基类，自动按组列出继承模型。                  |
+| `afterSubModelInit`   | `(subModel) => Promise<void>`                                 | 子模型初始化后回调。                          |
+| `afterSubModelAdd`    | `(subModel) => Promise<void>`                                 | 子模型添加后回调。                           |
+| `afterSubModelRemove` | `(subModel) => Promise<void>`                                 | 子模型移除后回调。                           |
+| `children`            | `React.ReactNode`                                             | 按钮内容，可自定义为文字或图标。                    |
+| `keepDropdownOpen`    | `boolean`                                                     | 添加后是否保持下拉菜单展开。默认自动关闭。               |
 
-export interface SubModelItem {
-  // 标识
+---
+
+## SubModelItem 类型定义
+
+```ts
+interface SubModelItem {
   key?: string;
-  // 显示文案
   label?: string;
-  // 类型
   type?: 'group' | 'divider';
-  // 是否禁用
   disabled?: boolean;
-  // 图标
   icon?: React.ReactNode;
-  // type 为空时，为子菜单
-  // type: group 时，为菜单分组
   children?: SubModelItemsType;
-  // 使用哪个 Model
   useModel?: string;
-  // model 的初始化参数
-  createModelOptions?: { props?: Record<string, any>; stepParams?: Record<string, any> };
-  // 支持开关功能，开表示添加，关表示移除。
-  toggleable?: boolean;
+  createModelOptions?: {
+    props?: Record<string, any>;
+    stepParams?: Record<string, any>;
+  };
+  toggleable?: boolean | ((model: FlowModel) => boolean);
 }
 ```
+
+| 字段                   | 类型                       | 说明                         |
+| -------------------- | ------------------------ | -------------------------- |
+| `key`                | `string`                 | 唯一标识。 |
+| `label`              | `string`                 | 显示文本。                      |
+| `type`               | `'group'` \| `'divider'` | 分组或分隔符。省略时为普通项或子菜单。        |
+| `disabled`           | `boolean`                | 是否禁用当前项。                   |
+| `icon`               | `React.ReactNode`        | 图标内容。                      |
+| `children`           | `SubModelItemsType`      | 子菜单项，用于嵌套分组或子菜单。           |
+| `useModel`           | `string`                 | 指定使用的 Model 类型（注册名）。       |
+| `createModelOptions` | `object`                 | 初始化模型时的参数。                 |
+| `toggleable`         | `boolean` \| `(model: FlowModel) => boolean` | 开关形态，已添加则移除，未添加则添加（只允许一个）。 |
+
+---
 
 ## 示例
 
@@ -74,8 +93,8 @@ export interface SubModelItem {
 
 <code src="./demos/add-sub-model-toggleable.tsx"></code>
 
-- 添加 `toggleable: true` 标记即可
-- toggleable 的 Model 只能有一个
+- 简单场景 `toggleable: true` 即可，默认根据类名查找，同一个类的实例只允许出现一次
+- 自定义查找规则：`toggleable: (model: FlowModel) => boolean`
 
 ### 异步 items
 
