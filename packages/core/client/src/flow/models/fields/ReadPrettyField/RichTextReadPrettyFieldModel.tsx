@@ -15,7 +15,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['richText'];
-  @reactive
+  // @reactive
   public render() {
     const { textOnly = true } = this.props;
     const value = this.getValue();

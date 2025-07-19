@@ -9,6 +9,8 @@
 
 import { APIClient } from '@nocobase/sdk';
 import { vi } from 'vitest';
+import React from 'react';
+import { render } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
 import type { DefaultStructure, FlowDefinition, FlowModelOptions } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
@@ -70,28 +72,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
   return new FlowEngine();
-  const applyFlowCache = new Map();
-  const mockEngine = {
-    getModel: vi.fn(),
-    createModel: vi.fn(),
-    moveModel: vi.fn().mockReturnValue(true),
-    removeModel: vi.fn().mockReturnValue(true),
-    saveModel: vi.fn().mockResolvedValue({ success: true }),
-    destroyModel: vi.fn().mockResolvedValue({ success: true }),
-    getAction: vi.fn(),
-    translate: vi.fn((key: string) => key),
-    reactView: null as any,
-    applyFlowCache,
-  } as Partial<FlowEngine>;
-
-  // Mock the cache delete method to track delete calls while preserving original behavior
-  (mockEngine.applyFlowCache as any).delete = vi.fn(mockEngine.applyFlowCache.delete.bind(mockEngine.applyFlowCache));
-  // Add the instance method to constructor as static method for testing access
-  (mockEngine.constructor as any).generateApplyFlowCacheKey = vi.fn(
-    (prefix: string, type: string, modelUid: string) => `${prefix}-${type}-${modelUid}`,
-  );
-
-  return mockEngine as FlowEngine;
 };
 
 const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
@@ -1249,6 +1229,74 @@ describe('FlowModel', () => {
       model = new FlowModel(modelOptions);
     });
 
+    describe('Component Lifecycle Hooks', () => {
+      test('should call onMount and onUnmount with FlowModelRenderer', () => {
+        const mountSpy = vi.fn();
+        const unmountSpy = vi.fn();
+
+        class TestModel extends FlowModel {
+          protected onMount(): void {
+            mountSpy();
+          }
+
+          protected onUnmount(): void {
+            unmountSpy();
+          }
+
+          public render(): any {
+            return React.createElement('div', { 'data-testid': 'test-component' }, 'Test Component');
+          }
+        }
+
+        const testModel = new TestModel(modelOptions);
+
+        // Test with FlowModelRenderer (simulated)
+        const { unmount } = render(testModel.render());
+
+        // Verify onMount was called
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+
+        // Unmount and verify onUnmount was called
+        unmount();
+        expect(unmountSpy).toHaveBeenCalledTimes(1);
+      });
+
+      test('should call onMount and onUnmount as children', () => {
+        const mountSpy = vi.fn();
+        const unmountSpy = vi.fn();
+
+        class TestModel extends FlowModel {
+          protected onMount(): void {
+            mountSpy();
+          }
+
+          protected onUnmount(): void {
+            unmountSpy();
+          }
+
+          public render(): any {
+            return React.createElement('span', null, 'Child Component');
+          }
+        }
+
+        const testModel = new TestModel(modelOptions);
+
+        // Test as children: <TestComponent>{model.render()}</TestComponent>
+        const TestComponent = ({ children }: { children: React.ReactNode }) => {
+          return React.createElement('div', { 'data-testid': 'parent' }, children);
+        };
+
+        const { unmount } = render(React.createElement(TestComponent, null, testModel.render()));
+
+        // Verify onMount was called
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+
+        // Unmount and verify onUnmount was called
+        unmount();
+        expect(unmountSpy).toHaveBeenCalledTimes(1);
+      });
+    });
+
     describe('save operations', () => {
       test('should save model through FlowEngine', async () => {
         flowEngine.saveModel = vi.fn().mockResolvedValue({ success: true, id: 'saved-id' });
@@ -1322,8 +1370,10 @@ describe('FlowModel', () => {
         const result = model.render();
 
         expect(result).toBeDefined();
-        expect(typeof result.type).toBe('string');
+        expect(React.isValidElement(result)).toBe(true);
         expect(typeof result.props).toBe('object');
+        expect(typeof result.type).toBe('object');
+        expect(result.type.displayName).toBe('ReactiveWrapper(FlowModel)');
       });
 
       test('should rerender with previous auto flows', async () => {

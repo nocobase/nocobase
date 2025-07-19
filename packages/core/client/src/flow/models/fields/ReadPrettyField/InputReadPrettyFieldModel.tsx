@@ -14,7 +14,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL'] as any;
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix, suffix } = this.props;
@@ -32,7 +32,7 @@ export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
 export class InputReadPrettyFieldModel2 extends ReadPrettyFieldModel {
   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix, suffix } = this.props;

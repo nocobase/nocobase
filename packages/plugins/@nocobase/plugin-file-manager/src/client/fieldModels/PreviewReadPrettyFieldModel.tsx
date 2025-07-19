@@ -146,7 +146,7 @@ export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
     return true;
   }
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     return <Preview value={castArray(value)} {...this.props} />;

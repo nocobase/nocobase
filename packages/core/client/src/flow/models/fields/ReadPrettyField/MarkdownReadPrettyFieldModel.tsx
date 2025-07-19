@@ -15,7 +15,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class MarkdownReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['markdown'];
-  @reactive
+  // @reactive
   public render() {
     const { textOnly = true } = this.props;
     const value = this.getValue();

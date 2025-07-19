@@ -8,6 +8,7 @@
  */
 
 import { batch, define, observable, observe } from '@formily/reactive';
+import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
@@ -74,6 +75,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private observerDispose: () => void;
   #flowContext: FlowModelContext;
 
+  /**
+   * 原始 render 方法的引用
+   */
+  private _originalRender: (() => any) | null = null;
+
+  /**
+   * 缓存的响应式包装器组件（每个实例一个）
+   */
+  private _reactiveWrapperCache?: React.ComponentType;
+
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
       throw new Error('FlowModel must be initialized with a FlowEngine instance.');
@@ -126,6 +137,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         fork.rerender();
       });
     });
+
+    // 设置 render 方法的响应式包装
+    try {
+      this.setupReactiveRender();
+    } catch (error) {
+      console.error(`Failed to setup reactive render for ${this.constructor.name}:`, error);
+      // 如果包装失败，确保 render 方法仍然可用
+      if (typeof this.render !== 'function') {
+        this.render = () => React.createElement('div', null, 'Render method not available');
+      }
+    }
   }
 
   get context() {
@@ -793,6 +815,134 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     this.flowEngine.applyFlowCache.set(cacheKey, { status: 'pending', promise });
     return await promise;
+  }
+
+  /**
+   * 智能检测是否应该跳过响应式包装
+   * @private
+   */
+  private shouldSkipReactiveWrapping(): boolean {
+    // 1. 检查是否已经被包装过
+    if ((this.render as any).__isReactiveWrapped) {
+      return true;
+    }
+
+    // 2. 检查 render 方法的返回值类型
+    if (this.isRenderMethodReturningFunction()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 检查 render 方法是否返回函数
+   * @private
+   */
+  private isRenderMethodReturningFunction(): boolean {
+    try {
+      // 创建一个临时的 render 调用来检测返回类型
+      const originalRender = Object.getPrototypeOf(this).render;
+      if (originalRender && originalRender !== FlowModel.prototype.render) {
+        const result = originalRender.call(this);
+        return typeof result === 'function';
+      }
+    } catch (error) {
+      // 如果调用出错，假设不返回函数
+    }
+
+    return false;
+  }
+
+  /**
+   * 设置 render 方法的响应式包装
+   * @private
+   */
+  private setupReactiveRender(): void {
+    // 确保 render 方法存在且是函数
+    if (typeof this.render !== 'function' || this.shouldSkipReactiveWrapping()) {
+      return;
+    }
+
+    try {
+      // 保存原始 render 方法的引用
+      const originalRender = this.render;
+      this._originalRender = originalRender;
+
+      // 验证原始方法是函数
+      if (typeof originalRender !== 'function') {
+        console.error(`FlowModel ${this.constructor.name}: original render method is not a function`, originalRender);
+        return;
+      }
+
+      // 创建缓存的响应式包装器组件工厂（只创建一次）
+      const createReactiveWrapper = (modelInstance: any) => {
+        const ReactiveWrapper = observer(() => {
+          // 触发响应式更新的关键属性访问
+          modelInstance.props; // 确保 props 变化时触发更新
+
+          // 添加生命周期钩子
+          React.useEffect(() => {
+            // 组件挂载时调用 onMount 钩子
+            if (typeof modelInstance.onMount === 'function') {
+              modelInstance.onMount();
+            }
+
+            // 返回清理函数，组件卸载时调用 onUnmount 钩子
+            return () => {
+              if (typeof modelInstance.onUnmount === 'function') {
+                modelInstance.onUnmount();
+              }
+            };
+          }, []);
+
+          // 调用原始渲染方法
+          return originalRender.call(modelInstance);
+        });
+
+        // 设置显示名称便于调试
+        ReactiveWrapper.displayName = `ReactiveWrapper(${modelInstance.constructor.name})`;
+
+        return ReactiveWrapper;
+      };
+
+      const wrappedRender = function (this: any) {
+        // 当前实例创建或获取缓存的 ReactiveWrapper
+        if (!this._reactiveWrapperCache) {
+          this._reactiveWrapperCache = createReactiveWrapper(this);
+        }
+
+        // 返回响应式组件
+        return React.createElement(this._reactiveWrapperCache);
+      };
+
+      // 标记已被包装
+      (wrappedRender as any).__isReactiveWrapped = true;
+      (wrappedRender as any).__originalRender = originalRender;
+
+      // 替换 render 方法
+      this.render = wrappedRender;
+    } catch (error) {
+      console.error(`FlowModel ${this.constructor.name}: Error during render method wrapping:`, error);
+    }
+  }
+
+  /**
+   * 组件挂载时的生命周期钩子
+   * 子类可以重写此方法来添加挂载时的逻辑
+   * @protected
+   */
+  protected onMount(): void {
+    // 默认为空实现，子类可以重写
+  }
+
+  /**
+   * 组件卸载时的生命周期钩子
+   * 子类可以重写此方法来添加卸载时的逻辑
+   * @protected
+   */
+  protected onUnmount(): void {
+    // 默认为空实现，子类可以重写
   }
 
   /**

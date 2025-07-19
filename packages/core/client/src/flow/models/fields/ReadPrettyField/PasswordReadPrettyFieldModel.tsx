@@ -14,7 +14,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
   static readonly supportedFieldInterfaces = ['password'];
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     if (!value) {

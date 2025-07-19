@@ -25,7 +25,7 @@ export class MapReadPrettyFieldModel extends ReadPrettyFieldModel {
     return null;
   }
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     return (
