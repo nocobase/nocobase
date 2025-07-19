@@ -18,8 +18,117 @@ import { FormProvider, SchemaComponent } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { useToken } from '../../../style';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { Action, ActionProps } from '../action';
 import { StablePopover } from '../popover';
+import { ConfigProvider } from 'antd';
+import { Popup } from 'antd-mobile';
+import { CloseOutline } from 'antd-mobile-icons';
+import { useZIndexContext } from '../action/zIndexContext';
+import { isDesktop } from 'react-device-detect';
+
+// Mobile container component
+const EditTableActionMobileContainer = (props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trigger: 'click' | 'hover';
+  content: React.ReactElement;
+  children: React.ReactElement;
+}) => {
+  const { t } = useTranslation();
+  const { open, onOpenChange, content, children } = props;
+  const parentZIndex = useZIndexContext();
+  const { token } = useToken();
+
+  const newZIndex = parentZIndex + 1000; // Use a simple increment
+
+  const closePopup = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  const theme = useMemo(() => {
+    return {
+      token: {
+        zIndexPopupBase: newZIndex,
+      },
+    };
+  }, [newZIndex]);
+
+  const bodyStyle = useMemo(
+    () => ({
+      borderTopLeftRadius: `${token.borderRadius}px`,
+      borderTopRightRadius: `${token.borderRadius}px`,
+      maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+      overflow: 'auto',
+      zIndex: newZIndex,
+    }),
+    [newZIndex, token.borderRadius],
+  );
+
+  const zIndexStyle = useMemo(() => ({ zIndex: newZIndex }), [newZIndex]);
+
+  // Get mobile container
+  const getMobileContainer = useCallback(() => {
+    if (!isDesktop) {
+      return (document.querySelector('.mobile-container') as HTMLElement) || document.body;
+    }
+    return document.body;
+  }, []);
+
+  return (
+    <ConfigProvider theme={theme}>
+      {children}
+      <Popup
+        visible={open}
+        onClose={closePopup}
+        onMaskClick={closePopup}
+        getContainer={getMobileContainer}
+        bodyStyle={bodyStyle}
+        maskStyle={zIndexStyle}
+        style={zIndexStyle}
+        closeOnSwipe
+        destroyOnClose
+      >
+        <div
+          style={{
+            height: 'var(--nb-mobile-page-header-height)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: `1px solid ${token.colorSplit}`,
+            position: 'sticky',
+            top: 0,
+            backgroundColor: token.colorBgContainer,
+            zIndex: 1000,
+          }}
+        >
+          {/* used to make the title center */}
+          <span
+            style={{
+              display: 'inline-block',
+              padding: `${token.padding}px`,
+              visibility: 'hidden',
+            }}
+          >
+            <CloseOutline />
+          </span>
+          <span>{t('Column Settings')}</span>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: `${token.padding}px`,
+              cursor: 'pointer',
+            }}
+            onClick={closePopup}
+          >
+            <CloseOutline />
+          </span>
+        </div>
+        <div style={{ padding: `${token.padding}px` }}>{content}</div>
+      </Popup>
+    </ConfigProvider>
+  );
+};
 
 export const EditTableActionContext = createContext<any>(null);
 EditTableActionContext.displayName = 'EditTableActionContext';
@@ -50,7 +159,11 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
   const form = useMemo<Form>(() => props.form || createForm(), [props.form]);
 
   // Compatible with old UISchema (before 1.0), keeping useProps for compatibility
-  const { columns, onSubmit, onReset, Container = StablePopover, icon, onlyIcon } = useProps(props);
+  const { columns, onSubmit, onReset, Container: propContainer, icon, onlyIcon } = useProps(props);
+
+  // Use mobile container in mobile layout
+  const { isMobileLayout } = useMobileLayout();
+  const Container = propContainer || (isMobileLayout ? EditTableActionMobileContainer : StablePopover);
 
   const onOpenChange = useCallback((visible: boolean): void => {
     setVisible(visible);
