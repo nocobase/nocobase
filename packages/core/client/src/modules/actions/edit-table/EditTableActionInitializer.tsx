@@ -13,14 +13,14 @@ import { ActionInitializer } from '../../../schema-initializer/items/ActionIniti
 export const EditTableActionInitializer = (props) => {
   const schema = {
     type: 'void',
-    title: '{{ t("Edit table") }}',
+    title: '{{ t("Column Settings") }}',
     'x-action': 'edit-table',
     'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:editTable',
     'x-component': 'EditTable.Action',
     'x-use-component-props': 'useEditTableActionProps',
     'x-component-props': {
-      icon: 'EditOutlined',
+      icon: 'SettingOutlined',
     },
   };
   return <ActionInitializer {...props} schema={schema} />;

@@ -162,7 +162,7 @@ const EditTableActionContent = observer(
                 onClick={async () => {
                   await form.reset();
                   onReset?.(form.values);
-                  field.title = compile(fieldSchema.title) || t('Edit table');
+                  field.title = compile(fieldSchema.title) || t('Column Settings');
                   setVisible(false);
                 }}
               >
