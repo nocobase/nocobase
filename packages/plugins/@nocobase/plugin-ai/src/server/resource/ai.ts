@@ -9,6 +9,7 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
+import _ from 'lodash';
 
 const aiResource: ResourceOptions = {
   name: 'ai',
