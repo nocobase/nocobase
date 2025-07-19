@@ -15,6 +15,8 @@ import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { Context } from '@nocobase/actions';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
+import { AIChatContext, AIToolCall } from '../types/ai-chat-conversation.type';
+import { tool } from '@langchain/core/tools';
 
 export abstract class LLMProvider {
   app: Application;
@@ -43,14 +45,11 @@ export abstract class LLMProvider {
     this.app = app;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
     if (chatOptions) {
-      const { messages, tools, ...modelOptions } = chatOptions;
+      const { messages, ...modelOptions } = chatOptions;
       this.modelOptions = modelOptions;
       this.messages = messages;
       this.chatModel = this.createModel();
-      if (tools?.length) {
-        this.chatModel = this.chatModel.bindTools(tools);
-      }
-      this.registerChatHandler('parse-messages', parseMessages);
+      // this.registerChatHandler('parse-messages', parseMessages);
     }
   }
 
@@ -65,11 +64,16 @@ export abstract class LLMProvider {
     return this.chatModel.invoke(this.messages);
   }
 
-  async stream(options?: any) {
+  async stream(context: AIChatContext, options?: any) {
     for (const handler of this.chatHandlers.values()) {
       await handler();
     }
-    return this.chatModel.stream(this.messages, options);
+
+    if (context.tools?.length) {
+      return this.chatModel.bindTools(context.tools).stream(context.messages, options);
+    } else {
+      return this.chatModel.stream(context.messages, options);
+    }
   }
 
   async listModels(): Promise<{
