@@ -11,6 +11,21 @@ import { parseDate } from '@nocobase/utils';
 import { Op, Sequelize } from 'sequelize';
 import moment from 'moment';
 
+/**
+ * 自动识别时间是否为 UTC，统一输出为本地时间格式字符串
+ * @param val - 原始时间字符串或 Date 对象
+ * @param format - 输出格式，默认 'YYYY-MM-DD HH:mm:ss'
+ */
+function formatAsLocalTime(val: string | Date, format = 'YYYY-MM-DD HH:mm:ss'): string {
+  const m = moment(val);
+
+  // 判断是否为 ISO UTC 格式，例如 2025-07-20T00:00:00Z 或含有 Z、+00:00 后缀
+  const isLikelyUTC = typeof val === 'string' && /Z$|[+-]00:00$/.test(val);
+
+  // 若 moment 对象是 UTC 或原始字符串看起来是 UTC，就转本地
+  return m.isUTC() || isLikelyUTC ? m.local().format(format) : m.format(format);
+}
+
 function isDate(input) {
   return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
 }
@@ -33,7 +48,7 @@ const toDate = (date, options: any = {}) => {
   }
 
   if (field.constructor.name === 'DateOnlyField') {
-    val = moment.utc(val).format('YYYY-MM-DD HH:mm:ss');
+    val = formatAsLocalTime(val);
   }
 
   const eventObj = {
