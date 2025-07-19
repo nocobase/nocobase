@@ -17,3 +17,4 @@ export const STORAGE_TYPE_LOCAL = 'local';
 export const STORAGE_TYPE_ALI_OSS = 'ali-oss';
 export const STORAGE_TYPE_S3 = 's3';
 export const STORAGE_TYPE_TX_COS = 'tx-cos';
+export const STORAGE_TYPE_MINIO = 'minio';

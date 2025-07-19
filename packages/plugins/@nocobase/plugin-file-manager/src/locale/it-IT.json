@@ -11,6 +11,7 @@
   "Aliyun OSS": "Aliyun OSS",
   "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
+  "MinIO": "MinIO",
   "Region": "Regione",
   "Bucket": "Bucket",
   "Path": "Percorso",

@@ -8,7 +8,13 @@
  */
 
 import { Plugin, useCollection } from '@nocobase/client';
-import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
+import {
+  STORAGE_TYPE_ALI_OSS,
+  STORAGE_TYPE_LOCAL,
+  STORAGE_TYPE_MINIO,
+  STORAGE_TYPE_S3,
+  STORAGE_TYPE_TX_COS,
+} from '../constants';
 import { FileManagerProvider } from './FileManagerProvider';
 import { FileSizeField } from './FileSizeField';
 import { FileStoragePane } from './FileStorage';
@@ -21,7 +27,13 @@ import { FileCollectionTemplate } from './templates';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
-  static buildInStorage = [STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS];
+  static buildInStorage = [
+    STORAGE_TYPE_LOCAL,
+    STORAGE_TYPE_ALI_OSS,
+    STORAGE_TYPE_S3,
+    STORAGE_TYPE_TX_COS,
+    STORAGE_TYPE_MINIO,
+  ];
   storageTypes = new Map();
 
   async load() {
