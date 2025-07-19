@@ -448,6 +448,8 @@
   "Are you sure you don't want to save?": "kaydetmek istemediğinizden emin misiniz??",
   "Dragging": "Sürükleme",
   "Popup": "Açılır Pencere",
+  "Column Settings": "Sütun ayarları",
+  "visible": "görünür",
   "Trigger workflow": "İş akışını tetikle",
   "Request API": "API İsteği",
   "Assign field values": "Alan değerleri ata",

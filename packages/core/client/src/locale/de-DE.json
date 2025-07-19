@@ -634,6 +634,8 @@
   "Are you sure you don't want to save?": "Sind Sie sicher, dass Sie nicht speichern möchten?",
   "Dragging": "Ziehen",
   "Popup": "Popup",
+  "Column Settings": "Spalteneinstellungen",
+  "visible": "sichtbar",
   "Trigger workflow": "Workflow auslösen",
   "Request API": "API anfragen",
   "Assign field values": "Feldwerte zuweisen",

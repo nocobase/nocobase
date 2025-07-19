@@ -634,6 +634,8 @@
   "Are you sure you don't want to save?": "Are you sure you don't want to save?",
   "Dragging": "Dragging",
   "Popup": "Popup",
+  "Column Settings": "Column Settings",
+  "visible": "visible",
   "Trigger workflow": "Trigger workflow",
   "Request API": "Request API",
   "Assign field values": "Assign field values",

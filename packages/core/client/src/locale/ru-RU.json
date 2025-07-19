@@ -448,6 +448,8 @@
   "Are you sure you don't want to save?": "Вы уверены, что не хотите сохранить?",
   "Dragging": "Перетаскивание",
   "Popup": "Всплывающий",
+  "Column Settings": "Настройки столбцов",
+  "visible": "видимый",
   "Trigger workflow": "Рабочий процесс Триггера",
   "Request API": "Запрос API",
   "Assign field values": "Присвоить значения поля",

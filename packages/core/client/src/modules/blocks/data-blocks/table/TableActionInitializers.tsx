@@ -96,6 +96,15 @@ const commonOptions = {
     },
     {
       type: 'item',
+      title: "{{t('Column Settings')}}",
+      name: 'editTable',
+      Component: 'EditTableActionInitializer',
+      schema: {
+        'x-align': 'right',
+      },
+    },
+    {
+      type: 'item',
       title: "{{t('Link')}}",
       name: 'link',
       Component: 'LinkActionInitializer',

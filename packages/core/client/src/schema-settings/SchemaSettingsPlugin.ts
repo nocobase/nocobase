@@ -20,6 +20,7 @@ import { expendableActionSettings } from '../modules/actions/expand-collapse/exp
 import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
 import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
 import { refreshActionSettings } from '../modules/actions/refresh/refreshActionSettings';
+import { editTableActionSettings } from '../modules/actions/edit-table/editTableActionSettings';
 import { customizeSaveRecordActionSettings } from '../modules/actions/save-record/customizeSaveRecordActionSettings';
 import { createSubmitActionSettings } from '../modules/actions/submit/createSubmitActionSettings';
 import { submitActionSettings, updateSubmitActionSettings } from '../modules/actions/submit/updateSubmitActionSettings';
@@ -105,6 +106,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(addNewActionSettings);
     this.schemaSettingsManager.add(filterActionSettings);
     this.schemaSettingsManager.add(refreshActionSettings);
+    this.schemaSettingsManager.add(editTableActionSettings);
     this.schemaSettingsManager.add(viewActionSettings);
     this.schemaSettingsManager.add(editActionSettings);
     this.schemaSettingsManager.add(deleteActionSettings);
