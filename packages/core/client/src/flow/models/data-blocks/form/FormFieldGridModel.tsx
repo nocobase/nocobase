@@ -30,23 +30,27 @@ export class FormFieldGridModel extends GridModel<{
   };
   renderAddSubModelButton() {
     const formModelInstance = this.context.blockModel as FormModel;
+    const collection = this.context.currentCollection || formModelInstance.collection;
     const fieldItems = buildFieldItems(
-      formModelInstance.collection.getFields(),
+      collection.getFields(),
       formModelInstance,
       'FormFieldModel',
       'items',
-      ({ defaultOptions, fieldPath }) => ({
-        use: defaultOptions.use,
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: formModelInstance.collection.dataSourceKey,
-              collectionName: formModelInstance.collection.name,
-              fieldPath,
+      ({ defaultOptions, fieldPath }) => {
+        return {
+          ...defaultOptions,
+          use: defaultOptions.use,
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
             },
           },
-        },
-      }),
+        };
+      },
     );
 
     return (
