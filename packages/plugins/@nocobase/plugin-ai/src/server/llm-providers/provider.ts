@@ -15,7 +15,7 @@ import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { Context } from '@nocobase/actions';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
-import { AiChatContext, AiToolCall } from '../types/ai-chat-conversation.type';
+import { AIChatContext, AIToolCall } from '../types/ai-chat-conversation.type';
 import { tool } from '@langchain/core/tools';
 
 export abstract class LLMProvider {
@@ -64,7 +64,7 @@ export abstract class LLMProvider {
     return this.chatModel.invoke(this.messages);
   }
 
-  async stream(context: AiChatContext, options?: any) {
+  async stream(context: AIChatContext, options?: any) {
     for (const handler of this.chatHandlers.values()) {
       await handler();
     }

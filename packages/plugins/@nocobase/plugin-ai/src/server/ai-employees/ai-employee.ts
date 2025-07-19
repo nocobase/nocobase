@@ -16,8 +16,8 @@ import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AiChatContext, AiChatConversation, AiMessage, AiMessageInput } from '../types/ai-chat-conversation.type';
-import { createAiChatConversation } from '../manager/ai-chat-conversation';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types/ai-chat-conversation.type';
+import { createAIChatConversation } from '../manager/ai-chat-conversation';
 
 type ToolMessage = {
   id: string;
@@ -41,7 +41,7 @@ export class AIEmployee {
   private sessionId: string;
   private ctx: Context;
   private systemMessage: string;
-  private aiChatConversation: AiChatConversation;
+  private aiChatConversation: AIChatConversation;
 
   constructor(ctx: Context, employee: Model, sessionId: string, systemMessage?: string) {
     this.employee = employee;
@@ -50,7 +50,7 @@ export class AIEmployee {
     this.db = ctx.db;
     this.sessionId = sessionId;
     this.systemMessage = systemMessage;
-    this.aiChatConversation = createAiChatConversation(this.ctx, this.sessionId);
+    this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
   }
 
   async getLLMService() {
@@ -87,7 +87,7 @@ export class AIEmployee {
     return { provider, model: modelSettings.model, service };
   }
 
-  async prepareChatStream(chatContext: AiChatContext, provider: LLMProvider) {
+  async prepareChatStream(chatContext: AIChatContext, provider: LLMProvider) {
     const controller = new AbortController();
     const { signal } = controller;
 
@@ -142,7 +142,7 @@ export class AIEmployee {
     }
 
     if (message || toolCalls?.length) {
-      const values: AiMessageInput = {
+      const values: AIMessageInput = {
         role: this.employee.username,
         content: {
           type: 'text',
@@ -186,7 +186,7 @@ export class AIEmployee {
             transaction,
           });
         }
-        const result: AiMessage = await conversation.addMessages(values);
+        const result: AIMessage = await conversation.addMessages(values);
         if (toolCalls?.length) {
           await this.initToolCall(transaction, result.messageId, toolCalls);
         }
@@ -596,7 +596,7 @@ export class AIEmployee {
     this.ctx.res.end();
   }
 
-  async processMessages(userMessages: AiMessageInput[], messageId?: string) {
+  async processMessages(userMessages: AIMessageInput[], messageId?: string) {
     try {
       await this.aiChatConversation.withTransaction(async (conversation) => {
         if (messageId) {

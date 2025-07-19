@@ -1,13 +1,13 @@
 import { Transaction } from '@nocobase/database';
 
-export interface AiChatConversation extends TransactionSupported<AiChatConversation> {
+export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
   getSessionId(): string;
-  addMessages(messages: AiMessageInput): Promise<AiMessage>;
-  addMessages(messages: AiMessageInput[]): Promise<AiMessage[]>;
-  removeMessages(options: AiMessageRemoveOptions): Promise<void>;
-  getMessage(messageId: string): Promise<AiMessage | null>;
-  listMessages(query?: AiMessageQuery): Promise<AiMessage[]>;
-  getChatContext(options?: AiChatContextOptions): Promise<AiChatContext>;
+  addMessages(messages: AIMessageInput): Promise<AIMessage>;
+  addMessages(messages: AIMessageInput[]): Promise<AIMessage[]>;
+  removeMessages(options: AIMessageRemoveOptions): Promise<void>;
+  getMessage(messageId: string): Promise<AIMessage | null>;
+  listMessages(query?: AIMessageQuery): Promise<AIMessage[]>;
+  getChatContext(options?: AIChatContextOptions): Promise<AIChatContext>;
 }
 
 export interface TransactionSupported<T> {
@@ -17,44 +17,44 @@ export interface TransactionSupported<T> {
   ): Promise<R>;
 }
 
-export type AiChatContext = {
+export type AIChatContext = {
   messages: {
     role: 'user' | 'assistant' | 'tool';
     content: any;
     tool_call_id?: string;
-    tool_calls?: AiToolCall[];
+    tool_calls?: AIToolCall[];
   }[];
   tools: any[];
 };
 
-export type AiMessage = {
+export type AIMessage = {
   messageId: string;
   sessionId: string;
   role: string;
-  content: AiMessageContent;
-  toolCalls?: AiToolCall[];
+  content: AIMessageContent;
+  toolCalls?: AIToolCall[];
   attachments?: unknown[];
   workContext?: unknown[];
-  metadata?: AiMessageMetadata;
+  metadata?: AIMessageMetadata;
 };
 
-export type AiMessageContent = {
+export type AIMessageContent = {
   type: string;
   content: unknown;
 };
 
-export type AiToolCall = {
+export type AIToolCall = {
   id: string;
   name: string;
   type: string;
   args: unknown;
 };
 
-export type AiMessageMetadata = {
+export type AIMessageMetadata = {
   model: string;
   provider: string;
   usage_metadata?: any;
-  toolCall?: AiToolCall;
+  toolCall?: AIToolCall;
   autoCallTools?: string[];
   autoCall?: boolean;
   interrupted?: boolean;
@@ -62,17 +62,17 @@ export type AiMessageMetadata = {
   [key: string]: unknown;
 };
 
-export type AiMessageInput = Omit<AiMessage, 'messageId' | 'sessionId'>;
+export type AIMessageInput = Omit<AIMessage, 'messageId' | 'sessionId'>;
 
-export type AiMessageQuery = {
+export type AIMessageQuery = {
   messageId?: string;
 };
 
-export type AiMessageRemoveOptions = {
+export type AIMessageRemoveOptions = {
   messageId?: string;
 };
 
-export type AiChatContextOptions = {
+export type AIChatContextOptions = {
   systemPrompt?: string;
   tools?: any[];
-} & AiMessageQuery;
+} & AIMessageQuery;

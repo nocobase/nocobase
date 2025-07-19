@@ -1,21 +1,21 @@
 import _ from 'lodash';
 import {
-  AiChatContext,
-  AiChatContextOptions,
-  AiChatConversation,
-  AiMessage,
-  AiMessageInput,
-  AiMessageQuery,
-  AiMessageRemoveOptions,
+  AIChatContext,
+  AIChatContextOptions,
+  AIChatConversation,
+  AIMessage,
+  AIMessageInput,
+  AIMessageQuery,
+  AIMessageRemoveOptions,
 } from '../types/ai-chat-conversation.type';
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Filter, Transaction } from '@nocobase/database';
-export const createAiChatConversation = (ctx: Context, sessionId: string): AiChatConversation => {
-  return new AiChatConversationImpl(ctx, sessionId);
+export const createAIChatConversation = (ctx: Context, sessionId: string): AIChatConversation => {
+  return new AIChatConversationImpl(ctx, sessionId);
 };
 
-class AiChatConversationImpl implements AiChatConversation {
+class AIChatConversationImpl implements AIChatConversation {
   private transaction?: Transaction;
   constructor(
     private ctx: Context,
@@ -38,12 +38,12 @@ class AiChatConversationImpl implements AiChatConversation {
     return this.sessionId;
   }
 
-  async addMessages(messages: AiMessageInput): Promise<AiMessage>;
-  async addMessages(messages: AiMessageInput[]): Promise<AiMessage[]>;
-  async addMessages(messages: AiMessageInput | AiMessageInput[]): Promise<AiMessage | AiMessage[]> {
+  async addMessages(messages: AIMessageInput): Promise<AIMessage>;
+  async addMessages(messages: AIMessageInput[]): Promise<AIMessage[]>;
+  async addMessages(messages: AIMessageInput | AIMessageInput[]): Promise<AIMessage | AIMessage[]> {
     const isArray = _.isArray(messages);
     const messageList = isArray ? messages : [messages];
-    const instances: AiMessage[] = await this.aiConversationMessagesRepo.create({
+    const instances: AIMessage[] = await this.aiConversationMessagesRepo.create({
       values: messageList.map(
         (message) =>
           ({
@@ -55,13 +55,13 @@ class AiChatConversationImpl implements AiChatConversation {
             workContext: message.workContext,
             metadata: message.metadata,
             toolCalls: message.toolCalls,
-          }) as AiMessage,
+          }) as AIMessage,
       ),
       transaction: this.transaction,
     });
     return isArray ? instances : instances[0];
   }
-  async removeMessages({ messageId }: AiMessageRemoveOptions): Promise<void> {
+  async removeMessages({ messageId }: AIMessageRemoveOptions): Promise<void> {
     const filter: Filter = {
       sessionId: this.sessionId,
     };
@@ -75,10 +75,10 @@ class AiChatConversationImpl implements AiChatConversation {
       transaction: this.transaction,
     });
   }
-  async getMessage(messageId: string): Promise<AiMessage | null> {
+  async getMessage(messageId: string): Promise<AIMessage | null> {
     return await this.aiMessagesRepo.findByTargetKey(messageId);
   }
-  async listMessages(query: AiMessageQuery): Promise<AiMessage[]> {
+  async listMessages(query: AIMessageQuery): Promise<AIMessage[]> {
     const filter: Filter = {
       sessionId: this.sessionId,
     };
@@ -92,7 +92,7 @@ class AiChatConversationImpl implements AiChatConversation {
       filter,
     });
   }
-  async getChatContext(options: AiChatContextOptions): Promise<AiChatContext> {
+  async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
     const messages = await this.formatMessages(aiMessages);
     if (options?.systemPrompt) {
@@ -107,7 +107,7 @@ class AiChatConversationImpl implements AiChatConversation {
     };
   }
 
-  private formatMessages(messages: AiMessage[]) {
+  private formatMessages(messages: AIMessage[]) {
     const formattedMessages = [];
 
     for (const msg of messages) {
@@ -164,8 +164,8 @@ ${content}`;
     return formattedMessages;
   }
 
-  private clone(): AiChatConversationImpl {
-    return new AiChatConversationImpl(this.ctx, this.sessionId);
+  private clone(): AIChatConversationImpl {
+    return new AIChatConversationImpl(this.ctx, this.sessionId);
   }
 
   private snowflake() {
