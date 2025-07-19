@@ -8,7 +8,7 @@
  */
 
 import { ObjectField as ObjectFieldModel } from '@formily/core';
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField } from '@formily/react';
 import { Switch } from 'antd';
 import { MenuOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ import { css } from '@emotion/css';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useProps } from '../../hooks/useProps';
 import { useCompile } from '../../hooks';
+import { useToken } from '../../../style';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import { useSortable, SortableContext } from '@dnd-kit/sortable';
 
@@ -41,35 +42,32 @@ interface DraggableItemProps {
   onToggleVisible: (key: string, visible: boolean) => void;
 }
 
-const containerStyle = css`
-  width: 420px;
+const createContainerStyle = (token: any) => css`
+  max-height: 100%;
+  overflow-y: auto;
 `;
 
-const itemStyle = css`
+const createItemStyle = (token: any) => css`
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: ${token.padding}px ${token.paddingLG}px;
+  border-top: 1px solid ${token.colorBorderSecondary};
   user-select: none;
-  background: white;
+  background: ${token.colorBgContainer};
 
   &:hover {
-    background-color: #fafafa;
-  }
-
-  &:last-child {
-    border-bottom: none;
+    background-color: ${token.colorFillTertiary};
   }
 `;
 
-const dragHandleStyle = css`
-  margin-right: 12px;
-  color: #bfbfbf;
+const createDragHandleStyle = (token: any) => css`
+  margin-right: ${token.margin}px;
+  color: ${token.colorTextDescription};
   cursor: grab;
-  font-size: 14px;
+  font-size: ${token.fontSize}px;
 
   &:hover {
-    color: #8c8c8c;
+    color: ${token.colorTextSecondary};
   }
 
   &:active {
@@ -77,60 +75,39 @@ const dragHandleStyle = css`
   }
 `;
 
-const visibilityIconStyle = css`
-  margin-right: 12px;
-  font-size: 16px;
+const createVisibilityIconStyle = (token: any) => css`
+  margin-right: ${token.margin}px;
+  font-size: ${token.fontSizeLG}px;
 `;
 
-const titleStyle = css`
+const createTitleStyle = (token: any) => css`
   flex: 1;
-  margin-right: 12px;
-  font-size: 14px;
-  color: #262626;
+  margin-right: ${token.margin}px;
+  font-size: ${token.fontSize}px;
+  color: ${token.colorText};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const switchContainerStyle = css`
+const createSwitchContainerStyle = () => css`
   display: flex;
   align-items: center;
 `;
 
-const headerStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 16px 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+const createMainContainerStyle = (token: any) => css`
+  background: ${token.colorBgContainer};
 `;
 
-const headerTitleStyle = css`
-  font-size: 14px;
-  font-weight: 500;
-  color: #262626;
-  margin: 0;
-`;
-
-const headerStatsStyle = css`
-  font-size: 12px;
-  color: #8c8c8c;
-`;
-
-const mainContainerStyle = css`
-  background: white;
-  margin-bottom: 16px;
-`;
-
-const emptyStyle = css`
-  padding: 40px 20px;
+const createEmptyStyle = (token: any) => css`
+  padding: ${token.paddingLG * 2}px ${token.paddingLG}px;
   text-align: center;
-  color: #8c8c8c;
-  border-top: 1px solid #f0f0f0;
+  color: ${token.colorTextDescription};
+  border-top: 1px solid ${token.colorBorderSecondary};
 `;
 
 const DraggableItem: React.FC<DraggableItemProps> = ({ item, index, onToggleVisible }) => {
-  const { t } = useTranslation();
+  const { token } = useToken();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.key });
 
   const style = {
@@ -140,11 +117,13 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ item, index, onToggleVisi
   };
 
   return (
-    <div ref={setNodeRef} className={itemStyle} style={style} {...attributes}>
-      <MenuOutlined className={dragHandleStyle} {...listeners} />
-      <div className={visibilityIconStyle}>{item.visible ? <EyeOutlined /> : <EyeInvisibleOutlined />}</div>
-      <span className={titleStyle}>{item.title}</span>
-      <div className={switchContainerStyle}>
+    <div ref={setNodeRef} className={createItemStyle(token)} style={style} {...attributes}>
+      <MenuOutlined className={createDragHandleStyle(token)} {...listeners} />
+      <div className={createVisibilityIconStyle(token)}>
+        {item.visible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+      </div>
+      <span className={createTitleStyle(token)}>{item.title}</span>
+      <div className={createSwitchContainerStyle()}>
         <Switch size="small" checked={item.visible} onChange={(checked) => onToggleVisible(item.key, checked)} />
       </div>
     </div>
@@ -153,9 +132,9 @@ const DraggableItem: React.FC<DraggableItemProps> = ({ item, index, onToggleVisi
 
 const InternalEditTable = observer((props: EditTableProps) => {
   const field = useField<ObjectFieldModel>();
-  const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const { t } = useTranslation();
+  const { token } = useToken();
 
   // Get props through useProps for compatibility
   const { columns: propsColumns, value, onChange } = useProps(props);
@@ -252,18 +231,13 @@ const InternalEditTable = observer((props: EditTableProps) => {
     [onChange],
   );
 
-  // Calculate stats for header
-  const visibleCount = columns.filter((col) => col.visible).length;
-  const totalCount = columns.length;
-
   if (columns.length === 0) {
     return (
-      <div className={mainContainerStyle}>
-        <div className={headerStyle}>
-          <h4 className={headerTitleStyle}>{t('Table Columns')}</h4>
-        </div>
-        <div className={emptyStyle}>
-          <EyeInvisibleOutlined style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }} />
+      <div className={createMainContainerStyle(token)}>
+        <div className={createEmptyStyle(token)}>
+          <EyeInvisibleOutlined
+            style={{ fontSize: `${token.fontSizeXL}px`, marginBottom: `${token.marginXS}px`, display: 'block' }}
+          />
           {t('No columns available')}
         </div>
       </div>
@@ -271,14 +245,8 @@ const InternalEditTable = observer((props: EditTableProps) => {
   }
 
   return (
-    <div className={mainContainerStyle}>
-      <div className={headerStyle}>
-        <h4 className={headerTitleStyle}>{t('Table Columns')}</h4>
-        <span className={headerStatsStyle}>
-          {visibleCount}/{totalCount} {t('visible')}
-        </span>
-      </div>
-      <div className={containerStyle}>
+    <div className={createMainContainerStyle(token)}>
+      <div className={createContainerStyle(token)}>
         <DndContext onDragEnd={handleDragEnd}>
           <SortableContext items={columns.map((item) => item.key)}>
             {columns.map((item, index) => (
