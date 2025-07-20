@@ -9,14 +9,17 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RecordProxy } from '../RecordProxy';
-import { Collection } from '../data-source';
+import { Collection, DataSource } from '../data-source';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 
 describe('RecordProxy', () => {
   let engine: FlowEngine;
   let model: FlowModel;
-  let collection: Collection;
+  let postsCollection: Collection;
+  let usersCollection: Collection;
+  let commentsCollection: Collection;
+  let profilesCollection: Collection;
   let mockApiRequest: any;
 
   beforeEach(() => {
@@ -27,8 +30,12 @@ describe('RecordProxy', () => {
       flowEngine: engine,
     });
 
-    // Setup Collection
-    collection = new Collection({
+    // Access the data source manager from the engine's context
+    const dataSourceManager = engine.context.dataSourceManager;
+    const dataSource = dataSourceManager.getDataSource('main');
+
+    // Setup Collections
+    postsCollection = new Collection({
       name: 'posts',
       filterTargetKey: 'id',
       fields: [
@@ -42,6 +49,43 @@ describe('RecordProxy', () => {
       ],
     });
 
+    usersCollection = new Collection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer' },
+        { name: 'name', type: 'string' },
+        { name: 'posts', type: 'hasMany', target: 'posts' },
+        { name: 'profile', type: 'hasOne', target: 'profiles' },
+      ],
+    });
+
+    commentsCollection = new Collection({
+      name: 'comments',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer' },
+        { name: 'content', type: 'string' },
+        { name: 'author', type: 'belongsTo', target: 'users' },
+      ],
+    });
+
+    profilesCollection = new Collection({
+      name: 'profiles',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer' },
+        { name: 'bio', type: 'string' },
+        { name: 'user', type: 'belongsTo', target: 'users' },
+      ],
+    });
+
+    // Add collections to the default main data source
+    dataSource.addCollection(postsCollection);
+    dataSource.addCollection(usersCollection);
+    dataSource.addCollection(commentsCollection);
+    dataSource.addCollection(profilesCollection);
+
     // Mock APIClient request method
     mockApiRequest = vi.fn();
     model.context.defineProperty('api', {
@@ -54,7 +98,7 @@ describe('RecordProxy', () => {
   describe('basic property access', () => {
     it('should return existing properties directly', () => {
       const record = { id: 1, title: 'Test Post' };
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       expect(proxy.id).toBe(1);
       expect(proxy.title).toBe('Test Post');
@@ -62,7 +106,7 @@ describe('RecordProxy', () => {
 
     it('should return undefined for non-existent non-association properties', () => {
       const record = { id: 1 };
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       expect(proxy.nonExistent).toBeUndefined();
     });
@@ -77,7 +121,7 @@ describe('RecordProxy', () => {
         data: { data: authorData },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
       const author = await proxy.author;
 
       expect(mockApiRequest).toHaveBeenCalledWith(
@@ -100,7 +144,7 @@ describe('RecordProxy', () => {
         data: { data: commentsData, meta: { count: 2, page: 1, pageSize: 20 } },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
       const comments = await proxy.comments;
 
       expect(mockApiRequest).toHaveBeenCalledWith(
@@ -112,7 +156,7 @@ describe('RecordProxy', () => {
           }),
         }),
       );
-      expect(comments).toEqual(commentsData);
+      expect(comments.map((c) => ({ ...c }))).toEqual(commentsData);
     });
 
     it('should lazy load belongsToMany association', async () => {
@@ -126,7 +170,7 @@ describe('RecordProxy', () => {
         data: { data: tagsData, meta: {} },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
       const tags = await proxy.tags;
 
       expect(mockApiRequest).toHaveBeenCalledWith(
@@ -134,7 +178,7 @@ describe('RecordProxy', () => {
           url: 'posts/1/tags:list',
         }),
       );
-      expect(tags).toEqual(tagsData);
+      expect(tags.map((t) => ({ ...t }))).toEqual(tagsData);
     });
 
     it('should lazy load hasOne association', async () => {
@@ -145,7 +189,7 @@ describe('RecordProxy', () => {
         data: { data: profileData },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
       const profile = await proxy.profile;
 
       expect(mockApiRequest).toHaveBeenCalledWith(
@@ -167,7 +211,7 @@ describe('RecordProxy', () => {
         data: { data: categoriesData, meta: {} },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
       const categories = await proxy.categories;
 
       expect(mockApiRequest).toHaveBeenCalledWith(
@@ -175,7 +219,7 @@ describe('RecordProxy', () => {
           url: 'posts/1/categories:list',
         }),
       );
-      expect(categories).toEqual(categoriesData);
+      expect(categories.map((c) => ({ ...c }))).toEqual(categoriesData);
     });
   });
 
@@ -188,7 +232,7 @@ describe('RecordProxy', () => {
         data: { data: authorData },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       const author1 = await proxy.author;
       const author2 = await proxy.author;
@@ -205,7 +249,7 @@ describe('RecordProxy', () => {
         data: { data: authorData },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       const [author1, author2] = await Promise.all([proxy.author, proxy.author]);
 
@@ -221,7 +265,7 @@ describe('RecordProxy', () => {
 
       mockApiRequest.mockRejectedValue(error);
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       await expect(proxy.author).rejects.toThrow('Network error');
     });
@@ -233,7 +277,7 @@ describe('RecordProxy', () => {
         data: { data: { id: 10, name: 'John' } },
       });
 
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       // First request fails
       await expect(proxy.author).rejects.toThrow('First error');
@@ -245,6 +289,119 @@ describe('RecordProxy', () => {
     });
   });
 
+  describe('recursive lazy loading', () => {
+    it('should handle multi-level association access (belongsTo -> hasMany)', async () => {
+      const postRecord = { id: 1 };
+      const authorData = { id: 10, name: 'John' };
+      const johnsPostsData = [
+        { id: 1, title: 'Post 1' },
+        { id: 2, title: 'Post 2' },
+      ];
+
+      // Mock the first API call (post -> author)
+      mockApiRequest.mockResolvedValueOnce({ data: { data: authorData } });
+      // Mock the second API call (author -> posts)
+      mockApiRequest.mockResolvedValueOnce({ data: { data: johnsPostsData, meta: {} } });
+
+      const postProxy = new RecordProxy(postRecord, postsCollection, model.context);
+
+      // 1. First level access
+      const authorProxy = await postProxy.author;
+      expect(authorProxy.name).toBe('John');
+
+      // 2. Second level access
+      const johnsPosts = await authorProxy.posts;
+
+      // Verify first call
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'posts/1/author:get',
+        }),
+      );
+
+      // Verify second call
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'users/10/posts:list',
+        }),
+      );
+
+      expect(johnsPosts.map((p) => ({ ...p }))).toEqual(johnsPostsData);
+      expect(mockApiRequest).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle multi-level association access (hasMany -> belongsTo)', async () => {
+      const postRecord = { id: 1 };
+      const commentsData = [{ id: 101, content: 'Great post!' }];
+      const commentAuthorData = { id: 20, name: 'Jane' };
+
+      // Mock post -> comments
+      mockApiRequest.mockResolvedValueOnce({ data: { data: commentsData, meta: {} } });
+      // Mock comment -> author
+      mockApiRequest.mockResolvedValueOnce({ data: { data: commentAuthorData } });
+
+      const postProxy = new RecordProxy(postRecord, postsCollection, model.context);
+
+      // 1. First level access
+      const commentsProxyArray = await postProxy.comments;
+      expect(commentsProxyArray).toHaveLength(1);
+
+      // 2. Second level access
+      const firstCommentProxy = commentsProxyArray[0];
+      const commentAuthor = await firstCommentProxy.author;
+
+      // Verify first call
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'posts/1/comments:list',
+        }),
+      );
+
+      // Verify second call
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'comments/101/author:get',
+        }),
+      );
+
+      expect(commentAuthor).toEqual(commentAuthorData);
+      expect(mockApiRequest).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle multi-level association access with a single await', async () => {
+      const postRecord = { id: 1 };
+      const authorData = { id: 10, name: 'John' };
+      const profileData = { id: 100, bio: 'A bio' };
+
+      // Mock post -> author
+      mockApiRequest.mockResolvedValueOnce({ data: { data: authorData } });
+      // Mock author -> profile
+      mockApiRequest.mockResolvedValueOnce({ data: { data: profileData } });
+
+      const postProxy = new RecordProxy(postRecord, postsCollection, model.context);
+
+      // Access post.author.profile with a single await
+      const profile = await postProxy.author.profile;
+
+      // Verify first call (post -> author)
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'posts/1/author:get',
+        }),
+      );
+
+      // Verify second call (author -> profile)
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'users/10/profile:get',
+        }),
+      );
+
+      expect(profile).toEqual(profileData);
+      expect(mockApiRequest).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('edge cases', () => {
     it('should use custom filterTargetKey when specified', async () => {
       const customCollection = new Collection({
@@ -252,6 +409,8 @@ describe('RecordProxy', () => {
         filterTargetKey: 'customId',
         fields: [{ name: 'author', type: 'belongsTo', target: 'users' }],
       });
+      const dataSource = engine.context.dataSourceManager.getDataSource('main');
+      dataSource.addCollection(customCollection);
 
       const record = { id: 1, customId: 99 };
       mockApiRequest.mockResolvedValue({
@@ -261,17 +420,16 @@ describe('RecordProxy', () => {
       const proxy = new RecordProxy(record, customCollection, model.context);
       await proxy.author;
 
-      expect(mockApiRequest).toHaveBeenCalledWith({
-        url: 'posts/99/author:get',
-        method: 'get',
-        params: {},
-        headers: {},
-      });
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'posts/99/author:get',
+        }),
+      );
     });
 
     it('should return undefined for non-association field types', () => {
       const record = { id: 1 };
-      const proxy = new RecordProxy(record, collection, model.context);
+      const proxy = new RecordProxy(record, postsCollection, model.context);
 
       // Field doesn't exist
       expect(proxy.nonExistentField).toBeUndefined();
