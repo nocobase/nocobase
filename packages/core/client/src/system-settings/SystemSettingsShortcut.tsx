@@ -132,6 +132,19 @@ const schema: ISchema = {
             });
           },
         },
+        options: {
+          type: 'object',
+          title: '{{t("Advanced options")}}',
+          properties: {
+            menuDisableAccordion: {
+              type: 'boolean',
+              default: false,
+              'x-content': '{{t("Disable Menu Accordion")}}',
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+            },
+          },
+        },
         // allowSignUp: {
         //   type: 'boolean',
         //   default: true,

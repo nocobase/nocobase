@@ -10,6 +10,7 @@
 import { UserCenterButton } from './UserCenterButton';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { LanguageSettings } from './LanguageSettings';
+import { MenuBehaviorSettings } from './MenuBehaviorSettings';
 
 const userCenterSettings = new SchemaSettings({
   name: 'userCenterSettings',
@@ -19,6 +20,11 @@ const userCenterSettings = new SchemaSettings({
       name: 'langue',
       Component: LanguageSettings,
       sort: 350,
+    },
+    {
+      name: 'menuBehavior',
+      Component: MenuBehaviorSettings,
+      sort: 360,
     },
   ],
 });
