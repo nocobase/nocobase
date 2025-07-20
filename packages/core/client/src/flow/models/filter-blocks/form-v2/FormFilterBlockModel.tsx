@@ -32,15 +32,15 @@ export class FormFilterBlockModel extends FilterBlockModel<{
     return this.context.form;
   }
 
+  addAppends() {}
+
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('form', {
       get: () => createForm(),
     });
     this.context.defineProperty('blockModel', {
-      value: {
-        addAppends: () => {},
-      },
+      value: this,
     });
   }
 

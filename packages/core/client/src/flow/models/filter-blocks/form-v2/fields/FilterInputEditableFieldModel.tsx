@@ -19,6 +19,78 @@ export class FilterInputEditableFieldModel extends FilterEditableFieldModel {
   get component() {
     return [Input, {}];
   }
+
+  addFilterGroupToTargetModels() {
+    const operator = this.props.operator;
+    const targets = this.props.targets || [];
+
+    if (!operator || !targets.length) {
+      return;
+    }
+
+    targets.forEach((target) => {
+      const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
+      if (model) {
+        if (this.field.value != null) {
+          model.resource.addFilterGroup(this.uid, {
+            [target.fieldPath]: {
+              [operator]: this.field.value,
+            },
+          });
+        } else {
+          model.resource.removeFilterGroup(this.uid);
+        }
+      }
+    });
+  }
+
+  removeFilterGroupFromTargetModels() {
+    const operator = this.props.operator;
+    const targets = this.props.targets || [];
+
+    if (!operator || !targets.length) {
+      return;
+    }
+
+    targets.forEach((target) => {
+      const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
+      if (model) {
+        model.resource.removeFilterGroup(this.uid);
+      }
+    });
+  }
+
+  doFilter() {
+    const targets = this.props.targets || [];
+
+    if (!targets.length) {
+      return;
+    }
+
+    this.addFilterGroupToTargetModels();
+    targets.forEach((target) => {
+      const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
+      if (model) {
+        model.resource.refresh();
+      }
+    });
+  }
+
+  doReset() {
+    const targets = this.props.targets || [];
+
+    if (!targets.length) {
+      return;
+    }
+
+    this.removeFilterGroupFromTargetModels();
+    targets.forEach((target) => {
+      const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
+      if (model) {
+        model.resource.refresh();
+      }
+    });
+  }
 }
 
 FilterInputEditableFieldModel.registerFlow({
@@ -35,7 +107,9 @@ FilterInputEditableFieldModel.registerFlow({
           'x-component': ConnectFields,
         },
       },
-      handler(ctx, params) {},
+      handler(ctx, params) {
+        ctx.model.setProps('targets', params.targets);
+      },
     },
     defaultOperator: {
       title: 'Default operator',
@@ -58,7 +132,9 @@ FilterInputEditableFieldModel.registerFlow({
           operator: defaultOperator,
         };
       },
-      handler(ctx, params) {},
+      handler(ctx, params) {
+        ctx.model.setProps('operator', params.operator);
+      },
     },
   },
 });
