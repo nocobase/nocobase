@@ -355,6 +355,12 @@ GridModel.registerFlow({
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
 
+  onInit() {
+    this.context.defineProperty('blockGridModel', {
+      value: this,
+    });
+  }
+
   renderAddSubModelButton() {
     const t = this.translate;
     return (
