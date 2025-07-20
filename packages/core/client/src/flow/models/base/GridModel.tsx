@@ -53,6 +53,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   itemFlowSettings = {};
 
   onInit(options: any): void {
+    super.onInit(options);
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
       this.resetRows(true);
 
@@ -355,7 +356,8 @@ GridModel.registerFlow({
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
 
-  onInit() {
+  onInit(options: any): void {
+    super.onInit(options);
     this.context.defineProperty('blockGridModel', {
       value: this,
     });
