@@ -229,6 +229,32 @@ const fork2 = model.createFork('key2', {});
 
 ---
 
+## 为什么 FlowModel 使用类方式（class）实现
+
+虽然在 React 社区中函数组件因其简洁性和 Hook 支持而成为主流，但 FlowModel 依然采用 class 实现，原因如下：
+
+### 1. 生命周期逻辑集中且清晰
+
+FlowModel 拥有多个生命周期钩子（如 `onInit`、`onMount`、`onUnmount`、`beforeApplyAutoFlows`、 `afterApplyAutoFlows` 等），这些逻辑通过类方法更清晰地组织，避免了函数式中多个 Hook 间的复杂依赖。
+
+### 2. 支持继承与复用
+
+使用 class 可以继承通用的模型逻辑，形成清晰的模型体系结构（例如 ActionModel → RecordActionModel），便于逻辑封装和重用。
+
+### 3. 面向模型的结构管理
+
+FlowModel 是逻辑结构和数据流的承载，不仅仅是 UI 单元。它更像一种“组件逻辑抽象”，适合用类来表达。
+
+### 4. 跨 React 场景使用
+
+FlowModel 的存在不依赖 React 生命周期，它可以在非 UI 场景中运行（如数据预处理、流驱动），使用 class 更易于在各种上下文中构造实例。
+
+### 5. 易于持久化和 fork
+
+模型结构需要被保存、复制（fork）、加载，使用 class 的方式可以更方便地序列化和解构重建。
+
+> 总结：FlowModel 更偏向于“流建模”的领域驱动模型，其类结构提供了组织复杂模型逻辑的能力，与 React 的函数组件模式互为补充，而非替代关系。
+
 ## FlowModel 与 React.Component 区别
 
 ### 📦 基本职责对比
