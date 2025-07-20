@@ -254,7 +254,12 @@ export class Application {
   }
 
   private initRequireJs() {
-    this.requirejs = getRequireJs();
+    // 避免重复初始化 requirejs
+    if (window['requirejs']) {
+      this.requirejs = window['requirejs'];
+      return;
+    }
+    window['requirejs'] = this.requirejs = getRequireJs();
     defineGlobalDeps(this.requirejs);
     window.define = this.requirejs.define;
   }

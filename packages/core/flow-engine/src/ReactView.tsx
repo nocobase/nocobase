@@ -92,7 +92,7 @@ export class ReactView {
     return container;
   }
 
-  onRefReady<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 3000) {
+  onRefReady<T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout = 10000) {
     const start = Date.now();
     function check() {
       if (ref.current) return cb(ref.current);
