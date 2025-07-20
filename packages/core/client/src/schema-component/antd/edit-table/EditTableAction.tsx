@@ -10,8 +10,8 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Typography } from 'antd';
-import React, { createContext, useCallback, useMemo, useState } from 'react';
+import { Typography, Checkbox } from 'antd';
+import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { FormProvider, SchemaComponent } from '../../core';
@@ -161,6 +161,9 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
   // Compatible with old UISchema (before 1.0), keeping useProps for compatibility
   const { columns, onSubmit, onReset, Container: propContainer, icon, onlyIcon } = useProps(props);
 
+  // Move currentColumns state to parent component to persist across popup open/close
+  const [currentColumns, setCurrentColumns] = useState(() => columns || []);
+
   // Use mobile container in mobile layout
   const { isMobileLayout } = useMobileLayout();
   const Container = propContainer || (isMobileLayout ? EditTableActionMobileContainer : StablePopover);
@@ -181,6 +184,8 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
       <EditTableActionContent
         form={form}
         columns={columns}
+        currentColumns={currentColumns}
+        setCurrentColumns={setCurrentColumns}
         field={field}
         fieldSchema={fieldSchema}
         onReset={onReset}
@@ -188,7 +193,7 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
         onSubmit={onSubmit}
       />
     );
-  }, [field, fieldSchema, form, onReset, onSubmit, columns]);
+  }, [field, fieldSchema, form, onReset, onSubmit, columns, currentColumns, setCurrentColumns]);
 
   return (
     <EditTableActionContext.Provider value={editTableActionContextValue}>
@@ -228,6 +233,16 @@ const createHeaderStyle = (token: any) => css`
   margin-bottom: 0;
 `;
 
+const createHeaderLeftStyle = (token: any) => css`
+  display: flex;
+  align-items: center;
+  gap: ${token.margin}px;
+`;
+
+const createHeaderCheckboxStyle = (token: any) => css`
+  margin-right: ${token.margin}px;
+`;
+
 const createStatsTextStyle = (token: any) => css`
   font-size: ${token.fontSize}px;
   color: ${token.colorTextSecondary};
@@ -242,6 +257,8 @@ const EditTableActionContent = observer(
   ({
     form,
     columns,
+    currentColumns,
+    setCurrentColumns,
     field,
     fieldSchema,
     onReset,
@@ -250,6 +267,8 @@ const EditTableActionContent = observer(
   }: {
     form: Form<any>;
     columns: any;
+    currentColumns: any[];
+    setCurrentColumns: React.Dispatch<React.SetStateAction<any[]>>;
     field: Field<any, any, any, any>;
     fieldSchema;
     onReset: any;
@@ -259,20 +278,42 @@ const EditTableActionContent = observer(
     const compile = useCompile();
     const { t } = useTranslation();
     const { token } = useToken();
-    const [currentColumns, setCurrentColumns] = useState(columns);
+
+    // Initialize currentColumns from external columns only once
+    useEffect(() => {
+      if (columns && columns.length > 0 && currentColumns.length === 0) {
+        setCurrentColumns(columns);
+      }
+    }, [columns, currentColumns.length, setCurrentColumns]);
 
     // Calculate stats for header
     const visibleCount = useMemo(() => {
-      return currentColumns.filter((col) => col.visible).length;
+      const count = currentColumns.filter((col) => col.visible).length;
+      return count;
     }, [currentColumns]);
     const totalCount = useMemo(() => {
-      return currentColumns.length;
+      const count = currentColumns.length;
+      return count;
     }, [currentColumns]);
+
+    // Global select all functionality
+    const isAllChecked = visibleCount === totalCount;
+    const isIndeterminate = visibleCount > 0 && visibleCount < totalCount;
+
+    const handleGlobalCheckAll = (checked: boolean) => {
+      const newColumns = currentColumns.map((col) => ({
+        ...col,
+        visible: checked,
+      }));
+
+      onSubmit?.({ columns: newColumns });
+      setCurrentColumns([...newColumns]); // Force new array reference
+    };
 
     const schema = useMemo(() => {
       const finalColumns = currentColumns || field.dataSource || [];
 
-      return {
+      const schema = {
         type: 'object',
         properties: {
           columns: {
@@ -289,20 +330,31 @@ const EditTableActionContent = observer(
           },
         },
       };
+
+      return schema;
     }, [field?.dataSource, fieldSchema?.default, currentColumns]);
 
     return (
       <form>
         <FormProvider form={form}>
           <div className={createHeaderStyle(token)}>
-            <span className={createStatsTextStyle(token)}>
-              {t('visible')} {visibleCount}/{totalCount}
-            </span>
+            <div className={createHeaderLeftStyle(token)}>
+              <Checkbox
+                checked={isAllChecked}
+                indeterminate={isIndeterminate}
+                onChange={(e) => handleGlobalCheckAll(e.target.checked)}
+                className={createHeaderCheckboxStyle(token)}
+              />
+              <span className={createStatsTextStyle(token)}>
+                {t('visible')} {visibleCount}/{totalCount}
+              </span>
+            </div>
             <Typography.Link
               onClick={async () => {
                 await form.reset();
-                onReset?.(form.values);
-                field.title = compile(fieldSchema.title) || t('Column Settings');
+                onReset?.({ columns: [] });
+                onSubmit?.({ columns: [] });
+                setCurrentColumns([]);
                 setVisible(false);
               }}
             >
@@ -317,7 +369,7 @@ const EditTableActionContent = observer(
               contain: 'layout style',
             }}
           >
-            <SchemaComponent schema={schema} />
+            <SchemaComponent key="edit-table-schema" schema={schema} />
           </div>
         </FormProvider>
       </form>
