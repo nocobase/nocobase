@@ -12,10 +12,11 @@ import { vi } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowDefinition, FlowModelOptions } from '../../types';
+import type { DefaultStructure, FlowDefinition, FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
 import { FlowExitException } from '../../utils';
+import { RecordProxy } from '../../RecordProxy';
 
 // 全局处理测试中的未处理 Promise rejection
 const originalUnhandledRejection = process.listeners('unhandledRejection');
@@ -1848,6 +1849,482 @@ describe('FlowModel', () => {
         model.invalidateAutoFlowCache(true);
 
         expect(childSpy).toHaveBeenCalledWith(true);
+      });
+    });
+  });
+
+  // ==================== EXPRESSION RESOLUTION ====================
+  describe('Expression Resolution', () => {
+    let model: FlowModel;
+    let TestFlowModel: typeof FlowModel;
+
+    beforeEach(() => {
+      TestFlowModel = class extends FlowModel<any> {
+        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
+      };
+      model = new TestFlowModel({
+        ...modelOptions,
+        uid: 'test-expression-model-uid',
+      });
+    });
+
+    describe('{{ctx.xxx.yyy.zzz}} expression resolution', () => {
+      test('should resolve simple ctx expressions in step parameters', async () => {
+        const flow: FlowDefinition = {
+          key: 'expressionFlow',
+          auto: true,
+          steps: {
+            testStep: {
+              handler: vi.fn().mockImplementation((ctx, params) => {
+                // 验证表达式被正确解析
+                expect(params.message).toBe('Hello Test User');
+                expect(params.id).toBe('user123');
+                return 'resolved';
+              }),
+              defaultParams: {
+                message: 'Hello {{ctx.user.name}}',
+                id: '{{ctx.user.id}}',
+              },
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(flow);
+
+        model.context.defineProperty('user', {
+          get: () => {
+            return {
+              name: 'Test User',
+              id: 'user123',
+            };
+          },
+        });
+
+        const handlerSpy = flow.steps.testStep.handler as any;
+        await model.applyAutoFlows();
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      test('should resolve nested ctx expressions with multiple levels', async () => {
+        const flow: FlowDefinition = {
+          key: 'nestedExpressionFlow',
+          auto: true,
+          steps: {
+            nestedStep: {
+              handler: vi.fn().mockImplementation((ctx, params) => {
+                expect(params.authorName).toBe('John Doe');
+                expect(params.authorEmail).toBe('john@example.com');
+                expect(params.config).toBe('production');
+                return 'nested-resolved';
+              }),
+              defaultParams: {
+                authorName: '{{ctx.article.author.profile.name}}',
+                authorEmail: '{{ctx.article.author.profile.email}}',
+                config: '{{ctx.app.settings.environment}}',
+              },
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(flow);
+
+        model.context.defineProperty('article', {
+          get: () => ({
+            author: {
+              profile: {
+                name: 'John Doe',
+                email: 'john@example.com',
+              },
+            },
+          }),
+        });
+
+        model.context.defineProperty('app', {
+          get: () => ({
+            settings: {
+              environment: 'production',
+            },
+          }),
+        });
+
+        const handlerSpy = flow.steps.nestedStep.handler as any;
+        await model.applyAutoFlows();
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      test('should resolve async expressions with RecordProxy', async () => {
+        const flow: FlowDefinition = {
+          key: 'asyncRecordFlow',
+          auto: true,
+          steps: {
+            asyncStep: {
+              handler: vi.fn().mockImplementation((ctx, params) => {
+                // 验证表达式被正确解析
+                expect(params.authorName).toBe('Jane Smith');
+                expect(params.categoryName).toBe('Technology');
+                expect(params.tagCount).toBe(3);
+                return 'async-resolved';
+              }),
+              defaultParams: {
+                authorName: '{{ctx.asyncRecord.author.name}}',
+                categoryName: '{{ctx.asyncRecord.category.title}}',
+                tagCount: '{{ctx.asyncRecord.tags.length}}',
+              },
+            },
+          },
+        };
+
+        // 模拟基础记录数据
+        const mockRecord = {
+          id: 1,
+          title: 'Test Article',
+        };
+
+        // 创建模拟 Collection
+        const mockCollection = {
+          name: 'articles',
+          filterTargetKey: 'id',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            const fields = {
+              author: { type: 'belongsTo', isAssociationField: () => true, targetCollection: mockAuthorCollection },
+              category: { type: 'belongsTo', isAssociationField: () => true, targetCollection: mockCategoryCollection },
+              tags: { type: 'hasMany', isAssociationField: () => true, targetCollection: mockTagCollection },
+            };
+            return fields[fieldName] || { isAssociationField: () => false };
+          }),
+        };
+
+        const mockAuthorCollection = {
+          name: 'users',
+          getField: () => ({ isAssociationField: () => false }),
+        };
+
+        const mockCategoryCollection = {
+          name: 'categories',
+          getField: () => ({ isAssociationField: () => false }),
+        };
+
+        const mockTagCollection = {
+          name: 'tags',
+          getField: () => ({ isAssociationField: () => false }),
+        };
+
+        // 模拟 API 客户端
+        const mockApiClient = {
+          resource: vi.fn().mockImplementation((resourceName) => ({
+            get: vi.fn().mockImplementation(() => {
+              if (resourceName === 'articles.author') {
+                return Promise.resolve({
+                  data: { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+                });
+              }
+              if (resourceName === 'articles.category') {
+                return Promise.resolve({
+                  data: { id: 3, title: 'Technology', slug: 'tech' },
+                });
+              }
+              if (resourceName === 'articles.tags') {
+                return Promise.resolve({
+                  data: [
+                    { id: 4, name: 'React' },
+                    { id: 5, name: 'TypeScript' },
+                    { id: 6, name: 'Testing' },
+                  ],
+                  meta: { count: 3 },
+                });
+              }
+              return Promise.resolve({ data: null });
+            }),
+          })),
+          request: vi.fn().mockImplementation(({ url }) => {
+            if (url === 'articles/1/author:get') {
+              return Promise.resolve({
+                data: { data: { id: 2, name: 'Jane Smith', email: 'jane@example.com' } },
+              });
+            }
+            if (url === 'articles/1/category:get') {
+              return Promise.resolve({
+                data: { data: { id: 3, title: 'Technology', slug: 'tech' } },
+              });
+            }
+            if (url === 'articles/1/tags:list') {
+              return Promise.resolve({
+                data: {
+                  data: [
+                    { id: 4, name: 'React' },
+                    { id: 5, name: 'TypeScript' },
+                    { id: 6, name: 'Testing' },
+                  ],
+                  meta: { count: 3 },
+                },
+              });
+            }
+            return Promise.resolve({ data: { data: null } });
+          }),
+        };
+
+        // 先设置 model.context
+        model.context.defineProperty('api', {
+          get: () => mockApiClient,
+        });
+
+        model.context.defineProperty('record', {
+          get: () => mockRecord,
+        });
+
+        // 创建真正的RecordProxy来测试表达式解析
+        const realRecord = { id: 1, title: 'Test Article' };
+        const recordProxy = new RecordProxy(realRecord, mockCollection, model.context);
+
+        model.context.defineProperty('asyncRecord', {
+          get: () => recordProxy,
+        });
+
+        TestFlowModel.registerFlow(flow);
+
+        const handlerSpy = flow.steps.asyncStep.handler as any;
+        await model.applyAutoFlows();
+        expect(handlerSpy).toHaveBeenCalled();
+
+        // 验证真正的RecordProxy API调用
+        expect(mockApiClient.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            url: 'articles/1/author:get',
+          }),
+        );
+        expect(mockApiClient.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            url: 'articles/1/category:get',
+          }),
+        );
+        expect(mockApiClient.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            url: 'articles/1/tags:list',
+          }),
+        );
+      });
+
+      test('should handle mixed sync and async expressions', async () => {
+        const flow: FlowDefinition = {
+          key: 'mixedFlow',
+          auto: true,
+          steps: {
+            mixedStep: {
+              handler: vi.fn().mockImplementation((ctx, params) => {
+                expect(params.title).toBe('Article: Test Article');
+                expect(params.userId).toBe(123);
+                expect(params.authorName).toBe('Alice Brown');
+                expect(params.timestamp).toContain('2024');
+                return 'mixed-resolved';
+              }),
+              defaultParams: {
+                title: 'Article: {{ctx.record.title}}', // 同步访问
+                userId: '{{ctx.user.id}}', // 同步访问
+                authorName: '{{ctx.asyncRecord.author.name}}', // 异步访问
+                timestamp: '{{ctx.getCurrentTime()}}', // 函数调用
+              },
+            },
+          },
+        };
+
+        // 设置同步数据
+        model.context.defineProperty('record', {
+          get: () => ({ title: 'Test Article' }),
+        });
+
+        model.context.defineProperty('user', {
+          get: () => ({ id: 123, name: 'Current User' }),
+        });
+
+        // 设置函数
+        model.context.defineProperty('getCurrentTime', {
+          get: () => () => '2024-01-01T12:00:00Z',
+        });
+
+        // 设置异步数据
+        const mockRecord = { id: 1 };
+        const mockCollection = {
+          name: 'articles',
+          filterTargetKey: 'id',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            if (fieldName === 'author') {
+              return {
+                type: 'belongsTo',
+                isAssociationField: () => true,
+                targetCollection: { name: 'users', getField: () => ({ isAssociationField: () => false }) },
+              };
+            }
+            return { isAssociationField: () => false };
+          }),
+        };
+
+        const mockApiClient = {
+          resource: vi.fn().mockReturnValue({
+            get: vi.fn().mockResolvedValue({
+              data: { id: 2, name: 'Alice Brown' },
+            }),
+          }),
+          request: vi.fn().mockImplementation(({ url }) => {
+            if (url === 'articles/1/author:get') {
+              return Promise.resolve({
+                data: { data: { id: 2, name: 'Alice Brown' } },
+              });
+            }
+            return Promise.resolve({ data: { data: null } });
+          }),
+        };
+
+        model.context.defineProperty('api', {
+          get: () => mockApiClient,
+        });
+
+        // 使用静态对象测试表达式解析
+        model.context.defineProperty('asyncRecord', {
+          get: () => new RecordProxy(mockRecord, mockCollection as any, model.context),
+        });
+
+        TestFlowModel.registerFlow(flow);
+
+        const handlerSpy = flow.steps.mixedStep.handler as any;
+        await model.applyAutoFlows();
+        expect(handlerSpy).toHaveBeenCalled();
+      });
+
+      test('should handle deeply nested async expressions', async () => {
+        const flow: FlowDefinition = {
+          key: 'deepAsyncFlow',
+          auto: true,
+          steps: {
+            deepStep: {
+              handler: vi.fn().mockImplementation((ctx, params) => {
+                expect(params.companyName).toBe('Tech Corp');
+                expect(params.departmentCode).toBe('ENG-001');
+                expect(params.managerEmail).toBe('manager@techcorp.com');
+                return 'deep-resolved';
+              }),
+              defaultParams: {
+                companyName: '{{ctx.asyncRecord.author.profile.company.name}}',
+                departmentCode: '{{ctx.asyncRecord.author.profile.department.code}}',
+                managerEmail: '{{ctx.asyncRecord.author.profile.department.manager.email}}',
+              },
+            },
+          },
+        };
+
+        const mockRecord = { id: 1 };
+
+        // 创建层次化的模拟集合
+        const mockCompanyCollection = {
+          name: 'companies',
+          getField: () => ({ isAssociationField: () => false }),
+        };
+
+        const mockDepartmentCollection = {
+          name: 'departments',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            if (fieldName === 'manager') {
+              return {
+                type: 'belongsTo',
+                isAssociationField: () => true,
+                targetCollection: mockUserCollection,
+              };
+            }
+            return { isAssociationField: () => false };
+          }),
+        };
+
+        const mockUserCollection = {
+          name: 'users',
+          getField: () => ({ isAssociationField: () => false }),
+        };
+
+        const mockProfileCollection = {
+          name: 'profiles',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            if (fieldName === 'company') {
+              return {
+                type: 'belongsTo',
+                isAssociationField: () => true,
+                targetCollection: mockCompanyCollection,
+              };
+            }
+            if (fieldName === 'department') {
+              return {
+                type: 'belongsTo',
+                isAssociationField: () => true,
+                targetCollection: mockDepartmentCollection,
+              };
+            }
+            return { isAssociationField: () => false };
+          }),
+        };
+
+        const mockAuthorCollection = {
+          name: 'users',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            if (fieldName === 'profile') {
+              return {
+                type: 'hasOne',
+                isAssociationField: () => true,
+                targetCollection: mockProfileCollection,
+              };
+            }
+            return { isAssociationField: () => false };
+          }),
+        };
+
+        const mockArticleCollection = {
+          name: 'articles',
+          filterTargetKey: 'id',
+          getField: vi.fn().mockImplementation((fieldName) => {
+            if (fieldName === 'author') {
+              return {
+                type: 'belongsTo',
+                isAssociationField: () => true,
+                targetCollection: mockAuthorCollection,
+              };
+            }
+            return { isAssociationField: () => false };
+          }),
+        };
+
+        const mockApiClient = {
+          request: vi.fn().mockImplementation(({ url }) => {
+            if (url === 'articles/1/author:get') {
+              return Promise.resolve({ data: { data: { id: 2, name: 'Author Name' } } });
+            }
+            if (url === 'users/2/profile:get') {
+              return Promise.resolve({ data: { data: { id: 3, bio: 'Author bio' } } });
+            }
+            if (url === 'profiles/3/company:get') {
+              return Promise.resolve({ data: { data: { id: 4, name: 'Tech Corp' } } });
+            }
+            if (url === 'profiles/3/department:get') {
+              return Promise.resolve({ data: { data: { id: 5, code: 'ENG-001', name: 'Engineering' } } });
+            }
+            if (url === 'departments/5/manager:get') {
+              return Promise.resolve({
+                data: { data: { id: 6, name: 'Manager Name', email: 'manager@techcorp.com' } },
+              });
+            }
+            return Promise.resolve({ data: { data: null } });
+          }),
+        };
+
+        model.context.defineProperty('api', {
+          get: () => mockApiClient,
+        });
+
+        // 使用静态深层嵌套对象测试表达式解析
+        model.context.defineProperty('asyncRecord', {
+          get: () => new RecordProxy(mockRecord, mockArticleCollection as any, model.context),
+        });
+
+        TestFlowModel.registerFlow(flow);
+
+        const handlerSpy = flow.steps.deepStep.handler as any;
+        await model.applyAutoFlows();
+        expect(handlerSpy).toHaveBeenCalled();
       });
     });
   });
