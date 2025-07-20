@@ -8,12 +8,11 @@
  */
 
 import { ButtonProps } from 'antd';
-import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class ResetFilterFormActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: tval('Reset'),
+    children: 'Reset',
   };
 }
 
@@ -24,11 +23,20 @@ ResetFilterFormActionModel.registerFlow({
   },
   steps: {
     doReset: {
-      async handler(ctx, params) {},
+      async handler(ctx, params) {
+        const blockModel = ctx.model.context.blockModel;
+        const gridModel = blockModel.subModels.grid;
+        const fieldModels = gridModel.subModels.items;
+
+        fieldModels.forEach((fieldModel) => {
+          fieldModel.doReset();
+          fieldModel.field.reset();
+        });
+      },
     },
   },
 });
 
 ResetFilterFormActionModel.define({
-  title: tval('Reset'),
+  title: 'Reset',
 });

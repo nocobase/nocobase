@@ -172,14 +172,11 @@ function ConnectFields(props) {
       value: field.name,
     }));
 
+    const value = props.value.find((item) => item.modelUid === model.uid)?.fieldPath;
+
     return (
       <FormItem label={model.title} key={model.uid}>
-        <Select
-          options={options}
-          value={selectedValues[model.uid]?.fieldPath}
-          onChange={(value) => handleSelectChange(model.uid, value)}
-          allowClear
-        />
+        <Select options={options} value={value} onChange={(value) => handleSelectChange(model.uid, value)} allowClear />
       </FormItem>
     );
   });

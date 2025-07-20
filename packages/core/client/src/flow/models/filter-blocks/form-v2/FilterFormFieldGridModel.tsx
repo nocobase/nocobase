@@ -60,14 +60,3 @@ export class FilterFormFieldGridModel extends GridModel {
     return <AddFieldButton items={this.getFieldMenuItems()} subModelKey="items" model={this} />;
   }
 }
-
-FilterFormFieldGridModel.registerFlow({
-  key: 'gridSettings',
-  title: 'Grid settings',
-  auto: true,
-  steps: {
-    getMenuItems: {
-      handler(ctx, params) {},
-    },
-  },
-});
