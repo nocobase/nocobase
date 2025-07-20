@@ -253,7 +253,12 @@ FlowModel 的存在不依赖 React 生命周期，它可以在非 UI 场景中�
 
 模型结构需要被保存、复制（fork）、加载，使用 class 的方式可以更方便地序列化和解构重建。
 
-> 总结：FlowModel 更偏向于“流建模”的领域驱动模型，其类结构提供了组织复杂模型逻辑的能力，与 React 的函数组件模式互为补充，而非替代关系。
+:::info{title="总结"}
+FlowModel 更偏向于“流建模”的领域驱动模型，其类结构提供了组织复杂模型逻辑的能力，与 React 的函数组件模式互为补充，而非替代关系。
+FlowModel 并不会改变组件的实现方式。它只是为 ReactComponent 增加了对 PropsFlow 和 EventFlow 的支持，从而让组件的属性和事件都可以通过可视化方式配置和编排。
+:::
+
+<img style="width: 500px;" src="https://static-docs.nocobase.com/20250603132845.png">
 
 ## FlowModel 与 React.Component 区别
 
@@ -317,7 +322,7 @@ class HelloModel extends FlowModel {
 | `setSubModel` / `addSubModel`    | 显式控制子模型的创建与绑定          |
 | `createFork`                     | 支持一个模型逻辑被复用渲染多次（如表格每行） |
 | `loadModel` / `save()`           | 模型可持久化，与后端打通           |
-| `configureRequiredSteps`         | 配置流步骤设置（如表单多步）        |
+| `openStepSettingsDialog` / `configureRequiredSteps`         | 流步骤设置 |
 
 ### ✅ 总结
 
