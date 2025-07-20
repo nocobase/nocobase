@@ -131,7 +131,7 @@ const subModel = model.setSubModel('subKey', options);
 
 ### 推荐使用 `<AddSubModelButton />` 创建子 Model
 
-可以自动处理绑定和渲染逻辑。
+可以自动处理子 Model 的添加、绑定、存储等问题，详见 [AddSubModelButton 使用说明](https://pr-7056.client.docs-cn.nocobase.com/core/flow-engine/flow-sub-models/add-sub-model)。
 
 ### 渲染 SubModel
 
