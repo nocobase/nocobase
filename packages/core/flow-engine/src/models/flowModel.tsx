@@ -826,7 +826,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
     let model: T;
     if (options instanceof FlowModel) {
-      if (options.parent && options.parent !== this) {
+      if (options.parent.constructor.name !== this.constructor.name) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
