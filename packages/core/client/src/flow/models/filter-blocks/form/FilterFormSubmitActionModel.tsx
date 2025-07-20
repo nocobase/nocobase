@@ -8,10 +8,10 @@
  */
 
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
-import type { ButtonProps, ButtonType } from 'antd/es/button';
 import { tval } from '@nocobase/utils/client';
+import type { ButtonProps, ButtonType } from 'antd/es/button';
 import { ActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormSubmitActionModel extends FilterFormActionModel {
@@ -37,7 +37,7 @@ FilterFormSubmitActionModel.registerFlow({
         await currentBlockModel.form.submit();
         const values = currentBlockModel.form.values;
         const flowEngine = ctx.engine as FlowEngine;
-        flowEngine.forEachModel((model: DataBlockModel) => {
+        flowEngine.forEachModel((model: CollectionBlockModel) => {
           if (model.resource && model?.collection?.name === currentBlockModel.collection.name) {
             (model.resource as MultiRecordResource).addFilterGroup(currentBlockModel.uid, values);
             (model.resource as MultiRecordResource).refresh();

@@ -14,7 +14,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
   static readonly supportedFieldInterfaces = ['url'];
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const content = value && (

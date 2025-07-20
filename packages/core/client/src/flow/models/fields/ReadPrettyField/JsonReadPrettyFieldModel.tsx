@@ -20,7 +20,7 @@ const JSONClassName = css`
 
 export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['json'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { space, style, className } = this.props;

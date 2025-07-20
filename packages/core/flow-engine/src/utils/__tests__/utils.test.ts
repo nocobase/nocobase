@@ -25,15 +25,13 @@ import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
 import type {
   FlowDefinition,
-  ParamsContext,
   ActionDefinition,
   DeepPartial,
   ModelConstructor,
   StepParams,
   StepDefinition,
 } from '../../types';
-import type { ISchema } from '@formily/json-schema';
-import type { APIClient } from '@nocobase/sdk';
+import { FlowRuntimeContext } from '../../flowContext';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -441,18 +439,11 @@ describe('Utils', () => {
 
   // ==================== resolveDefaultParams() FUNCTION ====================
   describe('resolveDefaultParams()', () => {
-    let mockContext: ParamsContext<FlowModel>;
+    let mockContext: FlowRuntimeContext<FlowModel>;
 
     beforeEach(() => {
-      mockContext = {
-        model: mockModel,
-        globals: {
-          flowEngine: mockFlowEngine,
-          app: {},
-        },
-        app: {} as any,
-        inputArgs: { testExtra: 'value' },
-      };
+      mockContext = new FlowRuntimeContext(mockModel, 'testFlow', 'runtime');
+      mockContext.defineProperty('inputArgs', { value: { testExtra: 'testExtra' } });
     });
 
     describe('static parameter resolution', () => {
@@ -500,7 +491,7 @@ describe('Utils', () => {
       });
 
       test('should handle function accessing context properties', async () => {
-        const paramsFn = vi.fn((ctx: ParamsContext<FlowModel>) => ({
+        const paramsFn = vi.fn((ctx: FlowRuntimeContext<FlowModel>) => ({
           modelUid: ctx.model.uid,
           extraData: ctx.inputArgs.testExtra,
         }));
@@ -509,7 +500,7 @@ describe('Utils', () => {
 
         expect(result).toEqual({
           modelUid: mockModel.uid,
-          extraData: 'value',
+          extraData: 'testExtra',
         });
       });
     });
@@ -784,19 +775,19 @@ describe('Utils', () => {
       test('should return static object directly', async () => {
         const staticOptions = { option1: 'value1', option2: 'value2' };
 
-        const result = await resolveDefaultOptions(staticOptions, mockModel);
+        const result = await resolveDefaultOptions(staticOptions, mockModel.context);
 
         expect(result).toEqual(staticOptions);
       });
 
       test('should return empty object for undefined options', async () => {
-        const result = await resolveDefaultOptions(undefined, mockModel);
+        const result = await resolveDefaultOptions(undefined, mockModel.context);
 
         expect(result).toEqual({});
       });
 
       test('should return empty object for null options', async () => {
-        const result = await resolveDefaultOptions(null, mockModel);
+        const result = await resolveDefaultOptions(null, mockModel.context);
 
         expect(result).toEqual({});
       });
@@ -815,7 +806,7 @@ describe('Utils', () => {
           },
         };
 
-        const result = await resolveDefaultOptions(complexOptions, mockModel);
+        const result = await resolveDefaultOptions(complexOptions, mockModel.context);
 
         expect(result).toEqual(complexOptions);
       });
@@ -825,20 +816,20 @@ describe('Utils', () => {
       test('should call function with parent model and return result', async () => {
         const optionsFn = vi.fn().mockReturnValue({ dynamic: 'value' });
 
-        const result = await resolveDefaultOptions(optionsFn, mockModel);
+        const result = await resolveDefaultOptions(optionsFn, mockModel.context);
 
-        expect(optionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(optionsFn).toHaveBeenCalledWith(mockModel.context, undefined);
         expect(result).toEqual({ dynamic: 'value' });
       });
 
       test('should handle function accessing model properties', async () => {
-        const optionsFn = vi.fn((parentModel: FlowModel) => ({
+        const optionsFn = vi.fn((parentContext: any) => ({
           use: 'DynamicModel',
-          parentUid: parentModel.uid,
-          sortIndex: parentModel.sortIndex || 0,
+          parentUid: parentContext.model.uid,
+          sortIndex: parentContext.model.sortIndex || 0,
         }));
 
-        const result = await resolveDefaultOptions(optionsFn, mockModel);
+        const result = await resolveDefaultOptions(optionsFn, mockModel.context);
 
         expect(result).toEqual({
           use: 'DynamicModel',
@@ -850,9 +841,9 @@ describe('Utils', () => {
       test('should handle async function correctly', async () => {
         const asyncOptionsFn = vi.fn().mockResolvedValue({ async: 'result' });
 
-        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel);
+        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel.context);
 
-        expect(asyncOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(asyncOptionsFn).toHaveBeenCalledWith(mockModel.context, undefined);
         expect(result).toEqual({ async: 'result' });
       });
 
@@ -861,7 +852,7 @@ describe('Utils', () => {
           () => new Promise((resolve) => setTimeout(() => resolve({ delayed: 'value' }), 10)),
         );
 
-        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel);
+        const result = await resolveDefaultOptions(asyncOptionsFn, mockModel.context);
 
         expect(result).toEqual({ delayed: 'value' });
       });
@@ -875,7 +866,7 @@ describe('Utils', () => {
 
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await resolveDefaultOptions(errorFn, mockModel);
+        const result = await resolveDefaultOptions(errorFn, mockModel.context);
 
         expect(result).toEqual({});
         expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
@@ -888,7 +879,7 @@ describe('Utils', () => {
 
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await resolveDefaultOptions(rejectFn, mockModel);
+        const result = await resolveDefaultOptions(rejectFn, mockModel.context);
 
         expect(result).toEqual({});
         expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
@@ -899,7 +890,7 @@ describe('Utils', () => {
       test('should handle function returning null and convert to empty object', async () => {
         const nullFn = vi.fn().mockReturnValue(null);
 
-        const result = await resolveDefaultOptions(nullFn, mockModel);
+        const result = await resolveDefaultOptions(nullFn, mockModel.context);
 
         expect(result).toEqual({});
       });
@@ -907,7 +898,7 @@ describe('Utils', () => {
       test('should handle function returning undefined and convert to empty object', async () => {
         const undefinedFn = vi.fn().mockReturnValue(undefined);
 
-        const result = await resolveDefaultOptions(undefinedFn, mockModel);
+        const result = await resolveDefaultOptions(undefinedFn, mockModel.context);
 
         expect(result).toEqual({});
       });
@@ -932,9 +923,9 @@ describe('Utils', () => {
           },
         ]);
 
-        const result = await processMetaChildren(childrenFn, mockModel, 'dynamic.');
+        const result = await processMetaChildren(childrenFn, mockModel.context, 'dynamic.');
 
-        expect(childrenFn).toHaveBeenCalledWith(mockModel);
+        expect(childrenFn).toHaveBeenCalledWith(mockModel.context);
         expect(result).toHaveLength(2);
         expect(result[0]).toEqual({
           key: 'dynamic.Dynamic Table',
@@ -966,9 +957,9 @@ describe('Utils', () => {
           },
         ]);
 
-        const result = await processMetaChildren(asyncChildrenFn, mockModel);
+        const result = await processMetaChildren(asyncChildrenFn, mockModel.context);
 
-        expect(asyncChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(asyncChildrenFn).toHaveBeenCalledWith(mockModel.context);
         expect(result).toHaveLength(1);
         expect(result[0].label).toBe('Async Chart');
         expect(result[0].createModelOptions.use).toBe('AsyncChartModel');
@@ -977,9 +968,9 @@ describe('Utils', () => {
       test('should handle function-based children that return empty array', async () => {
         const emptyChildrenFn = vi.fn().mockReturnValue([]);
 
-        const result = await processMetaChildren(emptyChildrenFn, mockModel);
+        const result = await processMetaChildren(emptyChildrenFn, mockModel.context);
 
-        expect(emptyChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(emptyChildrenFn).toHaveBeenCalledWith(mockModel.context);
         expect(result).toEqual([]);
       });
 
@@ -996,9 +987,9 @@ describe('Utils', () => {
           },
         ]);
 
-        const result = await processMetaChildren(parentChildrenFn, mockModel);
+        const result = await processMetaChildren(parentChildrenFn, mockModel.context);
 
-        expect(parentChildrenFn).toHaveBeenCalledWith(mockModel);
+        expect(parentChildrenFn).toHaveBeenCalledWith(mockModel.context);
         expect(result).toHaveLength(1);
         expect(result[0].label).toBe('Parent Group');
         expect(result[0].children).toHaveLength(1);
@@ -1015,7 +1006,7 @@ describe('Utils', () => {
 
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await processMetaChildren(errorChildrenFn, mockModel);
+        const result = await processMetaChildren(errorChildrenFn, mockModel.context);
 
         expect(result).toEqual([]);
         expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
@@ -1028,7 +1019,7 @@ describe('Utils', () => {
 
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await processMetaChildren(rejectChildrenFn, mockModel);
+        const result = await processMetaChildren(rejectChildrenFn, mockModel.context);
 
         expect(result).toEqual([]);
         expect(consoleSpy).toHaveBeenCalledWith('Error resolving meta children function:', expect.any(Error));
@@ -1039,7 +1030,7 @@ describe('Utils', () => {
       test('should handle function-based children returning null and convert to empty array', async () => {
         const nullChildrenFn = vi.fn().mockReturnValue(null);
 
-        const result = await processMetaChildren(nullChildrenFn, mockModel);
+        const result = await processMetaChildren(nullChildrenFn, mockModel.context);
 
         expect(result).toEqual([]);
       });
@@ -1047,7 +1038,7 @@ describe('Utils', () => {
       test('should handle function-based children returning undefined and convert to empty array', async () => {
         const undefinedChildrenFn = vi.fn().mockReturnValue(undefined);
 
-        const result = await processMetaChildren(undefinedChildrenFn, mockModel);
+        const result = await processMetaChildren(undefinedChildrenFn, mockModel.context);
 
         expect(result).toEqual([]);
       });
@@ -1066,7 +1057,7 @@ describe('Utils', () => {
           },
         ]);
 
-        const result = await processMetaChildren(mixedChildrenFn, mockModel);
+        const result = await processMetaChildren(mixedChildrenFn, mockModel.context);
 
         expect(result).toHaveLength(2);
         expect(result[0].createModelOptions).toEqual({
@@ -1098,7 +1089,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel, 'prefix.');
+        const result = await processMetaChildren(children, mockModel.context, 'prefix.');
 
         expect(result).toHaveLength(2);
         expect(result[0]).toEqual({
@@ -1132,9 +1123,9 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
-        expect(dynamicOptionsFn).toHaveBeenCalledWith(mockModel, undefined);
+        expect(dynamicOptionsFn).toHaveBeenCalledWith(mockModel.context, undefined);
         expect(result[0].createModelOptions).toEqual({
           use: 'DynamicModel',
           parentUid: 'test',
@@ -1153,7 +1144,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].toggleDetector).toBe(toggleDetector);
         expect(result[0].customRemove).toBe(customRemove);
@@ -1188,7 +1179,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel, 'test.');
+        const result = await processMetaChildren(children, mockModel.context, 'test.');
 
         expect(result).toHaveLength(2);
 
@@ -1263,7 +1254,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result).toHaveLength(1);
         expect(result[0].key).toBe('Category A');
@@ -1282,7 +1273,7 @@ describe('Utils', () => {
           { title: 'Block2', defaultOptions: { use: 'Model2' } },
         ];
 
-        const result = await processMetaChildren(children, mockModel, 'custom.');
+        const result = await processMetaChildren(children, mockModel.context, 'custom.');
 
         expect(result[0].key).toBe('custom.Block1');
         expect(result[1].key).toBe('custom.Block2');
@@ -1291,7 +1282,7 @@ describe('Utils', () => {
       test('should generate keys without prefix when not provided', async () => {
         const children = [{ title: 'Block1', defaultOptions: { use: 'Model1' } }];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].key).toBe('Block1');
       });
@@ -1299,7 +1290,7 @@ describe('Utils', () => {
       test('should handle missing title by generating item keys', async () => {
         const children = [{ defaultOptions: { use: 'Model1' } }, { defaultOptions: { use: 'Model2' } }];
 
-        const result = await processMetaChildren(children, mockModel, 'test.');
+        const result = await processMetaChildren(children, mockModel.context, 'test.');
 
         expect(result[0].key).toBe('test.item-0');
         expect(result[1].key).toBe('test.item-1');
@@ -1315,7 +1306,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].createModelOptions.use).toBe('TableModel');
         expect(result[0].createModelOptions.config).toEqual({ test: true });
@@ -1329,7 +1320,7 @@ describe('Utils', () => {
           },
         ];
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].createModelOptions.use).toBe('Block');
       });
@@ -1350,7 +1341,7 @@ describe('Utils', () => {
 
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].createModelOptions).toEqual({
           use: 'Error Block',
@@ -1361,7 +1352,7 @@ describe('Utils', () => {
       });
 
       test('should handle empty children array', async () => {
-        const result = await processMetaChildren([], mockModel);
+        const result = await processMetaChildren([], mockModel.context);
 
         expect(result).toEqual([]);
       });
@@ -1376,7 +1367,7 @@ describe('Utils', () => {
           undefined,
         ].filter(Boolean); // Filter out null/undefined for realistic test
 
-        const result = await processMetaChildren(children, mockModel);
+        const result = await processMetaChildren(children, mockModel.context);
 
         expect(result).toHaveLength(1);
         expect(result[0].label).toBe('Valid Block');
@@ -1459,7 +1450,7 @@ describe('Utils', () => {
     });
 
     describe('merging behavior', () => {
-      test('should merge step and action uiSchemas with step taking priority', async () => {
+      test('should return step uiSchema when both step and action have uiSchema', async () => {
         const actionUiSchema = {
           field1: { type: 'string', title: 'Action Field 1' },
           field2: { type: 'number', title: 'Action Field 2' },
@@ -1477,42 +1468,8 @@ describe('Utils', () => {
         const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
 
         expect(result).toEqual({
-          field1: { type: 'string', title: 'Step Field 1' }, // Step priority
-          field2: { type: 'number', title: 'Action Field 2' }, // From action
-          field3: { type: 'boolean', title: 'Step Field 3' }, // From step
-        });
-      });
-
-      test('should deep merge field properties when both define same field', async () => {
-        const actionUiSchema = {
-          field1: {
-            type: 'string',
-            title: 'Action Field',
-            'x-component': 'Input',
-            'x-component-props': { placeholder: 'Action placeholder' },
-          },
-        };
-        const stepUiSchema = {
-          field1: {
-            title: 'Step Field', // Should override
-            required: true, // Should be added
-            'x-component-props': { disabled: true }, // Should merge
-          },
-        };
-
-        mockAction.uiSchema = actionUiSchema;
-        mockStep.uiSchema = stepUiSchema;
-        mockStep.use = 'testAction';
-        mockModel.flowEngine.getAction = vi.fn().mockReturnValue(mockAction);
-
-        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
-
-        expect(result.field1).toEqual({
-          type: 'string',
-          title: 'Step Field', // Overridden by step
-          'x-component': 'Input',
-          required: true, // Added by step
-          'x-component-props': { disabled: true }, // Step overrides action
+          field1: { type: 'string', title: 'Step Field 1' },
+          field3: { type: 'boolean', title: 'Step Field 3' },
         });
       });
     });
@@ -1565,12 +1522,11 @@ describe('Utils', () => {
 
         const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
 
-        expect(dynamicActionUiSchema).toHaveBeenCalled();
+        expect(dynamicActionUiSchema).not.toHaveBeenCalled();
         expect(dynamicStepUiSchema).toHaveBeenCalled();
         expect(result).toEqual({
-          actionField: { type: 'string', title: 'Action Field' },
           stepField: { type: 'number', title: 'Step Field' },
-          sharedField: { type: 'string', title: 'Step Shared' }, // Step overrides action
+          sharedField: { type: 'string', title: 'Step Shared' },
         });
       });
 

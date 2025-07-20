@@ -8,10 +8,10 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import React from 'react';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { EditableFieldModel } from '../EditableFieldModel';
+import React from 'react';
 import { MarkdownReadPretty } from '../../../../internal/components/MarkdownReadPretty';
+import { FormFieldModel } from '../FormFieldModel';
 
 const Markdown: any = connect(
   Input.TextArea,
@@ -22,7 +22,7 @@ const Markdown: any = connect(
   }),
   mapReadPretty((props) => <MarkdownReadPretty {...props} />),
 );
-export class MarkdownEditableFieldModel extends EditableFieldModel {
+export class MarkdownEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['markdown'];
 
   setComponentProps(componentProps) {

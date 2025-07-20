@@ -15,7 +15,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['color'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
 

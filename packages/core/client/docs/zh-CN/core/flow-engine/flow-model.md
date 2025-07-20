@@ -95,6 +95,21 @@
 
 ---
 
+### 自动流执行生命周期钩子
+
+FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以重写这些 protected 方法来实现自定义逻辑：
+
+- **protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise\<void\>**
+  在所有自动流执行前调用。可以通过抛出 `FlowExitException` 来终止流程执行。
+
+- **protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise\<void\>**
+  在所有自动流执行后调用。可以访问所有自动流的执行结果。
+
+- **protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise\<void\>**
+  在自动流执行出错时调用。可以进行自定义错误处理。
+
+---
+
 ### 步骤设置
 
 - **openStepSettingsDialog(flowKey: string, stepKey: string)**  

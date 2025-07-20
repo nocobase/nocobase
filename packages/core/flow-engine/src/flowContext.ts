@@ -267,6 +267,7 @@ export class FlowContext {
 }
 
 export class FlowEngineContext extends FlowContext {
+  declare dataSourceManager: DataSourceManager;
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
@@ -295,17 +296,26 @@ export class FlowEngineContext extends FlowContext {
 }
 
 export class FlowModelContext extends FlowContext {
-  constructor(protected model: FlowModel) {
+  declare dataSourceManager: DataSourceManager;
+  declare model: FlowModel;
+  declare engine: FlowEngine;
+  constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate(this.model.flowEngine.context);
+    this.addDelegate(model.flowEngine.context);
+    this.defineProperty('model', {
+      value: model,
+    });
   }
 }
 
 export class FlowForkModelContext extends FlowContext {
-  constructor(protected model: FlowModel) {
+  declare dataSourceManager: DataSourceManager;
+  // declare model: FlowModel;
+  declare engine: FlowEngine;
+  constructor(public model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }

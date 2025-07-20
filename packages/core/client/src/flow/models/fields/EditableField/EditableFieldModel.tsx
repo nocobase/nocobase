@@ -12,7 +12,6 @@ import type { FieldPatternTypes, FieldValidator } from '@formily/core';
 import { Field, Form } from '@formily/core';
 import { FieldContext } from '@formily/react';
 import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { FormFieldGridModel, FormModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
@@ -286,7 +285,7 @@ EditableFieldModel.registerFlow({
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('EditableFieldModel').keys()];
+        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
         if (classes.length === 1) {
           return null;
         }
@@ -302,18 +301,9 @@ EditableFieldModel.registerFlow({
           },
         };
       },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-        if (ctx.model.use !== params.use) {
-          const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
+      afterParamsChange: async (ctx, params, previousParams) => {
+        if (params.use !== previousParams.use) {
+          await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
             stepParams: {
               fieldSettings: {
@@ -326,8 +316,18 @@ EditableFieldModel.registerFlow({
               },
             },
           });
-          await ctx.model.destroy();
-          await newModel.applyAutoFlows(ctx);
+        }
+        return true;
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.use,
+        };
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
         }
       },
     },

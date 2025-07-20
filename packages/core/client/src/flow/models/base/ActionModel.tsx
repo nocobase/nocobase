@@ -92,7 +92,7 @@ ActionModel.registerFlow({
   },
 });
 
-export class GlobalActionModel extends ActionModel {}
+export class CollectionActionModel extends ActionModel {}
 
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {

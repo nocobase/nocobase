@@ -17,7 +17,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class NumberReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     return (

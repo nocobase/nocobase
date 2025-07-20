@@ -8,11 +8,10 @@
  */
 import { escapeT } from '@nocobase/flow-engine';
 
-import { css } from '@nocobase/client';
-import { EditableFieldModel } from '@nocobase/client';
 import { connect, mapReadPretty } from '@formily/react';
-import { MapComponent } from '../../components/MapComponent';
+import { css, FormFieldModel } from '@nocobase/client';
 import React from 'react';
+import { MapComponent } from '../../components/MapComponent';
 import { PointReadPretty } from './MapReadPrettyFieldModel';
 
 const className = css`
@@ -31,7 +30,7 @@ const InternalMap = connect((props) => {
   );
 }, mapReadPretty(PointReadPretty));
 
-export class MapEditableFieldModel extends EditableFieldModel {
+export class MapEditableFieldModel extends FormFieldModel {
   getMapFieldType() {
     return null;
   }

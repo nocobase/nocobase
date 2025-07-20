@@ -8,9 +8,9 @@
  */
 
 import { Radio } from '@formily/antd-v5';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class RadioGroupEditableFieldModel extends EditableFieldModel {
+export class RadioGroupEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['radioGroup'];
 
   get component() {

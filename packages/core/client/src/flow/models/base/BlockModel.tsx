@@ -10,7 +10,6 @@ import { Schema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
 import {
-  APIResource,
   BaseRecordResource,
   Collection,
   CollectionField,
@@ -34,8 +33,20 @@ export interface ResourceSettingsInitParams {
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
+  }
+
+  get title() {
+    if (!this._title) {
+      this._title = this.defaultBlockTitle();
+    }
+    return this._title;
+  }
+
+  protected defaultBlockTitle() {
+    return `${this.translate(this.constructor['meta']?.title || this.constructor.name)}`;
   }
 
   renderComponent(): any {
@@ -133,7 +144,11 @@ BlockModel.registerFlow({
 
 BlockModel.define({ hide: true });
 
-export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
+export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
+
+export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
+  isManualRefresh = false;
+
   get dataSource(): DataSource {
     return this.context.dataSource;
   }
@@ -199,11 +214,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {
-    throw new Error('createResource method must be implemented in subclasses of DataBlockModel');
-  }
-
-  get title() {
-    return this.context.t(this._title) || this.defaultBlockTitle();
+    throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
 
   protected defaultBlockTitle() {
@@ -235,7 +246,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   }
 }
 
-DataBlockModel.registerFlow({
+CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
   auto: true,
   steps: {
@@ -271,7 +282,24 @@ DataBlockModel.registerFlow({
   },
 });
 
-DataBlockModel.define({ hide: true });
+CollectionBlockModel.registerFlow({
+  key: 'refreshSettings',
+  auto: true,
+  sort: 10000,
+  steps: {
+    refresh: {
+      async handler(ctx) {
+        if (ctx.model.isManualRefresh) {
+          ctx.model.resource.loading = false;
+        } else {
+          await ctx.model.resource.refresh();
+        }
+      },
+    },
+  },
+});
+
+CollectionBlockModel.define({ hide: true });
 
 export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 

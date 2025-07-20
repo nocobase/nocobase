@@ -22,7 +22,7 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
     'updatedAt',
     'unixTimestamp',
   ];
-  @reactive
+  // @reactive
   public render() {
     const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;

@@ -8,11 +8,10 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { APIClient } from '@nocobase/sdk';
-import { FlowRuntimeContext } from './flowContext';
+import { SubModelItemsType } from './components';
+import { FlowModelContext, FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
-import { ReactView } from './ReactView';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -184,28 +183,18 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   defaultParams?:
     | Record<string, any>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+  afterParamsChange?: (ctx: FlowRuntimeContext<TModel>, params: any, previousParams: any) => boolean | Promise<boolean>;
 }
 
 /**
  * Step definition with unified support for both registered actions and inline handlers
+ * Extends ActionDefinition but makes some properties optional and adds step-specific properties
  */
-export interface StepDefinition<TModel extends FlowModel = FlowModel> {
-  // Basic step properties
-  title?: string;
+export interface StepDefinition<TModel extends FlowModel = FlowModel>
+  extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
-  // Action reference (optional)
   use?: string; // Name of the registered ActionDefinition to use as base
-
-  // Handler (optional, but required if 'use' is not provided)
-  handler?: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
-
-  // UI and params configuration
-  uiSchema?:
-    | Record<string, ISchema>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>); // Optional: overrides uiSchema from ActionDefinition if 'use' is provided
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>); // Optional: overrides/extends defaultParams from ActionDefinition if 'use' is provided
 
   // Step configuration
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
@@ -359,28 +348,33 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
 
 export interface FlowModelMeta {
   title?: string;
+  key?: string;
+  label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
   /**
    * 默认选项配置，支持静态对象或动态函数形式
    *
    * 当为静态对象时，将直接使用该配置作为默认值
-   * 当为函数时，将在创建菜单项时调用，可根据父模型动态生成配置
+   * 当为函数时，将在创建菜单项时调用，可根据父模型上下文动态生成配置
    *
    * @example
    * // 静态配置
    * defaultOptions: { someProperty: 'value' }
    *
    * // 动态配置
-   * defaultOptions: (parentModel) => {
+   * defaultOptions: (ctx) => {
    *   return {
-   *     someProperty: parentModel.someData ? 'valueA' : 'valueB'
+   *     someProperty: ctx.model.someData ? 'valueA' : 'valueB'
    *   };
    * }
    */
+  createModelOptions?:
+    | Record<string, any>
+    | ((ctx: FlowModelContext, item?: any) => Record<string, any> | Promise<Record<string, any>>);
   defaultOptions?:
     | Record<string, any>
-    | ((parentModel: FlowModel) => Record<string, any> | Promise<Record<string, any>>);
+    | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
   // uniqueSub?: boolean;
   /**
@@ -421,24 +415,24 @@ export interface FlowModelMeta {
    * ]
    *
    * // 动态配置
-   * children: (parentModel) => {
-   *   const hasPermission = parentModel.checkPermission('advanced');
+   * children: (ctx) => {
+   *   const hasPermission = ctx.model.checkPermission('advanced');
    *   return [
    *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
    *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
    *   ];
    * }
    */
-  children?: FlowModelMeta[] | ((parentModel: FlowModel) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
+  children?: false | SubModelItemsType;
   /**
    * 切换检测器函数，用于判断该模型是否已存在
    * 主要用于支持切换式的 UI 交互
    */
-  toggleDetector?: (model: FlowModel) => boolean | Promise<boolean>;
+  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
   /**
    * 自定义移除函数，用于处理该项的删除逻辑
    */
-  customRemove?: (model: FlowModel, item: any) => Promise<void>;
+  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
 }
 
 /**
@@ -473,4 +467,11 @@ export interface ToolbarItemConfig {
   visible?: (model: FlowModel) => boolean;
   /** 排序权重，数字越小越靠右（先添加的在右边） */
   sort?: number;
+}
+
+export interface ApplyFlowCacheEntry {
+  status: 'pending' | 'resolved' | 'rejected';
+  promise: Promise<any>;
+  data?: any;
+  error?: any;
 }

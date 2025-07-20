@@ -24,11 +24,11 @@ import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { RecordActionModel } from '../../base/ActionModel';
-import { DataBlockModel } from '../../base/BlockModel';
+import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailsModel extends DataBlockModel<{
+export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
@@ -151,20 +151,20 @@ DetailsModel.registerFlow({
   auto: true,
   sort: 150,
   steps: {
-    dataLoadingMode: {
-      use: 'dataLoadingMode',
-    },
-    refresh: {
-      async handler(ctx, params) {
-        const { dataLoadingMode } = ctx.model.props;
-        if (dataLoadingMode === 'auto') {
-          await ctx.model.applySubModelsAutoFlows('grid');
-          await ctx.model.refresh();
-        } else {
-          ctx.model.resource.loading = false;
-        }
-      },
-    },
+    // dataLoadingMode: {
+    //   use: 'dataLoadingMode',
+    // },
+    // refresh: {
+    //   async handler(ctx, params) {
+    //     const { dataLoadingMode } = ctx.model.props;
+    //     if (dataLoadingMode === 'auto') {
+    //       await ctx.model.applySubModelsAutoFlows('grid');
+    //       await ctx.model.refresh();
+    //     } else {
+    //       ctx.model.resource.loading = false;
+    //     }
+    //   },
+    // },
   },
 });
 

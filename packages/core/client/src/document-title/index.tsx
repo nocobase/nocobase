@@ -33,9 +33,11 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
   const getTitle = useCallback(() => titleRef.current, []);
   const setTitle = useCallback(
     (title) => {
-      document.title = titleRef.current = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${routeT(title || '')}${
-        addonAfter ? ` - ${titleT(addonAfter)}` : ''
-      }`;
+      setTimeout(() => {
+        document.title = titleRef.current = `${addonBefore ? ` - ${t(addonBefore)}` : ''}${routeT(title || '')}${
+          addonAfter ? ` - ${titleT(addonAfter)}` : ''
+        }`;
+      });
     },
     [addonAfter, addonBefore, t, routeT, titleT],
   );

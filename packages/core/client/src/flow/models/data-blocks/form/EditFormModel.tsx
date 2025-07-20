@@ -150,7 +150,7 @@ EditFormModel.registerFlow({
         // 1. 先初始化字段网格，确保所有字段都创建完成
         await ctx.model.applySubModelsAutoFlows('grid');
         // 2. 加载数据
-        await ctx.resource.refresh();
+        // await ctx.resource.refresh();
       },
     },
   },

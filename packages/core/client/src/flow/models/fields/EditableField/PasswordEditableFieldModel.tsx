@@ -9,9 +9,9 @@
 
 import { Password } from '@formily/antd-v5';
 import { tval } from '@nocobase/utils/client';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class PasswordEditableFieldModel extends EditableFieldModel {
+export class PasswordEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['password'];
   get component() {
     return [Password, {}];

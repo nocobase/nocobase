@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from './EditableFieldModel';
 import { Input } from '@formily/antd-v5';
+import { FormFieldModel } from './FormFieldModel';
 
-export class InputEditableFieldModel extends EditableFieldModel {
+export class InputEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence'];
   get component() {
     return [Input, {}];

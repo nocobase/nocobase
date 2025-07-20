@@ -156,7 +156,7 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
     try {
       const action = model.flowEngine?.getAction?.(step.use);
       if (action && action.uiSchema) {
-        stepUiSchema = action.uiSchema;
+        stepUiSchema = stepUiSchema || action.uiSchema;
       }
     } catch (error) {
       console.warn(`Failed to get action ${step.use}:`, error);

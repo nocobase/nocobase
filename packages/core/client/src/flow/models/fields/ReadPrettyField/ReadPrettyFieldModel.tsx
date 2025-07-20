@@ -18,7 +18,7 @@ export class ReadPrettyFieldModel extends FieldModel {
     return this.context.fieldValue;
   }
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix, suffix } = this.props;
@@ -121,13 +121,9 @@ ReadPrettyFieldModel.registerFlow({
           use: ctx.model.use,
         };
       },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-        if (ctx.model.use !== params.use) {
-          const newModel = await ctx.engine.replaceModel(ctx.model.uid, {
+      afterParamsChange: async (ctx, params, previousParams) => {
+        if (params.use !== previousParams.use) {
+          await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
             stepParams: {
               fieldSettings: {
@@ -140,7 +136,13 @@ ReadPrettyFieldModel.registerFlow({
               },
             },
           });
-          await newModel.applyAutoFlows(ctx);
+        }
+        return true;
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
         }
       },
     },

@@ -8,9 +8,9 @@
  */
 
 import { Checkbox } from '@formily/antd-v5';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class CheckboxGroupEditableFieldModel extends EditableFieldModel {
+export class CheckboxGroupEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['checkboxGroup'];
 
   get component() {

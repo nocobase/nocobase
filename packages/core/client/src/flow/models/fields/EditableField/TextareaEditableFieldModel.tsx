@@ -8,9 +8,9 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class TextareaEditableFieldModel extends EditableFieldModel {
+export class TextareaEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea'];
 
   setComponentProps(componentProps) {

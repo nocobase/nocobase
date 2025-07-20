@@ -9,9 +9,9 @@
 
 import { Input } from '@formily/antd-v5';
 import { customAlphabet as Alphabet } from 'nanoid';
-import { EditableFieldModel } from './EditableFieldModel';
+import { FormFieldModel } from './FormFieldModel';
 
-export class NanoIDEditableFieldModel extends EditableFieldModel {
+export class NanoIDEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['nanoid'];
 
   get component() {

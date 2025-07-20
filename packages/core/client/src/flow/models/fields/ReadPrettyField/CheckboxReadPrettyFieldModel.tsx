@@ -15,7 +15,7 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 export class CheckboxReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['checkbox'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix = '', suffix = '', showUnchecked } = this.props;
