@@ -37,8 +37,10 @@ export abstract class LLMProvider {
     const { app, serviceOptions, modelOptions } = opts;
     this.app = app;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
-    this.modelOptions = modelOptions;
-    this.chatModel = this.createModel();
+    if (modelOptions) {
+      this.modelOptions = modelOptions;
+      this.chatModel = this.createModel();
+    }
   }
 
   prepareChain(context: AIChatContext) {
@@ -47,8 +49,10 @@ export abstract class LLMProvider {
       chain = chain.bindTools(context.tools);
     }
     if (context.structuredOutput) {
-      const { schema, options } = this.getStructuredOutputOptions(context.structuredOutput);
-      chain = chain.withStructuredOutput(schema, options);
+      const { schema, options } = this.getStructuredOutputOptions(context.structuredOutput) || {};
+      if (schema) {
+        chain = chain.withStructuredOutput(schema, options);
+      }
     }
     return chain;
   }

@@ -121,5 +121,5 @@ export async function parseMessages(messages: any[]) {
     const msg = await parseMessage(message);
     msgs.push(msg);
   }
-  this.messages = msgs;
+  return msgs;
 }
