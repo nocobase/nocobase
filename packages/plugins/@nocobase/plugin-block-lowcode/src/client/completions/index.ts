@@ -187,4 +187,19 @@ ctx.element.innerHTML = ctx.t('welcome_user', { user: ctx.auth.user.nickname, ns
       });
     },
   },
+  {
+    label: 'Resource Example Snippet',
+    type: 'snippet',
+    info: 'Use a resource to fetch data and display it in the current HTML element.',
+    detail: 'Resource Snippet',
+    boost: 85, // 较低优先级，代码片段
+    apply: `ctx.useResource('SingleRecordResource');
+const resource = ctx.resource;
+resource.setDataSourceKey('main');
+resource.setResourceName('users');
+await resource.refresh();
+ctx.element.innerHTML = \`
+  <pre>\${JSON.stringify(ctx.resource.getData(), null, 2)}</pre>
+\`;`,
+  },
 ] as Completion[];
