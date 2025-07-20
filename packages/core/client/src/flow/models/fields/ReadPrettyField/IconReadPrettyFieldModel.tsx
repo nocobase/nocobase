@@ -14,7 +14,7 @@ import { Icon } from '../../../../icon';
 
 export class IconReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['icon'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
 

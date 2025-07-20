@@ -42,6 +42,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
+import { useDeleteRouteSchema } from './useDeleteRouteSchema';
 
 const components = { TreeSelect };
 
@@ -114,6 +115,7 @@ export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
+  const { deleteRouteSchema } = useDeleteRouteSchema();
   const currentRoute = useCurrentRoute();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const navigate = useNavigateNoUpdate();
@@ -129,7 +131,9 @@ export const RemoveRoute: FC = () => {
           content: t('Are you sure you want to delete it?'),
           onOk: async () => {
             // 删除对应菜单的路由
-            currentRoute?.id != null && (await deleteRoute(currentRoute.id));
+            if (currentRoute?.id != null) {
+              await Promise.all([deleteRoute(currentRoute.id), deleteRouteSchema(currentRoute.schemaUid)]);
+            }
 
             if (
               currentPageUid !== currentRoute?.schemaUid &&

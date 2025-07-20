@@ -23,7 +23,7 @@ const toValue = (value: any, callback: (v: number) => number) => {
 };
 export class PercentReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix = '', suffix = '' } = this.props;

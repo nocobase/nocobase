@@ -11,6 +11,7 @@ import React from 'react';
 import { observer } from '@formily/reactive-react';
 
 /**
+ * @deprecated 已废弃，已经不需要了，render函数会自动处理响应式更新
  * 响应式装饰器，用于让FlowModel的render方法自动支持响应式更新
  *
  * 使用方式：

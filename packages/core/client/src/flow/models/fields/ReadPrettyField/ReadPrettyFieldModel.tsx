@@ -18,7 +18,7 @@ export class ReadPrettyFieldModel extends FieldModel {
     return this.context.fieldValue;
   }
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { prefix, suffix } = this.props;

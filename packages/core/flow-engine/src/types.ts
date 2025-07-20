@@ -8,6 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import { SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
@@ -347,6 +348,8 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
 
 export interface FlowModelMeta {
   title?: string;
+  key?: string;
+  label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
   /**
@@ -366,6 +369,9 @@ export interface FlowModelMeta {
    *   };
    * }
    */
+  createModelOptions?:
+    | Record<string, any>
+    | ((ctx: FlowModelContext, item?: any) => Record<string, any> | Promise<Record<string, any>>);
   defaultOptions?:
     | Record<string, any>
     | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
@@ -417,7 +423,7 @@ export interface FlowModelMeta {
    *   ];
    * }
    */
-  children?: FlowModelMeta[] | ((ctx: FlowModelContext) => FlowModelMeta[] | Promise<FlowModelMeta[]>);
+  children?: false | SubModelItemsType;
   /**
    * 切换检测器函数，用于判断该模型是否已存在
    * 主要用于支持切换式的 UI 交互

@@ -15,11 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Schema } from '@formily/react';
-import {
-  MobilePageContentContainer,
-  MobilePageHeader,
-  MobilePageProvider
-} from '@nocobase/plugin-mobile/client';
+import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
 import { useLocalTranslation } from '../../../locale';
 import {
   fetchChannels,
@@ -129,6 +125,9 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
           <List
             style={{
               '--border-top': 'none',
+              '--font-size': 'var(--adm-font-size-6)',
+              // @ts-ignore
+              '--adm-font-size-main': 'var(--adm-font-size-4)',
             }}
           >
             {messages.map((item) => {
@@ -141,7 +140,11 @@ const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
                     </div>
                   }
                   description={item.content}
-                  extra={dayjs(item.receiveTimestamp).fromNow(true)}
+                  extra={
+                    <span style={{ fontSize: 'var(--adm-font-size-main)' }}>
+                      {dayjs(item.receiveTimestamp).fromNow(true)}
+                    </span>
+                  }
                   onClick={() => {
                     onMessageClick(item);
                   }}

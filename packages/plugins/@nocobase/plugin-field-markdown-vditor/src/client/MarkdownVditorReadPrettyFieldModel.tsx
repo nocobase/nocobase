@@ -15,7 +15,7 @@ import { Display } from './components/Display';
 export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
   static readonly supportedFieldInterfaces = ['vditor'];
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const app = this.context.app;

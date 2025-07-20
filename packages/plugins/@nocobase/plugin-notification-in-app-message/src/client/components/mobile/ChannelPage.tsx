@@ -20,7 +20,7 @@ import React, { useEffect } from 'react';
 import { useLocalTranslation } from '../../../locale';
 import { ChannelStatus, channelStatusFilterObs, fetchChannels, userIdObs } from '../../observables';
 import { ChannelList } from './ChannelList';
-const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickItem?: (item: any) => void; }) => {
+const MobileMessageBoxInner = (props: { displayNavigationBar?: boolean; onClickItem?: (item: any) => void }) => {
   const { t } = useLocalTranslation();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;

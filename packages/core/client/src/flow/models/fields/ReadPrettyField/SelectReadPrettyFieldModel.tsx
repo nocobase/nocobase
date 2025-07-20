@@ -44,7 +44,7 @@ const fieldNames = {
 export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
-  @reactive
+  // @reactive
   public render() {
     const value = this.getValue();
     const { dataSource = [] } = this.props;

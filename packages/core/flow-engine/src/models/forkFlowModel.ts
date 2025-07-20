@@ -212,6 +212,11 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     }
   }
 
+  onUnmount() {
+    if (this.disposed) return;
+    this.dispose();
+  }
+
   /**
    * 释放 fork：从 master.forks 中移除自身并断开引用
    */

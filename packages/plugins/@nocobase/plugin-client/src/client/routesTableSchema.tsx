@@ -24,6 +24,7 @@ import {
   useCollectionRecordData,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
+  useDeleteRouteSchema,
   useInsertPageSchema,
   useMenuTranslation,
   useNocoBaseRoutes,
@@ -1318,23 +1319,6 @@ function useCreateRouteSchema(isMobile: boolean) {
   );
 
   return { createRouteSchema, createTabRouteSchema };
-}
-
-function useDeleteRouteSchema(collectionName = 'uiSchemas') {
-  const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
-  const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
-
-  const deleteRouteSchema = useCallback(
-    async (schemaUid: string) => {
-      const res = await resource[`remove/${schemaUid}`]();
-      refreshMenu();
-      return res;
-    },
-    [resource, refreshMenu],
-  );
-
-  return { deleteRouteSchema };
 }
 
 function TypeTag(props) {
