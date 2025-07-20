@@ -99,7 +99,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
       component: this.component,
     });
     field.setData({ path: this.parent.context.basePath });
-    console.log(this.parent.context.basePath, field, this.collectionField.name);
     return field;
   }
 

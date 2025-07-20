@@ -30,7 +30,7 @@ const ArrayNester = observer((props) => {
         {value.map((_, index) => {
           const gridModel = model.subModels.grid as FlowModel;
           const fork = gridModel.createFork({}, `${index}`);
-          gridModel.context.defineProperty('basePath', {
+          fork.context.defineProperty('basePath', {
             get: () => {
               const basePath = model?.context.basePath;
               const finalPath = basePath ? `${basePath}.${fieldPath}.${index}` : `${fieldPath}.${index}`;
