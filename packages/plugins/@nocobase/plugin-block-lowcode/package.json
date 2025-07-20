@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-block-lowcode",
-  "displayName": "Block: Code",
-  "displayName.zh-CN": "区块：代码",
-  "description": "Create code blocks that execute custom JavaScript code with external library loading support.",
-  "description.zh-CN": "创建代码区块，通过执行自定义 JavaScript 代码进行渲染，支持加载外部库。",
+  "displayName": "Block: JavaScript",
+  "displayName.zh-CN": "区块：JavaScript",
+  "description": "A block for executing custom JavaScript code and dynamically updating HTML content.",
+  "description.zh-CN": "一个用于执行自定义 JavaScript 代码并动态更新 HTML 内容的区块。",
   "version": "1.9.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

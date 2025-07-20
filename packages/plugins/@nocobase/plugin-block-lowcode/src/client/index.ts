@@ -8,7 +8,7 @@
  */
 
 import { lazy, Plugin } from '@nocobase/client';
-import { CodeBlockModel } from './CodeBlockModel';
+import { JavaScriptBlockModel } from './JavaScriptBlockModel';
 import { LowcodeBlockModel } from './LowcodeBlockModel';
 
 const { CodeEditor } = lazy(() => import('./CodeEditor'), 'CodeEditor');
@@ -21,7 +21,7 @@ export class PluginBlockLowcodeClient extends Plugin {
     });
 
     // Register the LowcodeBlockFlowModel
-    this.flowEngine.registerModels({ LowcodeBlockModel, CodeBlockModel });
+    this.flowEngine.registerModels({ LowcodeBlockModel, JavaScriptBlockModel });
 
     // Set up requirejs context for lowcode components
 

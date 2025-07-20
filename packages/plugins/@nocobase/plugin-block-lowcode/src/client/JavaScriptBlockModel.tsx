@@ -19,7 +19,7 @@ import {
 import { Card } from 'antd';
 import React from 'react';
 
-export class CodeBlockModel extends BlockModel {
+export class JavaScriptBlockModel extends BlockModel {
   render() {
     return (
       <Card id={`model-${this.uid}`} className="code-block">
@@ -35,16 +35,21 @@ export class CodeBlockModel extends BlockModel {
   }
 }
 
-CodeBlockModel.registerFlow({
-  key: 'codeSettings',
-  title: 'Code settings',
+JavaScriptBlockModel.define({
+  title: 'JavaScript block',
+});
+
+JavaScriptBlockModel.registerFlow({
+  key: 'jsSettings',
+  title: 'JavaScript settings',
   auto: true,
   steps: {
     runJs: {
+      title: 'Write JavaScript',
       uiSchema: {
         code: {
           type: 'string',
-          title: 'Write code',
+          title: 'Write JavaScript',
           'x-component': 'CodeEditor',
           'x-component-props': {
             minHeight: '400px',
