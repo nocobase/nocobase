@@ -36,6 +36,7 @@ const ArrayNester = observer((props) => {
               const finalPath = basePath ? `${basePath}.${fieldPath}.${index}` : `${fieldPath}.${index}`;
               return finalPath;
             },
+            cache: false,
           });
           return (
             <Card key={index} style={{ marginBottom: 12 }}>
