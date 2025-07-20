@@ -25,8 +25,9 @@ FlowEngine 是一个强大的模型引擎，支持组件化、树形结构建模
   * [渲染 SubModel](#渲染-submodel)
   * [何时使用 SubModel](#什么时候需要-submodel)
 * [作为 Fork Model 使用](#作为-fork-model-使用)
-* [FlowModel API](#flowmodel-api)
+* [为什么 FlowModel 使用类方式（class）实现](#为什么-flowmodel-使用类方式class实现)
 * [FlowModel 与 React.Component 区别](#flowmodel-与-reactcomponent-区别)
+* [FlowModel API](#flowmodel-api)
 
 ---
 
@@ -161,74 +162,6 @@ const fork2 = model.createFork('key2', {});
 
 ---
 
-## FlowModel API
-
-### 渲染
-
-* `render()`
-* `rerender()`
-
-### 属性
-
-* `props`
-* `context`
-* `parent`
-* `subModels`
-
-### 生命周期方法
-
-* `onInit(options)`
-* `onMount()`
-* `onUnmount()`
-* `beforeApplyAutoFlows(inputArgs)`
-* `afterApplyAutoFlows(results, inputArgs)`
-* `onApplyAutoFlowsError(error, inputArgs)`
-
-### 属性和参数管理
-
-* `setProps()`
-* `getProps()`
-* `setStepParams()`
-* `getStepParams()`
-
-### 子模型管理
-
-* `mapSubModels`
-* `findSubModel`
-* `setSubModel`
-* `addSubModel`
-
-### 流管理
-
-* `registerFlow`
-* `dispatchEvent`
-* `applyAutoFlows`
-
-### 事件（emitter.on）
-
-* `onSubModelAdded`
-* `onSubModelRemoved`
-* `onSubModelReplaced`
-* `onSubModelMoved`
-* `onResizeLeft`
-* `onResizeRight`
-* `onResizeBottom`
-* `onResizeCorner`
-* `onResizeEnd`
-
-### Flow Settings
-
-* `openStepSettingsDialog`
-* `configureRequiredSteps`
-
-### 元数据管理
-
-* `static define()`
-* `static defineChildren()`
-* `title`
-
----
-
 ## 为什么 FlowModel 使用类方式（class）实现
 
 虽然在 React 社区中函数组件因其简洁性和 Hook 支持而成为主流，但 FlowModel 依然采用 class 实现，原因如下：
@@ -334,3 +267,71 @@ class HelloModel extends FlowModel {
 | 优势   | 丰富生态和工具链        | 强结构化、流可持久化、子模型可控      |
 
 > FlowModel 可以与 React 互补使用：在 FlowModel 中使用 React 渲染，而由 FlowEngine 管理其生命周期和结构。
+
+---
+
+## FlowModel API
+
+### 渲染
+
+* `render()`
+* `rerender()`
+
+### 属性
+
+* `props`
+* `context`
+* `parent`
+* `subModels`
+
+### 生命周期方法
+
+* `onInit(options)`
+* `onMount()`
+* `onUnmount()`
+* `beforeApplyAutoFlows(inputArgs)`
+* `afterApplyAutoFlows(results, inputArgs)`
+* `onApplyAutoFlowsError(error, inputArgs)`
+
+### 属性和参数管理
+
+* `setProps()`
+* `getProps()`
+* `setStepParams()`
+* `getStepParams()`
+
+### 子模型管理
+
+* `mapSubModels`
+* `findSubModel`
+* `setSubModel`
+* `addSubModel`
+
+### 流管理
+
+* `registerFlow`
+* `dispatchEvent`
+* `applyAutoFlows`
+
+### 事件（emitter.on）
+
+* `onSubModelAdded`
+* `onSubModelRemoved`
+* `onSubModelReplaced`
+* `onSubModelMoved`
+* `onResizeLeft`
+* `onResizeRight`
+* `onResizeBottom`
+* `onResizeCorner`
+* `onResizeEnd`
+
+### Flow Settings
+
+* `openStepSettingsDialog`
+* `configureRequiredSteps`
+
+### 元数据管理
+
+* `static define()`
+* `static defineChildren()`
+* `title`
