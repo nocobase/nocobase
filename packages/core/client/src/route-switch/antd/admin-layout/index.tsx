@@ -34,10 +34,10 @@ import {
   useMenuDragEnd,
   useParseURLAndParams,
   useRequest,
+  useRouterBasename,
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
-  useRouterBasename,
 } from '../../../';
 import {
   CurrentPageUidContext,
@@ -46,22 +46,22 @@ import {
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useLocationNoUpdate,
+  useNavigateNoUpdate,
 } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
+import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
+import { VariableScope } from '../../../variables/VariableScope';
 import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
-import { navigateWithinSelf } from '../../../block-provider/hooks';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { VariableScope } from '../../../variables/VariableScope';
-import _ from 'lodash';
-import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 
+export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
@@ -328,7 +328,7 @@ const GroupItem: FC<{ item: any }> = (props) => {
             <Badge
               {...item._route.options.badge}
               count={badgeCount}
-              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
               dot={false}
             ></Badge>
           )}
@@ -346,7 +346,7 @@ const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (pr
       {(context) =>
         context.collapsed && !props.hidden && !inHeader ? (
           <Tooltip title={props.title} placement="right">
-            <Badge {...props.badgeProps} style={{ transform: 'none' }} dot={false}>
+            <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
               {props.children}
             </Badge>
           </Tooltip>
@@ -438,7 +438,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
               <Badge
                 {...item._route.options?.badge}
                 count={badgeCount}
-                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
                 dot={false}
               ></Badge>
             )}
@@ -469,7 +469,7 @@ const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean
           {badgeCount != null && (
             <Badge
               {...badgeProps}
-              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor }}
+              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
               dot={false}
             ></Badge>
           )}

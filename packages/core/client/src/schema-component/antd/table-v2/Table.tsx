@@ -70,6 +70,9 @@ import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
+
+// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
 // Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
@@ -671,12 +674,12 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
   const isReadPrettyMode =
-    !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
+    (!!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true)) ||
+    schema?.['x-action-column'] === 'actions';
   const mergedStyle = useMemo(
     () => ({ overflow: 'hidden', ...props.style, ...dynamicStyle }),
     [props.style, dynamicStyle],
   );
-
   return (
     <FlagProvider isInTableCell>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}

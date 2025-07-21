@@ -1,16 +1,30 @@
 # @nocobase/plugin-workflow-cc
 
-## 分支
+<video width="100%" controls>
+      <source src="https://static-docs.nocobase.com/NocoBase0510.mp4" type="video/mp4">
+</video>
 
-和 nocobase 仓库一样，也分为 main 和 next 两个分支
 
-- main：只处理缺陷修复
-- next：新插件、新特性、不兼容性变更等
+## What is NocoBase
 
-## 提测
+NocoBase is a scalability-first, open-source no-code development platform.  
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
-- 提交 PR 之后，会自动生成 PR 测试环境，测试通过后再合并到对应分支
+Homepage:  
+https://www.nocobase.com/
 
-```bash
-pr-<number>-<pro-tpl>.test.nocobase.com
-``` 
+Online Demo:  
+https://demo.nocobase.com/new
+
+Documents:  
+https://docs.nocobase.com/
+
+Commericial license & plugins:  
+https://www.nocobase.com/en/commercial
+
+License agreement:   
+https://www.nocobase.com/en/agreement
+
+
+## Contact Us:  
+hello@nocobase.com

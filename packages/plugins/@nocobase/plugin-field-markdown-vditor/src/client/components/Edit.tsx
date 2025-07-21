@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile, usePlugin, withDynamicSchemaProps } from '@nocobase/client';
+import {
+  useAPIClient,
+  useCompile,
+  usePlugin,
+  withDynamicSchemaProps,
+  useZIndexContext,
+  getZIndex,
+} from '@nocobase/client';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
@@ -35,6 +42,9 @@ export const Edit = withDynamicSchemaProps((props) => {
   const compileRef = useRef(compile);
   compileRef.current = compile;
   const { t } = useTranslation();
+  const parentZIndex = useZIndexContext();
+
+  const zIndex = getZIndex('drawer', parentZIndex + 1000, 0);
 
   const lang: any = useMemo(() => {
     const currentLang = locale.replace(/-/g, '_');
@@ -174,6 +184,28 @@ export const Edit = withDynamicSchemaProps((props) => {
       }
     }
   }, [disabled, editorReady]);
+
+  useEffect(() => {
+    if (!containerParentRef.current) return;
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of Array.from(mutation.addedNodes)) {
+          if (node instanceof HTMLElement && node.classList.contains('vditor-img')) {
+            // 移动图片预览层到弹窗容器
+            containerParentRef.current.appendChild(node);
+            node.style.zIndex = String(zIndex);
+          }
+        }
+      }
+    });
+
+    observer.observe(document.body, { childList: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [zIndex]);
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;

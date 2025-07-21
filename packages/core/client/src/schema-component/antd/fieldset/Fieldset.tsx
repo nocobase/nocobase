@@ -7,6 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PER_PAGE = 20;
-export const SIMPLE_PAGINATION_LIMIT = 300000;
+import React from 'react';
+import { FormLayout } from '@formily/antd-v5';
+import { Card } from 'antd';
+
+export function Fieldset(props) {
+  return (
+    <Card>
+      <FormLayout layout={props.layout || 'vertical'}>{props.children}</FormLayout>
+    </Card>
+  );
+}
