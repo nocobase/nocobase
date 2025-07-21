@@ -310,6 +310,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (_.isFunction(this.collection['isView']) && this.collection['isView']()) {
       return 0;
     }
+    const tableName = this.collection.tableName();
     if (this.database.isMySQLCompatibleDialect()) {
       await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
       const results: any[] = await this.database.sequelize.query(
@@ -318,7 +319,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         WHERE table_schema = DATABASE()
           AND table_name = ?
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        { replacements: [tableName], type: QueryTypes.SELECT },
       );
       return Number(results?.[0]?.table_rows ?? 0);
     }
@@ -330,7 +331,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
         WHERE c.relname = ? AND n.nspname = current_schema();
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        { replacements: [tableName], type: QueryTypes.SELECT },
       );
       return Number(results?.[0]?.estimate ?? 0);
     }
@@ -342,7 +343,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         FROM sys.dm_db_partition_stats
         WHERE object_id = OBJECT_ID(?) AND (index_id = 0 OR index_id = 1)
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
+        { replacements: [tableName], type: QueryTypes.SELECT },
       );
       return Number(results?.[0]?.estimate ?? 0);
     }
