@@ -10,22 +10,22 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Typography, Checkbox } from 'antd';
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { FormProvider, SchemaComponent } from '../../core';
-import { useCompile, useDesignable } from '../../hooks';
-import { useProps } from '../../hooks/useProps';
-import { useToken } from '../../../style';
-import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
-import { Action, ActionProps } from '../action';
-import { StablePopover } from '../popover';
-import { ConfigProvider } from 'antd';
+import { Checkbox, ConfigProvider, Typography } from 'antd';
 import { Popup } from 'antd-mobile';
 import { CloseOutline } from 'antd-mobile-icons';
-import { useZIndexContext } from '../action/zIndexContext';
+import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { isDesktop } from 'react-device-detect';
+import { useTranslation } from 'react-i18next';
+import { useNiceDropdownMaxHeight } from '../../../common/useNiceDropdownHeight';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { useToken } from '../../../style';
+import { FormProvider, SchemaComponent } from '../../core';
+import { useDesignable } from '../../hooks';
+import { useProps } from '../../hooks/useProps';
+import { Action, ActionProps } from '../action';
+import { useZIndexContext } from '../action/zIndexContext';
+import { StablePopover } from '../popover';
 
 // Mobile container component
 const EditTableActionMobileContainer = (props: {
@@ -157,6 +157,7 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
   const { designable, dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const form = useMemo<Form>(() => props.form || createForm(), [props.form]);
+  const popupMaxHeight = useNiceDropdownMaxHeight([visible]);
 
   // Compatible with old UISchema (before 1.0), keeping useProps for compatibility
   const { columns, onSubmit, onReset, Container: propContainer, icon, onlyIcon } = useProps(props);
@@ -190,10 +191,11 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
         fieldSchema={fieldSchema}
         onReset={onReset}
         setVisible={setVisible}
+        popupMaxHeight={popupMaxHeight}
         onSubmit={onSubmit}
       />
     );
-  }, [field, fieldSchema, form, onReset, onSubmit, columns, currentColumns, setCurrentColumns]);
+  }, [field, fieldSchema, form, onReset, onSubmit, columns, currentColumns, setCurrentColumns, popupMaxHeight]);
 
   return (
     <EditTableActionContext.Provider value={editTableActionContextValue}>
@@ -263,6 +265,7 @@ const EditTableActionContent = observer(
     fieldSchema,
     onReset,
     setVisible,
+    popupMaxHeight,
     onSubmit,
   }: {
     form: Form<any>;
@@ -273,9 +276,9 @@ const EditTableActionContent = observer(
     fieldSchema;
     onReset: any;
     setVisible: React.Dispatch<React.SetStateAction<boolean>>;
+    popupMaxHeight: number;
     onSubmit: any;
   }) => {
-    const compile = useCompile();
     const { t } = useTranslation();
     const { token } = useToken();
 
@@ -364,7 +367,7 @@ const EditTableActionContent = observer(
           <div
             className={contentStyle}
             style={{
-              maxHeight: 'calc(100vh - 300px)',
+              maxHeight: popupMaxHeight - 80,
               overflowY: 'auto',
               contain: 'layout style',
             }}
