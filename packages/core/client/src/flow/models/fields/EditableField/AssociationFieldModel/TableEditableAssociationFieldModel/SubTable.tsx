@@ -107,7 +107,6 @@ export const SubTable = observer(() => {
     [field.value],
   );
 
-  console.log(field.value);
   return (
     <Card>
       <Table columns={getColumns()} tableLayout="fixed" scroll={{ x: 'max-content' }} dataSource={dataSource} />

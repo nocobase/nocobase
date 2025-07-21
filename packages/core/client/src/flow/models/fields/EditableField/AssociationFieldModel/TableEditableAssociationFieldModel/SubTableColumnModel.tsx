@@ -95,6 +95,13 @@ export class SubTableColumnModel extends TableColumnModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          fork.context.defineProperty('basePath', {
+            get: () => {
+              const basePath = (this.parent as FieldModel).fieldPath;
+              return `${basePath}.${index}`;
+            },
+            cache: false,
+          });
           return <FlowModelRenderer model={fork} />;
         })}
       </>
