@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { Plugin } from '../application/Plugin';
 import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
+import * as filterFormActions from './models/filter-blocks/form-v2/flow-actions';
 import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
@@ -30,6 +31,7 @@ export class PluginFlowEngine extends Plugin {
     // console.log('Registering flow models:', Object.keys(filteredModels));
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
+    this.flowEngine.registerActions(filterFormActions);
     this.app.addProvider(FlowEngineRunner, {});
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
