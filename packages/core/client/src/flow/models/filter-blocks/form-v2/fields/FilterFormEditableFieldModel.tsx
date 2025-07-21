@@ -83,3 +83,17 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     });
   }
 }
+
+FilterFormEditableFieldModel.registerFlow({
+  key: 'filterFormItemSettings',
+  auto: true,
+  title: 'Filter form item settings',
+  steps: {
+    connectFields: {
+      use: 'connectFields',
+    },
+    defaultOperator: {
+      use: 'defaultOperator',
+    },
+  },
+});

@@ -16,17 +16,3 @@ export class InputFilterFormEditableFieldModel extends FilterFormEditableFieldMo
     return [Input, {}];
   }
 }
-
-InputFilterFormEditableFieldModel.registerFlow({
-  key: 'filterInputSettings',
-  auto: true,
-  title: 'Filter input settings',
-  steps: {
-    connectFields: {
-      use: 'connectFields',
-    },
-    defaultOperator: {
-      use: 'defaultOperator',
-    },
-  },
-});
