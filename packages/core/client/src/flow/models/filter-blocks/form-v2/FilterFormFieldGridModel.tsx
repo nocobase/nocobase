@@ -36,7 +36,7 @@ export class FilterFormFieldGridModel extends GridModel {
     const menuItems = buildFieldMenuItems(
       collections,
       this,
-      'FilterEditableFieldModel',
+      'FilterFormEditableFieldModel',
       'items',
       ({ defaultOptions, fieldPath, collection }) => ({
         use: defaultOptions.use,

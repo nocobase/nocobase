@@ -8,13 +8,13 @@
  */
 
 import { FormItem, Input, Select } from '@formily/antd-v5';
-import { FilterEditableFieldModel } from './FilterEditableFieldModel';
+import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
 import React from 'react';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { getAllDataModels } from '../utils';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 
-export class FilterInputEditableFieldModel extends FilterEditableFieldModel {
+export class InputFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
   static readonly supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence'];
   get component() {
     return [Input, {}];
@@ -93,7 +93,7 @@ export class FilterInputEditableFieldModel extends FilterEditableFieldModel {
   }
 }
 
-FilterInputEditableFieldModel.registerFlow({
+InputFilterFormEditableFieldModel.registerFlow({
   key: 'filterInputSettings',
   auto: true,
   title: 'Filter input settings',
