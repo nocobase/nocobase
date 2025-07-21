@@ -6,8 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { castArray } from 'lodash';
+import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTable } from './SubTable';

@@ -15,16 +15,14 @@ import {
   escapeT,
   FlowModel,
   FlowsFloatContextMenu,
-  useFlowSettingsContext,
   FlowModelRenderer,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
-import { TableColumnModel } from '../../../../data-blocks/table/TableColumnModel';
 
-export class SubTableColumnModel extends TableColumnModel {
+export class SubTableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -119,9 +117,9 @@ SubTableColumnModel.define({
 });
 
 SubTableColumnModel.registerFlow({
-  key: 'tableColumnSettings',
+  key: 'subTableColumnSettings',
   auto: true,
-  sort: 600,
+  sort: 500,
   title: escapeT('Table column settings'),
   steps: {
     init: {
@@ -137,23 +135,24 @@ SubTableColumnModel.registerFlow({
     },
     title: {
       title: escapeT('Column title'),
-      uiSchema: {
-        title: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Column title'),
+      uiSchema: (ctx) => {
+        return {
+          title: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              placeholder: escapeT('Column title'),
+            },
+            'x-reactions': (field) => {
+              const { model } = ctx;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
           },
-          'x-reactions': (field) => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useFlowSettingsContext<FieldModel>();
-            const originTitle = model.collectionField?.title;
-            field.decoratorProps = {
-              ...field.decoratorProps,
-              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-            };
-          },
-        },
+        };
       },
       defaultParams: (ctx) => {
         return {
