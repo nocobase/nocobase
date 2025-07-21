@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, {
@@ -67,9 +67,9 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 
 // Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
@@ -283,7 +283,7 @@ const useTableColumns = (
               columnHidden: schemaHidden,
             };
           },
-        } as TableColumnProps<any>;
+        } as TableColumnProps;
       }) || []
     );
   }, [
@@ -340,11 +340,12 @@ const useTableColumns = (
 
     if (props.showDel) {
       res.push({
-        title: '',
+        title: '' as any,
         key: 'delete',
         width: 60,
         align: 'center',
         fixed: 'right',
+        // @ts-ignore
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (
