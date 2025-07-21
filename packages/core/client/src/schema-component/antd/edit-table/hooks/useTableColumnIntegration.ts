@@ -24,8 +24,10 @@ export interface TableColumnProps {
 /**
  * Hook to integrate EditTable column settings with Table columns
  * This hook handles the merging of saved column settings with schema columns
+ * @param originalColumns - The original columns from schema
+ * @param enable - Whether to enable integration logic; if false, returns originalColumns directly
  */
-export const useTableColumnIntegration = (originalColumns: TableColumnProps[]) => {
+export const useTableColumnIntegration = (originalColumns: TableColumnProps[], enable = true) => {
   const fieldSchema = useFieldSchema();
 
   // Get table ID for localStorage
@@ -60,7 +62,7 @@ export const useTableColumnIntegration = (originalColumns: TableColumnProps[]) =
 
   // Merge original columns with saved settings
   const integratedColumns = useMemo(() => {
-    if (!savedColumnSettings || savedColumnSettings.length === 0) {
+    if (!enable || !savedColumnSettings || savedColumnSettings.length === 0) {
       return originalColumns;
     }
 
@@ -76,7 +78,7 @@ export const useTableColumnIntegration = (originalColumns: TableColumnProps[]) =
 
       if (savedSetting) {
         // Merge saved settings with original column (saved settings take priority)
-        const columnHidden = !savedSetting.visible;
+        const columnHidden = column.columnHidden || !savedSetting.visible;
         const columnWidth = savedSetting.width || column.width;
         const columnFixed = savedSetting.fixed || column.fixed;
 
@@ -118,7 +120,5 @@ export const useTableColumnIntegration = (originalColumns: TableColumnProps[]) =
 
   return {
     columns: integratedColumns,
-    hasSettings: !!(savedColumnSettings && savedColumnSettings.length > 0),
-    tableId,
   };
 };

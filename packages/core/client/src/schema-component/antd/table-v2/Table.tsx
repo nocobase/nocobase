@@ -70,7 +70,6 @@ import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 
 // Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
@@ -301,8 +300,22 @@ const useTableColumns = (
     props.optimizeTextCellRender,
   ]);
 
-  // Apply EditTable column integration
-  const { columns: integratedColumns } = useTableColumnIntegration(baseColumns);
+  // Helper function to check if the table schema contains an EditTable.Action in actions
+  function hasEditTableAction(schema) {
+    const actionsProps = schema?.parent?.properties?.actions?.properties;
+    if (!actionsProps) return false;
+    return Object.values(actionsProps).some((item) => item['x-component'] === 'EditTable.Action');
+  }
+
+  // Check if the current table contains the editTable action
+  const editTableActionExists = hasEditTableAction(schema);
+
+  // Always call the hook, but only enable integration logic when needed
+  // Use the columns from the hook (either integrated or baseColumns)
+  const { columns: integratedColumns } = useTableColumnIntegration(
+    baseColumns,
+    !designable && editTableActionExists, // enable only if not designable and editTableActionExists
+  );
 
   // Apply column hidden styles and width adjustments
   const columns = useMemo(() => {

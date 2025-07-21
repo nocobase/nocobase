@@ -209,7 +209,7 @@ const InternalEditTableAction = React.memo((props: EditTableActionProps) => {
       >
         {/* Adding a div here can prevent unnecessary re-rendering of Action */}
         <div>
-          <Action onClick={handleClick} icon={icon} onlyIcon={onlyIcon} {...props} />
+          <Action {...props} onClick={handleClick} icon={icon} onlyIcon={onlyIcon} disabled={designable} />
         </div>
       </Container>
     </EditTableActionContext.Provider>
