@@ -109,7 +109,7 @@ export const SubTable = observer(() => {
 
   return (
     <Card>
-      <Table columns={getColumns()} tableLayout="fixed" scroll={{ x: 'max-content' }} dataSource={dataSource} />
+      <Table columns={getColumns()} scroll={{ x: 'max-content' }} dataSource={dataSource} />
       <a onClick={handleAdd}>
         <PlusOutlined /> Add new
       </a>
