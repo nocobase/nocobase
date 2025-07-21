@@ -11,6 +11,7 @@ import { UploadOutlined } from '@ant-design/icons';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { castArray } from 'lodash';
+import { largeField } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -44,6 +45,7 @@ export const CardUpload = (props) => {
     </FieldContext.Provider>
   );
 };
+@largeField()
 export class UploadEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = [
     'attachment',

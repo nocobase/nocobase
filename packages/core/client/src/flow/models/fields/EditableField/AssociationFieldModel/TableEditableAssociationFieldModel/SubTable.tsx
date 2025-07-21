@@ -19,11 +19,18 @@ import {
 import { ArrayField } from '@formily/core';
 import { tval } from '@nocobase/utils/client';
 import { Table, Card } from 'antd';
-import { castArray } from 'lodash';
 import { PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { FieldContext, useField, observer } from '@formily/react';
+import { useField, observer } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SubTableColumnModel } from './SubTableColumnModel';
+
+const transformItem = (use: string) => {
+  const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
+  if (selectGroup.includes(use)) {
+    return 'SelectEditableFieldModel';
+  }
+  return use;
+};
 
 const AddFieldColumn = ({ model }) => {
   const items = buildFieldItems(
@@ -31,37 +38,39 @@ const AddFieldColumn = ({ model }) => {
     model,
     'EditableFieldModel',
     'columns',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'SubTableColumnModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: model.collection.dataSourceKey,
-            collectionName: model.collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: model.collection.dataSourceKey,
-                collectionName: model.collection.name,
-                fieldPath,
-              },
-            },
-            formItemSettings: {
-              showLabel: {
-                showLabel: false,
-              },
+    ({ defaultOptions, fieldPath }) => {
+      return {
+        use: 'SubTableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: model.collection.dataSourceKey,
+              collectionName: model.collection.name,
+              fieldPath,
             },
           },
         },
-      },
-    }),
+        subModels: {
+          field: {
+            use: transformItem(defaultOptions.use),
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: model.collection.dataSourceKey,
+                  collectionName: model.collection.name,
+                  fieldPath,
+                },
+              },
+              formItemSettings: {
+                showLabel: {
+                  showLabel: false,
+                },
+              },
+            },
+          },
+        },
+      };
+    },
   );
   return (
     <AddFieldButton

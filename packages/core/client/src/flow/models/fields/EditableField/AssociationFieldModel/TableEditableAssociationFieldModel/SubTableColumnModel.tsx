@@ -9,6 +9,7 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { EditOutlined } from '@ant-design/icons';
 import {
   DragHandler,
   Droppable,
@@ -16,11 +17,52 @@ import {
   FlowModel,
   FlowsFloatContextMenu,
   FlowModelRenderer,
+  useFlowEngine,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
-import React from 'react';
+import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
+import { QuickEditForm } from '../../../../data-blocks/form/QuickEditForm';
+import { useField } from '@formily/react';
+
+const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index }) => {
+  const flowEngine = useFlowEngine();
+  const ref = useRef(null);
+  return (
+    <div ref={ref}>
+      <EditOutlined
+        className="edit-icon"
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            await flowEngine.context.viewOpener.open({
+              mode: 'popover',
+              target: e.target,
+              placement: 'rightTop',
+              styles: {
+                body: {
+                  maxWidth: 400,
+                },
+              },
+              content: (popover) => {
+                return (
+                  <>
+                    <FlowModelRenderer model={model} uid={model.uid} />
+                  </>
+                );
+              },
+            });
+          } catch (error) {
+            console.log(error);
+          }
+        }}
+      />
+    </div>
+  );
+};
 
 export class SubTableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -81,9 +123,9 @@ export class SubTableColumnModel extends FieldModel {
 
   render() {
     return (value, record, index) => (
-      <>
+      <div>
         {this.mapSubModels('field', (action: EditableFieldModel) => {
-          const fork = action.createFork({}, `${index}`);
+          const fork: any = action.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
           });
@@ -100,9 +142,23 @@ export class SubTableColumnModel extends FieldModel {
             },
             cache: false,
           });
-          return <FlowModelRenderer model={fork} />;
+          if (fork.constructor.isLargeField) {
+            return (
+              <LargeFieldEdit
+                model={fork}
+                params={{
+                  fieldPath: action.fieldPath,
+                  collectionName: action.collectionField.collection.name,
+                  dataSourceKey: action.collectionField.dataSourceKey,
+                }}
+                index={index}
+              />
+            );
+          } else {
+            return <FlowModelRenderer model={fork} />;
+          }
         })}
-      </>
+      </div>
     );
   }
 }
