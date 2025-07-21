@@ -12,7 +12,7 @@ import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL'] as any;
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea'] as any;
 
   // @reactive
   public render() {

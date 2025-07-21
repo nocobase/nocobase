@@ -24,6 +24,13 @@ export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
 
+  protected onMount(): void {
+    // if having ref, should rerender to insert content to html again
+    if (this.ref.current) {
+      this.rerender();
+    }
+  }
+
   render() {
     const { loading, error } = this.props;
 
@@ -46,7 +53,7 @@ export class LowcodeBlockModel extends BlockModel {
 }
 
 LowcodeBlockModel.define({
-  title: 'Code',
+  title: 'Code (Deprecated)',
   group: 'Content',
   icon: 'CloudOutlined',
   defaultOptions: {
