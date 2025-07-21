@@ -108,7 +108,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(
 ): Promise<any> {
   try {
     // 单个表达式直接返回值，保持原始类型
-    const singleMatch = expression.match(/^\{\{(ctx\.[^}]+)\}\}$/);
+    const singleMatch = expression.match(/^\{\{\s*(ctx\.[^}]+)\s*\}\}$/);
     if (singleMatch) {
       const path = singleMatch[1];
 
@@ -126,12 +126,29 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(
       `,
       )(ctx);
 
-      return result;
+      if (result !== undefined) {
+        return result;
+      }
+
+      const fallBackResult = await new Function(
+        'ctx',
+        `
+        return (async () => {
+          try {
+            return await ${path};
+          } catch (e) {
+            return undefined;
+          }
+        })();
+      `,
+      )(ctx.currentFlow); // TODO: 当currentFlow彻底替换后成新context后这里就不需要了
+
+      return fallBackResult;
     }
 
     // 多个表达式使用模板字符串，需要预先解析所有值
     let result = expression;
-    const matches = [...expression.matchAll(/\{\{(ctx\.[^}]+)\}\}/g)];
+    const matches = [...expression.matchAll(/\{\{\s*(ctx\.[^}]+)\s*\}\}/g)];
 
     for (const [fullMatch, path] of matches) {
       const value = await new Function(
