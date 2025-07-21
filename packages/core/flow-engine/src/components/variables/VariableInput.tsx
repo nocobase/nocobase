@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Input, Cascader, Tag, Button, Space, theme } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { useFlowSettingsContext } from '../../hooks';
@@ -40,21 +40,6 @@ interface CascaderOption {
 }
 
 const VARIABLE_REGEX = /\{\{\s*ctx\.([^}]+?)\s*\}\}/g;
-const CONSTANT_TYPES = [
-  { value: 'string', label: 'String', default: '' },
-  { value: 'number', label: 'Number', default: '0' },
-  { value: 'boolean', label: 'Boolean', default: 'false' },
-  { value: 'date', label: 'Date', default: () => new Date().toISOString() },
-];
-
-const getConstantDefault = (type: string): string => {
-  const constantType = CONSTANT_TYPES.find((t) => t.value === type);
-  return constantType
-    ? typeof constantType.default === 'function'
-      ? constantType.default()
-      : constantType.default
-    : '';
-};
 
 const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[]): CascaderOption[] => {
   return nodes.map((node) => ({
@@ -97,11 +82,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   const cascaderData = useMemo(() => convertMetaTreeToCascaderData(flowContext.getPropertyMetaTree()), [flowContext]);
 
   const options = useMemo(
-    () => [
-      { value: '', label: t('Null') },
-      { value: ' ', label: t('Constant'), children: CONSTANT_TYPES },
-      ...cascaderData,
-    ],
+    () => [{ value: '', label: t('Null') }, { value: 'constant', label: t('Constant') }, ...cascaderData],
     [cascaderData, t],
   );
 
@@ -115,12 +96,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     return model instanceof EditableFieldModelClass;
   }, []);
 
-  // 检查是否应该从model渲染组件
-  const shouldRenderFromModel = renderFromModel ?? isEditableFieldModel(flowContext.model);
-
   // 获取model组件配置
   const modelComponent = useMemo(() => {
-    if (!shouldRenderFromModel || !flowContext.model['component']) return null;
+    const shouldRender = renderFromModel ?? isEditableFieldModel(flowContext.model);
+    if (!shouldRender || !flowContext.model['component']) return null;
 
     const [Component, componentProps = {}] = flowContext.model['component'];
     if (!Component) return null;
@@ -155,7 +134,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
         style: { width: '100%', ...componentProps.style },
       },
     };
-  }, [shouldRenderFromModel, flowContext.model['component'], value, onChange, placeholder, disabled]);
+  }, [renderFromModel, isEditableFieldModel, flowContext.model, value, onChange, placeholder, disabled]);
 
   const getVariableLabels = useCallback(
     (variablePath: string[]): string[] => {
@@ -176,8 +155,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [cascaderData],
   );
 
-  const { displayParts, hasVariable } = useMemo(() => {
-    if (!value) return { displayParts: [], hasVariable: false };
+  const { displayParts, hasVariable, isConstant, cascaderValue } = useMemo(() => {
+    if (!value) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: undefined };
 
     const parts: Array<{ type: 'text' | 'variable'; content: string; labels?: string[] }> = [];
     let lastIndex = 0;
@@ -205,8 +184,27 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       parts.push({ type: 'text', content: value.slice(lastIndex) });
     }
 
-    return { displayParts: parts, hasVariable: foundVariable };
-  }, [value, getVariableLabels]);
+    // 判断是否为常量：有值但没有变量
+    const isConstant = value && !foundVariable;
+
+    // 计算 cascaderValue
+    let cascaderValue;
+    if (foundVariable) {
+      // 单变量模式下用严格匹配，多变量模式下找第一个变量
+      const regex = mode === 'single' ? /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/ : VARIABLE_REGEX;
+      const varMatch = value.match(regex);
+      if (varMatch) {
+        cascaderValue = varMatch[1]
+          .trim()
+          .split('.')
+          .map((part) => part.trim());
+      }
+    } else if (isConstant) {
+      cascaderValue = ['constant'];
+    }
+
+    return { displayParts: parts, hasVariable: foundVariable, isConstant, cascaderValue };
+  }, [value, getVariableLabels, mode]);
 
   const isReadOnlyInSingleMode = mode === 'single' && hasVariable;
 
@@ -231,8 +229,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     (next: string[], optionPath: any[]) => {
       if (next[0] === '') {
         onChange?.('');
-      } else if (next[0] === ' ' && next[1]) {
-        onChange?.(getConstantDefault(next[1]));
+      } else if (next[0] === 'constant') {
+        // 常量选项被选中，但不改变当前值，让用户继续在输入框中输入
+        return;
       } else {
         const lastOption = optionPath[optionPath.length - 1];
         if (lastOption?.isLeaf !== false && !lastOption?.children?.length) {
@@ -271,9 +270,15 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           <Component {...props} />
         </div>
 
-        <Cascader options={options} onChange={handleCascaderChange} changeOnSelect={false} disabled={disabled}>
+        <Cascader
+          options={options}
+          onChange={handleCascaderChange}
+          changeOnSelect={false}
+          disabled={disabled}
+          value={cascaderValue}
+        >
           <Button
-            type={hasVariable ? 'primary' : 'default'}
+            type={hasVariable || isConstant ? 'primary' : 'default'}
             disabled={disabled}
             style={{
               borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0`,
@@ -378,9 +383,15 @@ export const VariableInput: React.FC<VariableInputProps> = ({
         />
       )}
 
-      <Cascader options={options} onChange={handleCascaderChange} changeOnSelect={false} disabled={disabled}>
+      <Cascader
+        options={options}
+        onChange={handleCascaderChange}
+        changeOnSelect={false}
+        disabled={disabled}
+        value={cascaderValue}
+      >
         <Button
-          type={hasVariable ? 'primary' : 'default'}
+          type={hasVariable || isConstant ? 'primary' : 'default'}
           disabled={disabled}
           style={{
             borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0`,
