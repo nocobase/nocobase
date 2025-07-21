@@ -154,7 +154,17 @@ export default {
     const addToCollections = values.filter((table) => !existsCollectionNames.includes(table));
     if (addToCollections.length) {
       const collectionService = new CollectionService(ctx.app.db);
-      await collectionService.addCollections(addToCollections);
+      try {
+        (async () => {
+          const results = await collectionService.loadCollections(addToCollections);
+          await ctx.app.db.getRepository('collections').create({ values: results });
+        })();
+      } catch (e) {
+        ctx.app.db.logger.error('Failed to add collections', {
+          error: e.message,
+          stack: e.stack,
+        });
+      }
     }
     ctx.body = true;
   },

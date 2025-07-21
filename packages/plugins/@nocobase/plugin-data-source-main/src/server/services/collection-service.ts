@@ -57,7 +57,7 @@ interface FieldOptions {
 export class CollectionService {
   constructor(private db: Database) {}
 
-  async addCollections(collectionNames: string[]) {
+  async loadCollections(collectionNames: string[]) {
     const results = (
       await Promise.all(
         collectionNames.map(async (tableName) => {
@@ -88,15 +88,7 @@ export class CollectionService {
         }),
       )
     ).filter(Boolean) as Array<CollectionOptions>;
-    try {
-      await this.db.getRepository('collections').create({ values: results });
-    } catch (e) {
-      this.db.logger.error('Failed to add collections', {
-        error: e.message,
-        stack: e.stack,
-      });
-      throw new Error(`Failed to add collections: ${e.message}`, { cause: e });
-    }
+    return results;
   }
 
   async getCollection(tableInfo: { tableName: string; schema?: string }): Promise<CollectionOptions> {

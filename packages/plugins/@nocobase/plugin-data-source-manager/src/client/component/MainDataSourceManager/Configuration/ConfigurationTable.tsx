@@ -16,6 +16,7 @@ import {
   DataSourceContext_deprecated,
   EditSubFieldAction,
   FieldSummary,
+  LoadCollection,
   SchemaComponent,
   SchemaComponentContext,
   TemplateSummary,
@@ -224,6 +225,7 @@ export const ConfigurationTable = () => {
           FieldSummary,
           TemplateSummay: TemplateSummary,
           CollectionFields,
+          LoadCollection,
         }}
         scope={{
           loadFilterTargetKeys,

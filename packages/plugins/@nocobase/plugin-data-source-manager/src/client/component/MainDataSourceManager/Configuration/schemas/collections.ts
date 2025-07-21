@@ -152,6 +152,11 @@ export const collectionTableSchema: ISchema = {
           },
           'x-align': 'left',
         },
+        loadCollections: {
+          type: 'void',
+          title: '{{ t("Load collection") }}',
+          'x-component': 'LoadCollection',
+        },
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',

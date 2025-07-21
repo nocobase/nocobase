@@ -21,6 +21,7 @@ export * from './SyncSQLFieldsAction';
 export * from './DeleteCollectionAction';
 export * from './AddSubFieldAction';
 export * from './EditSubFieldAction';
+export * from './LoadCollectionAction';
 export * from './components/FieldSummary';
 export * from './components/TemplateSummary';
 export * from './components/CollectionFieldInterfaceTag';
