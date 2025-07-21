@@ -7,26 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ObjectField as ObjectFieldModel } from '@formily/core';
-import { observer, useField, useFieldSchema } from '@formily/react';
-import { Switch, Button, Space, Tooltip, Checkbox } from 'antd';
 import {
-  MenuOutlined,
-  EyeOutlined,
   EyeInvisibleOutlined,
-  VerticalAlignTopOutlined,
+  EyeOutlined,
+  MenuOutlined,
   VerticalAlignBottomOutlined,
   VerticalAlignMiddleOutlined,
+  VerticalAlignTopOutlined,
 } from '@ant-design/icons';
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
-import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
-import { useProps } from '../../hooks/useProps';
-import { useCompile } from '../../hooks';
-import { useToken } from '../../../style';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
-import { useSortable, SortableContext } from '@dnd-kit/sortable';
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { css } from '@emotion/css';
+import { ObjectField as ObjectFieldModel } from '@formily/core';
+import { observer, useField, useFieldSchema } from '@formily/react';
+import { Button, Checkbox, Tooltip } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { useToken } from '../../../style';
+import { useCompile } from '../../hooks';
+import { useProps } from '../../hooks/useProps';
 
 export interface EditTableProps {
   columns?: any[];
