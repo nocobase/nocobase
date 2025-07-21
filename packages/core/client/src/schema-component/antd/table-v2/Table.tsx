@@ -255,6 +255,7 @@ const useTableColumns = (
           fixed: columnFixed,
           ...columnSchema['x-component-props'],
           width: columnWidth,
+          schema: columnSchema,
           render: (value, record, index) => {
             return (
               <RefreshComponentProvider refresh={refresh}>
