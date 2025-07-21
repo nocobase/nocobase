@@ -16,6 +16,9 @@ import {
   FlowModelRenderer,
   AddFieldButton,
 } from '@nocobase/flow-engine';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
+import { action } from '@formily/reactive';
+import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { tval } from '@nocobase/utils/client';
 import { Table, Card } from 'antd';
@@ -94,15 +97,48 @@ export const SubTable = observer(() => {
   const model = useFlowModel();
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
-
     return [
       ...baseColumns,
-      { key: 'empty' },
+      {
+        key: 'empty',
+      },
       {
         key: 'addColumn',
         fixed: 'right',
         width: 200,
         title: <AddFieldColumn model={model} />,
+      },
+      {
+        title: '',
+        key: 'delete',
+        width: 60,
+        align: 'center',
+        fixed: 'right',
+        render: (v, record, index) => {
+          return (
+            <div
+              onClick={() => {
+                return action(() => {
+                  const fieldIndex = index;
+                  if (!Array.isArray(field.value)) return;
+
+                  // 删除一条记录（确保不会越界）
+                  const nextValue = [...field.value];
+                  if (fieldIndex >= 0 && fieldIndex < nextValue.length) {
+                    nextValue.splice(fieldIndex, 1);
+                    spliceArrayState(field, {
+                      startIndex: fieldIndex,
+                      deleteCount: 1,
+                    });
+                    field.onInput(nextValue);
+                  }
+                });
+              }}
+            >
+              <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
+            </div>
+          );
+        },
       },
     ] as any;
   };
@@ -118,7 +154,7 @@ export const SubTable = observer(() => {
 
   return (
     <Card>
-      <Table columns={getColumns()} scroll={{ x: 'max-content' }} dataSource={dataSource} />
+      <Table columns={getColumns()} scroll={{ x: 'max-content' }} dataSource={dataSource} pagination={false} />
       <a onClick={handleAdd}>
         <PlusOutlined /> Add new
       </a>

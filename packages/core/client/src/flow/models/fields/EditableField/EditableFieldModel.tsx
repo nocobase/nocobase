@@ -114,6 +114,10 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   }
 
   render() {
+    //fork model 有缺陷
+    if (!this.field) {
+      this.field = this.createField();
+    }
     return (
       <FieldContext.Provider value={this.field}>
         <ReactiveField key={this.uid} field={this.field}>
