@@ -221,7 +221,7 @@ EditableFieldModel.registerFlow({
       title: escapeT('Default value'),
       uiSchema: {
         defaultValue: {
-          'x-component': 'Input',
+          'x-component': 'VariableInput',
           'x-decorator': 'FormItem',
           'x-component-props': {},
         },
