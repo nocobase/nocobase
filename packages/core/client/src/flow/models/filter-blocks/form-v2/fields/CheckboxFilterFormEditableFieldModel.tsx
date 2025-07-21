@@ -10,7 +10,7 @@
 import { Checkbox } from '@formily/antd-v5';
 import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
 
-export class CheckboxEditableFieldModel extends FilterFormEditableFieldModel {
+export class CheckboxFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
   static readonly supportedFieldInterfaces = ['checkbox'];
 
   get component() {

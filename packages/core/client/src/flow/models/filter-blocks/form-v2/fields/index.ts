@@ -9,3 +9,6 @@
 
 export * from './InputFilterFormEditableFieldModel';
 export * from './FilterFormEditableFieldModel';
+export * from './CheckboxFilterFormEditableFieldModel';
+export * from './CheckboxGroupFilterFormEditableFieldModel';
+export * from './IconEditableFieldModel';

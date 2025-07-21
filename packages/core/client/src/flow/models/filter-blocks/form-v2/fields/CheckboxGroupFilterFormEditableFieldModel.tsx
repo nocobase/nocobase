@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
+import { Checkbox } from '@formily/antd-v5';
 import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
 
-export class InputFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
-  static readonly supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence'];
+export class CheckboxGroupFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+  static readonly supportedFieldInterfaces = ['checkboxGroup'];
 
   get component() {
-    return [Input, {}];
+    return [Checkbox.Group, {}];
   }
 }
