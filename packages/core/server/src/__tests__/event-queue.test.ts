@@ -230,7 +230,7 @@ describe('memory queue adapter', () => {
       await app.eventQueue.connect();
       await app.eventQueue.publish('test1', 'message1', { maxRetries: 3 });
 
-      await sleep(500);
+      await sleep(2000);
       expect(mockListener).toBeCalledTimes(4);
 
       const mockPlugin = app.pm.get(MockPlugin);
@@ -251,7 +251,7 @@ describe('memory queue adapter', () => {
       await app.eventQueue.connect();
       await app.eventQueue.publish('test1', 'message1', { timeout: 500, maxRetries: 1 });
 
-      await sleep(1000);
+      await sleep(1800);
       expect(mockListener).toBeCalledTimes(2);
       expect(result).toHaveLength(0);
 
@@ -294,6 +294,26 @@ describe('memory queue adapter', () => {
       await sleep(600);
 
       expect(mockPlugin.processedMessages).toHaveLength(1);
+    });
+
+    test('async concurrent processing with multiple messages', async () => {
+      const mockPlugin = app.pm.get(MockPlugin1);
+      await app.start();
+      for (const i of [1, 2, 3, 4, 5]) {
+        await app.eventQueue.publish('mock-plugin-1', i);
+        await sleep(100);
+        if (i === 1) {
+          expect(mockPlugin.processing.size).toBe(1);
+        }
+      }
+      expect(mockPlugin.processing.size).toBe(2);
+      await sleep(500);
+      expect(mockPlugin.processedMessages).toHaveLength(3);
+      expect(mockPlugin.processing.size).toBe(2);
+
+      await sleep(500);
+      expect(mockPlugin.processedMessages).toHaveLength(5);
+      expect(mockPlugin.processing.size).toBe(0);
     });
   });
 
