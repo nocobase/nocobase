@@ -152,6 +152,10 @@ export class FlowSettings {
       this.components.Submit = Submit;
       this.components.Reset = Reset;
 
+      // 动态导入变量输入组件
+      const { VariableInput } = await import('./components/variables/VariableInput');
+      this.components.VariableInput = VariableInput;
+
       this.antdComponentsLoaded = true;
       console.log('FlowSettings: Antd components loaded successfully');
     } catch (error) {

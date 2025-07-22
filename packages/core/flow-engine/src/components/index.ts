@@ -13,4 +13,5 @@ export * from './FlowErrorFallback';
 export * from './FlowModelRenderer';
 export * from './settings';
 export * from './subModel';
+export * from './variables/VariableInput';
 //

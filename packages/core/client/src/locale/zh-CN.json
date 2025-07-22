@@ -1211,7 +1211,6 @@
   "N/A": "不适用",
   "No form available for reset.": "没有可用的表单进行重置。",
   "No form available for submission.": "没有可用的表单进行提交。",
-  "Enable Scan":"启用扫码录入",
   "Page settings": "页面设置",
   "Card settings": "卡片设置",
   "Table settings": "表格设置",
@@ -1243,5 +1242,7 @@
   "Enable click to open": "启用点击打开",
   "Display style":"显示样式",
   "Text":"文本",
-  "Display only":"阅读模式"
+  "Display only":"阅读模式",
+  "Enable Scan":"启用扫码录入",
+  "Date variables(Deprecated)":"日期变量(废弃)"
 }

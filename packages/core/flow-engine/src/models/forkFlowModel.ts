@@ -11,6 +11,7 @@ import { action, define, observable } from '@formily/reactive';
 import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
+import { FlowEngine } from '../flowEngine';
 
 /**
  * ForkFlowModel 作为 FlowModel 的独立实例：
@@ -162,7 +163,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
 
   get context() {
     if (!this['#flowContext']) {
-      this['#flowContext'] = new FlowForkModelContext(this.master) as unknown as FlowModelContext;
+      this['#flowContext'] = new FlowForkModelContext(this.master, this) as unknown as FlowModelContext;
     }
     return this['#flowContext'] as unknown as FlowModelContext;
   }
@@ -213,8 +214,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   onUnmount() {
-    if (this.disposed) return;
-    this.dispose();
+    // if (this.disposed) return;
+    // this.dispose(); // 实际场景不需要fork自己dispose的， 自己dispose反而会造成很多问题
   }
 
   /**
@@ -224,6 +225,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     if (this.disposed) return;
     this.disposed = true;
     if (this.master && (this.master as any).forks) {
+      const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${this.forkId}`, 'all', this.uid);
+      this.flowEngine.applyFlowCache.delete(forkCacheKey);
       (this.master as any).forks.delete(this as any);
     }
     // 从 master 的 forkCache 中移除自己
@@ -236,8 +239,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         }
       }
     }
-    // @ts-ignore
-    this.master = null;
   }
 
   /**
