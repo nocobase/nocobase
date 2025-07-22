@@ -13,6 +13,7 @@ export const PARALLEL_MODE = {
   ALL: 'all',
   ANY: 'any',
   RACE: 'race',
+  ALL_SETTLED: 'allSettled',
 } as const;
 
 const Modes = {
@@ -58,6 +59,17 @@ const Modes = {
         return failedStatus;
       }
       return JOB_STATUS.PENDING;
+    },
+  },
+  [PARALLEL_MODE.ALL_SETTLED]: {
+    next() {
+      return true;
+    },
+    getStatus(result) {
+      if (result.some((status) => status === JOB_STATUS.PENDING)) {
+        return JOB_STATUS.PENDING;
+      }
+      return JOB_STATUS.RESOLVED;
     },
   },
 };

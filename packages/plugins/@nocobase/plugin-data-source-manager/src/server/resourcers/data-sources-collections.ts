@@ -208,7 +208,7 @@ export default {
       await transaction.commit();
       const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
       if (dataSource) {
-        await dataSource.load({ refresh: true });
+        await dataSource.load({ refresh: true, condition: toBeInserted ? { name: { $in: toBeInserted } } : {} });
       }
       ctx.body = true;
       await next();
