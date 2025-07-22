@@ -10,7 +10,7 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal, getPickerFormat } from '@nocobase/utils/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { handleDateChangeOnForm } from '../../../../internal/utils/dateTimeUtils';
+import { handleDateChangeOnForm } from '../../../../../internal/utils/dateTimeUtils';
 
 const toStringByPicker = (value, picker = 'date', timezone: 'gmt' | 'local') => {
   if (!dayjs.isDayjs(value)) return value;

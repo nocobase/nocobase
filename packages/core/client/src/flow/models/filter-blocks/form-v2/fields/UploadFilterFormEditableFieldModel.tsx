@@ -14,7 +14,7 @@ import { castArray } from 'lodash';
 import React, { useState } from 'react';
 import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
 
-export const CardUpload = (props) => {
+const CardUpload = (props) => {
   const outerField: any = useField();
   const [fileList, setFileList] = useState(castArray(props.value || []));
   return (

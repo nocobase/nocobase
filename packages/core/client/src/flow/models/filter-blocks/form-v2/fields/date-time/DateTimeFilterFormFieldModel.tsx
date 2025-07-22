@@ -8,9 +8,9 @@
  */
 import { DatePicker } from '@formily/antd-v5';
 import { escapeT } from '@nocobase/flow-engine';
-import { FilterFormFieldModel } from '../../../form/FilterFormFieldModel';
+import { FilterFormEditableFieldModel } from '../FilterFormEditableFieldModel';
 
-export class DateTimeFilterFormFieldModel extends FilterFormFieldModel {
+export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
   setComponentProps(componentProps) {
     let { dateFormat, timeFormat } = componentProps || {};
     if (!componentProps.format && (dateFormat || timeFormat)) {
