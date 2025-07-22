@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { APIClient } from '@nocobase/sdk';
+import { createRef } from 'react';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
+import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel } from './models';
+import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
 import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -268,6 +272,10 @@ export class FlowContext {
 
 export class FlowEngineContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
+  declare requireAsync: (url: string) => Promise<any>;
+  declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare api: APIClient;
+
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
@@ -292,6 +300,58 @@ export class FlowEngineContext extends FlowContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
+    this.defineProperty('requirejs', {
+      get: () => this.app?.requirejs?.requirejs,
+    });
+    this.defineProperty('auth', {
+      get: () => ({
+        roleName: this.api.auth.role,
+        locale: this.api.auth.locale,
+        token: this.api.auth.token,
+        user: this.user,
+      }),
+    });
+    this.defineMethod('loadCSS', async (url: string) => {
+      return new Promise((resolve, reject) => {
+        // Check if CSS is already loaded
+        const existingLink = document.querySelector(`link[href="${url}"]`);
+        if (existingLink) {
+          resolve(null);
+          return;
+        }
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = url;
+        link.onload = () => resolve(null);
+        link.onerror = () => reject(new Error(`Failed to load CSS: ${url}`));
+        document.head.appendChild(link);
+      });
+    });
+    this.defineMethod('requireAsync', async (url: string) => {
+      return new Promise((resolve, reject) => {
+        if (!this.requirejs) {
+          reject(new Error('requirejs is not available'));
+          return;
+        }
+        this.requirejs(
+          [url],
+          (...args: any[]) => {
+            resolve(args[0]);
+          },
+          reject,
+        );
+      });
+    });
+    this.defineMethod('createJSRunner', (options) => {
+      return new JSRunner({
+        ...options,
+        globals: {
+          ctx: this,
+          ...options?.globals,
+        },
+      });
+    });
   }
 }
 
@@ -299,6 +359,10 @@ export class FlowModelContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   declare model: FlowModel;
   declare engine: FlowEngine;
+  declare ref: React.RefObject<HTMLDivElement>;
+  declare requireAsync: (url: string) => Promise<any>;
+  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
@@ -308,6 +372,18 @@ export class FlowModelContext extends FlowContext {
     this.defineProperty('model', {
       value: model,
     });
+    this.defineProperty('ref', {
+      get: () => createRef<HTMLDivElement>(),
+    });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = new JSRunner({
+        globals: {
+          ctx: this,
+          ...variables,
+        },
+      });
+      return runner.run(code);
+    });
   }
 }
 
@@ -315,17 +391,40 @@ export class FlowForkModelContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   // declare model: FlowModel;
   declare engine: FlowEngine;
+  declare ref: React.RefObject<HTMLDivElement>;
+  declare requireAsync: (url: string) => Promise<any>;
+  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+
   constructor(public model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }
     super();
     this.addDelegate(this.model.context);
+    this.defineProperty('ref', {
+      get: () => createRef<HTMLDivElement>(),
+    });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = new JSRunner({
+        globals: {
+          ctx: this,
+          ...variables,
+        },
+      });
+      return runner.run(code);
+    });
   }
 }
 
 export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   stepResults: Record<string, any> = {};
+  declare engine: FlowEngine;
+  declare onRefReady: <T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout?: number) => void;
+  declare dataSourceManager: DataSourceManager;
+  declare ref: React.RefObject<HTMLDivElement>;
+  declare requireAsync: (url: string) => Promise<any>;
+  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+  declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
 
   constructor(
     public model: TModel,
@@ -334,6 +433,35 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   ) {
     super();
     this.addDelegate(this.model.context);
+    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource };
+    this.defineMethod('useResource', (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => {
+      if (model['resource']) {
+        return;
+      }
+      const R = ResourceMap[className];
+      if (!R) {
+        throw new Error(`Resource class ${className} not found in ResourceMap`);
+      }
+      const resource = new R() as APIResource;
+      resource.setAPIClient(this.api);
+      model['resource'] = resource;
+    });
+    this.defineProperty('resource', {
+      get: () => model['resource'] || model.context['resource'],
+      cache: true,
+    });
+    this.defineMethod('onRefReady', (ref, cb, timeout) => {
+      this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = new JSRunner({
+        globals: {
+          ctx: this,
+          ...variables,
+        },
+      });
+      return runner.run(code);
+    });
   }
 
   protected _getOwnProperty(key: string): any {

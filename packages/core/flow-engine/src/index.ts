@@ -26,5 +26,7 @@ export * from './withFlowModel';
 export * from './components';
 export * from './data-source';
 export * from './decorators';
+export * from './ElementProxy';
 export * from './flowContext';
+export * from './JSRunner';
 //
