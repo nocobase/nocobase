@@ -49,7 +49,7 @@ export default {
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
           'x-component-props': {
-            placeholder: '请输入 AccessKey',
+            placeholder: `{{t("Please enter AccessKey", { ns: "${NAMESPACE}" })}}`,
           },
           required: true,
           description: `{{t("MinIO AccessKey for authentication", { ns: "${NAMESPACE}" })}}`,
@@ -61,7 +61,7 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           'x-component-props': {
             password: true,
-            placeholder: '请输入 SecretKey',
+            placeholder: `{{t("Please enter SecretKey", { ns: "${NAMESPACE}" })}}`,
           },
           required: true,
           description: `{{t("MinIO SecretKey for authentication", { ns: "${NAMESPACE}" })}}`,

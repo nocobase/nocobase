@@ -17,7 +17,7 @@ import { cloudFilenameGetter, ensureUrlEncoded } from '../utils';
 export default class extends StorageType {
   static defaults() {
     return {
-      title: 'MinIO 对象存储',
+      title: 'MinIO Object Storage',
       name: 'minio-storage',
       type: STORAGE_TYPE_MINIO,
       baseUrl: process.env.MINIO_STORAGE_BASE_URL,

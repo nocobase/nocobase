@@ -28,5 +28,7 @@
   "Will be used for API": "API에 사용될 것입니다.",
   "Default storage will be used when not selected": "선택하지 않으면 기본 저장소가 사용됩니다.",
   "Keep file in storage when destroying a record": "레코드 삭제 시 파일을 저장소에 보존",
-  "See more": "더 보기"  
+  "See more": "더 보기",
+  "Please enter AccessKey": "AccessKey를 입력하세요",
+  "Please enter SecretKey": "SecretKey를 입력하세요"
 }

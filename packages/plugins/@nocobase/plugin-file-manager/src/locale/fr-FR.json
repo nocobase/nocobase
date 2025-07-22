@@ -18,5 +18,7 @@
   "Bucket": "Bucket",
   "Path": "Chemin",
   "Filename": "Nom de fichier",
-  "Will be used for API": "Sera utilisé pour l'API"
+  "Will be used for API": "Sera utilisé pour l'API",
+  "Please enter AccessKey": "Veuillez saisir AccessKey",
+  "Please enter SecretKey": "Veuillez saisir SecretKey"
 }
