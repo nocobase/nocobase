@@ -240,6 +240,195 @@ describe('FlowContext properties and methods', () => {
       },
     ]);
   });
+
+  it('should support single-level mixed sync and async properties in getPropertyMetaTree', async () => {
+    const ctx = new FlowContext();
+
+    // 同步属性
+    ctx.defineProperty('syncProp', {
+      meta: {
+        type: 'object',
+        title: 'Sync Property',
+        properties: {
+          field1: { type: 'string', title: 'Field 1' },
+          field2: { type: 'number', title: 'Field 2' },
+        },
+      },
+    });
+
+    // 异步属性
+    ctx.defineProperty('asyncProp', {
+      meta: {
+        type: 'object',
+        title: 'Async Property',
+        properties: async () => {
+          // 模拟异步加载
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return {
+            dynamicField1: { type: 'string', title: 'Dynamic Field 1' },
+            dynamicField2: { type: 'boolean', title: 'Dynamic Field 2' },
+          };
+        },
+      },
+    });
+
+    const tree = ctx.getPropertyMetaTree();
+
+    // 检查同步属性
+    expect(tree[0]).toEqual({
+      name: 'syncProp',
+      title: 'Sync Property',
+      type: 'object',
+      interface: undefined,
+      uiSchema: undefined,
+      children: [
+        {
+          name: 'field1',
+          title: 'Field 1',
+          type: 'string',
+          interface: undefined,
+          uiSchema: undefined,
+          children: undefined,
+        },
+        {
+          name: 'field2',
+          title: 'Field 2',
+          type: 'number',
+          interface: undefined,
+          uiSchema: undefined,
+          children: undefined,
+        },
+      ],
+    });
+
+    // 检查异步属性
+    expect(tree[1].name).toBe('asyncProp');
+    expect(tree[1].title).toBe('Async Property');
+    expect(typeof tree[1].children).toBe('function');
+
+    // 调用异步函数获取子节点
+    const asyncChildren = await (tree[1].children as () => Promise<any>)();
+    expect(asyncChildren).toEqual([
+      {
+        name: 'dynamicField1',
+        title: 'Dynamic Field 1',
+        type: 'string',
+        interface: undefined,
+        uiSchema: undefined,
+        children: undefined,
+      },
+      {
+        name: 'dynamicField2',
+        title: 'Dynamic Field 2',
+        type: 'boolean',
+        interface: undefined,
+        uiSchema: undefined,
+        children: undefined,
+      },
+    ]);
+  });
+
+  it('should support multi-level mixed sync and async properties in getPropertyMetaTree', async () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('complexProp', {
+      meta: {
+        type: 'object',
+        title: 'Complex Property',
+        properties: {
+          // 第一层：同步属性包含异步子属性
+          syncWithAsync: {
+            type: 'object',
+            title: 'Sync with Async',
+            properties: async () => {
+              await new Promise((resolve) => setTimeout(resolve, 10));
+              return {
+                asyncChild: { type: 'string', title: 'Async Child' },
+                syncChild: {
+                  type: 'object',
+                  title: 'Sync Child',
+                  properties: {
+                    deepField: { type: 'number', title: 'Deep Field' },
+                  },
+                },
+              };
+            },
+          },
+          // 第一层：异步属性包含同步和异步子属性
+          asyncWithMixed: {
+            type: 'object',
+            title: 'Async with Mixed',
+            properties: async () => {
+              await new Promise((resolve) => setTimeout(resolve, 15));
+              return {
+                syncChild: {
+                  type: 'string',
+                  title: 'Sync Child in Async',
+                  properties: {
+                    deepSync: { type: 'boolean', title: 'Deep Sync' },
+                  },
+                },
+                asyncChild: {
+                  type: 'object',
+                  title: 'Async Child in Async',
+                  properties: async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 5));
+                    return {
+                      veryDeep: { type: 'string', title: 'Very Deep Field' },
+                    };
+                  },
+                },
+              };
+            },
+          },
+        },
+      },
+    });
+
+    const tree = ctx.getPropertyMetaTree();
+    const complexNode = tree[0];
+
+    expect(complexNode.name).toBe('complexProp');
+    expect(complexNode.title).toBe('Complex Property');
+    expect(Array.isArray(complexNode.children)).toBe(true);
+
+    const children = complexNode.children as any[];
+    expect(children).toHaveLength(2);
+
+    // 检查第一个子节点（同步属性包含异步子属性）
+    const syncWithAsyncNode = children[0];
+    expect(syncWithAsyncNode.name).toBe('syncWithAsync');
+    expect(typeof syncWithAsyncNode.children).toBe('function');
+
+    const syncWithAsyncChildren = await syncWithAsyncNode.children();
+    expect(syncWithAsyncChildren).toHaveLength(2);
+    expect(syncWithAsyncChildren[0].name).toBe('asyncChild');
+    expect(syncWithAsyncChildren[1].name).toBe('syncChild');
+    expect(Array.isArray(syncWithAsyncChildren[1].children)).toBe(true);
+
+    // 检查第二个子节点（异步属性包含混合子属性）
+    const asyncWithMixedNode = children[1];
+    expect(asyncWithMixedNode.name).toBe('asyncWithMixed');
+    expect(typeof asyncWithMixedNode.children).toBe('function');
+
+    const asyncWithMixedChildren = await asyncWithMixedNode.children();
+    expect(asyncWithMixedChildren).toHaveLength(2);
+
+    // 检查同步子节点
+    const syncChildInAsync = asyncWithMixedChildren[0];
+    expect(syncChildInAsync.name).toBe('syncChild');
+    expect(Array.isArray(syncChildInAsync.children)).toBe(true);
+
+    // 检查异步子节点
+    const asyncChildInAsync = asyncWithMixedChildren[1];
+    expect(asyncChildInAsync.name).toBe('asyncChild');
+    expect(typeof asyncChildInAsync.children).toBe('function');
+
+    const veryDeepChildren = await asyncChildInAsync.children();
+    expect(veryDeepChildren).toHaveLength(1);
+    expect(veryDeepChildren[0].name).toBe('veryDeep');
+    expect(veryDeepChildren[0].title).toBe('Very Deep Field');
+  });
   it('should define and call instance method with defineMethod', () => {
     const ctx = new FlowContext();
     ctx.defineMethod('hello', function (name: string) {

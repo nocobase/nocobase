@@ -20,24 +20,24 @@ import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
-interface MetaTreeNode {
+export interface MetaTreeNode {
   name: string;
   title: string;
   type: string;
   interface?: string;
   uiSchema?: any;
-  children?: MetaTreeNode[];
+  children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
-interface PropertyMeta {
+export interface PropertyMeta {
   type: string;
   title: string;
   interface?: string;
   uiSchema?: any;
-  properties?: Record<string, PropertyMeta>;
+  properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
-interface PropertyOptions {
+export interface PropertyOptions {
   value?: any;
   get?: Getter;
   cache?: boolean;
@@ -157,19 +157,26 @@ export class FlowContext {
 
   getPropertyMetaTree(): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
-    // 递归转换为 MetaTreeNode 结构
-    function toTreeNode(name: string, meta: PropertyMeta): MetaTreeNode {
-      return {
-        name,
-        title: meta.title,
-        type: meta.type,
-        interface: meta.interface,
-        uiSchema: meta.uiSchema,
-        children: meta.properties
-          ? Object.entries(meta.properties).map(([childName, childMeta]) => toTreeNode(childName, childMeta))
-          : undefined,
-      };
-    }
+
+    const toTreeNode = (name: string, meta: PropertyMeta): MetaTreeNode => ({
+      name,
+      title: meta.title,
+      type: meta.type,
+      interface: meta.interface,
+      uiSchema: meta.uiSchema,
+      children: meta.properties
+        ? typeof meta.properties === 'function'
+          ? async () => {
+              const resolvedProperties = await (meta.properties as () => Promise<Record<string, PropertyMeta>>)();
+              return Object.entries(resolvedProperties).map(([childName, childMeta]) =>
+                toTreeNode(childName, childMeta),
+              );
+            }
+          : Object.entries(meta.properties as Record<string, PropertyMeta>).map(([childName, childMeta]) =>
+              toTreeNode(childName, childMeta),
+            )
+        : undefined,
+    });
 
     return Object.entries(metaMap).map(([key, meta]) => toTreeNode(key, meta));
   }
