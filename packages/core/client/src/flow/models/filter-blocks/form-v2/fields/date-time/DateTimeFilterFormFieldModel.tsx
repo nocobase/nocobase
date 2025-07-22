@@ -6,14 +6,15 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from '@formily/antd-v5';
 import { escapeT } from '@nocobase/flow-engine';
 import { FilterFormEditableFieldModel } from '../FilterFormEditableFieldModel';
+import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
 export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
   enableDisplayMode = false;
 
   setComponentProps(componentProps) {
+    const operator = this.props.operator;
     let { dateFormat, timeFormat } = componentProps || {};
     if (!componentProps.format && (dateFormat || timeFormat)) {
       if (!dateFormat) {
@@ -26,11 +27,12 @@ export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
     }
     super.setComponentProps({
       ...componentProps,
+      isRange: operator === '$dateBetween',
     });
   }
 
   get component() {
-    return [DatePicker, {}];
+    return [DateFilterDynamicComponent, {}];
   }
 }
 
