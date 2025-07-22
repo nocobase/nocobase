@@ -26,6 +26,7 @@ export interface MetaTreeNode {
   type: string;
   interface?: string;
   uiSchema?: any;
+  hide?: boolean;
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -34,6 +35,7 @@ export interface PropertyMeta {
   title: string;
   interface?: string;
   uiSchema?: any;
+  hide?: boolean;
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
@@ -164,6 +166,7 @@ export class FlowContext {
       type: meta.type,
       interface: meta.interface,
       uiSchema: meta.uiSchema,
+      hide: meta.hide,
       children: meta.properties
         ? typeof meta.properties === 'function'
           ? async () => {

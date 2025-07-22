@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Input, Cascader, Tag, Button, Space, theme } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { useFlowSettingsContext } from '../../hooks';
@@ -42,12 +42,26 @@ interface CascaderOption {
 const VARIABLE_REGEX = /\{\{\s*ctx\.([^}]+?)\s*\}\}/g;
 
 const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[]): CascaderOption[] => {
-  return nodes.map((node) => ({
-    value: node.name,
-    label: node.title || node.name,
-    children: node.children?.length ? convertMetaTreeToCascaderData(node.children) : undefined,
-    isLeaf: !node.children?.length,
-  }));
+  return nodes
+    .map((node) => {
+      // 从 meta 中检查是否有 hide 属性，如果为 true 则跳过
+      const meta = node as any;
+      if (meta.hide === true) {
+        return null;
+      }
+
+      return {
+        value: node.name,
+        label: node.title || node.name,
+        children: node.children
+          ? typeof node.children === 'function'
+            ? [] // 异步函数，留空待加载
+            : convertMetaTreeToCascaderData(node.children).filter(Boolean) // 过滤掉null值
+          : undefined,
+        isLeaf: !node.children,
+      };
+    })
+    .filter(Boolean); // 过滤掉null值
 };
 
 /**
@@ -79,7 +93,85 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const flowContext = useFlowSettingsContext();
 
-  const cascaderData = useMemo(() => convertMetaTreeToCascaderData(flowContext.getPropertyMetaTree()), [flowContext]);
+  const [cascaderData, setCascaderData] = useState<CascaderOption[]>([]);
+  const [metaTreeCache, setMetaTreeCache] = useState<Map<string, MetaTreeNode[]>>(new Map());
+
+  // 初始化数据
+  useEffect(() => {
+    try {
+      const metaTree = flowContext.getPropertyMetaTree();
+      const cascaderOptions = convertMetaTreeToCascaderData(metaTree);
+      setCascaderData(cascaderOptions);
+
+      // 缓存根级别的MetaTreeNode
+      setMetaTreeCache(new Map([['root', metaTree]]));
+    } catch (error) {
+      console.error('Failed to get property meta tree:', error);
+      setCascaderData([]);
+    }
+  }, [flowContext]);
+
+  // 动态加载子菜单
+  const loadData = useCallback(
+    async (selectedOptions: any[]) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (!targetOption || targetOption.children?.length > 0) return;
+
+      try {
+        // 构建路径
+        const path = selectedOptions.map((opt) => opt.value);
+        const pathKey = path.join('.');
+
+        // 查找对应的MetaTreeNode
+        let currentNodes = metaTreeCache.get('root') || [];
+        let targetNode: MetaTreeNode | undefined;
+
+        for (const pathSegment of path) {
+          targetNode = currentNodes.find((node) => node.name === pathSegment);
+          if (!targetNode) break;
+
+          if (targetNode.children) {
+            if (typeof targetNode.children === 'function') {
+              // 如果是异步函数，需要调用获取子节点
+              const cacheKey = path.slice(0, path.indexOf(pathSegment) + 1).join('.');
+              if (!metaTreeCache.has(cacheKey)) {
+                const childNodes = await targetNode.children();
+                const newCache = new Map(metaTreeCache);
+                newCache.set(cacheKey, childNodes);
+                setMetaTreeCache(newCache);
+                currentNodes = childNodes;
+              } else {
+                currentNodes = metaTreeCache.get(cacheKey) || [];
+              }
+            } else {
+              currentNodes = targetNode.children;
+            }
+          }
+        }
+
+        // 如果找到目标节点且有异步children，加载它们
+        if (targetNode?.children && typeof targetNode.children === 'function') {
+          const childNodes = await targetNode.children();
+          const childOptions = convertMetaTreeToCascaderData(childNodes);
+
+          // 缓存子节点
+          const newCache = new Map(metaTreeCache);
+          newCache.set(pathKey, childNodes);
+          setMetaTreeCache(newCache);
+
+          // 更新cascader选项
+          targetOption.children = childOptions;
+          targetOption.isLeaf = childOptions.length === 0;
+          setCascaderData([...cascaderData]);
+        }
+      } catch (error) {
+        console.error('Failed to load cascader data:', error);
+        targetOption.isLeaf = true;
+        setCascaderData([...cascaderData]);
+      }
+    },
+    [flowContext, cascaderData, metaTreeCache],
+  );
 
   const options = useMemo(
     () => [{ value: '', label: t('Null') }, { value: 'constant', label: t('Constant') }, ...cascaderData],
@@ -140,14 +232,19 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     (variablePath: string[]): string[] => {
       if (!cascaderData.length) return variablePath;
 
-      let currentOptions = cascaderData;
+      // 由于使用浅层加载，我们只能显示第一级的标签
+      // 对于更深层级，直接返回路径名
       const labels: string[] = [];
 
-      for (const key of variablePath) {
-        const option = currentOptions.find((opt) => opt.value === key);
-        if (!option) return variablePath;
-        labels.push(option.label);
-        currentOptions = option.children || [];
+      if (variablePath.length > 0) {
+        const firstOption = cascaderData.find((opt) => opt.value === variablePath[0]);
+        if (firstOption) {
+          labels.push(firstOption.label);
+          // 对于更深层级，由于没有预加载数据，直接使用路径名
+          labels.push(...variablePath.slice(1));
+        } else {
+          return variablePath;
+        }
       }
 
       return labels;
@@ -262,7 +359,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           style={{
             flex: 1,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
+            borderTop: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+            borderLeft: `1px solid ${token.colorBorder}`,
             display: 'flex',
             alignItems: 'stretch',
           }}
@@ -276,6 +375,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           changeOnSelect={false}
           disabled={disabled}
           value={cascaderValue}
+          expandTrigger="hover"
+          loadData={loadData}
         >
           <Button
             type={hasVariable || isConstant ? 'primary' : 'default'}
@@ -302,9 +403,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
             flex: 1,
             height: '32px',
             padding: '4px 11px',
-            border: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderTop: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderBottom: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderLeft: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
             background: token.colorBgContainer,
             display: 'flex',
             alignItems: 'center',
@@ -378,7 +480,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           style={{
             flex: 1,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
           }}
         />
       )}
@@ -389,6 +492,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
         changeOnSelect={false}
         disabled={disabled}
         value={cascaderValue}
+        expandTrigger="hover"
+        loadData={loadData}
       >
         <Button
           type={hasVariable || isConstant ? 'primary' : 'default'}
