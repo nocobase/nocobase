@@ -282,12 +282,12 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
     console.debug(`memory queue (${channel}) processing message (${id})...`, content);
-    return event
-      .process(content, {
+    return (async () =>
+      event.process(content, {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
-      })
+      }))()
       .then(() => {
         console.debug(`memory queue (${channel}) consumed message (${id})`);
       })
