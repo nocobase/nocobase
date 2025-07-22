@@ -23,6 +23,7 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
+import { uid } from '@formily/shared';
 
 const LargeFieldEdit = observer(
   ({ model, params: { fieldPath, dataSourceKey, collectionName }, defaultValue }: any) => {
@@ -125,8 +126,9 @@ export class SubTableColumnModel extends FieldModel {
     return (value, record, index) => (
       <div>
         {this.mapSubModels('field', (action: EditableFieldModel) => {
+          record.__key = record.__key || uid();
           action.enableFormItem = false;
-          const fork: any = action.createFork({}, `${index}`);
+          const fork: any = action.createFork({}, `${record.__key}`);
           fork.context.defineProperty('basePath', {
             get: () => {
               const basePath = (this.parent as FieldModel).fieldPath;
@@ -147,7 +149,7 @@ export class SubTableColumnModel extends FieldModel {
               />
             );
           } else {
-            return <FlowModelRenderer model={fork} />;
+            return <FlowModelRenderer key={record.__key} model={fork} />;
           }
         })}
       </div>
