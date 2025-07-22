@@ -85,4 +85,4 @@ export default {
       [Op.not]: null,
     };
   },
-};
+} as Record<string, any>;
