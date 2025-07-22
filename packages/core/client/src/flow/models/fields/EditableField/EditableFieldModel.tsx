@@ -28,6 +28,8 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   static supportedFieldInterfaces = '*' as any;
   field: Field;
 
+  enableDisplayMode = true;
+
   get form() {
     return this.context.form as Form;
   }
@@ -255,35 +257,42 @@ EditableFieldModel.registerFlow({
     },
     pattern: {
       title: escapeT('Display mode'),
-      uiSchema: {
-        pattern: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
-            {
-              value: 'editable',
-              label: escapeT('Editable'),
-            },
-            {
-              value: 'disabled',
-              label: escapeT('Disabled'),
-            },
-            // {
-            //   value: 'readOnly',
-            //   label: escapeT('Read only'),
-            // },
-            {
-              value: 'readPretty',
-              label: escapeT('Display only'),
-            },
-          ],
-        },
+      uiSchema: (ctx) => {
+        if (!ctx.model.enableDisplayMode) {
+          return null;
+        }
+        return {
+          pattern: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              {
+                value: 'editable',
+                label: escapeT('Editable'),
+              },
+              {
+                value: 'disabled',
+                label: escapeT('Disabled'),
+              },
+              // {
+              //   value: 'readOnly',
+              //   label: escapeT('Read only'),
+              // },
+              {
+                value: 'readPretty',
+                label: escapeT('Display only'),
+              },
+            ],
+          },
+        };
       },
       defaultParams: (ctx) => ({
         pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
       handler(ctx, params) {
-        ctx.model.setPattern(params.pattern);
+        if (ctx.model.enableDisplayMode) {
+          ctx.model.setPattern(params.pattern);
+        }
       },
     },
     model: {
