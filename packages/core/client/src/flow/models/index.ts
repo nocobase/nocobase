@@ -29,7 +29,6 @@ export * from './fields';
 // export * from './filter-blocks/form/FilterFormResetActionModel';
 // export * from './filter-blocks/form/FilterFormSubmitActionModel';
 export * from './filter-blocks/form-v2/FormFilterBlockModel';
-export * from './filter-blocks/form-v2/FormFilterBlockModel';
 export * from './filter-blocks/form-v2/FilterFormFieldGridModel';
 export * from './filter-blocks/form-v2/fields';
 export * from './filter-blocks/form-v2/actions';
