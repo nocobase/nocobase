@@ -42,6 +42,7 @@ export interface PropertyMeta {
 
 export interface PropertyOptions {
   value?: any;
+  once?: boolean; // 是否只定义一次
   get?: Getter;
   cache?: boolean;
   meta?: PropertyMeta;
@@ -102,6 +103,10 @@ export class FlowContext {
 
   defineProperty(key: string, options: PropertyOptions) {
     this._props[key] = options;
+    if (options.once && this._props[key]) {
+      // 如果已经定义过，则不再覆盖
+      return;
+    }
     delete this._cache[key];
     // 用 Object.defineProperty 挂载到实例上，便于 ctx.foo 直接访问
     Object.defineProperty(this, key, {
@@ -382,6 +387,9 @@ export class FlowModelContext extends FlowContext {
     }
     super();
     this.addDelegate(model.flowEngine.context);
+    this.defineMethod('onRefReady', (ref, cb, timeout) => {
+      this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
     this.defineProperty('model', {
       value: model,
     });
@@ -421,6 +429,9 @@ export class FlowForkModelContext extends FlowContext {
     }
     super();
     this.addDelegate(this.master.context);
+    this.defineMethod('onRefReady', (ref, cb, timeout) => {
+      this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
     this.defineProperty('model', {
       get: () => this.fork,
     });
