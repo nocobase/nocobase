@@ -22,6 +22,8 @@ import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
+import { FlowModelsContext } from './ai-employees/context/flow-models';
+import { formFillerTool } from './ai-employees/form-filler/tools';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -108,22 +110,9 @@ export class PluginAIClient extends Plugin {
       Component: StructuredOutputSettings,
     });
 
-    // this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
-    // this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
+    this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerTool(...defineCollectionsTool);
-    this.aiManager.registerTool('frontEnd', 'formFiller', {
-      invoke: (ctx, params) => {
-        const { form: uid, data } = params;
-        if (!uid || !data) {
-          return;
-        }
-        const form = ctx[uid]?.form;
-        if (!form) {
-          return;
-        }
-        form.setValues(data);
-      },
-    });
+    this.aiManager.registerTool(...formFillerTool);
   }
 
   setupWorkflow() {

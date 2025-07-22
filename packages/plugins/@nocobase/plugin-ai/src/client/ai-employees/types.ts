@@ -8,6 +8,7 @@
  */
 
 import type { BubbleProps } from '@ant-design/x';
+import { Application } from '@nocobase/client';
 import { ComponentType } from 'react';
 
 export type Selector = {
@@ -37,7 +38,7 @@ export type ContextItem = {
   type: string;
   uid: string;
   title: string;
-  content: string;
+  content?: string;
 };
 
 export type ToolCall<T> = {
@@ -112,9 +113,7 @@ export type Task = {
 
 export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
-  tasks: Task[];
-  variables?: Record<string, any>;
-  localVariables?: Record<string, any>;
+  tasks?: Task[];
 };
 
 export type Tool = {
@@ -163,4 +162,5 @@ export type WorkContextOptions = {
   };
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
+  getContent?: (app: Application, item: ContextItem) => string;
 };

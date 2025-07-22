@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useLocalVariables, useVariables } from '@nocobase/client';
+import { Application, useLocalVariables, useVariables } from '@nocobase/client';
 import { ContextItem } from '../types';
+import PluginAIClient from '../..';
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -53,6 +54,7 @@ async function replaceVariables(template, variables, localVariables = {}) {
 }
 
 export const parseTask = async (
+  app: Application,
   task: {
     message: {
       user?: string;
@@ -61,26 +63,23 @@ export const parseTask = async (
       workContext?: ContextItem[];
     };
   },
-  variables: Record<string, any>,
-  localVariables?: Record<string, any>,
 ) => {
   let userMessage: any;
   const { message } = task;
   if (message?.user) {
-    const content = await replaceVariables(message.user, variables, localVariables);
     userMessage = {
       type: 'text',
-      content,
+      content: message.user,
     };
   }
   let systemMessage: string;
   if (message?.system) {
-    systemMessage = await replaceVariables(message.system, variables, localVariables);
+    systemMessage = message.system;
   }
   const attachments = [];
   if (message?.attachments?.length) {
     for (const attachment of message.attachments) {
-      const obj = await variables?.parseVariable(attachment, localVariables).then(({ value }) => value);
+      const obj = attachment;
       if (!obj) {
         continue;
       }
@@ -97,7 +96,27 @@ export const parseTask = async (
       }
     }
   }
-  return { userMessage, systemMessage, attachments, workContext: message.workContext };
+  const workContext = [];
+  if (message.workContext) {
+    const plugin = app.pm.get('ai') as PluginAIClient;
+    for (const context of message.workContext) {
+      if (context.content) {
+        workContext.push(context);
+        continue;
+      }
+      const contextOptions = plugin.aiManager.workContext.get(context.type);
+      if (!(contextOptions && contextOptions.getContent)) {
+        workContext.push(context);
+        continue;
+      }
+      const content = contextOptions.getContent(app, context);
+      workContext.push({
+        ...context,
+        content,
+      });
+    }
+  }
+  return { userMessage, systemMessage, attachments, workContext };
 };
 
 const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';

@@ -18,24 +18,13 @@ type AIEmployeeShortcutListModelStructure = {
 };
 
 export class AIEmployeeShortcutListModel extends FlowModel<AIEmployeeShortcutListModelStructure> {
-  // onInit() {
-  //   this.addSubModel('shortcuts', {
-  //     uid: 'data-modeling',
-  //     use: 'AIEmployeeShortcutModel',
-  //     props: {
-  //       avatar: 'notion-3-male',
-  //     },
-  //   });
-  // }
-  //
-  // render() {
-  //   return (
-  //     <div>
-  //       {this.mapSubModels('shortcuts', (shortcut) => {
-  //         console.log(shortcut.props);
-  //         return <FlowModelRenderer key={shortcut.uid} model={shortcut} />;
-  //       })}
-  //     </div>
-  //   );
-  // }
+  render() {
+    return (
+      <div>
+        {this.mapSubModels('shortcuts', (shortcut) => {
+          return <FlowModelRenderer key={shortcut.uid} model={shortcut} />;
+        })}
+      </div>
+    );
+  }
 }
