@@ -95,7 +95,7 @@ const PreviewCom = (props) => {
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               const option = fields?.data.find((h) => h.name === v.name) || v;
               if (!option?.uiSchema) {
-                const interfaceInstance = getInterface(v.name);
+                const interfaceInstance = getInterface(v.interface);
                 option.uiSchema = interfaceInstance?.default.uiSchema || {};
               }
               if (v.source) {
