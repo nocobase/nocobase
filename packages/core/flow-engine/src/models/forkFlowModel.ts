@@ -11,6 +11,7 @@ import { action, define, observable } from '@formily/reactive';
 import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
+import { FlowEngine } from '../flowEngine';
 
 /**
  * ForkFlowModel 作为 FlowModel 的独立实例：
@@ -224,6 +225,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     if (this.disposed) return;
     this.disposed = true;
     if (this.master && (this.master as any).forks) {
+      const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${this.forkId}`, 'all', this.uid);
+      this.flowEngine.applyFlowCache.delete(forkCacheKey);
       (this.master as any).forks.delete(this as any);
     }
     // 从 master 的 forkCache 中移除自己

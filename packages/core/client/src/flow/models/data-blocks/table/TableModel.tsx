@@ -236,7 +236,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
                     record[dataIndex] = values[dataIndex];
                     this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
-                    const fork: ForkFlowModel = model.subModels.field.getFork(`${recordIndex}`);
+                    const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     fork.context.defineProperty('record', {
                       get: () => record,
                     });

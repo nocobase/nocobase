@@ -12,11 +12,12 @@ import _ from 'lodash';
 import { Application } from '../application';
 
 export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> {
+  constructor(protected prefix = '') {}
   get models() {
     const models = new Map();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('flow-model:')) {
+      if (key && key.startsWith(`${this.prefix}flow-model:`)) {
         const data = localStorage.getItem(key);
         if (data) {
           const model = JSON.parse(data);
@@ -49,7 +50,7 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
 
   // 从本地存储加载模型数据
   async load(uid: string) {
-    const data = localStorage.getItem(`flow-model:${uid}`);
+    const data = localStorage.getItem(`${this.prefix}flow-model:${uid}`);
     if (!data) {
       console.warn(`Model with uid ${uid} not found in localStorage.`);
       return null;
@@ -78,7 +79,7 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   async save(model: FlowModel) {
     const data = model.serialize();
     const currentData = _.omit(data, ['subModels', 'flowEngine']);
-    localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
+    localStorage.setItem(`${this.prefix}flow-model:${model.uid}`, JSON.stringify(currentData));
     console.log('Saving model:', model.uid, currentData);
     for (const subModelKey of Object.keys(model.subModels || {})) {
       const subModelValue = model.subModels[subModelKey];
@@ -96,7 +97,16 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
 
   // 从本地存储中删除模型数据
   async destroy(uid: string) {
-    localStorage.removeItem(`flow-model:${uid}`);
+    localStorage.removeItem(`${this.prefix}flow-model:${uid}`);
+    return true;
+  }
+
+  async clear() {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(`${this.prefix}flow-model:`)) {
+        localStorage.removeItem(key);
+      }
+    }
     return true;
   }
 

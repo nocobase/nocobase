@@ -143,6 +143,10 @@ export class FlowEngine {
     this.#modelRepository = modelRepository;
   }
 
+  get modelRepository(): IFlowModelRepository | null {
+    return this.#modelRepository;
+  }
+
   /**
    * Internationalization translation method, calls the context's t method.
    * @param {string} keyOrTemplate Translation key or template string
