@@ -76,6 +76,10 @@ export default defineConfig({
             {
               title: 'Load model',
               link: '/examples/flow-models/load-model',
+            },
+            {
+              title: 'Fork model',
+              link: '/examples/flow-models/fork-model',
             }
             // {
             //   title: '可拖拽的布局',
