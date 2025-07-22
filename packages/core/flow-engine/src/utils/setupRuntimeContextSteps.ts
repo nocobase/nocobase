@@ -13,13 +13,13 @@ import { FlowModel } from '../models/flowModel';
 
 /**
  * 为 FlowRuntimeContext 设置 steps 属性及其 meta 信息
- * @param flowContext FlowRuntimeContext 实例
+ * @param ctx FlowRuntimeContext 实例
  * @param flow 流定义
  * @param model FlowModel 实例
  * @param flowKey key
  */
 export function setupRuntimeContextSteps(
-  flowContext: FlowRuntimeContext<any>,
+  ctx: FlowRuntimeContext<any>,
   flow: FlowDefinition,
   model: FlowModel,
   flowKey: string,
@@ -31,27 +31,48 @@ export function setupRuntimeContextSteps(
   for (const stepKey in flow.steps) {
     if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
       const flowStep = flow.steps[stepKey];
+      const stepParams = model.getStepParams(flowKey, stepKey) || {};
 
-      // 构建 meta 信息
+      // 根据 uiSchema 构建细化的 params meta
+      const paramsProperties: Record<string, any> = {};
+
+      if (flowStep.uiSchema && typeof flowStep.uiSchema === 'object') {
+        for (const [paramKey, paramSchema] of Object.entries(flowStep.uiSchema)) {
+          if (paramSchema && typeof paramSchema === 'object') {
+            const schema = paramSchema as any;
+            paramsProperties[paramKey] = {
+              type: schema.type || 'any',
+              title: schema.title || schema['x-decorator-props']?.label || paramKey,
+              interface: schema['x-component'],
+              uiSchema: schema,
+            };
+          }
+        }
+      }
+
+      // 构建 meta 信息 - 始终为所有步骤构建，但对空的进行特殊标记
+      const hasUISchema = flowStep.uiSchema && Object.keys(flowStep.uiSchema).length > 0;
+      const hasParams = stepParams && Object.keys(stepParams).length > 0;
+
       stepsMetaProperties[stepKey] = {
         type: 'object',
-        title: flowStep.title || stepKey,
+        title: ctx.t(flowStep.title) || stepKey,
         properties: {
           params: {
             type: 'object',
             title: 'Parameters',
-          },
-          uiSchema: {
-            type: 'object',
-            title: 'UI Schema',
+            properties: Object.keys(paramsProperties).length > 0 ? paramsProperties : undefined,
+            hide: !hasParams,
           },
           result: {
             type: 'any',
             title: 'Result',
           },
         },
+        hide: !(hasUISchema || hasParams),
       };
 
+      // 始终创建步骤对象，确保运行时能够访问
       steps[stepKey] = {
         get params() {
           return model.getStepParams(flowKey, stepKey) || {};
@@ -65,7 +86,7 @@ export function setupRuntimeContextSteps(
   }
 
   // 定义 steps 属性
-  flowContext.defineProperty('steps', {
+  ctx.defineProperty('steps', {
     get: () => steps,
     meta: {
       type: 'object',

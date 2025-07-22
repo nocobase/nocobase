@@ -93,7 +93,7 @@ export abstract class DataSource {
     if (flowEngineDataSourceManager) {
       flowEngineDataSourceManager.upsertDataSource(this.options);
       const ds = flowEngineDataSourceManager.getDataSource(this.key);
-      ds.upsertCollections(dataSource.collections || []);
+      ds.upsertCollections((dataSource.collections as any[]) || []);
     }
     this.setOptions(dataSource);
     this.collectionManager.setCollections(dataSource.collections || []);

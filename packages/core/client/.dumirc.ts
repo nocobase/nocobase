@@ -10,7 +10,7 @@ console.log('process.env.DOC_LANG', lang);
 
 export default defineConfig({
   hash: true,
-  mfsu:false,
+  mfsu: false,
   alias: {
     ...umiConfig.alias,
   },
@@ -39,13 +39,17 @@ export default defineConfig({
     // sidebarGroupModePath: ['/components'],
     nav: [
       {
-        title: 'API',
-        link: '/core/flow-models/quickstart',
+        title: 'Learn',
+        link: '/learn',
       },
-      // {
-      //   title: 'Components',
-      //   link: '/components/action',
-      // },
+      {
+        title: 'Examples',
+        link: '/examples/flow-models/hello-world',
+      },
+      {
+        title: 'API',
+        link: '/api/flow-engine',
+      },
       {
         title: 'Home site',
         link: lang === 'zh-CN' ? 'https://docs-cn.nocobase.com' : 'https://docs.nocobase.com',
@@ -56,218 +60,499 @@ export default defineConfig({
       // },
     ],
     sidebarEnhance: {
-      '/core': [
-        // {
-        //   title: 'Application',
-        //   type: 'group',
-        //   children: [
-        //     {
-        //       title: 'Application',
-        //       link: '/core/application/application',
-        //     },
-        //     {
-        //       title: 'PluginManager',
-        //       link: '/core/application/plugin-manager',
-        //     },
-        //     {
-        //       title: 'RouterManager',
-        //       link: '/core/application/router-manager',
-        //     },
-        //     {
-        //       title: 'PluginSettingsManager',
-        //       link: '/core/application/plugin-settings-manager',
-        //     },
-        //     {
-        //       title: 'Request',
-        //       link: '/core/request',
-        //     },
-        //   ],
-        // },
+      '/examples': [
         {
-          title: 'Quickstart',
-          link: '/core/flow-models/quickstart',
-        },
-        {
-          title: 'FlowEngine',
+          title: 'FlowModel',
           type: 'group',
           children: [
             {
+              title: 'Hello，NocoBase',
+              link: '/examples/flow-models/hello-world',
+            },
+            {
+              title: 'AddSubModelButton',
+              link: '/examples/flow-models/sub-model',
+            }
+            // {
+            //   title: '可拖拽的布局',
+            //   link: '/examples/flow-models/draggable-layout',
+            // },
+          ],
+        },
+        {
+          title: 'FlowDefinition',
+          type: 'group',
+          children: [
+            {
+              title: '简单的属性流',
+              link: '/examples/flow-definitions/simple-props-flow',
+            },
+            {
+              title: '简单的事件流',
+              link: '/examples/flow-definitions/simple-event-flow',
+            },
+          ]
+        },
+        {
+          title: 'FlowAction',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowAction 示例',
+              link: '/examples/flow-actions/example',
+            },
+          ],
+        },
+        {
+          title: 'FlowContext',
+          type: 'group',
+          children: [
+            {
+              title: 'ctx.model',
+              link: '/examples/flow-context/model',
+            },
+            {
+              title: 'ctx.ref + ctx.onRefReady',
+              link: '/examples/flow-context/ref',
+            },
+            {
+              title: 'ctx.requireAsync',
+              link: '/examples/flow-context/require-async',
+            },
+            {
+              title: 'ctx.runjs',
+              link: '/examples/flow-context/runjs',
+            },
+            {
+              title: 'ctx.api',
+              link: '/examples/flow-context/api',
+            },
+            {
+              title: 'ctx.useResource()',
+              link: '/examples/flow-context/use-resource',
+            },
+            {
+              title: 'ctx.viewOpener',
+              link: '/examples/flow-context/view-opener',
+            },
+            {
+              title: 'ctx.app',
+              link: '/examples/flow-context/app',
+            },
+            {
+              title: 'ctx.engine',
+              link: '/examples/flow-context/engine',
+            },
+            {
+              title: 'ctx.router',
+              link: '/examples/flow-context/router',
+            },
+            {
+              title: 'ctx.antd',
+              link: '/examples/flow-context/antd',
+            },
+            {
+              title: 'ctx.modal',
+              link: '/examples/flow-context/modal',
+            },
+            {
+              title: 'ctx.message',
+              link: '/examples/flow-context/message',
+            },
+            {
+              title: 'ctx.notification',
+              link: '/examples/flow-context/notification',
+            },
+            {
+              title: 'ctx.dataSourceManager',
+              link: '/examples/flow-context/data-source-manager',
+            },
+            {
+              title: 'ctx.dataSource',
+              link: '/examples/flow-context/data-source',
+            },
+            {
+              title: 'ctx.collection',
+              link: '/examples/flow-context/collection',
+            },
+            {
+              title: 'ctx.collectionField',
+              link: '/examples/flow-context/collection-field',
+            },
+            {
+              title: 'ctx.association',
+              link: '/examples/flow-context/association',
+            },
+            {
+              title: 'ctx.resource',
+              link: '/examples/flow-context/resource',
+            },
+            {
+              title: 'ctx.exit()',
+              link: '/examples/flow-context/exit',
+            },
+          ],
+        },
+        {
+          title: 'FlowResource',
+          type: 'group',
+          children: [
+            {
+              title: '简单的 Resource',
+              link: '/examples/flow-resources/simple-resource',
+            },
+            {
+              title: 'APIResource',
+              link: '/examples/flow-resources/api-resource',
+            },
+            {
+              title: 'SingleRecordResource',
+              link: '/examples/flow-resources/single-record-resource',
+            },
+            {
+              title: 'MultiRecordResource',
+              link: '/examples/flow-resources/multi-record-resource',
+            },
+          ],
+        },
+      ],
+      '/learn': [
+        {
+          title: 'Quick start',
+          type: 'group',
+          children: [
+            {
+              title: 'Quickstart',
+              link: '/learn',
+            },
+          ],
+        },
+        {
+          title: 'Basic',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel',
+              link: '/learn/flow-model',
+            },
+          ],
+        },
+      ],
+      '/api': [
+        {
+          type: 'group',
+          title: 'Flow Engine',
+          children: [
+            {
               title: 'Overview',
-              link: '/core/flow-engine',
+              link: '/api/flow-engine',
             },
             {
               title: 'FlowEngine',
-              link: '/core/flow-engine/flow-engine',
-            },
-            {
-              title: 'FlowModelRepository',
-              link: '/core/flow-engine/flow-model-repository',
-            },
-            {
-              title: 'FlowModel',
-              link: '/core/flow-engine/flow-model',
-            },
-            {
-              title: 'FlowSubModel',
-              link: '/core/flow-engine/flow-sub-model',
-            },
-            {
-              title: 'FlowModelRenderer',
-              link: '/core/flow-engine/flow-model-renderer',
-            },
-            {
-              title: 'FlowModelSettings',
-              link: '/core/flow-engine/flow-model-settings',
-            },
-            {
-              title: 'FlowDefinition',
-              link: '/core/flow-engine/flow-definition',
-            },
-            {
-              title: 'FlowResource',
-              link: '/core/flow-engine/flow-resource',
+              link: '/api/flow-engine/flow-engine',
             },
             {
               title: 'FlowContext',
               children: [
                 {
                   title: 'Overview',
-                  link: '/core/flow-engine/flow-context',
+                  link: '/api/flow-engine/flow-context',
                 },
                 {
                   title: 'FlowContext',
-                  link: '/core/flow-engine/flow-context/flow-context',
+                  link: '/api/flow-engine/flow-context/flow-context',
                 },
                 {
                   title: 'FlowEngineContext',
-                  link: '/core/flow-engine/flow-context/flow-engine-context',
+                  link: '/api/flow-engine/flow-context/flow-engine-context',
                 },
                 {
                   title: 'FlowModelContext',
-                  link: '/core/flow-engine/flow-context/flow-model-context',
+                  link: '/api/flow-engine/flow-context/flow-model-context',
                 },
                 {
                   title: 'FlowRuntimeContext',
-                  link: '/core/flow-engine/flow-context/flow-runtime-context',
+                  link: '/api/flow-engine/flow-context/flow-runtime-context',
                 },
               ],
             },
             {
+              title: 'FlowModel',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/api/flow-engine/flow-model',
+                },
+                {
+                  title: 'FlowModel',
+                  link: '/api/flow-engine/flow-model/flow-model',
+                },
+                {
+                  title: 'SubModel',
+                  link: '/api/flow-engine/flow-model/sub-model',
+                },
+                {
+                  title: 'ForkModel',
+                  link: '/api/flow-engine/flow-model/fork-model',
+                },
+              ]
+            },
+            {
+              title: 'FlowModelRenderer',
+              link: '/api/flow-engine/flow-model-renderer',
+            },
+            {
+              title: 'FlowModelRepository',
+              link: '/api/flow-engine/flow-model-repository',
+            },
+            {
+              title: 'FlowDefinition',
+              link: '/api/flow-engine/flow-definition',
+            },
+            {
               title: 'FlowAction',
-              link: '/core/flow-engine/flow-action',
+              link: '/api/flow-engine/flow-action',
             },
             {
-              title: 'FlowHooks',
-              link: '/core/flow-engine/flow-hooks',
-            },
-          ],
-        },
-        {
-          title: 'Flow Models',
-          type: 'group',
-          children: [
-            {
-              title: 'Overview',
-              link: '/core/flow-models',
-            },
-            {
-              title: 'LayoutModel',
-              link: '/core/flow-models/layout-flow-model',
-            },
-            {
-              title: 'LayoutRouteModel',
-              link: '/core/flow-models/layout-route-flow-model',
-            },
-            {
-              title: 'PageModel',
-              link: '/core/flow-models/page-flow-model',
+              title: 'FlowResource',
+              children: [
+                {
+                  title: 'Overview',
+                  link: '/api/flow-engine/flow-resource',
+                },
+                {
+                  title: 'APIResource',
+                  link: '/api/flow-engine/flow-resource/api-resource',
+                },
+                {
+                  title: 'SingleRecordResource',
+                  link: '/api/flow-engine/flow-resource/single-record-resource',
+                },
+                {
+                  title: 'MultiRecordResource',
+                  link: '/api/flow-engine/flow-resource/multi-record-resource',
+                },
+              ],
             },
             {
-              title: 'PageTabModel',
-              link: '/core/flow-models/page-tab-flow-model',
+              title: 'FlowSettings',
+              link: '/api/flow-engine/flow-settings',
             },
-            {
-              title: 'GridModel',
-              link: '/core/flow-models/grid-flow-model',
-            },
-            {
-              title: 'BlockGridModel',
-              link: '/core/flow-models/block-grid-flow-model',
-            },
-            {
-              title: 'BlockModel',
-              link: '/core/flow-models/block-flow-model',
-            },
-            {
-              title: 'FormModel',
-              link: '/core/flow-models/form-flow-model',
-            },
-            {
-              title: 'TableModel',
-              link: '/core/flow-models/table-flow-model',
-            },
-            {
-              title: 'DetailsModel',
-              link: '/core/flow-models/details-flow-model',
-            },
-            {
-              title: 'ListModel',
-              link: '/core/flow-models/list-flow-model',
-            },
-            {
-              title: 'CalendarModel',
-              link: '/core/flow-models/calendar-flow-model',
-            },
-            
-            {
-              title: 'KanbanModel',
-              link: '/core/flow-models/kanban-flow-model',
-            },
-            {
-              title: 'MapModel',
-              link: '/core/flow-models/map-flow-model',
-            },
-            {
-              title: 'GanttModel',
-              link: '/core/flow-models/gantt-flow-model',
-            },
-            {
-              title: 'ChartModel',
-              link: '/core/flow-models/chart-flow-model',
-            },
-            {
-              title: 'MarkdownModel',
-              link: '/core/flow-models/markdown-flow-model',
-            },
-            {
-              title: 'HtmlModel',
-              link: '/core/flow-models/html-flow-model',
-            },
-            {
-              title: 'iframeModel',
-              link: '/core/flow-models/iframe-flow-model',
-            },
-            {
-              title: 'TimelineModel',
-              link: '/core/flow-models/timeline-flow-model',
-            },
-            {
-              title: 'CollapseModel',
-              link: '/core/flow-models/collapse-flow-model',
-            },
-          ],
-        },
-        {
-          title: 'Flow Actions',
-          type: 'group',
-          children: [
-            {
-              title: 'Overview',
-              link: '/core/flow-actions',
-            },
-          ],
-        },
+          ]
+        }
       ],
+      // '/core': [
+      //   // {
+      //   //   title: 'Application',
+      //   //   type: 'group',
+      //   //   children: [
+      //   //     {
+      //   //       title: 'Application',
+      //   //       link: '/core/application/application',
+      //   //     },
+      //   //     {
+      //   //       title: 'PluginManager',
+      //   //       link: '/core/application/plugin-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'RouterManager',
+      //   //       link: '/core/application/router-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'PluginSettingsManager',
+      //   //       link: '/core/application/plugin-settings-manager',
+      //   //     },
+      //   //     {
+      //   //       title: 'Request',
+      //   //       link: '/core/request',
+      //   //     },
+      //   //   ],
+      //   // },
+      //   {
+      //     title: 'Quickstart',
+      //     link: '/core/flow-models/quickstart',
+      //   },
+      //   {
+      //     title: 'FlowEngine',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-engine',
+      //       },
+      //       {
+      //         title: 'FlowEngine',
+      //         link: '/core/flow-engine/flow-engine',
+      //       },
+      //       {
+      //         title: 'FlowModelRepository',
+      //         link: '/core/flow-engine/flow-model-repository',
+      //       },
+      //       {
+      //         title: 'FlowModel',
+      //         link: '/core/flow-engine/flow-model',
+      //       },
+      //       {
+      //         title: 'FlowSubModel',
+      //         link: '/core/flow-engine/flow-sub-model',
+      //       },
+      //       {
+      //         title: 'FlowModelRenderer',
+      //         link: '/core/flow-engine/flow-model-renderer',
+      //       },
+      //       {
+      //         title: 'FlowModelSettings',
+      //         link: '/core/flow-engine/flow-model-settings',
+      //       },
+      //       {
+      //         title: 'FlowDefinition',
+      //         link: '/core/flow-engine/flow-definition',
+      //       },
+      //       {
+      //         title: 'FlowResource',
+      //         link: '/core/flow-engine/flow-resource',
+      //       },
+      //       {
+      //         title: 'FlowContext',
+      //         children: [
+      //           {
+      //             title: 'Overview',
+      //             link: '/core/flow-engine/flow-context',
+      //           },
+      //           {
+      //             title: 'FlowContext',
+      //             link: '/core/flow-engine/flow-context/flow-context',
+      //           },
+      //           {
+      //             title: 'FlowEngineContext',
+      //             link: '/core/flow-engine/flow-context/flow-engine-context',
+      //           },
+      //           {
+      //             title: 'FlowModelContext',
+      //             link: '/core/flow-engine/flow-context/flow-model-context',
+      //           },
+      //           {
+      //             title: 'FlowRuntimeContext',
+      //             link: '/core/flow-engine/flow-context/flow-runtime-context',
+      //           },
+      //         ],
+      //       },
+      //       {
+      //         title: 'FlowAction',
+      //         link: '/core/flow-engine/flow-action',
+      //       },
+      //       {
+      //         title: 'FlowHooks',
+      //         link: '/core/flow-engine/flow-hooks',
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     title: 'Flow Models',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-models',
+      //       },
+      //       {
+      //         title: 'LayoutModel',
+      //         link: '/core/flow-models/layout-flow-model',
+      //       },
+      //       {
+      //         title: 'LayoutRouteModel',
+      //         link: '/core/flow-models/layout-route-flow-model',
+      //       },
+      //       {
+      //         title: 'PageModel',
+      //         link: '/core/flow-models/page-flow-model',
+      //       },
+      //       {
+      //         title: 'PageTabModel',
+      //         link: '/core/flow-models/page-tab-flow-model',
+      //       },
+      //       {
+      //         title: 'GridModel',
+      //         link: '/core/flow-models/grid-flow-model',
+      //       },
+      //       {
+      //         title: 'BlockGridModel',
+      //         link: '/core/flow-models/block-grid-flow-model',
+      //       },
+      //       {
+      //         title: 'BlockModel',
+      //         link: '/core/flow-models/block-flow-model',
+      //       },
+      //       {
+      //         title: 'FormModel',
+      //         link: '/core/flow-models/form-flow-model',
+      //       },
+      //       {
+      //         title: 'TableModel',
+      //         link: '/core/flow-models/table-flow-model',
+      //       },
+      //       {
+      //         title: 'DetailsModel',
+      //         link: '/core/flow-models/details-flow-model',
+      //       },
+      //       {
+      //         title: 'ListModel',
+      //         link: '/core/flow-models/list-flow-model',
+      //       },
+      //       {
+      //         title: 'CalendarModel',
+      //         link: '/core/flow-models/calendar-flow-model',
+      //       },
+
+      //       {
+      //         title: 'KanbanModel',
+      //         link: '/core/flow-models/kanban-flow-model',
+      //       },
+      //       {
+      //         title: 'MapModel',
+      //         link: '/core/flow-models/map-flow-model',
+      //       },
+      //       {
+      //         title: 'GanttModel',
+      //         link: '/core/flow-models/gantt-flow-model',
+      //       },
+      //       {
+      //         title: 'ChartModel',
+      //         link: '/core/flow-models/chart-flow-model',
+      //       },
+      //       {
+      //         title: 'MarkdownModel',
+      //         link: '/core/flow-models/markdown-flow-model',
+      //       },
+      //       {
+      //         title: 'HtmlModel',
+      //         link: '/core/flow-models/html-flow-model',
+      //       },
+      //       {
+      //         title: 'iframeModel',
+      //         link: '/core/flow-models/iframe-flow-model',
+      //       },
+      //       {
+      //         title: 'TimelineModel',
+      //         link: '/core/flow-models/timeline-flow-model',
+      //       },
+      //       {
+      //         title: 'CollapseModel',
+      //         link: '/core/flow-models/collapse-flow-model',
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     title: 'Flow Actions',
+      //     type: 'group',
+      //     children: [
+      //       {
+      //         title: 'Overview',
+      //         link: '/core/flow-actions',
+      //       },
+      //     ],
+      //   },
+      // ],
       // '/components': [
       //   {
       //     title: 'Action',
