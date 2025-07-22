@@ -12,6 +12,7 @@ class HelloBlockModel extends FlowModel {
   }
   protected onMount() {
     if (this.context.ref.current) {
+      console.log('HelloBlockModel mounted with ref:', this.context.ref.current);
       this.rerender();
     }
   }

@@ -69,6 +69,10 @@ export default defineConfig({
               title: 'Hello，NocoBase',
               link: '/examples/flow-models/hello-world',
             },
+            {
+              title: 'AddSubModelButton',
+              link: '/examples/flow-models/sub-model',
+            }
             // {
             //   title: '可拖拽的布局',
             //   link: '/examples/flow-models/draggable-layout',
@@ -289,7 +293,7 @@ export default defineConfig({
                 },
                 {
                   title: 'ForkModel',
-                  link: '/api/flow-engine/flow-model/sub-model',
+                  link: '/api/flow-engine/flow-model/fork-model',
                 },
               ]
             },
