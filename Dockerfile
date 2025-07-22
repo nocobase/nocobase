@@ -43,7 +43,8 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install --production
+  && yarn install --production \
+  && yarn add newrelic --production
 
 WORKDIR /app/my-nocobase-app
 RUN $BEFORE_PACK_NOCOBASE

@@ -8,13 +8,14 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
+import type { Router } from '@remix-run/router';
 import { createRef } from 'react';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
-import { FlowModel } from './models';
+import { FlowModel, ForkFlowModel } from './models';
 import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
 import { FlowExitException } from './utils';
 
@@ -271,6 +272,7 @@ export class FlowContext {
 }
 
 export class FlowEngineContext extends FlowContext {
+  declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
@@ -356,6 +358,7 @@ export class FlowEngineContext extends FlowContext {
 }
 
 export class FlowModelContext extends FlowContext {
+  declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare model: FlowModel;
   declare engine: FlowEngine;
@@ -373,7 +376,10 @@ export class FlowModelContext extends FlowContext {
       value: model,
     });
     this.defineProperty('ref', {
-      get: () => createRef<HTMLDivElement>(),
+      get: () => {
+        this.model['_refCreated'] = true;
+        return createRef<HTMLDivElement>();
+      },
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -388,6 +394,7 @@ export class FlowModelContext extends FlowContext {
 }
 
 export class FlowForkModelContext extends FlowContext {
+  declare router: Router;
   declare dataSourceManager: DataSourceManager;
   // declare model: FlowModel;
   declare engine: FlowEngine;
@@ -395,14 +402,23 @@ export class FlowForkModelContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
 
-  constructor(public model: FlowModel) {
-    if (!(model instanceof FlowModel)) {
+  constructor(
+    public master: FlowModel,
+    public fork: ForkFlowModel,
+  ) {
+    if (!(master instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate(this.model.context);
+    this.addDelegate(this.master.context);
+    this.defineProperty('model', {
+      get: () => this.fork,
+    });
     this.defineProperty('ref', {
-      get: () => createRef<HTMLDivElement>(),
+      get: () => {
+        this.fork['_refCreated'] = true;
+        return createRef<HTMLDivElement>();
+      },
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -418,6 +434,7 @@ export class FlowForkModelContext extends FlowContext {
 
 export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   stepResults: Record<string, any> = {};
+  declare router: Router;
   declare engine: FlowEngine;
   declare onRefReady: <T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout?: number) => void;
   declare dataSourceManager: DataSourceManager;
@@ -448,7 +465,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     });
     this.defineProperty('resource', {
       get: () => model['resource'] || model.context['resource'],
-      cache: true,
+      cache: false,
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
