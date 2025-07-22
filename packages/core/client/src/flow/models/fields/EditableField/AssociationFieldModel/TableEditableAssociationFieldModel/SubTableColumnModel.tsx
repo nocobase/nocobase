@@ -28,7 +28,6 @@ import { EditableFieldModel } from '../../EditableFieldModel';
 const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index, defaultValue }) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
-  console.log(model, defaultValue[fieldPath]);
   return (
     <div ref={ref}>
       <span>{defaultValue[fieldPath]}</span>
@@ -125,6 +124,7 @@ export class SubTableColumnModel extends FieldModel {
     return (value, record, index) => (
       <div>
         {this.mapSubModels('field', (action: EditableFieldModel) => {
+          action.enableFormItem = false;
           const fork: any = action.createFork({}, `${index}`);
           fork.context.defineProperty('basePath', {
             get: () => {

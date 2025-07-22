@@ -64,11 +64,6 @@ const AddFieldColumn = ({ model }) => {
                   fieldPath,
                 },
               },
-              formItemSettings: {
-                showLabel: {
-                  showLabel: false,
-                },
-              },
             },
           },
         },

@@ -29,6 +29,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   field: Field;
 
   enableDisplayMode = true;
+  enableFormItem = true;
 
   get form() {
     return this.context.form as Form;
@@ -156,6 +157,9 @@ EditableFieldModel.registerFlow({
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
+        if (!ctx.model.enableFormItem) {
+          return null;
+        }
         return {
           label: {
             'x-component': 'Input',
@@ -182,18 +186,25 @@ EditableFieldModel.registerFlow({
     },
     showLabel: {
       title: escapeT('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+      uiSchema: (ctx) => {
+        if (!ctx.model.enableFormItem) {
+          return null;
+        }
+        return {
+          showLabel: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              checkedChildren: escapeT('Yes'),
+              unCheckedChildren: escapeT('No'),
+            },
           },
-        },
+        };
       },
-      defaultParams: {
-        showLabel: true,
+      defaultParams: (ctx) => {
+        return {
+          showLabel: ctx.model.enableFormItem,
+        };
       },
       handler(ctx, params) {
         ctx.model.showTitle(params.showLabel);
@@ -201,11 +212,16 @@ EditableFieldModel.registerFlow({
     },
     tooltip: {
       title: escapeT('Tooltip'),
-      uiSchema: {
-        tooltip: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        if (!ctx.model.enableFormItem) {
+          return null;
+        }
+        return {
+          tooltip: {
+            'x-component': 'Input.TextArea',
+            'x-decorator': 'FormItem',
+          },
+        };
       },
       handler(ctx, params) {
         ctx.model.setTooltip(params.tooltip);
@@ -213,11 +229,16 @@ EditableFieldModel.registerFlow({
     },
     description: {
       title: escapeT('Description'),
-      uiSchema: {
-        description: {
-          'x-component': 'Input.TextArea',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        if (!ctx.model.enableFormItem) {
+          return null;
+        }
+        return {
+          description: {
+            'x-component': 'Input.TextArea',
+            'x-decorator': 'FormItem',
+          },
+        };
       },
       handler(ctx, params) {
         ctx.model.setDescription(params.description);
