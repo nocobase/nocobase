@@ -25,7 +25,7 @@ export type QueueCallbackOptions = {
   signal?: AbortSignal;
 };
 
-export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void> | void;
+export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void>;
 
 export type QueueEventOptions = {
   /**
@@ -62,7 +62,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
   private emitter: EventEmitter = new EventEmitter();
 
-  private reading: Map<string, Promise<void>> = new Map();
+  private reading: Map<string, Promise<void>[]> = new Map();
 
   protected events: Map<string, QueueEventOptions> = new Map();
 
@@ -82,13 +82,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
   }
 
-  listen = async (channel: string) => {
+  listen = (channel: string) => {
     if (!this.connected) {
       return;
-    }
-    if (this.reading.has(channel)) {
-      console.debug(`memory queue (${channel}) is already reading, waiting last reading to end...`);
-      await this.reading.get(channel);
     }
     const event = this.events.get(channel);
     if (!event) {
@@ -96,15 +92,29 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return;
     }
     if (!event.idle()) {
-      console.debug(`memory queue (${channel}) is not idle, skipping...`);
-      // setTimeout(() => {
-      //   this.emitter.emit(channel, channel);
-      // }, event.interval || QUEUE_DEFAULT_INTERVAL);
       return;
     }
-    const reading = this.read(channel);
+
+    const reading = this.reading.get(channel) || [];
+    const count = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
+    if (count <= 0) {
+      console.debug(
+        `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,
+      );
+      return;
+    }
+    console.debug(`reading more from queue (${channel}), count: ${count}`);
+    this.read(channel, count).forEach((promise) => {
+      reading.push(promise);
+      // eslint-disable-next-line promise/catch-or-return
+      promise.finally(() => {
+        const index = reading.indexOf(promise);
+        if (index > -1) {
+          reading.splice(index, 1);
+        }
+      });
+    });
     this.reading.set(channel, reading);
-    await reading;
   };
 
   constructor(private options: { appName: string }) {
@@ -182,6 +192,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   }
 
   async close() {
+    if (!this.connected) {
+      return;
+    }
     this.connected = false;
     if (this.processing) {
       console.info('memory queue waiting for processing job...');
@@ -242,7 +255,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
       const queue = this.queues.get(channel);
       if (event.idle() && queue?.length) {
-        await this.listen(channel);
+        this.listen(channel);
       }
 
       if (once) {
@@ -252,49 +265,46 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
   }
 
-  async read(channel: string) {
-    const event = this.events.get(channel);
-    if (!event) {
-      this.reading.delete(channel);
-      return;
-    }
+  read(channel: string, n: number): Promise<void>[] {
     const queue = this.queues.get(channel);
 
-    if (queue?.length) {
-      const messages = queue.slice(0, event.concurrency || QUEUE_DEFAULT_CONCURRENCY);
-      console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
-      queue.splice(0, messages.length);
-      const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
-      await Promise.all(batch);
+    if (!queue?.length) {
+      return [];
     }
-    this.reading.delete(channel);
+    const messages = queue.slice(0, n);
+    console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
+    queue.splice(0, messages.length);
+    const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
+    return batch;
   }
 
   async process(channel: string, { id, message }) {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
-    try {
-      console.debug(`memory queue (${channel}) processing message (${id})...`, content);
-      await event.process(content, {
+    console.debug(`memory queue (${channel}) processing message (${id})...`, content);
+    return event
+      .process(content, {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
+      })
+      .then(() => {
+        console.debug(`memory queue (${channel}) consumed message (${id})`);
+      })
+      .catch((ex) => {
+        if (maxRetries > 0 && retried < maxRetries) {
+          const currentRetry = retried + 1;
+          console.warn(
+            `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
+            ex,
+          );
+          setTimeout(() => {
+            this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
+          }, 1000);
+        } else {
+          console.error(ex);
+        }
       });
-      console.debug(`memory queue (${channel}) consumed message (${id})`);
-    } catch (ex) {
-      if (maxRetries > 0 && retried < maxRetries) {
-        const currentRetry = retried + 1;
-        console.warn(
-          `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
-          ex,
-        );
-        setImmediate(() => {
-          this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
-        });
-      } else {
-        console.error(ex);
-      }
-    }
   }
 }
 

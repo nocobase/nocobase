@@ -295,6 +295,26 @@ describe('memory queue adapter', () => {
 
       expect(mockPlugin.processedMessages).toHaveLength(1);
     });
+
+    test('async concurrent processing with multiple messages', async () => {
+      const mockPlugin = app.pm.get(MockPlugin1);
+      await app.start();
+      for (const i of [1, 2, 3, 4, 5]) {
+        await app.eventQueue.publish('mock-plugin-1', i);
+        await sleep(100);
+        if (i === 1) {
+          expect(mockPlugin.processing.size).toBe(1);
+        }
+      }
+      expect(mockPlugin.processing.size).toBe(2);
+      await sleep(500);
+      expect(mockPlugin.processedMessages).toHaveLength(3);
+      expect(mockPlugin.processing.size).toBe(2);
+
+      await sleep(500);
+      expect(mockPlugin.processedMessages).toHaveLength(5);
+      expect(mockPlugin.processing.size).toBe(0);
+    });
   });
 
   describe('storage', () => {
