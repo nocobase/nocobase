@@ -1,7 +1,6 @@
-import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Avatar, Card, List, Space } from 'antd';
+import { Avatar, List } from 'antd';
 import React from 'react';
 
 const data = [
@@ -31,22 +30,6 @@ const data = [
   },
 ];
 
-const App: React.FC = () => (
-  <List
-    itemLayout="horizontal"
-    dataSource={data}
-    renderItem={(item, index) => (
-      <List.Item>
-        <List.Item.Meta
-          avatar={<Avatar src={`https://api.dicebear.com/7.x/miniavs/svg?seed=${index}`} />}
-          title={<a href="https://ant.design">{item.title}</a>}
-          description="Ant Design, a design language for background applications, is refined by Ant UED Team"
-        />
-      </List.Item>
-    )}
-  />
-);
-
 export interface DefaultStructure {
   parent?: FlowModel;
   subModels: {
@@ -62,8 +45,8 @@ class HelloModel extends FlowModel<DefaultStructure> {
         dataSource={data}
         renderItem={(item, index) => {
           const fork = this.subModels.sub1.createFork({}, item.id.toString());
-          fork['item'] = item; // 将当前项传递给子模型
-          return <FlowModelRenderer key={item.id} model={fork} />;
+          (fork as unknown as HelloSubModel).setItem(item); // 将当前项传递给子模型
+          return <FlowModelRenderer key={item.id} model={fork} showFlowSettings />;
         }}
       />
     );
@@ -72,6 +55,11 @@ class HelloModel extends FlowModel<DefaultStructure> {
 
 class HelloSubModel extends FlowModel {
   item: any;
+
+  setItem(item: any) {
+    this.item = item;
+  }
+
   render() {
     return (
       <List.Item>
@@ -88,6 +76,7 @@ class HelloSubModel extends FlowModel {
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
+    this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ HelloModel, HelloSubModel });
 
     // 创建 HelloModel 的实例（仅用于示例）
