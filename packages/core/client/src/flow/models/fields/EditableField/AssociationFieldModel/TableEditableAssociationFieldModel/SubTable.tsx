@@ -82,10 +82,9 @@ const AddFieldColumn = ({ model }) => {
       subModelBaseClass="TableCustomColumnModel"
       items={items}
       onModelCreated={async (column: SubTableColumnModel) => {
-        await column.applyAutoFlows();
+        // await column.applyAutoFlows();
       }}
       onSubModelAdded={async (column: SubTableColumnModel) => {
-        console.log(model);
         // model.addAppends(column.fieldPath, true);
       }}
     />
@@ -105,7 +104,7 @@ export const SubTable = observer(() => {
       {
         key: 'addColumn',
         fixed: 'right',
-        width: 200,
+        width: 100,
         title: <AddFieldColumn model={model} />,
       },
       {

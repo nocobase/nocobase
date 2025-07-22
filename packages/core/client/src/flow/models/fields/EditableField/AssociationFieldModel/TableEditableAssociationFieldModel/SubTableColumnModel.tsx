@@ -25,9 +25,10 @@ import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 
-const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index }) => {
+const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index, defaultValue }) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
+  console.log(model.master, defaultValue);
   return (
     <div ref={ref}>
       <EditOutlined
@@ -141,6 +142,7 @@ export class SubTableColumnModel extends FieldModel {
                   dataSourceKey: action.collectionField.dataSourceKey,
                 }}
                 index={index}
+                defaultValue={value}
               />
             );
           } else {

@@ -92,6 +92,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   }
   createField() {
     const basePath = this.parent.context.basePath || this.context.basePath;
+    console.log(basePath, this.context);
     const field = this.form.createField({
       name: this.collectionField.name,
       basePath: basePath,
@@ -114,10 +115,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   }
 
   render() {
-    //fork model 有缺陷
-    if (!this.field) {
-      this.field = this.createField();
-    }
     return (
       <FieldContext.Provider value={this.field}>
         <ReactiveField key={this.uid} field={this.field}>
