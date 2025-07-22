@@ -14,6 +14,16 @@ import { buildFieldMenuItems } from './buildFieldMenuItems';
 import { getAllDataModels } from './utils';
 
 export class FilterFormFieldGridModel extends GridModel {
+  itemFlowSettings = {
+    showBackground: true,
+    style: {
+      top: -6,
+      left: -6,
+      right: -6,
+      bottom: -6,
+    },
+  };
+
   getFieldMenuItems(): any[] {
     // 1. 找到当前页面的 GridModel 实例
     const gridModelInstance = this.context.blockGridModel;
@@ -60,3 +70,16 @@ export class FilterFormFieldGridModel extends GridModel {
     return <AddFieldButton items={this.getFieldMenuItems()} subModelKey="items" model={this} />;
   }
 }
+
+FilterFormFieldGridModel.registerFlow({
+  key: 'filterFormFieldGridSettings',
+  auto: true,
+  steps: {
+    grid: {
+      handler(ctx, params) {
+        ctx.model.setProps('rowGap', 0);
+        ctx.model.setProps('colGap', 16);
+      },
+    },
+  },
+});
