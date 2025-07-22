@@ -27,7 +27,7 @@
   "Amazon S3": "亚马逊 S3",
   "Tencent COS": "腾讯云 COS",
   "MinIO": "MinIO",
-  "MinIO 对象存储": "MinIO 对象存储",
+  "MinIO Object Storage": "MinIO 对象存储",
   "Region": "区域",
   "Bucket": "存储桶",
   "Path": "路径",

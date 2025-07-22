@@ -11,7 +11,7 @@ import { NAMESPACE } from '../../locale';
 import common from './common';
 
 export default {
-  title: `{{t("MinIO 对象存储", { ns: "${NAMESPACE}" })}}`,
+  title: `{{t("MinIO Object Storage", { ns: "${NAMESPACE}" })}}`,
   name: 'minio',
   fieldset: {
     title: common.title,
