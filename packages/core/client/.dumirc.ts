@@ -72,6 +72,10 @@ export default defineConfig({
             {
               title: 'AddSubModelButton',
               link: '/examples/flow-models/sub-model',
+            },
+            {
+              title: 'Load model',
+              link: '/examples/flow-models/load-model',
             }
             // {
             //   title: '可拖拽的布局',
