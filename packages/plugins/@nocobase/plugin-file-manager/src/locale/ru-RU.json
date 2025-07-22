@@ -14,5 +14,7 @@
   "Aliyun OSS": "Aliyun OSS",
   "Amazon S3": "Amazon S3",
   "Tencent COS": "Tencent COS",
-  "Filename": "Имя файла"
+  "Filename": "Имя файла",
+  "Please enter AccessKey": "Введите AccessKey",
+  "Please enter SecretKey": "Введите SecretKey"
 }

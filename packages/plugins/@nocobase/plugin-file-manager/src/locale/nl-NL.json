@@ -35,6 +35,8 @@
     "Default storage will be used when not selected": "Standaard opslagruimte wordt gebruikt wanneer niet geselecteerd",
     "Keep file in storage when destroy record": "Bestand in opslag houden bij vernietiging van record",
     "See more": "Bekijk meer",
-    "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS regio-onderdeel van de bucket. Bijvoorbeeld: \"oss-cn-beijing\"."
+    "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS regio-onderdeel van de bucket. Bijvoorbeeld: \"oss-cn-beijing\".",
+    "Please enter AccessKey": "Voer AccessKey in",
+    "Please enter SecretKey": "Voer SecretKey in"
   }
   

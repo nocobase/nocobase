@@ -38,5 +38,7 @@
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "更清晰的表达方式，符合技术描述",
   "Default storage will be used when not selected": "空欄の場合はデフォルトのストレージが使用されます。",
   "Keep file in storage when destroy record": "レコード削除時にファイルを保持",
-  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里クラウドOSSの地域。 例えば「oss-cn-beijing」。"
+  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "阿里クラウドOSSの地域。 例えば「oss-cn-beijing」。",
+  "Please enter AccessKey": "AccessKeyを入力してください",
+  "Please enter SecretKey": "SecretKeyを入力してください"
 }

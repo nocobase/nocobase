@@ -51,5 +51,7 @@
   "MinIO secret access key for authentication": "MinIO-Geheimer Zugangsschlüssel für die Authentifizierung",
   "MinIO AccessKey for authentication": "MinIO AccessKey für die Authentifizierung",
   "MinIO SecretKey for authentication": "MinIO SecretKey für die Authentifizierung",
-  "MinIO bucket name for file storage": "MinIO-Bucket-Name für die Dateispeicherung"
+  "MinIO bucket name for file storage": "MinIO-Bucket-Name für die Dateispeicherung",
+  "Please enter AccessKey": "Bitte AccessKey eingeben",
+  "Please enter SecretKey": "Bitte SecretKey eingeben"
 }

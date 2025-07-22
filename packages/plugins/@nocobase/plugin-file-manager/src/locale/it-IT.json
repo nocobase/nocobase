@@ -36,5 +36,7 @@
   "Relative path the file will be saved to. Left blank as root path. The leading and trailing slashes \"/\" will be ignored. For example: \"user/avatar\".": "Percorso relativo in cui verrà salvato il file. Lasciare vuoto per il percorso radice. Le barre iniziali e finali \"/\" verranno ignorate. Ad esempio: \"user/avatar\".",
   "Default storage will be used when not selected": "Se non selezionato verrà utilizzato lo spazio di archiviazione predefinito",
   "Keep file in storage when destroy record": "Quando elimini il record mantieni il file nello spazio di archiviazione",
-  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Parte della regione Aliyun OSS del bucket. Ad esempio: \"oss-cn-beijing\"."
+  "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Parte della regione Aliyun OSS del bucket. Ad esempio: \"oss-cn-beijing\".",
+  "Please enter AccessKey": "Inserisci AccessKey",
+  "Please enter SecretKey": "Inserisci SecretKey"
 }

@@ -52,5 +52,7 @@
   "MinIO secret access key for authentication": "用于身份验证的 MinIO 访问密钥",
   "MinIO AccessKey for authentication": "用于身份验证的 MinIO AccessKey",
   "MinIO SecretKey for authentication": "用于身份验证的 MinIO SecretKey",
-  "MinIO bucket name for file storage": "用于文件存储的 MinIO 存储桶名称"
+  "MinIO bucket name for file storage": "用于文件存储的 MinIO 存储桶名称",
+  "Please enter AccessKey": "请输入 AccessKey",
+  "Please enter SecretKey": "请输入 SecretKey"
 }
