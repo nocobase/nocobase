@@ -388,29 +388,37 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
           tableLayout="fixed"
           size={this.props.size}
           rowKey={this.collection.filterTargetKey}
-          rowSelection={{
-            columnWidth: 50,
-            type: 'checkbox',
-            onChange: (_, selectedRows) => {
-              this.resource.setSelectedRows(selectedRows);
-            },
-            selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
-            renderCell: this.renderCell,
-          }}
+          rowSelection={
+            this.resource instanceof MultiRecordResource
+              ? {
+                  columnWidth: 50,
+                  type: 'checkbox',
+                  onChange: (_, selectedRows) => {
+                    this.resource.setSelectedRows(selectedRows);
+                  },
+                  selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
+                  renderCell: this.renderCell,
+                }
+              : {}
+          }
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
-          pagination={{
-            current: this.resource.getPage(),
-            pageSize: this.resource.getPageSize(),
-            total: this.resource.getMeta('count'),
-            showTotal: (total) => {
-              return this.translate('Total {{count}} items', { count: total });
-            },
-            showSizeChanger: true,
-          }}
+          pagination={
+            this.resource instanceof MultiRecordResource
+              ? {
+                  current: this.resource.getPage(),
+                  pageSize: this.resource.getPageSize(),
+                  total: this.resource.getMeta('count'),
+                  showTotal: (total) => {
+                    return this.translate('Total {{count}} items', { count: total });
+                  },
+                  showSizeChanger: true,
+                }
+              : false
+          }
           onChange={(pagination) => {
             console.log('onChange pagination:', pagination);
             this.resource.loading = true;
