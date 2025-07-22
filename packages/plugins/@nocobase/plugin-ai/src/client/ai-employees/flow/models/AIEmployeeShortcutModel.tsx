@@ -24,6 +24,7 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
     service: { loading },
   } = useAIEmployeesContext();
   const aiEmployee = aiEmployeesMap[username];
+  console.log(aiEmployee);
 
   const { triggerTask } = useChatBoxActions();
 

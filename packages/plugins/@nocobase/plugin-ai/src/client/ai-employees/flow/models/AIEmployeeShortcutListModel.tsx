@@ -18,9 +18,16 @@ type AIEmployeeShortcutListModelStructure = {
 };
 
 export class AIEmployeeShortcutListModel extends FlowModel<AIEmployeeShortcutListModelStructure> {
+  isNewModel = false;
+
   render() {
     return (
-      <div>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
         {this.mapSubModels('shortcuts', (shortcut) => {
           return <FlowModelRenderer key={shortcut.uid} model={shortcut} />;
         })}

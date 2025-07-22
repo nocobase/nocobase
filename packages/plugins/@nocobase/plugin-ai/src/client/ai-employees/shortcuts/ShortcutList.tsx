@@ -19,9 +19,10 @@ import { AIEmployeeListItem } from '../AIEmployeeListItem';
 export const ShortcutList: React.FC = () => {
   const flowEngine = useFlowEngine();
   const { designable } = useDesignable();
-  const { shortcuts, uid, builtIn } = useShortcuts();
+  const { model, builtIn } = useShortcuts();
   const { token } = useToken();
   const designMode = designable && !builtIn;
+  const hasShortcuts = model?.subModels?.shortcuts?.length > 0;
 
   const {
     aiEmployees,
@@ -30,19 +31,9 @@ export const ShortcutList: React.FC = () => {
 
   const [folded, setFolded] = useState(false);
 
-  const model = useMemo(() => {
-    return flowEngine.createModel({
-      uid: `ai-shortcuts-${uid}`,
-      use: 'AIEmployeeShortcutListModel',
-      subModels: {
-        shortcuts,
-      },
-    });
-  }, [flowEngine, shortcuts]);
-
   return (
     <>
-      {shortcuts.length > 0 && (
+      {hasShortcuts && (
         <>
           <Button
             variant="text"
@@ -62,6 +53,13 @@ export const ShortcutList: React.FC = () => {
         <AddSubModelButton
           model={model}
           subModelKey={'shortcuts'}
+          onSubModelAdded={async () => {
+            // if (!model.isNewModel) {
+            //   return;
+            // }
+            await model.save();
+            model.isNewModel = false;
+          }}
           items={async () => {
             return loading
               ? []
@@ -72,7 +70,7 @@ export const ShortcutList: React.FC = () => {
                     use: 'AIEmployeeShortcutModel',
                     props: {
                       aiEmployee: {
-                        username: 'form_assistant',
+                        username: aiEmployee.username,
                       },
                     },
                   },
@@ -93,7 +91,7 @@ export const ShortcutList: React.FC = () => {
           />
         </AddSubModelButton>
       )}
-      {(shortcuts.length || designMode) && (
+      {(hasShortcuts || designMode) && (
         <Divider
           type="vertical"
           style={{
