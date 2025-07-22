@@ -92,7 +92,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   }
   createField() {
     const basePath = this.parent.context.basePath || this.context.basePath;
-    console.log(basePath, this.context);
     const field = this.form.createField({
       name: this.collectionField.name,
       basePath: basePath,

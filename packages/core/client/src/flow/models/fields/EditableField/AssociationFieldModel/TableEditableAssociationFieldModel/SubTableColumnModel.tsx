@@ -28,9 +28,10 @@ import { EditableFieldModel } from '../../EditableFieldModel';
 const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index, defaultValue }) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
-  console.log(model.master, defaultValue);
+  console.log(model, defaultValue[fieldPath]);
   return (
     <div ref={ref}>
+      <span>{defaultValue[fieldPath]}</span>
       <EditOutlined
         className="edit-icon"
         onClick={async (e) => {
