@@ -40,29 +40,28 @@ interface CascaderOption {
 }
 
 const VARIABLE_REGEX = /\{\{\s*ctx\.([^}]+?)\s*\}\}/g;
-const CONSTANT_TYPES = [
-  { value: 'string', label: 'String', default: '' },
-  { value: 'number', label: 'Number', default: '0' },
-  { value: 'boolean', label: 'Boolean', default: 'false' },
-  { value: 'date', label: 'Date', default: () => new Date().toISOString() },
-];
-
-const getConstantDefault = (type: string): string => {
-  const constantType = CONSTANT_TYPES.find((t) => t.value === type);
-  return constantType
-    ? typeof constantType.default === 'function'
-      ? constantType.default()
-      : constantType.default
-    : '';
-};
 
 const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[]): CascaderOption[] => {
-  return nodes.map((node) => ({
-    value: node.name,
-    label: node.title || node.name,
-    children: node.children?.length ? convertMetaTreeToCascaderData(node.children) : undefined,
-    isLeaf: !node.children?.length,
-  }));
+  return nodes
+    .map((node) => {
+      // 从 meta 中检查是否有 hide 属性，如果为 true 则跳过
+      const meta = node as any;
+      if (meta.hide === true) {
+        return null;
+      }
+
+      return {
+        value: node.name,
+        label: node.title || node.name,
+        children: node.children
+          ? typeof node.children === 'function'
+            ? [] // 异步函数，留空待加载
+            : convertMetaTreeToCascaderData(node.children).filter(Boolean) // 过滤掉null值
+          : undefined,
+        isLeaf: !node.children,
+      };
+    })
+    .filter(Boolean); // 过滤掉null值
 };
 
 /**
@@ -94,14 +93,88 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const flowContext = useFlowSettingsContext();
 
-  const cascaderData = useMemo(() => convertMetaTreeToCascaderData(flowContext.getPropertyMetaTree()), [flowContext]);
+  const [cascaderData, setCascaderData] = useState<CascaderOption[]>([]);
+  const [metaTreeCache, setMetaTreeCache] = useState<Map<string, MetaTreeNode[]>>(new Map());
+
+  // 初始化数据
+  useEffect(() => {
+    try {
+      const metaTree = flowContext.getPropertyMetaTree();
+      const cascaderOptions = convertMetaTreeToCascaderData(metaTree);
+      setCascaderData(cascaderOptions);
+
+      // 缓存根级别的MetaTreeNode
+      setMetaTreeCache(new Map([['root', metaTree]]));
+    } catch (error) {
+      console.error('Failed to get property meta tree:', error);
+      setCascaderData([]);
+    }
+  }, [flowContext]);
+
+  // 动态加载子菜单
+  const loadData = useCallback(
+    async (selectedOptions: any[]) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (!targetOption || targetOption.children?.length > 0) return;
+
+      try {
+        // 构建路径
+        const path = selectedOptions.map((opt) => opt.value);
+        const pathKey = path.join('.');
+
+        // 查找对应的MetaTreeNode
+        let currentNodes = metaTreeCache.get('root') || [];
+        let targetNode: MetaTreeNode | undefined;
+
+        for (const pathSegment of path) {
+          targetNode = currentNodes.find((node) => node.name === pathSegment);
+          if (!targetNode) break;
+
+          if (targetNode.children) {
+            if (typeof targetNode.children === 'function') {
+              // 如果是异步函数，需要调用获取子节点
+              const cacheKey = path.slice(0, path.indexOf(pathSegment) + 1).join('.');
+              if (!metaTreeCache.has(cacheKey)) {
+                const childNodes = await targetNode.children();
+                const newCache = new Map(metaTreeCache);
+                newCache.set(cacheKey, childNodes);
+                setMetaTreeCache(newCache);
+                currentNodes = childNodes;
+              } else {
+                currentNodes = metaTreeCache.get(cacheKey) || [];
+              }
+            } else {
+              currentNodes = targetNode.children;
+            }
+          }
+        }
+
+        // 如果找到目标节点且有异步children，加载它们
+        if (targetNode?.children && typeof targetNode.children === 'function') {
+          const childNodes = await targetNode.children();
+          const childOptions = convertMetaTreeToCascaderData(childNodes);
+
+          // 缓存子节点
+          const newCache = new Map(metaTreeCache);
+          newCache.set(pathKey, childNodes);
+          setMetaTreeCache(newCache);
+
+          // 更新cascader选项
+          targetOption.children = childOptions;
+          targetOption.isLeaf = childOptions.length === 0;
+          setCascaderData([...cascaderData]);
+        }
+      } catch (error) {
+        console.error('Failed to load cascader data:', error);
+        targetOption.isLeaf = true;
+        setCascaderData([...cascaderData]);
+      }
+    },
+    [flowContext, cascaderData, metaTreeCache],
+  );
 
   const options = useMemo(
-    () => [
-      { value: '', label: t('Null') },
-      { value: ' ', label: t('Constant'), children: CONSTANT_TYPES },
-      ...cascaderData,
-    ],
+    () => [{ value: '', label: t('Null') }, { value: 'constant', label: t('Constant') }, ...cascaderData],
     [cascaderData, t],
   );
 
@@ -115,12 +188,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     return model instanceof EditableFieldModelClass;
   }, []);
 
-  // 检查是否应该从model渲染组件
-  const shouldRenderFromModel = renderFromModel ?? isEditableFieldModel(flowContext.model);
-
   // 获取model组件配置
   const modelComponent = useMemo(() => {
-    if (!shouldRenderFromModel || !flowContext.model['component']) return null;
+    const shouldRender = renderFromModel ?? isEditableFieldModel(flowContext.model);
+    if (!shouldRender || !flowContext.model['component']) return null;
 
     const [Component, componentProps = {}] = flowContext.model['component'];
     if (!Component) return null;
@@ -155,20 +226,25 @@ export const VariableInput: React.FC<VariableInputProps> = ({
         style: { width: '100%', ...componentProps.style },
       },
     };
-  }, [shouldRenderFromModel, flowContext.model['component'], value, onChange, placeholder, disabled]);
+  }, [renderFromModel, isEditableFieldModel, flowContext.model, value, onChange, placeholder, disabled]);
 
   const getVariableLabels = useCallback(
     (variablePath: string[]): string[] => {
       if (!cascaderData.length) return variablePath;
 
-      let currentOptions = cascaderData;
+      // 由于使用浅层加载，我们只能显示第一级的标签
+      // 对于更深层级，直接返回路径名
       const labels: string[] = [];
 
-      for (const key of variablePath) {
-        const option = currentOptions.find((opt) => opt.value === key);
-        if (!option) return variablePath;
-        labels.push(option.label);
-        currentOptions = option.children || [];
+      if (variablePath.length > 0) {
+        const firstOption = cascaderData.find((opt) => opt.value === variablePath[0]);
+        if (firstOption) {
+          labels.push(firstOption.label);
+          // 对于更深层级，由于没有预加载数据，直接使用路径名
+          labels.push(...variablePath.slice(1));
+        } else {
+          return variablePath;
+        }
       }
 
       return labels;
@@ -176,8 +252,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [cascaderData],
   );
 
-  const { displayParts, hasVariable } = useMemo(() => {
-    if (!value) return { displayParts: [], hasVariable: false };
+  const { displayParts, hasVariable, isConstant, cascaderValue } = useMemo(() => {
+    if (!value) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: undefined };
 
     const parts: Array<{ type: 'text' | 'variable'; content: string; labels?: string[] }> = [];
     let lastIndex = 0;
@@ -205,8 +281,27 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       parts.push({ type: 'text', content: value.slice(lastIndex) });
     }
 
-    return { displayParts: parts, hasVariable: foundVariable };
-  }, [value, getVariableLabels]);
+    // 判断是否为常量：有值但没有变量
+    const isConstant = value && !foundVariable;
+
+    // 计算 cascaderValue
+    let cascaderValue;
+    if (foundVariable) {
+      // 单变量模式下用严格匹配，多变量模式下找第一个变量
+      const regex = mode === 'single' ? /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/ : VARIABLE_REGEX;
+      const varMatch = value.match(regex);
+      if (varMatch) {
+        cascaderValue = varMatch[1]
+          .trim()
+          .split('.')
+          .map((part) => part.trim());
+      }
+    } else if (isConstant) {
+      cascaderValue = ['constant'];
+    }
+
+    return { displayParts: parts, hasVariable: foundVariable, isConstant, cascaderValue };
+  }, [value, getVariableLabels, mode]);
 
   const isReadOnlyInSingleMode = mode === 'single' && hasVariable;
 
@@ -231,8 +326,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     (next: string[], optionPath: any[]) => {
       if (next[0] === '') {
         onChange?.('');
-      } else if (next[0] === ' ' && next[1]) {
-        onChange?.(getConstantDefault(next[1]));
+      } else if (next[0] === 'constant') {
+        // 常量选项被选中，但不改变当前值，让用户继续在输入框中输入
+        return;
       } else {
         const lastOption = optionPath[optionPath.length - 1];
         if (lastOption?.isLeaf !== false && !lastOption?.children?.length) {
@@ -263,7 +359,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           style={{
             flex: 1,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
+            borderTop: `1px solid ${token.colorBorder}`,
+            borderBottom: `1px solid ${token.colorBorder}`,
+            borderLeft: `1px solid ${token.colorBorder}`,
             display: 'flex',
             alignItems: 'stretch',
           }}
@@ -271,9 +369,17 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           <Component {...props} />
         </div>
 
-        <Cascader options={options} onChange={handleCascaderChange} changeOnSelect={false} disabled={disabled}>
+        <Cascader
+          options={options}
+          onChange={handleCascaderChange}
+          changeOnSelect={false}
+          disabled={disabled}
+          value={cascaderValue}
+          expandTrigger="hover"
+          loadData={loadData}
+        >
           <Button
-            type={hasVariable ? 'primary' : 'default'}
+            type={hasVariable || isConstant ? 'primary' : 'default'}
             disabled={disabled}
             style={{
               borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0`,
@@ -297,9 +403,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
             flex: 1,
             height: '32px',
             padding: '4px 11px',
-            border: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderTop: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderBottom: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
+            borderLeft: `1px solid ${isFocused ? token.colorPrimary : token.colorBorder}`,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
             background: token.colorBgContainer,
             display: 'flex',
             alignItems: 'center',
@@ -373,14 +480,23 @@ export const VariableInput: React.FC<VariableInputProps> = ({
           style={{
             flex: 1,
             borderRadius: `${token.borderRadius}px 0 0 ${token.borderRadius}px`,
-            borderRight: 'none',
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
           }}
         />
       )}
 
-      <Cascader options={options} onChange={handleCascaderChange} changeOnSelect={false} disabled={disabled}>
+      <Cascader
+        options={options}
+        onChange={handleCascaderChange}
+        changeOnSelect={false}
+        disabled={disabled}
+        value={cascaderValue}
+        expandTrigger="hover"
+        loadData={loadData}
+      >
         <Button
-          type={hasVariable ? 'primary' : 'default'}
+          type={hasVariable || isConstant ? 'primary' : 'default'}
           disabled={disabled}
           style={{
             borderRadius: `0 ${token.borderRadius}px ${token.borderRadius}px 0`,

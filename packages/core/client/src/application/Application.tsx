@@ -288,7 +288,8 @@ export class Application {
       value: this.i18n,
     });
     this.flowEngine.context.defineProperty('router', {
-      value: this.router.router,
+      get: () => this.router.router,
+      cache: false,
     });
     this.flowEngine.context.defineProperty('role', {
       get: () => this.apiClient.auth.role,

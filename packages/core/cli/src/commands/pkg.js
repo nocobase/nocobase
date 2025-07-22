@@ -93,6 +93,11 @@ class Package {
     if (await fs.exists(file)) {
       return true;
     }
+    file = path.resolve(process.cwd(), 'node_modules', this.packageName, 'package.json');
+    if (await fs.exists(file)) {
+      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is in node_modules`));
+      return true;
+    }
     return false;
   }
 

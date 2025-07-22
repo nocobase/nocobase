@@ -8,7 +8,6 @@
  */
 
 import { Completion } from '@codemirror/autocomplete';
-import { basicHtmlSnippet } from './basicHtmlSnippet';
 
 export default [
   {
