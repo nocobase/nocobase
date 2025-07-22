@@ -82,6 +82,10 @@ export default defineConfig({
               link: '/examples/flow-models/fork-model',
             },
             {
+              title: '拖拽（DND）',
+              link: '/examples/flow-models/dnd',
+            },
+            {
               title: '一个可配置的卡片',
               link: '/examples/flow-models/my-card',
             },
