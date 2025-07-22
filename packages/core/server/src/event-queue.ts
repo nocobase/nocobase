@@ -300,7 +300,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
           );
           setTimeout(() => {
             this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
-          }, 1000);
+          }, 500);
         } else {
           console.error(ex);
         }

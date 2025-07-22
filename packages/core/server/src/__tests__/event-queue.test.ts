@@ -230,7 +230,7 @@ describe('memory queue adapter', () => {
       await app.eventQueue.connect();
       await app.eventQueue.publish('test1', 'message1', { maxRetries: 3 });
 
-      await sleep(500);
+      await sleep(2000);
       expect(mockListener).toBeCalledTimes(4);
 
       const mockPlugin = app.pm.get(MockPlugin);
@@ -251,7 +251,7 @@ describe('memory queue adapter', () => {
       await app.eventQueue.connect();
       await app.eventQueue.publish('test1', 'message1', { timeout: 500, maxRetries: 1 });
 
-      await sleep(1000);
+      await sleep(1800);
       expect(mockListener).toBeCalledTimes(2);
       expect(result).toHaveLength(0);
 
