@@ -22,7 +22,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     targets.forEach((target) => {
       const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
       if (model) {
-        if (this.field.value != null) {
+        if (this.field.value != null && this.field.value !== '') {
           model.resource.addFilterGroup(this.uid, {
             [target.fieldPath]: {
               [operator]: this.field.value,
