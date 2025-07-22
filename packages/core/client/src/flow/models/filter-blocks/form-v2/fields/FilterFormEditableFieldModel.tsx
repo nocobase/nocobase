@@ -11,6 +11,8 @@ import { CollectionBlockModel } from '../../../base/BlockModel';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
+  enableOperator = true;
+
   addFilterGroupToTargetModels() {
     const operator = this.props.operator;
     const targets = this.props.targets || [];

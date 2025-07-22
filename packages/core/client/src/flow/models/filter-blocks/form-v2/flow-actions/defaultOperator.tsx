@@ -8,11 +8,16 @@
  */
 
 import { defineAction } from '@nocobase/flow-engine';
+import { FilterFormEditableFieldModel } from '../fields';
 
-export const defaultOperator = defineAction({
+export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
   name: 'defaultOperator',
   title: 'Default operator',
   uiSchema(ctx) {
+    if (!ctx.model.enableOperator) {
+      return;
+    }
+
     const operators = ctx.model.context.collectionField.filterable?.operators || [];
     return {
       // 用于选择字段默认的操作
