@@ -144,7 +144,6 @@ export class SubTableColumnModel extends FieldModel {
               />
             );
           } else {
-            console.log(fork);
             return <FlowModelRenderer model={fork} />;
           }
         })}
