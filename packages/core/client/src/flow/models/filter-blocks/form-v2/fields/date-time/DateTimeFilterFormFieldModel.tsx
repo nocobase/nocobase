@@ -11,6 +11,8 @@ import { escapeT } from '@nocobase/flow-engine';
 import { FilterFormEditableFieldModel } from '../FilterFormEditableFieldModel';
 
 export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
+  enableDisplayMode = false;
+
   setComponentProps(componentProps) {
     let { dateFormat, timeFormat } = componentProps || {};
     if (!componentProps.format && (dateFormat || timeFormat)) {
