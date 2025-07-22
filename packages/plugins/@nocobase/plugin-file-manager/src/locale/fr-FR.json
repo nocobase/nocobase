@@ -13,9 +13,12 @@
   "Aliyun OSS": "Aliyun OSS",
   "Tencent COS": "Tencent COS",
   "Amazon S3": "Amazon S3",
+  "MinIO": "MinIO",
   "Region": "Region",
   "Bucket": "Bucket",
   "Path": "Chemin",
   "Filename": "Nom de fichier",
-  "Will be used for API": "Sera utilisé pour l'API"
+  "Will be used for API": "Sera utilisé pour l'API",
+  "Please enter AccessKey": "Veuillez saisir AccessKey",
+  "Please enter SecretKey": "Veuillez saisir SecretKey"
 }
