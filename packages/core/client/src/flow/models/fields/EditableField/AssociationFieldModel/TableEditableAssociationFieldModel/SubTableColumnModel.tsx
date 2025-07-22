@@ -14,54 +14,55 @@ import {
   DragHandler,
   Droppable,
   escapeT,
-  FlowModel,
   FlowsFloatContextMenu,
   FlowModelRenderer,
   useFlowEngine,
-  useFlowModel,
 } from '@nocobase/flow-engine';
+import { observer } from '@formily/react';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 
-const LargeFieldEdit = ({ model, params: { fieldPath, dataSourceKey, collectionName }, index, defaultValue }) => {
-  const flowEngine = useFlowEngine();
-  const ref = useRef(null);
-  return (
-    <div ref={ref}>
-      <span>{defaultValue[fieldPath]}</span>
-      <EditOutlined
-        className="edit-icon"
-        onClick={async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          try {
-            await flowEngine.context.viewOpener.open({
-              mode: 'popover',
-              target: e.target,
-              placement: 'rightTop',
-              styles: {
-                body: {
-                  maxWidth: 400,
+const LargeFieldEdit = observer(
+  ({ model, params: { fieldPath, dataSourceKey, collectionName }, defaultValue }: any) => {
+    const flowEngine = useFlowEngine();
+    const ref = useRef(null);
+    return (
+      <div ref={ref}>
+        <span>{model.field?.value || defaultValue?.[fieldPath]}</span>
+        <EditOutlined
+          className="edit-icon"
+          onClick={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              await flowEngine.context.viewOpener.open({
+                mode: 'popover',
+                target: e.target,
+                placement: 'rightTop',
+                styles: {
+                  body: {
+                    maxWidth: 400,
+                  },
                 },
-              },
-              content: (popover) => {
-                return (
-                  <>
-                    <FlowModelRenderer model={model} uid={model.uid} />
-                  </>
-                );
-              },
-            });
-          } catch (error) {
-            console.log(error);
-          }
-        }}
-      />
-    </div>
-  );
-};
+                content: (popover) => {
+                  return (
+                    <>
+                      <FlowModelRenderer model={model} uid={model.uid} />
+                    </>
+                  );
+                },
+              });
+            } catch (error) {
+              console.log(error);
+            }
+          }}
+        />
+      </div>
+    );
+  },
+);
 
 export class SubTableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -142,7 +143,6 @@ export class SubTableColumnModel extends FieldModel {
                   collectionName: action.collectionField.collection.name,
                   dataSourceKey: action.collectionField.dataSourceKey,
                 }}
-                index={index}
                 defaultValue={value}
               />
             );
