@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import type { FlowDefinition, DeepPartial, ActionDefinition } from '../types';
+import { FlowModel } from '../models/flowModel';
 
 /**
  * 合并两个流程定义
@@ -41,6 +42,6 @@ export function mergeFlowDefinitions(
   return mergedFlow;
 }
 
-export function defineAction(options: ActionDefinition) {
+export function defineAction<TModel extends FlowModel = FlowModel>(options: ActionDefinition<TModel>) {
   return options;
 }
