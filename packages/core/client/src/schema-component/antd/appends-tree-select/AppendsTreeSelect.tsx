@@ -55,11 +55,7 @@ function loadChildren(this, option) {
 }
 
 function isAssociation(field) {
-  return (
-    ['belongsTo', 'hasMany', 'hasOne', 'belongsToMany', 'belongsToArray'].includes(field.type) &&
-    field.target &&
-    field.interface
-  );
+  return field.target && field.interface;
 }
 
 function trueFilter(field) {

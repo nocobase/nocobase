@@ -61,7 +61,7 @@ export const useCollectionState = (currentCollectionName: string, displayType = 
         if (!field.interface) {
           return;
         }
-        if (depth === 0 && ['sort', 'password', 'sequence'].includes(field.type)) {
+        if (['sort', 'password', 'sequence'].includes(field.type)) {
           return;
         }
         if (filterFields && filterFields(field)) {
@@ -97,7 +97,7 @@ export const useCollectionState = (currentCollectionName: string, displayType = 
             depth: depth + 1,
             maxDepth,
             prefix: option.key,
-            exclude: ['id', ...systemKeys.filter((v) => v !== 'sort')],
+            exclude: ['id', ...systemKeys],
           });
         }
         return option;
@@ -290,7 +290,7 @@ function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, 
     });
   } else if (['hasOne', 'hasMany'].includes(node.field.type) || node?.type === 'duplicate') {
     children = traverseFields(node.field.target, {
-      exclude: ['id', ...systemKeys.filter((v) => v !== 'sort')],
+      exclude: ['id', ...systemKeys],
       prefix: node.key,
       maxDepth: 1,
     });

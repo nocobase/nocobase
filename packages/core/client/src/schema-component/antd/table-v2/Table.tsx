@@ -633,12 +633,12 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
   const isReadPrettyMode =
-    (!!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true)) ||
-    schema?.['x-action-column'] === 'actions';
+    !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
   const mergedStyle = useMemo(
     () => ({ overflow: 'hidden', ...props.style, ...dynamicStyle }),
     [props.style, dynamicStyle],
   );
+
   return (
     <FlagProvider isInTableCell>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}

@@ -16,9 +16,6 @@ export default {
     validateEvent() {
       return true;
     }
-    execute(workflow, values, options) {
-      return this.workflow.trigger(workflow, values, options);
-    }
   },
   asyncTrigger: class {
     constructor(public readonly workflow) {}
@@ -26,9 +23,6 @@ export default {
     off() {}
     validateEvent() {
       return true;
-    }
-    execute(workflow, values, options) {
-      return this.workflow.trigger(workflow, values, options);
     }
   },
 };

@@ -37,7 +37,7 @@ import {
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
-import { SchemaComponentContext } from '../schema-component';
+
 const getActionContext = (context: { fieldSchema?: Schema }) => {
   const actionCtx = (context.fieldSchema?.['x-action-context'] || {}) as { collection?: string; dataSource?: string };
   return actionCtx;
@@ -110,13 +110,11 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       FormLayout,
       VariableInput: (inputProps) => {
         return (
-          <SchemaComponentContext.Provider value={{ designable: false }}>
-            <VariableInput
-              {...inputProps}
-              value={inputProps.value || undefined}
-              hideVariableButton={props?.hideVariableButton}
-            />
-          </SchemaComponentContext.Provider>
+          <VariableInput
+            {...inputProps}
+            value={inputProps.value || undefined}
+            hideVariableButton={props?.hideVariableButton}
+          />
         );
       },
     };
@@ -238,7 +236,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     },
     [currentSchema, dn, field, fieldSchema],
   );
-
   return (
     <SchemaSettingsModalItem
       title={t('Set default value')}

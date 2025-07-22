@@ -149,7 +149,7 @@ export const useVariableOptions = ({
       currentUserSettings,
       currentRoleSettings,
       apiTokenSettings,
-      datetimeSettings,
+      !shouldDisplayExactDate && datetimeSettings,
       shouldDisplayExactDate && exactDateTimeSettings,
       shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,

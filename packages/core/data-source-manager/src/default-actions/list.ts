@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context, SIMPLE_PAGINATION_LIMIT } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { assign, isValidFilter } from '@nocobase/utils';
 import { pageArgsToLimitArgs } from './utils';
-import _ from 'lodash';
 
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
@@ -43,7 +42,7 @@ async function listWithPagination(ctx: Context) {
 
   const repository = ctx.getCurrentRepository();
 
-  let { simplePaginate } = repository.collection?.options || {};
+  const { simplePaginate } = repository.collection?.options || {};
 
   const options = {
     context: ctx,
@@ -56,26 +55,6 @@ async function listWithPagination(ctx: Context) {
       delete options[key];
     }
   });
-
-  if (_.isUndefined(simplePaginate) && _.isFunction(repository['getEstimatedRowCount'])) {
-    const count = await repository.getEstimatedRowCount();
-    if (count > SIMPLE_PAGINATION_LIMIT) {
-      const resourceName = ctx.action.resourceName;
-      const collection = ctx.dataSource.collectionManager.getCollection(resourceName);
-      await ctx.app.db.getRepository('dataSourcesCollections').updateOrCreate({
-        filterKeys: ['name', 'dataSourceKey'],
-        values: {
-          name: collection.name,
-          dataSourceKey: ctx.dataSource.options.name,
-          options: {
-            ...repository.collection?.options,
-            simplePaginate: true,
-          },
-        },
-      });
-      simplePaginate = true;
-    }
-  }
 
   if (simplePaginate) {
     options.limit = options.limit + 1;

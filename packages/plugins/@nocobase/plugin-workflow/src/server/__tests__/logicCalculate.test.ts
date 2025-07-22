@@ -26,42 +26,16 @@ describe('workflow > logic calculate', () => {
   });
 
   describe('single calculation', () => {
-    const now = new Date();
-    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     it.each([
       ['equal', 1, 1, true],
       ['equal', 1, '1', true],
       ['equal', 1, 2, false],
-      ['equal', now, now.toISOString(), true],
-      ['equal', now, now.getTime(), true],
-      ['equal', now, now.getTime() + 1, false],
-      ['equal', now, 'abc', false],
       ['==', 1, 1, true],
       ['notEqual', 1, 2, true],
       ['notEqual', 1, 1, false],
-      ['notEqual', now, now.getTime(), false],
-      ['notEqual', now, now.toISOString(), false],
-      ['notEqual', now, 'abc', true],
-      ['notEqual', now, true, true],
-      ['notEqual', now, false, true],
-      ['notEqual', now, null, true],
-      ['notEqual', now, 0, true],
-      ['notEqual', now, 1, true],
       ['!=', 1, 2, true],
       ['gt', 2, 1, true],
       ['gt', 1, 2, false],
-      ['gt', now, now.getTime(), false],
-      ['gt', now, now.toISOString(), false],
-      ['gt', now, '', false],
-      ['gt', now, true, false],
-      ['gt', now, false, false],
-      ['gt', now, null, false],
-      ['gt', now, 0, true],
-      ['gt', now, yesterday, true],
-      ['gt', now, yesterday.toISOString(), true],
-      ['gt', now, tomorrow, false],
-      ['gt', now, tomorrow.toISOString(), false],
       ['>', 2, 1, true],
       ['gte', 2, 1, true],
       ['gte', 2, 2, true],
@@ -69,18 +43,6 @@ describe('workflow > logic calculate', () => {
       ['>=', 2, 2, true],
       ['lt', 1, 2, true],
       ['lt', 2, 1, false],
-      ['lt', now, now.getTime(), false],
-      ['lt', now, now.toISOString(), false],
-      ['lt', now, '', false],
-      ['lt', now, true, false],
-      ['lt', now, false, false],
-      ['lt', now, null, false],
-      ['lt', now, 0, false],
-      ['lt', now, 1, false],
-      ['lt', now, yesterday, false],
-      ['lt', now, yesterday.toISOString(), false],
-      ['lt', now, tomorrow, true],
-      ['lt', now, tomorrow.toISOString(), true],
       ['<', 1, 2, true],
       ['lte', 1, 2, true],
       ['lte', 2, 2, true],
@@ -99,7 +61,7 @@ describe('workflow > logic calculate', () => {
       ['endsWith', 'abc', 'b', false],
       ['notEndsWith', 'abc', 'b', true],
       ['notEndsWith', 'abc', 'c', false],
-    ])('%s (%s, %s) should be %s', (calculator, a, b, expected) => {
+    ])('should support %s operator', (calculator, a, b, expected) => {
       expect(logicCalculate({ calculator, operands: [a, b] })).toBe(expected);
     });
   });

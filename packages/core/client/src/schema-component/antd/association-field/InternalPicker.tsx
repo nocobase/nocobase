@@ -129,17 +129,6 @@ export const InternalPicker = observer(
         ? value.filter(Boolean)?.map((v) => v?.[fieldNames.value])
         : value?.[fieldNames.value];
     };
-
-    const getDefaultOptions = () => {
-      if (multiple == null) return null;
-      return Array.isArray(value)
-        ? value.filter(Boolean)?.map((v) => ({
-            [fieldNames.label]: compile(v?.[fieldNames.label]),
-            [fieldNames.value]: v?.[fieldNames.value],
-          }))
-        : [{ [fieldNames.label]: compile(value?.[fieldNames.label]), [fieldNames.value]: value?.[fieldNames.value] }];
-    };
-
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
       const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -213,7 +202,7 @@ export const InternalPicker = observer(
                   setSelectedRows(values);
                 }
               }}
-              options={getDefaultOptions()}
+              options={options}
               value={getValue()}
               open={false}
             />

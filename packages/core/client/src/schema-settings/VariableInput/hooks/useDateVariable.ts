@@ -14,8 +14,6 @@ import { useOperators } from '../../../block-provider/CollectOperators';
 import { useDatePickerContext } from '../../../schema-component/antd/date-picker/DatePicker';
 import { getDateRanges } from '../../../schema-component/antd/date-picker/util';
 import { datetime } from '../../../collection-manager/interfaces/properties/operators';
-import { useFlag } from '../../../flag-provider';
-
 interface Props {
   operator?: {
     value: string;
@@ -235,7 +233,6 @@ export const useDatetimeVariableContext = () => {
 export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldSchema }: Props = {}) => {
   const { t } = useTranslation();
   const { getOperator } = useOperators();
-  const { collectionField } = useFlag();
 
   const datetimeSettings = useMemo(() => {
     const operatorValue = operator?.value || getOperator(targetFieldSchema?.name) || '';
@@ -400,10 +397,10 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled, targetFieldS
     ];
 
     return {
-      label: collectionField ? t('Date variables(Deprecated)') : t('Date variables'),
+      label: t('Date variables'),
       value: '$nDate',
       key: '$nDate',
-      disabled: dateOptions.every((option) => option.disabled) || collectionField,
+      disabled: dateOptions.every((option) => option.disabled),
       children: dateOptions,
     };
   }, [schema?.['x-component'], targetFieldSchema]);

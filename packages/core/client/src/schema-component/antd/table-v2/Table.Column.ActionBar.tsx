@@ -13,7 +13,6 @@ import React from 'react';
 import { SortableItem, useDesigner, useSchemaComponentContext } from '../..';
 import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useToken } from '../__builtins__';
-import { BlockContext, useBlockContext } from '../../../';
 
 export const designerCss = ({ margin = '-18px -16px', padding = '18px 16px' } = {}) => css`
   position: relative;
@@ -60,7 +59,6 @@ export const TableColumnActionBar = observer(
     const { isInSubTable } = useFlag() || {};
     const { designable } = useSchemaComponentContext();
     const { token } = useToken();
-    const { name } = useBlockContext?.() || {};
 
     if (!designable || Designer.isNullComponent) {
       return props.children;
@@ -73,10 +71,8 @@ export const TableColumnActionBar = observer(
           padding: `${token.margin}px ${token.marginXS}px`,
         })}
       >
-        <BlockContext.Provider value={{ name: isInSubTable ? name : 'taleColumn' }}>
-          <Designer />
-          {props.children}
-        </BlockContext.Provider>
+        <Designer />
+        {props.children}
       </SortableItem>
     );
   },
