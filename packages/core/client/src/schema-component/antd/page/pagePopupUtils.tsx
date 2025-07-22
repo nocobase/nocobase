@@ -68,7 +68,7 @@ export const getStoredPopupContext = (popupUid: string) => {
  * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
- * @param isDefault - When the context is missing, the default value will be used
+ * @param isDefault - Determines whether to store the context as a default value in `defaultPopupsContextStorage`
  */
 export const storePopupContext = (popupUid: string, params: PopupContextStorage, isDefault = false) => {
   if (isDefault) {
