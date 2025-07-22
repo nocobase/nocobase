@@ -53,7 +53,7 @@ class HelloModel extends FlowModel {
         <p>This is a simple block rendered by HelloModel.</p>
         <Space direction="vertical">
           {this.mapSubModels('subs', (subModel) => (
-            <FlowModelRenderer key={subModel.uid} model={subModel} />
+            <FlowModelRenderer key={subModel.uid} model={subModel} showFlowSettings />
           ))}
           <Space>
             <AddSubModelButton

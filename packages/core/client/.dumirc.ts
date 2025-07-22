@@ -80,7 +80,23 @@ export default defineConfig({
             {
               title: 'Fork model',
               link: '/examples/flow-models/fork-model',
-            }
+            },
+            {
+              title: '一个可配置的卡片',
+              link: '/examples/flow-models/my-card',
+            },
+            {
+              title: 'Vditor 集成',
+              link: '/examples/flow-models/vditor',
+            },
+            {
+              title: 'Markdown 解析',
+              link: '/examples/flow-models/markdown',
+            },
+            {
+              title: 'LiquidJS 集成',
+              link: '/examples/flow-models/liquidjs',
+            },
             // {
             //   title: '可拖拽的布局',
             //   link: '/examples/flow-models/draggable-layout',
@@ -230,9 +246,13 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'Quickstart',
+              title: '构建可编排的按钮组件',
               link: '/learn',
             },
+            // {
+            //   title: '构建可编排的卡片组件',
+            //   link: '/learn/my-card',
+            // },
           ],
         },
         {
@@ -245,6 +265,16 @@ export default defineConfig({
             },
           ],
         },
+        // {
+        //   title: 'Best Practices',
+        //   type: 'group',
+        //   children: [
+        //     {
+        //       title: 'Best Practices',
+        //       link: '/learn/best-practices',
+        //     }
+        //   ]
+        // }
       ],
       '/api': [
         {
