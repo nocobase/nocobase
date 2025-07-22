@@ -447,7 +447,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
       model['resource'] = resource;
     });
     this.defineProperty('resource', {
-      get: () => model['resource'],
+      get: () => model['resource'] || model.context['resource'],
       cache: true,
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {

@@ -236,8 +236,6 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         }
       }
     }
-    // @ts-ignore
-    this.master = null;
   }
 
   /**
