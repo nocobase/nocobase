@@ -36,6 +36,7 @@ export interface ITask {
   setLogger(logger: Logger): void;
   setApp(app: Application): void;
 
+  isCanceled: boolean;
   cancel(options?: { silent?: boolean });
   execute(): Promise<any>;
   reportProgress(progress: { total: number; current: number }): void;

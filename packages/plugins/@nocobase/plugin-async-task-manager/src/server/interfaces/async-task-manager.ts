@@ -19,14 +19,15 @@ export interface CreateTaskOptions extends Transactionable {
 }
 
 export interface AsyncTasksManager {
+  concurrency: number;
   setLogger(logger: Logger): void;
   setApp(app: Application): void;
   registerTaskType(taskType: TaskConstructor): void;
   createTask(data: Omit<TaskModel, 'id'>, options?: CreateTaskOptions): Promise<ITask>;
-  getTasksByTag(tagKey: string, tagValue: string): Promise<ITask[]>;
   cancelTask(taskId: TaskId): Promise<void>;
   getTaskStatus(taskId: TaskId): Promise<TaskStatus>;
   getTask(taskId: TaskId): ITask | undefined;
+  runTask(task: ITask): Promise<void>;
 }
 
 export class CancelError extends Error {

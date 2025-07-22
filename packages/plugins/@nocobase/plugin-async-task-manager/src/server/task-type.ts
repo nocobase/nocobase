@@ -52,19 +52,20 @@ export class TaskType implements ITask {
     if (this.record.status === TASK_STATUS.RUNNING) {
       this.abortController.abort();
     }
-    this.record.set({
-      status: TASK_STATUS.CANCELED,
-      doneAt: new Date(),
-    });
+    if (this.isCanceled) {
+      return this;
+    }
     await this.record.update(
       {
         status: TASK_STATUS.CANCELED,
+        doneAt: new Date(),
       },
       {
         hooks: !silent,
       },
     );
     this.logger?.debug(`Task ${this.record.id} cancelled`);
+    return this;
   }
 
   /**
@@ -99,18 +100,19 @@ export class TaskType implements ITask {
    * - Event emission
    */
   async run() {
-    this.record.startedAt = new Date();
     this.logger?.info(`Starting task ${this.record.id}, type: ${(this.constructor as typeof TaskType).type}`);
 
     if (this.isCanceled) {
       this.logger?.info(`Task ${this.record.id} was cancelled before execution`);
       if (this.record.status !== TASK_STATUS.CANCELED) {
-        this.record.status = TASK_STATUS.CANCELED;
-        await this.record.save();
+        await this.record.update({
+          status: TASK_STATUS.CANCELED,
+        });
       }
       return;
     }
-    await this.record.update({
+    this.record = await this.record.update({
+      startedAt: new Date(),
       status: TASK_STATUS.RUNNING,
     });
 
@@ -118,24 +120,22 @@ export class TaskType implements ITask {
       const result = await this.execute();
 
       this.logger?.info(`Task ${this.record.id} completed successfully with result: ${JSON.stringify(result)}`);
-      this.record.set({
+      await this.record.update({
         status: TASK_STATUS.SUCCEEDED,
         doneAt: new Date(),
         result,
       });
-      await this.record.save();
     } catch (error) {
       if (error instanceof CancelError) {
         this.cancel();
         this.logger?.info(`Task ${this.record.id} was cancelled during execution`);
         return;
       } else {
-        this.record.set({
+        await this.record.update({
           status: TASK_STATUS.FAILED,
           doneAt: new Date(),
           error: error.toString(),
         });
-        await this.record.save();
 
         this.logger?.error(`Task ${this.record.id} failed with error: ${error.message}`);
         throw error;

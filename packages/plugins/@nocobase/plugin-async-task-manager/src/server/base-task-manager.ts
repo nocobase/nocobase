@@ -23,6 +23,10 @@ import { Model } from '@nocobase/database';
 
 const WORKER_JOB_ASYNC_TASK_PROCESS = 'async-task:process';
 
+type QueueMessage = {
+  id: string;
+};
+
 export class BaseTaskManager implements AsyncTasksManager {
   private taskTypes: Map<string, TaskConstructor> = new Map();
 
@@ -39,11 +43,16 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private progressThrottles: Map<string, DebouncedFunc<(...args: any[]) => any>> = new Map();
 
-  private concurrency: number;
+  concurrency: number = process.env.ASYNC_TASK_MAX_CONCURRENCY
+    ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
+    : 3;
 
-  private idle = () => this.tasks.size < this.concurrency;
+  private idle = () => {
+    return true;
+    return this.tasks.size < this.concurrency;
+  };
 
-  private onQueueTask = async (id) => {
+  private onQueueTask = async ({ id }: QueueMessage) => {
     const task = await this.prepareTask(id);
     await this.runTask(task);
   };
@@ -57,7 +66,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     }
   };
 
-  private onTaskAfterCreated = (task) => {
+  private onTaskAfterCreate = (task) => {
     const userId = task.createdById;
     if (userId) {
       this.app.emit('ws:sendToTag', {
@@ -73,14 +82,15 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private onTaskStatusChanged = (task) => {
     if (!task.changed('status')) return;
-    const userId = task.createdById;
-    if (!userId) return;
 
     if (task.status === TASK_STATUS.CANCELED) {
       // Remove task immediately when cancelled
       this.progressThrottles.delete(task.id);
       this.tasks.delete(task.id);
     }
+
+    const userId = task.createdById;
+    if (!userId) return;
 
     this.app.emit('ws:sendToTag', {
       tagKey: 'userId',
@@ -143,12 +153,6 @@ export class BaseTaskManager implements AsyncTasksManager {
     });
   };
 
-  constructor() {
-    this.concurrency = process.env.ASYNC_TASK_MAX_CONCURRENCY
-      ? Number.parseInt(process.env.ASYNC_TASK_MAX_CONCURRENCY, 10)
-      : 3;
-  }
-
   private getThrottledProgressEmitter(taskId: string, userId: number) {
     if (!this.progressThrottles.has(taskId)) {
       this.progressThrottles.set(
@@ -182,9 +186,10 @@ export class BaseTaskManager implements AsyncTasksManager {
 
     this.app.on('afterLoad', () => {
       if (this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS)) {
-        this.app.backgroundJobManager.subscribe(`${plugin.name}.task`, {
+        this.app.eventQueue.subscribe(`${plugin.name}.task`, {
           idle: this.idle,
           process: this.onQueueTask,
+          concurrency: this.concurrency,
         });
       }
       this.app.pubSubManager.subscribe(`${plugin.name}.task.cancel`, this.onTaskCancelSignal);
@@ -201,14 +206,14 @@ export class BaseTaskManager implements AsyncTasksManager {
       }
     });
 
-    this.app.db.on('asyncTasks.afterCreated', this.onTaskAfterCreated);
+    this.app.db.on('asyncTasks.afterCreate', this.onTaskAfterCreate);
 
     this.app.db.on('asyncTasks.afterUpdate', this.onTaskStatusChanged);
   }
 
   private enqueueTask(task: ITask, queueOptions): void {
     const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
-    this.app.backgroundJobManager.publish(`${plugin.name}.task`, { id: task.record.id }, queueOptions);
+    this.app.eventQueue.publish(`${plugin.name}.task`, { id: task.record.id }, queueOptions);
   }
 
   async cancelTask(taskId: TaskId, externally = false): Promise<void> {
@@ -244,15 +249,15 @@ export class BaseTaskManager implements AsyncTasksManager {
     const DBTaskModel = this.app.db.getModel('asyncTasks');
     const record = (await DBTaskModel.create(values, options)) as TaskModel;
 
-    this.logger.info(`Creating task of type: ${data.type}, params: ${JSON.stringify(data.params)}`);
+    this.logger.debug(`Creating task of type: ${data.type}`);
+    this.logger.debug(`Task data: ${JSON.stringify(data)}`);
     const task = new taskType(record);
 
-    this.logger.info(`Created new task ${record.id} of type ${data.type}, params: ${JSON.stringify(data.params)}`);
+    this.logger.info(`New task of type: ${data.type} created as ${record.id}`);
     if (useQueue) {
+      this.logger.debug(`New task ${record.id} will be sent to queue for processing`);
       const queueOptions = typeof useQueue === 'object' ? useQueue : {};
       this.enqueueTask(task, queueOptions);
-    } else {
-      this.runTask(task);
     }
 
     return task;
@@ -298,7 +303,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     return task;
   }
 
-  private async runTask(task: ITask): Promise<void> {
+  async runTask(task: ITask): Promise<void> {
     if (task.record.status === TASK_STATUS.PENDING) {
       task.setLogger(this.logger);
       task.setApp(this.app);
@@ -311,14 +316,5 @@ export class BaseTaskManager implements AsyncTasksManager {
         this.logger.error(`Error executing task ${task.record.id} from queue: ${error.message}`);
       }
     }
-  }
-
-  async getTasksByTag(tagKey: string, tagValue: string): Promise<ITask[]> {
-    this.logger.debug(`Getting tasks by tag - key: ${tagKey}, value: ${tagValue}`);
-    const tasks = Array.from(this.tasks.values()).filter((task) => {
-      return task.record.tags[tagKey] == tagValue;
-    });
-    this.logger.debug(`Found ${tasks.length} tasks with tag ${tagKey}=${tagValue}`);
-    return tasks;
   }
 }
