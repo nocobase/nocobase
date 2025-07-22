@@ -93,12 +93,15 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     });
   }
   createField() {
-    return this.form.createField({
+    const field = this.form.createField({
       name: this.collectionField.name,
+      basePath: this.parent.context.basePath,
       ...this.props,
       decorator: this.decorator,
       component: this.component,
     });
+    field.setData({ path: this.parent.context.basePath });
+    return field;
   }
 
   async destroy() {
@@ -132,9 +135,11 @@ EditableFieldModel.registerFlow({
       handler(ctx, params) {
         const { fieldProps = {} } = params;
         const { collectionField } = ctx.model;
-
         // 如果字段已存在但连接有问题，重新创建
         if (ctx.model.field && (!ctx.model.field.form || ctx.model.field.destroyed)) {
+          ctx.model.field = null;
+        }
+        if (ctx.model.field && ctx.model.context.basePath !== ctx.model.field.data.path) {
           ctx.model.field = null;
         }
 
