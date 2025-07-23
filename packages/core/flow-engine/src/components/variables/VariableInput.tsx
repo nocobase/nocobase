@@ -41,7 +41,26 @@ interface CascaderOption {
 
 const VARIABLE_REGEX = /\{\{\s*ctx\.([^}]+?)\s*\}\}/g;
 
-const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[]): CascaderOption[] => {
+// 提取变量路径的辅助函数
+const extractVariablePaths = (value: string): string[][] => {
+  const matches = value.matchAll(VARIABLE_REGEX);
+  return Array.from(matches, (match) =>
+    match[1]
+      .trim()
+      .split('.')
+      .map((part) => part.trim()),
+  );
+};
+
+// 解析单个变量路径
+const parseVariablePath = (pathStr: string): string[] => {
+  return pathStr
+    .trim()
+    .split('.')
+    .map((part) => part.trim());
+};
+
+const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[], t: (key: string) => string): CascaderOption[] => {
   return nodes
     .map((node) => {
       // 从 meta 中检查是否有 hide 属性，如果为 true 则跳过
@@ -52,11 +71,11 @@ const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[]): CascaderOption[] 
 
       return {
         value: node.name,
-        label: node.title || node.name,
+        label: t(node.title || node.name),
         children: node.children
           ? typeof node.children === 'function'
             ? [] // 异步函数，留空待加载
-            : convertMetaTreeToCascaderData(node.children).filter(Boolean) // 过滤掉null值
+            : convertMetaTreeToCascaderData(node.children, t).filter(Boolean) // 过滤掉null值
           : undefined,
         isLeaf: !node.children,
       };
@@ -95,12 +114,13 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   const [cascaderData, setCascaderData] = useState<CascaderOption[]>([]);
   const [metaTreeCache, setMetaTreeCache] = useState<Map<string, MetaTreeNode[]>>(new Map());
+  const [labelCache, setLabelCache] = useState<Map<string, string>>(new Map());
 
   // 初始化数据
   useEffect(() => {
     try {
       const metaTree = flowContext.getPropertyMetaTree();
-      const cascaderOptions = convertMetaTreeToCascaderData(metaTree);
+      const cascaderOptions = convertMetaTreeToCascaderData(metaTree, flowContext.t);
       setCascaderData(cascaderOptions);
 
       // 缓存根级别的MetaTreeNode
@@ -110,6 +130,40 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       setCascaderData([]);
     }
   }, [flowContext]);
+
+  // 预加载当前值中的变量标签
+  useEffect(() => {
+    if (!value || !metaTreeCache.has('root')) return;
+
+    const variablePaths = extractVariablePaths(value);
+    if (variablePaths.length === 0) return;
+
+    const newLabels = new Map<string, string>();
+
+    for (const variablePath of variablePaths) {
+      let currentNodes = metaTreeCache.get('root') || [];
+
+      for (let i = 0; i < variablePath.length; i++) {
+        const segment = variablePath[i];
+        const cacheKey = variablePath.slice(0, i + 1).join('.');
+
+        const node = currentNodes.find((n) => n.name === segment);
+        if (node) {
+          newLabels.set(cacheKey, flowContext.t(node.title || node.name));
+
+          if (node.children && typeof node.children !== 'function') {
+            currentNodes = node.children;
+          }
+        } else {
+          newLabels.set(cacheKey, flowContext.t(segment));
+        }
+      }
+    }
+
+    if (newLabels.size > 0) {
+      setLabelCache((prev) => new Map([...prev, ...newLabels]));
+    }
+  }, [value, metaTreeCache, flowContext]);
 
   // 动态加载子菜单
   const loadData = useCallback(
@@ -152,7 +206,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
         // 如果找到目标节点且有异步children，加载它们
         if (targetNode?.children && typeof targetNode.children === 'function') {
           const childNodes = await targetNode.children();
-          const childOptions = convertMetaTreeToCascaderData(childNodes);
+          const childOptions = convertMetaTreeToCascaderData(childNodes, flowContext.t);
 
           // 缓存子节点
           const newCache = new Map(metaTreeCache);
@@ -228,48 +282,32 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     };
   }, [renderFromModel, isEditableFieldModel, flowContext.model, value, onChange, placeholder, disabled]);
 
+  // 获取变量标签，优先从缓存获取，否则直接翻译
   const getVariableLabels = useCallback(
     (variablePath: string[]): string[] => {
-      if (!cascaderData.length) return variablePath;
-
-      // 由于使用浅层加载，我们只能显示第一级的标签
-      // 对于更深层级，直接返回路径名
-      const labels: string[] = [];
-
-      if (variablePath.length > 0) {
-        const firstOption = cascaderData.find((opt) => opt.value === variablePath[0]);
-        if (firstOption) {
-          labels.push(firstOption.label);
-          // 对于更深层级，由于没有预加载数据，直接使用路径名
-          labels.push(...variablePath.slice(1));
-        } else {
-          return variablePath;
-        }
-      }
-
-      return labels;
+      return variablePath.map((segment, index) => {
+        const cacheKey = variablePath.slice(0, index + 1).join('.');
+        return labelCache.get(cacheKey) || flowContext.t(segment);
+      });
     },
-    [cascaderData],
+    [labelCache, flowContext],
   );
 
   const { displayParts, hasVariable, isConstant, cascaderValue } = useMemo(() => {
-    if (!value) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: undefined };
+    if (!value) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: [''] };
 
     const parts: Array<{ type: 'text' | 'variable'; content: string; labels?: string[] }> = [];
     let lastIndex = 0;
-    let match;
     let foundVariable = false;
 
     VARIABLE_REGEX.lastIndex = 0;
+    let match;
     while ((match = VARIABLE_REGEX.exec(value)) !== null) {
       if (match.index > lastIndex) {
         parts.push({ type: 'text', content: value.slice(lastIndex, match.index) });
       }
 
-      const variablePath = match[1]
-        .trim()
-        .split('.')
-        .map((part) => part.trim());
+      const variablePath = parseVariablePath(match[1]);
       const labels = getVariableLabels(variablePath);
       parts.push({ type: 'variable', content: match[0], labels });
       foundVariable = true;
@@ -281,27 +319,22 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       parts.push({ type: 'text', content: value.slice(lastIndex) });
     }
 
-    // 判断是否为常量：有值但没有变量
-    const isConstant = value && !foundVariable;
-
     // 计算 cascaderValue
-    let cascaderValue;
+    const isConstant = value && !foundVariable;
+    let cascaderValue = [''];
+
     if (foundVariable) {
-      // 单变量模式下用严格匹配，多变量模式下找第一个变量
       const regex = mode === 'single' ? /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/ : VARIABLE_REGEX;
       const varMatch = value.match(regex);
       if (varMatch) {
-        cascaderValue = varMatch[1]
-          .trim()
-          .split('.')
-          .map((part) => part.trim());
+        cascaderValue = parseVariablePath(varMatch[1]);
       }
     } else if (isConstant) {
       cascaderValue = ['constant'];
     }
 
     return { displayParts: parts, hasVariable: foundVariable, isConstant, cascaderValue };
-  }, [value, getVariableLabels, mode]);
+  }, [value, mode, getVariableLabels]);
 
   const isReadOnlyInSingleMode = mode === 'single' && hasVariable;
 
@@ -326,18 +359,35 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     (next: string[], optionPath: any[]) => {
       if (next[0] === '') {
         onChange?.('');
-      } else if (next[0] === 'constant') {
-        // 常量选项被选中，但不改变当前值，让用户继续在输入框中输入
         return;
-      } else {
-        const lastOption = optionPath[optionPath.length - 1];
-        if (lastOption?.isLeaf !== false && !lastOption?.children?.length) {
-          const newVariable = `{{ ctx.${next.join('.')} }}`;
-          onChange?.(mode === 'single' ? newVariable : (value || '') + newVariable);
+      }
+
+      if (next[0] === 'constant') {
+        return; // 常量选项被选中，但不改变当前值
+      }
+
+      const lastOption = optionPath[optionPath.length - 1];
+      if (lastOption?.isLeaf !== false && !lastOption?.children?.length) {
+        const newVariable = `{{ ctx.${next.join('.')} }}`;
+        const newValue = mode === 'single' ? newVariable : (value || '') + newVariable;
+
+        // 缓存选项路径中的标签
+        const newLabels = new Map<string, string>();
+        optionPath.forEach((option, index) => {
+          const cacheKey = next.slice(0, index + 1).join('.');
+          if (option.label && !labelCache.has(cacheKey)) {
+            newLabels.set(cacheKey, option.label);
+          }
+        });
+
+        if (newLabels.size > 0) {
+          setLabelCache((prev) => new Map([...prev, ...newLabels]));
         }
+
+        onChange?.(newValue);
       }
     },
-    [value, onChange, mode],
+    [value, onChange, mode, labelCache],
   );
 
   const handleKeyDown = useCallback(

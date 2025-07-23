@@ -470,7 +470,7 @@ export class FlowRuntimeContext<
   constructor(
     public model: TModel,
     public flowKey: string,
-    protected mode: TMode = 'runtime' as TMode,
+    protected _mode: TMode = 'runtime' as TMode,
   ) {
     super();
     this.addDelegate(this.model.context);
@@ -534,6 +534,10 @@ export class FlowRuntimeContext<
 
   exit() {
     throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+
+  get mode() {
+    return this._mode;
   }
 }
 
