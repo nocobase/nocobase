@@ -370,7 +370,11 @@ function VariableReplacer({ name, value, onChange }) {
   return (
     <Space>
       <WorkflowVariableInput variableOptions={{}} value={`{{${name}}}`} disabled />
-      <Variable.Input useTypedConstant={['string', 'number', 'boolean', 'date']} value={value} onChange={onChange} />
+      <Variable.Input
+        useTypedConstant={['string', 'number', 'boolean', 'date', 'object']}
+        value={value}
+        onChange={onChange}
+      />
     </Space>
   );
 }
