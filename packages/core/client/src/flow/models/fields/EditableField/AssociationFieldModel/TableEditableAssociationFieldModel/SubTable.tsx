@@ -16,12 +16,13 @@ import {
   FlowModelRenderer,
   AddFieldButton,
 } from '@nocobase/flow-engine';
+import { useTranslation } from 'react-i18next';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { action } from '@formily/reactive';
 import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { tval } from '@nocobase/utils/client';
-import { Table, Card } from 'antd';
+import { Table, Card, Space } from 'antd';
 import { PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { useField, observer } from '@formily/react';
 import React, { useMemo } from 'react';
@@ -77,7 +78,7 @@ const AddFieldColumn = ({ model }) => {
       subModelBaseClass="TableCustomColumnModel"
       items={items}
       onModelCreated={async (column: SubTableColumnModel) => {
-        // await column.applyAutoFlows();
+        await column.applyAutoFlows();
       }}
       onSubModelAdded={async (column: SubTableColumnModel) => {
         // model.addAppends(column.fieldPath, true);
@@ -86,9 +87,11 @@ const AddFieldColumn = ({ model }) => {
   );
 };
 
-export const SubTable = observer(() => {
+export const SubTable = observer((props: any) => {
   const field = useField<ArrayField>();
   const model = useFlowModel();
+  const { t } = useTranslation();
+  const { allowAddNew, allowSelectExistingRecord } = props;
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
@@ -115,8 +118,6 @@ export const SubTable = observer(() => {
                 return action(() => {
                   const fieldIndex = index;
                   if (!Array.isArray(field.value)) return;
-
-                  // 删除一条记录（确保不会越界）
                   const nextValue = [...field.value];
                   if (fieldIndex >= 0 && fieldIndex < nextValue.length) {
                     nextValue.splice(fieldIndex, 1);
@@ -136,7 +137,6 @@ export const SubTable = observer(() => {
       },
     ] as any;
   };
-
   const handleAdd = () => {
     const next = [...(field.value || []), {}];
     field.onInput(next);
@@ -149,9 +149,22 @@ export const SubTable = observer(() => {
   return (
     <Card>
       <Table columns={getColumns()} scroll={{ x: 'max-content' }} dataSource={dataSource} pagination={false} />
-      <a onClick={handleAdd}>
-        <PlusOutlined /> Add new
-      </a>
+      <Space
+        style={{
+          gap: 15,
+        }}
+      >
+        {allowAddNew !== false && (
+          <a onClick={handleAdd}>
+            <PlusOutlined /> {t('Add new')}
+          </a>
+        )}
+        {allowSelectExistingRecord && (
+          <a onClick={handleAdd}>
+            <PlusOutlined /> {t('Select record')}
+          </a>
+        )}
+      </Space>
     </Card>
   );
 });

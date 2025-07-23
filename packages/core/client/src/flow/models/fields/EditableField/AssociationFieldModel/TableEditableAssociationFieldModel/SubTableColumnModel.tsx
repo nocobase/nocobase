@@ -25,45 +25,43 @@ import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { uid } from '@formily/shared';
 
-const LargeFieldEdit = observer(
-  ({ model, params: { fieldPath, dataSourceKey, collectionName }, defaultValue }: any) => {
-    const flowEngine = useFlowEngine();
-    const ref = useRef(null);
-    return (
-      <div ref={ref}>
-        <span>{model.field?.value || defaultValue?.[fieldPath]}</span>
-        <EditOutlined
-          className="edit-icon"
-          onClick={async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            try {
-              await flowEngine.context.viewOpener.open({
-                mode: 'popover',
-                target: e.target,
-                placement: 'rightTop',
-                styles: {
-                  body: {
-                    maxWidth: 400,
-                  },
+const LargeFieldEdit = observer(({ model, params: { fieldPath }, defaultValue }: any) => {
+  const flowEngine = useFlowEngine();
+  const ref = useRef(null);
+  return (
+    <div ref={ref}>
+      <span>{model.field?.value || defaultValue?.[fieldPath]}</span>
+      <EditOutlined
+        className="edit-icon"
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            await flowEngine.context.viewOpener.open({
+              mode: 'popover',
+              target: e.target,
+              placement: 'rightTop',
+              styles: {
+                body: {
+                  maxWidth: 400,
                 },
-                content: (popover) => {
-                  return (
-                    <>
-                      <FlowModelRenderer model={model} uid={model.uid} />
-                    </>
-                  );
-                },
-              });
-            } catch (error) {
-              console.log(error);
-            }
-          }}
-        />
-      </div>
-    );
-  },
-);
+              },
+              content: (popover) => {
+                return (
+                  <>
+                    <FlowModelRenderer model={model} uid={model.uid} />
+                  </>
+                );
+              },
+            });
+          } catch (error) {
+            console.log(error);
+          }
+        }}
+      />
+    </div>
+  );
+});
 
 export class SubTableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -143,8 +141,6 @@ export class SubTableColumnModel extends FieldModel {
                 model={fork}
                 params={{
                   fieldPath: action.fieldPath,
-                  collectionName: action.collectionField.collection.name,
-                  dataSourceKey: action.collectionField.dataSourceKey,
                 }}
                 defaultValue={value}
               />
@@ -181,7 +177,7 @@ SubTableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-        await ctx.model.applySubModelsAutoFlows('field');
+        // await ctx.model.applySubModelsAutoFlows('field');
       },
     },
     title: {
