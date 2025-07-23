@@ -145,7 +145,6 @@ export const SubTable = observer((props: any) => {
     () => (field.value || []).map((item, index) => ({ key: item.id || index, ...item })),
     [field.value],
   );
-  console.log(getColumns());
   return (
     <Card>
       <Table

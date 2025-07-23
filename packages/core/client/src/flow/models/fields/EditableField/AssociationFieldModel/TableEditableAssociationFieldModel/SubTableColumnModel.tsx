@@ -180,14 +180,12 @@ SubTableColumnModel.define({
 
 SubTableColumnModel.registerFlow({
   key: 'subTableColumnSettings',
-  auto: true,
   sort: 500,
   title: escapeT('Table column settings'),
   steps: {
     init: {
       async handler(ctx, params) {
         const field = ctx.model.collectionField;
-        console.log(888);
         if (!field) {
           return;
         }
