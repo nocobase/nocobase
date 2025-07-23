@@ -67,7 +67,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   );
 
   if (options.bodyParser !== false) {
-    const bodyLimit = '10mb';
+    const bodyLimit = getBodyLimit();
     app.use(
       bodyParser({
         jsonLimit: bodyLimit,
@@ -166,3 +166,7 @@ export const enablePerfHooks = (app: Application) => {
 
   app.acl.allow('perf', '*', 'public');
 };
+
+export function getBodyLimit() {
+  return process.env.REQUEST_BODY_LIMIT || '10mb';
+}
