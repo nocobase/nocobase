@@ -285,14 +285,13 @@ describe('ForkFlowModel', () => {
 
       const fork = new ForkFlowModel(mockMaster, initialProps);
 
-      // Access the property descriptor indirectly through shared property setting
-      // ForkFlowModel.setSharedProperties(['testDescriptor']);
-
+      // Since testDescriptor is not a shared property, our fix now makes
+      // non-shared properties also check for setters and call them if they exist
       (fork as any).testDescriptor = 'newValue';
 
-      // Verify the setter was called (indirectly validates descriptor lookup)
+      // With our fix, the setter should be called even for non-shared properties
       const descriptor = Object.getOwnPropertyDescriptor(mockMaster, 'testDescriptor');
-      expect(descriptor?.set).not.toHaveBeenCalled();
+      expect(descriptor?.set).toHaveBeenCalledWith('newValue');
     });
 
     test('should handle non-existent property descriptors', () => {
@@ -841,6 +840,184 @@ describe('ForkFlowModel', () => {
       };
 
       expect((fork as any).nested.deep.property.value).toBe('deep value');
+    });
+  });
+
+  // ==================== SETTER BEHAVIOR ====================
+  describe('Setter Behavior', () => {
+    let fork: ForkFlowModel;
+
+    beforeEach(() => {
+      fork = new ForkFlowModel(mockMaster, initialProps);
+    });
+
+    describe('non-shared properties with setters', () => {
+      test('should call master setter methods in fork instances', () => {
+        // 直接在 master 上定义 setter
+        let testValue = '';
+        Object.defineProperty(mockMaster, 'customProperty', {
+          get() {
+            return testValue;
+          },
+          set(value: string) {
+            testValue = `processed_${value}`;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        // 在 fork 上设置属性应该调用 master 的 setter
+        (fork as any).customProperty = 'test_value';
+
+        // 验证 setter 被正确调用（值被处理）
+        expect((fork as any).customProperty).toBe('processed_test_value');
+        expect((mockMaster as any).customProperty).toBe('processed_test_value');
+      });
+
+      test('should preserve this context in fork setter calls', () => {
+        let setterContext: any = null;
+        let testValue = '';
+
+        Object.defineProperty(mockMaster, 'testProperty', {
+          get() {
+            return testValue;
+          },
+          set(value: string) {
+            setterContext = this;
+            testValue = value;
+            // 验证 this 指向 fork 实例，而不是 master
+            expect(this.isFork).toBe(true);
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        // 在 fork 上设置属性
+        (fork as any).testProperty = 'context_test';
+
+        // 验证 setter 中的 this 指向 fork
+        expect(setterContext).toBe(fork);
+        expect(setterContext.isFork).toBe(true);
+        expect((fork as any).testProperty).toBe('context_test');
+      });
+
+      test('should handle non-shared properties with setters correctly', () => {
+        let nonSharedValue = 0;
+
+        Object.defineProperty(mockMaster, 'nonSharedProperty', {
+          get() {
+            return nonSharedValue;
+          },
+          set(value: number) {
+            nonSharedValue = value * 2;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        // 设置非共享属性应该调用 setter
+        (fork as any).nonSharedProperty = 5;
+
+        // 验证 setter 被调用且 this 指向正确
+        expect((fork as any).nonSharedProperty).toBe(10); // 5 * 2
+        // master 也应该受到影响，因为我们共享同一个变量
+        expect((mockMaster as any).nonSharedProperty).toBe(10);
+      });
+
+      test('should fallback to local storage when no setter exists', () => {
+        // 设置一个没有 setter 的属性
+        (fork as any).customNonSetterProperty = 'local_value';
+
+        // 应该存储在 fork 的本地属性中
+        expect((fork as any).customNonSetterProperty).toBe('local_value');
+        // master 不应该有这个属性
+        expect((mockMaster as any).customNonSetterProperty).toBeUndefined();
+      });
+    });
+
+    describe('shared properties with setters', () => {
+      test('should handle shared properties with setters', () => {
+        // 临时修改 SHARED_PROPERTIES 来包含我们的测试属性
+        const originalSharedProps = ForkFlowModel.getSharedProperties();
+        ForkFlowModel.setSharedProperties([...originalSharedProps, 'sharedTestProperty']);
+
+        try {
+          let sharedValue = '';
+          Object.defineProperty(mockMaster, 'sharedTestProperty', {
+            get() {
+              return sharedValue;
+            },
+            set(value: string) {
+              sharedValue = `shared_${value}`;
+            },
+            configurable: true,
+            enumerable: true,
+          });
+
+          // 设置共享属性应该调用 setter
+          (fork as any).sharedTestProperty = 'test';
+
+          // 验证 setter 被调用
+          expect((fork as any).sharedTestProperty).toBe('shared_test');
+          expect((mockMaster as any).sharedTestProperty).toBe('shared_test');
+        } finally {
+          // 恢复原始的共享属性
+          ForkFlowModel.setSharedProperties(originalSharedProps);
+        }
+      });
+
+      test('should handle shared properties without setters', () => {
+        // 临时修改 SHARED_PROPERTIES 来包含我们的测试属性
+        const originalSharedProps = ForkFlowModel.getSharedProperties();
+        ForkFlowModel.setSharedProperties([...originalSharedProps, 'plainSharedProperty']);
+
+        try {
+          // 设置共享属性（没有 setter）
+          (fork as any).plainSharedProperty = 'shared_value';
+
+          // 应该直接设置在 master 上
+          expect((mockMaster as any).plainSharedProperty).toBe('shared_value');
+          expect((fork as any).plainSharedProperty).toBe('shared_value');
+        } finally {
+          // 恢复原始的共享属性
+          ForkFlowModel.setSharedProperties(originalSharedProps);
+        }
+      });
+    });
+
+    describe('UploadEditableFieldModel scenario', () => {
+      test('should handle customRequest setter like in UploadEditableFieldModel', () => {
+        // 模拟 UploadEditableFieldModel 的 customRequest setter
+        let customRequestValue: any = null;
+
+        Object.defineProperty(mockMaster, 'customRequest', {
+          set(fn: any) {
+            customRequestValue = fn;
+            // 模拟实际的 setter 逻辑
+            console.log('customRequest setter called');
+          },
+          get() {
+            return customRequestValue;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+
+        const testFunction = (fileData: any) => {
+          console.log('custom request executed', fileData);
+        };
+
+        // 在 fork 上设置 customRequest 应该调用 master 的 setter
+        (fork as any).customRequest = testFunction;
+
+        // 验证 setter 被调用，值被正确存储
+        expect((mockMaster as any).customRequest).toBe(testFunction);
+        expect(customRequestValue).toBe(testFunction);
+
+        // 注意：由于 ForkFlowModel 的 get proxy 会重新绑定函数，
+        // fork.customRequest 返回的是一个绑定的版本，但原始值正确存储了
+        expect(typeof (fork as any).customRequest).toBe('function');
+      });
     });
   });
 });
