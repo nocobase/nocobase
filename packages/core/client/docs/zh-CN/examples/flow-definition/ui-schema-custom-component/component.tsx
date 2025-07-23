@@ -1,9 +1,6 @@
-import { generate, green, presetPalettes, red } from '@ant-design/colors';
-import { connect } from '@formily/react';
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine';
-import type { ColorPickerProps } from 'antd';
-import { ColorPicker as AntdColorPicker, Button, Tag, theme } from 'antd';
+import { Alert, Tag } from 'antd';
 import React from 'react';
 
 // 自定义模型类，继承自 FlowModel
@@ -13,26 +10,18 @@ class MyModel extends FlowModel {
   }
 }
 
-type Presets = Required<ColorPickerProps>['presets'][number];
-
-function genPresets(presets = presetPalettes) {
-  return Object.entries(presets).map<Presets>(([label, colors]) => ({ label, colors, key: label }));
-}
-
-const ColorPicker = connect(({ onChange, ...rest }) => {
-  const { token } = theme.useToken();
-  const presets = genPresets({ primary: generate(token.colorPrimary), red, green });
-
+function MyAlert() {
+  // 获取流配置态的上下文
+  const ctx = useFlowSettingsContext();
   return (
-    <AntdColorPicker
-      presets={presets}
-      onChange={(_, css) => {
-        onChange(css); // 将颜色值传递给 onChange
-      }}
-      {...rest}
+    <Alert
+      message={`${ctx.model.constructor.name}-${ctx.model.uid}`}
+      description="Success Description Success Description Success Description"
+      type="success"
+      style={{ marginTop: 24, marginBottom: 24 }}
     />
   );
-});
+}
 
 const buttonSettings = defineFlow({
   key: 'buttonSettings',
@@ -41,21 +30,15 @@ const buttonSettings = defineFlow({
     general: {
       title: '通用配置',
       uiSchema: {
+        alert: {
+          type: 'void',
+          'x-component': MyAlert, // 使用自定义组件
+        },
         children: {
           type: 'string',
           title: '标签名',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-        },
-        color: {
-          type: 'string',
-          title: '标签颜色',
-          'x-decorator': 'FormItem',
-          'x-component': 'ColorPicker',
-          'x-component-props': {
-            showText: true,
-            format: 'hex',
-          },
         },
       },
       defaultParams: {},
@@ -72,7 +55,6 @@ MyModel.registerFlow(buttonSettings);
 // 插件类，负责注册模型、仓库，并加载或创建模型实例
 class PluginHelloModel extends Plugin {
   async load() {
-    this.flowEngine.flowSettings.registerComponents({ ColorPicker });
     // 启用 Flow Settings
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ MyModel });
