@@ -20,9 +20,8 @@ const myPropsFlow = defineFlow<MyCollectionBlockModel>({
   auto: true,
   steps: {
     bindEvent: {
-      handler(ctx, params) {
+      handler(ctx) {
         ctx.onRefReady(ctx.ref, (element) => {
-          console.log('Element is ready:', element);
           element.onclick = (event) => {
             ctx.model.dispatchEvent('click', { event });
           };
