@@ -86,7 +86,7 @@ export default defineConfig({
               link: '/examples/flow-models/dnd',
             },
             {
-              title: '一个可配置的卡片',
+              title: '可配置的卡片',
               link: '/examples/flow-models/my-card',
             },
             {
