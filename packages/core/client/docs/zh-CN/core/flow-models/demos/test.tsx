@@ -17,7 +17,6 @@ class MySubModel extends FlowModel {}
 
 MySubModel.registerFlow({
   key: 'sub',
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

@@ -55,7 +55,6 @@ type MyFlowSteps = {
 const myFlow = defineFlow<MyFlowSteps>({
   key: 'myFlow',
   title: '我的流程',
-  auto: true, // 自动执行
   sort: 100, // 执行顺序
   on: { eventName: 'user.created' }, // 监听 user.created 事件自动触发
   steps: {

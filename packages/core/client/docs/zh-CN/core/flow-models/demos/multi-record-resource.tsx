@@ -59,7 +59,7 @@ mock.onGet('posts:list').reply((config) => {
 mock.onPost('posts:create').reply((config) => {
   const newItem = {
     ...JSON.parse(config.data),
-    id: Math.max(...records.map(r => r.id)) + 1,
+    id: Math.max(...records.map((r) => r.id)) + 1,
   };
   records.push(newItem);
   return [
@@ -130,14 +130,13 @@ class MultiRecordFlowModel extends FlowModel {
     const data = this.resource.getData() || [];
     // 从 state 中获取 meta 信息，这是在 refresh 时设置的
     const responseMeta = this.resource.getMeta() || {};
-    
+
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <strong>Resource:</strong> {this.resource.getResourceName()} |
-          <strong> Page:</strong> {this.resource.getPage()} |
-          <strong> PageSize:</strong> {this.resource.getPageSize()} |
-          <strong> Total:</strong> {responseMeta.total || 0}
+          <strong>Resource:</strong> {this.resource.getResourceName()} |<strong> Page:</strong>{' '}
+          {this.resource.getPage()} |<strong> PageSize:</strong> {this.resource.getPageSize()} |<strong> Total:</strong>{' '}
+          {responseMeta.total || 0}
         </div>
         <pre>{JSON.stringify(data, null, 2)}</pre>
         <Space wrap>
@@ -201,7 +200,6 @@ class MultiRecordFlowModel extends FlowModel {
 }
 
 MultiRecordFlowModel.registerFlow({
-  auto: true,
   key: 'setResourceOptions',
   steps: {
     step1: {

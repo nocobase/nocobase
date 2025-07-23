@@ -11,7 +11,6 @@ class SubModel1 extends FlowModel {
 
 SubModel1.registerFlow({
   key: 'myflow',
-  auto: true,
   title: '子模型 1',
   steps: {
     step1: {

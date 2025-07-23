@@ -34,7 +34,6 @@ export class DateTimeFieldModel extends FormFieldModel {
 
 DateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
-  auto: true,
   sort: 1000,
   title: escapeT('Datetime settings'),
   steps: {

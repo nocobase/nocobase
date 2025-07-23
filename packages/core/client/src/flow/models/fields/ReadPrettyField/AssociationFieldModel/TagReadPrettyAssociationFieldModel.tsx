@@ -138,7 +138,6 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
 TagReadPrettyAssociationFieldModel.registerFlow({
   key: 'tagSettings',
   title: escapeT('Association tag settings'),
-  auto: true,
   sort: 200,
   steps: {
     fieldNames: {

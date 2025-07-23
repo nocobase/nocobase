@@ -76,7 +76,6 @@ export class AIEmployeeShortcutModel extends FlowModel {
 
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
-  auto: true,
   title: escapeT('Task settings'),
   steps: {
     editTasks: {

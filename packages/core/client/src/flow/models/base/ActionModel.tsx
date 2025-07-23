@@ -36,7 +36,6 @@ export class ActionModel extends FlowModel {
 ActionModel.registerFlow({
   key: 'buttonSettings',
   title: escapeT('Button settings'),
-  auto: true,
   steps: {
     general: {
       title: escapeT('General'),
@@ -114,7 +113,6 @@ export class RecordActionModel extends ActionModel {
 
 RecordActionModel.registerFlow({
   key: 'recordActionSettings',
-  auto: true,
   steps: {
     interaction: {
       handler(ctx, params) {

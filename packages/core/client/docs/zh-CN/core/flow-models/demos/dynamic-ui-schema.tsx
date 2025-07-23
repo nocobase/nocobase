@@ -27,7 +27,6 @@ class SimpleFormModel extends FlowModel {
 // 注册动态表单配置流程
 SimpleFormModel.registerFlow('configFlow', {
   title: '表单配置',
-  auto: true,
   steps: {
     // 第一步：基础设置
     basicSettings: {

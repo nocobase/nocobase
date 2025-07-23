@@ -13,7 +13,6 @@ class HelloBlockModel extends FlowModel {
 HelloBlockModel.registerFlow({
   key: 'api-example',
   title: 'API Example',
-  auto: true,
   steps: {
     fetchData: {
       handler: async (ctx) => {

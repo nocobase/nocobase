@@ -90,7 +90,6 @@ const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): Flo
 
 const createAutoFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
   key: 'autoFlow',
-  auto: true,
   sort: 1,
   steps: {
     autoStep: {
@@ -319,7 +318,6 @@ describe('FlowModel', () => {
       test('should handle complex flow definitions', () => {
         const complexFlow = {
           key: 'complexFlow',
-          auto: true,
           sort: 5,
           on: { eventName: 'complexEvent' },
           steps: {
@@ -520,7 +518,7 @@ describe('FlowModel', () => {
       test('should execute all auto flows', async () => {
         const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1', sort: 1 };
         const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2', sort: 2 };
-        const manualFlow = createBasicFlowDefinition(); // No auto flag
+        const manualFlow = { ...createBasicFlowDefinition(), manual: true }; // Mark as manual flow
 
         TestFlowModel.registerFlow(autoFlow1);
         TestFlowModel.registerFlow(autoFlow2);
@@ -539,7 +537,6 @@ describe('FlowModel', () => {
 
         const autoFlow1 = {
           key: 'auto1',
-          auto: true,
           sort: 3,
           steps: {
             step: {
@@ -553,7 +550,6 @@ describe('FlowModel', () => {
 
         const autoFlow2 = {
           key: 'auto2',
-          auto: true,
           sort: 1,
           steps: {
             step: {
@@ -567,7 +563,6 @@ describe('FlowModel', () => {
 
         const autoFlow3 = {
           key: 'auto3',
-          auto: true,
           sort: 2,
           steps: {
             step: {
@@ -685,7 +680,7 @@ describe('FlowModel', () => {
         test('should call onApplyAutoFlowsError when flow execution fails', async () => {
           const errorFlow = {
             key: 'errorFlow',
-            auto: true,
+
             steps: {
               errorStep: {
                 handler: vi.fn().mockImplementation(() => {
@@ -1872,7 +1867,7 @@ describe('FlowModel', () => {
       test('should resolve simple ctx expressions in step parameters', async () => {
         const flow: FlowDefinition = {
           key: 'expressionFlow',
-          auto: true,
+
           steps: {
             testStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -1908,7 +1903,7 @@ describe('FlowModel', () => {
       test('should resolve nested ctx expressions with multiple levels', async () => {
         const flow: FlowDefinition = {
           key: 'nestedExpressionFlow',
-          auto: true,
+
           steps: {
             nestedStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -1955,7 +1950,7 @@ describe('FlowModel', () => {
       test('should resolve async expressions with RecordProxy', async () => {
         const flow: FlowDefinition = {
           key: 'asyncRecordFlow',
-          auto: true,
+
           steps: {
             asyncStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -2074,7 +2069,7 @@ describe('FlowModel', () => {
 
         // 创建真正的RecordProxy来测试表达式解析
         const realRecord = { id: 1, title: 'Test Article' };
-        const recordProxy = new RecordProxy(realRecord, mockCollection, model.context);
+        const recordProxy = new RecordProxy(realRecord, mockCollection as any, model.context);
 
         model.context.defineProperty('asyncRecord', {
           get: () => recordProxy,
@@ -2107,7 +2102,7 @@ describe('FlowModel', () => {
       test('should handle mixed sync and async expressions', async () => {
         const flow: FlowDefinition = {
           key: 'mixedFlow',
-          auto: true,
+
           steps: {
             mixedStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -2193,7 +2188,7 @@ describe('FlowModel', () => {
       test('should handle deeply nested async expressions', async () => {
         const flow: FlowDefinition = {
           key: 'deepAsyncFlow',
-          auto: true,
+
           steps: {
             deepStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {

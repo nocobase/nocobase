@@ -89,7 +89,6 @@ export class TableColumnActionsModel extends TableColumnModel {
 
 TableColumnModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       handler(ctx, params) {

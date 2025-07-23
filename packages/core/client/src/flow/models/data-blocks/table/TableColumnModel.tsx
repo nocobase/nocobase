@@ -111,7 +111,6 @@ TableColumnModel.define({
 
 TableColumnModel.registerFlow({
   key: 'tableColumnSettings',
-  auto: true,
   sort: 500,
   title: escapeT('Table column settings'),
   steps: {
@@ -211,7 +210,6 @@ export class TableCustomColumnModel extends FlowModel {}
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',
-  auto: true,
   title: escapeT('Table column settings'),
   steps: {
     title: {

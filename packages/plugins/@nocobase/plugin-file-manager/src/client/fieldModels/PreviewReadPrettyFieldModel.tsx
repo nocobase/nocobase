@@ -156,7 +156,6 @@ export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
 PreviewReadPrettyFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
-  auto: true,
   steps: {
     size: {
       title: escapeT('Size'),

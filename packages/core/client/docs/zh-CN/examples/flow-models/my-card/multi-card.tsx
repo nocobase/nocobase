@@ -122,7 +122,6 @@ class HelloSubModel extends FlowModel {
 
 HelloSubModel.registerFlow({
   key: 'cardSettings',
-  auto: true,
   title: '卡片设置',
   steps: {
     setProps: {

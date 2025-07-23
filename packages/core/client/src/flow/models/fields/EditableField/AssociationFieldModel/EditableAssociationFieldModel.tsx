@@ -16,7 +16,6 @@ export class EditableAssociationFieldModel extends FormFieldModel {
 
 // EditableAssociationFieldModel.registerFlow({
 //   key: 'AssociationFieldSetting',
-//   auto: true,
 //   steps: {
 //     fieldModel: {
 //       title: escapeT('Set field model'),
