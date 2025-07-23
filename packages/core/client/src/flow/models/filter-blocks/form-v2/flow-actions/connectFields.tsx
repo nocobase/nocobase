@@ -29,17 +29,19 @@ export const connectFields = defineAction({
 });
 
 // 构建树形数据结构
-const buildTreeData = (ctx, fields: any[], prefix = '', selectedPath = '') => {
+const buildTreeData = (ctx, fields: any[], prefix = '', selectedPath = '', labelPrefix = '') => {
   return fields
     .filter((field) => field.filterable && field.options.interface)
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
       const label = ctx.t(field.uiSchema?.title) || field.name;
+      const fullLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
 
       const treeNode: any = {
         title: label,
         value: currentPath,
         key: currentPath,
+        fullLabel: fullLabel,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
         field,
       };
@@ -49,7 +51,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPath = '') => {
         const targetCollection = field.targetCollection;
         if (targetCollection) {
           const targetFields = targetCollection.getFields?.() || [];
-          treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPath);
+          treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPath, fullLabel);
         }
       }
 
@@ -96,7 +98,7 @@ function ConnectFields(props) {
 
       const fields = model.collection?.getFields?.() || [];
       const value = props.value?.find((item) => item.modelUid === model.uid)?.fieldPath;
-      const treeData = buildTreeData(ctx, fields, '', value);
+      const treeData = buildTreeData(ctx, fields, '', value, '');
 
       return (
         <FormItem label={model.title} key={model.uid}>
@@ -151,7 +153,8 @@ function TreeSelectWrapper(props) {
 
     if (targetCollection) {
       const targetFields = targetCollection.getFields?.() || [];
-      const childNodes = buildTreeData(ctx, targetFields, key);
+      const parentFullLabel = node.fullLabel || node.title;
+      const childNodes = buildTreeData(ctx, targetFields, key, '', parentFullLabel);
 
       node.props.data.children = childNodes;
     }
@@ -176,6 +179,7 @@ function TreeSelectWrapper(props) {
       treeExpandedKeys={expandedKeys}
       onTreeExpand={(expandedKeys) => setExpandedKeys(expandedKeys)}
       filterTreeNode={filterTreeNode}
+      treeNodeLabelProp="fullLabel"
     />
   );
 }
