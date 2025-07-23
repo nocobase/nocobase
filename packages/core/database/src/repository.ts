@@ -310,64 +310,70 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (_.isFunction(this.collection['isView']) && this.collection['isView']()) {
       return 0;
     }
-    if (this.database.isMySQLCompatibleDialect()) {
-      await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
-      const results: any[] = await this.database.sequelize.query(
-        `
+    const tableName = this.collection.tableName();
+    try {
+      if (this.database.isMySQLCompatibleDialect()) {
+        await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
+        const results: any[] = await this.database.sequelize.query(
+          `
         SELECT table_rows FROM information_schema.tables
         WHERE table_schema = DATABASE()
           AND table_name = ?
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
-      );
-      return Number(results?.[0]?.table_rows ?? 0);
-    }
-    if (this.database.isPostgresCompatibleDialect()) {
-      await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
-      const results: any[] = await this.database.sequelize.query(
-        `
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.table_rows ?? 0);
+      }
+      if (this.database.isPostgresCompatibleDialect()) {
+        await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
+        const results: any[] = await this.database.sequelize.query(
+          `
         SELECT reltuples::BIGINT AS estimate
         FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
         WHERE c.relname = ? AND n.nspname = current_schema();
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
-      );
-      return Number(results?.[0]?.estimate ?? 0);
-    }
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
 
-    if (this.database.sequelize.getDialect() === 'mssql') {
-      const results: any[] = await this.database.sequelize.query(
-        `
+      if (this.database.sequelize.getDialect() === 'mssql') {
+        const results: any[] = await this.database.sequelize.query(
+          `
         SELECT SUM(row_count) AS estimate
         FROM sys.dm_db_partition_stats
         WHERE object_id = OBJECT_ID(?) AND (index_id = 0 OR index_id = 1)
       `,
-        { replacements: [this.collection.name], type: QueryTypes.SELECT },
-      );
-      return Number(results?.[0]?.estimate ?? 0);
-    }
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
 
-    if (this.database.sequelize.getDialect() === 'oracle') {
-      const tableName = this.collection.name.toUpperCase();
-      const schemaName = (await this.getOracleSchema()).toUpperCase();
+      if (this.database.sequelize.getDialect() === 'oracle') {
+        const tableName = this.collection.name.toUpperCase();
+        const schemaName = (await this.getOracleSchema()).toUpperCase();
 
-      await this.database.sequelize.query(`BEGIN DBMS_STATS.GATHER_TABLE_STATS(:schema, :table); END;`, {
-        replacements: { schema: schemaName, table: tableName },
-        type: QueryTypes.RAW,
-      });
+        await this.database.sequelize.query(`BEGIN DBMS_STATS.GATHER_TABLE_STATS(:schema, :table); END;`, {
+          replacements: { schema: schemaName, table: tableName },
+          type: QueryTypes.RAW,
+        });
 
-      const results: any[] = await this.database.sequelize.query(
-        `
+        const results: any[] = await this.database.sequelize.query(
+          `
       SELECT NUM_ROWS AS "estimate"
       FROM ALL_TABLES
       WHERE TABLE_NAME = :table AND OWNER = :schema
       `,
-        {
-          replacements: { table: tableName, schema: schemaName },
-          type: QueryTypes.SELECT,
-        },
-      );
-      return Number(results?.[0]?.estimate ?? 0);
+          {
+            replacements: { table: tableName, schema: schemaName },
+            type: QueryTypes.SELECT,
+          },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
+    } catch (error) {
+      this.database.logger.error(`Failed to get estimated row count for ${this.collection.name}:`, error);
+      return 0;
     }
 
     return 0;

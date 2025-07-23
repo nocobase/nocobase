@@ -1096,7 +1096,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        await sub.applyAutoFlows(inputArgs, false);
+        await sub.applyAutoFlows(inputArgs);
       }),
     );
   }

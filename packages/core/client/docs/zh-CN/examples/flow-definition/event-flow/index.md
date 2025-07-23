@@ -19,3 +19,9 @@
 通过获取组件的原生 DOM 引用，直接绑定原生事件，实现更灵活的事件处理。
 
 <code src="./context-ref.tsx"></code>
+
+## 通过 element.addEventListener() 方式处理
+
+`element.addEventListener()` 是独立的，允许同一个事件添加多个监听函数。
+
+<code src="./event-listener.tsx"></code>
