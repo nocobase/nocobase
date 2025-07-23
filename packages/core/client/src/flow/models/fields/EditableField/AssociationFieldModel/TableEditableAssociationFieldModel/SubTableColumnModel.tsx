@@ -136,6 +136,7 @@ export class SubTableColumnModel extends FieldModel {
             },
             cache: false,
           });
+          fork.applyFlow('formItemSettings');
           if (fork.constructor.isLargeField) {
             return (
               <LargeFieldEdit
@@ -149,7 +150,7 @@ export class SubTableColumnModel extends FieldModel {
               />
             );
           } else {
-            return <FlowModelRenderer key={record.__key} model={fork} />;
+            return <FlowModelRenderer model={fork} key={record.__key} />;
           }
         })}
       </div>
