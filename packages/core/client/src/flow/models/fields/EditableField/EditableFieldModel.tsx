@@ -335,7 +335,7 @@ EditableFieldModel.registerFlow({
           },
         };
       },
-      afterParamsChange: async (ctx, params, previousParams) => {
+      beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.use !== previousParams.use) {
           await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
@@ -350,8 +350,8 @@ EditableFieldModel.registerFlow({
               },
             },
           });
+          ctx.exit();
         }
-        return true;
       },
       defaultParams: (ctx) => {
         return {

@@ -19,6 +19,7 @@ import {
   resolveDefaultParams,
   resolveStepUiSchema,
   setupRuntimeContextSteps,
+  FlowExitException,
 } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowRuntimeContext } from '../../../../flowContext';
@@ -65,7 +66,8 @@ const openStepSettingsDialog = async ({
   }
 
   let title = step.title;
-  let afterParamsChange = step.afterParamsChange;
+  let beforeParamsSave = step.beforeParamsSave;
+  let afterParamsSave = step.afterParamsSave;
 
   let actionDefaultParams = {};
   if (step.use) {
@@ -73,7 +75,8 @@ const openStepSettingsDialog = async ({
     if (action) {
       actionDefaultParams = action.defaultParams || {};
       title = title || action.title;
-      afterParamsChange = afterParamsChange || action.afterParamsChange;
+      beforeParamsSave = beforeParamsSave || action.beforeParamsSave;
+      afterParamsSave = afterParamsSave || action.afterParamsSave;
     }
   }
 
@@ -153,23 +156,24 @@ const openStepSettingsDialog = async ({
               await form.submit();
               const currentValues = form.values;
               model.setStepParams(flowKey, stepKey, currentValues);
-              let skipSave = false;
-              // Call onParamsChange callback if it exists
-              if (afterParamsChange) {
-                skipSave = await afterParamsChange(flowRuntimeContext, currentValues, previousParams);
+
+              // Call beforeParamsSave callback if it exists
+              if (beforeParamsSave) {
+                await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
               }
 
               currentDialog.close();
-              !skipSave &&
-                model
-                  .save()
-                  .then(() => {
-                    message.success(t('Configuration saved'));
-                  })
-                  .catch((_error) => {
-                    message.error(t('Error saving configuration, please check console'));
-                  });
+              await model.save();
+              message.success(t('Configuration saved'));
+              // Call afterParamsSave callback if it exists
+              if (afterParamsSave) {
+                await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
+              }
             } catch (error) {
+              if (error instanceof FlowExitException) {
+                currentDialog.close();
+                return;
+              }
               console.error(t('Error saving configuration'), ':', error);
               message.error(t('Error saving configuration, please check console'));
             }

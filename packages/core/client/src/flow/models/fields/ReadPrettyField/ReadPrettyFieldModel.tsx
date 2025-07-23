@@ -121,7 +121,7 @@ ReadPrettyFieldModel.registerFlow({
           use: ctx.model.use,
         };
       },
-      afterParamsChange: async (ctx, params, previousParams) => {
+      beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.use !== previousParams.use) {
           await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
@@ -136,8 +136,8 @@ ReadPrettyFieldModel.registerFlow({
               },
             },
           });
+          ctx.exit();
         }
-        return true;
       },
       async handler(ctx, params) {
         console.log('Sub model step1 handler');
