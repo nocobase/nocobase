@@ -159,6 +159,15 @@ function TreeSelectWrapper(props) {
     setTreeData([...treeData]);
   };
 
+  // 自定义搜索过滤函数，根据 title (label) 进行搜索
+  const filterTreeNode = (inputValue: string, treeNode: any) => {
+    const title = treeNode.title;
+    if (typeof title === 'string') {
+      return title.toLowerCase().includes(inputValue.toLowerCase());
+    }
+    return false;
+  };
+
   return (
     <TreeSelect
       {...props}
@@ -166,6 +175,7 @@ function TreeSelectWrapper(props) {
       loadData={loadData}
       treeExpandedKeys={expandedKeys}
       onTreeExpand={(expandedKeys) => setExpandedKeys(expandedKeys)}
+      filterTreeNode={filterTreeNode}
     />
   );
 }
