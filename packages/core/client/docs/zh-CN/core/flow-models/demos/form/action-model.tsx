@@ -14,7 +14,6 @@ export class ActionModel extends FlowModel {
 
 ActionModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       handler(ctx, params) {

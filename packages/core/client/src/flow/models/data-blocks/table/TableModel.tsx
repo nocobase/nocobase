@@ -434,13 +434,11 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
 TableModel.registerFlow({
   key: 'resourceSettings2',
-  auto: true,
   steps: {},
 });
 
 TableModel.registerFlow({
   key: 'tableSettings',
-  auto: true,
   sort: 500,
   title: escapeT('Table settings'),
   steps: {

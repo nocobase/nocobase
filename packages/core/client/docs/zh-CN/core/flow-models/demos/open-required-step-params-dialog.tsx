@@ -8,7 +8,6 @@ class DemoFlowModel extends FlowModel {}
 
 // 注册包含必填参数的流程
 DemoFlowModel.registerFlow('configFlow', {
-  auto: true,
   title: '配置流程',
   steps: {
     // 数据源配置 - 必填参数
@@ -128,7 +127,7 @@ DemoFlowModel.registerFlow('configFlow', {
 // 演示组件
 const Demo = () => {
   const [model, setModel] = useState(null);
-  
+
   const handleCreateModel = async () => {
     try {
       // 创建一个新的模型实例
@@ -138,7 +137,7 @@ const Demo = () => {
       });
 
       const result = await model.configureRequiredSteps();
-      
+
       message.success('参数配置完成！');
       console.log('configuration:', model.stepParams);
       setModel(model);
@@ -152,25 +151,33 @@ const Demo = () => {
     <div style={{ padding: 24, background: '#f5f5f5', borderRadius: 8 }}>
       <Card title="分步表单参数配置演示">
         <p>
-          这个演示展示了 <code>configureRequiredSteps</code> 方法的使用。
-          该方法会在一个分步表单对话框中显示所有标记为 <code>paramsRequired: true</code> 的步骤。
+          这个演示展示了 <code>configureRequiredSteps</code> 方法的使用。 该方法会在一个分步表单对话框中显示所有标记为{' '}
+          <code>paramsRequired: true</code> 的步骤。
         </p>
-        
+
         <Space direction="vertical" style={{ width: '100%' }}>
           <Button type="primary" onClick={handleCreateModel}>
             创建模型并配置必填参数
           </Button>
-          
+
           <div style={{ marginTop: 16 }}>
             <h4>流程说明：</h4>
             <ul>
-              <li><strong>setDataSource</strong>: 数据源配置 (必填)</li>
-              <li><strong>setCollection</strong>: 数据表配置 (必填)</li>
-              <li><strong>setTitle</strong>: 标题配置 (必填)</li>
-              <li><strong>setOptionalConfig</strong>: 可选配置 (跳过)</li>
+              <li>
+                <strong>setDataSource</strong>: 数据源配置 (必填)
+              </li>
+              <li>
+                <strong>setCollection</strong>: 数据表配置 (必填)
+              </li>
+              <li>
+                <strong>setTitle</strong>: 标题配置 (必填)
+              </li>
+              <li>
+                <strong>setOptionalConfig</strong>: 可选配置 (跳过)
+              </li>
             </ul>
             <p>
-              点击"创建模型并配置必填参数"按钮后，系统会在一个分步表单对话框中
+              点击&ldquo;创建模型并配置必填参数&rdquo;按钮后，系统会在一个分步表单对话框中
               显示前三个必填步骤，配置完成后会在卡片中显示当前的步骤参数。
             </p>
             {model && JSON.stringify(model.stepParams || {})}
@@ -198,4 +205,4 @@ const app = new Application({
   plugins: [DemoPlugin],
 });
 
-export default app.getRootComponent(); 
+export default app.getRootComponent();

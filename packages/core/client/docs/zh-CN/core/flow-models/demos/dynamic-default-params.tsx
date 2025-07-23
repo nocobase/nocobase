@@ -24,7 +24,6 @@ class SimpleProductModel extends FlowModel {
 // 注册简单的配置流程
 SimpleProductModel.registerFlow('configFlow', {
   title: '产品配置',
-  auto: true,
   steps: {
     // 第一步：设置产品名称和分类
     basicInfo: {

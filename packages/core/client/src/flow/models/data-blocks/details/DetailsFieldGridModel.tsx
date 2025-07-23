@@ -99,7 +99,6 @@ export class DetailsFieldGridModel extends GridModel<{
 
 DetailsFieldGridModel.registerFlow({
   key: 'detailFieldGridSettings',
-  auto: true,
   steps: {
     init: {
       async handler(ctx, params) {

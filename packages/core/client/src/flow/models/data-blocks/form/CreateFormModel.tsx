@@ -64,7 +64,6 @@ export class CreateFormModel extends FormModel {
 
 CreateFormModel.registerFlow({
   key: 'formSettings',
-  auto: true,
   title: escapeT('Form settings'),
   steps: {
     init: {

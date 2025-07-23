@@ -15,7 +15,6 @@ class HelloBlockModel extends FlowModel {
 
 HelloBlockModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       handler: async (ctx) => {

@@ -26,7 +26,6 @@ export class MarkdownReadPrettyFieldModel extends ReadPrettyFieldModel {
 MarkdownReadPrettyFieldModel.registerFlow({
   key: 'markdownSettings',
   title: tval('Markdown settings'),
-  auto: true,
   sort: 200,
   steps: {
     displayMode: {

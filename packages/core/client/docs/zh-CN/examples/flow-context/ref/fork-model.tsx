@@ -20,7 +20,6 @@ class HelloBlockModel extends FlowModel {
 HelloBlockModel.registerFlow({
   key: 'ref-example',
   title: 'Ref Example',
-  auto: true,
   steps: {
     refReady: {
       handler: async (ctx) => {

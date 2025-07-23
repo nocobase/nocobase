@@ -129,7 +129,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
 
 EditableFieldModel.registerFlow({
   key: 'formItemSettings',
-  auto: true,
   title: escapeT('Form item settings'),
   sort: 150,
   steps: {

@@ -101,12 +101,12 @@ class SingleRecordFlowModel extends FlowModel {
           </Button>
           <Button onClick={() => this.resource.refresh()}>Refresh</Button>
           <Button
-            onClick={async () =>{
+            onClick={async () => {
               try {
                 await this.resource.save({
                   name: faker.person.fullName(),
                   email: faker.internet.email(),
-                })
+                });
               } catch (error) {
                 message.error(error.message);
               }
@@ -124,7 +124,6 @@ class SingleRecordFlowModel extends FlowModel {
 }
 
 SingleRecordFlowModel.registerFlow({
-  auto: true,
   key: 'setResourceOptions',
   steps: {
     step1: {

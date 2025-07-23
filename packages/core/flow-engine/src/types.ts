@@ -83,9 +83,10 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   title?: string;
 
   /**
-   * Whether this flow is a default flow that should be automatically executed
+   * Whether this flow should be executed manually only (prevents auto-execution)
+   * Flows without 'on' property are auto-executed by default unless manual: true
    */
-  auto?: boolean;
+  manual?: boolean;
 
   /**
    * Sort order for flow execution, lower numbers execute first
@@ -130,9 +131,10 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
 // 扩展FlowDefinition类型，添加partial标记用于部分覆盖
 export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
   /**
-   * Whether this flow is a default flow that should be automatically executed
+   * Whether this flow should be executed manually only (prevents auto-execution)
+   * Flows without 'on' property are auto-executed by default unless manual: true
    */
-  auto?: boolean;
+  manual?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative
@@ -187,6 +189,16 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
 }
 
+export type StepUIMode =
+  | 'dialog'
+  | 'drawer'
+  | 'switch'
+  | 'select'
+  | { type: 'dialog'; props?: Record<string, any> }
+  | { type: 'drawer'; props?: Record<string, any> }
+  | { type: 'switch'; props?: Record<string, any> }
+  | { type: 'select'; props?: Record<string, any> };
+
 /**
  * Step definition with unified support for both registered actions and inline handlers
  * Extends ActionDefinition but makes some properties optional and adds step-specific properties
@@ -201,6 +213,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
+  uiMode?: StepUIMode;
 }
 
 /**

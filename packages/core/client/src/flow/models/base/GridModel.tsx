@@ -313,7 +313,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
 GridModel.registerFlow({
   key: GRID_FLOW_KEY,
-  auto: true,
   steps: {
     resetRows: {
       handler(ctx) {
@@ -380,7 +379,6 @@ export class BlockGridModel extends GridModel {
 
 BlockGridModel.registerFlow({
   key: 'blockGridSettings',
-  auto: true,
   steps: {
     grid: {
       handler(ctx, params) {

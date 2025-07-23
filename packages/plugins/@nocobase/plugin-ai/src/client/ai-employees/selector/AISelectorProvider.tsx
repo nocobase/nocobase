@@ -9,6 +9,7 @@
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Selector } from '../types';
+import { useFlowEngine } from '@nocobase/flow-engine';
 
 export const AISelectionContext = createContext<{
   selectable: string;
@@ -32,9 +33,12 @@ export const AISelectionProvider: React.FC<{
 }> = (props) => {
   const [selectable, setSelectable] = useState('');
   const [selector, setSelector] = useState<Selector>(null);
+  const flowEngine = useFlowEngine();
   const [ctx, setCtx] = useState<{
     [key: string]: Record<string, any>;
-  }>({});
+  }>({
+    flowEngine: flowEngine,
+  });
 
   const startSelect = (selectType: string, selector?: Selector) => {
     if (selector) {

@@ -112,12 +112,56 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: '简单的属性流',
-              link: '/examples/flow-definitions/simple-props-flow',
+              title: '属性流',
+              link: '/examples/flow-definition/props-flow',
             },
             {
-              title: '简单的事件流',
-              link: '/examples/flow-definitions/simple-event-flow',
+              title: '事件流',
+              link: '/examples/flow-definition/event-flow',
+            },
+            {
+              title: 'Context（运行时）',
+              link: '/examples/flow-definition/context-runtime',
+            },
+            {
+              title: 'Context（配置态）',
+              link: '/examples/flow-definition/context-settings',
+            },
+            {
+              title: 'uiSchema - 步骤配置表单',
+              link: '/examples/flow-definition/ui-schema-basic',
+            },
+            {
+              title: '自定义组件（配置表单）',
+              link: '/examples/flow-definition/ui-schema-custom-component',
+            },
+            {
+              title: 'defaultParams - 步骤参数默认值',
+              link: '/examples/flow-definition/default-params',
+            },
+            {
+              title: 'beforeParamsSave - 步骤参数保存前',
+              link: '/examples/flow-definition/before-params-save',
+            },
+            {
+              title: 'afterParamsSave - 步骤参数保存后',
+              link: '/examples/flow-definition/after-params-save',
+            },
+            {
+              title: 'handler - 步骤处理函数',
+              link: '/examples/flow-definition/handler',
+            },
+            {
+              title: 'paramsRequired - 步骤参数必填',
+              link: '/examples/flow-definition/params-required',
+            },
+            {
+              title: 'hideInSettings - 在设置界面中隐藏',
+              link: '/examples/flow-definition/hide-in-settings',
+            },
+            {
+              title: 'uiMode - 步骤设置的 UI 模式',
+              link: '/examples/flow-definition/ui-mode',
             },
           ]
         },

@@ -47,7 +47,6 @@ export class MapEditableFieldModel extends FormFieldModel {
 MapEditableFieldModel.registerFlow({
   key: 'mapFieldSetting',
   title: escapeT('Map field setting'),
-  auto: true,
   sort: 500,
   steps: {
     zoom: {

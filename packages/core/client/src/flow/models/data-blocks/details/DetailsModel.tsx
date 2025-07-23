@@ -148,7 +148,6 @@ export class DetailsModel extends CollectionBlockModel<{
 DetailsModel.registerFlow({
   key: 'detailsSettings',
   title: escapeT('Details settings'),
-  auto: true,
   sort: 150,
   steps: {
     // dataLoadingMode: {
