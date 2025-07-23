@@ -267,6 +267,70 @@ describe('workflow > instructions > parallel', () => {
     });
   });
 
+  describe('single allSettled', () => {
+    it('first failed', async () => {
+      const n1 = await workflow.createNode({
+        type: 'parallel',
+        config: {
+          mode: 'allSettled',
+        },
+      });
+      const n2 = await workflow.createNode({
+        type: 'error',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(3);
+      expect(jobs.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.ERROR);
+      expect(jobs.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('last failed', async () => {
+      const n1 = await workflow.createNode({
+        type: 'parallel',
+        config: {
+          mode: 'allSettled',
+        },
+      });
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const n3 = await workflow.createNode({
+        type: 'error',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(3);
+      expect(jobs.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.ERROR);
+    });
+  });
+
   describe('branch and join', () => {
     it('link to single branch', async () => {
       const n1 = await workflow.createNode({
