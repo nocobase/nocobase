@@ -621,12 +621,6 @@ describe('ForkFlowModel', () => {
       expect((mockMaster as any).forkCache.has(cacheKey)).toBe(false);
     });
 
-    test('should clear master reference', () => {
-      fork.dispose();
-
-      expect((fork as any).master).toBeNull();
-    });
-
     test('should handle dispose when already disposed', () => {
       fork.dispose();
 

@@ -518,7 +518,7 @@ describe('FlowModel', () => {
       test('should execute all auto flows', async () => {
         const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1', sort: 1 };
         const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2', sort: 2 };
-        const manualFlow = createBasicFlowDefinition(); // No auto flag
+        const manualFlow = { ...createBasicFlowDefinition(), manual: true }; // Mark as manual flow
 
         TestFlowModel.registerFlow(autoFlow1);
         TestFlowModel.registerFlow(autoFlow2);
