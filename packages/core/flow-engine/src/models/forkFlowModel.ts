@@ -214,8 +214,8 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   onUnmount() {
-    if (this.disposed) return;
-    this.dispose();
+    // if (this.disposed) return;
+    // this.dispose(); // 实际场景不需要fork自己dispose的， 自己dispose反而会造成很多问题
   }
 
   /**

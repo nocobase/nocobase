@@ -1039,6 +1039,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return results;
   }
 
+  hasSubModel<K extends keyof Structure['subModels']>(subKey: K) {
+    const subModel = (this.subModels as any)[subKey as string];
+    if (!subModel) {
+      return false;
+    }
+    return _.castArray(subModel).length > 0;
+  }
+
   findSubModel<K extends keyof Structure['subModels'], R>(
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,

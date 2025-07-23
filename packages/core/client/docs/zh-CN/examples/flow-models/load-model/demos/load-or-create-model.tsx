@@ -1,3 +1,4 @@
+import { observer } from '@formily/reactive-react';
 import { Application, MockFlowModelRepository, Plugin } from '@nocobase/client';
 import { AddSubModelButton, FlowModel, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -22,6 +23,11 @@ function useLoadOrCreateFlowModel(options) {
   return { loading, model: data };
 }
 
+const Length = observer((props: any) => {
+  const { model } = props;
+  return model.hasSubModel('subs') && <span>{model.subModels.subs?.length} items</span>;
+});
+
 function HelloComponent(props) {
   const { loading, model } = useLoadOrCreateFlowModel({
     uid: props.uid,
@@ -33,6 +39,7 @@ function HelloComponent(props) {
   return (
     <div>
       <FlowModelRenderer model={model} />
+      <Length model={model} />
     </div>
   );
 }
@@ -46,7 +53,7 @@ class HelloModel extends FlowModel {
         <p>This is a simple block rendered by HelloModel.</p>
         <Space direction="vertical">
           {this.mapSubModels('subs', (subModel) => (
-            <FlowModelRenderer key={subModel.uid} model={subModel} />
+            <FlowModelRenderer key={subModel.uid} model={subModel} showFlowSettings />
           ))}
           <Space>
             <AddSubModelButton
@@ -118,7 +125,11 @@ class PluginHelloModel extends Plugin {
     // 添加路由，将模型渲染到根路径（仅用于示例）
     this.router.add('root', {
       path: '/',
-      element: <HelloComponent uid="hello1" />,
+      element: (
+        <div>
+          <HelloComponent uid="hello1" />
+        </div>
+      ),
     });
   }
 }
