@@ -11535,6 +11535,15 @@ axios@^1.7.8:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
+axios@^1.8.2:
+  version "1.11.0"
+  resolved "https://registry.npmmirror.com/axios/-/axios-1.11.0.tgz#c2ec219e35e414c025b2095e8b8280278478fdb6"
+  integrity sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==
+  dependencies:
+    follow-redirects "^1.15.6"
+    form-data "^4.0.4"
+    proxy-from-env "^1.1.0"
+
 b4a@^1.6.4:
   version "1.6.4"
   resolved "https://registry.npmmirror.com/b4a/-/b4a-1.6.4.tgz#ef1c1422cae5ce6535ec191baeed7567443f36c9"
@@ -16104,6 +16113,16 @@ es-set-tostringtag@^2.0.3:
     has-tostringtag "^1.0.2"
     hasown "^2.0.1"
 
+es-set-tostringtag@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/es-set-tostringtag/-/es-set-tostringtag-2.1.0.tgz#f31dbbe0c183b00a6d26eb6325c810c0fd18bd4d"
+  integrity sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==
+  dependencies:
+    es-errors "^1.3.0"
+    get-intrinsic "^1.2.6"
+    has-tostringtag "^1.0.2"
+    hasown "^2.0.2"
+
 es-shim-unscopables@^1.0.0, es-shim-unscopables@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/es-shim-unscopables/-/es-shim-unscopables-1.0.2.tgz#1f6942e71ecc7835ed1c8a83006d8771a63a3763"
@@ -17625,6 +17644,17 @@ form-data@^4.0.0:
     combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
+form-data@^4.0.4:
+  version "4.0.4"
+  resolved "https://registry.npmmirror.com/form-data/-/form-data-4.0.4.tgz#784cdcce0669a9d68e94d11ac4eea98088edd2c4"
+  integrity sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==
+  dependencies:
+    asynckit "^0.4.0"
+    combined-stream "^1.0.8"
+    es-set-tostringtag "^2.1.0"
+    hasown "^2.0.2"
+    mime-types "^2.1.12"
+
 form-data@~2.3.2:
   version "2.3.3"
   resolved "https://registry.npmmirror.com/form-data/-/form-data-2.3.3.tgz#dcce52c05f644f298c6a7ab936bd724ceffbf3a6"
@@ -18136,6 +18166,14 @@ ghooks@^2.0.4:
     opt-cli "1.5.1"
     path-exists "3.0.0"
     spawn-command "0.0.2"
+
+gigachat@^0.0.15:
+  version "0.0.15"
+  resolved "https://registry.npmmirror.com/gigachat/-/gigachat-0.0.15.tgz#e99e5214938fc2504ab51323ec21156a0032cc52"
+  integrity sha512-4hAf/obnzwW4xp+AOP6Zv81F3Dr9QcsEjVOGTdY4aRWphzgV8YVZ134huqQfA/LQCuoD9UMmlt3nfix6exgjYg==
+  dependencies:
+    axios "^1.8.2"
+    uuid "^11.0.3"
 
 git-branch@^1.0.0:
   version "1.0.0"
@@ -21256,6 +21294,16 @@ kuler@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/kuler/-/kuler-2.0.0.tgz#e2c570a3800388fb44407e851531c1d670b061b3"
   integrity sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==
+
+langchain-gigachat@^0.0.14:
+  version "0.0.14"
+  resolved "https://registry.npmmirror.com/langchain-gigachat/-/langchain-gigachat-0.0.14.tgz#73290a3a3fa6fc8345b35ae997509edfa5aa3598"
+  integrity sha512-8jnHMZI1QqAs98iTdldouT1chiFRTtEnxXHFiQl8th7u/B6Eot0OJfMT5iviCFO6/pMNxYgq0Fzzr29ndaJyEQ==
+  dependencies:
+    gigachat "^0.0.15"
+    uuid "^11.0.5"
+    zod "^3.23.8"
+    zod-to-json-schema "^3.23.5"
 
 "langsmith@>=0.2.8 <0.4.0":
   version "0.3.12"
@@ -31997,6 +32045,11 @@ uuid@^10.0.0:
   resolved "https://registry.npmmirror.com/uuid/-/uuid-10.0.0.tgz#5a95aa454e6e002725c79055fd42aaba30ca6294"
   integrity sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==
 
+uuid@^11.0.3, uuid@^11.0.5:
+  version "11.1.0"
+  resolved "https://registry.npmmirror.com/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
+  integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
+
 uuid@^3.3.2:
   version "3.4.0"
   resolved "https://registry.npmmirror.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
@@ -33143,6 +33196,11 @@ zod-to-json-schema@^3.22.3:
   resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.3.tgz#5958ba111d681f8d01c5b6b647425c9b8a6059e7"
   integrity sha512-HIAfWdYIt1sssHfYZFCXp4rU1w2r8hVVXYIlmoa0r0gABLs5di3RCqPU5DDROogVz1pAdYBaz7HK5n9pSUNs3A==
 
+zod-to-json-schema@^3.23.5:
+  version "3.24.6"
+  resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.6.tgz#5920f020c4d2647edfbb954fa036082b92c9e12d"
+  integrity sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==
+
 zod-to-json-schema@^3.24.1:
   version "3.24.5"
   resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.5.tgz#d1095440b147fb7c2093812a53c54df8d5df50a3"
@@ -33152,6 +33210,11 @@ zod@^3.22.4, zod@^3.24.1:
   version "3.24.2"
   resolved "https://registry.npmmirror.com/zod/-/zod-3.24.2.tgz#8efa74126287c675e92f46871cfc8d15c34372b3"
   integrity sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==
+
+zod@^3.23.8:
+  version "3.25.76"
+  resolved "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz#26841c3f6fd22a6a2760e7ccb719179768471e34"
+  integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==
 
 zrender@5.6.1:
   version "5.6.1"
