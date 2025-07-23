@@ -30,10 +30,14 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 
+type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
+
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
 
   private db2cmCollections: string[] = [];
+
+  status: DataSourceState = 'loaded';
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
@@ -406,7 +410,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSources:*'],
     });
 
     this.app.acl.registerSnippet({
@@ -496,9 +500,24 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-
+    const plugin = this;
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
+    this.app.resource({
+      name: 'mainDataSource',
+      actions: {
+        async refresh(ctx, next) {
+          if (plugin.status === 'loaded') {
+            await plugin.app.db.getRepository<CollectionRepository>('collections').load({
+              filter: plugin.loadFilter,
+            });
+          }
+          ctx.body = {
+            status: plugin.status,
+          };
+        },
+      },
+    });
 
     const handleFieldSource = (fields) => {
       for (const field of lodash.castArray(fields)) {

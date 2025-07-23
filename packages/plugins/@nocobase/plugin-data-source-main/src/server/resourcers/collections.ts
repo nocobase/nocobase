@@ -152,12 +152,15 @@ export default {
     });
     const existsCollectionNames = existsCollections.map((c) => c.name);
     const addToCollections = values.filter((table) => !existsCollectionNames.includes(table));
+    const mainDataSource = ctx.app.pm.get('data-source-main');
     if (addToCollections.length) {
       const collectionService = new CollectionService(ctx.app.db);
       try {
         (async () => {
+          mainDataSource.status = 'loading';
           const results = await collectionService.loadCollections(addToCollections);
           await ctx.app.db.getRepository('collections').create({ values: results });
+          mainDataSource.status = 'loaded';
         })();
       } catch (e) {
         ctx.app.db.logger.error('Failed to add collections', {

@@ -50,6 +50,7 @@ export class DataSourceManager {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
       collections: options.collections || [],
+      status: 'loaded',
     });
     (options.dataSources || []).forEach((dataSourceOptions) => {
       this.addDataSource(LocalDataSource, dataSourceOptions);
@@ -68,6 +69,19 @@ export class DataSourceManager {
   getDataSources(filterDataSource?: (dataSource: DataSource) => boolean) {
     const allDataSources = Object.values(this.dataSourceInstancesMap);
     return filterDataSource ? _.filter(allDataSources, filterDataSource) : allDataSources;
+  }
+
+  setDataSources(dataSources: DataSourceOptions[]) {
+    const keyByDataSources = _.keyBy(dataSources, 'key');
+    Object.keys(this.dataSourceInstancesMap).forEach((key) => {
+      const newDataSource = keyByDataSources[key];
+      if (newDataSource) {
+        this.dataSourceInstancesMap[key].setOptions({
+          displayName: newDataSource.displayName,
+          status: newDataSource.status,
+        });
+      }
+    });
   }
 
   getDataSource(key?: string) {

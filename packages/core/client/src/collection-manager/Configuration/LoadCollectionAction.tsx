@@ -9,6 +9,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button, Drawer, Transfer, Input, message, App, Spin } from 'antd';
+import { ImportOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -140,8 +141,8 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
 
   return (
     <>
-      <Button type="default" onClick={showDrawer} {...restProps}>
-        {t('Load collection')}
+      <Button type="default" icon={<ImportOutlined style={{ marginRight: 4 }} />} onClick={showDrawer} {...restProps}>
+        {t('Load collections')}
       </Button>
 
       <Drawer
