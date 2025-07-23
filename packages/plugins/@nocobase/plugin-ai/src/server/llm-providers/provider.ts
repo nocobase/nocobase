@@ -8,12 +8,12 @@
  */
 
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import axios from 'axios';
 import { Model } from '@nocobase/database';
-import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
+import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
+import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 
 export interface LLMProviderOptions {
   app: Application;
