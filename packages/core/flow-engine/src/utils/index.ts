@@ -41,3 +41,6 @@ export { buildFieldItems, buildActionItems, buildBlockItems, processMetaChildren
 
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
+
+// Record Proxy 工具
+export { createRecordProxyContext } from './createRecordProxyContext';
