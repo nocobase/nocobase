@@ -9,7 +9,6 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { EditOutlined } from '@ant-design/icons';
 import {
   DragHandler,
   Droppable,
@@ -20,45 +19,55 @@ import {
 } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 import { TableColumnProps, Tooltip } from 'antd';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { uid } from '@formily/shared';
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath }, defaultValue }: any) => {
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
+  const field = model.subModels.readPrettyField as FieldModel;
+  const fieldModel = field.createFork({}, `${index}`);
+  const currentValue = model?.field?.value;
+  fieldModel.context.defineProperty('fieldValue', {
+    get: () => {
+      return model?.field?.value || currentValue;
+    },
+  });
+  const handleClick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await flowEngine.context.viewOpener.open({
+        mode: 'popover',
+        target: e.target,
+        placement: 'rightTop',
+        styles: {
+          body: {
+            maxWidth: 400,
+            minWidth: 200,
+          },
+        },
+        content: (popover) => {
+          return (
+            <>
+              <FlowModelRenderer model={model} uid={model.uid} />
+            </>
+          );
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
-    <div ref={ref}>
-      <span>{model.field?.value || defaultValue?.[fieldPath]}</span>
-      <EditOutlined
-        className="edit-icon"
-        onClick={async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          try {
-            await flowEngine.context.viewOpener.open({
-              mode: 'popover',
-              target: e.target,
-              placement: 'rightTop',
-              styles: {
-                body: {
-                  maxWidth: 400,
-                },
-              },
-              content: (popover) => {
-                return (
-                  <>
-                    <FlowModelRenderer model={model} uid={model.uid} />
-                  </>
-                );
-              },
-            });
-          } catch (error) {
-            console.log(error);
-          }
-        }}
-      />
+    <div
+      ref={ref}
+      style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', minHeight: 25, width: '100%' }}
+      onClick={handleClick}
+    >
+      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel.uid} />}</span>
     </div>
   );
 });
@@ -119,10 +128,15 @@ export class SubTableColumnModel extends FieldModel {
       render: this.render(),
     };
   }
-
   render() {
     return (value, record, index) => (
-      <div>
+      <div
+        className={css`
+          .ant-formily-item {
+            margin-bottom: 0;
+          }
+        `}
+      >
         {this.mapSubModels('field', (action: EditableFieldModel) => {
           record.__key = record.__key || uid();
           action.enableFormItem = false;
@@ -134,13 +148,14 @@ export class SubTableColumnModel extends FieldModel {
             },
             cache: false,
           });
-          fork.applyFlow('formItemSettings');
           if (fork.constructor.isLargeField) {
+            fork.applyAutoFlows();
             return (
               <LargeFieldEdit
                 model={fork}
                 params={{
                   fieldPath: action.fieldPath,
+                  index: record.__key,
                 }}
                 defaultValue={value}
               />
@@ -172,11 +187,28 @@ SubTableColumnModel.registerFlow({
     init: {
       async handler(ctx, params) {
         const field = ctx.model.collectionField;
+        console.log(888);
         if (!field) {
           return;
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
+        if ((ctx.model.subModels.field.constructor as any).isLargeField) {
+          const use = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+          const model = (ctx.model.subModels.field as FieldModel).setSubModel('readPrettyField', {
+            use,
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                  collectionName: field.collection.name,
+                  fieldPath: ctx.model.fieldPath,
+                },
+              },
+            },
+          });
+          await model.applyAutoFlows();
+        }
       },
     },
     title: {

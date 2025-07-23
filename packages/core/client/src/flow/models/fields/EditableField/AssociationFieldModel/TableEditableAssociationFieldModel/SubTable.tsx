@@ -145,10 +145,16 @@ export const SubTable = observer((props: any) => {
     () => (field.value || []).map((item, index) => ({ key: item.id || index, ...item })),
     [field.value],
   );
-
+  console.log(getColumns());
   return (
     <Card>
-      <Table columns={getColumns()} scroll={{ x: 'max-content' }} dataSource={dataSource} pagination={false} />
+      <Table
+        columns={getColumns()}
+        scroll={{ x: 'max-content' }}
+        tableLayout="fixed"
+        dataSource={dataSource}
+        pagination={false}
+      />
       <Space
         style={{
           gap: 15,
