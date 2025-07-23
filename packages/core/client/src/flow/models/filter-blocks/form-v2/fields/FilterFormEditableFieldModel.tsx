@@ -27,13 +27,9 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
         const value = this.getFilterValue();
         if (value != null && value !== '') {
           const targetField = model.collection.getField(target.fieldPath);
-          if (!targetField) {
-            console.error(`Field ${target.fieldPath} not found in collection ${model.collection.name}`);
-            return;
-          }
 
           // 如果是关系字段，则需拼接上 filterTargetKey
-          if (targetField.targetCollection) {
+          if (targetField?.targetCollection) {
             model.resource.addFilterGroup(this.uid, {
               [`${target.fieldPath}.${targetField.targetCollection.filterTargetKey}`]: {
                 [operator]: value,
@@ -54,7 +50,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   }
 
   removeFilterGroupFromTargetModels() {
-    const operator = this.props.operator;
+    const operator = this.props.operator || '$eq';
     const targets = this.props.targets || [];
 
     if (!operator || !targets.length) {

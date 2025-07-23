@@ -68,22 +68,22 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPath = '', label
 function ConnectFields(props) {
   const ctx = useFlowSettingsContext();
   const allDataModels = getAllDataModels(ctx.blockGridModel);
-  const [selectedValues, setSelectedValues] = React.useState({});
 
   const handleSelectChange = (modelUid: string, value: string) => {
-    const newValues = {
-      ...selectedValues,
-      [modelUid]: {
+    const newValues = {};
+    const selectedValues = props.value || [];
+    selectedValues.forEach((item) => {
+      newValues[item.modelUid] = item;
+    });
+
+    if (value != null && value !== '') {
+      newValues[modelUid] = {
         modelUid,
         fieldPath: value,
-      },
-    };
-
-    if (!value) {
-      delete newValues[modelUid];
+      };
+    } else {
+      delete newValues[modelUid]; // 如果值为空，则删除该模型的选择
     }
-
-    setSelectedValues(newValues);
 
     // 汇总所有选择的值到数组中
     const allSelectedValues = Object.values(newValues).filter(Boolean);
