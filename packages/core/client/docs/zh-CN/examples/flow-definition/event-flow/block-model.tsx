@@ -16,7 +16,7 @@ class MyCollectionBlockModel extends BlockModel {
 }
 
 const myPropsFlow = defineFlow<MyCollectionBlockModel>({
-  key: 'buttonSettings',
+  key: 'bindEvent',
   auto: true,
   steps: {
     bindEvent: {
@@ -83,7 +83,7 @@ class PluginHelloModel extends Plugin {
     // 注册路由，渲染模型
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} />,
+      element: <FlowModelRenderer model={model} showFlowSettings />,
     });
   }
 }
