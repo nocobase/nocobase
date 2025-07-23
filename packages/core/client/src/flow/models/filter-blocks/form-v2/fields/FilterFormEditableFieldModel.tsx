@@ -14,7 +14,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
 
   addFilterGroupToTargetModels() {
-    const operator = this.props.operator;
+    const operator = this.props.operator || '$eq';
     const targets = this.props.targets || [];
 
     if (!operator || !targets.length) {
@@ -24,10 +24,11 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     targets.forEach((target) => {
       const model: CollectionBlockModel = this.flowEngine.getModel(target.modelUid);
       if (model) {
-        if (this.field.value != null && this.field.value !== '') {
+        const value = this.getFilterValue();
+        if (value != null && value !== '') {
           model.resource.addFilterGroup(this.uid, {
             [target.fieldPath]: {
-              [operator]: this.field.value,
+              [operator]: value,
             },
           });
         } else {
@@ -83,6 +84,14 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
         model.resource.refresh();
       }
     });
+  }
+
+  /**
+   * 获取用于显示在筛选条件中的字段值
+   * @returns
+   */
+  getFilterValue() {
+    return this.field.value;
   }
 }
 

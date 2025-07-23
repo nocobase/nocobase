@@ -154,20 +154,32 @@ export class SelectAssociationFilterFormEditableFieldModel extends AssociationFi
   set onPopupScroll(fn) {
     this.field.setComponentProps({ onPopupScroll: fn });
   }
+
   set onDropdownVisibleChange(fn) {
     this.field.setComponentProps({ onDropdownVisibleChange: fn });
   }
+
   set onSearch(fn) {
     this.field.setComponentProps({ onSearch: fn });
   }
+
+  get component() {
+    return [AssociationSelect, {}];
+  }
+
   setDataSource(dataSource) {
     this.field.dataSource = dataSource;
   }
+
   getDataSource() {
     return this.field.dataSource;
   }
-  get component() {
-    return [AssociationSelect, {}];
+
+  getFilterValue() {
+    const fieldNames = this.field.componentProps.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.field.value)
+      ? this.field.value.map((item) => item[fieldNames.value])
+      : this.field.value?.[fieldNames.value];
   }
 }
 
