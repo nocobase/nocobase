@@ -30,4 +30,15 @@ export class TableEditableAssociationFieldModel extends EditableAssociationField
   }
 }
 
+TableEditableAssociationFieldModel.registerFlow({
+  key: 'loadTableColumns',
+  steps: {
+    init: {
+      async handler(ctx, params) {
+        await ctx.model.applySubModelsAutoFlows('columns');
+      },
+    },
+  },
+});
+
 export { SubTableColumnModel };
