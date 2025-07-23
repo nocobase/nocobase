@@ -19,3 +19,9 @@
 通过获取组件的原生 DOM 引用，直接绑定原生事件，实现更灵活的事件处理。
 
 <code src="./context-ref.tsx"></code>
+
+## 通过 addEventListener + removeEventListener 方式处理
+
+使用原生事件监听机制，可以在组件挂载时添加事件监听，并在卸载时移除，保证事件的正确绑定和释放，避免内存泄漏。
+
+<code src="./event-listener.tsx"></code>
