@@ -102,6 +102,7 @@ function ConnectFields(props) {
             showSearch
             treeDefaultExpandAll={false}
             style={{ width: '100%' }}
+            treeLine
           />
         </FormItem>
       );
