@@ -163,6 +163,14 @@ export default defineConfig({
               title: 'uiMode - 步骤设置的 UI 模式',
               link: '/examples/flow-definition/ui-mode',
             },
+            {
+              title: '打开预设置的配置表单',
+              link: '/examples/flow-definition/open-preset-step-settings-dialog',
+            },
+            {
+              title: '打开某流某步骤的配置表单',
+              link: '/examples/flow-definition/open-step-settings-dialog',
+            },
           ]
         },
         {

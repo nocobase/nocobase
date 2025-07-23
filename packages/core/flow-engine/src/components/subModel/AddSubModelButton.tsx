@@ -434,7 +434,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
       });
 
       addedModel.setParent(model);
-      await addedModel.configureRequiredSteps();
+      await addedModel.openPresetStepSettingsDialog();
 
       if (onModelCreated) {
         await onModelCreated(addedModel);

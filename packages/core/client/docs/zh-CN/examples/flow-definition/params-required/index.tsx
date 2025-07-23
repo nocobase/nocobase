@@ -18,6 +18,7 @@ const buttonSettings = defineFlow({
   steps: {
     general: {
       title: '通用配置',
+      paramsRequired: true,
       uiSchema: {
         title: {
           type: 'string',

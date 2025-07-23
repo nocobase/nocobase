@@ -1,7 +1,8 @@
 import * as icons from '@ant-design/icons';
+import { FormItem, FormLayout, Input, Select } from '@formily/antd-v5';
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, escapeT, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 
 // 自定义模型类，继承自 FlowModel
@@ -9,6 +10,22 @@ class MyModel extends FlowModel {
   render() {
     return <Button {...this.props} />;
   }
+}
+
+function MyComponent({ model }: { model: MyModel }) {
+  return (
+    <Space>
+      <FlowModelRenderer model={model} />
+      <Button
+        onClick={async () => {
+          await model.openStepSettingsDialog('buttonSettings', 'general');
+        }}
+        type="dashed"
+      >
+        Open Settings Dialog
+      </Button>
+    </Space>
+  );
 }
 
 const buttonSettings = defineFlow({
@@ -91,7 +108,7 @@ class PluginHelloModel extends Plugin {
     // 注册路由，渲染模型
     this.router.add('root', {
       path: '/',
-      element: <FlowModelRenderer model={model} showFlowSettings={true} />,
+      element: <MyComponent model={model} />,
     });
   }
 }
