@@ -144,6 +144,10 @@ export default defineConfig({
               link: '/examples/flow-context/ref',
             },
             {
+              title: 'ctx.requirejs',
+              link: '/examples/flow-context/requirejs',
+            },
+            {
               title: 'ctx.requireAsync',
               link: '/examples/flow-context/require-async',
             },
