@@ -55,7 +55,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   render() {
     return (
-      <BlockItemCard {...this.decoratorProps}>
+      <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
         <Observer>
           {() => {
             return this.renderComponent();
@@ -69,7 +69,6 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 BlockModel.registerFlow({
   key: 'cardSettings',
   title: escapeT('Card settings'),
-  auto: true,
   steps: {
     titleDescription: {
       title: escapeT('Title & description'),
@@ -248,7 +247,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
 CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
-  auto: true,
   steps: {
     init: {
       handler(ctx, params) {
@@ -273,7 +271,6 @@ CollectionBlockModel.registerFlow({
 
 CollectionBlockModel.registerFlow({
   key: 'refreshSettings',
-  auto: true,
   sort: 10000,
   steps: {
     refresh: {

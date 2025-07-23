@@ -42,7 +42,6 @@ JavaScriptBlockModel.define({
 JavaScriptBlockModel.registerFlow({
   key: 'jsSettings',
   title: 'JavaScript settings',
-  auto: true,
   steps: {
     runJs: {
       title: 'Write JavaScript',

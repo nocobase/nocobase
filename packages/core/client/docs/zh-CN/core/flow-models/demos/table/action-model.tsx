@@ -30,7 +30,6 @@ export class DeleteActionModel extends ActionModel {
 
 ActionModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

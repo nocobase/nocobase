@@ -124,7 +124,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
 
 EditableFieldModel.registerFlow({
   key: 'formItemSettings',
-  auto: true,
   title: escapeT('Form item settings'),
   sort: 150,
   steps: {
@@ -310,7 +309,7 @@ EditableFieldModel.registerFlow({
           },
         };
       },
-      afterParamsChange: async (ctx, params, previousParams) => {
+      beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.use !== previousParams.use) {
           await ctx.engine.replaceModel(ctx.model.uid, {
             use: params.use,
@@ -325,8 +324,8 @@ EditableFieldModel.registerFlow({
               },
             },
           });
+          ctx.exit();
         }
-        return true;
       },
       defaultParams: (ctx) => {
         return {

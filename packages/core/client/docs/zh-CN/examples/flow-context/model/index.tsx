@@ -29,7 +29,6 @@ class HelloModel extends FlowModel {
 
 HelloModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     setText: {
       uiSchema: {

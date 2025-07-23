@@ -28,7 +28,6 @@ export class PageTabModel extends FlowModel<{
 
 PageTabModel.registerFlow({
   key: 'pageTabSettings',
-  auto: true,
   steps: {
     step1: {
       async handler(ctx, params) {

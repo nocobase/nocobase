@@ -453,7 +453,10 @@ export class FlowForkModelContext extends FlowContext {
   }
 }
 
-export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
+export class FlowRuntimeContext<
+  TModel extends FlowModel = FlowModel,
+  TMode extends 'runtime' | 'settings' = any,
+> extends FlowContext {
   stepResults: Record<string, any> = {};
   declare router: Router;
   declare engine: FlowEngine;
@@ -467,7 +470,7 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
   constructor(
     public model: TModel,
     public flowKey: string,
-    protected mode: 'runtime' | 'settings' = 'runtime',
+    protected mode: TMode = 'runtime' as TMode,
   ) {
     super();
     this.addDelegate(this.model.context);
@@ -533,3 +536,6 @@ export class FlowRuntimeContext<TModel extends FlowModel> extends FlowContext {
     throw new FlowExitException(this.flowKey, this.model.uid);
   }
 }
+
+// 类型别名，方便使用
+export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;

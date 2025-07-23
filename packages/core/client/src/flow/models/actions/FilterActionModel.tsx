@@ -100,7 +100,6 @@ FilterActionModel.define({
 FilterActionModel.registerFlow({
   key: 'filterSettings',
   title: escapeT('Filter settings'),
-  auto: true,
   steps: {
     position: {
       handler(ctx, params) {

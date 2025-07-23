@@ -131,7 +131,6 @@ class TableBlockFlowModel extends FlowModel<TableBlockFlowModelStructure> {
 }
 
 TableBlockFlowModel.registerFlow('defaultFlow', {
-  auto: true,
   steps: {
     step1: {
       uiSchema: {},

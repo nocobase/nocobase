@@ -1,8 +1,3 @@
-/**
- * defaultShowCode: true
- * title: Hello World
- */
-
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
@@ -24,7 +19,6 @@ class HelloModel extends FlowModel {
 
 HelloModel.registerFlow({
   key: 'cardSettings',
-  auto: true,
   title: '卡片设置',
   steps: {
     setProps: {

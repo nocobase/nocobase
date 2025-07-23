@@ -19,10 +19,13 @@ import { parseTask } from '../utils';
 import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
+import { useApp } from '@nocobase/client';
 
 export const useChatBoxActions = () => {
+  const app = useApp();
   const t = useT();
 
+  const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
   const setTaskVariables = useChatBoxStore.use.setTaskVariables();
@@ -119,7 +122,7 @@ export const useChatBoxActions = () => {
 
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
-      const { aiEmployee, tasks, variables, localVariables } = options;
+      const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       if (!open) {
         setOpen(true);
@@ -147,11 +150,7 @@ export const useChatBoxActions = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments, workContext } = await parseTask(
-          task,
-          variables,
-          localVariables,
-        );
+        const { userMessage, systemMessage, attachments, workContext } = await parseTask(app, task);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {

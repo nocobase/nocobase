@@ -250,8 +250,6 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-
       setupSSEHeaders(ctx);
 
       const { sessionId, aiEmployee: employeeName, messages, editingMessageId } = ctx.action.params.values || {};
@@ -296,40 +294,7 @@ export default {
 
         const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
         await aiEmployee.cancelToolCall();
-
-        let persistenceMessages: Model[] = [];
-        try {
-          persistenceMessages = await ctx.db.sequelize.transaction(async (transaction) => {
-            if (editingMessageId) {
-              await ctx.db.getRepository('aiMessages').destroy({
-                filter: {
-                  sessionId,
-                  messageId: {
-                    $gte: editingMessageId,
-                  },
-                },
-                transaction,
-              });
-            }
-            return await ctx.db.getRepository('aiConversations.messages', sessionId).create({
-              values: messages.map((message: any) => ({
-                messageId: plugin.snowflake.generate(),
-                role: message.role,
-                content: message.content,
-                attachments: message.attachments,
-                workContext: message.workContext,
-              })),
-              transaction,
-            });
-          });
-        } catch (err) {
-          ctx.log.error(err);
-          sendErrorResponse(ctx, 'Chat error warning');
-          return next();
-        }
-
-        const [msg] = persistenceMessages;
-        await aiEmployee.processMessages(messages, msg?.messageId);
+        await aiEmployee.processMessages(messages, editingMessageId);
       } catch (err) {
         ctx.log.error(err);
         sendErrorResponse(ctx, 'Chat error warning');

@@ -171,7 +171,6 @@ const paginationState = {
 // 事件绑定
 SelectEditableAssociationFieldModel.registerFlow({
   key: 'eventSettings',
-  auto: true,
   sort: 300,
   steps: {
     bindEvent: {
@@ -331,7 +330,6 @@ SelectEditableAssociationFieldModel.registerFlow({
 SelectEditableAssociationFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
-  auto: true,
   sort: 200,
   steps: {
     init: {

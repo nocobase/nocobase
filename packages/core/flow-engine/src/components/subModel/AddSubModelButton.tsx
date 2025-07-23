@@ -23,7 +23,7 @@ import { buildSubModelGroups, buildSubModelItems } from './utils';
 
 export interface SubModelItem {
   key?: string;
-  label?: string;
+  label?: string | React.ReactNode;
   type?: 'group' | 'divider';
   disabled?: boolean;
   icon?: React.ReactNode;
@@ -434,7 +434,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
       });
 
       addedModel.setParent(model);
-      await addedModel.configureRequiredSteps();
+      await addedModel.openPresetStepSettingsDialog();
 
       if (onModelCreated) {
         await onModelCreated(addedModel);

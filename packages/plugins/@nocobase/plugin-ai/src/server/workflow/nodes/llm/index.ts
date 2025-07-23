@@ -11,9 +11,10 @@ import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plu
 import PluginAIServer from '../../../plugin';
 import { LLMProvider } from '../../../llm-providers/provider';
 import _ from 'lodash';
+import { parseMessages } from './parse-messages';
 
 export class LLMInstruction extends Instruction {
-  async getLLMProvider(llmService: string, chatOptions: any) {
+  async getLLMProvider(llmService: string, modelOptions: any) {
     const service = await this.workflow.db.getRepository('llmServices').findOne({
       filter: {
         name: llmService,
@@ -28,15 +29,16 @@ export class LLMInstruction extends Instruction {
       throw new Error('invalid llm provider');
     }
     const Provider = providerOptions.provider;
-    const provider = new Provider({ app: this.workflow.app, serviceOptions: service.options, chatOptions });
+    const provider = new Provider({ app: this.workflow.app, serviceOptions: service.options, modelOptions });
     return provider;
   }
 
   async run(node: FlowNodeModel, input: any, processor: Processor) {
     const { llmService, ...chatOptions } = processor.getParsedValue(node.config, node.id);
+    const { messages, structuredOutput, ...modelOptions } = chatOptions;
     let provider: LLMProvider;
     try {
-      provider = await this.getLLMProvider(llmService, chatOptions);
+      provider = await this.getLLMProvider(llmService, modelOptions);
     } catch (e) {
       return {
         status: JOB_STATUS.ERROR,
@@ -44,16 +46,21 @@ export class LLMInstruction extends Instruction {
       };
     }
 
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: input?.id ?? null,
     });
 
+    const parsedMessages = await parseMessages(messages);
+
     // eslint-disable-next-line promise/catch-or-return
     provider
-      .invokeChat()
+      .invokeChat({
+        messages: parsedMessages,
+        structuredOutput,
+      })
       .then((aiMsg) => {
         let raw = aiMsg;
         if (aiMsg.raw) {

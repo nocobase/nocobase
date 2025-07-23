@@ -9,7 +9,7 @@
 
 import { ChatDeepSeek } from '@langchain/deepseek';
 import { LLMProvider } from './provider';
-import { LLMProviderOptions } from '../manager/ai-manager';
+import { LLMProviderMeta } from '../manager/ai-manager';
 
 export class DeepSeekProvider extends LLMProvider {
   declare chatModel: ChatDeepSeek;
@@ -38,7 +38,7 @@ export class DeepSeekProvider extends LLMProvider {
   }
 }
 
-export const deepseekProviderOptions: LLMProviderOptions = {
+export const deepseekProviderOptions: LLMProviderMeta = {
   title: 'DeepSeek',
   provider: DeepSeekProvider,
 };

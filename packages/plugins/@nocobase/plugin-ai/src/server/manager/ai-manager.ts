@@ -7,29 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider } from '../llm-providers/provider';
+import { LLMProvider, LLMProviderOptions } from '../llm-providers/provider';
 import PluginAIServer from '../plugin';
-import { Application } from '@nocobase/server';
 import _ from 'lodash';
 import { ToolManager } from './tool-manager';
 
-export type LLMProviderOptions = {
+export type LLMProviderMeta = {
   title: string;
-  provider: new (opts: {
-    app: Application;
-    serviceOptions?: any;
-    chatOptions?: any;
-    abortSignal?: AbortSignal;
-  }) => LLMProvider;
+  provider: new (opts: LLMProviderOptions) => LLMProvider;
 };
 
 export class AIManager {
-  llmProviders = new Map<string, LLMProviderOptions>();
+  llmProviders = new Map<string, LLMProviderMeta>();
   toolManager = new ToolManager();
   constructor(protected plugin: PluginAIServer) {}
 
-  registerLLMProvider(name: string, options: LLMProviderOptions) {
-    this.llmProviders.set(name, options);
+  registerLLMProvider(name: string, meta: LLMProviderMeta) {
+    this.llmProviders.set(name, meta);
   }
 
   listLLMProviders() {

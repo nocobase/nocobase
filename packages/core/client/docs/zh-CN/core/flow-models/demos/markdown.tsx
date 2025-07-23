@@ -34,7 +34,6 @@ const MarkdownModel = FlowModel.extends([
   {
     key: 'default',
     title: 'Markdown',
-    auto: true,
     steps: {
       setTemplate: {
         use: 'block:markdown:template',

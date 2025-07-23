@@ -14,10 +14,39 @@ import { tval } from '@nocobase/utils/client';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { useField, observer } from '@formily/react';
 import { Field } from '@formily/core';
-import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+import { WorkflowVariableInput, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 
 const UserMessage: React.FC = observer(() => {
   const t = useT();
+  const field = useField();
+  const type = field.query('.type').take() as Field;
+
+  if (type.value === 'image_url' || type.value === 'image_base64') {
+    return (
+      <SchemaComponent
+        components={{ WorkflowVariableInput }}
+        schema={{
+          type: 'void',
+          properties: {
+            image_url: {
+              type: 'object',
+              properties: {
+                url: {
+                  title: tval('Image', { ns: namespace }),
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'WorkflowVariableInput',
+                  'x-component-props': {
+                    changeOnSelect: true,
+                  },
+                },
+              },
+            },
+          },
+        }}
+      />
+    );
+  }
 
   return (
     <SchemaComponent
@@ -82,7 +111,11 @@ const Content: React.FC = observer(() => {
                         type: 'string',
                         'x-decorator': 'FormItem',
                         'x-component': 'Select',
-                        enum: [{ label: t('Text'), value: 'text' }],
+                        enum: [
+                          { label: t('Text'), value: 'text' },
+                          { label: t('Image (send via URL)'), value: 'image_url' },
+                          { label: t('Image (send via Base64)'), value: 'image_base64' },
+                        ],
                         default: 'text',
                       },
                       user: {
@@ -123,7 +156,6 @@ const Content: React.FC = observer(() => {
   }
   return (
     <SchemaComponent
-      components={{ WorkflowVariableRawTextArea }}
       schema={{
         type: 'void',
         properties: {

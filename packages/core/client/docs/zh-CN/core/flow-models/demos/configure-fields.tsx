@@ -76,7 +76,6 @@ class FieldModel extends FlowModel {
 
 FieldModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       handler(ctx, params) {
@@ -139,7 +138,6 @@ class ConfigureFieldsFlowModel extends FlowModel<S> {
 
 ConfigureFieldsFlowModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

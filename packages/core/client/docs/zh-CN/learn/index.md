@@ -77,7 +77,7 @@ const model = this.flowEngine.createModel({
 
 const buttonSettings = defineFlow({
   key: 'buttonSettings',
-  auto: true,
+  
   title: '按钮设置',
   steps: {
     setProps: {

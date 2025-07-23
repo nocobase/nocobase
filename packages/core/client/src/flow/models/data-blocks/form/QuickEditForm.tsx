@@ -176,7 +176,6 @@ export class QuickEditForm extends FlowModel {
 
 QuickEditForm.registerFlow({
   key: 'quickEditFormSettings',
-  auto: true,
   sort: 100,
   steps: {
     init: {
