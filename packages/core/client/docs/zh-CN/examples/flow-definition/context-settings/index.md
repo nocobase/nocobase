@@ -5,9 +5,9 @@ FlowSettingsContext 是 FlowRuntimeContext 的 settings 模式，在打开流步
 ## 以下流步骤的设置表单打开时会创建 FlowSettingsContext
 
 - `model.openStepSettingsDialog(flowKey: string, stepKey: string): Promise<any>`  
-  打开某个流的某个步骤的配置表单
-- `model.openPresetStepSettingsDialog(): Promise<any>`
-  打开预设置的配置参数，需要在初始化 Model 时填写。
+  打开某个流的某个步骤的配置表单。
+- `model.openPresetStepSettingsDialog(): Promise<any>`  
+  打开预设置的配置步骤，需要在初始化 Model 时填写。
 
 ## 示例代码
 

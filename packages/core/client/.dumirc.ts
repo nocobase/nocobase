@@ -152,8 +152,8 @@ export default defineConfig({
               link: '/examples/flow-definition/handler',
             },
             {
-              title: 'paramsRequired - 步骤参数必填',
-              link: '/examples/flow-definition/params-required',
+              title: 'preset - 预设置的配置步骤',
+              link: '/examples/flow-definition/preset',
             },
             {
               title: 'hideInSettings - 在设置界面中隐藏',
