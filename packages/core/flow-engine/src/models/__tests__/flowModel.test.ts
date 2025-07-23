@@ -1783,10 +1783,10 @@ describe('FlowModel', () => {
         model.addSubModel('children', childModel1);
         model.addSubModel('children', childModel2);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(child1Spy).toHaveBeenCalledWith(false);
-        expect(child2Spy).toHaveBeenCalledWith(false);
+        expect(child1Spy).toHaveBeenCalledWith(true);
+        expect(child2Spy).toHaveBeenCalledWith(true);
       });
 
       test('should recursively invalidate cache for object subModels', () => {
@@ -1795,9 +1795,9 @@ describe('FlowModel', () => {
 
         model.setSubModel('child', childModel);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(childSpy).toHaveBeenCalledWith(false);
+        expect(childSpy).toHaveBeenCalledWith(true);
       });
 
       test('should handle mixed array and object subModels', () => {
@@ -1813,11 +1813,11 @@ describe('FlowModel', () => {
         model.addSubModel('arrayChildren', arrayChild2);
         model.setSubModel('objectChild', objectChild);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(array1Spy).toHaveBeenCalledWith(false);
-        expect(array2Spy).toHaveBeenCalledWith(false);
-        expect(objectSpy).toHaveBeenCalledWith(false);
+        expect(array1Spy).toHaveBeenCalledWith(true);
+        expect(array2Spy).toHaveBeenCalledWith(true);
+        expect(objectSpy).toHaveBeenCalledWith(true);
       });
 
       test('should handle empty subModels without error', () => {
