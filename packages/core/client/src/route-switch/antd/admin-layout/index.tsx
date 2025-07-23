@@ -675,10 +675,43 @@ export const InternalAdminLayout = () => {
   const { token } = useToken();
   const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
   const [collapsed, setCollapsed] = useState(isMobileLayout);
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [lastUserAction, setLastUserAction] = useState<'open' | 'close' | null>(null);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
   const { styles } = useHeaderStyle();
+
+  // Get system settings for menu behavior configuration
+  const { data: systemSettings } = useSystemSettings() || {};
+
+  // Configuration for menu behavior
+  const menuConfig = useMemo(() => {
+    const disableAccordion = systemSettings?.data?.options?.menuDisableAccordion ?? false;
+
+    return {
+      // Allow multiple menus to stay open - can be configured via system settings
+      disableAccordion, // Default to false for backward compatibility
+    };
+  }, [systemSettings?.data?.options?.menuDisableAccordion]);
+
+  // Add click listener to detect manual menu closing
+  useEffect(() => {
+    const handleMenuClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if user clicked on a menu item that would close a submenu
+      if (target.closest('.ant-menu-submenu-title')) {
+        const submenu = target.closest('.ant-menu-submenu');
+        const isOpen = submenu?.classList.contains('ant-menu-submenu-open');
+        if (isOpen) {
+          setLastUserAction('close');
+        }
+      }
+    };
+
+    document.addEventListener('click', handleMenuClick);
+    return () => document.removeEventListener('click', handleMenuClick);
+  }, []);
 
   const route = useMemo(() => {
     return {
@@ -739,11 +772,50 @@ export const InternalAdminLayout = () => {
     });
   }, []);
 
+  const handleMenuOpenChange = useCallback(
+    (keys: string[]) => {
+      if (menuConfig.disableAccordion) {
+        // When accordion is disabled, check if this is user action or accordion behavior
+        if (keys.length > openKeys.length) {
+          // User is opening new menus
+          setLastUserAction('open');
+          setOpenKeys(keys);
+        } else if (keys.length < openKeys.length) {
+          // Check if this is user action or accordion behavior
+          if (lastUserAction === 'close') {
+            // User is manually closing menus
+            setOpenKeys(keys);
+            setLastUserAction(null);
+          } else {
+            // This is accordion behavior, ignore it
+          }
+        }
+      } else {
+        // Default behavior - allow both opening and closing
+        setOpenKeys(keys);
+      }
+    },
+    [openKeys, menuConfig.disableAccordion, lastUserAction],
+  );
+
   const menuProps = useMemo(() => {
-    return {
+    const baseProps = {
       overflowedIndicatorPopupClassName: styles.headerPopup,
     };
-  }, [styles.headerPopup]);
+
+    if (menuConfig.disableAccordion && !collapsed) {
+      // When accordion is disabled, take full control of menu state
+      return {
+        ...baseProps,
+        multiple: true, // Disable accordion behavior
+        openKeys: openKeys, // Force our controlled openKeys
+        onOpenChange: handleMenuOpenChange, // Use our custom handler
+      };
+    }
+
+    // Default behavior - let ProLayout handle menu state
+    return baseProps;
+  }, [styles.headerPopup, openKeys, collapsed, handleMenuOpenChange, menuConfig.disableAccordion]);
 
   return (
     <DndContext onDragEnd={onDragEnd}>
