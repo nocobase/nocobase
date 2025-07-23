@@ -24,7 +24,7 @@ const useBlockHeight = ({ height, heightMode }) => {
 export const BlockItemCard = (props) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const { title: blockTitle, description, children } = props;
+  const { title: blockTitle, description, children, className } = props;
   const height = useBlockHeight(props);
   const title = (blockTitle || description) && (
     <div style={{ padding: '8px 0px 8px' }}>
@@ -50,6 +50,7 @@ export const BlockItemCard = (props) => {
       styles={{
         body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
       }}
+      className="nocobase-block-item-card"
     >
       {children}
     </Card>

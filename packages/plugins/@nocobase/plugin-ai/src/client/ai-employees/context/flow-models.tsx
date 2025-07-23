@@ -56,7 +56,7 @@ export const FlowModelsContext: WorkContextOptions = {
       const model = flowEngine.getModel(item.uid);
       return (
         <>
-          <BuildOutlined /> {model.title}
+          <BuildOutlined /> {model?.title || ''}
         </>
       );
     },

@@ -24,6 +24,7 @@ import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-emplo
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { formFillerTool } from './ai-employees/form-filler/tools';
+import './ai-employees/flow/events';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -96,6 +97,13 @@ export class PluginAIClient extends Plugin {
   }
 
   setupAIFeatures() {
+    this.app.flowEngine.context.defineProperty('ai', {
+      once: true,
+      value: {
+        selectable: false,
+      },
+    });
+
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);

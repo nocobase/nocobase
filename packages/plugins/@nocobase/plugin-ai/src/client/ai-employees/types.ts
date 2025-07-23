@@ -37,7 +37,7 @@ export type Conversation = {
 export type ContextItem = {
   type: string;
   uid: string;
-  title: string;
+  title?: string;
   content?: string;
 };
 
@@ -100,14 +100,17 @@ export type ResendOptions = {
   aiEmployee: AIEmployee;
 };
 
+export type TaskMessage = {
+  user?: string;
+  system?: string;
+  attachments?: any[];
+  workContext?: ContextItem[];
+};
+
 export type Task = {
   title?: string;
   taskDesc?: string;
-  message: {
-    user?: string;
-    system?: string;
-    attachments?: Attachment[];
-  };
+  message: TaskMessage;
   autoSend?: boolean;
 };
 

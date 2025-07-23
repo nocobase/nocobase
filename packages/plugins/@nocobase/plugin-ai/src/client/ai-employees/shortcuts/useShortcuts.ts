@@ -54,6 +54,7 @@ export const useShortcuts = () => {
               uid: 'orin',
               use: 'AIEmployeeShortcutModel',
               props: {
+                builtIn: true,
                 aiEmployee: {
                   username: 'orin',
                 },

@@ -9,9 +9,9 @@
 
 import React, { useMemo, useState } from 'react';
 import { Avatar, Button, Spin, Popover } from 'antd';
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, defineFlow, escapeT } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
-import { AIEmployee, TriggerTaskOptions } from '../../types';
+import { AIEmployee, Task, TriggerTaskOptions } from '../../types';
 import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
@@ -24,7 +24,6 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
     service: { loading },
   } = useAIEmployeesContext();
   const aiEmployee = aiEmployeesMap[username];
-  console.log(aiEmployee);
 
   const { triggerTask } = useChatBoxActions();
 
@@ -66,9 +65,68 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
 };
 
 export class AIEmployeeShortcutModel extends FlowModel {
-  public declare props: TriggerTaskOptions;
+  public declare props: TriggerTaskOptions & {
+    builtIn?: boolean;
+  };
 
   render() {
     return <Shortcut {...this.props} />;
   }
 }
+
+AIEmployeeShortcutModel.registerFlow({
+  key: 'shortcutSettings',
+  auto: true,
+  title: escapeT('Task settings'),
+  steps: {
+    editTasks: {
+      title: escapeT('Edit tasks'),
+      uiSchema: {
+        background: {
+          type: 'string',
+          title: 'Background',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+        message: {
+          type: 'string',
+          title: 'Default message',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+        block: {
+          type: 'string',
+          title: 'Block UID',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        autoSend: {
+          type: 'boolean',
+          title: 'Send default message automatically',
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+        },
+      },
+      handler(ctx, params) {
+        const task: Task = {
+          message: {
+            user: params.message,
+            system: params.background,
+          },
+          autoSend: params.autoSend,
+        };
+        if (params.block) {
+          task.message.workContext = [
+            {
+              type: 'flow-model',
+              uid: params.block,
+            },
+          ];
+        }
+        ctx.model.setProps({
+          tasks: [task],
+        });
+      },
+    },
+  },
+});

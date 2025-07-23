@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { DndProvider, DragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { AIEmployeeShortcutModel } from './AIEmployeeShortcutModel';
 
 type AIEmployeeShortcutListModelStructure = {
@@ -28,9 +28,26 @@ export class AIEmployeeShortcutListModel extends FlowModel<AIEmployeeShortcutLis
           gap: '8px',
         }}
       >
-        {this.mapSubModels('shortcuts', (shortcut) => {
-          return <FlowModelRenderer key={shortcut.uid} model={shortcut} />;
-        })}
+        <DndProvider>
+          {this.mapSubModels('shortcuts', (shortcut) => {
+            return (
+              <Droppable model={shortcut} key={shortcut.uid}>
+                <FlowModelRenderer
+                  key={shortcut.uid}
+                  model={shortcut}
+                  showFlowSettings={!shortcut.props?.builtIn}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            );
+          })}
+        </DndProvider>
       </div>
     );
   }

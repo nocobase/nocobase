@@ -51,7 +51,7 @@ export const ChatButton: React.FC = () => {
   return (
     <div
       className={css`
-        z-index: 2000;
+        z-index: 1050;
         display: flex;
         border-radius: 8px;
         gap: 8px;

@@ -15,9 +15,9 @@ import { useShortcuts } from './useShortcuts';
 import { useDesignable, useToken } from '@nocobase/client';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
+import { observer } from '@formily/react';
 
-export const ShortcutList: React.FC = () => {
-  const flowEngine = useFlowEngine();
+export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
   const { model, builtIn } = useShortcuts();
   const { token } = useToken();
@@ -54,9 +54,9 @@ export const ShortcutList: React.FC = () => {
           model={model}
           subModelKey={'shortcuts'}
           onSubModelAdded={async () => {
-            // if (!model.isNewModel) {
-            //   return;
-            // }
+            if (!model.isNewModel) {
+              return;
+            }
             await model.save();
             model.isNewModel = false;
           }}
@@ -101,4 +101,4 @@ export const ShortcutList: React.FC = () => {
       )}
     </>
   );
-};
+});
