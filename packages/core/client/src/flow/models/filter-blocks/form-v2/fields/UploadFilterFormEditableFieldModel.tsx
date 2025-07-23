@@ -75,7 +75,6 @@ export class UploadFilterFormEditableFieldModel extends FilterFormEditableFieldM
 // 事件绑定
 UploadFilterFormEditableFieldModel.registerFlow({
   key: 'eventSettings',
-  auto: true,
   sort: 300,
   steps: {
     bindEvent: {
@@ -95,7 +94,6 @@ UploadFilterFormEditableFieldModel.registerFlow({
 UploadFilterFormEditableFieldModel.registerFlow({
   key: 'uploadSetting',
   sort: 500,
-  auto: true,
   steps: {
     default: {
       async handler(ctx) {

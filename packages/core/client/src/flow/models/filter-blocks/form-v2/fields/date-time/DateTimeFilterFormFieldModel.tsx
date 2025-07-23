@@ -38,7 +38,6 @@ export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
 
 DateTimeFilterFormFieldModel.registerFlow({
   key: 'datetimeSettings',
-  auto: true,
   sort: 1000,
   title: escapeT('Datetime settings'),
   steps: {

@@ -12,6 +12,7 @@ import { GridModel } from '../../base/GridModel';
 import React from 'react';
 import { buildFieldMenuItems } from './buildFieldMenuItems';
 import { getAllDataModels } from './utils';
+import { FilterFormEditableFieldModel } from './fields';
 
 export class FilterFormFieldGridModel extends GridModel {
   itemFlowSettings = {
@@ -65,15 +66,46 @@ export class FilterFormFieldGridModel extends GridModel {
     return menuItems;
   }
 
+  async onModelCreated(subModel: FilterFormEditableFieldModel) {
+    const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
+    const allDataModels = getAllDataModels(subModel.context.blockGridModel);
+
+    // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
+    const matchingModels = allDataModels.filter((model) => {
+      // @ts-ignore
+      const collection = model.collection;
+      return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
+    });
+
+    // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
+    if (matchingModels.length > 0) {
+      const targets = matchingModels.map((model) => ({
+        modelUid: model.uid,
+        fieldPath: fieldPath,
+      }));
+
+      // 存到数据库中
+      subModel.setStepParams('filterFormItemSettings', 'connectFields', {
+        targets,
+      });
+    }
+  }
+
   renderAddSubModelButton() {
     // 向筛选表单区块添加字段 model
-    return <AddFieldButton items={this.getFieldMenuItems()} subModelKey="items" model={this} />;
+    return (
+      <AddFieldButton
+        items={this.getFieldMenuItems()}
+        subModelKey="items"
+        model={this}
+        onModelCreated={this.onModelCreated}
+      />
+    );
   }
 }
 
 FilterFormFieldGridModel.registerFlow({
   key: 'filterFormFieldGridSettings',
-  auto: true,
   steps: {
     grid: {
       handler(ctx, params) {

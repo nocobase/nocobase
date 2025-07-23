@@ -21,7 +21,6 @@ export class NanoIDFilterFormEditableFieldModel extends FilterFormEditableFieldM
 
 NanoIDFilterFormEditableFieldModel.registerFlow({
   key: 'nanoidSettings',
-  auto: true,
   sort: 1000,
   steps: {
     initialValue: {
