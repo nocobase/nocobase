@@ -13,7 +13,6 @@ import { TreeSelect } from 'antd';
 import React from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 import { getAllDataModels } from '../utils';
-import { sortTree } from '@nocobase/utils/client';
 
 export const connectFields = defineAction({
   name: 'connectFields',
@@ -30,20 +29,29 @@ export const connectFields = defineAction({
 });
 
 // 构建树形数据结构
-const buildTreeData = (ctx, fields: any[], prefix = '') => {
+const buildTreeData = (ctx, fields: any[], prefix = '', selectedPath = '') => {
   return fields
     .filter((field) => field.filterable && field.options.interface)
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
       const label = ctx.t(field.uiSchema?.title) || field.name;
 
-      const treeNode = {
+      const treeNode: any = {
         title: label,
         value: currentPath,
         key: currentPath,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
         field,
       };
+
+      // 如果选中的路径包含当前路径，且当前字段有关系目标，则预加载子节点
+      if (selectedPath && selectedPath.startsWith(currentPath + '.') && field.target) {
+        const targetCollection = field.targetCollection;
+        if (targetCollection) {
+          const targetFields = targetCollection.getFields?.() || [];
+          treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPath);
+        }
+      }
 
       return treeNode;
     })
@@ -87,8 +95,8 @@ function ConnectFields(props) {
       }
 
       const fields = model.collection?.getFields?.() || [];
-      const treeData = buildTreeData(ctx, fields);
       const value = props.value?.find((item) => item.modelUid === model.uid)?.fieldPath;
+      const treeData = buildTreeData(ctx, fields, '', value);
 
       return (
         <FormItem label={model.title} key={model.uid}>
