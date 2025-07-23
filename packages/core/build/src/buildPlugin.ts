@@ -58,7 +58,7 @@ const external = [
   '@nocobase/test',
   '@nocobase/utils',
   '@nocobase/license-kit',
-
+  '@nocobase/flow-engine',
   // @nocobase/auth
   'jsonwebtoken',
 
