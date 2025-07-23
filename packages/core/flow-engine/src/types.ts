@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { SubModelItemsType } from './components';
-import { FlowModelContext, FlowRuntimeContext } from './flowContext';
+import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 
@@ -183,7 +183,8 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   defaultParams?:
     | Record<string, any>
     | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
-  afterParamsChange?: (ctx: FlowRuntimeContext<TModel>, params: any, previousParams: any) => boolean | Promise<boolean>;
+  beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
+  afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
 }
 
 /**
