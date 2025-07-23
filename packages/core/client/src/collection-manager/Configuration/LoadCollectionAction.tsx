@@ -146,7 +146,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
       </Button>
 
       <Drawer
-        title={t('Load Collections')}
+        title={t('Load collections')}
         placement="right"
         onClose={handleCancel}
         open={open}
@@ -157,13 +157,13 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
               {t('Cancel')}
             </Button>
             <Button type="primary" onClick={handleSubmit} loading={loading} disabled={targetKeys.length === 0}>
-              {t('Submit')} ({targetKeys.length})
+              {t('Submit')}
             </Button>
           </div>
         }
       >
-        <div style={{ height: '100%' }}>
-          <Spin spinning={loading}>
+        <div style={{ height: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column' }}>
+          <Spin spinning={loading} style={{ height: '100%' }}>
             <Transfer
               dataSource={filteredDataSource}
               titles={[t('Available Collections'), t('Selected Collections')]}
@@ -177,7 +177,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
               style={{ height: '100%' }}
               listStyle={{
                 width: 350,
-                height: 500,
+                height: 'calc(100vh - 100px)',
               }}
               locale={{
                 itemUnit: t('item'),
