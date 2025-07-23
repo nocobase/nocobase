@@ -121,6 +121,23 @@ function ConnectFields(props) {
 function TreeSelectWrapper(props) {
   const ctx = useFlowSettingsContext();
   const [treeData, setTreeData] = React.useState(props.treeData || []);
+  const [expandedKeys, setExpandedKeys] = React.useState([]);
+
+  // 根据 value 计算需要展开的路径
+  React.useEffect(() => {
+    if (props.value) {
+      const pathSegments = props.value.split('.');
+      const keysToExpand = [];
+
+      // 生成所有需要展开的父级路径
+      for (let i = 0; i < pathSegments.length - 1; i++) {
+        const expandKey = pathSegments.slice(0, i + 1).join('.');
+        keysToExpand.push(expandKey);
+      }
+
+      setExpandedKeys(keysToExpand);
+    }
+  }, [props.value]);
 
   // 异步加载关系字段的子节点
   const loadData = async (node) => {
@@ -142,5 +159,13 @@ function TreeSelectWrapper(props) {
     setTreeData([...treeData]);
   };
 
-  return <TreeSelect {...props} treeData={treeData} loadData={loadData} />;
+  return (
+    <TreeSelect
+      {...props}
+      treeData={treeData}
+      loadData={loadData}
+      treeExpandedKeys={expandedKeys}
+      onTreeExpand={(expandedKeys) => setExpandedKeys(expandedKeys)}
+    />
+  );
 }
