@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
@@ -16,6 +16,8 @@ import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types/ai-chat-conversation.type';
+import { createAIChatConversation } from '../manager/ai-chat-conversation';
 
 type ToolMessage = {
   id: string;
@@ -39,6 +41,7 @@ export class AIEmployee {
   private sessionId: string;
   private ctx: Context;
   private systemMessage: string;
+  private aiChatConversation: AIChatConversation;
 
   constructor(ctx: Context, employee: Model, sessionId: string, systemMessage?: string) {
     this.employee = employee;
@@ -47,9 +50,10 @@ export class AIEmployee {
     this.db = ctx.db;
     this.sessionId = sessionId;
     this.systemMessage = systemMessage;
+    this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
   }
 
-  async getLLMService(messages: any[]) {
+  async getLLMService() {
     const modelSettings = this.employee.modelSettings;
 
     if (!modelSettings?.llmService) {
@@ -71,37 +75,24 @@ export class AIEmployee {
       throw new Error('LLM service provider not found');
     }
 
-    const tools = [];
-    const skills = this.employee.skillSettings?.skills || [];
-    if (skills?.length) {
-      for (const skill of skills) {
-        const tool = await this.plugin.aiManager.toolManager.getTool(skill.name);
-        if (tool) {
-          tools.push(tool);
-        }
-      }
-    }
-
     const Provider = providerOptions.provider;
     const provider = new Provider({
       app: this.ctx.app,
       serviceOptions: service.options,
-      chatOptions: {
+      modelOptions: {
         ...modelSettings,
-        messages,
-        tools,
       },
     });
 
     return { provider, model: modelSettings.model, service };
   }
 
-  async prepareChatStream(provider: LLMProvider) {
+  async prepareChatStream(chatContext: AIChatContext, provider: LLMProvider) {
     const controller = new AbortController();
     const { signal } = controller;
 
     try {
-      const stream = await provider.stream({ signal });
+      const stream = await provider.stream(chatContext, { signal });
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
       return { stream, controller, signal };
     } catch (error) {
@@ -150,9 +141,9 @@ export class AIEmployee {
       return;
     }
 
-    let _msgId = messageId;
     if (message || toolCalls?.length) {
-      const values = {
+      const values: AIMessageInput = {
+        role: this.employee.username,
         content: {
           type: 'text',
           content: message,
@@ -166,12 +157,12 @@ export class AIEmployee {
       };
 
       if (signal.aborted) {
-        values.metadata['interrupted'] = true;
+        values.metadata.interrupted = true;
       }
 
       if (toolCalls?.length) {
         values.toolCalls = toolCalls;
-        values.metadata['autoCallTools'] = toolCalls
+        values.metadata.autoCallTools = toolCalls
           .filter((tool: { name: string }) => {
             return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
           })
@@ -182,25 +173,9 @@ export class AIEmployee {
         values.metadata.usage_metadata = gathered.usage_metadata;
       }
 
-      if (messageId) {
-        await this.db.sequelize.transaction(async (transaction) => {
-          await this.db.getRepository('aiMessages').update({
-            filter: {
-              sessionId: this.sessionId,
-              messageId,
-            },
-            values,
-            transaction,
-          });
-          await this.db.getRepository('aiMessages').destroy({
-            filter: {
-              sessionId: this.sessionId,
-              messageId: {
-                $gt: messageId,
-              },
-            },
-            transaction,
-          });
+      const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+        if (messageId) {
+          await conversation.removeMessages({ messageId });
           await this.aiToolMessagesRepo.destroy({
             filter: {
               sessionId: this.sessionId,
@@ -208,100 +183,24 @@ export class AIEmployee {
                 $gte: messageId,
               },
             },
+            transaction,
           });
-        });
-      } else {
-        const entity = await this.db.getRepository('aiConversations.messages', this.sessionId).create({
-          values: {
-            messageId: this.plugin.snowflake.generate(),
-            role: this.employee.username,
-            ...values,
-          },
-        });
-        _msgId = entity.messageId;
-      }
-    }
+        }
+        const result: AIMessage = await conversation.addMessages(values);
+        if (toolCalls?.length) {
+          await this.initToolCall(transaction, result.messageId, toolCalls);
+        }
 
-    if (toolCalls?.length) {
-      await this.initToolCall(_msgId, toolCalls);
-      await this.callTool(_msgId, true);
+        return result;
+      });
+
+      if (toolCalls?.length) {
+        await this.callTool(aiMessage.messageId, true);
+        return;
+      }
     }
 
     this.ctx.res.end();
-  }
-
-  async getConversationHistory(messageIdFilter?: string) {
-    const historyMessages = await this.db.getRepository('aiConversations.messages', this.sessionId).find({
-      sort: ['messageId'],
-      ...(messageIdFilter
-        ? {
-            filter: {
-              messageId: {
-                $lt: messageIdFilter,
-              },
-            },
-          }
-        : {}),
-    });
-
-    return await this.formatMessages(historyMessages);
-  }
-
-  async formatMessages(messages: any[]) {
-    const formattedMessages = [];
-
-    for (const msg of messages) {
-      const attachments = msg.attachments;
-      const workContext = msg.workContext;
-      let content = msg.content.content;
-      if (!content && !attachments && !msg.toolCalls?.length) {
-        continue;
-      }
-      if (msg.role === 'user') {
-        if (typeof content === 'string') {
-          content = `<user_query>${content}</user_query>`;
-          if (workContext?.length) {
-            content = `<work_context>${JSON.stringify(workContext)}</work_context>
-${content}`;
-          }
-        }
-        const contents = [];
-        if (attachments?.length) {
-          for (const attachment of attachments) {
-            contents.push({
-              type: 'file',
-              content: attachment,
-            });
-          }
-          if (content) {
-            contents.push({
-              type: 'text',
-              content,
-            });
-          }
-        }
-        formattedMessages.push({
-          role: 'user',
-          content: contents.length ? contents : content,
-        });
-        continue;
-      }
-      if (msg.role === 'tool') {
-        formattedMessages.push({
-          role: 'tool',
-          content,
-          tool_call_id: msg.metadata?.toolCall?.id,
-        });
-        continue;
-      }
-      formattedMessages.push({
-        role: 'assistant',
-        content,
-        tool_calls: msg.toolCalls,
-      });
-    }
-
-    return formattedMessages;
   }
 
   async parseUISchema(content: string) {
@@ -377,8 +276,7 @@ ${content}`;
     return message;
   }
 
-  async getHistoryMessages(messageId?: string) {
-    const history = await this.getConversationHistory(messageId);
+  async getSystemPrompt() {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id,
@@ -396,32 +294,25 @@ ${content}`;
     if (this.systemMessage) {
       background = await parseVariables(this.ctx, this.systemMessage);
     }
-    const historyMessages = [
-      {
-        role: 'system',
-        content: getSystemPrompt({
-          aiEmployee: {
-            nickname: this.employee.nickname,
-            about: this.employee.about,
-          },
-          task: {
-            background,
-          },
-          personal: userConfig?.prompt,
-          dataSources: dataSourceMessage,
-          environment: {
-            database: this.db.sequelize.getDialect(),
-            locale: this.ctx.getCurrentLocale() || 'en-US',
-          },
-        }),
+    return getSystemPrompt({
+      aiEmployee: {
+        nickname: this.employee.nickname,
+        about: this.employee.about,
       },
-      ...history,
-    ];
-
-    return historyMessages;
+      task: {
+        background,
+      },
+      personal: userConfig?.prompt,
+      dataSources: dataSourceMessage,
+      environment: {
+        database: this.db.sequelize.getDialect(),
+        locale: this.ctx.getCurrentLocale() || 'en-US',
+      },
+    });
   }
 
   async initToolCall(
+    transaction: Transaction,
     messageId: string,
     toolCalls: {
       id: string;
@@ -446,6 +337,7 @@ ${content}`;
         auto: toolCall.auto,
         execution: toolCall?.tool?.execution ?? 'backend',
       })),
+      transaction,
     });
   }
 
@@ -589,17 +481,7 @@ ${content}`;
       return;
     }
 
-    const toolMessages = toolCalls.map((toolCall) => ({
-      role: 'tool',
-      name: toolCall.toolName,
-      content: toolCall.content,
-      tool_call_id: toolCall.toolCallId,
-    }));
-
-    const formattedHistoryMessages = await this.getHistoryMessages();
-    const formattedMessages = [...formattedHistoryMessages, ...toolMessages];
-
-    const { model, service } = await this.getLLMService(formattedMessages);
+    const { model, service } = await this.getLLMService();
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user rejected this tool invocation and needs to continue modifying the parameters.';
@@ -662,22 +544,11 @@ ${content}`;
       return;
     }
 
-    const toolMessages = toolCalls.map((toolCall) => ({
-      role: 'tool',
-      name: toolCall.toolName,
-      content: toolCall.content,
-      tool_call_id: toolCall.toolCallId,
-    }));
-
-    const historyMessages = await this.getHistoryMessages();
-    const formattedMessages = [...historyMessages, ...toolMessages];
-
-    const { provider, model, service } = await this.getLLMService(formattedMessages);
+    const { provider, model, service } = await this.getLLMService();
     const toolCallMap = await this.getToolCallMap(messageId);
-    await this.db.sequelize.transaction(async (transaction) => {
-      await this.db.getRepository('aiConversations.messages', this.sessionId).create({
-        values: toolCalls.map((toolCall) => ({
-          messageId: this.plugin.snowflake.generate(),
+    await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+      await conversation.addMessages(
+        toolCalls.map((toolCall) => ({
           role: 'tool',
           content: {
             type: 'text',
@@ -689,9 +560,8 @@ ${content}`;
             toolCall: toolCallMap.get(toolCall.toolCallId),
             autoCall: toolCall.auto,
           },
-          transaction,
         })),
-      });
+      );
       for (const toolCall of toolCalls) {
         await this.aiToolMessagesRepo.update({
           filter: {
@@ -706,7 +576,12 @@ ${content}`;
       }
     });
 
-    const { stream, signal } = await this.prepareChatStream(provider);
+    const chatContext = await this.aiChatConversation.getChatContext({
+      systemPrompt: await this.getSystemPrompt(),
+      tools: await this.getTools(),
+    });
+
+    const { stream, signal } = await this.prepareChatStream(chatContext, provider);
     await this.processChatStream(stream, {
       signal,
       model,
@@ -721,14 +596,21 @@ ${content}`;
     this.ctx.res.end();
   }
 
-  async processMessages(userMessages: any[], messageId?: string) {
+  async processMessages(userMessages: AIMessageInput[], messageId?: string) {
     try {
-      const formattedUserMessages = await this.formatMessages(userMessages);
-      const historyMessages = await this.getHistoryMessages(messageId);
-      const formattedMessages = [...historyMessages, ...formattedUserMessages];
+      await this.aiChatConversation.withTransaction(async (conversation) => {
+        if (messageId) {
+          await conversation.removeMessages({ messageId });
+        }
+        await conversation.addMessages(userMessages);
+      });
 
-      const { provider, model, service } = await this.getLLMService(formattedMessages);
-      const { stream, signal } = await this.prepareChatStream(provider);
+      const chatContext = await this.aiChatConversation.getChatContext({
+        systemPrompt: await this.getSystemPrompt(),
+        tools: await this.getTools(),
+      });
+      const { provider, model, service } = await this.getLLMService();
+      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
       await this.processChatStream(stream, {
         signal,
@@ -747,9 +629,13 @@ ${content}`;
 
   async resendMessages(messageId?: string) {
     try {
-      const historyMessages = await this.getHistoryMessages(messageId);
-      const { provider, model, service } = await this.getLLMService(historyMessages);
-      const { stream, signal } = await this.prepareChatStream(provider);
+      const chatContext = await this.aiChatConversation.getChatContext({
+        systemPrompt: await this.getSystemPrompt(),
+        messageId,
+        tools: await this.getTools(),
+      });
+      const { provider, model, service } = await this.getLLMService();
+      const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
       await this.processChatStream(stream, {
         signal,
@@ -812,15 +698,35 @@ ${content}`;
 
   private async withTool(toolCalls: { id: string; args: unknown; name: string }[]) {
     const autoSkillNames = this.getAutoSkillNames();
-    const toolGroupList = await this.plugin.aiManager.toolManager.listTools();
-    const toolList = toolGroupList.flatMap(({ tools }) => tools);
-    const toolMap = new Map(toolList.map((tool) => [tool.name, tool]));
+    const toolMap = await this.getToolMap();
     return toolCalls.map((toolCall) => ({
       ...toolCall,
       toolExist: toolMap.has(toolCall.name),
       tool: toolMap.get(toolCall.name),
       auto: autoSkillNames.includes(toolCall.name),
     }));
+  }
+
+  private async getTools() {
+    this.getSkills();
+    const toolMap = await this.getToolMap();
+    const tools = [];
+    const skills = this.getSkills();
+    if (skills?.length) {
+      for (const skill of skills) {
+        const tool = toolMap.get(skill.name);
+        if (tool) {
+          tools.push(tool);
+        }
+      }
+    }
+    return tools;
+  }
+
+  private async getToolMap() {
+    const toolGroupList = await this.plugin.aiManager.toolManager.listTools();
+    const toolList = toolGroupList.flatMap(({ tools }) => tools);
+    return new Map(toolList.map((tool) => [tool.name, tool]));
   }
 
   private get aiMessagesRepo() {

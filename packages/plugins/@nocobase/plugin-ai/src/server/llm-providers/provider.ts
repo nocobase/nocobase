@@ -9,20 +9,23 @@
 
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import axios from 'axios';
-import { parseMessages } from './handlers/parse-messages';
 import { Model } from '@nocobase/database';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
-import { Context } from '@nocobase/actions';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
+import { AIChatContext } from '../types/ai-chat-conversation.type';
+
+export interface LLMProviderOptions {
+  app: Application;
+  serviceOptions?: Record<string, any>;
+  modelOptions?: Record<string, any>;
+}
 
 export abstract class LLMProvider {
   app: Application;
   serviceOptions: Record<string, any>;
   modelOptions: Record<string, any>;
-  messages: any[];
   chatModel: any;
-  chatHandlers = new Map<string, () => Promise<void> | void>();
 
   abstract createModel(): BaseChatModel | any;
 
@@ -30,46 +33,38 @@ export abstract class LLMProvider {
     return null;
   }
 
-  constructor(opts: {
-    app: Application;
-    serviceOptions?: any;
-    chatOptions?: {
-      messages?: any[];
-      tools?: any[];
-      [key: string]: any;
-    };
-  }) {
-    const { app, serviceOptions, chatOptions } = opts;
+  constructor(opts: LLMProviderOptions) {
+    const { app, serviceOptions, modelOptions } = opts;
     this.app = app;
     this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions);
-    if (chatOptions) {
-      const { messages, tools, ...modelOptions } = chatOptions;
+    if (modelOptions) {
       this.modelOptions = modelOptions;
-      this.messages = messages;
       this.chatModel = this.createModel();
-      if (tools?.length) {
-        this.chatModel = this.chatModel.bindTools(tools);
+    }
+  }
+
+  prepareChain(context: AIChatContext) {
+    let chain = this.chatModel;
+    if (context.tools?.length) {
+      chain = chain.bindTools(context.tools);
+    }
+    if (context.structuredOutput) {
+      const { schema, options } = this.getStructuredOutputOptions(context.structuredOutput) || {};
+      if (schema) {
+        chain = chain.withStructuredOutput(schema, options);
       }
-      this.registerChatHandler('parse-messages', parseMessages);
     }
+    return chain;
   }
 
-  registerChatHandler(name: string, handler: () => Promise<void> | void) {
-    this.chatHandlers.set(name, handler.bind(this));
+  async invokeChat(context: AIChatContext, options?: any) {
+    const chain = this.prepareChain(context);
+    return chain.invoke(context.messages, options);
   }
 
-  async invokeChat() {
-    for (const handler of this.chatHandlers.values()) {
-      await handler();
-    }
-    return this.chatModel.invoke(this.messages);
-  }
-
-  async stream(options?: any) {
-    for (const handler of this.chatHandlers.values()) {
-      await handler();
-    }
-    return this.chatModel.stream(this.messages, options);
+  async stream(context: AIChatContext, options?: any) {
+    const chain = this.prepareChain(context);
+    return chain.stream(context.messages, options);
   }
 
   async listModels(): Promise<{
@@ -130,5 +125,33 @@ export abstract class LLMProvider {
         file_data: data,
       };
     }
+  }
+
+  getStructuredOutputOptions(structuredOutput: AIChatContext['structuredOutput']) {
+    const { responseFormat } = this.modelOptions || {};
+    const { schema, name, description, strict } = structuredOutput || {};
+    if (!schema) {
+      return;
+    }
+    const methods = {
+      json_object: 'jsonMode',
+      json_schema: 'jsonSchema',
+    };
+    const options = {
+      includeRaw: true,
+      name,
+      method: methods[responseFormat],
+    };
+    if (strict) {
+      options['strict'] = strict;
+    }
+    return {
+      schema: {
+        name,
+        description,
+        parameters: schema,
+      },
+      options,
+    };
   }
 }

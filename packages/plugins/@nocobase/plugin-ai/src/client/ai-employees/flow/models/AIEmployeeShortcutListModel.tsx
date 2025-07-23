@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { DndProvider, DragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { AIEmployeeShortcutModel } from './AIEmployeeShortcutModel';
 
 type AIEmployeeShortcutListModelStructure = {
@@ -18,24 +18,37 @@ type AIEmployeeShortcutListModelStructure = {
 };
 
 export class AIEmployeeShortcutListModel extends FlowModel<AIEmployeeShortcutListModelStructure> {
-  // onInit() {
-  //   this.addSubModel('shortcuts', {
-  //     uid: 'data-modeling',
-  //     use: 'AIEmployeeShortcutModel',
-  //     props: {
-  //       avatar: 'notion-3-male',
-  //     },
-  //   });
-  // }
-  //
-  // render() {
-  //   return (
-  //     <div>
-  //       {this.mapSubModels('shortcuts', (shortcut) => {
-  //         console.log(shortcut.props);
-  //         return <FlowModelRenderer key={shortcut.uid} model={shortcut} />;
-  //       })}
-  //     </div>
-  //   );
-  // }
+  isNewModel = false;
+
+  render() {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
+        <DndProvider>
+          {this.mapSubModels('shortcuts', (shortcut) => {
+            return (
+              <Droppable model={shortcut} key={shortcut.uid}>
+                <FlowModelRenderer
+                  key={shortcut.uid}
+                  model={shortcut}
+                  showFlowSettings={!shortcut.props?.builtIn}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            );
+          })}
+        </DndProvider>
+      </div>
+    );
+  }
 }

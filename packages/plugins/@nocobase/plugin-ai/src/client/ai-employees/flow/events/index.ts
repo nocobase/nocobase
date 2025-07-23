@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export { LLMProvider } from './llm-providers/provider';
-export { LLMProviderMeta } from './manager/ai-manager';
+export * from './ai-context-selection';
