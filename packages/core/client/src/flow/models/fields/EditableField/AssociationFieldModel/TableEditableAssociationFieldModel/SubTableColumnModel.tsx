@@ -177,7 +177,6 @@ SubTableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-        // await ctx.model.applySubModelsAutoFlows('field');
       },
     },
     title: {
