@@ -21,14 +21,9 @@ class MyCollectionBlockModel extends BlockModel {
   protected onMount() {
     if (this.context.ref.current) {
       console.log('区块已挂载，添加事件监听');
-      this.context.ref.current.addEventListener('click', this.handleClick);
-    }
-  }
-
-  protected onUnmount() {
-    console.log('区块将卸载，移除事件监听', this.context.ref.current);
-    if (this.context.ref.current) {
+      // 防止重复加，先移除
       this.context.ref.current.removeEventListener('click', this.handleClick);
+      this.context.ref.current.addEventListener('click', this.handleClick);
     }
   }
 }
