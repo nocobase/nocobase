@@ -18,44 +18,30 @@ const buttonSettings = defineFlow({
   steps: {
     general: {
       title: '通用配置',
-      uiSchema: {
+      uiSchema: async (ctx) => ({
         title: {
           type: 'string',
           title: '按钮标题',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-          'x-decorator-props': {
-            tooltip: escapeT('Displays the AI employee’s assigned tasks on the profile when hovering over the button.'),
-          },
         },
         type: {
           type: 'string',
           title: '类型',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
-          enum: [
-            { label: '主要', value: 'primary' },
-            { label: '次要', value: 'default' },
-            { label: '危险', value: 'danger' },
-            { label: '虚线', value: 'dashed' },
-            { label: '链接', value: 'link' },
-            { label: '文本', value: 'text' },
-          ],
+          // 获取类型列表
+          enum: await ctx.types,
         },
         icon: {
           type: 'string',
           title: '图标',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
-          enum: [
-            { label: '搜索', value: 'SearchOutlined' },
-            { label: '添加', value: 'PlusOutlined' },
-            { label: '删除', value: 'DeleteOutlined' },
-            { label: '编辑', value: 'EditOutlined' },
-            { label: '设置', value: 'SettingOutlined' },
-          ],
+          // 获取图标列表
+          enum: await ctx.icons,
         },
-      },
+      }),
       defaultParams: {
         type: 'primary',
       },
@@ -76,6 +62,31 @@ class PluginHelloModel extends Plugin {
   async load() {
     // 启用 Flow Settings
     this.flowEngine.flowSettings.forceEnable();
+    // 模拟获取类型列表
+    this.flowEngine.context.defineProperty('types', {
+      async get() {
+        return [
+          { label: '主要', value: 'primary' },
+          { label: '次要', value: 'default' },
+          { label: '危险', value: 'danger' },
+          { label: '虚线', value: 'dashed' },
+          { label: '链接', value: 'link' },
+          { label: '文本', value: 'text' },
+        ];
+      },
+    });
+    // 模拟获取图标列表
+    this.flowEngine.context.defineProperty('icons', {
+      async get() {
+        return [
+          { label: '搜索', value: 'SearchOutlined' },
+          { label: '添加', value: 'PlusOutlined' },
+          { label: '删除', value: 'DeleteOutlined' },
+          { label: '编辑', value: 'EditOutlined' },
+          { label: '设置', value: 'SettingOutlined' },
+        ];
+      },
+    });
     this.flowEngine.registerModels({ MyModel });
     const model = this.flowEngine.createModel({
       uid: 'my-model',
