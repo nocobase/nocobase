@@ -29,6 +29,10 @@ export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
       },
     };
   },
+  afterParamsChange(ctx) {
+    ctx.model.field.reset();
+    return false;
+  },
   defaultParams: (ctx) => {
     const operators = ctx.model.context.collectionField.filterable?.operators || [];
     const defaultOperator = operators[0]?.value;
