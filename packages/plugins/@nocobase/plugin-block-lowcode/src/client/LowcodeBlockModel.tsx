@@ -133,7 +133,6 @@ ctx.element.innerHTML = \`
 LowcodeBlockModel.registerFlow({
   key: 'default',
   title: tStr('Configuration'),
-  auto: true,
   steps: {
     executionStep: {
       title: tStr('Code'),

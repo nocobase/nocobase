@@ -49,7 +49,6 @@ class HelloSubModel extends FlowModel {
 
 HelloSubModel.registerFlow({
   key: 'sub-model-example',
-  auto: true,
   steps: {
     test: {
       handler: async (ctx) => {

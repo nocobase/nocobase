@@ -83,7 +83,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
 PageModel.registerFlow({
   key: 'pageSettings',
   title: escapeT('Page settings'),
-  auto: true,
   steps: {
     general: {
       title: escapeT('General'),

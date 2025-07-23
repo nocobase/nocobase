@@ -42,7 +42,6 @@ export class MapReadPrettyFieldModel extends ReadPrettyFieldModel {
 MapReadPrettyFieldModel.registerFlow({
   key: 'mapFieldSetting',
   title: escapeT('Map field setting'),
-  auto: true,
   steps: {
     displayStyle: {
       title: escapeT('Display style'),

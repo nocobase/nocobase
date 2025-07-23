@@ -30,7 +30,6 @@ export class FormItemModel extends FlowModel {
 
 FormItemModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       handler(ctx, params) {

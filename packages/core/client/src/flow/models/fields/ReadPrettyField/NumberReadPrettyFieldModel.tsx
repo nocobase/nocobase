@@ -49,7 +49,6 @@ NumberReadPrettyFieldModel.registerFlow({
   key: 'numberSettings',
   sort: 100,
   title: 'Number settings',
-  auto: true,
   steps: {
     format: {
       title: 'Format',

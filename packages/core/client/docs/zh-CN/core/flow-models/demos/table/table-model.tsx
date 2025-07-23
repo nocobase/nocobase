@@ -109,7 +109,6 @@ export class TableModel extends FlowModel<S> {
 
 TableModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       async handler(ctx, params) {

@@ -83,9 +83,10 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   title?: string;
 
   /**
-   * Whether this flow is a default flow that should be automatically executed
+   * Whether this flow should be executed manually only (prevents auto-execution)
+   * Flows without 'on' property are auto-executed by default unless manual: true
    */
-  auto?: boolean;
+  manual?: boolean;
 
   /**
    * Sort order for flow execution, lower numbers execute first
@@ -130,9 +131,10 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
 // 扩展FlowDefinition类型，添加partial标记用于部分覆盖
 export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
   /**
-   * Whether this flow is a default flow that should be automatically executed
+   * Whether this flow should be executed manually only (prevents auto-execution)
+   * Flows without 'on' property are auto-executed by default unless manual: true
    */
-  auto?: boolean;
+  manual?: boolean;
   /**
    * Sort order for flow execution, lower numbers execute first
    * Defaults to 0, can be negative

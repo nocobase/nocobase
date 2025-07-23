@@ -20,7 +20,6 @@ class HelloModel extends FlowModel {
 
 HelloModel.registerFlow({
   key: 'codemirror',
-  auto: true,
   steps: {
     init: {
       async handler(ctx, params) {

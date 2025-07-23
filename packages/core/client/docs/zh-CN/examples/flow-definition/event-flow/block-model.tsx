@@ -17,7 +17,6 @@ class MyCollectionBlockModel extends BlockModel {
 
 const myPropsFlow = defineFlow<MyCollectionBlockModel>({
   key: 'buttonSettings',
-  auto: true,
   steps: {
     bindEvent: {
       handler(ctx, params) {

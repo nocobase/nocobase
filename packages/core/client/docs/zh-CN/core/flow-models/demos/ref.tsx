@@ -26,7 +26,6 @@ class RefFlowModel extends FlowModel {
 }
 
 RefFlowModel.registerFlow('defaultFlow', {
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

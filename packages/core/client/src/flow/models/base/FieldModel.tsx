@@ -52,7 +52,6 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
 
 FieldModel.registerFlow({
   key: 'fieldSettings',
-  auto: true,
   title: escapeT('Field settings'),
   steps: {
     init: {

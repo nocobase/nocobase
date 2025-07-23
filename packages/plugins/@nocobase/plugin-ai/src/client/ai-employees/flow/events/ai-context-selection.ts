@@ -12,7 +12,6 @@ import { css } from '@emotion/css';
 
 CollectionBlockModel.registerFlow({
   key: 'aiOnSelectSettings',
-  auto: true,
   steps: {
     aiOnSelect: {
       handler(ctx, params) {

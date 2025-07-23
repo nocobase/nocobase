@@ -115,7 +115,6 @@ export class EditFormModel extends FormModel {
 
 EditFormModel.registerFlow({
   key: 'formSettings',
-  auto: true,
   title: escapeT('Edit form settings'),
   steps: {
     init: {

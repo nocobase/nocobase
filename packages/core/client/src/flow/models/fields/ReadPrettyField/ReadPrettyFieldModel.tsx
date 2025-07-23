@@ -84,7 +84,6 @@ export class ReadPrettyFieldModel extends FieldModel {
 
 ReadPrettyFieldModel.registerFlow({
   key: 'readPrettyFieldSettings',
-  auto: true,
   title: escapeT('Read pretty field settings'),
   sort: 100,
   steps: {
