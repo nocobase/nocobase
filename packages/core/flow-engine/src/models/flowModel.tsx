@@ -220,16 +220,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.flowEngine.applyFlowCache.delete(forkCacheKey);
       });
     }
-
-    const subModelKeys = Object.keys(this.subModels);
-    for (const subModelKey of subModelKeys) {
-      const subModelValue = this.subModels[subModelKey];
-      if (Array.isArray(subModelValue)) {
-        for (const subModel of subModelValue) {
-          subModel.invalidateAutoFlowCache(deep);
+    if (deep) {
+      const subModelKeys = Object.keys(this.subModels);
+      for (const subModelKey of subModelKeys) {
+        const subModelValue = this.subModels[subModelKey];
+        if (Array.isArray(subModelValue)) {
+          for (const subModel of subModelValue) {
+            subModel.invalidateAutoFlowCache(deep);
+          }
+        } else if (subModelValue instanceof FlowModel) {
+          subModelValue.invalidateAutoFlowCache(deep);
         }
-      } else if (subModelValue instanceof FlowModel) {
-        subModelValue.invalidateAutoFlowCache(deep);
       }
     }
   }
@@ -1163,7 +1164,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache();
+    this.invalidateAutoFlowCache(true);
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -1179,7 +1180,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache();
+    this.invalidateAutoFlowCache(true);
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }

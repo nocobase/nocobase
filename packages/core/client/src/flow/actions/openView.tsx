@@ -78,7 +78,7 @@ export const openView = defineAction({
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'page',
               });
-              pageModel.invalidateAutoFlowCache();
+              pageModel.invalidateAutoFlowCache(true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
           />
