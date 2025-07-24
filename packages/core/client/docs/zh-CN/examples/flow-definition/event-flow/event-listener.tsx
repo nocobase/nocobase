@@ -18,12 +18,18 @@ class MyCollectionBlockModel extends BlockModel {
     this.dispatchEvent('click', { event });
   };
 
+  protected element: HTMLDivElement;
+
   protected onMount() {
     if (this.context.ref.current) {
-      console.log('区块已挂载，添加事件监听');
-      // 防止重复加，先移除
-      this.context.ref.current.removeEventListener('click', this.handleClick);
-      this.context.ref.current.addEventListener('click', this.handleClick);
+      this.element = this.context.ref.current;
+      this.element.addEventListener('click', this.handleClick);
+    }
+  }
+  protected onUnmount() {
+    if (this.element) {
+      console.log('卸载区块，移除事件监听');
+      this.element.removeEventListener('click', this.handleClick);
     }
   }
 }
