@@ -90,34 +90,58 @@ function ConnectFields(props) {
     props.onChange?.(allSelectedValues);
   };
 
-  return allDataModels
-    .map((model: CollectionBlockModel) => {
-      if (!(model instanceof CollectionBlockModel)) {
-        return null;
-      }
+  return (
+    <div>
+      {/* 添加操作说明 */}
+      <div
+        style={{
+          marginBottom: '16px',
+          padding: '12px',
+          backgroundColor: '#f0f9ff',
+          border: '1px solid #bae6fd',
+          borderRadius: '6px',
+          fontSize: '14px',
+          color: '#0369a1',
+        }}
+      >
+        <div style={{ fontWeight: 500, marginBottom: '8px' }}>字段连接配置说明：</div>
+        <ul style={{ margin: 0, paddingLeft: '16px' }}>
+          <li>这里的每个选择框都对应页面中的一个区块</li>
+          <li>选中一个字段后，点击“确定”，就完成了字段之间的连接</li>
+          <li>支持选择关系字段的子字段（如：用户.部门.名称）</li>
+        </ul>
+      </div>
 
-      const fields = model.collection?.getFields?.() || [];
-      const value = props.value?.find((item) => item.modelUid === model.uid)?.fieldPath;
-      const treeData = buildTreeData(ctx, fields, '', value, '');
+      {allDataModels
+        .map((model: CollectionBlockModel) => {
+          if (!(model instanceof CollectionBlockModel)) {
+            return null;
+          }
 
-      return (
-        <FormItem label={`${model.title} #${model.uid.substring(0, 4)}`} key={model.uid}>
-          <TreeSelectWrapper
-            treeData={treeData}
-            value={value}
-            onChange={(value) => handleSelectChange(model.uid, value)}
-            allowClear
-            placeholder="请选择字段"
-            treeDataSimpleMode={false}
-            showSearch
-            treeDefaultExpandAll={false}
-            style={{ width: '100%' }}
-            treeLine
-          />
-        </FormItem>
-      );
-    })
-    .filter(Boolean);
+          const fields = model.collection?.getFields?.() || [];
+          const value = props.value?.find((item) => item.modelUid === model.uid)?.fieldPath;
+          const treeData = buildTreeData(ctx, fields, '', value, '');
+
+          return (
+            <FormItem label={`${model.title} #${model.uid.substring(0, 4)}`} key={model.uid}>
+              <TreeSelectWrapper
+                treeData={treeData}
+                value={value}
+                onChange={(value) => handleSelectChange(model.uid, value)}
+                allowClear
+                placeholder="请选择字段"
+                treeDataSimpleMode={false}
+                showSearch
+                treeDefaultExpandAll={false}
+                style={{ width: '100%' }}
+                treeLine
+              />
+            </FormItem>
+          );
+        })
+        .filter(Boolean)}
+    </div>
+  );
 }
 
 function TreeSelectWrapper(props) {
