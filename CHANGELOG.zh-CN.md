@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.8.10](https://github.com/nocobase/nocobase/compare/v1.8.9...v1.8.10) - 2025-07-24
+
+### 🎉 新特性
+
+- **[认证：SAML 2.0]** 支持用户未认证时，自动跳转到 SSO登录页 by @2013xile
+
 ## [v1.8.9](https://github.com/nocobase/nocobase/compare/v1.8.8...v1.8.9) - 2025-07-24
 
 ### 🎉 新特性
