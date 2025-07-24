@@ -224,7 +224,9 @@ EditableFieldModel.registerFlow({
         defaultValue: {
           'x-component': 'VariableInput',
           'x-decorator': 'FormItem',
-          'x-component-props': {},
+          'x-component-props': {
+            useStepInputComponent: true,
+          },
         },
       },
       defaultParams: (ctx) => ({

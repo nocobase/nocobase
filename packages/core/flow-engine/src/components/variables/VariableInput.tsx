@@ -10,8 +10,9 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { Input, Cascader, Tag, Button, Space, theme } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
+import { useField, useForm } from '@formily/react';
 import { useFlowSettingsContext } from '../../hooks';
-import { MetaTreeNode } from '../../flowContext';
+import { MetaTreeNode, FlowContext } from '../../flowContext';
 import { useTranslation } from 'react-i18next';
 
 interface VariableInputProps {
@@ -28,8 +29,8 @@ interface VariableInputProps {
   className?: string;
   /** 模式：单变量或多变量 */
   mode?: 'single' | 'multiple';
-  /** 是否从model渲染字段组件，默认根据当前model是否为EditableFieldModel实例自动判断 */
-  renderFromModel?: boolean;
+  /** 是否使用model的stepInputComponent，默认为false */
+  useStepInputComponent?: boolean;
 }
 
 interface CascaderOption {
@@ -43,6 +44,10 @@ const VARIABLE_REGEX = /\{\{\s*ctx\.([^}]+?)\s*\}\}/g;
 
 // 提取变量路径的辅助函数
 const extractVariablePaths = (value: string): string[][] => {
+  // 确保 value 是字符串类型
+  if (typeof value !== 'string' || !value) {
+    return [];
+  }
   const matches = value.matchAll(VARIABLE_REGEX);
   return Array.from(matches, (match) =>
     match[1]
@@ -89,8 +94,8 @@ const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[], t: (key: string) =
  * 支持文本输入和变量选择的复合输入框，可以在单变量和多变量模式间切换。
  * 变量以 {{ ctx.xxx }} 格式显示为可删除的标签。
  *
- * 当当前 flowContext.model 是 EditableFieldModel 实例时，默认从 model.component
- * 渲染字段组件，提供更丰富的字段类型支持。
+ * 当 useStepInputComponent 为 true 且 flowContext.model 有 stepInputComponent 时，
+ * 使用自定义组件渲染，提供更丰富的字段类型支持。
  *
  * @param props 组件属性
  * @returns React组件
@@ -104,13 +109,37 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   style,
   className,
   mode = 'single',
-  renderFromModel = false, // TODO: 这里为true就有问题
+  useStepInputComponent = false,
 }) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const inputRef = useRef<any>(null);
   const [isFocused, setIsFocused] = useState(false);
   const flowContext = useFlowSettingsContext();
+
+  // 使用 Formily hooks 获取当前表单和字段上下文
+  const form = useForm();
+  const field = useField();
+
+  // 添加日志监听字段值变化
+  useEffect(() => {
+    console.log('[VariableInput] Field value changed:', {
+      fieldValue: 'value' in field ? field.value : undefined,
+      propsValue: value,
+      fieldPath: field?.path || field?.address,
+    });
+  }, [field, value]);
+
+  // 同步外部 value 到 field
+  useEffect(() => {
+    if ('value' in field && 'setValue' in field && field.value !== value) {
+      console.log('[VariableInput] Syncing props value to field:', {
+        propsValue: value,
+        currentFieldValue: field.value,
+      });
+      (field as any).setValue(value);
+    }
+  }, [value, field]);
 
   const [cascaderData, setCascaderData] = useState<CascaderOption[]>([]);
   const [metaTreeCache, setMetaTreeCache] = useState<Map<string, MetaTreeNode[]>>(new Map());
@@ -133,9 +162,12 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   // 预加载当前值中的变量标签
   useEffect(() => {
-    if (!value || !metaTreeCache.has('root')) return;
+    // 确保 value 是字符串类型
+    const stringValue = typeof value === 'string' ? value : value ? String(value) : '';
 
-    const variablePaths = extractVariablePaths(value);
+    if (!stringValue || !metaTreeCache.has('root')) return;
+
+    const variablePaths = extractVariablePaths(stringValue);
     if (variablePaths.length === 0) return;
 
     const newLabels = new Map<string, string>();
@@ -232,55 +264,66 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [cascaderData, t],
   );
 
-  // 检查是否是 EditableFieldModel 或其子类
-  const isEditableFieldModel = useCallback((model: any) => {
-    if (!model?.flowEngine) return false;
+  // 创建 step input 渲染组件
+  const stepInputContent = useMemo(() => {
+    if (!useStepInputComponent || !flowContext.model?.stepInputComponent) return null;
 
-    const EditableFieldModelClass = model.flowEngine.getModelClass('EditableFieldModel');
-    if (!EditableFieldModelClass) return false;
+    const { stepInputComponent } = flowContext.model;
 
-    return model instanceof EditableFieldModelClass;
-  }, []);
+    // 创建新的 FlowContext，委托给原始的 flowContext
+    const stepInputContext = new FlowContext();
 
-  // 获取model组件配置
-  const modelComponent = useMemo(() => {
-    const shouldRender = renderFromModel ?? isEditableFieldModel(flowContext.model);
-    if (!shouldRender || !flowContext.model['component']) return null;
+    // 添加委托，让新上下文可以访问原始上下文的所有属性
+    stepInputContext.addDelegate(flowContext);
 
-    const [Component, componentProps = {}] = flowContext.model['component'];
-    if (!Component) return null;
+    // 直接提供 value 和 onChange，而不是通过 field
+    stepInputContext.defineProperty('value', {
+      value: value,
+    });
 
-    const parseValue = (val: string) => {
-      if (!val) return undefined;
+    stepInputContext.defineProperty('onChange', {
+      value: onChange,
+    });
+
+    // 为了兼容性，仍然提供 field，但 stepInputComponent 应该使用 value/onChange
+    stepInputContext.defineProperty('field', {
+      value: field,
+    });
+
+    console.log('[VariableInput stepInputContent] Context info:', {
+      hasStepInputComponent: !!stepInputComponent,
+      contextValue: value,
+      contextOnChange: !!onChange,
+      fieldValue: 'value' in field ? field.value : undefined,
+      fieldPath: field?.path || field?.address,
+    });
+
+    // 处理不同类型的 stepInputComponent
+    if (typeof stepInputComponent === 'function') {
       try {
-        return JSON.parse(val);
-      } catch {
-        return val;
+        // 先尝试作为函数调用，看是否返回 JSX
+        const result = (stepInputComponent as (ctx: any) => React.ReactNode)(stepInputContext);
+        if (React.isValidElement(result) || typeof result === 'string' || result === null) {
+          // 直接返回 JSX 元素
+          return result;
+        } else {
+          // 如果返回的不是 JSX，那么 stepInputComponent 可能是一个 React 组件
+          // （如 observer 包装的组件）
+          const ComponentType = stepInputComponent as React.ComponentType<any>;
+          return <ComponentType />;
+        }
+      } catch (error: any) {
+        // 如果调用失败，说明 stepInputComponent 是一个 React 组件而不是函数
+        console.warn('stepInputComponent is not a function, treating as React component:', error.message);
+        const ComponentType = stepInputComponent as React.ComponentType<any>;
+        return <ComponentType />;
       }
-    };
-
-    const stringifyValue = (val: any) => {
-      if (val == null) return '';
-      if (typeof val === 'string') return val;
-      try {
-        return JSON.stringify(val);
-      } catch {
-        return String(val);
-      }
-    };
-
-    return {
-      Component,
-      props: {
-        ...componentProps,
-        value: parseValue(value),
-        onChange: (val: any) => onChange?.(stringifyValue(val)),
-        placeholder,
-        disabled,
-        style: { width: '100%', ...componentProps.style },
-      },
-    };
-  }, [renderFromModel, isEditableFieldModel, flowContext.model, value, onChange, placeholder, disabled]);
+    } else if (React.isValidElement(stepInputComponent)) {
+      return stepInputComponent;
+    } else {
+      return stepInputComponent;
+    }
+  }, [useStepInputComponent, flowContext, field, value, onChange]);
 
   // 获取变量标签，优先从缓存获取，否则直接翻译
   const getVariableLabels = useCallback(
@@ -294,7 +337,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   );
 
   const { displayParts, hasVariable, isConstant, cascaderValue } = useMemo(() => {
-    if (!value) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: [''] };
+    // 确保 value 是字符串类型，如果不是则转换
+    const stringValue = typeof value === 'string' ? value : value ? String(value) : '';
+
+    if (!stringValue) return { displayParts: [], hasVariable: false, isConstant: false, cascaderValue: [''] };
 
     const parts: Array<{ type: 'text' | 'variable'; content: string; labels?: string[] }> = [];
     let lastIndex = 0;
@@ -302,9 +348,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
     VARIABLE_REGEX.lastIndex = 0;
     let match;
-    while ((match = VARIABLE_REGEX.exec(value)) !== null) {
+    while ((match = VARIABLE_REGEX.exec(stringValue)) !== null) {
       if (match.index > lastIndex) {
-        parts.push({ type: 'text', content: value.slice(lastIndex, match.index) });
+        parts.push({ type: 'text', content: stringValue.slice(lastIndex, match.index) });
       }
 
       const variablePath = parseVariablePath(match[1]);
@@ -315,17 +361,17 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       lastIndex = VARIABLE_REGEX.lastIndex;
     }
 
-    if (lastIndex < value.length) {
-      parts.push({ type: 'text', content: value.slice(lastIndex) });
+    if (lastIndex < stringValue.length) {
+      parts.push({ type: 'text', content: stringValue.slice(lastIndex) });
     }
 
     // 计算 cascaderValue
-    const isConstant = value && !foundVariable;
+    const isConstant = stringValue && !foundVariable;
     let cascaderValue = [''];
 
     if (foundVariable) {
       const regex = mode === 'single' ? /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/ : VARIABLE_REGEX;
-      const varMatch = value.match(regex);
+      const varMatch = stringValue.match(regex);
       if (varMatch) {
         cascaderValue = parseVariablePath(varMatch[1]);
       }
@@ -340,6 +386,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      console.log('[VariableInput handleInputChange]', {
+        newValue: e.target.value,
+        isReadOnly: isReadOnlyInSingleMode,
+      });
       if (!isReadOnlyInSingleMode) {
         onChange?.(e.target.value);
       }
@@ -349,8 +399,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   const handleVariableDelete = useCallback(
     (variableToDelete: string) => {
-      if (!value) return;
-      onChange?.(mode === 'single' ? '' : value.replace(variableToDelete, ''));
+      const stringValue = typeof value === 'string' ? value : value ? String(value) : '';
+      if (!stringValue) return;
+      onChange?.(mode === 'single' ? '' : stringValue.replace(variableToDelete, ''));
     },
     [value, onChange, mode],
   );
@@ -368,8 +419,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
       const lastOption = optionPath[optionPath.length - 1];
       if (lastOption?.isLeaf !== false && !lastOption?.children?.length) {
+        const stringValue = typeof value === 'string' ? value : value ? String(value) : '';
         const newVariable = `{{ ctx.${next.join('.')} }}`;
-        const newValue = mode === 'single' ? newVariable : (value || '') + newVariable;
+        const newValue = mode === 'single' ? newVariable : (stringValue || '') + newVariable;
 
         // 缓存选项路径中的标签
         const newLabels = new Map<string, string>();
@@ -399,10 +451,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [isReadOnlyInSingleMode],
   );
 
-  // 如果启用了 model 渲染且有可用的组件，则渲染它
-  if (modelComponent && !hasVariable) {
-    const { Component, props } = modelComponent;
-
+  // 如果启用了 stepInputComponent 且有可用的组件且没有变量，则渲染它
+  if (stepInputContent && !hasVariable) {
     return (
       <Space.Compact style={{ display: 'flex', width: '100%', ...style }} className={className}>
         <div
@@ -416,7 +466,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
             alignItems: 'stretch',
           }}
         >
-          <Component {...props} />
+          <div style={{ width: '100%' }}>{stepInputContent}</div>
         </div>
 
         <Cascader

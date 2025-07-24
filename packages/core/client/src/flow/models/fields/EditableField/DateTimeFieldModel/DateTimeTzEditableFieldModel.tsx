@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { PreviewText } from '@formily/antd-v5';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { connect, mapProps, mapReadPretty, observer, FieldContext } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
 import React from 'react';
@@ -51,6 +51,13 @@ const DatePickerCom = connect(
   mapProps((props: any, field: any) => {
     const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
 
+    console.log('[DatePickerCom mapProps]', {
+      propsValue: value,
+      fieldValue: field?.value,
+      format,
+      fieldPath: field?.path || field?.address,
+    });
+
     return {
       ...rest,
       value: parseInitialValue(value, format),
@@ -58,8 +65,14 @@ const DatePickerCom = connect(
       picker,
       showTime,
       onChange: (val: any) => {
+        console.log('[DatePickerCom onChange]', {
+          selectedValue: val,
+          fieldBefore: field?.value,
+        });
         const result = parseToDate(val, format);
+        console.log('[DatePickerCom onChange] Parsed result:', result);
         field.setValue(result);
+        console.log('[DatePickerCom onChange] Field value after setValue:', field?.value);
       },
     };
   }),
@@ -83,4 +96,15 @@ export class DateTimeTzEditableFieldModel extends DateTimeFieldModel {
   get component() {
     return [DatePickerCom, {}];
   }
+
+  stepInputComponent = (ctx) => {
+    console.log('[stepInputComponent] Context info:', {
+      contextValue: ctx.value,
+      contextOnChange: !!ctx.onChange,
+      hasField: !!ctx.field,
+    });
+
+    // 直接使用 ctx.value 和 ctx.onChange，而不是通过 field
+    return <DatePickerCom value={ctx.value} onChange={ctx.onChange} />;
+  };
 }
