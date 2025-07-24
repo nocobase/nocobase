@@ -22,10 +22,14 @@ import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
+import { FlowModelsContext } from './ai-employees/context/flow-models';
+import { formFillerTool } from './ai-employees/form-filler/tools';
+import './ai-employees/flow/events';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
+const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
@@ -93,6 +97,13 @@ export class PluginAIClient extends Plugin {
   }
 
   setupAIFeatures() {
+    this.app.flowEngine.context.defineProperty('ai', {
+      once: true,
+      value: {
+        selectable: false,
+      },
+    });
+
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
@@ -102,22 +113,14 @@ export class PluginAIClient extends Plugin {
       title: tval('Messages'),
       Component: MessagesSettings,
     });
-    // this.aiManager.registerWorkContext('classic-pages', ClassicPagesContext);
-    // this.aiManager.registerWorkContext('collection-definitions', CollectionDefinitionsContext);
-    this.aiManager.registerTool(...defineCollectionsTool);
-    this.aiManager.registerTool('frontEnd', 'formFiller', {
-      invoke: (ctx, params) => {
-        const { form: uid, data } = params;
-        if (!uid || !data) {
-          return;
-        }
-        const form = ctx[uid]?.form;
-        if (!form) {
-          return;
-        }
-        form.setValues(data);
-      },
+    this.aiManager.chatSettings.set('structured-output', {
+      title: tval('Structured output'),
+      Component: StructuredOutputSettings,
     });
+
+    this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
+    this.aiManager.registerTool(...defineCollectionsTool);
+    this.aiManager.registerTool(...formFillerTool);
   }
 
   setupWorkflow() {

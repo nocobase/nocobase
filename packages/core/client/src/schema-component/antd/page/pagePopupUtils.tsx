@@ -55,9 +55,10 @@ export interface PopupContextStorage extends PopupContext {
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
+const defaultPopupsContextStorage: Record<string, PopupContextStorage> = {};
 
 export const getStoredPopupContext = (popupUid: string) => {
-  return popupsContextStorage[popupUid];
+  return popupsContextStorage[popupUid] || defaultPopupsContextStorage[popupUid];
 };
 
 /**
@@ -67,8 +68,13 @@ export const getStoredPopupContext = (popupUid: string) => {
  * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
+ * @param isDefault - Determines whether to store the context as a default value in `defaultPopupsContextStorage`
  */
-export const storePopupContext = (popupUid: string, params: PopupContextStorage) => {
+export const storePopupContext = (popupUid: string, params: PopupContextStorage, isDefault = false) => {
+  if (isDefault) {
+    defaultPopupsContextStorage[popupUid] = params;
+    return;
+  }
   popupsContextStorage[popupUid] = params;
 };
 

@@ -90,7 +90,6 @@ const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): Flo
 
 const createAutoFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
   key: 'autoFlow',
-  auto: true,
   sort: 1,
   steps: {
     autoStep: {
@@ -319,7 +318,6 @@ describe('FlowModel', () => {
       test('should handle complex flow definitions', () => {
         const complexFlow = {
           key: 'complexFlow',
-          auto: true,
           sort: 5,
           on: { eventName: 'complexEvent' },
           steps: {
@@ -520,7 +518,7 @@ describe('FlowModel', () => {
       test('should execute all auto flows', async () => {
         const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1', sort: 1 };
         const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2', sort: 2 };
-        const manualFlow = createBasicFlowDefinition(); // No auto flag
+        const manualFlow = { ...createBasicFlowDefinition(), manual: true }; // Mark as manual flow
 
         TestFlowModel.registerFlow(autoFlow1);
         TestFlowModel.registerFlow(autoFlow2);
@@ -539,7 +537,6 @@ describe('FlowModel', () => {
 
         const autoFlow1 = {
           key: 'auto1',
-          auto: true,
           sort: 3,
           steps: {
             step: {
@@ -553,7 +550,6 @@ describe('FlowModel', () => {
 
         const autoFlow2 = {
           key: 'auto2',
-          auto: true,
           sort: 1,
           steps: {
             step: {
@@ -567,7 +563,6 @@ describe('FlowModel', () => {
 
         const autoFlow3 = {
           key: 'auto3',
-          auto: true,
           sort: 2,
           steps: {
             step: {
@@ -685,7 +680,7 @@ describe('FlowModel', () => {
         test('should call onApplyAutoFlowsError when flow execution fails', async () => {
           const errorFlow = {
             key: 'errorFlow',
-            auto: true,
+
             steps: {
               errorStep: {
                 handler: vi.fn().mockImplementation(() => {
@@ -1020,8 +1015,8 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('children', runtimeData);
 
-          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
-          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
+          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
         });
 
         test('should apply auto flows to single subModel', async () => {
@@ -1035,7 +1030,7 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsAutoFlows('child', runtimeData);
 
-          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData, false);
+          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
         });
 
         test('should handle empty subModels gracefully', async () => {
@@ -1788,10 +1783,10 @@ describe('FlowModel', () => {
         model.addSubModel('children', childModel1);
         model.addSubModel('children', childModel2);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(child1Spy).toHaveBeenCalledWith(false);
-        expect(child2Spy).toHaveBeenCalledWith(false);
+        expect(child1Spy).toHaveBeenCalledWith(true);
+        expect(child2Spy).toHaveBeenCalledWith(true);
       });
 
       test('should recursively invalidate cache for object subModels', () => {
@@ -1800,9 +1795,9 @@ describe('FlowModel', () => {
 
         model.setSubModel('child', childModel);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(childSpy).toHaveBeenCalledWith(false);
+        expect(childSpy).toHaveBeenCalledWith(true);
       });
 
       test('should handle mixed array and object subModels', () => {
@@ -1818,11 +1813,11 @@ describe('FlowModel', () => {
         model.addSubModel('arrayChildren', arrayChild2);
         model.setSubModel('objectChild', objectChild);
 
-        model.invalidateAutoFlowCache();
+        model.invalidateAutoFlowCache(true);
 
-        expect(array1Spy).toHaveBeenCalledWith(false);
-        expect(array2Spy).toHaveBeenCalledWith(false);
-        expect(objectSpy).toHaveBeenCalledWith(false);
+        expect(array1Spy).toHaveBeenCalledWith(true);
+        expect(array2Spy).toHaveBeenCalledWith(true);
+        expect(objectSpy).toHaveBeenCalledWith(true);
       });
 
       test('should handle empty subModels without error', () => {
@@ -1872,7 +1867,7 @@ describe('FlowModel', () => {
       test('should resolve simple ctx expressions in step parameters', async () => {
         const flow: FlowDefinition = {
           key: 'expressionFlow',
-          auto: true,
+
           steps: {
             testStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -1908,7 +1903,7 @@ describe('FlowModel', () => {
       test('should resolve nested ctx expressions with multiple levels', async () => {
         const flow: FlowDefinition = {
           key: 'nestedExpressionFlow',
-          auto: true,
+
           steps: {
             nestedStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -1955,7 +1950,7 @@ describe('FlowModel', () => {
       test('should resolve async expressions with RecordProxy', async () => {
         const flow: FlowDefinition = {
           key: 'asyncRecordFlow',
-          auto: true,
+
           steps: {
             asyncStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -2074,7 +2069,7 @@ describe('FlowModel', () => {
 
         // 创建真正的RecordProxy来测试表达式解析
         const realRecord = { id: 1, title: 'Test Article' };
-        const recordProxy = new RecordProxy(realRecord, mockCollection, model.context);
+        const recordProxy = new RecordProxy(realRecord, mockCollection as any, model.context);
 
         model.context.defineProperty('asyncRecord', {
           get: () => recordProxy,
@@ -2107,7 +2102,7 @@ describe('FlowModel', () => {
       test('should handle mixed sync and async expressions', async () => {
         const flow: FlowDefinition = {
           key: 'mixedFlow',
-          auto: true,
+
           steps: {
             mixedStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {
@@ -2193,7 +2188,7 @@ describe('FlowModel', () => {
       test('should handle deeply nested async expressions', async () => {
         const flow: FlowDefinition = {
           key: 'deepAsyncFlow',
-          auto: true,
+
           steps: {
             deepStep: {
               handler: vi.fn().mockImplementation((ctx, params) => {

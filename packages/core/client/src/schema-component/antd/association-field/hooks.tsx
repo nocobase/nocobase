@@ -14,7 +14,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
 import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { Collection } from '../../../data-source';
+import { Collection, useCollectionRecord } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
@@ -68,6 +68,7 @@ export default function useServiceOptions(props) {
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const record = useRecord();
+  const { isNew } = useCollectionRecord() || {};
   const filterParams =
     (isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
       ? field.componentProps?.service?.params?.filter
@@ -76,7 +77,9 @@ export default function useServiceOptions(props) {
   const { filter: parsedFilterParams } = useParsedFilter({
     filterOption: filterParams,
     onFilterChange: () => {
-      field.reset();
+      if (isNew) {
+        field.reset();
+      }
     },
   });
 

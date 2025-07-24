@@ -74,7 +74,6 @@ export class FormFieldGridModel extends GridModel<{
 
 FormFieldGridModel.registerFlow({
   key: 'formFieldGridSettings',
-  auto: true,
   steps: {
     init: {
       async handler(ctx, params) {

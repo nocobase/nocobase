@@ -220,16 +220,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.flowEngine.applyFlowCache.delete(forkCacheKey);
       });
     }
-
-    const subModelKeys = Object.keys(this.subModels);
-    for (const subModelKey of subModelKeys) {
-      const subModelValue = this.subModels[subModelKey];
-      if (Array.isArray(subModelValue)) {
-        for (const subModel of subModelValue) {
-          subModel.invalidateAutoFlowCache(deep);
+    if (deep) {
+      const subModelKeys = Object.keys(this.subModels);
+      for (const subModelKey of subModelKeys) {
+        const subModelValue = this.subModels[subModelKey];
+        if (Array.isArray(subModelValue)) {
+          for (const subModel of subModelValue) {
+            subModel.invalidateAutoFlowCache(deep);
+          }
+        } else if (subModelValue instanceof FlowModel) {
+          subModelValue.invalidateAutoFlowCache(deep);
         }
-      } else if (subModelValue instanceof FlowModel) {
-        subModelValue.invalidateAutoFlowCache(deep);
       }
     }
   }
@@ -281,7 +282,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!modelFlows.has(ModelClass as any)) {
       modelFlows.set(ModelClass as any, new Map<string, FlowDefinition>());
     }
-    const flows = modelFlows.get(ModelClass as any)!;
+    const flows = modelFlows.get(ModelClass as any);
+    if (!flows) {
+      throw new Error('Failed to get flows Map for model class');
+    }
 
     if (flows.has(key)) {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
@@ -554,7 +558,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         combinedParams = await resolveParamsExpressions(combinedParams, flowContext);
 
         try {
-          const currentStepResult = handler!(flowContext, combinedParams);
+          if (!handler) {
+            console.error(
+              `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+            );
+            continue;
+          }
+          const currentStepResult = handler(flowContext, combinedParams);
           if (step.isAwait !== false) {
             lastResult = await currentStepResult;
           } else {
@@ -651,8 +661,20 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const allFlows = constructor.getFlows();
 
     // 过滤出自动流程并按 sort 排序
+    // 没有 on 属性且没有 manual: true 的流程默认自动执行
     const autoFlows = Array.from(allFlows.values())
-      .filter((flow) => flow.auto === true)
+      .filter((flow) => {
+        // 如果有 on 属性，说明是事件触发流程，不自动执行
+        if (flow.on) {
+          return false;
+        }
+        // 如果明确设置了 manual: true，不自动执行
+        if (flow.manual === true) {
+          return false;
+        }
+        // 其他情况默认自动执行
+        return true;
+      })
       .sort((a, b) => (a.sort || 0) - (b.sort || 0));
 
     return autoFlows;
@@ -1075,7 +1097,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        await sub.applyAutoFlows(inputArgs, false);
+        await sub.applyAutoFlows(inputArgs);
       }),
     );
   }
@@ -1142,7 +1164,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache();
+    this.invalidateAutoFlowCache(true);
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -1158,7 +1180,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache();
+    this.invalidateAutoFlowCache(true);
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }
@@ -1191,6 +1213,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       dialogWidth,
       dialogTitle,
     });
+  }
+
+  async openPresetStepSettingsDialog(dialogWidth?: number | string, dialogTitle?: string) {
+    return this.configureRequiredSteps(dialogWidth, dialogTitle);
   }
 
   get translate() {

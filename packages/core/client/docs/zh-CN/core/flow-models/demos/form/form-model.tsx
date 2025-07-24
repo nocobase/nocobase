@@ -74,7 +74,6 @@ export class FormModel extends FlowModel {
 
 FormModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       async handler(ctx, params) {

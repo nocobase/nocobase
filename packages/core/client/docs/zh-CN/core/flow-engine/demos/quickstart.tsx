@@ -38,7 +38,6 @@ class MyModel extends FlowModel {
 MyModel.registerFlow({
   key: 'defaultFlow',
   title: 'Default Flow',
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

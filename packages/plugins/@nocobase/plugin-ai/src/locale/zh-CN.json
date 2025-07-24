@@ -96,5 +96,7 @@
   "invoke-status-init": "待执行",
   "invoke-status-pending": "执行中",
   "invoke-status-error": "执行失败",
-  "invoke-status-success": "执行成功"
+  "invoke-status-success": "执行成功",
+  "Image (send via URL)": "图片 (通过 URL 发送)",
+  "Image (send via Base64)": "图片 (通过 Base64 发送)"
 }

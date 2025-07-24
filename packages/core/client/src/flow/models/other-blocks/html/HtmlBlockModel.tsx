@@ -53,7 +53,6 @@ HtmlBlockModel.define({
 
 HtmlBlockModel.registerFlow({
   key: 'default',
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

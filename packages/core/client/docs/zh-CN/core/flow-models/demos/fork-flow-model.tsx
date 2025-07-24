@@ -23,7 +23,6 @@ class HelloFlowModel extends FlowModel {
 
 // 一个简单的 flow，用来把 stepParams.name 写入 props.name
 HelloFlowModel.registerFlow('setNameFlow', {
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

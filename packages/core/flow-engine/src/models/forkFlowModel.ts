@@ -153,9 +153,17 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
             return true;
           }
         } else {
-          // 非共享属性：写入 fork 的本地属性存储
-          target.localProperties[prop] = value;
-          return true;
+          // 非共享属性：检查 master 是否有 setter，如果有则优先调用
+          const descriptor = this.getPropertyDescriptor(target.master, prop);
+          if (descriptor && descriptor.set) {
+            // 如果有 setter，用 receiver（fork 实例）作为 this 调用
+            descriptor.set.call(receiver, value);
+            return true;
+          } else {
+            // 没有 setter，写入 fork 的本地属性存储
+            target.localProperties[prop] = value;
+            return true;
+          }
         }
       },
     });

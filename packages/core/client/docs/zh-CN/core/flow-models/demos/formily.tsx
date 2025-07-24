@@ -68,7 +68,6 @@ class FormilyFlowModel extends FlowModel {
 }
 
 FormilyFlowModel.registerFlow('defaultFlow', {
-  auto: true,
   steps: {
     step1: {
       uiSchema: {

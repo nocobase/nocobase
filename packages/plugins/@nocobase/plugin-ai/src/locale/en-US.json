@@ -95,5 +95,7 @@
   "invoke-status-init": "init",
   "invoke-status-pending": "pending",
   "invoke-status-error": "error",
-  "invoke-status-success": "success"
+  "invoke-status-success": "success",
+  "Image (send via URL)": "Image (send via URL)",
+  "Image (send via Base64)": "Image (send via Base64)"
 }

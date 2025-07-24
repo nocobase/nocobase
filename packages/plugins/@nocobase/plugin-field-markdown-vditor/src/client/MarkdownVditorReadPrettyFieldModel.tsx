@@ -33,7 +33,6 @@ export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
 MarkdownVditorReadPrettyFieldModel.registerFlow({
   key: 'markdownVditorSettings',
   title: tval('MarkdownVditor settings'),
-  auto: true,
   sort: 200,
   steps: {
     displayMode: {

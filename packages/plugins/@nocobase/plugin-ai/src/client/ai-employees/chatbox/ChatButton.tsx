@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
-import { FloatButton, Avatar, Dropdown } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.png';
 import { css } from '@emotion/css';
 import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { useAISelectionContext } from '../selector/AISelectorProvider';
-import { PauseCircleFilled } from '@ant-design/icons';
+import { PauseCircleFilled, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
-import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { ShortcutList } from '../shortcuts/ShortcutList';
 
 export const ChatButton: React.FC = () => {
   const { aiEmployees } = useAIEmployeesContext();
@@ -30,13 +30,6 @@ export const ChatButton: React.FC = () => {
 
   const { stopSelect, selectable } = useAISelectionContext();
   const { token } = useToken();
-  // const flowEngine = useFlowEngine();
-  //
-  // const model = useMemo(() => {
-  //   return flowEngine.createModel({
-  //     use: 'AIEmployeeShortcutListModel',
-  //   });
-  // }, [flowEngine]);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -58,36 +51,39 @@ export const ChatButton: React.FC = () => {
   return (
     <div
       className={css`
-        .ant-float-btn {
-          width: 60px;
-          height: 60px;
-        }
-        .ant-float-btn .ant-float-btn-body .ant-float-btn-content {
-          padding: 0;
-        }
-        .ant-float-btn .ant-float-btn-body .ant-float-btn-content .ant-float-btn-icon {
-          width: 56px;
-          height: 56px;
-          opacity: 0.8;
-          transition: opacity 0.1s;
-        }
-        .ant-float-btn .ant-float-btn-body .ant-float-btn-content .ant-float-btn-icon:hover {
-          opacity: 1;
-        }
+        z-index: 1050;
+        display: flex;
+        border-radius: 8px;
+        gap: 8px;
+        position: fixed;
+        bottom: 48px;
+        align-items: center;
+        inset-inline-end: 8px;
+        width: fit-content;
+        height: 60px;
+        padding: 4px;
+
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
       `}
     >
-      {/* <FlowModelRenderer model={model} /> */}
+      <ShortcutList />
       {!selectable ? (
         <Dropdown menu={{ items }} placement="topRight">
-          <FloatButton
-            icon={<Avatar src={icon} size={56} />}
+          <Avatar
+            src={icon}
+            size={52}
+            shape="square"
             onClick={() => {
               setOpen(!open);
             }}
           />
         </Dropdown>
       ) : (
-        <FloatButton
+        <Button
           icon={
             <PauseCircleFilled
               style={{

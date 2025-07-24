@@ -11,6 +11,8 @@ import { createSchemaField, FormConsumer, ISchema } from '@formily/react';
 import { toJS } from '@formily/reactive';
 import { Button, message } from 'antd';
 import React from 'react';
+import { FlowRuntimeContext } from '../../../../flowContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import {
@@ -20,8 +22,6 @@ import {
   resolveStepUiSchema,
   setupRuntimeContextSteps,
 } from '../../../../utils';
-import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
-import { FlowRuntimeContext } from '../../../../flowContext';
 
 /**
  * 检查步骤是否已经有了所需的配置值
@@ -139,7 +139,7 @@ const openRequiredParamsStepFormDialog = async ({
             const step = flow.steps[stepKey];
 
             // 只处理 paramsRequired 为 true 的步骤
-            if (step.paramsRequired) {
+            if (step.paramsRequired || step.preset) {
               // 使用提取的工具函数解析并合并uiSchema
               const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
 
@@ -149,7 +149,8 @@ const openRequiredParamsStepFormDialog = async ({
                 const currentStepParams = model.getStepParams(flowKey, stepKey) || {};
 
                 // 检查是否已经有了所需的配置值
-                const hasAllRequiredParams = hasRequiredParams(mergedUiSchema, currentStepParams);
+                const hasAllRequiredParams = false; // hasRequiredParams(mergedUiSchema, currentStepParams);
+                console.log(`Flow: ${flowKey}, Step: ${stepKey}, hasAllRequiredParams:`, hasAllRequiredParams);
 
                 // 只有当缺少必需参数时才添加到列表中
                 if (!hasAllRequiredParams) {
@@ -166,6 +167,8 @@ const openRequiredParamsStepFormDialog = async ({
             }
           }
         }
+
+        console.log('Required steps:', requiredSteps);
 
         // 如果没有需要配置的步骤，显示提示
         if (requiredSteps.length === 0) {

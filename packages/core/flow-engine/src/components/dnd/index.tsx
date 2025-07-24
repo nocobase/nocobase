@@ -9,6 +9,7 @@
 
 import { DragOutlined } from '@ant-design/icons';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
 import React, { FC, useState } from 'react';
 import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
@@ -90,26 +91,29 @@ export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restP
       {...restProps}
     >
       {children}
-      <DragOverlay dropAnimation={null}>
-        {activeId && (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              whiteSpace: 'nowrap',
-              background: '#fff',
-              border: '1px solid #1890ff',
-              borderRadius: 4,
-              padding: '4px 12px',
-              color: '#1890ff',
-              // fontSize: 18,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            }}
-          >
-            {flowEngine.translate('Dragging')}
-          </span>
-        )}
-      </DragOverlay>
+      {createPortal(
+        <DragOverlay dropAnimation={null} zIndex={2000}>
+          {activeId && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+                background: '#fff',
+                border: '1px solid #1890ff',
+                borderRadius: 4,
+                padding: '4px 12px',
+                color: '#1890ff',
+                // fontSize: 18,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              }}
+            >
+              {flowEngine.translate('Dragging')}
+            </span>
+          )}
+        </DragOverlay>,
+        document.body,
+      )}
     </DndContext>
   );
 };

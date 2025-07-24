@@ -22,7 +22,6 @@ class MyModel extends FlowModel {
 
 const myPropsFlow = defineFlow({
   key: 'myPropsFlow',
-  auto: true,
   title: '按钮配置',
   steps: {
     setProps: {

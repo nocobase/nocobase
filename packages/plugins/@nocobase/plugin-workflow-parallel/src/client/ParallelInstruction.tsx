@@ -133,6 +133,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
+        direction: 'vertical',
         options: [
           {
             value: 'all',
@@ -148,6 +149,11 @@ export default class extends Instruction {
             value: 'race',
             label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed.', { ns: "${NAMESPACE}" })}}`,
+          },
+          {
+            value: 'allSettled',
+            label: `{{t('Run all branch (ignore failures)', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Always continue after all branches end, regardless of success or failure.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },
