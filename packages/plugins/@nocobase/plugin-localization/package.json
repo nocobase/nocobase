@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-localization",
-  "version": "1.8.9",
+  "version": "1.8.10",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/localization-management",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/localization-management",
