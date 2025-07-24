@@ -34,6 +34,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     get: () => {
       return model?.field?.value || currentValue;
     },
+    cache: false,
   });
   const handleClick = async (e) => {
     e.preventDefault();

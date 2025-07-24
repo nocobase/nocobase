@@ -8,14 +8,7 @@
  */
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import {
-  escapeT,
-  FlowModel,
-  buildFieldItems,
-  useFlowModel,
-  FlowModelRenderer,
-  AddFieldButton,
-} from '@nocobase/flow-engine';
+import { buildFieldItems, useFlowModel, AddFieldButton } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { action } from '@formily/reactive';
@@ -147,13 +140,7 @@ export const SubTable = observer((props: any) => {
   );
   return (
     <Card>
-      <Table
-        columns={getColumns()}
-        scroll={{ x: 'max-content' }}
-        tableLayout="fixed"
-        dataSource={dataSource}
-        pagination={false}
-      />
+      <Table columns={getColumns()} tableLayout="fixed" dataSource={dataSource} pagination={false} />
       <Space
         style={{
           gap: 15,
