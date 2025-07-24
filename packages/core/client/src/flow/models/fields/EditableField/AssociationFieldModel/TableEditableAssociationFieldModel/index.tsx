@@ -62,6 +62,27 @@ TableEditableAssociationFieldModel.registerFlow({
         });
       },
     },
+    enableIndexColumn: {
+      title: escapeT('Enable index column'),
+      uiSchema: {
+        enableIndexColumn: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        enableIndexColumn: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setComponentProps({
+          enableIndexColumn: params.enableIndexColumn,
+        });
+      },
+    },
   },
 });
 

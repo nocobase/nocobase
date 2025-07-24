@@ -87,10 +87,18 @@ export const SubTable = observer((props: any) => {
   const field = useField<ArrayField>();
   const model = useFlowModel();
   const { t } = useTranslation();
-  const { allowAddNew, allowSelectExistingRecord } = props;
+  const { allowAddNew, allowSelectExistingRecord, enableIndexColumn } = props;
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
+      enableIndexColumn && {
+        title: '',
+        key: '__index__',
+        width: 48,
+        align: 'center',
+        fixed: 'left',
+        render: (_: any, __: any, index: number) => index + 1,
+      },
       ...baseColumns,
       {
         key: 'empty',
@@ -131,7 +139,7 @@ export const SubTable = observer((props: any) => {
           );
         },
       },
-    ] as any;
+    ].filter(Boolean) as any;
   };
   const handleAdd = () => {
     const next = [...(field.value || []), {}];
@@ -143,7 +151,13 @@ export const SubTable = observer((props: any) => {
   );
   return (
     <Card>
-      <Table columns={getColumns()} tableLayout="fixed" dataSource={dataSource} pagination={false} />
+      <Table
+        columns={getColumns()}
+        tableLayout="fixed"
+        scroll={{ x: 'max-content' }}
+        dataSource={dataSource}
+        pagination={false}
+      />
       <Space
         style={{
           gap: 15,
