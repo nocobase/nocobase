@@ -46,6 +46,7 @@ import { SubFormProvider, useAssociationFieldContext } from '../association-fiel
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 const InViewContext = React.createContext(false);
 
@@ -90,6 +91,7 @@ const TableColumnTitle = withTooltipComponent(RecursionField);
 
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
+  const { t } = useTranslation();
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
@@ -125,6 +127,7 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
+        s.title = t(s?.title, { ns: NAMESPACE_UI_SCHEMA });
         return {
           title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
           dataIndex,
