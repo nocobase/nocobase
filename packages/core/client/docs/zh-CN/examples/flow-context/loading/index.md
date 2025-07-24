@@ -22,7 +22,7 @@ class MyModel {
 
 `uiSchema`、`defaultParams` 和 `handler` 都支持 async 回调，直接 `await` 异步属性即可，系统会自动维护 loading 状态。
 
-```tsx
+```ts
 {
   async uiSchema(ctx) {
     await ctx.asyncProperty;
@@ -42,7 +42,7 @@ class MyModel {
 
 目前未提供专用 HOC，建议在组件内使用 `useRequest` 处理异步属性：
 
-```tsx
+```tsx | pure
 function Example() {
   const { loading, data } = useRequest(() => ctx.asyncProperty);
   if (loading) {
