@@ -210,6 +210,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   use?: string; // Name of the registered ActionDefinition to use as base
 
   // Step configuration
+  preset?: boolean;
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'

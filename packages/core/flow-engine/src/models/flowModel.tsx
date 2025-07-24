@@ -1215,6 +1215,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  async openPresetStepSettingsDialog(dialogWidth?: number | string, dialogTitle?: string) {
+    return this.configureRequiredSteps(dialogWidth, dialogTitle);
+  }
+
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);
   }

@@ -2,7 +2,7 @@
 
 ## 概述
 
-在流程步骤中，通常需要为处理函数（handler）配置参数（params），以实现灵活的业务逻辑。通过 `uiSchema`，可以为这些参数生成可视化的表单，方便用户在界面上进行配置。
+在流步骤中，通常需要为处理函数（handler）配置参数（params），以实现灵活的业务逻辑。通过 `uiSchema`，可以为这些参数生成可视化的表单，方便用户在界面上进行配置。
 
 ## 参数说明
 
@@ -52,7 +52,6 @@
 - `title`: 字段显示名称。
 - `x-decorator`: 表单项装饰器，通常为 `FormItem`，用于包裹表单控件并提供标签、校验等功能。
 - `x-component`: 表单控件类型，如 `Input`、`Select`、`Checkbox` 等，更多组件参考 [Formily Ant Design 组件库](https://antd5.formilyjs.org/components)。
-- `default`: 字段默认值，可选。
 - `enum`: 枚举值数组，用于下拉选择等场景，可选。
 - `required`: 是否必填，布尔值，可选。
 - `description`: 字段说明或帮助文本，可选。

@@ -152,8 +152,8 @@ export default defineConfig({
               link: '/examples/flow-definition/handler',
             },
             {
-              title: 'paramsRequired - 步骤参数必填',
-              link: '/examples/flow-definition/params-required',
+              title: 'preset - 预设置的配置步骤',
+              link: '/examples/flow-definition/preset',
             },
             {
               title: 'hideInSettings - 在设置界面中隐藏',
@@ -162,6 +162,14 @@ export default defineConfig({
             {
               title: 'uiMode - 步骤设置的 UI 模式',
               link: '/examples/flow-definition/ui-mode',
+            },
+            {
+              title: '打开预设置的配置表单',
+              link: '/examples/flow-definition/open-preset-step-settings-dialog',
+            },
+            {
+              title: '打开某流某步骤的配置表单',
+              link: '/examples/flow-definition/open-step-settings-dialog',
             },
           ]
         },
