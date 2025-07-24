@@ -265,6 +265,7 @@ export class PluginMobileClient extends Plugin {
         label: t('Mobile routes', {
           ns: pkg.name,
         }),
+        sort: 25,
         children: (
           <TabLayout>
             <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>
