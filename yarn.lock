@@ -52,12 +52,12 @@
     ini "^1.3.5"
     kitx "^2.0.0"
 
-"@alicloud/dingtalk@^2.1.23":
-  version "2.2.14"
-  resolved "https://registry.npmmirror.com/@alicloud/dingtalk/-/dingtalk-2.2.14.tgz#71ba44695d2e0e43eee263c60ff3aa2578eb1401"
-  integrity sha512-Ihscka9mvKbaYAhOQxG1VE0xGRYK1ZYoEYYjVEj1d1TaZL16ttBVOMlskE/CEMqGkGVEuQaSOZtngcUf2Cud5A==
+"@alicloud/dingtalk@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.npmmirror.com/@alicloud/dingtalk/-/dingtalk-2.2.24.tgz#df986380bf6a832ef85d02a63c1ba9234e1c67e5"
+  integrity sha512-OHhYAbIyVhug6bm4pNVElJmZYpgHkvKL6QEkpRFE0geduOUhwB6hY3iLNW2C7RjijUmsWsSvyQRkKWHYgw+8Rg==
   dependencies:
-    "@alicloud/endpoint-util" "^0.0.1"
+    "@alicloud/endpoint-util" "^0.0.2"
     "@alicloud/gateway-dingtalk" "^1.0.2"
     "@alicloud/gateway-spi" "^0.0.8"
     "@alicloud/openapi-client" "^0.4.14"
@@ -83,6 +83,11 @@
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
     kitx "^2.0.0"
+
+"@alicloud/endpoint-util@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.npmmirror.com/@alicloud/endpoint-util/-/endpoint-util-0.0.2.tgz#a86fade1fac4242442e1d19e030f5aa31070d2d3"
+  integrity sha512-7aqVtcRzM0dVUE7bHLP2wKFuZygx5V6MTHBIbhGH3gfkN3/VZ9LlrxhkEfOCYtWfAyo9q0t9ScxQ4khvhweMqw==
 
 "@alicloud/gateway-dingtalk@^1.0.2":
   version "1.0.2"
