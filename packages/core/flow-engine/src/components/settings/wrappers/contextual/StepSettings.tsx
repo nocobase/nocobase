@@ -8,11 +8,11 @@
  */
 
 import { message } from 'antd';
+import { FlowModel } from '../../../../models';
 import { StepSettingsProps } from '../../../../types';
+import { getT } from '../../../../utils';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
-import { FlowModel } from '../../../../models';
-import { getT } from '../../../../utils';
 
 /**
  * 统一的步骤设置入口函数
@@ -47,7 +47,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
   }
 
   // 检查步骤的 settingMode 配置，默认为 'dialog'
-  const settingMode = step.settingMode || 'dialog';
+  const settingMode = step.uiMode || step.settingMode || 'dialog';
 
   // 根据 settingMode 选择相应的打开方式
   if (settingMode === 'drawer') {
@@ -108,11 +108,11 @@ const getStepSettingMode = (model: FlowModel, flowKey: string, stepKey: string):
       return null;
     }
 
-    return step.settingMode || 'dialog';
+    return (step.uiMode as any) || step.settingMode || 'dialog';
   } catch (error) {
     console.warn('Error getting step setting mode:', error);
     return null;
   }
 };
 
-export { openStepSettings, isStepUsingDrawerMode, getStepSettingMode, openStepSettingsDialog, openStepSettingsDrawer };
+export { getStepSettingMode, isStepUsingDrawerMode, openStepSettings, openStepSettingsDialog, openStepSettingsDrawer };

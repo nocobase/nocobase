@@ -53,6 +53,28 @@ describe('FlowContext properties and methods', () => {
     expect(await ctx.d).toBe('cd');
   });
 
+  it('should queue and reuse promise for concurrent async get calls', async () => {
+    const ctx = new FlowContext();
+    const getter = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return 'async-value';
+    });
+    ctx.defineProperty('concurrent', { get: getter });
+
+    // 并发调用
+    const [v1, v2, v3] = await Promise.all([ctx.concurrent, ctx.concurrent, ctx.concurrent]);
+    expect(v1).toBe('async-value');
+    expect(v2).toBe('async-value');
+    expect(v3).toBe('async-value');
+    // 只会调用一次 getter
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 再次调用，因已缓存，不会再调用 getter
+    const v4 = await ctx.concurrent;
+    expect(v4).toBe('async-value');
+    expect(getter).toHaveBeenCalledTimes(1);
+  });
+
   it('should cache get result by default', async () => {
     const ctx = new FlowContext();
     const getter = vi.fn().mockResolvedValue(789);
