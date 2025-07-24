@@ -5,17 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
-## [v1.8.10](https://github.com/nocobase/nocobase/compare/v1.8.9...v1.8.10) - 2025-07-24
+## [v1.8.10](https://github.com/nocobase/nocobase/compare/v1.8.7...v1.8.10) - 2025-07-24
 
 ### 🎉 新特性
 
 - **[认证：SAML 2.0]** 支持用户未认证时，自动跳转到 SSO登录页 by @2013xile
 
-## [v1.8.9](https://github.com/nocobase/nocobase/compare/v1.8.8...v1.8.9) - 2025-07-24
-
-### 🎉 新特性
-
 - **[server]** 支持通过环境变量配置请求体大小限制 ([#7273](https://github.com/nocobase/nocobase/pull/7273)) by @aaaaaajie
+
+- **[工作流：并行分支节点]** 为并行分支节点增加“全部执行”的模式 ([#7263](https://github.com/nocobase/nocobase/pull/7263)) by @mytharcher
+
+- **[Redis 消息队列适配器]** 新增基于 Redis 的事件队列适配器 by @mytharcher
 
 ### 🚀 优化
 
@@ -24,20 +24,6 @@
 - **[AI 集成]** 移除调用 `saveJob` 的 `await` ([#7275](https://github.com/nocobase/nocobase/pull/7275)) by @mytharcher
 
 - **[工作流：JSON 计算]** JSON 计算节点支持可测试 by @mytharcher
-
-### 🐛 修复
-
-- **[client]** 修复下拉关系字段使用 formula 作为标题时未按模糊匹配查询的问题 ([#7280](https://github.com/nocobase/nocobase/pull/7280)) by @katherinehhh
-
-## [v1.8.8](https://github.com/nocobase/nocobase/compare/v1.8.7...v1.8.8) - 2025-07-23
-
-### 🎉 新特性
-
-- **[工作流：并行分支节点]** 为并行分支节点增加“全部执行”的模式 ([#7263](https://github.com/nocobase/nocobase/pull/7263)) by @mytharcher
-
-- **[Redis 消息队列适配器]** 新增基于 Redis 的事件队列适配器 by @mytharcher
-
-### 🚀 优化
 
 - **[server]** 内存队列适配器并发支持未满载时继续处理新任务 ([#7267](https://github.com/nocobase/nocobase/pull/7267)) by @mytharcher
 
@@ -50,6 +36,8 @@
 ### 🐛 修复
 
 - **[client]**
+  - 修复下拉关系字段使用 formula 作为标题时未按模糊匹配查询的问题 ([#7280](https://github.com/nocobase/nocobase/pull/7280)) by @katherinehhh
+
   - 修复 子表单联动规则中缺失当前对象变量的问题 ([#7266](https://github.com/nocobase/nocobase/pull/7266)) by @katherinehhh
 
   - 数据选择器设置标题字段无效 ([#7251](https://github.com/nocobase/nocobase/pull/7251)) by @zhangzhonghe
