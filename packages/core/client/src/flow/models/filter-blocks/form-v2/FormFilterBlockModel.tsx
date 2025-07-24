@@ -51,7 +51,7 @@ export class FormFilterBlockModel extends FilterBlockModel<{
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
         <DndProvider>
-          <FormButtonGroup>
+          <FormButtonGroup align="right">
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
                 <FlowModelRenderer
