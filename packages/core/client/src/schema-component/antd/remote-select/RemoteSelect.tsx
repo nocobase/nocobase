@@ -92,7 +92,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         if (targetField?.interface) {
           const targetInterface = getInterface(targetField.interface);
           const initialOperator = targetInterface?.filterable?.operators[0].value || '$includes';
-          if (targetField.type === 'string') {
+          if (targetField.type === 'string' || targetField.dataType === 'string') {
             return '$includes';
           }
           return initialOperator;
