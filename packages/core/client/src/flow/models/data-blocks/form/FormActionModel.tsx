@@ -34,7 +34,6 @@ FormSubmitActionModel.registerFlow({
   steps: {
     saveResource: {
       async handler(ctx) {
-        console.log(ctx.blockModel.form.values);
         if (!ctx?.resource) {
           throw new Error('Resource is not initialized');
         }

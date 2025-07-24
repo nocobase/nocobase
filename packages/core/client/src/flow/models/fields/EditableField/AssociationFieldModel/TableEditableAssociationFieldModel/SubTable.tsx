@@ -15,6 +15,7 @@ import { action } from '@formily/reactive';
 import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { Table, Card, Space } from 'antd';
+import { castArray } from 'lodash';
 import { PlusOutlined } from '@ant-design/icons';
 import { useField, observer } from '@formily/react';
 import React, { useMemo } from 'react';
@@ -146,9 +147,10 @@ export const SubTable = observer((props: any) => {
     field.onInput(next);
   };
   const dataSource = useMemo(
-    () => (field.value || []).map((item, index) => ({ key: item.id || index, ...item })),
+    () => castArray(field.value || []).map((item, index) => ({ key: item.id || index, ...item })),
     [field.value],
   );
+  console.log(field.value, dataSource);
   return (
     <Card>
       <Table
@@ -157,6 +159,9 @@ export const SubTable = observer((props: any) => {
         scroll={{ x: 'max-content' }}
         dataSource={dataSource}
         pagination={false}
+        locale={{
+          emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
+        }}
       />
       <Space
         style={{
