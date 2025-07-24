@@ -9,9 +9,11 @@
 
 import { ChatDeepSeek } from '@langchain/deepseek';
 import { LLMProvider } from './provider';
-import { LLMProviderOptions } from '../manager/ai-manager';
+import { LLMProviderMeta } from '../manager/ai-manager';
 
 export class DeepSeekProvider extends LLMProvider {
+  declare chatModel: ChatDeepSeek;
+
   get baseURL() {
     return 'https://api.deepseek.com';
   }
@@ -31,11 +33,12 @@ export class DeepSeekProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
+      verbose: true,
     });
   }
 }
 
-export const deepseekProviderOptions: LLMProviderOptions = {
+export const deepseekProviderOptions: LLMProviderMeta = {
   title: 'DeepSeek',
   provider: DeepSeekProvider,
 };
