@@ -40,13 +40,13 @@ import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
-import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 const InViewContext = React.createContext(false);
 
@@ -127,9 +127,16 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
-        s.title = t(s?.title, { ns: NAMESPACE_UI_SCHEMA });
+        const translatedTitle = t(s?.title, { ns: NAMESPACE_UI_SCHEMA });
         return {
-          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
+          title: (
+            <TableColumnTitle
+              name={s.name}
+              schema={{ ...s, title: translatedTitle }}
+              onlyRenderSelf
+              tooltip={s['x-component-props']?.tooltip}
+            />
+          ),
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
