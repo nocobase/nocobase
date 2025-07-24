@@ -18,6 +18,9 @@ interface FieldMenuItem {
   icon?: string;
   value?: string; // 字段的完整路径，如 "dataSourceKey.collectionName.fieldName"
   children?: FieldMenuItem[];
+  type?: 'group' | 'item';
+  searchable?: boolean;
+  searchPlaceholder?: string;
   createModelOptions?: {
     defaultOptions: Record<string, any>;
     collectionField?: CollectionField;
@@ -89,7 +92,16 @@ export function buildFieldMenuItems(
     const dataSourceMenuItem: FieldMenuItem = {
       key: dataSourceKey,
       label: dataSource.displayName,
-      children: [],
+      children: [
+        {
+          key: 'collections',
+          label: 'Collections',
+          type: 'group' as const,
+          searchable: true,
+          searchPlaceholder: 'Search collections',
+          children: [],
+        },
+      ],
     };
 
     // 为每个集合创建菜单项
@@ -97,7 +109,16 @@ export function buildFieldMenuItems(
       const collectionMenuItem: FieldMenuItem = {
         key: `${dataSourceKey}.${collection.name}`,
         label: collection.title,
-        children: [],
+        children: [
+          {
+            key: 'fields',
+            label: 'Fields',
+            type: 'group' as const,
+            searchable: true,
+            searchPlaceholder: 'Search fields',
+            children: [],
+          },
+        ],
       };
 
       // 获取集合的所有字段
@@ -155,22 +176,23 @@ export function buildFieldMenuItems(
           }),
         };
 
-        if (collectionMenuItem.children) {
-          collectionMenuItem.children.push(fieldMenuItem);
-        }
+        collectionMenuItem.children[0].children.push(fieldMenuItem);
       });
 
       // 只有当集合有字段时才添加到数据源菜单
       if (collectionMenuItem.children && collectionMenuItem.children.length > 0) {
-        if (dataSourceMenuItem.children) {
-          dataSourceMenuItem.children.push(collectionMenuItem);
-        }
+        dataSourceMenuItem.children[0].children.push(collectionMenuItem);
       }
     });
 
     // 只有当数据源有集合时才添加到最终菜单
     if (dataSourceMenuItem.children && dataSourceMenuItem.children.length > 0) {
-      menuItems.push(dataSourceMenuItem);
+      menuItems.push({
+        key: 'dataSources',
+        label: 'Data sources',
+        type: 'group' as const,
+        children: [dataSourceMenuItem],
+      });
     }
   }
 
