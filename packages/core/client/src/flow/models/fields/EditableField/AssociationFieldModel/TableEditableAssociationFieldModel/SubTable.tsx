@@ -20,6 +20,7 @@ import { PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { useField, observer } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SubTableColumnModel } from './SubTableColumnModel';
+import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 
 const transformItem = (use: string) => {
   const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
@@ -74,7 +75,10 @@ const AddFieldColumn = ({ model }) => {
         await column.applyAutoFlows();
       }}
       onSubModelAdded={async (column: SubTableColumnModel) => {
-        // model.addAppends(column.fieldPath, true);
+        const currentBlockModel = model.context.blockModel;
+        if (currentBlockModel instanceof EditFormModel) {
+          currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
+        }
       }}
     />
   );
