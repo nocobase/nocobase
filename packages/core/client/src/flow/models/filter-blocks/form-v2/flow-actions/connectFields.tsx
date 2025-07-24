@@ -101,7 +101,7 @@ function ConnectFields(props) {
       const treeData = buildTreeData(ctx, fields, '', value, '');
 
       return (
-        <FormItem label={model.title} key={model.uid}>
+        <FormItem label={`${model.title} #${model.uid.substring(0, 4)}`} key={model.uid}>
           <TreeSelectWrapper
             treeData={treeData}
             value={value}
