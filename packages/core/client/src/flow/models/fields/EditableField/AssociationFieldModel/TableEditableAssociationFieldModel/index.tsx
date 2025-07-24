@@ -8,6 +8,7 @@
  */
 import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
+import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTable } from './SubTable';
 import { SubTableColumnModel } from './SubTableColumnModel';
@@ -32,10 +33,33 @@ export class TableEditableAssociationFieldModel extends EditableAssociationField
 
 TableEditableAssociationFieldModel.registerFlow({
   key: 'loadTableColumns',
+  title: escapeT('Association table settings'),
+  sort: 300,
   steps: {
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
+      },
+    },
+    allowAddNew: {
+      title: escapeT('Allow add new data'),
+      uiSchema: {
+        allowAddNew: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setComponentProps({
+          allowAddNew: params.allowAddNew,
+        });
       },
     },
   },

@@ -28,7 +28,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
-  const fieldModel = field.createFork({}, `${index}`);
+  const fieldModel = field?.createFork({}, `${index}`);
   const currentValue = model?.field?.value;
   fieldModel.context.defineProperty('fieldValue', {
     get: () => {
