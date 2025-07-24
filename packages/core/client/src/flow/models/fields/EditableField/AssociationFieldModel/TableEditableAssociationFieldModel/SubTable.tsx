@@ -147,10 +147,9 @@ export const SubTable = observer((props: any) => {
     field.onInput(next);
   };
   const dataSource = useMemo(
-    () => castArray(field.value || []).map((item, index) => ({ key: item.id || index, ...item })),
+    () => castArray(field.value || []).map((item, index) => ({ key: index, ...item })),
     [field.value],
   );
-  console.log(field.value, dataSource);
   return (
     <Card>
       <Table
