@@ -9,6 +9,7 @@
 
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
+import { DrawerProps, ModalProps, PopoverProps } from 'antd';
 import { createRef } from 'react';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
@@ -20,6 +21,30 @@ import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResou
 import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
+
+type OpenDialogProps = {
+  model: 'dialog';
+} & ModalProps;
+
+type OpenDrawerProps = {
+  model: 'drawer';
+} & DrawerProps;
+
+type OpenInlineProps = {
+  model: 'inline';
+  target: any;
+};
+
+type OpenPopoverProps = {
+  model: 'popover';
+  target: any;
+} & PopoverProps;
+
+type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
+
+interface ViewOpener {
+  open: (props: OpenProps) => Promise<any>;
+}
 
 export interface MetaTreeNode {
   name: string;
@@ -53,6 +78,7 @@ export class FlowContext {
   _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
   protected _delegates: FlowContext[] = [];
+  protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
 
   constructor() {
@@ -222,11 +248,40 @@ export class FlowContext {
       if (options.cache === false) {
         return options.get(this);
       }
-      if (!(key in this._cache)) {
-        const result = options.get(this);
-        this._cache[key] = result;
+
+      // 已缓存直接返回
+      if (key in this._cache) {
+        return this._cache[key];
       }
-      return this._cache[key];
+
+      if (this._pending[key]) return this._pending[key];
+
+      // 支持 async getter 并发排队
+      const result = options.get(this);
+
+      // 判断是否为 Promise/thenable
+      const isPromise =
+        (typeof result === 'object' && result !== null && typeof (result as any).then === 'function') ||
+        (typeof result === 'function' && typeof (result as any).then === 'function');
+
+      if (isPromise) {
+        this._pending[key] = (result as Promise<any>).then(
+          (v) => {
+            this._cache[key] = v;
+            delete this._pending[key];
+            return v;
+          },
+          (err) => {
+            delete this._pending[key];
+            throw err;
+          },
+        );
+        return this._pending[key];
+      }
+
+      // sync 直接缓存
+      this._cache[key] = result;
+      return result;
     }
 
     return undefined;
@@ -292,6 +347,7 @@ export class FlowEngineContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
   declare api: APIClient;
+  declare viewOpener: ViewOpener;
 
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -380,6 +436,7 @@ export class FlowModelContext extends FlowContext {
   declare ref: React.RefObject<HTMLDivElement>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+  declare viewOpener: ViewOpener;
 
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
@@ -466,6 +523,7 @@ export class FlowRuntimeContext<
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
+  declare viewOpener: ViewOpener;
 
   constructor(
     public model: TModel,
