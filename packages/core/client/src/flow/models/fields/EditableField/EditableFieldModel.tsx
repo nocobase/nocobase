@@ -102,7 +102,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
       decorator: this.decorator,
       component: this.component,
     });
-    field.setData({ path: this.parent.context.basePath });
     return field;
   }
 
