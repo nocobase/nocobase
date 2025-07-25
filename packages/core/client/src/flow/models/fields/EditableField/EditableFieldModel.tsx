@@ -17,6 +17,7 @@ import { FormFieldGridModel, FormModel } from '../..';
 import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
+import { DefaultValue } from './DefaultValue';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
@@ -222,7 +223,7 @@ EditableFieldModel.registerFlow({
       title: escapeT('Default value'),
       uiSchema: {
         defaultValue: {
-          'x-component': 'VariableInput',
+          'x-component': DefaultValue,
           'x-decorator': 'FormItem',
           'x-component-props': {},
         },
