@@ -162,9 +162,9 @@ describe('workflow > actions > executions', () => {
 
       const e2 = await workflow.getExecutions();
       expect(e2.length).toBe(1);
-      expect(e2[0].get('status')).toBe(EXECUTION_STATUS.CANCELED);
+      expect(e2[0].get('status')).toBe(EXECUTION_STATUS.ABORTED);
       const jobs = await e2[0].getJobs();
-      expect(jobs[0].status).toBe(JOB_STATUS.CANCELED);
+      expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
   });
 });
