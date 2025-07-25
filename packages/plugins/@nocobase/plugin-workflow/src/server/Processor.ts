@@ -302,13 +302,18 @@ export default class Processor {
       job = payload;
       job.set('updatedAt', new Date());
     } else {
-      job = model.build({
-        ...payload,
-        id: this.options.plugin.snowflake.getUniqueID().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        executionId: this.execution.id,
-      });
+      job = model.build(
+        {
+          ...payload,
+          id: this.options.plugin.snowflake.getUniqueID().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          executionId: this.execution.id,
+        },
+        {
+          isNewRecord: true,
+        },
+      );
     }
     this.jobsToSave.set(job.id, job);
 
