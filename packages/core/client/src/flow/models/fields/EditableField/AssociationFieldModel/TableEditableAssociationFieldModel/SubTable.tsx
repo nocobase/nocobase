@@ -89,7 +89,6 @@ export const SubTable = observer((props: any) => {
   const model = useFlowModel();
   const { t } = useTranslation();
   const { allowAddNew, enableIndexColumn } = props;
-  console.log(field);
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
@@ -111,7 +110,7 @@ export const SubTable = observer((props: any) => {
         width: 100,
         title: <AddFieldColumn model={model} />,
       },
-      {
+      field.editable && {
         title: '',
         key: 'delete',
         width: 60,
