@@ -19,7 +19,7 @@ import {
 } from '@nocobase/flow-engine';
 import { observer } from '@formily/react';
 import { TableColumnProps, Tooltip } from 'antd';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { uid } from '@formily/shared';

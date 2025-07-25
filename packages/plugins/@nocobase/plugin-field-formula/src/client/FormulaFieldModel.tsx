@@ -88,7 +88,7 @@ function Result(props) {
       if ((fieldPath as string).indexOf('.') >= 0 || currentForm?.readPretty) {
         return;
       }
-      const scope = toJS(getValuesByFullPath(form.values, fieldPath));
+      const scope = toJS(getValuesByFullPath(form.values, field.address.entire));
       let v;
       try {
         v = evaluate(expression, scope);
