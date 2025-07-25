@@ -25,7 +25,7 @@ describe('workflow > instructions > loop', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: [Plugin],
+      plugins: ['workflow-delay', Plugin],
     });
     plugin = app.pm.get('workflow');
 
@@ -319,7 +319,7 @@ describe('workflow > instructions > loop', () => {
         expect(jobs.length).toBe(4);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
         expect(jobs[0].result).toEqual({ looped: 2 });
-        expect(jobs.filter((j) => j.nodeId === n2.id).length).toBe(2);
+        expect(jobs.filter((j) => j.nodeId == n2.id).length).toBe(2);
       });
     });
 
@@ -915,6 +915,98 @@ describe('workflow > instructions > loop', () => {
   });
 
   describe('mixed', () => {
+    it('double loop with delay inside', async () => {
+      const asyncWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        config: {},
+      });
+      const n1 = await asyncWorkflow.createNode({
+        type: 'loop',
+        config: {
+          target: 2,
+        },
+      });
+
+      const n2 = await asyncWorkflow.createNode({
+        type: 'loop',
+        upstreamId: n1.id,
+        branchIndex: 0,
+        config: {
+          target: 2,
+        },
+      });
+
+      const n3 = await asyncWorkflow.createNode({
+        type: 'delay',
+        upstreamId: n2.id,
+        branchIndex: 0,
+        config: {
+          unit: 100,
+          duration: 4,
+          endStatus: JOB_STATUS.RESOLVED,
+        },
+      });
+
+      plugin.trigger(asyncWorkflow, {});
+
+      await sleep(100);
+
+      const [e1] = await asyncWorkflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      const j1s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j1s.length).toBe(3);
+      expect(j1s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j1s[1].status).toBe(JOB_STATUS.PENDING);
+      expect(j1s[2].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(500);
+      const j2s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j2s.length).toBe(4);
+      expect(j2s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j2s[1].status).toBe(JOB_STATUS.PENDING);
+      expect(j2s[2].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2s[3].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(500);
+      const j3s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j3s.length).toBe(6);
+      expect(j3s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j3s[1].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3s[2].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3s[3].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3s[4].status).toBe(JOB_STATUS.PENDING);
+      expect(j3s[5].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(500);
+      const j4s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j4s.length).toBe(7);
+      expect(j4s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j4s[1].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j4s[2].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j4s[3].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j4s[4].status).toBe(JOB_STATUS.PENDING);
+      expect(j4s[5].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j4s[6].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(500);
+
+      const [e2] = await asyncWorkflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const j5s = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(j5s.length).toBe(7);
+      expect(j5s[0].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[1].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[2].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[3].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[4].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[5].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[6].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j5s[0].result).toEqual({ looped: 2 });
+      expect(j5s[1].result).toEqual({ looped: 2 });
+      expect(j5s[4].result).toEqual({ looped: 2 });
+    });
+
     it.skip('loop branch contains parallel branches', async () => {
       const n1 = await workflow.createNode({
         type: 'loop',

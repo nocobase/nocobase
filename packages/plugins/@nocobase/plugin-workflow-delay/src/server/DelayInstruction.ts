@@ -72,9 +72,8 @@ export default class extends Instruction {
   };
 
   schedule(job) {
-    const now = new Date();
-    const createdAt = Date.parse(job.createdAt);
-    const delay = createdAt + job.result - now.getTime();
+    const createdAt = new Date(job.createdAt).getTime();
+    const delay = createdAt + job.result - Date.now();
     if (delay > 0) {
       const trigger = this.trigger.bind(this, job.id);
       this.timers.set(job.id, setTimeout(trigger, delay));
@@ -113,6 +112,7 @@ export default class extends Instruction {
 
     // add to schedule
     this.schedule(job);
+    processor.logger.debug(`delay node (${node.id}) will resume after ${duration}ms`);
 
     return null;
   }
