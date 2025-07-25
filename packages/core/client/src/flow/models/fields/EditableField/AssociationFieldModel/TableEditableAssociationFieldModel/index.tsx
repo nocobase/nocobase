@@ -17,7 +17,7 @@ const AssociationTable = connect(
     return <SubTable {...props} />;
   },
   mapReadPretty((props) => {
-    return <div />;
+    return <SubTable {...props} />;
   }),
 );
 

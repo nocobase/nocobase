@@ -88,7 +88,8 @@ export const SubTable = observer((props: any) => {
   const field = useField<ArrayField>();
   const model = useFlowModel();
   const { t } = useTranslation();
-  const { allowAddNew, allowSelectExistingRecord, enableIndexColumn } = props;
+  const { allowAddNew, enableIndexColumn } = props;
+  console.log(field);
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
@@ -167,14 +168,9 @@ export const SubTable = observer((props: any) => {
           gap: 15,
         }}
       >
-        {allowAddNew !== false && (
+        {field.editable && allowAddNew !== false && (
           <a onClick={handleAdd}>
             <PlusOutlined /> {t('Add new')}
-          </a>
-        )}
-        {allowSelectExistingRecord && (
-          <a onClick={handleAdd}>
-            <PlusOutlined /> {t('Select record')}
           </a>
         )}
       </Space>
