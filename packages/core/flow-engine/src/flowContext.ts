@@ -10,6 +10,9 @@
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { DrawerProps, ModalProps, PopoverProps } from 'antd';
+import { MessageInstance } from 'antd/es/message/interface';
+import type { HookAPI } from 'antd/es/modal/useModal';
+import { NotificationInstance } from 'antd/es/notification/interface';
 import { createRef } from 'react';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
@@ -22,10 +25,11 @@ import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
-type OpenDialogProps = {
+interface OpenDialogProps extends ModalProps {
   mode: 'dialog';
+  content?: React.ReactNode | ((dialog: any) => React.ReactNode);
   [key: string]: any;
-};
+}
 
 type OpenDrawerProps = {
   mode: 'drawer';
@@ -47,7 +51,7 @@ type OpenPopoverProps = {
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
 interface ViewOpener {
-  open: (props: any) => Promise<any>;
+  open: (props: OpenProps) => Promise<any>;
 }
 
 export interface MetaTreeNode {
@@ -352,6 +356,7 @@ export class FlowEngineContext extends FlowContext {
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
   declare api: APIClient;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
 
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -441,6 +446,9 @@ export class FlowModelContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
@@ -480,6 +488,9 @@ export class FlowForkModelContext extends FlowContext {
   declare ref: React.RefObject<HTMLDivElement>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(
     public master: FlowModel,
@@ -528,6 +539,9 @@ export class FlowRuntimeContext<
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(
     public model: TModel,
