@@ -23,27 +23,31 @@ import { FlowExitException } from './utils';
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
 type OpenDialogProps = {
-  model: 'dialog';
-} & ModalProps;
+  mode: 'dialog';
+  [key: string]: any;
+};
 
 type OpenDrawerProps = {
-  model: 'drawer';
-} & DrawerProps;
+  mode: 'drawer';
+  [key: string]: any;
+};
 
 type OpenInlineProps = {
-  model: 'inline';
+  mode: 'inline';
   target: any;
+  [key: string]: any;
 };
 
 type OpenPopoverProps = {
-  model: 'popover';
+  mode: 'popover';
   target: any;
+  [key: string]: any;
 } & PopoverProps;
 
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
 interface ViewOpener {
-  open: (props: OpenProps) => Promise<any>;
+  open: (props: any) => Promise<any>;
 }
 
 export interface MetaTreeNode {
