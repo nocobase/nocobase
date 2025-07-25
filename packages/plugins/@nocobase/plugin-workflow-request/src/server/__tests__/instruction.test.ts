@@ -688,7 +688,7 @@ describe('workflow > instructions > request', () => {
       const processor = (await workflowPlugin.trigger(syncFlow, { data: { title: 't1' } })) as Processor;
 
       const [execution] = await syncFlow.getExecutions();
-      expect(processor.execution.id).toEqual(execution.id);
+      assert.equal(processor.execution.id, execution.id);
       expect(processor.execution.status).toBe(execution.status);
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
