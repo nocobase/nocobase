@@ -66,26 +66,46 @@ const parseVariablePath = (pathStr: string): string[] => {
 };
 
 const convertMetaTreeToCascaderData = (nodes: MetaTreeNode[], t: (key: string) => string): CascaderOption[] => {
-  return nodes
-    .map((node) => {
-      // 从 meta 中检查是否有 hide 属性，如果为 true 则跳过
-      const meta = node as any;
-      if (meta.hide === true) {
-        return null;
-      }
+  const result: CascaderOption[] = [];
 
-      return {
-        value: node.name,
-        label: t(node.title || node.name),
-        children: node.children
-          ? typeof node.children === 'function'
-            ? [] // 异步函数，留空待加载
-            : convertMetaTreeToCascaderData(node.children, t).filter(Boolean) // 过滤掉null值
-          : undefined,
-        isLeaf: !node.children,
-      };
-    })
-    .filter(Boolean); // 过滤掉null值
+  for (const node of nodes) {
+    const meta = node as any;
+
+    // 根据 display 属性处理显示逻辑
+    if (meta.display === 'none') {
+      // 完全隐藏，跳过该节点和子节点
+      continue;
+    }
+
+    if (meta.display === 'flatten') {
+      // 隐藏当前层级，但将子节点平铺到当前级别
+      if (node.children) {
+        if (typeof node.children === 'function') {
+          // 异步函数暂时跳过，需要在动态加载时处理
+          continue;
+        } else {
+          // 递归处理子节点并平铺到当前级别
+          const flattenedChildren = convertMetaTreeToCascaderData(node.children, t);
+          result.push(...flattenedChildren);
+        }
+      }
+      continue;
+    }
+
+    // 默认处理（display === 'default' 或 undefined）
+    result.push({
+      value: node.name,
+      label: t(node.title || node.name),
+      children: node.children
+        ? typeof node.children === 'function'
+          ? [] // 异步函数，留空待加载
+          : convertMetaTreeToCascaderData(node.children, t) // 递归处理子节点
+        : undefined,
+      isLeaf: !node.children,
+    });
+  }
+
+  return result;
 };
 
 /**
@@ -296,6 +316,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       contextOnChange: !!onChange,
       fieldValue: 'value' in field ? field.value : undefined,
       fieldPath: field?.path || field?.address,
+      fieldModified: 'modified' in field ? (field as any).modified : undefined,
     });
 
     // 处理不同类型的 stepInputComponent

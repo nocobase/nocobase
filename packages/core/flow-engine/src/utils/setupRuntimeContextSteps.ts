@@ -51,16 +51,23 @@ export function setupRuntimeContextSteps(
         }
       }
 
+      // 如果没有参数属性，则隐藏整个step
+      const hasParams = Object.keys(paramsProperties).length > 0;
+
       stepsMetaProperties[stepKey] = {
         type: 'object',
         title: ctx.t(flowStep.title) || stepKey,
-        properties: {
-          params: {
-            type: 'object',
-            title: 'Parameters',
-            properties: Object.keys(paramsProperties).length > 0 ? paramsProperties : undefined,
-          },
-        },
+        display: hasParams ? 'default' : 'none',
+        properties: hasParams
+          ? {
+              params: {
+                type: 'object',
+                title: 'Parameters',
+                display: 'flatten',
+                properties: paramsProperties,
+              },
+            }
+          : undefined,
       };
 
       // 始终创建步骤对象，确保运行时能够访问

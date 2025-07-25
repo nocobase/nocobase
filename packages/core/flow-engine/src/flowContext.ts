@@ -27,7 +27,7 @@ export interface MetaTreeNode {
   type: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -36,7 +36,7 @@ export interface PropertyMeta {
   title: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
@@ -172,7 +172,7 @@ export class FlowContext {
       type: meta.type,
       interface: meta.interface,
       uiSchema: meta.uiSchema,
-      hide: meta.hide,
+      display: meta.display,
       children: meta.properties
         ? typeof meta.properties === 'function'
           ? async () => {
