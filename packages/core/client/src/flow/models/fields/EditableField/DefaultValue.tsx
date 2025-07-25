@@ -17,8 +17,13 @@ import React, { useMemo } from 'react';
 class DefaultValueFormModel extends FlowModel {
   form: Form;
 
+  addAppends(fieldPath: string) {}
+
   onInit(options: any): void {
     this.form = createForm();
+    this.context.defineProperty('blockModel', {
+      get: () => this,
+    });
     this.context.defineProperty('form', {
       get: () => this.form,
     });
@@ -49,11 +54,11 @@ export function DefaultValue() {
       subModels: {
         fields: [
           {
+            ...ctx.model.serialize(),
             uid: uid(),
             parentId: null,
             subKey: null,
             subType: null,
-            ...ctx.model.serialize(),
           },
         ],
       },
