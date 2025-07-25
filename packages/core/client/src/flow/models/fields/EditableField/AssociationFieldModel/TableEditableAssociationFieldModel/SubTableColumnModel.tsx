@@ -20,6 +20,7 @@ import {
 import { observer } from '@formily/react';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
+import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { uid } from '@formily/shared';
@@ -207,6 +208,10 @@ SubTableColumnModel.registerFlow({
             },
           });
           await model.applyAutoFlows();
+        }
+        const currentBlockModel = ctx.model.context.blockModel;
+        if (currentBlockModel instanceof EditFormModel) {
+          currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);
         }
       },
     },

@@ -8,7 +8,7 @@
  */
 import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
-import { DefaultStructure, escapeT, SingleRecordResource } from '@nocobase/flow-engine';
+import { escapeT, SingleRecordResource } from '@nocobase/flow-engine';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTable } from './SubTable';
 import { SubTableColumnModel } from './SubTableColumnModel';
