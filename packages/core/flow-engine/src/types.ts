@@ -203,12 +203,12 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
-  | 'switch'
-  | 'select'
+  // | 'switch'
+  // | 'select'
   | { type: 'dialog'; props?: Record<string, any> }
-  | { type: 'drawer'; props?: Record<string, any> }
-  | { type: 'switch'; props?: Record<string, any> }
-  | { type: 'select'; props?: Record<string, any> };
+  | { type: 'drawer'; props?: Record<string, any> };
+// | { type: 'switch'; props?: Record<string, any> }
+// | { type: 'select'; props?: Record<string, any> }
 
 /**
  * Step definition with unified support for both registered actions and inline handlers
@@ -221,6 +221,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   use?: string; // Name of the registered ActionDefinition to use as base
 
   // Step configuration
+  // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu

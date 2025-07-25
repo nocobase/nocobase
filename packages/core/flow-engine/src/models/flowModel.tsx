@@ -1233,6 +1233,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.configureRequiredSteps(dialogWidth, dialogTitle);
   }
 
+  async openFlowStepSettingsDialog(options: {
+    flowKey?: string;
+    stepKey?: string;
+    preset?: boolean;
+    uiMode?: 'drawer' | 'dialog';
+  }) {}
+
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);
   }

@@ -188,6 +188,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: '异步 ctx 属性的 loading 状态',
+              link: '/examples/flow-context/loading',
+            },
+            {
               title: 'ctx.model',
               link: '/examples/flow-context/model',
             },

@@ -18,6 +18,7 @@ const buttonSettings = defineFlow({
   steps: {
     general: {
       title: '通用配置',
+      uiMode: 'drawer',
       uiSchema: {
         title: {
           type: 'string',
