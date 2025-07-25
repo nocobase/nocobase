@@ -76,14 +76,19 @@ export default class extends Instruction {
     const createdAt = Date.parse(job.createdAt);
     const delay = createdAt + job.result - now.getTime();
     if (delay > 0) {
-      const trigger = this.trigger.bind(this, job);
+      const trigger = this.trigger.bind(this, job.id);
       this.timers.set(job.id, setTimeout(trigger, delay));
     } else {
       this.trigger(job);
     }
   }
 
-  async trigger(job) {
+  async trigger(jobOrId: JobModel | string) {
+    const { model } = this.workflow.app.db.getCollection('jobs');
+    const job =
+      jobOrId instanceof model
+        ? jobOrId
+        : await this.workflow.app.db.getRepository('jobs').findOne({ filterByTk: jobOrId });
     if (!job.execution) {
       job.execution = await job.getExecution();
     }
