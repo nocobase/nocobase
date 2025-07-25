@@ -8,7 +8,7 @@
  */
 import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
-import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, escapeT, SingleRecordResource } from '@nocobase/flow-engine';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTable } from './SubTable';
 import { SubTableColumnModel } from './SubTableColumnModel';
@@ -39,6 +39,9 @@ TableEditableAssociationFieldModel.registerFlow({
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
+        const currentBlock = ctx.model.context.blockModel;
+        const resource = currentBlock.context.resource as SingleRecordResource;
+        resource.addUpdateAssociationValues(ctx.model.fieldPath);
       },
     },
     allowAddNew: {
