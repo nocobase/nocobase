@@ -71,7 +71,7 @@ const AddActionButtonCore: React.FC<AddActionButtonProps> = ({
   onSubModelAdded,
 }) => {
   const defaultChildren = useMemo(() => {
-    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure actions')}</FlowSettingsButton>;
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Actions')}</FlowSettingsButton>;
   }, [model]);
 
   // 动态获取基于 subModelBaseClass 的额外菜单项

@@ -161,6 +161,26 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this;
   }
 
+  setUpdateAssociationValues(updateAssociationValues: string[]) {
+    return this.addRequestParameter('updateAssociationValues', updateAssociationValues);
+  }
+
+  getUpdateAssociationValues(): string[] {
+    return this.request.params.updateAssociationValues || [];
+  }
+
+  addUpdateAssociationValues(updateAssociationValues: string | string[]) {
+    const currentUpdateAssociationValues = this.getUpdateAssociationValues();
+    const newUpdateAssociationValues = this.splitValue(updateAssociationValues);
+    newUpdateAssociationValues.forEach((append) => {
+      if (!currentUpdateAssociationValues.includes(append)) {
+        currentUpdateAssociationValues.push(append);
+      }
+    });
+    this.request.params.updateAssociationValues = currentUpdateAssociationValues;
+    return this;
+  }
+
   setFilterByTk(filterByTk: any) {
     return this.addRequestParameter('filterByTk', filterByTk);
   }

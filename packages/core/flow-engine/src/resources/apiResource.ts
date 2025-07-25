@@ -8,6 +8,7 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
+import { omit } from 'lodash';
 import { FlowResource } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
@@ -124,6 +125,6 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     const options = {
       ...this.request,
     };
-    return options;
+    return omit(options, 'params.updateAssociationValues');
   }
 }

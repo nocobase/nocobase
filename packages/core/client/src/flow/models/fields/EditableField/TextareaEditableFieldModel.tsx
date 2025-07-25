@@ -9,7 +9,8 @@
 
 import { Input } from '@formily/antd-v5';
 import { FormFieldModel } from './FormFieldModel';
-
+import { largeField } from '@nocobase/flow-engine';
+@largeField()
 export class TextareaEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea'];
 

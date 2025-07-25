@@ -593,7 +593,7 @@ export class CollectionField {
   }
 
   get defaultValue() {
-    return this.options.defaultValue;
+    return this.options.defaultValue == null ? undefined : this.options.defaultValue;
   }
 
   get interface() {
