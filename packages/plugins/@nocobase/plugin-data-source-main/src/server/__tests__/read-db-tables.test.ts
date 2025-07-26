@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { parseDatabaseOptionsFromEnv } from '@nocobase/database';
+import Database, { createMockDatabase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { createApp } from '.';
-import { Sequelize, DataTypes } from 'sequelize';
+import { Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
@@ -94,43 +94,29 @@ describe('db2cm test', () => {
     beforeEach(async () => {
       app = await createApp();
       db = app.db;
-      const dbOptions = await parseDatabaseOptionsFromEnv();
-      sequelize = new Sequelize(dbOptions);
-      sequelize.define('table1', {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        name: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
+      const database = await createMockDatabase();
+      database.collection({
+        name: 'table1',
+        fields: [
+          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+          { type: 'string', name: 'name', allowNull: false },
+        ],
       });
-
-      sequelize.define('table2', {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        description: {
-          type: DataTypes.TEXT,
-        },
+      database.collection({
+        name: 'table2',
+        fields: [
+          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+          { type: 'string', name: 'name', allowNull: false },
+        ],
       });
-
-      sequelize.define('table3', {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        createdAt: {
-          type: DataTypes.DATE,
-          defaultValue: DataTypes.NOW,
-        },
+      database.collection({
+        name: 'table3',
+        fields: [
+          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+          { type: 'string', name: 'name', allowNull: false },
+        ],
       });
-      await sequelize.sync({ force: true });
+      await database.sync();
     });
 
     afterEach(async () => {
@@ -144,35 +130,36 @@ describe('db2cm test', () => {
       const response = await app.agent().resource('collections').selectable();
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBeGreaterThan(0);
-      expect(response.body.data.some((x) => x.name === 'table1s')).toBeTruthy();
-      expect(response.body.data.some((x) => x.name === 'table2s')).toBeTruthy();
-      expect(response.body.data.some((x) => x.name === 'table3s')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table1')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table2')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table3')).toBeTruthy();
     });
 
     it('add tables to collections', async () => {
+      const tableNames = ['table1', 'table2', 'table3'];
+
       let collections = await db.getRepository('collections').find({
-        where: { name: ['table1s', 'table2s', 'table3s'] },
+        where: { name: tableNames },
       });
       expect(collections.length).toBe(0);
-      const response = await app
-        .agent()
-        .resource('collections')
-        .add({
-          values: ['table1s', 'table2s', 'table3s'],
-        });
+
+      const response = await app.agent().resource('collections').add({
+        values: tableNames,
+      });
       expect(response.status).toBe(200);
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       collections = await db.getRepository('collections').find({
-        where: { name: ['table1s', 'table2s', 'table3s'] },
+        where: { name: tableNames },
       });
 
       expect(collections.length).toBe(3);
       const listReponse = await app.agent().resource('collections').list();
       expect(listReponse.status).toBe(200);
-      expect(listReponse.body.data.some((x) => x.name === 'table1s')).toBeTruthy();
-      expect(listReponse.body.data.some((x) => x.name === 'table2s')).toBeTruthy();
-      expect(listReponse.body.data.some((x) => x.name === 'table3s')).toBeTruthy();
+
+      tableNames.forEach((tableName) => {
+        expect(listReponse.body.data.some((x) => x.name === tableName)).toBeTruthy();
+      });
     });
   });
 });
