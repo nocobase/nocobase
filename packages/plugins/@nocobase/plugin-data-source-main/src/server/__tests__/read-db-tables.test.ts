@@ -89,11 +89,13 @@ describe('db2cm test', () => {
   });
 
   describe('read db tables', async () => {
+    let sequelize: Sequelize;
+
     beforeEach(async () => {
       app = await createApp();
       db = app.db;
       const dbOptions = await parseDatabaseOptionsFromEnv();
-      const sequelize = new Sequelize(dbOptions);
+      sequelize = new Sequelize(dbOptions);
       sequelize.define('table1', {
         id: {
           type: DataTypes.INTEGER,
@@ -132,6 +134,9 @@ describe('db2cm test', () => {
     });
 
     afterEach(async () => {
+      if (sequelize) {
+        await sequelize.close();
+      }
       await app.destroy();
     });
 
@@ -156,9 +161,12 @@ describe('db2cm test', () => {
           values: ['table1s', 'table2s', 'table3s'],
         });
       expect(response.status).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
       collections = await db.getRepository('collections').find({
         where: { name: ['table1s', 'table2s', 'table3s'] },
       });
+
       expect(collections.length).toBe(3);
       const listReponse = await app.agent().resource('collections').list();
       expect(listReponse.status).toBe(200);
