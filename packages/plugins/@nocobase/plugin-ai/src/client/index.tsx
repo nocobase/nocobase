@@ -25,6 +25,7 @@ import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
+import { aiEmployeesData } from './ai-employees/flow/context';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/manager/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -97,12 +98,7 @@ export class PluginAIClient extends Plugin {
   }
 
   setupAIFeatures() {
-    this.app.flowEngine.context.defineProperty('ai', {
-      once: true,
-      value: {
-        selectable: false,
-      },
-    });
+    this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
