@@ -8,8 +8,8 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { FilterBlockModel } from '../../base/BlockModel';
-import { BlockGridModel } from '../../base/GridModel';
+import { FilterBlockModel } from '../base/BlockModel';
+import { BlockGridModel } from '../base/GridModel';
 
 export function getAllDataModels(gridModel: BlockGridModel): FlowModel[] {
   const gridRows = gridModel.props.rows as Record<string, string[][]>;

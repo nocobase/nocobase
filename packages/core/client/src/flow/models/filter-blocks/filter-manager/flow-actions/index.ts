@@ -8,4 +8,3 @@
  */
 
 export * from './connectFields';
-export * from './defaultOperator';

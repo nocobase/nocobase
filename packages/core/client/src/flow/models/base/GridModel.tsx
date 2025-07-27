@@ -33,6 +33,7 @@ import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
+import { FILTER_CONFIGS_STEP_KEY, FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
 export const GRID_FLOW_KEY = 'gridSettings';
 export const GRID_STEP = 'grid';
@@ -392,6 +393,13 @@ BlockGridModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('rowGap', ctx.themeToken.marginBlock);
         ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
+      },
+    },
+    [FILTER_CONFIGS_STEP_KEY]: {
+      handler(ctx) {
+        ctx.model.context.defineProperty('filterManager', {
+          value: new FilterManager(ctx.model),
+        });
       },
     },
   },
