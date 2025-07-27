@@ -93,7 +93,7 @@ export class FilterFormFieldGridModel extends GridModel {
       const operatorOptions = subModel.context.collectionField.filterable?.operators || [];
       // 存到数据库中
       this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
-        operator: operatorOptions[0].value || '$eq',
+        operator: operatorOptions[0]?.value || '$eq',
         targets,
       });
     }
