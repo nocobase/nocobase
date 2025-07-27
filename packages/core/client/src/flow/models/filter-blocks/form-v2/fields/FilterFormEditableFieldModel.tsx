@@ -14,6 +14,15 @@ import { FilterManager } from '../../filter-manager/FilterManager';
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
 
+  createField() {
+    return this.form.createField({
+      name: `${this.collectionField.name}_${this.uid}`, // 确保每个字段的名称唯一
+      ...this.props,
+      decorator: this.decorator,
+      component: this.component,
+    });
+  }
+
   addFilterGroupToTargetModels() {
     const filterManager: FilterManager = this.context.filterManager;
     const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
