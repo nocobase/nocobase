@@ -10,7 +10,7 @@
 import Database, { createMockDatabase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { createApp } from '.';
-import { Sequelize } from 'sequelize';
+import { DataTypes, Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
@@ -94,29 +94,51 @@ describe('db2cm test', () => {
     beforeEach(async () => {
       app = await createApp();
       db = app.db;
-      const database = await createMockDatabase();
-      database.collection({
-        name: 'table1',
-        fields: [
-          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
-          { type: 'string', name: 'name', allowNull: false },
-        ],
-      });
-      database.collection({
-        name: 'table2',
-        fields: [
-          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
-          { type: 'string', name: 'name', allowNull: false },
-        ],
-      });
-      database.collection({
-        name: 'table3',
-        fields: [
-          { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
-          { type: 'string', name: 'name', allowNull: false },
-        ],
-      });
-      await database.sync();
+
+      // 使用 SQL 语句创建表
+      await db.sequelize.query(`
+        CREATE TABLE IF NOT EXISTS table1 (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL
+        );
+      `);
+
+      await db.sequelize.query(`
+        CREATE TABLE IF NOT EXISTS table2 (
+          id SERIAL PRIMARY KEY,
+          description TEXT
+        );
+      `);
+
+      await db.sequelize.query(`
+        CREATE TABLE IF NOT EXISTS table3 (
+          id SERIAL PRIMARY KEY,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      // const database = await createMockDatabase();
+      // database.collection({
+      //   name: 'table1',
+      //   fields: [
+      //     { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+      //     { type: 'string', name: 'name', allowNull: false },
+      //   ],
+      // });
+      // database.collection({
+      //   name: 'table2',
+      //   fields: [
+      //     { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+      //     { type: 'string', name: 'name', allowNull: false },
+      //   ],
+      // });
+      // database.collection({
+      //   name: 'table3',
+      //   fields: [
+      //     { type: 'integer', name: 'id', primaryKey: true, autoIncrement: true },
+      //     { type: 'string', name: 'name', allowNull: false },
+      //   ],
+      // });
+      // await database.sync();
     });
 
     afterEach(async () => {
