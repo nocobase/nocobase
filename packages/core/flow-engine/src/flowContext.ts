@@ -160,6 +160,23 @@ export class FlowContext {
     });
   }
 
+  removeCache(key: string) {
+    if (key in this._cache) {
+      delete this._cache[key];
+      return true;
+    }
+    if (key in this._pending) {
+      delete this._pending[key];
+      return true;
+    }
+    // 递归清理委托链
+    for (const delegate of this._delegates) {
+      if (delegate.removeCache(key)) {
+        return true;
+      }
+    }
+  }
+
   delegate(ctx: FlowContext) {
     if (!(ctx instanceof FlowContext)) {
       throw new Error('Delegate must be an instance of FlowContext');
