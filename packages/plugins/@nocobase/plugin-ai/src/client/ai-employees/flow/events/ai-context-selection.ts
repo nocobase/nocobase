@@ -15,8 +15,10 @@ CollectionBlockModel.registerFlow({
   steps: {
     aiOnSelect: {
       handler(ctx, params) {
-        ctx.model.setProps('onClick', () => {
-          console.log('onClick', ctx.model);
+        ctx.model.setDecoratorProps({
+          onClick: () => {
+            console.log('onClick', ctx.model);
+          },
         });
       },
     },
