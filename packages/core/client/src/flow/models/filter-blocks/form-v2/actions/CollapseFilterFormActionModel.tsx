@@ -69,10 +69,9 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
     } else {
       Object.values(gridRows)
         .filter((row, index) => index >= collapsedRows)
-        .flat()
+        .flat(2)
         .forEach((uid: string) => {
           const fieldModel = this.flowEngine.getModel<FilterFormEditableFieldModel>(uid);
-          debugger;
           if (fieldModel) {
             fieldModel.show();
           }
