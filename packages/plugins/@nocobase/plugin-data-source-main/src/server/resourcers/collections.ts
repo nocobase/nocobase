@@ -143,6 +143,7 @@ export default {
     const diffTables = allTables.filter((table) => !existsCollections.includes(table));
 
     ctx.body = diffTables.map((name) => ({ name }));
+    await next();
   },
 
   async ['collections:add'](ctx, next) {
@@ -170,5 +171,6 @@ export default {
       }
     }
     ctx.body = true;
+    await next();
   },
 };
