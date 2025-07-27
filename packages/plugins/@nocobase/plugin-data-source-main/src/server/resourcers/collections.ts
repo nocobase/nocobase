@@ -140,7 +140,15 @@ export default {
     const existsCollections = Array.from(ctx.app.db.collections.values()).map((x: Collection) =>
       underscored ? snakeCase(x.name) : x.name,
     );
-    const diffTables = allTables.filter((table) => !existsCollections.includes(table));
+
+    const tableNames = allTables.map((table) => {
+      if (typeof table === 'object' && table.tableName) {
+        return table.tableName;
+      }
+      return table;
+    });
+
+    const diffTables = tableNames.filter((tableName) => !existsCollections.includes(tableName));
 
     ctx.body = diffTables.map((name) => ({ name }));
     await next();

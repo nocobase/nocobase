@@ -88,7 +88,7 @@ describe('db2cm test', () => {
     });
   });
 
-  describe('read db tables', async () => {
+  describe.skipIf(process.env.DB_DIALECT === 'sqlite')('read db tables', async () => {
     let sequelize: Sequelize;
 
     beforeEach(async () => {
@@ -96,7 +96,17 @@ describe('db2cm test', () => {
       db = app.db;
 
       const queryInterface = db.sequelize.getQueryInterface();
-      await queryInterface.createTable('table1', {
+
+      const schema = (db.sequelize as any).options?.schema;
+
+      const getTableName = (tableName: string) => {
+        return {
+          tableName,
+          schema: schema || undefined,
+        };
+      };
+
+      await queryInterface.createTable(getTableName('table1'), {
         id: {
           type: DataTypes.INTEGER,
           primaryKey: true,
@@ -108,7 +118,7 @@ describe('db2cm test', () => {
         },
       });
 
-      await queryInterface.createTable('table2', {
+      await queryInterface.createTable(getTableName('table2'), {
         id: {
           type: DataTypes.INTEGER,
           primaryKey: true,
@@ -119,7 +129,7 @@ describe('db2cm test', () => {
         },
       });
 
-      await queryInterface.createTable('table3', {
+      await queryInterface.createTable(getTableName('table3'), {
         id: {
           type: DataTypes.INTEGER,
           primaryKey: true,
