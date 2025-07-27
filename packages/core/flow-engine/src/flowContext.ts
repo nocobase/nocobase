@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { DrawerProps, ModalProps, PopoverProps } from 'antd';
@@ -136,11 +137,10 @@ export class FlowContext {
   }
 
   defineProperty(key: string, options: PropertyOptions) {
-    this._props[key] = options;
-    if (options.once && this._props[key]) {
-      // 如果已经定义过，则不再覆盖
+    if (this._props[key] && this._props[key]?.once) {
       return;
     }
+    this._props[key] = options;
     delete this._cache[key];
     // 用 Object.defineProperty 挂载到实例上，便于 ctx.foo 直接访问
     Object.defineProperty(this, key, {

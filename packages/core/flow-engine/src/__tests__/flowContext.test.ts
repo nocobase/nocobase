@@ -683,4 +683,11 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     const sub = engine.getModel<TestModel>('sub1');
     expect(sub.context.appName).toBe('NocoBase');
   });
+
+  it('should only define property once when once: true', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('foo', { value: 1, once: true });
+    ctx.defineProperty('foo', { value: 2 });
+    expect(ctx.foo).toBe(1);
+  });
 });
