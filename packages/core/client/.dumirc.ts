@@ -188,6 +188,18 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'ctx.defineProperty() - 定义属性',
+              link: '/examples/flow-context/define-property',
+            },
+            {
+              title: 'ctx.defineMethod() - 定义方法',
+              link: '/examples/flow-context/define-method',
+            },
+            {
+              title: 'ctx.addDelegate() - 代理链',
+              link: '/examples/flow-context/add-delegate',
+            },
+            {
               title: '异步 ctx 属性的 loading 状态',
               link: '/examples/flow-context/loading',
             },

@@ -78,7 +78,7 @@ export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const branches = processor.getBranches(node);
 
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: Array(branches.length).fill(null),
       nodeId: node.id,
@@ -105,8 +105,6 @@ export default class extends Instruction {
         }),
       Promise.resolve(),
     );
-
-    return null;
   }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {

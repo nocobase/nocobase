@@ -105,7 +105,7 @@ export default class extends Instruction {
     const { mode, ...config } = node.config as ManualConfig;
     const assignees = [...new Set(processor.getParsedValue(config.assignees, node.id).flat().filter(Boolean))];
 
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: assignees.length ? JOB_STATUS.PENDING : JOB_STATUS.RESOLVED,
       result: mode ? [] : null,
       nodeId: node.id,

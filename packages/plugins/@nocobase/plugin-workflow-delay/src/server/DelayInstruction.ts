@@ -97,7 +97,7 @@ export default class extends Instruction {
 
   async run(node, prevJob, processor: Processor) {
     const duration = processor.getParsedValue(node.config.duration || 1, node.id) * (node.config.unit || 1_000);
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: duration,
       nodeId: node.id,
