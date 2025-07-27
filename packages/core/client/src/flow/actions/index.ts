@@ -15,4 +15,5 @@ export * from './dateTimeFormat';
 export * from './sortingRules';
 export * from './dataLoadingMode';
 export * from './displayMode';
+export * from './layout';
 //

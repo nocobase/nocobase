@@ -8,6 +8,7 @@
  */
 
 import { createForm, Form } from '@formily/core';
+import { tval } from '@nocobase/utils/client';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { FormActionModel } from './FormActionModel';
@@ -43,4 +44,16 @@ export class FormModel extends CollectionBlockModel<{
 
 FormModel.define({
   hide: true,
+});
+
+FormModel.registerFlow({
+  key: 'formModelSettings',
+  auto: true,
+  title: tval('Form settings'),
+  steps: {
+    layout: {
+      use: 'layout',
+      title: tval('Layout'),
+    },
+  },
 });
