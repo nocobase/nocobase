@@ -80,12 +80,14 @@ export class FilterFormFieldGridModel extends GridModel {
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
       const targets = matchingModels.map((model) => ({
-        modelUid: model.uid,
-        fieldPath: fieldPath,
+        targetModelUid: model.uid,
+        targetFieldPaths: [fieldPath],
       }));
 
+      const operatorOptions = subModel.context.collectionField.filterable?.operators || [];
       // 存到数据库中
-      subModel.setStepParams('filterFormItemSettings', 'connectFields', {
+      this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
+        operator: operatorOptions[0].value || '$eq',
         targets,
       });
     }
@@ -98,7 +100,7 @@ export class FilterFormFieldGridModel extends GridModel {
         items={this.getFieldMenuItems()}
         subModelKey="items"
         model={this}
-        onModelCreated={this.onModelCreated}
+        onModelCreated={this.onModelCreated.bind(this)}
       />
     );
   }

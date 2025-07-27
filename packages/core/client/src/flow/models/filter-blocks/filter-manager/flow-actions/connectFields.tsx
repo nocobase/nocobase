@@ -26,9 +26,6 @@ export const connectFields = defineAction({
       value: {
         type: 'object',
         'x-component': ConnectFields,
-        'x-component-props': {
-          value: ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid),
-        },
       },
     };
   },
@@ -91,16 +88,15 @@ function ConnectFields(
     label: ctx.t(op.label),
   }));
   const defaultOperator = operatorOptions[0]?.value || '';
+  const value = ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid);
 
-  console.log('props', props);
-
-  if (!props.value?.operator) {
+  if (!value?.operator) {
     _.set(props, 'value.operator', defaultOperator);
   }
 
   const handleSelectChange = (modelUid: string, values: string[]) => {
     const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
-    const selectedValues = props.value?.targets || [];
+    const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
       newValues[item.targetModelUid] = item;
     });
@@ -118,7 +114,7 @@ function ConnectFields(
     const allSelectedTargets = Object.values(newValues);
 
     props.onChange?.({
-      operator: props.value?.operator || defaultOperator,
+      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };
@@ -126,7 +122,7 @@ function ConnectFields(
   // 处理添加/移除目标区块
   const handleToggleBlock = (modelUid: string, checked: boolean) => {
     const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
-    const selectedValues = props.value?.targets || [];
+    const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
       newValues[item.targetModelUid] = item;
     });
@@ -144,7 +140,7 @@ function ConnectFields(
 
     const allSelectedTargets = Object.values(newValues);
     props.onChange?.({
-      operator: props.value?.operator || defaultOperator,
+      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };
@@ -152,7 +148,7 @@ function ConnectFields(
   // 处理删除目标区块
   const handleRemoveBlock = (modelUid: string) => {
     const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
-    const selectedValues = props.value?.targets || [];
+    const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
       if (item.targetModelUid !== modelUid) {
         newValues[item.targetModelUid] = item;
@@ -161,7 +157,7 @@ function ConnectFields(
 
     const allSelectedTargets = Object.values(newValues);
     props.onChange?.({
-      operator: props.value?.operator || defaultOperator,
+      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };
@@ -169,12 +165,12 @@ function ConnectFields(
   const handleDefaultOperatorChange = (value) => {
     props.onChange?.({
       operator: value,
-      targets: props.value?.targets || [],
+      targets: value?.targets || [],
     });
   };
 
   // 获取已选择的区块UIDs
-  const selectedModelUids = (props.value?.targets || []).map((item) => item.targetModelUid);
+  const selectedModelUids = (value?.targets || []).map((item) => item.targetModelUid);
 
   // 生成下拉菜单项
   const menuItems = allDataModels
@@ -238,7 +234,7 @@ function ConnectFields(
             <Select
               options={operatorOptions}
               placeholder="请选择操作符"
-              value={props.value.operator}
+              value={value.operator}
               onChange={handleDefaultOperatorChange}
             />
           </FormItem>
@@ -255,15 +251,14 @@ function ConnectFields(
           return selectedModelUids.includes(model.uid);
         })
         .sort((a, b) => {
-          // 按照在 props.value.targets 中的顺序排序
-          const aIndex = (props.value?.targets || []).findIndex((item) => item.targetModelUid === a.uid);
-          const bIndex = (props.value?.targets || []).findIndex((item) => item.targetModelUid === b.uid);
+          // 按照在 value.targets 中的顺序排序
+          const aIndex = (value?.targets || []).findIndex((item) => item.targetModelUid === a.uid);
+          const bIndex = (value?.targets || []).findIndex((item) => item.targetModelUid === b.uid);
           return aIndex - bIndex;
         })
         .map((model: CollectionBlockModel) => {
           const fields = model.collection?.getFields?.() || [];
-          const values =
-            props.value?.targets?.find((item) => item.targetModelUid === model.uid)?.targetFieldPaths || [];
+          const values = value?.targets?.find((item) => item.targetModelUid === model.uid)?.targetFieldPaths || [];
           const treeData = buildTreeData(ctx, fields, '', values.join(','), '');
 
           return (
