@@ -49,6 +49,9 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
     type: 'link',
   };
 
+  enableEditTitle = false;
+  enableEditIcon = false;
+
   render() {
     return <CollapseButton />;
   }
