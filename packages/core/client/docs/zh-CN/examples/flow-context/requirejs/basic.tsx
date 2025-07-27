@@ -11,9 +11,9 @@ class HelloModel extends FlowModel {
       </Card>
     );
   }
-  async onMount() {
-    if (!this.context.ref.current) {
-      return;
+  protected onMount() {
+    if (this.context.ref.current) {
+      this.rerender();
     }
   }
 }

@@ -20,6 +20,11 @@ class HelloBlockModel extends FlowModel {
       </div>
     );
   }
+  protected onMount() {
+    if (this.context.ref.current) {
+      this.rerender();
+    }
+  }
 }
 
 HelloBlockModel.registerFlow({
