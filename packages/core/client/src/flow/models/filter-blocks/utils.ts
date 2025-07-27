@@ -10,6 +10,7 @@
 import { FlowModel } from '@nocobase/flow-engine';
 import { FilterBlockModel } from '../base/BlockModel';
 import { BlockGridModel } from '../base/GridModel';
+import { CreateFormModel } from '../data-blocks/form';
 
 export function getAllDataModels(gridModel: BlockGridModel): FlowModel[] {
   const gridRows = gridModel.props.rows as Record<string, string[][]>;
@@ -19,5 +20,8 @@ export function getAllDataModels(gridModel: BlockGridModel): FlowModel[] {
     .map((uid) => {
       return gridModel.flowEngine.getModel(uid);
     })
-    .filter((model): model is FlowModel => model !== null && !(model instanceof FilterBlockModel));
+    .filter(
+      (model): model is FlowModel =>
+        model !== null && !(model instanceof FilterBlockModel) && !(model instanceof CreateFormModel),
+    );
 }
