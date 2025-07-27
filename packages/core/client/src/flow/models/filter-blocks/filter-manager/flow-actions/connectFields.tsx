@@ -11,7 +11,7 @@ import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flo
 import { FormItem } from '@formily/antd-v5';
 import { TreeSelect, Button, Dropdown, Switch, Select, Divider } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 import { getAllDataModels } from '../../utils';
 import _ from 'lodash';
@@ -88,7 +88,7 @@ function ConnectFields(
     label: ctx.t(op.label),
   }));
   const defaultOperator = operatorOptions[0]?.value || '';
-  const value = ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid);
+  const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
   if (!value?.operator) {
     _.set(props, 'value.operator', defaultOperator);
@@ -114,6 +114,10 @@ function ConnectFields(
     const allSelectedTargets = Object.values(newValues);
 
     props.onChange?.({
+      operator: value?.operator || defaultOperator,
+      targets: allSelectedTargets,
+    });
+    setValue({
       operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
@@ -143,6 +147,10 @@ function ConnectFields(
       operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
+    setValue({
+      operator: value?.operator || defaultOperator,
+      targets: allSelectedTargets,
+    });
   };
 
   // 处理删除目标区块
@@ -160,10 +168,18 @@ function ConnectFields(
       operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
+    setValue({
+      operator: value?.operator || defaultOperator,
+      targets: allSelectedTargets,
+    });
   };
 
   const handleDefaultOperatorChange = (value) => {
     props.onChange?.({
+      operator: value?.operator || defaultOperator,
+      targets: value?.targets || [],
+    });
+    setValue({
       operator: value,
       targets: value?.targets || [],
     });

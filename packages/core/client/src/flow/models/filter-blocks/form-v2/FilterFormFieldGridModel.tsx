@@ -13,6 +13,8 @@ import React from 'react';
 import { buildFieldMenuItems } from './buildFieldMenuItems';
 import { getAllDataModels } from '../utils';
 import { FilterFormEditableFieldModel } from './fields';
+import { FilterBlockModel } from '../../base/BlockModel';
+import { CreateFormModel } from '../..';
 
 export class FilterFormFieldGridModel extends GridModel {
   itemFlowSettings = {
@@ -72,6 +74,10 @@ export class FilterFormFieldGridModel extends GridModel {
 
     // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
     const matchingModels = allDataModels.filter((model) => {
+      if (model instanceof FilterBlockModel || model instanceof CreateFormModel) {
+        return false;
+      }
+
       // @ts-ignore
       const collection = model.collection;
       return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
