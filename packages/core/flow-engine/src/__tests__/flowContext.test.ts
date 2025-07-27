@@ -95,6 +95,47 @@ describe('FlowContext properties and methods', () => {
     expect(getter).toHaveBeenCalledTimes(2);
   });
 
+  it('should remove cache and pending for property', async () => {
+    const ctx = new FlowContext();
+    const getter = vi.fn().mockResolvedValue('cached-value');
+    ctx.defineProperty('foo', { get: getter });
+
+    // 首次获取，触发缓存
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 再次获取，命中缓存
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 清除缓存
+    ctx.removeCache('foo');
+
+    // 再次获取，应重新调用 getter
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
+  it('should remove cache and pending recursively in delegates', async () => {
+    const delegate = new FlowContext();
+    const getter = vi.fn().mockResolvedValue('delegate-value');
+    delegate.defineProperty('bar', { get: getter });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(delegate);
+
+    // 首次获取，触发缓存
+    await ctx.bar;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 清除缓存（应递归到 delegate）
+    ctx.removeCache('bar');
+
+    // 再次获取，应重新调用 getter
+    await ctx.bar;
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
   it('should support delegate context property', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('shared', { value: 'from delegate' });
@@ -641,5 +682,12 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     model.context.defineProperty('appName', { value: 'NocoBase2' });
     const sub = engine.getModel<TestModel>('sub1');
     expect(sub.context.appName).toBe('NocoBase');
+  });
+
+  it('should only define property once when once: true', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('foo', { value: 1, once: true });
+    ctx.defineProperty('foo', { value: 2 });
+    expect(ctx.foo).toBe(1);
   });
 });
