@@ -29,6 +29,7 @@ export class NumberFieldInterface extends CollectionFieldInterface {
       },
     },
   };
+  validationType = 'number';
   availableTypes = ['double', 'float', 'decimal'];
   hasDefaultValue = true;
   properties = {

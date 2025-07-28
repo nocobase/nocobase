@@ -377,3 +377,5 @@ export const ThroughCollection = observer(
   },
   { displayName: 'ThroughCollection' },
 );
+
+export { FieldValidation } from './FieldValidation';
