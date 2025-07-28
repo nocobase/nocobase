@@ -38,6 +38,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionField } from '../../../data-source/collection-field/CollectionField';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -246,7 +247,7 @@ export const InternalPicker = observer(
             <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions scope={scope}>
+                  <SchemaComponentOptions scope={scope} components={{ CollectionField: CollectionField }}>
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
