@@ -79,6 +79,7 @@ export interface PropertyOptions {
   once?: boolean; // 是否只定义一次
   get?: Getter;
   cache?: boolean;
+  observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMeta;
 }
 
@@ -86,6 +87,7 @@ export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
+  protected _observableCache: Record<string, any> = observable.shallow({});
   protected _delegates: FlowContext[] = [];
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
@@ -141,6 +143,7 @@ export class FlowContext {
       return;
     }
     this._props[key] = options;
+    delete this._observableCache[key]; // 清除旧的 observable 缓存
     delete this._cache[key];
     // 用 Object.defineProperty 挂载到实例上，便于 ctx.foo 直接访问
     Object.defineProperty(this, key, {
@@ -161,6 +164,10 @@ export class FlowContext {
   }
 
   removeCache(key: string) {
+    if (key in this._observableCache) {
+      delete this._observableCache[key];
+      return true;
+    }
     if (key in this._cache) {
       delete this._cache[key];
       return true;
@@ -274,9 +281,10 @@ export class FlowContext {
         return options.get(this);
       }
 
-      // 已缓存直接返回
-      if (key in this._cache) {
-        return this._cache[key];
+      const cacheKey = options.observable ? '_observableCache' : '_cache';
+
+      if (key in this[cacheKey]) {
+        return this[cacheKey][key];
       }
 
       if (this._pending[key]) return this._pending[key];
@@ -292,7 +300,7 @@ export class FlowContext {
       if (isPromise) {
         this._pending[key] = (result as Promise<any>).then(
           (v) => {
-            this._cache[key] = v;
+            this[cacheKey][key] = v;
             delete this._pending[key];
             return v;
           },
@@ -305,7 +313,7 @@ export class FlowContext {
       }
 
       // sync 直接缓存
-      this._cache[key] = result;
+      this[cacheKey][key] = result;
       return result;
     }
 
@@ -616,10 +624,13 @@ export class FlowRuntimeContext<
       if (options.cache === false) {
         return ContextPathProxy.create()[key];
       }
-      if (!(key in this._cache)) {
-        this._cache[key] = ContextPathProxy.create()[key];
+
+      const cacheKey = options.observable ? '_observableCache' : '_cache';
+
+      if (!(key in this[cacheKey])) {
+        this[cacheKey][key] = ContextPathProxy.create()[key];
       }
-      return this._cache[key];
+      return this[cacheKey][key];
     }
 
     return undefined;
