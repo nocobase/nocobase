@@ -16,7 +16,6 @@ import { observable } from '@formily/reactive';
 import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { useFlowModel } from '@nocobase/flow-engine';
-import { FilterFormEditableFieldModel } from '../fields';
 
 // 使用observable创建响应式状态
 const collapseState = observable({
@@ -28,9 +27,8 @@ const CollapseButton = observer(() => {
   const props = { ...model.defaultProps, ...model.props };
 
   const handleClick = () => {
-    collapseState.collapsed = !collapseState.collapsed;
     // 触发折叠/展开事件
-    model.dispatchEvent('collapseToggle', { collapsed: collapseState.collapsed });
+    model.dispatchEvent('collapseToggle');
   };
 
   return (
@@ -53,30 +51,12 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
   enableEditTitle = false;
   enableEditIcon = false;
 
-  toggle(collapsedRows: number) {
-    const gridRows = this.context.blockModel.subModels.grid.props.rows || {};
-
-    if (collapseState.collapsed) {
-      Object.values(gridRows)
-        .filter((row, index) => index >= collapsedRows)
-        .flat(2)
-        .forEach((uid: string) => {
-          const fieldModel = this.flowEngine.getModel<FilterFormEditableFieldModel>(uid);
-          if (fieldModel) {
-            fieldModel.hide();
-          }
-        });
-    } else {
-      Object.values(gridRows)
-        .filter((row, index) => index >= collapsedRows)
-        .flat(2)
-        .forEach((uid: string) => {
-          const fieldModel = this.flowEngine.getModel<FilterFormEditableFieldModel>(uid);
-          if (fieldModel) {
-            fieldModel.show();
-          }
-        });
-    }
+  onMount() {
+    super.onMount();
+    const defaultCollapsed = this.getStepParams('collapseSettings', 'defaultCollapsed')?.value || false;
+    const collapsedRows = this.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
+    collapseState.collapsed = defaultCollapsed;
+    this.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
   }
 
   render() {
@@ -85,8 +65,8 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
 }
 
 CollapseFilterFormActionModel.registerFlow({
-  key: 'collapseEventSettings',
-  title: tval('Collapse event settings'),
+  key: 'collapseSettings',
+  title: tval('Collapse settings'),
   on: 'collapseToggle',
   steps: {
     toggle: {
@@ -106,36 +86,29 @@ CollapseFilterFormActionModel.registerFlow({
       },
       async handler(ctx, params) {
         const collapsedRows = params.collapsedRows || 1;
-        ctx.model.toggle(collapsedRows);
+        collapseState.collapsed = !collapseState.collapsed;
+        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
       },
+    },
+    defaultCollapsed: {
+      title: '默认是否折叠',
+      uiSchema: {
+        value: {
+          type: 'boolean',
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+        },
+      },
+      beforeParamsSave(ctx, params) {
+        const defaultCollapsed = params.value || false;
+        collapseState.collapsed = defaultCollapsed;
+        const collapsedRows = ctx.model.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
+        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+      },
+      handler(ctx, params) {},
     },
   },
 });
-
-// CollapseFilterFormActionModel.registerFlow({
-//   key: 'collapseSettings',
-//   title: tval('Collapse Settings'),
-//   steps: {
-//     settings: {
-//       title: '默认是否折叠',
-//       uiSchema: {
-//         defaultState: {
-//           type: 'boolean',
-//           'x-decorator': 'FormItem',
-//           'x-component': 'Switch',
-//         },
-//       },
-//       defaultParams: {
-//         defaultState: false,
-//       },
-//       async handler(ctx, params) {
-//         collapseState.collapsed = params.defaultState || false;
-//         const collapsedRows = ctx.model.getStepParams('collapseEventSettings', 'toggle')?.collapsedRows || 1;
-//         ctx.model.toggle(collapsedRows);
-//       },
-//     },
-//   },
-// });
 
 CollapseFilterFormActionModel.define({
   title: tval('Collapse/Expand'),

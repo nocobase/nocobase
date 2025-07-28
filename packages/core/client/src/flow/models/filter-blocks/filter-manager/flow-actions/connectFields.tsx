@@ -29,8 +29,9 @@ export const connectFields = defineAction({
       },
     };
   },
-  afterParamsSave(ctx, params) {
+  beforeParamsSave(ctx, params) {
     ctx.model.context.filterManager.saveConnectFieldsConfig(ctx.model.uid, params.value);
+    ctx.exit();
   },
   handler(ctx, params) {},
 });

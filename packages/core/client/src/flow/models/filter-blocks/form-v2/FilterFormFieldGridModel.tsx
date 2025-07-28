@@ -27,6 +27,41 @@ export class FilterFormFieldGridModel extends GridModel {
     },
   };
 
+  private hiddenRows: any = {};
+
+  toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
+    const gridRows = this.props.rows || {};
+
+    if (!collapse) {
+      // 展开：恢复所有隐藏的行
+      const restoredRows = { ...gridRows, ...this.hiddenRows };
+      this.setProps('rows', restoredRows);
+      this.hiddenRows = {};
+    } else {
+      // 折叠：只保留指定数量的行，其余行保存到 hiddenRows 中
+      const rowKeys = Object.keys(gridRows);
+
+      if (rowKeys.length > visibleRows) {
+        const visibleRowKeys = rowKeys.slice(0, visibleRows);
+        const hiddenRowKeys = rowKeys.slice(visibleRows);
+
+        // 保存要隐藏的行
+        this.hiddenRows = {};
+        hiddenRowKeys.forEach((key) => {
+          this.hiddenRows[key] = gridRows[key];
+        });
+
+        // 只保留可见的行
+        const visibleRowsData = {};
+        visibleRowKeys.forEach((key) => {
+          visibleRowsData[key] = gridRows[key];
+        });
+
+        this.setProps('rows', visibleRowsData);
+      }
+    }
+  }
+
   getFieldMenuItems(): any[] {
     // 1. 找到当前页面的 GridModel 实例
     const gridModelInstance = this.context.blockGridModel;
