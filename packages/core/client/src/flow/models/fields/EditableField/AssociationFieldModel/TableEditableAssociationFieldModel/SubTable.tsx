@@ -8,11 +8,12 @@
  */
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { buildFieldItems, useFlowModel, AddFieldButton } from '@nocobase/flow-engine';
+import { buildFieldItems, useFlowModel, AddFieldButton, useFlowEngine, DndProvider } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
+import { DragEndEvent } from '@dnd-kit/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { action } from '@formily/reactive';
-import { CloseOutlined, MenuOutlined } from '@ant-design/icons';
+import { CloseOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { Table, Card, Space } from 'antd';
 import { castArray } from 'lodash';
@@ -150,6 +151,22 @@ export const SubTable = observer((props: any) => {
     () => castArray(field.value || []).map((item, index) => ({ key: index, ...item })),
     [field.value],
   );
+
+  const HeaderWrapperComponent = React.memo((props) => {
+    const engine = useFlowEngine();
+
+    const onDragEnd = ({ active, over }: DragEndEvent) => {
+      if (active.id && over?.id && active.id !== over.id) {
+        engine.moveModel(active.id as string, over.id as string);
+      }
+    };
+
+    return (
+      <DndProvider onDragEnd={onDragEnd}>
+        <thead {...props} />
+      </DndProvider>
+    );
+  });
   return (
     <Card>
       <Table
@@ -160,6 +177,11 @@ export const SubTable = observer((props: any) => {
         pagination={false}
         locale={{
           emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
+        }}
+        components={{
+          header: {
+            wrapper: HeaderWrapperComponent,
+          },
         }}
       />
       <Space
