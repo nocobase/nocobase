@@ -55,7 +55,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   render() {
     return (
-      <BlockItemCard {...this.decoratorProps}>
+      <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
         <Observer>
           {() => {
             return this.renderComponent();
