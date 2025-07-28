@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import {
   EditDescription,
   GeneralSchemaDesigner,
@@ -31,6 +31,7 @@ import {
   SchemaSettings,
   useApp,
   useIsFileField,
+  FlagProvider,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema, ISchema } from '@formily/react';
@@ -256,6 +257,13 @@ const EditDefaultValue = () => {
   const fieldSchema = useFieldSchema();
   const { getTranslatedTitle } = useChartFilter();
   const title = getTranslatedTitle(fieldSchema.title);
+  const { getField } = useCollection_deprecated();
+  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } =
+    useCollectionManager_deprecated();
+  const collectionField = useMemo(
+    () => getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']),
+    [fieldSchema, getCollectionJoinField, getField],
+  );
   return (
     <SchemaSettingsModalItem
       key="set field default value"
@@ -288,6 +296,9 @@ const EditDefaultValue = () => {
         });
         dn.refresh();
         setDefaultValue(field, variables, localVariables);
+      }}
+      ModalContextProvider={(props: any) => {
+        return <FlagProvider collectionField={collectionField}>{props.children}</FlagProvider>;
       }}
     />
   );
