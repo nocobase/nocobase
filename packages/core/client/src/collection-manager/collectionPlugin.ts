@@ -92,7 +92,6 @@ export class CollectionPlugin extends Plugin {
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_KEY,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
-      status: 'loaded',
     });
   }
 
