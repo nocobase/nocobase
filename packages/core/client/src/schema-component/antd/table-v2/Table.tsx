@@ -1005,7 +1005,7 @@ export const Table: any = withDynamicSchemaProps(
             </DndContext>
           );
         };
-      }, [field, onRowDragEnd, value]); // Don't put 'value' in dependencies, otherwise it will cause the performance issue
+      }, [field, onRowDragEnd, value]); // 'value' is included in dependencies to ensure proper response to changes, such as when adding new rows. Be cautious of potential performance issues if 'value' changes frequently.
 
       // @ts-ignore
       BodyWrapperComponent.displayName = 'BodyWrapperComponent';
