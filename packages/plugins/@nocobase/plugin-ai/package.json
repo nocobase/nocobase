@@ -9,6 +9,7 @@
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/plugin-workflow": "1.x",
+    "@nocobase/flow-engine": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },

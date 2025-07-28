@@ -14,10 +14,10 @@ import { AIEmployee } from './types';
 import { AISelectionProvider } from './selector/AISelectorProvider';
 import { AISettingsProvider } from './AISettingsProvider';
 import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
+import { useFlowEngine } from '@nocobase/flow-engine';
 
 export const AIEmployeesContext = createContext<{
   aiEmployees: AIEmployee[];
-  setAIEmployees: (aiEmployees: AIEmployee[]) => void;
   service: any;
   aiEmployeesMap: Record<string, AIEmployee>;
 }>({} as any);
@@ -25,30 +25,21 @@ export const AIEmployeesContext = createContext<{
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const [aiEmployees, setAIEmployees] = React.useState<AIEmployee[]>(null);
+  const flowEngine = useFlowEngine();
 
-  const api = useAPIClient();
-  const service = useRequest<AIEmployee[]>(
-    () =>
-      api
-        .resource('aiEmployees')
-        .listByUser()
-        .then((res) => res?.data?.data),
-    {
-      onSuccess: (aiEmployees) => setAIEmployees(aiEmployees),
-    },
-  );
-  const aiEmployeesMap = useMemo(() => {
-    return (aiEmployees || []).reduce((acc, aiEmployee) => {
-      acc[aiEmployee.username] = aiEmployee;
-      return acc;
-    }, {});
-  }, [aiEmployees]);
+  const service = useRequest<{
+    aiEmployees: AIEmployee[];
+    aiEmployeesMap: {
+      [username: string]: AIEmployee;
+    };
+  }>(() => flowEngine.context.aiEmployeesData);
+  const aiEmployees = service.data?.aiEmployees;
+  const aiEmployeesMap = service.data?.aiEmployeesMap;
 
   return (
     <AISelectionProvider>
       <AISettingsProvider>
-        <AIEmployeesContext.Provider value={{ aiEmployees, setAIEmployees, service, aiEmployeesMap }}>
+        <AIEmployeesContext.Provider value={{ aiEmployees, service, aiEmployeesMap }}>
           <ChatBoxLayout>{props.children}</ChatBoxLayout>
         </AIEmployeesContext.Provider>
       </AISettingsProvider>

@@ -38,6 +38,12 @@ ctx.defineProperty({
 
 <code src="./cache.tsx"></code>
 
+## Observable 的属性
+
+- `observable: true` 时，如果属性值变更时，所有 observer 的地方都会变更。
+
+<code src="./observable.tsx"></code>
+
 ## once 只定义一次
 
 - 设置 `once: true` 后，属性只会采用第一次定义，后续同名定义无效。

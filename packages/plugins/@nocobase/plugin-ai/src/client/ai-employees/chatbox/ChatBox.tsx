@@ -158,7 +158,7 @@ export const ChatBoxWrapper: React.FC = () => {
         top: '50%',
         width: '95%',
         height: '95%',
-        zIndex: selectable ? -1 : 1000,
+        zIndex: selectable ? -1 : 1100,
       }}
       styles={{
         body: {
@@ -173,6 +173,7 @@ export const ChatBoxWrapper: React.FC = () => {
     <div
       style={{
         position: 'fixed',
+        transform: 'translateX(0px) !important',
         right: showConversations ? '-800px' : '-450px',
         zIndex: 1,
         top: 0,

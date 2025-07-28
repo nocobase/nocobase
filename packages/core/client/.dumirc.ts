@@ -315,6 +315,20 @@ export default defineConfig({
             },
           ],
         },
+        {
+          title: '单元测试',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel 测试',
+              link: '/examples/tests/flow-model-test',
+            },
+            {
+              title: '流测试',
+              link: '/examples/tests/flow-test',
+            },
+          ],
+        }
       ],
       '/learn': [
         {
