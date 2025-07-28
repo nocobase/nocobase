@@ -13,6 +13,11 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import Application from './application';
+import { sleep } from '@nocobase/utils';
+
+export const QUEUE_DEFAULT_INTERVAL = 250;
+export const QUEUE_DEFAULT_CONCURRENCY = 1;
+export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
 
 export type QueueCallbackOptions = {
   id?: string;
@@ -20,9 +25,12 @@ export type QueueCallbackOptions = {
   signal?: AbortSignal;
 };
 
-export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void> | void;
+export type QueueCallback = (message: any, options: QueueCallbackOptions) => Promise<void>;
 
 export type QueueEventOptions = {
+  /**
+   * @experimental
+   */
   interval?: number;
   concurrency?: number;
   idle(): boolean;
@@ -49,18 +57,14 @@ export interface EventQueueOptions {
   channelPrefix?: string;
 }
 
-export const QUEUE_DEFAULT_INTERVAL = 1_000;
-export const QUEUE_DEFAULT_CONCURRENCY = 1;
-export const QUEUE_DEFAULT_ACK_TIMEOUT = 15_000;
-
 export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   private connected = false;
 
   private emitter: EventEmitter = new EventEmitter();
 
-  private reading: Map<string, Promise<void>> = new Map();
+  private reading: Map<string, Promise<void>[]> = new Map();
 
-  private events: Map<string, QueueEventOptions> = new Map();
+  protected events: Map<string, QueueEventOptions> = new Map();
 
   protected queues: Map<string, { id: string; content: any; options?: QueueMessageOptions }[]> = new Map();
 
@@ -74,17 +78,13 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return null;
   }
 
-  get storagePath() {
+  private get storagePath() {
     return path.resolve(process.cwd(), 'storage', 'apps', this.options.appName, 'event-queue.json');
   }
 
-  listen = async (channel: string) => {
+  listen = (channel: string) => {
     if (!this.connected) {
       return;
-    }
-    if (this.reading.has(channel)) {
-      console.debug(`memory queue (${channel}) is already reading, waiting last reading to end...`);
-      await this.reading.get(channel);
     }
     const event = this.events.get(channel);
     if (!event) {
@@ -92,12 +92,29 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return;
     }
     if (!event.idle()) {
-      console.debug(`memory queue (${channel}) is not idle, skipping...`);
       return;
     }
-    const reading = this.read(channel);
+
+    const reading = this.reading.get(channel) || [];
+    const count = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
+    if (count <= 0) {
+      console.debug(
+        `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,
+      );
+      return;
+    }
+    console.debug(`reading more from queue (${channel}), count: ${count}`);
+    this.read(channel, count).forEach((promise) => {
+      reading.push(promise);
+      // eslint-disable-next-line promise/catch-or-return
+      promise.finally(() => {
+        const index = reading.indexOf(promise);
+        if (index > -1) {
+          reading.splice(index, 1);
+        }
+      });
+    });
     this.reading.set(channel, reading);
-    await reading;
   };
 
   constructor(private options: { appName: string }) {
@@ -108,7 +125,11 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     return this.connected;
   }
 
-  private async loadFromStorage() {
+  setConnected(connected: boolean) {
+    this.connected = connected;
+  }
+
+  async loadFromStorage() {
     let queues = {};
     let exists = false;
     try {
@@ -157,20 +178,23 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     this.connected = true;
 
     setImmediate(() => {
-      // for (const channel of this.events.keys()) {
-      //   this.consume(channel);
-      // }
-      for (const channel of this.queues.keys()) {
-        const queue = this.queues.get(channel);
-        if (!queue?.length) {
-          continue;
-        }
-        this.emitter.emit(channel, channel);
+      for (const channel of this.events.keys()) {
+        this.consume(channel);
       }
+      // for (const channel of this.queues.keys()) {
+      //   const queue = this.queues.get(channel);
+      //   if (!queue?.length) {
+      //     continue;
+      //   }
+      //   this.emitter.emit(channel, channel);
+      // }
     });
   }
 
   async close() {
+    if (!this.connected) {
+      return;
+    }
     this.connected = false;
     if (this.processing) {
       console.info('memory queue waiting for processing job...');
@@ -193,16 +217,19 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
 
     this.emitter.on(channel, this.listen);
 
-    // if (this.connected) {
-    //   this.consume(channel);
-    // }
+    if (this.connected) {
+      this.consume(channel);
+    }
   }
+
   unsubscribe(channel: string) {
     if (!this.events.has(channel)) {
       return;
     }
     this.events.delete(channel);
+    this.emitter.off(channel, this.listen);
   }
+
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
     const event = this.events.get(channel);
     if (!event) {
@@ -212,56 +239,72 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       this.queues.set(channel, []);
     }
     const queue = this.queues.get(channel);
-    queue.push({ id: randomUUID(), content, options });
+    const message = { id: randomUUID(), content, options };
+    queue.push(message);
     console.debug(`memory queue (${channel}) published message`, content);
 
     setImmediate(() => {
       this.emitter.emit(channel, channel);
     });
   }
-  async read(channel: string) {
-    const event = this.events.get(channel);
-    if (!event) {
-      this.reading.delete(channel);
-      return;
-    }
-    const queue = this.queues.get(channel);
 
-    while (queue?.length) {
-      const messages = queue.slice(0, event.concurrency || QUEUE_DEFAULT_CONCURRENCY);
-      console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
-      queue.splice(0, messages.length);
-      const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
-      await Promise.all(batch);
+  async consume(channel: string, once = false) {
+    while (this.connected && this.events.get(channel)) {
+      const event = this.events.get(channel);
+      const interval = event.interval || QUEUE_DEFAULT_INTERVAL;
+
+      const queue = this.queues.get(channel);
+      if (event.idle() && queue?.length) {
+        this.listen(channel);
+      }
+
+      if (once) {
+        break;
+      }
+      await sleep(interval);
     }
-    this.reading.delete(channel);
   }
 
-  async process(channel, { id, message }) {
+  read(channel: string, n: number): Promise<void>[] {
+    const queue = this.queues.get(channel);
+
+    if (!queue?.length) {
+      return [];
+    }
+    const messages = queue.slice(0, n);
+    console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
+    queue.splice(0, messages.length);
+    const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
+    return batch;
+  }
+
+  async process(channel: string, { id, message }) {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
-    try {
-      console.debug(`memory queue (${channel}) processing message (${id})...`, content);
-      await event.process(content, {
+    console.debug(`memory queue (${channel}) processing message (${id})...`, content);
+    return (async () =>
+      event.process(content, {
         id,
         retried,
         signal: AbortSignal.timeout(timeout),
+      }))()
+      .then(() => {
+        console.debug(`memory queue (${channel}) consumed message (${id})`);
+      })
+      .catch((ex) => {
+        if (maxRetries > 0 && retried < maxRetries) {
+          const currentRetry = retried + 1;
+          console.warn(
+            `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
+            ex,
+          );
+          setTimeout(() => {
+            this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
+          }, 500);
+        } else {
+          console.error(ex);
+        }
       });
-      console.debug(`memory queue (${channel}) consumed message (${id})`);
-    } catch (ex) {
-      if (maxRetries > 0 && retried < maxRetries) {
-        const currentRetry = retried + 1;
-        console.warn(
-          `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
-          ex,
-        );
-        setImmediate(() => {
-          this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
-        });
-      } else {
-        console.error(ex);
-      }
-    }
   }
 }
 
@@ -277,15 +320,13 @@ export class EventQueue {
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    this.events = new Map();
-
     this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
 
     app.on('afterStart', async () => {
       await this.connect();
     });
     app.on('beforeStop', async () => {
-      app.logger.info('[queue] gracefully shuting down...');
+      app.logger.info('[queue] gracefully shutting down...');
       await this.close();
     });
   }
@@ -350,7 +391,11 @@ export class EventQueue {
     }
     const c = this.getFullChannel(channel);
     this.app.logger.debug('event queue publishing:', { channel: c, message });
-    await this.adapter.publish(c, message, { timeout: QUEUE_DEFAULT_ACK_TIMEOUT, ...options, timestamp: Date.now() });
+    await this.adapter.publish(c, message, {
+      timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
+      ...options,
+      timestamp: Date.now(),
+    });
   }
 }
 

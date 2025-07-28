@@ -20,7 +20,7 @@ export interface IJob {
   [key: string]: unknown;
 }
 
-export type InstructionResult = IJob | Promise<IJob> | null;
+export type InstructionResult = IJob | Promise<IJob> | Promise<void> | null | void;
 
 export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
 

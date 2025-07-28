@@ -38,8 +38,14 @@ import viewResourcer from './resourcers/views';
 import { TableInfo } from '@nocobase/database';
 import { ColumnsDescription } from 'sequelize';
 
+type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
+
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
+
+  private db2cmCollections: string[] = [];
+
+  status: DataSourceState = 'loaded';
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
@@ -127,6 +133,9 @@ export class PluginDataSourceMainServer extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      if (model.options.uiManageable) {
+        throw new Error('Cannot remove a UI manageable collection');
+      }
       const removeOptions = {};
       if (options.transaction) {
         removeOptions['transaction'] = options.transaction;
@@ -409,13 +418,33 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.collection-view `,
       actions: ['dbViews:*'],
     });
+
+    this.app.db.on('afterDefineCollection', async (collection) => {
+      if (collection?.options?.uiManageable) {
+        this.db2cmCollections.push(collection.name);
+      }
+    });
+
+    this.app.on('afterEnablePlugin', this.db2cm.bind(this));
+
+    this.app.on('afterInstall', this.db2cm.bind(this));
+
+    this.app.on('afterUpgrade', this.db2cm.bind(this));
+  }
+
+  private async db2cm() {
+    if (this.db2cmCollections.length) {
+      await this.app.db.getRepository<CollectionRepository>('collections').db2cmCollections(this.db2cmCollections);
+      this.log.info(`collections synced to collection manager: ${this.db2cmCollections.join(', ')}`);
+      this.db2cmCollections = [];
+    }
   }
 
   async load() {
@@ -479,9 +508,24 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-
+    const plugin = this;
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
+    this.app.resource({
+      name: 'mainDataSource',
+      actions: {
+        async refresh(ctx, next) {
+          if (plugin.status === 'loaded') {
+            await plugin.app.db.getRepository<CollectionRepository>('collections').load({
+              filter: plugin.loadFilter,
+            });
+          }
+          ctx.body = {
+            status: plugin.status,
+          };
+        },
+      },
+    });
 
     const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
       for (const field of lodash.castArray(fields)) {

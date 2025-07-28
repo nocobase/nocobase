@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/lock-manager",
-  "version": "1.8.0-alpha.11",
+  "version": "1.9.0-alpha.3",
   "main": "lib/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@nocobase/utils": "1.8.0-alpha.11",
+    "@nocobase/utils": "1.9.0-alpha.3",
     "async-mutex": "^0.5.0"
   }
 }

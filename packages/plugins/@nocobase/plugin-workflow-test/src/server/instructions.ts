@@ -87,7 +87,7 @@ export default {
 
   asyncResume: {
     async run(node, input, processor) {
-      const job = await processor.saveJob({
+      const job = processor.saveJob({
         status: 0,
         nodeId: node.id,
         nodeKey: node.key,
@@ -119,11 +119,11 @@ export default {
     },
   },
 
-  recordAppName: {
+  recordAppId: {
     run(node, input, processor) {
       return {
         status: 1,
-        result: processor.options.plugin.app.name,
+        result: processor.options.plugin.app.instanceId,
       };
     },
   },

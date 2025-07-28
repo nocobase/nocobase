@@ -141,7 +141,7 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
         [],
       ),
       required: true,
-      default: 'math.js',
+      default: 'formula.js',
     },
     expression: {
       type: 'string',

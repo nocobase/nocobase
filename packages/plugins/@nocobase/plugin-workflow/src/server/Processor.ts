@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fn, col } from 'sequelize';
 import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
@@ -15,7 +16,7 @@ import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
-import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
@@ -120,7 +121,20 @@ export default class Processor {
 
     this.makeNodes(nodes);
 
+    const JobDBModel = plugin.db.getModel('jobs');
+    const jobIds = await JobDBModel.findAll({
+      attributes: ['executionId', 'nodeId', [fn('MAX', col('id')), 'id']],
+      group: ['executionId', 'nodeId'],
+      where: {
+        executionId: execution.id,
+      },
+      raw: true,
+      transaction,
+    });
     const jobs = await execution.getJobs({
+      where: {
+        id: jobIds.map((item) => item.id),
+      },
       order: [['id', 'ASC']],
       transaction,
     });
@@ -133,7 +147,8 @@ export default class Processor {
   public async start() {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status} before, could not be started again`);
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`);
+      return;
     }
     await this.prepare();
     if (this.nodes.length) {
@@ -147,7 +162,8 @@ export default class Processor {
   public async resume(job: JobModel) {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status} before, could not be resumed`);
+      this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`);
+      return;
     }
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
@@ -158,11 +174,13 @@ export default class Processor {
     let job;
     try {
       // call instruction to get result and status
-      this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`);
       this.logger.debug(`config of node`, { data: node.config });
       job = await instruction(node, prevJob, this);
-      if (!job) {
+      if (job === null) {
         return this.exit();
+      }
+      if (!job) {
+        return this.exit(true);
       }
     } catch (err) {
       // for uncaught error, set to error
@@ -219,6 +237,7 @@ export default class Processor {
       return Promise.reject(new Error('`run` should be implemented for customized execution of the node'));
     }
 
+    this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`);
     return this.exec(instruction.run.bind(instruction), node, input);
   }
 
@@ -250,10 +269,14 @@ export default class Processor {
       );
     }
 
+    this.logger.info(`execution (${this.execution.id}) resume instruction [${node.type}] for node (${node.id})`);
     return this.exec(instruction.resume.bind(instruction), node, job);
   }
 
-  public async exit(s?: number) {
+  public async exit(s?: number | true) {
+    if (s === true) {
+      return;
+    }
     if (this.jobsToSave.size) {
       const newJobs = [];
       for (const job of this.jobsToSave.values()) {
@@ -313,6 +336,7 @@ export default class Processor {
     this.lastSavedJob = job;
     this.jobsMapByNodeKey[job.nodeKey] = job;
     this.jobResultsMapByNodeKey[job.nodeKey] = job.result;
+    this.logger.debug(`job added to save list: ${JSON.stringify(job)}`);
 
     return job;
   }
