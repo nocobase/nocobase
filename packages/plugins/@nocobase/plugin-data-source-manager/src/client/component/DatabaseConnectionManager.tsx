@@ -32,15 +32,7 @@ export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const dm = useDataSourceManager();
-  const api = useAPIClient();
-
-  const dataSourceListCallback = useCallback(
-    (data: any) => {
-      dm.setDataSources(data?.data || []);
-      dm.reload();
-    },
-    [dm],
-  );
+  const api = useAPIClient(); // 移到组件顶层
 
   const types = [...plugin.types.keys()]
     .map((key) => {
@@ -128,7 +120,6 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
-          dataSourceListCallback,
           useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}
