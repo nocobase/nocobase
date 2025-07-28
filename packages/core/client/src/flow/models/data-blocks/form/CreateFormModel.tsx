@@ -31,9 +31,10 @@ export class CreateFormModel extends FormModel {
   }
 
   renderComponent() {
+    const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
       <FormProvider form={this.form}>
-        <FormLayout layout={'vertical'}>
+        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
         <DndProvider>

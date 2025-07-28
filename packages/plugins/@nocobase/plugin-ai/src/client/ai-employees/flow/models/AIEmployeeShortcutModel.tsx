@@ -8,13 +8,15 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Avatar, Button, Spin, Popover } from 'antd';
-import { FlowModel, defineFlow, escapeT } from '@nocobase/flow-engine';
+import { Avatar, Button, Spin, Popover, Card, Tag } from 'antd';
+import { FlowModel, defineFlow, escapeT, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
 import { AIEmployee, Task, TriggerTaskOptions } from '../../types';
 import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
+import { useToken } from '@nocobase/client';
+const { Meta } = Card;
 
 const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, tasks }) => {
   const [focus, setFocus] = useState(false);
@@ -74,56 +76,140 @@ export class AIEmployeeShortcutModel extends FlowModel {
   }
 }
 
+const Information: React.FC<{
+  aiEmployeesMap: {
+    [username: string]: AIEmployee;
+  };
+}> = ({ aiEmployeesMap = {} }) => {
+  const { token } = useToken();
+  const ctx = useFlowSettingsContext();
+  const username = ctx.model.props.aiEmployee?.username;
+  const aiEmployee = aiEmployeesMap[username];
+
+  if (!aiEmployee) {
+    return null;
+  }
+
+  return (
+    <Card
+      variant="borderless"
+      style={{
+        maxWidth: 520,
+      }}
+    >
+      <Meta
+        avatar={aiEmployee.avatar ? <Avatar src={avatars(aiEmployee.avatar)} size={48} /> : null}
+        title={
+          <>
+            {aiEmployee.nickname}
+            {aiEmployee.position && (
+              <Tag
+                style={{
+                  marginLeft: token.margin,
+                }}
+              >
+                {aiEmployee.position}
+              </Tag>
+            )}
+          </>
+        }
+        description={<>{aiEmployee.bio}</>}
+      />
+    </Card>
+  );
+};
+
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
   title: escapeT('Task settings'),
   steps: {
     editTasks: {
       title: escapeT('Edit tasks'),
-      uiSchema: {
-        background: {
-          type: 'string',
-          title: 'Background',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
-        },
-        message: {
-          type: 'string',
-          title: 'Default message',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input.TextArea',
-        },
-        block: {
-          type: 'string',
-          title: 'Block UID',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        },
-        autoSend: {
-          type: 'boolean',
-          title: 'Send default message automatically',
-          'x-decorator': 'FormItem',
-          'x-component': 'Checkbox',
-        },
+      uiSchema: async (ctx) => {
+        const { aiEmployeesMap } = await ctx.aiEmployeesData;
+        return {
+          profile: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': () => <Information aiEmployeesMap={aiEmployeesMap} />,
+          },
+          taskDesc: {
+            type: 'string',
+            title: escapeT('Task description'),
+            'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: escapeT(
+                'Displays the AI employee’s assigned tasks on the profile when hovering over the button.',
+              ),
+            },
+            'x-component': 'Input.TextArea',
+            'x-component-props': {
+              autoSize: {
+                minRows: 2,
+              },
+            },
+          },
+          tasks: {
+            type: 'array',
+            title: escapeT('Task'),
+            'x-component': 'ArrayTabs',
+            'x-component-props': {
+              size: 'small',
+            },
+            items: {
+              type: 'object',
+              properties: {
+                title: {
+                  type: 'string',
+                  title: escapeT('Title'),
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  'x-decorator-props': {
+                    tooltip: escapeT('Label for task selection buttons when multiple tasks exist'),
+                  },
+                },
+                message: {
+                  type: 'object',
+                  properties: {
+                    system: {
+                      title: escapeT('Background'),
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        tooltip: escapeT(
+                          'Additional system prompt appended to the AI employee’s definition, used to refine instructions',
+                        ),
+                      },
+                      'x-component': 'Input.TextArea',
+                    },
+                    user: {
+                      title: escapeT('Default user message'),
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input.TextArea',
+                    },
+                    workContext: {
+                      title: escapeT('Work context'),
+                      type: 'array',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'WorkContext',
+                    },
+                  },
+                },
+                autoSend: {
+                  type: 'boolean',
+                  'x-content': escapeT('Send default user message automatically'),
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Checkbox',
+                },
+              },
+            },
+          },
+        };
       },
       handler(ctx, params) {
-        const task: Task = {
-          message: {
-            user: params.message,
-            system: params.background,
-          },
-          autoSend: params.autoSend,
-        };
-        if (params.block) {
-          task.message.workContext = [
-            {
-              type: 'flow-model',
-              uid: params.block,
-            },
-          ];
-        }
         ctx.model.setProps({
-          tasks: [task],
+          tasks: params.tasks,
         });
       },
     },
