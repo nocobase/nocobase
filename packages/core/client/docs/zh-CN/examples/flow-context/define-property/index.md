@@ -1,5 +1,9 @@
 # ctx.defineProperty() - 定义属性
 
+:::info
+FlowContext 用于中心化管理各类上下文，上下文的属性本身只支持 get，并不支持 set。如果你希望某个自定义的属性是可以 get & set 的，建议定义一个 `observable.ref(value)` 或 `observable.box(value)` 类型的属性。
+:::
+
 ## 定义同步属性
 
 同步属性适用于绝大多数场景，直接读取即可，无需异步处理。
