@@ -44,6 +44,20 @@ ctx.defineProperty({
 
 <code src="./observable.tsx"></code>
 
+## observable.ref & observable.box 响应式属性
+
+可用于代替 React 的 `useState()`，实现响应式数据。
+
+- `observable.ref(value)`：返回一个响应式对象，直接通过 `.value` 读写。
+- `observable.box(value)`：返回一个响应式盒子对象，支持 `.get()` 和 `.set()` 方法。
+
+两者都能实现响应式，区别在于：
+
+- ref：只观察引用（浅观察，不递归）
+- box：观察值和它的内部（深度观察）
+
+<code src="./observable-ref-box.tsx"></code>
+
 ## once 只定义一次
 
 - 设置 `once: true` 后，属性只会采用第一次定义，后续同名定义无效。
