@@ -151,14 +151,6 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   getFilterValue() {
     return this.field.value;
   }
-
-  hide() {
-    this.field.display = 'hidden';
-  }
-
-  show() {
-    this.field.display = 'visible';
-  }
 }
 
 FilterFormEditableFieldModel.registerFlow({
