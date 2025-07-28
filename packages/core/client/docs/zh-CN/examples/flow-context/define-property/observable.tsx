@@ -8,7 +8,7 @@ class HelloModel extends FlowModel {
   onInit() {
     this.context.defineProperty('cached', {
       get: () => uid(),
-      observable: true, // 默认 cache: true
+      observable: true, // 可选，默认为 false
     });
   }
   render() {
