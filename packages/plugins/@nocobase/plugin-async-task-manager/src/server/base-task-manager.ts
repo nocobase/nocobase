@@ -69,9 +69,8 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskAfterCreate = (task) => {
     const userId = task.createdById;
     if (userId) {
-      this.app.emit('ws:sendToTag', {
-        tagKey: 'userId',
-        tagValue: userId,
+      this.app.emit('ws:sendToUser', {
+        userId,
         message: {
           type: 'async-tasks:created',
           payload: task.toJSON(),
@@ -92,9 +91,8 @@ export class BaseTaskManager implements AsyncTasksManager {
     const userId = task.createdById;
     if (!userId) return;
 
-    this.app.emit('ws:sendToTag', {
-      tagKey: 'userId',
-      tagValue: userId,
+    this.app.emit('ws:sendToUser', {
+      userId,
       message: {
         type: 'async-tasks:status',
         payload: {
@@ -159,9 +157,8 @@ export class BaseTaskManager implements AsyncTasksManager {
         taskId,
         throttle(
           (record: Model) => {
-            this.app.emit('ws:sendToTag', {
-              tagKey: 'userId',
-              tagValue: userId,
+            this.app.emit('ws:sendToUser', {
+              userId,
               message: {
                 type: 'async-tasks:progress',
                 payload: record.toJSON(),
