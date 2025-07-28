@@ -10,6 +10,7 @@
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { ToolCall, WorkContextOptions } from '../ai-employees/types';
+import { FlowEngine } from '@nocobase/flow-engine';
 
 export type LLMProviderOptions = {
   components: {
@@ -39,7 +40,7 @@ export type ToolOptions = {
       }>;
     };
   };
-  invoke?: (ctx: any, params: any) => void | Promise<void>;
+  invoke?: (ctx: FlowEngine, params: any) => void | Promise<void>;
 };
 
 export class AIManager {

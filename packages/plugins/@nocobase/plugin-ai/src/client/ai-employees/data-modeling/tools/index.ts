@@ -15,7 +15,7 @@ import { useChatConversationsStore } from '../../chatbox/stores/chat-conversatio
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolOptions } from '../../../manager/ai-manager';
 import { useChatMessageActions } from '../../chatbox/hooks/useChatMessageActions';
-import { useAISelectionContext } from '../../selector/AISelectorProvider';
+import { useAISelectionContext } from '../../1.x/selector/AISelectorProvider';
 import { useDataSource } from '@nocobase/client';
 
 export const defineCollectionsTool: [string, string, ToolOptions] = [

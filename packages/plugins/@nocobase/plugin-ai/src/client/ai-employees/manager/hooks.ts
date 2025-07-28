@@ -21,7 +21,7 @@ import { useT } from '../../locale';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
+import { useAIEmployeesData } from '../useAIEmployeesData';
 
 export const useCreateFormProps = () => {
   const form = useMemo(
@@ -70,9 +70,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const api = useAPIClient();
   const { refresh } = useDataBlockRequest();
-  const {
-    service: { refresh: refreshAIEmployees },
-  } = useAIEmployeesContext();
+  const { refresh: refreshAIEmployees } = useAIEmployeesData();
   const t = useT();
 
   return {
@@ -98,9 +96,7 @@ export const useEditActionProps = () => {
   const form = useForm();
   const resource = useDataBlockResource();
   const { refresh } = useDataBlockRequest();
-  const {
-    service: { refresh: refreshAIEmployees },
-  } = useAIEmployeesContext();
+  const { refresh: refreshAIEmployees } = useAIEmployeesData();
   const collection = useCollection();
   const filterTk = collection.getFilterTargetKey();
   const t = useT();

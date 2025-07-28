@@ -13,9 +13,9 @@ import { AddSubModelButton, FlowModelRenderer, useFlowEngine } from '@nocobase/f
 import React, { useMemo, useState } from 'react';
 import { useShortcuts } from './useShortcuts';
 import { useDesignable, useToken } from '@nocobase/client';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { observer } from '@formily/react';
+import { useAIEmployeesData } from '../useAIEmployeesData';
 
 export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
@@ -24,10 +24,7 @@ export const ShortcutList: React.FC = observer(() => {
   const designMode = designable && !builtIn;
   const hasShortcuts = model?.subModels?.shortcuts?.length > 0;
 
-  const {
-    aiEmployees,
-    service: { loading },
-  } = useAIEmployeesContext();
+  const { loading, aiEmployees } = useAIEmployeesData();
 
   const [folded, setFolded] = useState(false);
 

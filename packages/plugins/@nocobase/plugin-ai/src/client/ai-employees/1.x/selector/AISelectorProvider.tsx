@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { Selector } from '../types';
+import { Selector } from '../../types';
 import { useFlowEngine } from '@nocobase/flow-engine';
 
 export const AISelectionContext = createContext<{

@@ -35,7 +35,7 @@ const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), '
 const { Chat } = lazy(() => import('./llm-providers/components/Chat'), 'Chat');
 const { ModelSelect } = lazy(() => import('./llm-providers/components/ModelSelect'), 'ModelSelect');
 const { AIResourceContextCollector } = lazy(
-  () => import('./ai-employees/selector/AIContextCollector'),
+  () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
 

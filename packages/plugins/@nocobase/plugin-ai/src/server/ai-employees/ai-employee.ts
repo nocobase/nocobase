@@ -577,6 +577,7 @@ export class AIEmployee {
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
+      provider,
       systemPrompt: await this.getSystemPrompt(),
       tools: await this.getTools(),
     });
@@ -605,11 +606,12 @@ export class AIEmployee {
         await conversation.addMessages(userMessages);
       });
 
+      const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        provider,
         systemPrompt: await this.getSystemPrompt(),
         tools: await this.getTools(),
       });
-      const { provider, model, service } = await this.getLLMService();
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
       await this.processChatStream(stream, {
@@ -629,12 +631,13 @@ export class AIEmployee {
 
   async resendMessages(messageId?: string) {
     try {
+      const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        provider,
         systemPrompt: await this.getSystemPrompt(),
         messageId,
         tools: await this.getTools(),
       });
-      const { provider, model, service } = await this.getLLMService();
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
       await this.processChatStream(stream, {

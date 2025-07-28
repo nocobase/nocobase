@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
 import { ToolOptions } from '../../../manager/ai-manager';
 import { FormModel } from '@nocobase/client';
 
@@ -15,12 +14,11 @@ export const formFillerTool: [string, string, ToolOptions] = [
   'frontend',
   'formFiller',
   {
-    invoke: (ctx, params) => {
+    invoke: (flowEngine, params) => {
       const { form: uid, data } = params;
       if (!uid || !data) {
         return;
       }
-      const flowEngine = ctx.flowEngine as FlowEngine;
       const model = flowEngine.getModel(uid) as FormModel;
       model?.form?.setValues(data);
     },

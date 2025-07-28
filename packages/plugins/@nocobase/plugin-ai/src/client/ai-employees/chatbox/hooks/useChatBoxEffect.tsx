@@ -9,12 +9,12 @@
 
 import { useContext, useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
-import { AIEmployeesContext } from '../../AIEmployeesProvider';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
+import { useAIEmployeesData } from '../../useAIEmployeesData';
 
 export const useChatBoxEffect = () => {
-  const { aiEmployees } = useContext(AIEmployeesContext);
+  const { aiEmployees } = useAIEmployeesData();
 
   const senderRef = useChatBoxStore.use.senderRef();
   const currentEmployee = useChatBoxStore.use.currentEmployee();

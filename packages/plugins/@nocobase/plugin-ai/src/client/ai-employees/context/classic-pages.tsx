@@ -14,7 +14,6 @@ import { tval } from '@nocobase/utils/client';
 // @ts-ignore
 import pkg from '../../../../package.json';
 import { useT } from '../../locale';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { useTranslation } from 'react-i18next';
 import { Schema } from '@formily/react';
 import { Button } from 'antd';
@@ -113,32 +112,7 @@ export const ClassicPagesContext: WorkContextOptions = {
         Component: ({ onAdd }) => {
           const t = useT();
           const { t: collectionT } = useTranslation('lm-collections');
-          const { startSelect } = useAISelectionContext();
-          return (
-            <div
-              onClick={() => {
-                startSelect('block', {
-                  onSelect: ({ uid, fieldSchema, collection }) => {
-                    if (!uid) {
-                      return;
-                    }
-                    let title = '';
-                    if (collection) {
-                      title = Schema.compile(collection.title, { t: collectionT });
-                      title = `${title} `;
-                    }
-                    onAdd({
-                      uid,
-                      title: `${title}#${uid}`,
-                      content: JSON.stringify(fieldSchema.toJSON()),
-                    });
-                  },
-                });
-              }}
-            >
-              {t('Select block UI schemas')}
-            </div>
-          );
+          return <div onClick={() => {}}>{t('Select block UI schemas')}</div>;
         },
       },
       tag: {
@@ -156,35 +130,9 @@ export const ClassicPagesContext: WorkContextOptions = {
         icon: <SelectOutlined />,
         Component: ({ onAdd }) => {
           const t = useT();
-          const { startSelect } = useAISelectionContext();
           const addAttachments = useChatMessagesStore.use.addAttachments();
 
-          return (
-            <div
-              onClick={() => {
-                startSelect('field', {
-                  onSelect: ({ uid, value }) => {
-                    if (!value) {
-                      return;
-                    }
-                    if (isAttachment(value)) {
-                      addAttachments(value);
-                      return;
-                    }
-                    if (typeof value === 'string') {
-                      onAdd({
-                        uid,
-                        title: `${t('Field value')} #${uid}`,
-                        content: value,
-                      });
-                    }
-                  },
-                });
-              }}
-            >
-              {t('Select field values')}
-            </div>
-          );
+          return <div onClick={() => {}}>{t('Select field values')}</div>;
         },
       },
     },

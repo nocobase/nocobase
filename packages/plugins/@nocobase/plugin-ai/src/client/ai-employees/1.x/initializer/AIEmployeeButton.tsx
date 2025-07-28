@@ -22,7 +22,6 @@ import {
 import { useFieldSchema } from '@formily/react';
 // import { useChatBoxContext } from '../../chatbox/ChatBoxContext';
 import { ProfileCard } from '../../ProfileCard';
-import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 
 export const AIEmployeeButton: React.FC<{
   username: string;
@@ -45,11 +44,7 @@ export const AIEmployeeButton: React.FC<{
   // const setTaskVariables = useChatBoxContext('setTaskVariables');
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaToolbarRender(fieldSchema);
-  const {
-    aiEmployeesMap,
-    service: { loading },
-  } = useAIEmployeesContext();
-  const aiEmployee = aiEmployeesMap[username];
+  const aiEmployee = {};
 
   if (!aiEmployee) {
     return null;

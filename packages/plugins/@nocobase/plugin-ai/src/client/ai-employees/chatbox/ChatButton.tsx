@@ -11,24 +11,22 @@ import React, { useMemo, useState } from 'react';
 import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.png';
 import { css } from '@emotion/css';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { PauseCircleFilled, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
+import { useAIEmployeesData } from '../useAIEmployeesData';
 
 export const ChatButton: React.FC = () => {
-  const { aiEmployees } = useAIEmployeesContext();
+  const { aiEmployees } = useAIEmployeesData();
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const { stopSelect, selectable } = useAISelectionContext();
   const { token } = useToken();
 
   const items = useMemo(() => {
@@ -56,7 +54,7 @@ export const ChatButton: React.FC = () => {
         border-radius: 8px;
         gap: 8px;
         position: fixed;
-        bottom: 48px;
+        bottom: 42px;
         align-items: center;
         inset-inline-end: 8px;
         width: fit-content;
@@ -71,31 +69,16 @@ export const ChatButton: React.FC = () => {
       `}
     >
       <ShortcutList />
-      {!selectable ? (
-        <Dropdown menu={{ items }} placement="topRight">
-          <Avatar
-            src={icon}
-            size={52}
-            shape="square"
-            onClick={() => {
-              setOpen(!open);
-            }}
-          />
-        </Dropdown>
-      ) : (
-        <Button
-          icon={
-            <PauseCircleFilled
-              style={{
-                color: token.colorErrorText,
-              }}
-            />
-          }
+      <Dropdown menu={{ items }} placement="topRight">
+        <Avatar
+          src={icon}
+          size={52}
+          shape="square"
           onClick={() => {
-            stopSelect();
+            setOpen(!open);
           }}
         />
-      )}
+      </Dropdown>
     </div>
   );
 };

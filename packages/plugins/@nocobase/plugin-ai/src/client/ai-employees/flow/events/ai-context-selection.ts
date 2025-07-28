@@ -8,7 +8,8 @@
  */
 
 import { CollectionBlockModel } from '@nocobase/client';
-import { css } from '@emotion/css';
+import { useAISelectionStore } from '../../ai-selection';
+import classNames from 'classnames';
 
 CollectionBlockModel.registerFlow({
   key: 'aiOnSelectSettings',
@@ -16,8 +17,14 @@ CollectionBlockModel.registerFlow({
     aiOnSelect: {
       handler(ctx, params) {
         ctx.model.setDecoratorProps({
+          className: classNames('ai-selectable', ctx.model.decoratorProps.className),
           onClick: () => {
-            console.log('onClick', ctx.model);
+            const aiSelection = useAISelectionStore.getState();
+            if (!aiSelection.selectable) {
+              return;
+            }
+            aiSelection.selector?.onSelect({ uid: ctx.model.uid });
+            aiSelection.stopSelect();
           },
         });
       },

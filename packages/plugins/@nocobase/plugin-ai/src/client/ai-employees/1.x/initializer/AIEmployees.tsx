@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { SchemaInitializerItem, useSchemaInitializer, useToken } from '@nocobase/client';
-import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { Spin } from 'antd';
 import { tval } from '@nocobase/utils/client';
 import { AIEmployeeListItem } from '../../AIEmployeeListItem';
@@ -19,10 +18,8 @@ const getAIEmployeesInitializer = () => ({
   title: tval('AI employees', { ns: 'ai' }),
   type: 'subMenu',
   useChildren() {
-    const {
-      aiEmployees,
-      service: { loading },
-    } = useAIEmployeesContext();
+    const loading = false;
+    const aiEmployees = [];
     const { token } = useToken();
 
     return loading

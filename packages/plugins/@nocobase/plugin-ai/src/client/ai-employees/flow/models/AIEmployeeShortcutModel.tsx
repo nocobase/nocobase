@@ -12,19 +12,16 @@ import { Avatar, Button, Spin, Popover, Card, Tag } from 'antd';
 import { FlowModel, defineFlow, escapeT, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
 import { AIEmployee, Task, TriggerTaskOptions } from '../../types';
-import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
 import { useToken } from '@nocobase/client';
+import { useAIEmployeesData } from '../../useAIEmployeesData';
 const { Meta } = Card;
 
 const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, tasks }) => {
   const [focus, setFocus] = useState(false);
 
-  const {
-    aiEmployeesMap,
-    service: { loading },
-  } = useAIEmployeesContext();
+  const { loading, aiEmployeesMap } = useAIEmployeesData();
   const aiEmployee = aiEmployeesMap[username];
 
   const { triggerTask } = useChatBoxActions();

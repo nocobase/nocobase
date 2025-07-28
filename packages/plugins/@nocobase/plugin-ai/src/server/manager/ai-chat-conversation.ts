@@ -20,6 +20,7 @@ import {
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Filter, Transaction } from '@nocobase/database';
+import { LLMProvider } from '../llm-providers/provider';
 export const createAIChatConversation = (ctx: Context, sessionId: string): AIChatConversation => {
   return new AIChatConversationImpl(ctx, sessionId);
 };
@@ -103,7 +104,7 @@ class AIChatConversationImpl implements AIChatConversation {
   }
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
-    const messages = this.formatMessages(aiMessages);
+    const messages = await this.formatMessages(aiMessages, options.provider);
     if (options?.systemPrompt) {
       messages.unshift({
         role: 'system',
@@ -116,7 +117,7 @@ class AIChatConversationImpl implements AIChatConversation {
     };
   }
 
-  private formatMessages(messages: AIMessage[]) {
+  private async formatMessages(messages: AIMessage[], provider: LLMProvider) {
     const formattedMessages = [];
 
     for (const msg of messages) {
@@ -137,15 +138,13 @@ ${content}`;
         const contents = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            contents.push({
-              type: 'file',
-              content: attachment,
-            });
+            const parsed = await provider.parseAttachment(attachment);
+            contents.push(parsed);
           }
           if (content) {
             contents.push({
               type: 'text',
-              content,
+              text: content,
             });
           }
         }

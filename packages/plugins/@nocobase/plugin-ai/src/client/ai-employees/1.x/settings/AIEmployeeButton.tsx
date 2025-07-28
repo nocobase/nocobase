@@ -24,11 +24,10 @@ import { ArrayTabs } from '@formily/antd-v5';
 const { Meta } = Card;
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAISelectionContext } from '../../selector/AISelectorProvider';
+import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { AIEmployee, ContextItem as ContextItemType } from '../../types';
 import { AIVariableRawTextArea } from './AIVariableRawTextArea';
 import { useFieldSchema } from '@formily/react';
-import { useAIEmployeesContext } from '../../AIEmployeesProvider';
 import { useAIEmployeeButtonVariableOptions } from './useVariableOptions';
 import { AddContextButton } from '../../AddContextButton';
 import { useField } from '@formily/react';
@@ -253,8 +252,7 @@ export const aiEmployeeButtonSettings = new SchemaSettings({
         const username = dn.getSchemaAttribute('x-component-props.username') || {};
         const form = useMemo(() => createForm({}), []);
         const { selectable } = useAISelectionContext();
-        const { aiEmployeesMap } = useAIEmployeesContext();
-        const aiEmployee = aiEmployeesMap[username];
+        const aiEmployee = {};
 
         return (
           <div onClick={(e) => e.stopPropagation()}>

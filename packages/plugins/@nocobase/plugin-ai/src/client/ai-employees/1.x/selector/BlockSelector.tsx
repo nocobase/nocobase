@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Button } from 'antd';
-import { useT } from '../../locale';
+import { useT } from '../../../locale';
 import { BuildOutlined } from '@ant-design/icons';
 import { useAISelectionContext } from './AISelectorProvider';
 import { useField } from '@formily/react';

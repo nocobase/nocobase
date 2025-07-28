@@ -13,9 +13,9 @@ import { useT } from '../../locale';
 import { Button, Popover, Card, Alert, App, Typography } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { uid } from '@formily/shared';
 import { useChatBoxStore } from './stores/chat-box';
+import { useAIEmployeesData } from '../useAIEmployeesData';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();
@@ -39,9 +39,7 @@ const useEditActionProps = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
 
-  const {
-    service: { refresh },
-  } = useAIEmployeesContext();
+  const { refresh } = useAIEmployeesData();
 
   return {
     type: 'primary',

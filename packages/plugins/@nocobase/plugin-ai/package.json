@@ -22,7 +22,7 @@
     "use-context-selector": "^2.0.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
-    "@langchain/google-genai": "^0.2.14",
+    "@langchain/google-genai": "^0.2.16",
     "@langchain/anthropic": "^0.3.23",
     "echarts": "^5.5.0",
     "echarts-for-react": "3.0.2",

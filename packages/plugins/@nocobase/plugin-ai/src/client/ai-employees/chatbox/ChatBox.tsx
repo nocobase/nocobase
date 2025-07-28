@@ -22,7 +22,6 @@ const { Header, Footer, Sider } = Layout;
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
@@ -147,8 +146,6 @@ export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
   const showConversations = useChatBoxStore.use.showConversations();
 
-  const { selectable } = useAISelectionContext();
-
   return expanded ? (
     <Card
       style={{
@@ -158,7 +155,7 @@ export const ChatBoxWrapper: React.FC = () => {
         top: '50%',
         width: '95%',
         height: '95%',
-        zIndex: selectable ? -1 : 1100,
+        zIndex: 1100,
       }}
       styles={{
         body: {
