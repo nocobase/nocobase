@@ -286,15 +286,19 @@ export default class Processor {
           const JobCollection = this.options.plugin.db.getCollection('jobs');
           const changes = [];
           if (job.changed('status')) {
-            changes.push(`status=${job.status}`);
+            changes.push([`status`, job.status]);
+            job.changed('status', false);
           }
           if (job.changed('result')) {
-            changes.push(`result='${JSON.stringify(job.result)}'`);
+            changes.push([`result`, JSON.stringify(job.result)]);
+            job.changed('result', false);
           }
           if (changes.length) {
             await this.options.plugin.db.sequelize.query(
-              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.join()} WHERE id='${job.id}'`,
-              { transaction: this.mainTransaction },
+              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
+                job.id
+              }'`,
+              { replacements: changes.map(([, value]) => value), transaction: this.mainTransaction },
             );
           }
           // await job.save({ transaction: this.mainTransaction });
