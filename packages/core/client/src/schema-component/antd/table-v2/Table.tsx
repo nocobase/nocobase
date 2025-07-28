@@ -883,6 +883,8 @@ export const Table: any = withDynamicSchemaProps(
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+      const valueRef = useRef(value);
+      valueRef.current = value;
 
       useEffect(() => {
         if (tableBlockContextBasicValue?.field) {
@@ -993,8 +995,8 @@ export const Table: any = withDynamicSchemaProps(
             }
             const fromIndex = e.active?.data.current?.sortable?.index;
             const toIndex = e.over?.data.current?.sortable?.index;
-            const from = value?.[fromIndex] || e.active;
-            const to = value?.[toIndex] || e.over;
+            const from = valueRef.current?.[fromIndex] || e.active;
+            const to = valueRef.current?.[toIndex] || e.over;
             void field.move(fromIndex, toIndex);
             onRowDragEnd({ from, to });
           }, []);
@@ -1005,7 +1007,7 @@ export const Table: any = withDynamicSchemaProps(
             </DndContext>
           );
         };
-      }, [field, onRowDragEnd, value]); // 'value' is included in dependencies to ensure proper response to changes, such as when adding new rows. Be cautious of potential performance issues if 'value' changes frequently.
+      }, [field, onRowDragEnd]); // 'value' is included in dependencies to ensure proper response to changes, such as when adding new rows. Be cautious of potential performance issues if 'value' changes frequently.
 
       // @ts-ignore
       BodyWrapperComponent.displayName = 'BodyWrapperComponent';
@@ -1121,14 +1123,14 @@ export const Table: any = withDynamicSchemaProps(
             ? React.createElement<Omit<SortableContextProps, 'children'>>(
                 SortableContext,
                 {
-                  items: value?.map?.(getRowKey) || [],
+                  items: valueRef.current?.map?.(getRowKey) || [],
                 },
                 children,
               )
             : React.createElement(React.Fragment, {}, children);
         },
-        [dragSort, getRowKey, value], // 'value' is included in dependencies to ensure the SortableWrapper updates correctly when the data changes. 
-                                     // While this may cause the dropdown component to disappear in certain cases, it is necessary to maintain synchronization with the current table state.
+        [dragSort, getRowKey], // 'value' is included in dependencies to ensure the SortableWrapper updates correctly when the data changes.
+        // While this may cause the dropdown component to disappear in certain cases, it is necessary to maintain synchronization with the current table state.
       );
 
       const { height: tableHeight, tableSizeRefCallback } = useTableSize();
