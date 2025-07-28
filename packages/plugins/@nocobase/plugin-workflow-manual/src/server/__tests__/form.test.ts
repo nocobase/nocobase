@@ -82,8 +82,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -120,8 +120,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -164,8 +164,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -214,8 +214,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -264,8 +264,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -319,8 +319,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const now = new Date();
       const res1 = await userAgents[0].resource('workflowManualTasks').submit({
@@ -336,7 +336,8 @@ describe('workflow > instructions > manual', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
-      expect(job.result).toMatchObject({ f1: { a: users[0].id, id: 3, b: 3, d: post.title }, _: 'resolve' });
+      expect(job.result).toMatchObject({ f1: { id: 3, b: 3, d: post.title }, _: 'resolve' });
+      assert.equal(job.result.f1.a, users[0].id);
       const time = new Date(job.result.f1.c);
       expect(time.getTime() - now.getTime()).toBeLessThan(1000);
     });

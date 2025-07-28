@@ -37,15 +37,15 @@ describe('file-manager > cluster', () => {
       const p1 = app1.pm.get(Plugin) as Plugin;
       const p2 = app2.pm.get(Plugin) as Plugin;
 
-      expect(p1.storagesCache.get(s1.id)).toEqual(s1.toJSON());
-      expect(p2.storagesCache.get(s1.id)).toEqual(s1.toJSON());
+      expect(p1.storagesCache[s1.id]).toEqual(s1.toJSON());
+      expect(p2.storagesCache[s1.id]).toEqual(s1.toJSON());
 
       await s1.update({
         path: 'a',
       });
-      expect(p1.storagesCache.get(s1.id).path).toEqual('a');
+      expect(p1.storagesCache[s1.id].path).toEqual('a');
       await sleep(550);
-      expect(p2.storagesCache.get(s1.id).path).toEqual('a');
+      expect(p2.storagesCache[s1.id].path).toEqual('a');
     });
   });
 });

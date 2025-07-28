@@ -54,7 +54,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  nodesMap = new Map<number, FlowNodeModel>();
+  nodesMap = new Map<number | string, FlowNodeModel>();
 
   private jobsMapByNodeKey: { [key: string]: JobModel } = {};
   private jobResultsMapByNodeKey: { [key: string]: any } = {};
@@ -400,7 +400,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number, includeSelfScope = false) {
+  public getScope(sourceNodeId: number | string, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -431,7 +431,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number, { additionalScope = {}, includeSelfScope = false } = {}) {
+  public getParsedValue(value, sourceNodeId: number | string, { additionalScope = {}, includeSelfScope = false } = {}) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {

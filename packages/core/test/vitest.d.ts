@@ -15,9 +15,22 @@ declare global {
   const afterEach: (typeof import('vitest'))['afterEach'];
 }
 
+import type { Assertion, AsymmetricMatchersContaining } from 'vitest';
 import { type UserConfig } from 'vitest/config';
 export declare const defineConfig: (
   config?: UserConfig & {
     server: boolean;
   },
 ) => UserConfig;
+
+declare module 'vitest' {
+  // 直接为 Vitest 的原生接口添加方法签名
+  interface Assertion<T = any> {
+    toEqualNumberOrString(expected: string | number): T;
+  }
+
+  // AsymmetricMatchersContaining 的返回类型通常是 void
+  interface AsymmetricMatchersContaining {
+    toEqualNumberOrString(expected: string | number): void;
+  }
+}

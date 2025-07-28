@@ -11,6 +11,7 @@ import { MockDatabase } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import Instruction from '../instructions';
 
 describe('workflow > Processor', () => {
   let app: MockServer;
@@ -294,8 +295,8 @@ describe('workflow > Processor', () => {
 
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(2);
-      expect(jobs[0].nodeId).toEqual(n1.id);
-      expect(jobs[1].nodeId).toEqual(n2.id);
+      expect(jobs[0].nodeId).toEqualNumberOrString(n1.id);
+      expect(jobs[1].nodeId).toEqualNumberOrString(n2.id);
       expect(jobs[1].result).toEqual(true);
     });
 
@@ -376,6 +377,133 @@ describe('workflow > Processor', () => {
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('loop with delay inside, bigint job id', async () => {
+      class BigIntIdBranchInstruction extends Instruction {
+        async run(node, prevJob, processor) {
+          const [branch] = processor.getBranches(node);
+          if (!branch) {
+            return {
+              status: JOB_STATUS.RESOLVED,
+              result: { looped: 0 },
+            };
+          }
+          const job = processor.saveJob({
+            id: '16033386100689920',
+            status: JOB_STATUS.PENDING,
+            result: { looped: 0 },
+            nodeId: node.id,
+            nodeKey: node.key,
+            upstreamId: prevJob?.id ?? null,
+          });
+
+          await processor.run(branch, job);
+
+          return null;
+        }
+        async resume(node, branchJob, processor) {
+          const [branch] = processor.getBranches(node);
+          const job = processor.findBranchParentJob(branchJob, node);
+          const { result, status } = job;
+          if (status !== JOB_STATUS.PENDING) {
+            processor.logger.warn(`job (#${job.id}) is not pending, status: ${status}`);
+            return null;
+          }
+
+          if (!result.looped) {
+            job.set({
+              result: { looped: 1 },
+            });
+            processor.saveJob(job);
+            await processor.run(branch, job);
+            return null;
+          }
+
+          job.set({
+            status: JOB_STATUS.RESOLVED,
+          });
+          return job;
+        }
+      }
+      class BigIntIdInstruction extends Instruction {
+        run(node, prevJob, processor) {
+          const lastJob = processor.lastSavedJob;
+          const job = processor.saveJob({
+            id: lastJob.result.looped ? '16033386100689922' : '16033386100689921',
+            status: JOB_STATUS.PENDING,
+            nodeId: node.id,
+            nodeKey: node.key,
+            upstreamId: prevJob?.id ?? null,
+          });
+
+          setTimeout(() => {
+            this.workflow.resume(job);
+          }, 500);
+
+          return null;
+        }
+        async resume(node, prevJob, processor) {
+          console.log(
+            '--------',
+            processor.execution.jobs.map((item) => ({
+              id: item.id,
+              nodeId: item.nodeId,
+              nodeType: processor.nodesMap.get(item.nodeId)?.type,
+              status: item.status,
+            })),
+          );
+          prevJob.set('status', JOB_STATUS.RESOLVED);
+          return prevJob;
+        }
+      }
+      plugin.registerInstruction('bigIntIdBranch', BigIntIdBranchInstruction);
+      plugin.registerInstruction('bigIntId', BigIntIdInstruction);
+      const asyncWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        config: {},
+      });
+      const n1 = await asyncWorkflow.createNode({
+        type: 'bigIntIdBranch',
+      });
+
+      const n2 = await asyncWorkflow.createNode({
+        type: 'bigIntId',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      plugin.trigger(asyncWorkflow, {});
+
+      await sleep(100);
+
+      const [e1] = await asyncWorkflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      const j1s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j1s.length).toBe(2);
+      expect(j1s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j1s[1].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(600);
+      const [e2] = await asyncWorkflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.STARTED);
+      const j2s = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(j2s.length).toBe(3);
+      expect(j2s[0].status).toBe(JOB_STATUS.PENDING);
+      expect(j2s[1].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2s[2].status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(500);
+      const [e3] = await asyncWorkflow.getExecutions();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const j3s = await e3.getJobs({ order: [['id', 'ASC']] });
+      expect(j3s.length).toBe(3);
+      expect(j3s[0].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3s[1].status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3s[2].status).toBe(JOB_STATUS.RESOLVED);
     });
   });
 });

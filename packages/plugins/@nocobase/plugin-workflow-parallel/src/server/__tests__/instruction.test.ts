@@ -294,9 +294,9 @@ describe('workflow > instructions > parallel', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
-      expect(jobs.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.RESOLVED);
-      expect(jobs.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.ERROR);
-      expect(jobs.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId == n1.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId == n2.id).status).toBe(JOB_STATUS.ERROR);
+      expect(jobs.find((item) => item.nodeId == n3.id).status).toBe(JOB_STATUS.RESOLVED);
     });
 
     it('last failed', async () => {
@@ -325,9 +325,9 @@ describe('workflow > instructions > parallel', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(3);
-      expect(jobs.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.RESOLVED);
-      expect(jobs.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
-      expect(jobs.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.ERROR);
+      expect(jobs.find((item) => item.nodeId == n1.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId == n2.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs.find((item) => item.nodeId == n3.id).status).toBe(JOB_STATUS.ERROR);
     });
   });
 
@@ -559,7 +559,7 @@ describe('workflow > instructions > parallel', () => {
       const pendingJobs = await execution.getJobs();
       expect(pendingJobs.length).toBe(4);
 
-      const pending = pendingJobs.find((item) => item.nodeId === n3.id);
+      const pending = pendingJobs.find((item) => item.nodeId == n3.id);
       pending.set({
         status: JOB_STATUS.RESOLVED,
         result: 123,
@@ -614,7 +614,7 @@ describe('workflow > instructions > parallel', () => {
       const pendingJobs = await e1.getJobs();
       expect(pendingJobs.length).toBe(4);
 
-      const pending = pendingJobs.find((item) => item.nodeId === n2.id);
+      const pending = pendingJobs.find((item) => item.nodeId == n2.id);
       pending.set({
         status: JOB_STATUS.RESOLVED,
         result: 123,

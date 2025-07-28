@@ -63,7 +63,7 @@ export async function submit(context: Context, next) {
     .getParsedValue(task.node.config.assignees ?? [], task.nodeId)
     .flat()
     .filter(Boolean);
-  if (!assignees.includes(currentUser.id) || task.userId !== currentUser.id) {
+  if (!assignees.some((id) => id == currentUser.id) || task.userId != currentUser.id) {
     return context.throw(403);
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, task.nodeId, {

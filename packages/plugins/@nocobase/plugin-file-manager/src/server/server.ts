@@ -54,7 +54,7 @@ export type UploadFileOptions = {
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
-  storagesCache = new Map<number, StorageModel>();
+  storagesCache: { [key: string]: StorageModel } = {};
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
@@ -66,7 +66,7 @@ export class PluginFileManagerServer extends Plugin {
       return;
     }
 
-    const storage = this.storagesCache.get(record.get('storageId'));
+    const storage = this.storagesCache[record.get('storageId')];
     if (!storage) {
       return;
     }
@@ -110,7 +110,7 @@ export class PluginFileManagerServer extends Plugin {
     if (!this.storagesCache.size) {
       await this.loadStorages();
     }
-    const storages = Array.from(this.storagesCache.values());
+    const storages = Object.values(this.storagesCache);
     const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
     if (!storage) {
@@ -156,9 +156,9 @@ export class PluginFileManagerServer extends Plugin {
     const storages = await repository.find({
       transaction: options?.transaction,
     });
-    this.storagesCache = new Map();
+    this.storagesCache = {};
     for (const storage of storages) {
-      this.storagesCache.set(storage.get('id'), this.parseStorage(storage));
+      this.storagesCache[storage.get('id')] = this.parseStorage(storage);
     }
   }
 
@@ -308,7 +308,7 @@ export class PluginFileManagerServer extends Plugin {
     if (!file.storageId) {
       return encodeURL(file.url);
     }
-    const storage = this.storagesCache.get(file.storageId);
+    const storage = this.storagesCache[file.storageId];
     if (!storage) {
       return encodeURL(file.url);
     }
@@ -343,7 +343,7 @@ export class PluginFileManagerServer extends Plugin {
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }
-    const storage = this.storagesCache.get(file.storageId);
+    const storage = this.storagesCache[file.storageId];
     if (!storage) {
       throw new Error('[file-manager] no linked or default storage provided');
     }

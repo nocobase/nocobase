@@ -64,11 +64,11 @@ describe('storage:s3', () => {
         size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storageId: storage.id,
       };
 
       // 文件上传和解析是否正常
       expect(body.data).toMatchObject(matcher);
+      assert.equal(body.data.storageId, storage.id);
       // 文件的 url 是否正常生成
       expect(body.data.url).toBe(`${attachment.storage.baseUrl}/${body.data.path}/${body.data.filename}`);
       // 文件的数据是否正常保存

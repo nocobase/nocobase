@@ -59,9 +59,9 @@ describe('file manager > server', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: 1,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, 1);
       });
 
       it('should be local2 storage', async () => {
@@ -87,9 +87,9 @@ describe('file manager > server', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: storage.id,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, storage.id);
       });
 
       it('should be custom values', async () => {
@@ -106,9 +106,9 @@ describe('file manager > server', () => {
           path: '',
           size: 22,
           meta: {},
-          storageId: 1,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, 1);
       });
     });
 
@@ -123,9 +123,9 @@ describe('file manager > server', () => {
           extname: '.txt',
           path: '',
           meta: {},
-          storageId: 1,
         };
         expect(data).toMatchObject(matcher);
+        assert.equal(data.storageId, 1);
       });
     });
 

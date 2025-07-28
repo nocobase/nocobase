@@ -60,7 +60,7 @@ describe('update associations', () => {
       });
 
       const profile1 = await Profile.repository.findOne({ filterByTk: profile.id });
-      expect(profile1['userId']).toBe(user.id);
+      assert.equal(profile1['userId'], user.id);
     });
 
     it('should update has many association with foreign key', async () => {
@@ -102,7 +102,7 @@ describe('update associations', () => {
       });
 
       const profile1 = await Profile.repository.findOne({ filterByTk: profile.id });
-      expect(profile1['userId']).toBe(user.id);
+      assert.equal(profile1['userId'], user.id);
     });
 
     test('update belongs to with foreign key and object', async () => {
@@ -285,14 +285,14 @@ describe('update associations', () => {
       });
 
       expect(p4?.toJSON()).toMatchObject({
-        id: 4,
         name: 'post4',
-        userId: 1,
         user: {
-          id: 1,
           name: 'user1',
         },
       });
+      assert.equal(p4?.get('id'), 4);
+      assert.equal(p4?.get('user').id, 1);
+      assert.equal(p4?.get('userId'), 1);
     });
   });
 
@@ -355,10 +355,10 @@ describe('update associations', () => {
         posts: [
           {
             name: 'post1',
-            userId: user1.id,
           },
         ],
       });
+      assert.equal(user1.get('posts')[0].get('userId'), user1.id);
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
@@ -374,10 +374,10 @@ describe('update associations', () => {
         posts: [
           {
             name: 'post1',
-            userId: user1.id,
           },
         ],
       });
+      assert.equal(user1.get('posts')[0].get('userId'), user1.id);
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
@@ -389,9 +389,7 @@ describe('update associations', () => {
         name: 'user1',
       });
       const post11 = await Post.model.findByPk(post1.id);
-      expect(post11.toJSON()).toMatchObject({
-        userId: user1.id,
-      });
+      assert.equal(post11.get('userId'), user1.id);
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
@@ -404,9 +402,7 @@ describe('update associations', () => {
         name: 'user1',
       });
       const post11 = await Post.model.findByPk(post1.id);
-      expect(post11.toJSON()).toMatchObject({
-        userId: user1.id,
-      });
+      assert.equal(post11.get('userId'), user1.id);
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
@@ -422,10 +418,8 @@ describe('update associations', () => {
         name: 'user1',
       });
       const post11 = await Post.model.findByPk(post1.id);
-      expect(post11.toJSON()).toMatchObject({
-        userId: user1.id,
-        name: 'post1',
-      });
+      assert.equal(post11.get('userId'), user1.id);
+      assert.equal(post11.get('name'), 'post1');
     });
     it('user.posts', async () => {
       const user1 = await User.model.create<any>({ name: 'user1' });
@@ -447,20 +441,14 @@ describe('update associations', () => {
         name: 'user1',
       });
       const post11 = await Post.model.findByPk(post1.id);
-      expect(post11.toJSON()).toMatchObject({
-        userId: user1.id,
-        name: 'post1',
-      });
+      assert.equal(post11.get('userId'), user1.id);
+      assert.equal(post11.get('name'), 'post1');
       const post22 = await Post.model.findByPk(post2.id);
-      expect(post22.toJSON()).toMatchObject({
-        userId: user1.id,
-        name: 'post2',
-      });
+      assert.equal(post22.get('userId'), user1.id);
+      assert.equal(post22.get('name'), 'post2');
       const post33 = await Post.model.findByPk(post3.id);
-      expect(post33.toJSON()).toMatchObject({
-        userId: user1.id,
-        name: 'post3',
-      });
+      assert.equal(post33.get('userId'), user1.id);
+      assert.equal(post33.get('name'), 'post3');
     });
   });
 
@@ -568,17 +556,13 @@ describe('update associations', () => {
         where: { name: 'post1' },
       });
 
+      assert.equal(post1.get('userId'), user.id);
+
       const comment1 = await Comment.model.findOne({
         where: { name: 'comment1' },
       });
 
-      expect(post1).toMatchObject({
-        userId: user.get('id'),
-      });
-
-      expect(comment1).toMatchObject({
-        postId: post1.get('id'),
-      });
+      assert.equal(comment1.get('postId'), post1.get('id'));
     });
   });
 

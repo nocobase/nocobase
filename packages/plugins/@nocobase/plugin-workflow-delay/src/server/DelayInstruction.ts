@@ -23,7 +23,7 @@ interface DelayConfig {
 }
 
 export default class extends Instruction {
-  timers: Map<number, NodeJS.Timeout> = new Map();
+  timers: Map<string | number, NodeJS.Timeout> = new Map();
 
   constructor(public workflow: WorkflowPlugin) {
     super(workflow);
@@ -76,7 +76,7 @@ export default class extends Instruction {
     const delay = createdAt + job.result - Date.now();
     if (delay > 0) {
       const trigger = this.trigger.bind(this, job.id);
-      this.timers.set(job.id, setTimeout(trigger, delay));
+      this.timers.set(job.id.toString(), setTimeout(trigger, delay));
     } else {
       this.trigger(job);
     }
@@ -94,8 +94,10 @@ export default class extends Instruction {
     if (job.execution.status === EXECUTION_STATUS.STARTED) {
       this.workflow.resume(job);
     }
-    if (this.timers.get(job.id)) {
-      this.timers.delete(job.id);
+    const idStr = job.id.toString();
+    if (this.timers.get(idStr)) {
+      clearTimeout(this.timers.get(idStr));
+      this.timers.delete(idStr);
     }
   }
 
@@ -108,7 +110,6 @@ export default class extends Instruction {
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
-    job.node = node;
 
     // add to schedule
     this.schedule(job);

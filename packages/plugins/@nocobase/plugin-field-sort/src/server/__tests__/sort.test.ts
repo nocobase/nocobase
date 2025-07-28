@@ -213,9 +213,9 @@ describe('sort field', () => {
 
       const records = await Test.repository.find({});
       const r3 = records.find((r) => r.get('name') === 'r3');
-      expect(r3.get('sort')).toBe(2);
+      expect(r3.get('sort')).toEqualNumberOrString(2);
       const r5 = records.find((r) => r.get('name') === 'r5');
-      expect(r5.get('sort')).toBe(1);
+      expect(r5.get('sort')).toEqualNumberOrString(1);
     });
 
     it('should init sorted value by createdAt when primaryKey not exists', async () => {
@@ -292,7 +292,9 @@ describe('sort field', () => {
       const items = await db.getRepository('tests').find({
         order: ['id'],
       });
-      expect(items.map((item) => item.get('sort'))).toEqual([1, 2, 3]);
+      expect(items[0].get('sort')).toEqualNumberOrString(1);
+      expect(items[1].get('sort')).toEqualNumberOrString(2);
+      expect(items[2].get('sort')).toEqualNumberOrString(3);
     });
 
     test.skip('simultaneously create ', async () => {
@@ -343,16 +345,16 @@ describe('sort field', () => {
       const t3 = await Test.model.create({ status: 'draft' });
       const t4 = await Test.model.create({ status: 'draft' });
 
-      expect(t1.get('sort')).toBe(1);
-      expect(t2.get('sort')).toBe(2);
-      expect(t3.get('sort')).toBe(1);
-      expect(t4.get('sort')).toBe(2);
+      expect(t1.get('sort')).toEqualNumberOrString(1);
+      expect(t2.get('sort')).toEqualNumberOrString(2);
+      expect(t3.get('sort')).toEqualNumberOrString(1);
+      expect(t4.get('sort')).toEqualNumberOrString(2);
 
       t1.set('status', 'draft');
       await t1.save();
 
       await t1.reload();
-      expect(t1.get('sort')).toBe(3);
+      expect(t1.get('sort')).toEqualNumberOrString(3);
     });
   });
 
@@ -374,8 +376,8 @@ describe('sort field', () => {
       const p2 = await anotherDB.getRepository('posts').create({
         values: { title: 'p2' },
       });
-      expect(p1.sort).toBe(1);
-      expect(p2.sort).toBe(2);
+      expect(p1.sort).toEqualNumberOrString(1);
+      expect(p2.sort).toEqualNumberOrString(2);
     });
   });
 });

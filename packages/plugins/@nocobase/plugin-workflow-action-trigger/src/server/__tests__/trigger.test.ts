@@ -404,7 +404,8 @@ describe('workflow > action-trigger', () => {
       const e1s = await workflow.getExecutions();
       expect(e1s.length).toBe(1);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(e1s[0].context.data).toMatchObject({ title: 'p1', categoryId: c1.id });
+      expect(e1s[0].context.data.title).toBe('p1');
+      assert.equal(e1s[0].context.data.categoryId, c1.id);
 
       const res2 = await userAgents[0]
         .post(`/categories/${c1.id}/posts:create`)
@@ -446,11 +447,14 @@ describe('workflow > action-trigger', () => {
       expect(res1.status).toBe(200);
       expect(res1.body.data.execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [e1] = await w1.getExecutions();
-      expect(e1.id).toBe(res1.body.data.execution.id);
-      expect(e1.context.data).toMatchObject({ id: data.id, categoryId: category.id, category: { title: 'c1' } });
+      assert.equal(e1.id, res1.body.data.execution.id);
+      expect(e1.context.data).toMatchObject({ category: { title: 'c1' } });
+      assert.equal(e1.context.data.id, data.id);
+      assert.equal(e1.context.data.categoryId, category.id);
       expect(e1.context.user).toMatchObject(
-        omit(users[1].toJSON(), ['createdAt', 'updatedAt', 'createdById', 'updatedById']),
+        omit(users[1].toJSON(), ['id', 'createdAt', 'updatedAt', 'createdById', 'updatedById']),
       );
+      assert.equal(e1.context.user.id, users[1].toJSON().id);
     });
   });
 

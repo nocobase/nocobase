@@ -565,7 +565,7 @@ export async function updateMultipleAssociation(
     // @ts-ignore
     const findTargetKey = (association as any).targetKey || association.options.targetKey || targetKey;
 
-    const existIndexInSetItems = setItems.findIndex((setItem) => setItem[findTargetKey] === newItem[findTargetKey]);
+    const existIndexInSetItems = setItems.findIndex((setItem) => setItem[findTargetKey] == newItem[findTargetKey]);
 
     if (existIndexInSetItems !== -1) {
       setItems[existIndexInSetItems] = newItem;

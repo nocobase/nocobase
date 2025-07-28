@@ -62,7 +62,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
-      expect(executions[0].context.data.id).toBe(post.id);
+      expect(executions[0].context.data.id).toEqualNumberOrString(post.id);
       const triggerTime = new Date(post.createdAt);
       triggerTime.setMilliseconds(0);
       expect(executions[0].context.date).toBe(triggerTime.toISOString());
@@ -93,7 +93,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
       await sleep(2000);
       const e2s = await workflow.getExecutions();
       expect(e2s.length).toBe(1);
-      expect(e2s[0].context.data.id).toBe(post.id);
+      expect(e2s[0].context.data.id).toEqualNumberOrString(post.id);
 
       const triggerTime = new Date(post.createdAt.getTime() + 2000);
       triggerTime.setMilliseconds(0);
@@ -406,7 +406,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
-      expect(executions[0].context.data.category.id).toBe(category.id);
+      expect(executions[0].context.data.category.id).toEqualNumberOrString(category.id);
     });
 
     it('on field changed', async () => {
@@ -494,7 +494,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
 
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
-      expect(executions[0].context.data.id).toBe(p1.id);
+      expect(executions[0].context.data.id).toEqualNumberOrString(p1.id);
       const triggerTime = new Date(p1.createdAt);
       triggerTime.setMilliseconds(0);
       expect(executions[0].context.date).toBe(triggerTime.toISOString());
