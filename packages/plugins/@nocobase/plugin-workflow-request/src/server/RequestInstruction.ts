@@ -224,6 +224,12 @@ export default class extends Instruction {
           const job = await this.workflow.app.db.getRepository('jobs').findOne({
             filterByTk: id,
           });
+          if (!job) {
+            processor.logger.error(
+              `request job (${id}) not found, execution (${processor.execution.id}) cannot be resumed.`,
+            );
+            return;
+          }
           job.set(jobDone);
           job.execution = processor.execution;
           this.workflow.resume(job);
