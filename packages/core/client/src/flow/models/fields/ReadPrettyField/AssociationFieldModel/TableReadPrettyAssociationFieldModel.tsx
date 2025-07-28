@@ -27,8 +27,7 @@ function TableModelMixin<TBase extends Constructor>(Base: TBase) {
     renderCell = TableModel.prototype.renderCell;
     resource = {
       getData: () => {
-        console.log(this);
-        return this.field?.value || [];
+        return (this.field as any)?.value || [];
       },
     };
   };
@@ -36,6 +35,7 @@ function TableModelMixin<TBase extends Constructor>(Base: TBase) {
 
 const CombinedBase = TableModelMixin(ReadPrettyAssociationFieldModel);
 
+// Todo 未完成
 export class TableReadPrettyAssociationFieldModel extends CombinedBase {
   get collection() {
     return this.collectionField.targetCollection;
@@ -60,8 +60,4 @@ export class TableReadPrettyAssociationFieldModel extends CombinedBase {
       </div>
     );
   }
-
-  //    public render() {
-  //       return <FlowModelRenderer/>
-  //    }
 }

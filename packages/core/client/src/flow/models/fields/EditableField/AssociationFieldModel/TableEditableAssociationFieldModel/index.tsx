@@ -22,7 +22,7 @@ const AssociationTable = connect(
 );
 
 export class TableEditableAssociationFieldModel extends EditableAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
+  static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
   get collection() {
     return this.collectionField.targetCollection;
   }
