@@ -16,7 +16,7 @@ import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
-import { ExecutionModel, FlowNodeModel, JobModel } from './types';
+import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
@@ -55,7 +55,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  nodesMap = new Map<number, FlowNodeModel>();
+  nodesMap = new Map<number | string, FlowNodeModel>();
 
   private jobsMapByNodeKey: { [key: string]: JobModel } = {};
   private jobResultsMapByNodeKey: { [key: string]: any } = {};
@@ -283,7 +283,25 @@ export default class Processor {
         if (job.isNewRecord) {
           newJobs.push(job);
         } else {
-          await job.save({ transaction: this.mainTransaction });
+          const JobCollection = this.options.plugin.db.getCollection('jobs');
+          const changes = [];
+          if (job.changed('status')) {
+            changes.push([`status`, job.status]);
+            job.changed('status', false);
+          }
+          if (job.changed('result')) {
+            changes.push([`result`, JSON.stringify(job.result)]);
+            job.changed('result', false);
+          }
+          if (changes.length) {
+            await this.options.plugin.db.sequelize.query(
+              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
+                job.id
+              }'`,
+              { replacements: changes.map(([, value]) => value), transaction: this.mainTransaction },
+            );
+          }
+          // await job.save({ transaction: this.mainTransaction });
         }
       }
       if (newJobs.length) {
@@ -323,13 +341,18 @@ export default class Processor {
       job = payload;
       job.set('updatedAt', new Date());
     } else {
-      job = model.build({
-        ...payload,
-        id: this.options.plugin.snowflake.getUniqueID().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        executionId: this.execution.id,
-      });
+      job = model.build(
+        {
+          ...payload,
+          id: this.options.plugin.snowflake.getUniqueID().toString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          executionId: this.execution.id,
+        },
+        {
+          isNewRecord: true,
+        },
+      );
     }
     this.jobsToSave.set(job.id, job);
 
@@ -417,7 +440,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number, includeSelfScope = false) {
+  public getScope(sourceNodeId: number | string, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -448,7 +471,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number, { additionalScope = {}, includeSelfScope = false } = {}) {
+  public getParsedValue(value, sourceNodeId: number | string, { additionalScope = {}, includeSelfScope = false } = {}) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {

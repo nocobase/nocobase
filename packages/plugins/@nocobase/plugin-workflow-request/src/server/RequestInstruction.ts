@@ -10,7 +10,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import { Readable } from 'stream';
@@ -183,22 +183,24 @@ export default class extends Instruction {
       }
     }
 
-    const job = processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
+    const jobDone: IJob = {
+      status: JOB_STATUS.PENDING,
+    };
+
     // eslint-disable-next-line promise/catch-or-return
     request(config, this.workflow.app)
       .then((response) => {
         processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
 
-        job.set({
-          status: JOB_STATUS.RESOLVED,
-          result: responseSuccess(response, config.onlyData),
-        });
+        jobDone.status = JOB_STATUS.RESOLVED;
+        jobDone.result = responseSuccess(response, config.onlyData);
       })
       .catch((error) => {
         if (error.isAxiosError) {
@@ -213,14 +215,22 @@ export default class extends Instruction {
           processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
         }
 
-        job.set({
-          status: JOB_STATUS.FAILED,
-          result: responseFailure(error),
-        });
+        jobDone.status = JOB_STATUS.FAILED;
+        jobDone.result = responseFailure(error);
       })
       .finally(() => {
         processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
-        setTimeout(() => {
+        setTimeout(async () => {
+          const job = await this.workflow.app.db.getRepository('jobs').findOne({
+            filterByTk: id,
+          });
+          if (!job) {
+            processor.logger.error(
+              `request job (${id}) not found, execution (${processor.execution.id}) cannot be resumed.`,
+            );
+            return;
+          }
+          job.set(jobDone);
           job.execution = processor.execution;
           this.workflow.resume(job);
         });
