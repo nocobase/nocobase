@@ -69,7 +69,6 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 BlockModel.registerFlow({
   key: 'cardSettings',
   title: escapeT('Card settings'),
-  auto: true,
   steps: {
     titleDescription: {
       title: escapeT('Title & description'),
