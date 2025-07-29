@@ -12,8 +12,10 @@ import _ from 'lodash';
 
 type RunSQLOptions = {
   uid: string;
+  sql?: string;
   params?: Record<string, any>;
   type?: 'selectVar' | 'selectRow' | 'selectRows';
+  debug?: boolean;
 };
 
 export class PluginFlowEngineClient extends Plugin {
@@ -21,20 +23,16 @@ export class PluginFlowEngineClient extends Plugin {
   async beforeLoad() {}
   async load() {
     const ctx = this.flowEngine.context;
-    ctx.defineMethod('runsql', async (sql: string, options: RunSQLOptions) => {
+    ctx.defineMethod('runsql', async (options: RunSQLOptions) => {
       if (!options.uid) {
         throw new Error('UID is required');
-      }
-      if (!sql) {
-        throw new Error('SQL query cannot be empty');
       }
       const { data } = await ctx.api.request({
         method: 'POST',
         url: 'flowSql:run',
         data: {
-          sql,
           type: 'selectRows',
-          ..._.pick(options, ['uid', 'params', 'type']),
+          ..._.pick(options, ['sql', 'uid', 'params', 'type']),
         },
       });
       return data?.data;

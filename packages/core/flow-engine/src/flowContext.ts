@@ -375,9 +375,11 @@ export class FlowContext {
 }
 
 type RunSQLOptions = {
-  uid: string;
-  params?: Record<string, any>;
-  type?: 'selectVar' | 'selectRow' | 'selectRows';
+  uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
+  sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
+  params?: Record<string, any>; // 可选，SQL 参数
+  type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
+  debug?: boolean;
 };
 
 export class FlowEngineContext extends FlowContext {
@@ -389,7 +391,7 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
-  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
+  declare runsql: (options: RunSQLOptions) => Promise<any>;
 
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -482,7 +484,7 @@ export class FlowModelContext extends FlowContext {
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
-  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
+  declare runsql: (options: RunSQLOptions) => Promise<any>;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
   declare message: MessageInstance;
@@ -529,7 +531,7 @@ export class FlowForkModelContext extends FlowContext {
   declare ref: React.RefObject<HTMLDivElement>;
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
-  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
+  declare runsql: (options: RunSQLOptions) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare modal: HookAPI;
   declare message: MessageInstance;
@@ -583,7 +585,7 @@ export class FlowRuntimeContext<
   declare ref: React.RefObject<HTMLDivElement>;
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
-  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
+  declare runsql: (options: RunSQLOptions) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare viewOpener: ViewOpener;
