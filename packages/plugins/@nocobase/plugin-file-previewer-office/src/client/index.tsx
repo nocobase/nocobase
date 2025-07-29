@@ -96,7 +96,6 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'application/pdf',
         ].includes(file.mimetype);
       },
       Previewer: IframePreviewer,
