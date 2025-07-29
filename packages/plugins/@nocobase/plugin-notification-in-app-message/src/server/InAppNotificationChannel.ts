@@ -33,8 +33,9 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
 
   onMessageCreatedOrUpdated = async (model, options) => {
     const userId = model.userId;
-    this.app.emit('ws:sendToUser', {
-      userId,
+    this.app.emit('ws:sendToTag', {
+      tagKey: 'userId',
+      tagValue: userId,
       message: {
         type: 'in-app-message:updated',
         payload: model.toJSON(),
