@@ -84,7 +84,6 @@
     "joi": "^17.13.3",
     "lint-staged": "^13.2.3",
     "loadjs": "^4.3.0",
-    "newrelic": "^12.25.0",
     "patch-package": "^8.0.0",
     "pm2": "^6.0.5",
     "pretty-format": "^24.0.0",
