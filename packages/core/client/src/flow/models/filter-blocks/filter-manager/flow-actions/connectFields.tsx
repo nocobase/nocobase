@@ -30,6 +30,22 @@ export const connectFields = defineAction({
     };
   },
   beforeParamsSave(ctx, params) {
+    const config = params.value as ConnectFieldsConfig;
+
+    if (!config.operator) {
+      ctx.notification.error({
+        message: ctx.t('请选择一个操作符'),
+      });
+      return ctx.exit();
+    }
+
+    if (!config.targets || config.targets.length === 0) {
+      ctx.notification.error({
+        message: ctx.t('请选择至少一个目标区块'),
+      });
+      return ctx.exit();
+    }
+
     ctx.model.context.filterManager.saveConnectFieldsConfig(ctx.model.uid, params.value);
     ctx.exit();
   },
@@ -251,7 +267,7 @@ function ConnectFields(
             <Select
               options={operatorOptions}
               placeholder="请选择操作符"
-              value={value.operator}
+              value={value?.operator}
               onChange={handleDefaultOperatorChange}
             />
           </FormItem>
