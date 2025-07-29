@@ -96,6 +96,8 @@ export async function resolveParamsExpressions<TModel extends FlowModel = FlowMo
     return source;
   };
 
+  // 有一些场景需要跳过解析，例如默认值设置变量后，设置菜单里面的 model defaultvalue应该显示的是原始变量字符串
+  // 此时上下文还是处于runtime模式的，暂时通过上下文的字段让其跳过解析
   if (ctx.skipResolveParams) {
     return params;
   }
