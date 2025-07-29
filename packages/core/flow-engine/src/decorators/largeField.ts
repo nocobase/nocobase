@@ -7,5 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { reactive } from './reactive';
-export { largeField } from './largeField';
+export function largeField() {
+  return function (target: any) {
+    target.isLargeField = true;
+  };
+}
