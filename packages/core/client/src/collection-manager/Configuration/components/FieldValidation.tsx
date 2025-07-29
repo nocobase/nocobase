@@ -14,22 +14,26 @@ import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { uid } from '@formily/shared';
 
 interface ValidationRule {
   key: string;
   name: string;
-  value?: string;
-  [key: string]: any;
+  args?: {
+    [key: string]: any;
+  };
+}
+
+interface ValidationData {
+  type: string;
+  rules: ValidationRule[];
 }
 
 interface FieldValidationProps {
-  value?: ValidationRule[];
-  onChange?: (value: ValidationRule[]) => void;
-  type?: string; // 验证类型，来自 x-component-props
+  value?: ValidationData;
+  onChange?: (value: ValidationData) => void;
+  type?: string;
 }
 
-// Joi 验证函数映射
 const VALIDATION_OPTIONS = {
   string: [
     { key: 'max', label: 'Max' },
@@ -61,9 +65,13 @@ const VALIDATION_OPTIONS = {
 };
 
 export const FieldValidation = observer((props: FieldValidationProps) => {
-  const { value = [], onChange, type } = props;
+  const { value, onChange, type } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
+
+  // 从 value 中解构 rules，如果 value 不存在则使用空数组
+  const rules = value?.rules || [];
+  const validationType = value?.type || type || 'string';
 
   const styles = useMemo(() => {
     return {
@@ -110,29 +118,58 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     };
   }, [token]);
 
-  // 获取当前类型对应的验证选项
   const validationOptions = useMemo(() => {
-    return VALIDATION_OPTIONS[type] || VALIDATION_OPTIONS.string;
-  }, [type]);
+    return VALIDATION_OPTIONS[validationType] || VALIDATION_OPTIONS.string;
+  }, [validationType]);
 
   const handleAddRule = (ruleType: string) => {
     const newRule: ValidationRule = {
-      key: `r_${uid()}`,
+      key: `r_${Date.now()}`,
       name: ruleType,
-      value: '',
+      args: {},
     };
 
-    const newValue = [...value, newRule];
+    const newRules = [...rules, newRule];
+    const newValue: ValidationData = {
+      type: validationType,
+      rules: newRules,
+    };
     onChange?.(newValue);
   };
 
-  const handleRemoveRule = (ruleKey: string) => {
-    const newValue = value.filter((rule) => rule.key !== ruleKey);
+  const handleRemoveRule = (ruleIndex: number) => {
+    const newRules = rules.filter((_, index) => index !== ruleIndex);
+    const newValue: ValidationData = {
+      type: validationType,
+      rules: newRules,
+    };
     onChange?.(newValue);
   };
 
-  const handleRuleChange = (ruleKey: string, field: string, fieldValue: any) => {
-    const newValue = value.map((rule) => (rule.key === ruleKey ? { ...rule, [field]: fieldValue } : rule));
+  const handleRuleChange = (ruleIndex: number, field: string, fieldValue: any) => {
+    const newRules = rules.map((rule, index) => {
+      if (index === ruleIndex) {
+        if (field === 'value') {
+          let argKey = 'limit';
+          if (rule.name === 'pattern') {
+            argKey = 'regex';
+          } else {
+            fieldValue = Number(fieldValue);
+          }
+
+          return { ...rule, args: { ...rule.args, [argKey]: fieldValue } };
+        } else if (field === 'name') {
+          return { ...rule, name: fieldValue, args: {} };
+        } else {
+          return { ...rule, [field]: fieldValue };
+        }
+      }
+      return rule;
+    });
+    const newValue: ValidationData = {
+      type: validationType,
+      rules: newRules,
+    };
     onChange?.(newValue);
   };
 
@@ -155,13 +192,15 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       <div style={styles.label}>{t('Validation')}:</div>
 
       <div style={styles.validationContainer}>
-        {value.map((rule) => {
-          const needsValue = !['required'].includes(rule.name);
+        {rules.map((rule, index) => {
+          const needsValue = !['required', 'email', 'url'].includes(rule.name);
+          const currentValue = rule.args?.limit || rule.args?.regex || '';
+
           return (
             <div key={rule.key} style={styles.ruleRow}>
               <Select
                 value={rule.name}
-                onChange={(newType) => handleRuleChange(rule.key, 'name', newType)}
+                onChange={(newType) => handleRuleChange(index, 'name', newType)}
                 style={styles.ruleSelect}
                 options={validationOptions.map((opt) => ({
                   value: opt.key,
@@ -172,15 +211,15 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
 
               {needsValue && (
                 <Input
-                  value={rule.value}
-                  onChange={(e) => handleRuleChange(rule.key, 'value', e.target.value)}
+                  value={currentValue}
+                  onChange={(e) => handleRuleChange(index, 'value', e.target.value)}
                   placeholder={t('Enter value')}
                   style={styles.ruleInput}
                   size="small"
                 />
               )}
 
-              <CloseOutlined style={styles.removeButton} onClick={() => handleRemoveRule(rule.key)} />
+              <CloseOutlined style={styles.removeButton} onClick={() => handleRemoveRule(index)} />
             </div>
           );
         })}

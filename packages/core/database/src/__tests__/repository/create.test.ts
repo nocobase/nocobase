@@ -8,6 +8,7 @@
  */
 
 import { Collection, createMockDatabase, Database } from '@nocobase/database';
+import { uid } from '@nocobase/utils';
 
 describe('create with hasMany', () => {
   let db: Database;
@@ -293,5 +294,93 @@ describe('create', () => {
 
     expect(u1.name).toEqual('u1');
     expect(await u1.countPosts()).toEqual(1);
+  });
+});
+
+describe('validation', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = await createMockDatabase();
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  describe('string field validation', () => {
+    let StringCollection: Collection;
+    beforeEach(async () => {
+      StringCollection = db.collection({
+        name: 'test',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+            allowNull: true,
+            validation: {
+              type: 'string',
+              rules: [
+                { key: `r_${uid()}`, name: 'min', args: { limit: 2 } },
+                { key: `r_${uid()}`, name: 'max', args: { limit: 5 } },
+                { key: `r_${uid()}`, name: 'pattern', args: { regex: /^[a-zA-Z]+$/ } }, // only letters
+              ],
+            },
+          },
+        ],
+      });
+      await db.sync();
+    });
+
+    it('should throw validation error for string field that is too short', async () => {
+      await expect(
+        StringCollection.repository.create({
+          values: {
+            name: 'a', // violates min: 2
+          },
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should throw validation error for string field that is too long', async () => {
+      await expect(
+        StringCollection.repository.create({
+          values: {
+            name: 'abcdef', // violates max: 5
+          },
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should throw validation error for invalid pattern', async () => {
+      await expect(
+        StringCollection.repository.create({
+          values: {
+            name: 'abc123', // violates pattern: only letters allowed
+          },
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('should succeed with valid string values', async () => {
+      const result = await StringCollection.repository.create({
+        values: {
+          name: 'abc', // valid: length 2-5 and only letters
+        },
+      });
+
+      expect(result.get('name')).toBe('abc');
+    });
+
+    it('should throw validation error for invalid null', async () => {
+      await expect(
+        StringCollection.repository.create({
+          values: {
+            name: null,
+          },
+        }),
+      ).rejects.toThrow();
+    });
   });
 });

@@ -26,6 +26,7 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { buildJoiSchema } from './utils/field-validation';
 
 export type RepositoryType = typeof Repository;
 
@@ -226,6 +227,21 @@ export class Collection<
     for (const [_, field] of this.fields) {
       if (field.options.treeChildren) {
         return field;
+      }
+    }
+  }
+
+  validate(values: Record<string, any>) {
+    for (const [, field] of this.fields) {
+      if (!field.options.validation) {
+        continue;
+      }
+
+      const joiSchema = buildJoiSchema(field.options.validation);
+      const value = values[field.name];
+      const { error } = joiSchema.validate(value);
+      if (error) {
+        throw new Error(`Validation error for field "${field.name}", value: ${value}, details: ${error.message}`);
       }
     }
   }
