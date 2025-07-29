@@ -223,11 +223,8 @@ EditableFieldModel.registerFlow({
       title: escapeT('Default value'),
       uiSchema: {
         defaultValue: {
-          'x-component': DefaultValue,
+          'x-component': 'VariableFieldInput',
           'x-decorator': 'FormItem',
-          'x-component-props': {
-            useStepInputComponent: true,
-          },
         },
       },
       defaultParams: (ctx) => ({

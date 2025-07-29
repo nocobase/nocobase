@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './EllipsisWithTooltip';
-export * from './ExpiresRadio';
-export * from './drag-drop';
-export * from './VariableFieldInput';
-export * from './VariableValue';
+export { VariableSelector } from './VariableSelector';
