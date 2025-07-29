@@ -68,6 +68,7 @@ const importFormSchema = {
             className: css`
               margin-top: 5px;
             `,
+            children: escapeT('Download template', { ns: `${NAMESPACE}` }),
             onClick: '{{ useDownloadXlsxTemplateAction }}',
           },
         },
@@ -96,6 +97,7 @@ const SchemaField = createSchemaField({
     DownloadTips,
     Upload,
     FormItem,
+    Button,
   },
 });
 
