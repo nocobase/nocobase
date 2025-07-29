@@ -7,21 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, compileUiSchema, useFlowSettingsContext, useFlowModel } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { CollectionActionModel, Action } from '@nocobase/client';
+import { CollectionActionModel, Cascader } from '@nocobase/client';
 import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
-import { createForm, Form } from '@formily/core';
+import { createForm } from '@formily/core';
 import { FormButtonGroup, FormLayout, FormItem } from '@formily/antd-v5';
 import { Button, Upload } from 'antd';
 import { saveAs } from 'file-saver';
 import { ImportWarning, DownloadTips } from './ImportActionInitializer';
 import { NAMESPACE } from './constants';
 import { css } from '@emotion/css';
+import { useFields } from './useFields';
+
+const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'sort'];
 
 const initImportSettings = (fields) => {
-  const importColumns = fields?.filter((f) => !f.isAssociationField()).map((f) => ({ dataIndex: [f.name] }));
+  const importColumns = fields
+    ?.filter((f) => !f.isAssociationField() && !(EXCLUDE_INTERFACES.includes(f.interface) || !f.options.interface))
+    .map((f) => ({ dataIndex: [f.name] }));
   return { importColumns, explain: '' };
 };
 
@@ -187,7 +192,6 @@ ImportActionModel.registerFlow({
       title: escapeT('Importable fields'),
       uiSchema: (ctx) => {
         const currentBlock = ctx.model.context.blockModel;
-        const fields = currentBlock.collection.getFields();
         return {
           explain: {
             type: 'string',
@@ -222,12 +226,13 @@ ImportActionModel.registerFlow({
                     dataIndex: {
                       type: 'array',
                       'x-decorator': 'FormItem',
-                      'x-component': 'Cascader',
+                      'x-component': Cascader,
                       required: true,
                       'x-use-component-props': () => {
-                        console.log(fields);
+                        // eslint-disable-next-line react-hooks/rules-of-hooks
+                        const data = useFields(currentBlock.collection.name);
                         return {
-                          options: fields,
+                          options: data,
                         };
                       },
                       'x-component-props': {
