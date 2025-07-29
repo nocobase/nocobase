@@ -9,20 +9,22 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
+import { ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import { CollectionActionModel, Cascader } from '@nocobase/client';
 import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
+import { observable } from '@formily/reactive';
 import { createForm } from '@formily/core';
 import { observer } from '@formily/reactive-react';
 import { FormButtonGroup, FormLayout, FormItem } from '@formily/antd-v5';
-import { Button, Upload } from 'antd';
+import { Button, Upload, Spin, Space } from 'antd';
 import { saveAs } from 'file-saver';
 import { ImportWarning, DownloadTips } from './ImportActionInitializer';
 import { NAMESPACE } from './constants';
 import { css } from '@emotion/css';
 import { useFields } from './useFields';
 
-const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'sort'];
+const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
 const INCLUDE_FILE_TYPE = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
@@ -136,6 +138,10 @@ ImportActionModel.registerFlow({
   steps: {
     import: {
       handler: async (ctx, params) => {
+        const state = observable({
+          status: '', // '', 'importing', 'imported'
+          result: null as any,
+        });
         const form = createForm();
         const currentBlock = ctx.model.context.blockModel;
         const { resource } = currentBlock;
@@ -188,9 +194,7 @@ ImportActionModel.registerFlow({
 
           const importMode = ctx.model.getProps().importMode;
 
-          popover.close();
-          //   setImportModalVisible(true);
-          //   setImportStatus(ImportStatus.IMPORTING);
+          state.status = 'importing';
 
           try {
             const { data } = await resource.runAction('importXlsx', {
@@ -199,36 +203,90 @@ ImportActionModel.registerFlow({
               timeout: 10 * 60 * 1000,
             });
 
-            form.reset();
-
-            if (!data.data.taskId) {
-              //   setImportResult(data);
+            if (!data?.data?.taskId) {
+              state.result = data;
+              state.status = 'imported';
               await resource?.refresh?.();
-              //   setImportStatus(ImportStatus.IMPORTED);
+              form.reset();
             } else {
-              //   setImportModalVisible(false);
-              popover.close();
+              popover.close(); // 后台任务直接关闭弹窗
+              form.reset();
             }
           } catch (error) {
-            // setImportModalVisible(false);
-            // setVisible(true);
+            state.status = '';
+            console.error(error);
           }
         };
 
         const ImportDialogContent = observer(({ popover }: any) => {
+          const { t } = ctx;
+          const renderResult = (result) => {
+            if (!result) return null;
+            const { successCount, meta } = result;
+            if (successCount) {
+              return t('{{successCount}} records have been successfully imported', { successCount }, { ns: NAMESPACE });
+            }
+            // const parts = [
+            //   `${t('Total records')}: ${stats.total || 0}`,
+            //   `${t('Successfully imported')}: ${stats.success || 0}`,
+            // ];
+            // if (stats.skipped > 0) parts.push(`${t('Skipped')}: ${stats.skipped}`);
+            // if (stats.updated > 0) parts.push(`${t('Updated')}: ${stats.updated}`);
+            // return parts.join(', ');
+          };
+
+          const downloadFailureDataHandler = () => {
+            const arrayBuffer = new Int8Array(state.result?.data?.data);
+            const blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
+            saveAs(blob, 'fail.xlsx');
+          };
+
+          if (state.status === 'importing') {
+            return (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                <Spin tip={t('Excel data importing')} indicator={<LoadingOutlined spin style={{ fontSize: 24 }} />} />
+              </div>
+            );
+          }
+          if (state.status === 'imported') {
+            const meta = state.result?.meta;
+            return (
+              <Space direction="vertical" align="center" style={{ width: '100%', padding: 24 }}>
+                <ExclamationCircleFilled style={{ fontSize: 72, color: '#1890ff' }} />
+                <p>{renderResult(state.result)}</p>
+                <Space>
+                  {meta?.failureCount > 0 && (
+                    <Button onClick={downloadFailureDataHandler}>{t('To download the failure data')}</Button>
+                  )}
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      popover.close();
+                      state.status = '';
+                      state.result = null;
+                    }}
+                  >
+                    {t('Done')}
+                  </Button>
+                </Space>
+              </Space>
+            );
+          }
+
+          // 初始导入表单
           return (
             <FormProvider form={form}>
               <FormLayout layout="vertical">
                 <SchemaField schema={importFormSchema} scope={{ t: ctx.t, handelDownloadXlsxTemplateAction }} />
               </FormLayout>
               <FormButtonGroup align="right">
-                <Button onClick={() => popover.close()}>{ctx.t('Cancel')}</Button>
+                <Button onClick={() => popover.close()}>{t('Cancel')}</Button>
                 <Button
                   type="primary"
                   onClick={() => handelStartImport(popover)}
                   disabled={!form.values.upload?.fileList?.length}
                 >
-                  {ctx.t('Start import')}
+                  {t('Start import')}
                 </Button>
               </FormButtonGroup>
             </FormProvider>
