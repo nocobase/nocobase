@@ -8,21 +8,13 @@
  */
 
 import { createForm } from '@formily/core';
-import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { createSchemaField, FormProvider, ISchema, Observer } from '@formily/react';
 import { toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
 import React from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import {
-  compileUiSchema,
-  getT,
-  resolveDefaultParams,
-  resolveStepUiSchema,
-  setupRuntimeContextSteps,
-  FlowExitException,
-} from '../../../../utils';
+import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, FlowExitException } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
-import { FlowRuntimeContext } from '../../../../flowContext';
 
 const SchemaField = createSchemaField();
 
@@ -42,7 +34,9 @@ const openStepSettingsDialog = async ({
   dialogWidth = 600,
   dialogTitle,
   mode = 'dialog',
-}: StepSettingsDialogProps): Promise<any> => {
+  ctx,
+  ...uiProps
+}: StepSettingsDialogProps & Record<string, any>): Promise<any> => {
   const t = getT(model);
   const message = model.context.message;
 
@@ -91,11 +85,12 @@ const openStepSettingsDialog = async ({
     return {};
   }
 
-  // 创建流程运行时上下文用于解析默认参数
-  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+  const flowRuntimeContext = ctx;
 
-  flowRuntimeContext.defineProperty('currentStep', { value: step });
+  // 确保上下文中设置了当前步骤
+  if (!flowRuntimeContext.currentStep || flowRuntimeContext.currentStep !== step) {
+    flowRuntimeContext.defineProperty('currentStep', { value: step });
+  }
 
   const flowEngine = model.flowEngine;
   const scopes = {
@@ -139,6 +134,7 @@ const openStepSettingsDialog = async ({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
+    ...uiProps,
     footer: (
       <Space align="end">
         <Button

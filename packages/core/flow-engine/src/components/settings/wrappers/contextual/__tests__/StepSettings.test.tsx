@@ -9,7 +9,7 @@
 
 import { FlowEngine } from '@nocobase/flow-engine';
 import { FlowModel } from '../../../../../models';
-import { getStepSettingMode, isStepUsingDrawerMode } from '../StepSettings';
+import { getStepSettingMode } from '../StepSettings';
 
 // 创建测试模型
 class TestModel extends FlowModel {
@@ -26,7 +26,6 @@ TestModel.registerFlow({
     dialogStep: {
       title: '对话框步骤',
       use: 'testAction',
-      // settingMode 默认为 'dialog'
       uiSchema: {
         message: {
           type: 'string',
@@ -39,7 +38,6 @@ TestModel.registerFlow({
     drawerStep: {
       title: '抽屉步骤',
       use: 'testAction',
-      settingMode: 'drawer', // 明确设置为抽屉模式
       uiSchema: {
         title: {
           type: 'string',
@@ -58,7 +56,6 @@ TestModel.registerFlow({
     explicitDialogStep: {
       title: '明确对话框步骤',
       use: 'testAction',
-      settingMode: 'dialog', // 明确设置为对话框模式
       uiSchema: {
         value: {
           type: 'string',
@@ -104,33 +101,6 @@ describe('StepSettings', () => {
     it('should return null for non-existent flow', () => {
       const mode = getStepSettingMode(testModel, 'nonExistentFlow', 'dialogStep');
       expect(mode).toBe(null);
-    });
-  });
-
-  describe('isStepUsingDrawerMode', () => {
-    it('should return false for default step', () => {
-      const isDrawer = isStepUsingDrawerMode(testModel, 'testFlow', 'dialogStep');
-      expect(isDrawer).toBe(false);
-    });
-
-    it('should return true for drawer step', () => {
-      const isDrawer = isStepUsingDrawerMode(testModel, 'testFlow', 'drawerStep');
-      expect(isDrawer).toBe(true);
-    });
-
-    it('should return false for explicitly set dialog step', () => {
-      const isDrawer = isStepUsingDrawerMode(testModel, 'testFlow', 'explicitDialogStep');
-      expect(isDrawer).toBe(false);
-    });
-
-    it('should return false for non-existent step', () => {
-      const isDrawer = isStepUsingDrawerMode(testModel, 'testFlow', 'nonExistentStep');
-      expect(isDrawer).toBe(false);
-    });
-
-    it('should return false for non-existent flow', () => {
-      const isDrawer = isStepUsingDrawerMode(testModel, 'nonExistentFlow', 'dialogStep');
-      expect(isDrawer).toBe(false);
     });
   });
 });

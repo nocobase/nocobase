@@ -34,7 +34,7 @@ export { isInheritedFrom } from './inheritance';
 export { resolveDefaultParams, resolveDefaultOptions, resolveParamsExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema } from './schema-utils';
+export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
 
 // 菜单构建器
 export { buildFieldItems, buildActionItems, buildBlockItems, processMetaChildren } from './menu-builders';

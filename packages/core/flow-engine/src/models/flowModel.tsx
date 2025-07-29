@@ -1193,10 +1193,24 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {void}
    */
   openStepSettingsDialog(flowKey: string, stepKey: string) {
+    // 创建流程运行时上下文
+    const flow = this.getFlow(flowKey);
+    const step = flow?.steps?.[stepKey];
+
+    if (!flow || !step) {
+      console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+      return;
+    }
+
+    const ctx = new FlowRuntimeContext(this, flowKey, 'settings');
+    setupRuntimeContextSteps(ctx, flow, this, flowKey);
+    ctx.defineProperty('currentStep', { value: step });
+
     return openStepSettingsDialogFn({
       model: this,
       flowKey,
       stepKey,
+      ctx,
     });
   }
 
