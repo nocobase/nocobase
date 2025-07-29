@@ -20,7 +20,7 @@ const aiResource: ResourceOptions = {
       await next();
     },
     listModels: async (ctx, next) => {
-      const { llmService } = ctx.action.params;
+      const { llmService, model } = ctx.action.params;
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const service = await ctx.db.getRepository('llmServices').findOne({
         filter: {
@@ -40,12 +40,17 @@ const aiResource: ResourceOptions = {
         app: ctx.app,
         serviceOptions: options,
       });
-      const res = await provider.listModels();
-      if (res.errMsg) {
-        ctx.log.error(res.errMsg);
-        ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+      if (model && providerOptions.supportedModel.includes(model)) {
+        ctx.body = providerOptions.models?.[model].map((id) => ({ id })) ?? [];
+      } else {
+        const res = await provider.listModels();
+        if (res.errMsg) {
+          ctx.log.error(res.errMsg);
+          ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+        }
+        ctx.body = res.models || [];
       }
-      ctx.body = res.models || [];
+
       return next();
     },
   },

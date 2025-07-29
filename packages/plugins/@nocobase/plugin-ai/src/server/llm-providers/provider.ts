@@ -15,6 +15,11 @@ import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 
+export enum SupportedModel {
+  LLM = 'LLM',
+  EMBEDDING = 'EMBEDDING',
+}
+
 export interface LLMProviderOptions {
   app: Application;
   serviceOptions?: Record<string, any>;

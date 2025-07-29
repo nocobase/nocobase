@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider, LLMProviderOptions } from '../llm-providers/provider';
+import { LLMProvider, LLMProviderOptions, SupportedModel } from '../llm-providers/provider';
 import PluginAIServer from '../plugin';
 import _ from 'lodash';
 import { ToolManager } from './tool-manager';
 
 export type LLMProviderMeta = {
   title: string;
+  supportedModel?: SupportedModel[];
+  models?: Partial<Record<SupportedModel, string[]>>;
   provider: new (opts: LLMProviderOptions) => LLMProvider;
 };
 
@@ -28,6 +30,10 @@ export class AIManager {
 
   listLLMProviders() {
     const providers = this.llmProviders.entries();
-    return Array.from(providers).map(([name, { title }]) => ({ name, title }));
+    return Array.from(providers).map(([name, { title, supportedModel }]) => ({
+      name,
+      title,
+      supportedModel: supportedModel ?? [SupportedModel.LLM],
+    }));
   }
 }

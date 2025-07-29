@@ -8,11 +8,12 @@
  */
 
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { LLMProvider } from './provider';
+import { LLMProvider, SupportedModel } from './provider';
 import axios from 'axios';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import model from 'packages/core/client/docs/zh-CN/core/flow-contexts/demos/model';
 
 export class GoogleGenAIProvider extends LLMProvider {
   declare chatModel: ChatGoogleGenerativeAI;
@@ -114,5 +115,18 @@ export class GoogleGenAIProvider extends LLMProvider {
 
 export const googleGenAIProviderOptions = {
   title: 'Google generative AI',
+  supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  models: {
+    [SupportedModel.LLM]: [
+      'models/gemini-2.5-pro',
+      'models/gemini-2.5-flash',
+      'models/gemini-2.5-flash-lite',
+      'models/gemini-2.0-flash',
+      'models/gemini-2.0-flash-lite',
+      'models/gemini-1.5-pro',
+      'models/gemini-1.5-flash',
+    ],
+    [SupportedModel.EMBEDDING]: ['models/text-embedding-004'],
+  },
   provider: GoogleGenAIProvider,
 };
