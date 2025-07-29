@@ -27,6 +27,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     if (!this.isNewRecord) {
       options.params.filterByTk = this.getFilterByTk();
       actionName = 'update';
+      options.params.updateAssociationValues = this.getUpdateAssociationValues();
     }
     await this.runAction(actionName, {
       ...options,

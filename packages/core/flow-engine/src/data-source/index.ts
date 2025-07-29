@@ -593,7 +593,7 @@ export class CollectionField {
   }
 
   get defaultValue() {
-    return this.options.defaultValue;
+    return this.options.defaultValue == null ? undefined : this.options.defaultValue;
   }
 
   get interface() {
@@ -629,6 +629,11 @@ export class CollectionField {
   getInterfaceOptions() {
     const app = this.flowEngine.context.app;
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
+  }
+
+  getFilterOperators() {
+    const opts = this.getInterfaceOptions();
+    return opts?.filterable?.operators || [];
   }
 
   getSubclassesOf(baseClass: string) {

@@ -48,7 +48,6 @@ FormModel.define({
 
 FormModel.registerFlow({
   key: 'formModelSettings',
-  auto: true,
   title: tval('Form settings'),
   steps: {
     layout: {

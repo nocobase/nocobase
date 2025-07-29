@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
+import { ReadPrettyFieldModel, DetailItemModel, TableColumnModel } from '@nocobase/client';
 import { castArray } from 'lodash';
 import React from 'react';
 import { reactive, escapeT } from '@nocobase/flow-engine';
@@ -186,7 +186,7 @@ PreviewReadPrettyFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          size: ctx.model.parent instanceof TableColumnModel ? 28 : 100,
+          size: ctx.model.parent instanceof DetailItemModel ? 100 : 28,
         };
       },
       handler(ctx, params) {
