@@ -28,6 +28,11 @@ export class FormFilterBlockModel extends FilterBlockModel<{
     actions?: any[]; // Replace with actual type if available
   };
 }> {
+  /**
+   * 是否需要自动触发筛选，当字段值变更时自动执行筛选
+   */
+  autoTriggerFilter = true;
+
   get form() {
     return this.context.form;
   }

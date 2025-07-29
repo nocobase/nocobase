@@ -7,12 +7,44 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { reaction } from '@formily/reactive';
+import { debounce } from 'lodash';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
 import { FilterManager } from '../../filter-manager/FilterManager';
+import _ from 'lodash';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
+
+  private dispose: Function;
+  private debouncedDoFilter: ReturnType<typeof debounce>;
+
+  onMount() {
+    super.onMount();
+    // 创建防抖的 doFilter 方法，延迟 300ms
+    this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
+    this.dispose = reaction(
+      () => this.field.value, // 追踪器函数：返回要监听的值
+      () => {
+        if (this.context.blockModel.autoTriggerFilter) {
+          this.debouncedDoFilter(); // 响应器函数：值变化时执行
+        }
+      },
+      {
+        fireImmediately: false, // 首次不执行
+      },
+    );
+
+    this.field.componentProps.onKeyDown = this.handleEnterPress.bind(this); // 添加回车事件监听
+  }
+
+  onUnmount() {
+    super.onUnmount();
+    this.dispose();
+    // 取消防抖函数的执行
+    this.debouncedDoFilter.cancel();
+  }
 
   createField() {
     return this.form.createField({
@@ -37,7 +69,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
       const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
       if (model) {
         const value = this.getFilterValue();
-        if (value != null && value !== '' && target.targetFieldPaths?.length) {
+        if (value != null && value !== '' && !_.isEmpty(value) && target.targetFieldPaths?.length) {
           const targetFieldPaths = target.targetFieldPaths;
 
           if (targetFieldPaths.length === 1) {
@@ -151,6 +183,17 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   getFilterValue() {
     return this.field.value;
   }
+
+  /**
+   * 处理回车事件
+   * 当用户在输入框中按下回车键时触发筛选
+   */
+  handleEnterPress = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+      event.preventDefault(); // 防止表单提交等默认行为
+      this.doFilter(); // 立即执行筛选
+    }
+  };
 }
 
 FilterFormEditableFieldModel.registerFlow({

@@ -17,6 +17,16 @@ export class SubmitFilterFormActionModel extends FilterFormActionModel {
     title: tval('Filter'),
     type: 'primary',
   };
+
+  onMount(): void {
+    super.onMount();
+    this.context.blockModel.autoTriggerFilter = false;
+  }
+
+  onUnmount(): void {
+    super.onUnmount();
+    this.context.blockModel.autoTriggerFilter = true;
+  }
 }
 
 SubmitFilterFormActionModel.registerFlow({
