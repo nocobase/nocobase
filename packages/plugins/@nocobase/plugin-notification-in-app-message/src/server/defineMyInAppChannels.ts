@@ -12,7 +12,7 @@ import { Op, Sequelize } from 'sequelize';
 import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
 
-export default function defineMyInAppChannels({ app }: { app: Application }) {
+export default function defineMyInAppChannels(app: Application) {
   app.resourceManager.define({
     name: 'myInAppChannels',
     actions: {
