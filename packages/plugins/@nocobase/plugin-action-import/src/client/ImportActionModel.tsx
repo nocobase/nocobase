@@ -10,38 +10,19 @@
 import { escapeT, compileUiSchema, useFlowSettingsContext, useFlowModel } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { CollectionActionModel, Action } from '@nocobase/client';
-import { ISchema, useFieldSchema, createSchemaField, FormProvider } from '@formily/react';
+import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
 import { createForm, Form } from '@formily/core';
 import { FormButtonGroup, FormLayout, FormItem } from '@formily/antd-v5';
 import { Button, Upload } from 'antd';
-import { tval } from '@nocobase/utils/client';
 import { saveAs } from 'file-saver';
 import { ImportWarning, DownloadTips } from './ImportActionInitializer';
 import { NAMESPACE } from './constants';
 import { css } from '@emotion/css';
 
-const handelDownloadXlsxTemplateAction = async () => {
-  // const { resource } = useBlockRequestContext();
-  // const compile = useCompile();
-  // const record = useRecord();
-  // const { title } = useCollection_deprecated();
-  // const { explain, importColumns } = record;
-  // const { data } = await resource.downloadXlsxTemplate(
-  //   {
-  //     values: {
-  //       title: compile(title),
-  //       explain,
-  //       columns: compile(importColumns),
-  //     },
-  //   },
-  //   {
-  //     method: 'post',
-  //     responseType: 'blob',
-  //   },
-  // );
-  // const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  // saveAs(blob, `${compile(title)}.xlsx`);
+const initImportSettings = (fields) => {
+  const importColumns = fields?.filter((f) => !f.isAssociationField()).map((f) => ({ dataIndex: [f.name] }));
+  return { importColumns, explain: '' };
 };
 
 const importFormSchema = {
@@ -69,7 +50,7 @@ const importFormSchema = {
               margin-top: 5px;
             `,
             children: escapeT('Download template', { ns: `${NAMESPACE}` }),
-            onClick: '{{ useDownloadXlsxTemplateAction }}',
+            onClick: '{{ handelDownloadXlsxTemplateAction }}',
           },
         },
       },
@@ -112,7 +93,12 @@ export class ImportActionModel extends CollectionActionModel {
 ImportActionModel.define({
   title: escapeT('Import'),
 });
-
+const toArr = (v: any) => {
+  if (!v || !Array.isArray(v)) {
+    return [];
+  }
+  return v;
+};
 ImportActionModel.registerFlow({
   key: 'importSettings',
   title: escapeT('Import settings'),
@@ -121,6 +107,46 @@ ImportActionModel.registerFlow({
     import: {
       handler: async (ctx, params) => {
         const form = createForm();
+        const handelDownloadXlsxTemplateAction = async () => {
+          const currentBlock = ctx.model.context.blockModel;
+          const { resource } = currentBlock;
+          const { title, name } = currentBlock.collection;
+          const { explain, importColumns } = ctx.model.getProps().importSettings;
+          const columns = toArr(importColumns)
+            .map((column) => {
+              const field = ctx.model.context.dataSourceManager.getCollectionField(
+                `${currentBlock.collection.dataSourceKey}.${name}.${column.dataIndex[0]}`,
+              );
+              if (!field) {
+                return;
+              }
+              column.defaultTitle = ctx.t(field?.uiSchema?.title) || field.name;
+              if (column.dataIndex.length > 1) {
+                const subField = ctx.model.context.dataSourceManager.getCollectionField(
+                  `${ctx.model.context.collection.dataSourceKey}.${name}.${column.dataIndex.join('.')}`,
+                );
+
+                if (!subField) {
+                  return;
+                }
+                column.defaultTitle = column.defaultTitle + '/' + ctx.t(subField?.uiSchema?.title) || subField.name;
+              }
+              return column;
+            })
+            .filter(Boolean);
+          const data = await resource.runAction('downloadXlsxTemplate', {
+            data: {
+              title: ctx.t(title),
+              explain,
+              columns: [...columns],
+            },
+            responseType: 'blob',
+            method: 'post',
+          });
+          const blob = new Blob([data], { type: 'application/x-xls' });
+          saveAs(blob, `${ctx.t(title)}.xlsx`);
+        };
+
         await ctx.engine.context.viewOpener.open({
           mode: 'dialog',
           placement: 'center',
@@ -130,7 +156,7 @@ ImportActionModel.registerFlow({
             return (
               <FormProvider form={form}>
                 <FormLayout layout={'vertical'}>
-                  <SchemaField schema={importFormSchema} scope={{ t: ctx.t }} />
+                  <SchemaField schema={importFormSchema} scope={{ t: ctx.t, handelDownloadXlsxTemplateAction }} />
                 </FormLayout>
                 <FormButtonGroup align="right">
                   <Button
@@ -147,6 +173,136 @@ ImportActionModel.registerFlow({
               </FormProvider>
             );
           },
+        });
+      },
+    },
+  },
+});
+
+ImportActionModel.registerFlow({
+  key: 'importActionSetting',
+  title: escapeT('Import action settings'),
+  steps: {
+    importSetting: {
+      title: escapeT('Importable fields'),
+      uiSchema: (ctx) => {
+        const currentBlock = ctx.model.context.blockModel;
+        const fields = currentBlock.collection.getFields();
+        return {
+          explain: {
+            type: 'string',
+            title: `{{ t("Import explain", {ns: "${NAMESPACE}"}) }}`,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+          },
+          importColumns: {
+            type: 'array',
+            'x-component': 'ArrayItems',
+            'x-decorator': 'FormItem',
+            items: {
+              type: 'object',
+              properties: {
+                space: {
+                  type: 'void',
+                  'x-component': 'Space',
+                  'x-component-props': {
+                    className: css`
+                      width: 100%;
+                      & .ant-space-item:nth-child(2) {
+                        flex: 1;
+                      }
+                    `,
+                  },
+                  properties: {
+                    sort: {
+                      type: 'void',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'ArrayItems.SortHandle',
+                    },
+                    dataIndex: {
+                      type: 'array',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Cascader',
+                      required: true,
+                      'x-use-component-props': () => {
+                        console.log(fields);
+                        return {
+                          options: fields,
+                        };
+                      },
+                      'x-component-props': {
+                        fieldNames: {
+                          label: 'title',
+                          value: 'name',
+                          children: 'children',
+                        },
+                        changeOnSelect: false,
+                      },
+                    },
+                    title: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-component-props': {
+                        placeholder: '{{ t("Custom column title") }}',
+                      },
+                    },
+                    description: {
+                      type: 'string',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Input',
+                      'x-component-props': {
+                        placeholder: `{{ t("Field description placeholder", {ns: "${NAMESPACE}"}) }}`,
+                      },
+                    },
+                    remove: {
+                      type: 'void',
+                      'x-decorator': 'FormItem',
+                      'x-component': 'ArrayItems.Remove',
+                    },
+                  },
+                },
+              },
+            },
+            properties: {
+              add: {
+                type: 'void',
+                title: `{{ t("Add importable field", {ns: "${NAMESPACE}"}) }}`,
+                'x-component': 'ArrayItems.Addition',
+                'x-component-props': {
+                  className: css`
+                    border-color: var(--colorSettings);
+                    color: var(--colorSettings);
+                    &.ant-btn-dashed:hover {
+                      border-color: var(--colorSettings);
+                      color: var(--colorSettings);
+                    }
+                  `,
+                },
+              },
+            },
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        const currentBlock = ctx.model.context.blockModel;
+        const fields = currentBlock.collection.getFields();
+        return {
+          ...initImportSettings(fields),
+        };
+      },
+      handler: (ctx, params) => {
+        const { importColumns, explain } = params;
+        const columns = importColumns
+          ?.filter((fieldItem) => fieldItem?.dataIndex?.length)
+          .map((item) => ({
+            dataIndex: item.dataIndex.map((di) => di.name ?? di),
+            title: item.title,
+            description: item.description,
+          }));
+        ctx.model.setProps('importSettings', {
+          importColumns: columns,
+          explain,
         });
       },
     },
