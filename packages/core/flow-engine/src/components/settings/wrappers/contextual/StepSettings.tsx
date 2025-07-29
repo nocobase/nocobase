@@ -51,13 +51,13 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
 
   // 提取模式和属性
   let settingMode: 'dialog' | 'drawer';
-  let uiProps: Record<string, any> = {};
+  let uiModeProps: Record<string, any> = {};
 
   if (typeof resolvedUiMode === 'string') {
     settingMode = resolvedUiMode;
   } else if (typeof resolvedUiMode === 'object' && resolvedUiMode.type) {
     settingMode = resolvedUiMode.type;
-    uiProps = resolvedUiMode.props || {};
+    uiModeProps = resolvedUiMode.props || {};
   } else {
     // 默认使用 dialog 模式
     settingMode = 'dialog';
@@ -72,7 +72,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
       drawerWidth: width,
       drawerTitle: title,
       ctx,
-      ...uiProps,
+      uiModeProps,
     });
   } else {
     return openStepSettingsDialog({
@@ -82,7 +82,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
       dialogWidth: width,
       dialogTitle: title,
       ctx,
-      ...uiProps,
+      uiModeProps,
     });
   }
 };

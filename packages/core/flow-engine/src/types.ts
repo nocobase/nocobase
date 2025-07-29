@@ -311,6 +311,7 @@ export interface StepSettingsDrawerProps {
   drawerWidth?: number | string;
   drawerTitle?: string;
   ctx?: FlowRuntimeContext;
+  uiModeProps?: Record<string, any>;
 }
 
 /**

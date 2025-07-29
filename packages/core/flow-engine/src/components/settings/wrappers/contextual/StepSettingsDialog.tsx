@@ -8,13 +8,14 @@
  */
 
 import { createForm } from '@formily/core';
-import { createSchemaField, FormProvider, ISchema, Observer } from '@formily/react';
-import { toJS } from '@formily/reactive';
+import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { observable, toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, FlowExitException } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
+import { autorun } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -35,7 +36,7 @@ const openStepSettingsDialog = async ({
   dialogTitle,
   mode = 'dialog',
   ctx,
-  ...uiProps
+  uiModeProps,
 }: StepSettingsDialogProps & Record<string, any>): Promise<any> => {
   const t = getT(model);
   const message = model.context.message;
@@ -134,7 +135,7 @@ const openStepSettingsDialog = async ({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
-    ...uiProps,
+    ...toJS(uiModeProps),
     footer: (
       <Space align="end">
         <Button
@@ -180,21 +181,31 @@ const openStepSettingsDialog = async ({
       </Space>
     ),
     content: (currentDialog) => {
-      // 编译 formSchema 中的表达式
-      const compiledFormSchema = compileUiSchema(scopes, formSchema);
-      return (
-        <FormProvider form={form}>
-          <FlowSettingsContextProvider value={flowRuntimeContext}>
-            <SchemaField
-              schema={compiledFormSchema}
-              components={{
-                ...flowEngine.flowSettings?.components,
-              }}
-              scope={scopes}
-            />
-          </FlowSettingsContextProvider>
-        </FormProvider>
-      );
+      const DialogContent = observable(() => {
+        useEffect(() => {
+          return autorun(() => {
+            const dynamicProps = toJS(uiModeProps);
+            currentDialog.update(dynamicProps);
+          });
+        }, []);
+
+        const compiledFormSchema = compileUiSchema(scopes, formSchema);
+        return (
+          <FormProvider form={form}>
+            <FlowSettingsContextProvider value={flowRuntimeContext}>
+              <SchemaField
+                schema={compiledFormSchema}
+                components={{
+                  ...flowEngine.flowSettings?.components,
+                }}
+                scope={scopes}
+              />
+            </FlowSettingsContextProvider>
+          </FormProvider>
+        );
+      });
+
+      return <DialogContent />;
     },
   });
 };
