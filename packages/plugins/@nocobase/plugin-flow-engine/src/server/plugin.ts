@@ -12,7 +12,30 @@ import { Plugin } from '@nocobase/server';
 export class PluginFlowEngineServer extends Plugin {
   async afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.app.acl.allow('flowSql', 'run', 'loggedIn');
+    this.app.resourceManager.registerActionHandlers({
+      'flowSql:run': async (ctx, next) => {
+        const { sql, type, params } = ctx.action.params.values || {};
+        const result = await this.db.sequelize.query(sql, {
+          replacements: params,
+        });
+        if (type === 'selectVar') {
+          ctx.body = Object.values(result[0][0] || {}).shift();
+          return;
+        }
+        if (type === 'selectRow') {
+          ctx.body = result[0][0] || null;
+          return;
+        }
+        if (type === 'selectRows') {
+          ctx.body = result[0] || [];
+          return;
+        }
+        await next();
+      },
+    });
+  }
 
   async load() {}
 

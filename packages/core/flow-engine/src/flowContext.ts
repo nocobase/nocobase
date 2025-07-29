@@ -374,6 +374,12 @@ export class FlowContext {
   }
 }
 
+type RunSQLOptions = {
+  uid: string;
+  params?: Record<string, any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+};
+
 export class FlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
@@ -383,6 +389,7 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
+  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
 
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -475,6 +482,7 @@ export class FlowModelContext extends FlowContext {
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
   declare message: MessageInstance;
@@ -521,6 +529,7 @@ export class FlowForkModelContext extends FlowContext {
   declare ref: React.RefObject<HTMLDivElement>;
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
+  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare modal: HookAPI;
   declare message: MessageInstance;
@@ -574,6 +583,7 @@ export class FlowRuntimeContext<
   declare ref: React.RefObject<HTMLDivElement>;
   declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
+  declare runsql: (sql: string, options: RunSQLOptions) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare viewOpener: ViewOpener;
