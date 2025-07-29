@@ -56,9 +56,9 @@ const buttonSettings = defineFlow({
           ],
         },
       },
-      defaultParams: {
+      defaultParams: () => ({
         type: 'primary',
-      },
+      }),
       // 步骤处理函数，设置模型属性
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);

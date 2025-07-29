@@ -22,7 +22,7 @@ import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
 import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
-import { FlowExitException } from './utils';
+import { FlowExitException, resolveDefaultParams, resolveParamsExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -379,6 +379,7 @@ export class FlowEngineContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare renderJson: (template: any) => Promise<any>;
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
@@ -406,6 +407,9 @@ export class FlowEngineContext extends FlowContext {
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
+    });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveParamsExpressions(template, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -468,6 +472,7 @@ export class FlowModelContext extends FlowContext {
   declare model: FlowModel;
   declare engine: FlowEngine;
   declare ref: React.RefObject<HTMLDivElement>;
+  declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare viewOpener: ViewOpener;
@@ -493,6 +498,9 @@ export class FlowModelContext extends FlowContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveParamsExpressions(template, this);
+    });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
@@ -511,6 +519,7 @@ export class FlowForkModelContext extends FlowContext {
   // declare model: FlowModel;
   declare engine: FlowEngine;
   declare ref: React.RefObject<HTMLDivElement>;
+  declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare modal: HookAPI;
@@ -538,6 +547,9 @@ export class FlowForkModelContext extends FlowContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveParamsExpressions(template, this);
+    });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
@@ -560,6 +572,7 @@ export class FlowRuntimeContext<
   declare onRefReady: <T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout?: number) => void;
   declare dataSourceManager: DataSourceManager;
   declare ref: React.RefObject<HTMLDivElement>;
+  declare renderJson: (template: any) => Promise<any>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
@@ -594,6 +607,9 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveParamsExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({

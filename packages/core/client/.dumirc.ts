@@ -212,6 +212,10 @@ export default defineConfig({
               link: '/examples/flow-context/ref',
             },
             {
+              title: 'ctx.renderJson',
+              link: '/examples/flow-context/render-json',
+            },
+            {
               title: 'ctx.requirejs',
               link: '/examples/flow-context/requirejs',
             },
@@ -352,6 +356,10 @@ export default defineConfig({
             {
               title: 'FlowModel',
               link: '/learn/flow-model',
+            },
+            {
+              title: 'Observable',
+              link: '/learn/observable',
             },
           ],
         },

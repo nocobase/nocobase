@@ -43,6 +43,12 @@ interface StepDefinition {
 
 <code src="./functional.tsx"></code>
 
+### 5. 响应式属性示例 - 动态更新弹窗
+
+展示如何通过 `observable` 对象和 `uiMode.props` 实现对已打开弹窗的动态更新。
+
+<code src="./observable-props.tsx"></code>
+
 ## 主要特性
 
 - **静态配置**: 支持字符串 (`'dialog'`, `'drawer'`) 和对象形式
