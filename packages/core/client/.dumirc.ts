@@ -101,10 +101,10 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-            // {
-            //   title: '可拖拽的布局',
-            //   link: '/examples/flow-models/draggable-layout',
-            // },
+            {
+              title: '生命周期',
+              link: '/examples/flow-models/lifecycle',
+            },
           ],
         },
         {
