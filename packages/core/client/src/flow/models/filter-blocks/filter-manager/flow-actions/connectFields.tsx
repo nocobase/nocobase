@@ -30,7 +30,9 @@ export const connectFields = defineAction({
     };
   },
   beforeParamsSave(ctx, params) {
-    ctx.model.context.filterManager.saveConnectFieldsConfig(ctx.model.uid, params.value);
+    if (!_.isEmpty(params.value)) {
+      ctx.model.context.filterManager.saveConnectFieldsConfig(ctx.model.uid, params.value);
+    }
     ctx.exit();
   },
   handler(ctx, params) {},
@@ -175,13 +177,13 @@ function ConnectFields(
     });
   };
 
-  const handleDefaultOperatorChange = (value) => {
+  const handleDefaultOperatorChange = (v) => {
     props.onChange?.({
-      operator: value?.operator || defaultOperator,
+      operator: v?.operator || defaultOperator,
       targets: value?.targets || [],
     });
     setValue({
-      operator: value,
+      operator: v,
       targets: value?.targets || [],
     });
   };
