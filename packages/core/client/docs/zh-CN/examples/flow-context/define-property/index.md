@@ -1,5 +1,9 @@
 # ctx.defineProperty() - 定义属性
 
+:::info
+FlowContext 用于中心化管理各类上下文，上下文的属性本身只支持 get，并不支持 set。如果你希望某个自定义的属性是可以 get & set 的，建议定义一个 `observable.ref(value)` 或 `observable.box(value)` 类型的属性。
+:::
+
 ## 定义同步属性
 
 同步属性适用于绝大多数场景，直接读取即可，无需异步处理。
@@ -43,6 +47,20 @@ ctx.defineProperty({
 - `observable: true` 时，如果属性值变更时，所有 observer 的地方都会变更。
 
 <code src="./observable.tsx"></code>
+
+## observable.ref & observable.box 响应式属性
+
+可用于代替 React 的 `useState()`，实现响应式数据。
+
+- `observable.ref(value)`：返回一个响应式对象，直接通过 `.value` 读写。
+- `observable.box(value)`：返回一个响应式盒子对象，支持 `.get()` 和 `.set()` 方法。
+
+两者都能实现响应式，区别在于：
+
+- ref：只观察引用（浅观察，不递归）
+- box：观察值和它的内部（深度观察）
+
+<code src="./observable-ref-box.tsx"></code>
 
 ## once 只定义一次
 
