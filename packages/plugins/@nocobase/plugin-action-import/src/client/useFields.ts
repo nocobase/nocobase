@@ -26,7 +26,6 @@ const EXCLUDE_INTERFACES = [
 export const useFields = (collectionName: string) => {
   const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
-  console.log(fields);
   const compile = useCompile();
   const field2option = (field, depth) => {
     if (!field.interface || EXCLUDE_INTERFACES.includes(field.interface)) {
