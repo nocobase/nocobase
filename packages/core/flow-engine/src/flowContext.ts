@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { DrawerProps, ModalProps, PopoverProps } from 'antd';
+import { MessageInstance } from 'antd/es/message/interface';
+import type { HookAPI } from 'antd/es/modal/useModal';
+import { NotificationInstance } from 'antd/es/notification/interface';
 import { createRef } from 'react';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
@@ -22,10 +26,11 @@ import { FlowExitException } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
-type OpenDialogProps = {
+interface OpenDialogProps extends ModalProps {
   mode: 'dialog';
+  content?: React.ReactNode | ((dialog: any) => React.ReactNode);
   [key: string]: any;
-};
+}
 
 type OpenDrawerProps = {
   mode: 'drawer';
@@ -47,7 +52,7 @@ type OpenPopoverProps = {
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
 interface ViewOpener {
-  open: (props: any) => Promise<any>;
+  open: (props: OpenProps) => Promise<any>;
 }
 
 export interface MetaTreeNode {
@@ -74,6 +79,7 @@ export interface PropertyOptions {
   once?: boolean; // 是否只定义一次
   get?: Getter;
   cache?: boolean;
+  observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMeta;
 }
 
@@ -81,6 +87,7 @@ export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
+  protected _observableCache: Record<string, any> = observable.shallow({});
   protected _delegates: FlowContext[] = [];
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
@@ -132,11 +139,11 @@ export class FlowContext {
   }
 
   defineProperty(key: string, options: PropertyOptions) {
-    this._props[key] = options;
-    if (options.once && this._props[key]) {
-      // 如果已经定义过，则不再覆盖
+    if (this._props[key] && this._props[key]?.once) {
       return;
     }
+    this._props[key] = options;
+    delete this._observableCache[key]; // 清除旧的 observable 缓存
     delete this._cache[key];
     // 用 Object.defineProperty 挂载到实例上，便于 ctx.foo 直接访问
     Object.defineProperty(this, key, {
@@ -154,6 +161,27 @@ export class FlowContext {
       writable: false,
       value: fn.bind(this),
     });
+  }
+
+  removeCache(key: string) {
+    if (key in this._observableCache) {
+      delete this._observableCache[key];
+      return true;
+    }
+    if (key in this._cache) {
+      delete this._cache[key];
+      return true;
+    }
+    if (key in this._pending) {
+      delete this._pending[key];
+      return true;
+    }
+    // 递归清理委托链
+    for (const delegate of this._delegates) {
+      if (delegate.removeCache(key)) {
+        return true;
+      }
+    }
   }
 
   delegate(ctx: FlowContext) {
@@ -253,9 +281,10 @@ export class FlowContext {
         return options.get(this);
       }
 
-      // 已缓存直接返回
-      if (key in this._cache) {
-        return this._cache[key];
+      const cacheKey = options.observable ? '_observableCache' : '_cache';
+
+      if (key in this[cacheKey]) {
+        return this[cacheKey][key];
       }
 
       if (this._pending[key]) return this._pending[key];
@@ -271,7 +300,7 @@ export class FlowContext {
       if (isPromise) {
         this._pending[key] = (result as Promise<any>).then(
           (v) => {
-            this._cache[key] = v;
+            this[cacheKey][key] = v;
             delete this._pending[key];
             return v;
           },
@@ -284,7 +313,7 @@ export class FlowContext {
       }
 
       // sync 直接缓存
-      this._cache[key] = result;
+      this[cacheKey][key] = result;
       return result;
     }
 
@@ -352,6 +381,7 @@ export class FlowEngineContext extends FlowContext {
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
   declare api: APIClient;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
 
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -441,6 +471,9 @@ export class FlowModelContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
@@ -480,6 +513,9 @@ export class FlowForkModelContext extends FlowContext {
   declare ref: React.RefObject<HTMLDivElement>;
   declare requireAsync: (url: string) => Promise<any>;
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(
     public master: FlowModel,
@@ -528,6 +564,9 @@ export class FlowRuntimeContext<
   declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare viewOpener: ViewOpener;
+  declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
 
   constructor(
     public model: TModel,
@@ -585,10 +624,13 @@ export class FlowRuntimeContext<
       if (options.cache === false) {
         return ContextPathProxy.create()[key];
       }
-      if (!(key in this._cache)) {
-        this._cache[key] = ContextPathProxy.create()[key];
+
+      const cacheKey = options.observable ? '_observableCache' : '_cache';
+
+      if (!(key in this[cacheKey])) {
+        this[cacheKey][key] = ContextPathProxy.create()[key];
       }
-      return this._cache[key];
+      return this[cacheKey][key];
     }
 
     return undefined;

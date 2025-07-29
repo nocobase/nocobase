@@ -87,7 +87,7 @@ export default {
 
   asyncResume: {
     async run(node, input, processor) {
-      const job = await processor.saveJob({
+      const job = processor.saveJob({
         status: 0,
         nodeId: node.id,
         nodeKey: node.key,

@@ -20,6 +20,7 @@ import {
 import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthenticatorsContext } from '../authenticator';
 
 export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -55,6 +56,7 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
 export function AuthLayout() {
   const { data } = useSystemSettings() || {};
   const { token } = useToken();
+  const { t } = useTranslation('lm-collections');
   return (
     <div
       style={{
@@ -68,7 +70,7 @@ export function AuthLayout() {
         <SwitchLanguage />
       </div>
       <h1 style={{ textAlign: 'center' }}>
-        <ReadPretty.TextArea value={data?.data?.title} />
+        <ReadPretty.TextArea value={t(data?.data?.title)} />
       </h1>
       <AuthenticatorsContextProvider>
         <Outlet />

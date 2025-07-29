@@ -101,10 +101,10 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-            // {
-            //   title: '可拖拽的布局',
-            //   link: '/examples/flow-models/draggable-layout',
-            // },
+            {
+              title: '生命周期',
+              link: '/examples/flow-models/lifecycle',
+            },
           ],
         },
         {
@@ -187,6 +187,18 @@ export default defineConfig({
           title: 'FlowContext',
           type: 'group',
           children: [
+            {
+              title: 'ctx.defineProperty() - 定义属性',
+              link: '/examples/flow-context/define-property',
+            },
+            {
+              title: 'ctx.defineMethod() - 定义方法',
+              link: '/examples/flow-context/define-method',
+            },
+            {
+              title: 'ctx.addDelegate() - 代理链',
+              link: '/examples/flow-context/add-delegate',
+            },
             {
               title: '异步 ctx 属性的 loading 状态',
               link: '/examples/flow-context/loading',
@@ -303,6 +315,20 @@ export default defineConfig({
             },
           ],
         },
+        {
+          title: '单元测试',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel 测试',
+              link: '/examples/tests/flow-model-test',
+            },
+            {
+              title: '流测试',
+              link: '/examples/tests/flow-test',
+            },
+          ],
+        }
       ],
       '/learn': [
         {

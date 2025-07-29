@@ -272,6 +272,7 @@ export const LayoutContent = () => {
 const NocoBaseLogo = () => {
   const result = useSystemSettings();
   const { token } = useToken();
+  const { t } = useTranslation('lm-collections');
   const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
 
   const hasLogo = result?.data?.data?.logo?.url;
@@ -279,7 +280,7 @@ const NocoBaseLogo = () => {
     <img className={className2} src={result?.data?.data?.logo?.url} />
   ) : (
     <span style={fontSizeStyle} className={className3}>
-      {result?.data?.data?.title}
+      {t(result?.data?.data?.title)}
     </span>
   );
 

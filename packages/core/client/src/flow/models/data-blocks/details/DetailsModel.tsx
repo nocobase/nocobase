@@ -10,7 +10,6 @@
 import { FormLayout } from '@formily/antd-v5';
 import {
   AddActionButton,
-  CollectionField,
   DndProvider,
   DragHandler,
   Droppable,
@@ -20,6 +19,7 @@ import {
   buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
+import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -103,6 +103,9 @@ export class DetailsModel extends CollectionBlockModel<{
   }
 
   renderComponent() {
+    console.log(this.props);
+    const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+
     return (
       <>
         <DndProvider>
@@ -136,7 +139,7 @@ export class DetailsModel extends CollectionBlockModel<{
             </Space>
           </div>
         </DndProvider>
-        <FormLayout layout={'vertical'}>
+        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         </FormLayout>
         {this.renderPagination()}
@@ -150,20 +153,10 @@ DetailsModel.registerFlow({
   title: escapeT('Details settings'),
   sort: 150,
   steps: {
-    // dataLoadingMode: {
-    //   use: 'dataLoadingMode',
-    // },
-    // refresh: {
-    //   async handler(ctx, params) {
-    //     const { dataLoadingMode } = ctx.model.props;
-    //     if (dataLoadingMode === 'auto') {
-    //       await ctx.model.applySubModelsAutoFlows('grid');
-    //       await ctx.model.refresh();
-    //     } else {
-    //       ctx.model.resource.loading = false;
-    //     }
-    //   },
-    // },
+    layout: {
+      use: 'layout',
+      title: tval('Layout'),
+    },
   },
 });
 

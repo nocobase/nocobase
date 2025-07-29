@@ -95,6 +95,47 @@ describe('FlowContext properties and methods', () => {
     expect(getter).toHaveBeenCalledTimes(2);
   });
 
+  it('should remove cache and pending for property', async () => {
+    const ctx = new FlowContext();
+    const getter = vi.fn().mockResolvedValue('cached-value');
+    ctx.defineProperty('foo', { get: getter });
+
+    // 首次获取，触发缓存
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 再次获取，命中缓存
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 清除缓存
+    ctx.removeCache('foo');
+
+    // 再次获取，应重新调用 getter
+    await ctx.foo;
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
+  it('should remove cache and pending recursively in delegates', async () => {
+    const delegate = new FlowContext();
+    const getter = vi.fn().mockResolvedValue('delegate-value');
+    delegate.defineProperty('bar', { get: getter });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(delegate);
+
+    // 首次获取，触发缓存
+    await ctx.bar;
+    expect(getter).toHaveBeenCalledTimes(1);
+
+    // 清除缓存（应递归到 delegate）
+    ctx.removeCache('bar');
+
+    // 再次获取，应重新调用 getter
+    await ctx.bar;
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
   it('should support delegate context property', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('shared', { value: 'from delegate' });
@@ -495,6 +536,75 @@ describe('FlowContext properties and methods', () => {
     expect(delegate.greet('Copilot')).toBe('Hello from delegate, Copilot');
   });
 
+  it('should define and call method that uses property', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('foo', { value: 10 });
+    ctx.defineMethod('getFooPlus', function (n: number) {
+      return this.foo + n;
+    });
+    expect(ctx.getFooPlus(5)).toBe(15);
+  });
+
+  it('should call delegate method and access delegate property', () => {
+    const delegate = new FlowContext();
+    delegate.defineProperty('bar', { value: 20 });
+    delegate.defineMethod('getBarDouble', function () {
+      return this.bar * 2;
+    });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(delegate);
+
+    expect(ctx.getBarDouble()).toBe(40);
+  });
+
+  it('should allow local method to access local and delegate properties', () => {
+    const delegate = new FlowContext();
+    delegate.defineProperty('bar', { value: 7 });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(delegate);
+    ctx.defineProperty('foo', { value: 3 });
+    ctx.defineMethod('sumFooBar', function () {
+      return ctx.foo + ctx.bar;
+    });
+
+    expect(ctx.sumFooBar()).toBe(10);
+  });
+
+  it('should override delegate method and still access delegate property', () => {
+    const delegate = new FlowContext();
+    delegate.defineProperty('bar', { value: 100 });
+    delegate.defineMethod('getBar', function () {
+      return this.bar;
+    });
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(delegate);
+    ctx.defineMethod('getBar', function () {
+      // 访问 delegate 的属性
+      return ctx.bar + 1;
+    });
+
+    expect(ctx.getBar()).toBe(101);
+  });
+
+  it('should support multi-level delegate method and property lookup', () => {
+    const root = new FlowContext();
+    root.defineProperty('num', { value: 5 });
+    root.defineMethod('getNum', function () {
+      return this.num;
+    });
+
+    const mid = new FlowContext();
+    mid.addDelegate(root);
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(mid);
+
+    expect(ctx.getNum()).toBe(5);
+  });
+
   it('should support addDelegate and removeDelegate for multiple delegates', () => {
     const d1 = new FlowContext();
     d1.defineProperty('foo', { value: 'from d1' });
@@ -641,5 +751,12 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     model.context.defineProperty('appName', { value: 'NocoBase2' });
     const sub = engine.getModel<TestModel>('sub1');
     expect(sub.context.appName).toBe('NocoBase');
+  });
+
+  it('should only define property once when once: true', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('foo', { value: 1, once: true });
+    ctx.defineProperty('foo', { value: 2 });
+    expect(ctx.foo).toBe(1);
   });
 });
