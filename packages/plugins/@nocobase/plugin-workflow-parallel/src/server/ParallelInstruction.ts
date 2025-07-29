@@ -105,8 +105,6 @@ export default class extends Instruction {
         }),
       Promise.resolve(),
     );
-
-    return null;
   }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {

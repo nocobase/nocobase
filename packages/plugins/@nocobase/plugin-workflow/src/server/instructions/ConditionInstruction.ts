@@ -65,8 +65,6 @@ export class ConditionInstruction extends Instruction {
     const savedJob = processor.saveJob(job);
 
     await processor.run(branchNode, savedJob);
-
-    return null;
   }
 
   async resume(node: FlowNodeModel, branchJob: JobModel, processor: Processor) {

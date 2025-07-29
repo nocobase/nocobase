@@ -23,7 +23,7 @@ interface DelayConfig {
 }
 
 export default class extends Instruction {
-  timers: Map<string | number, NodeJS.Timeout> = new Map();
+  timers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(public workflow: WorkflowPlugin) {
     super(workflow);
