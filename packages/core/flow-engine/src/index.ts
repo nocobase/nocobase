@@ -23,6 +23,8 @@ export * from './models';
 export * from './provider';
 export * from './withFlowModel';
 
+export * from '@formily/reactive';
+export { observer } from '@formily/reactive-react';
 export * from './components';
 export * from './data-source';
 export * from './decorators';

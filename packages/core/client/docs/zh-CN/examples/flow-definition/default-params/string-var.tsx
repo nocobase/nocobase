@@ -19,45 +19,15 @@ const buttonSettings = defineFlow({
     general: {
       title: '通用配置',
       uiSchema: {
-        title: {
-          type: 'string',
-          title: '按钮标题',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          'x-decorator-props': {
-            tooltip: escapeT('Displays the AI employee’s assigned tasks on the profile when hovering over the button.'),
-          },
-        },
         type: {
           type: 'string',
           title: '类型',
           'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: '主要', value: 'primary' },
-            { label: '次要', value: 'default' },
-            { label: '危险', value: 'danger' },
-            { label: '虚线', value: 'dashed' },
-            { label: '链接', value: 'link' },
-            { label: '文本', value: 'text' },
-          ],
-        },
-        icon: {
-          type: 'string',
-          title: '图标',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          enum: [
-            { label: '搜索', value: 'SearchOutlined' },
-            { label: '添加', value: 'PlusOutlined' },
-            { label: '删除', value: 'DeleteOutlined' },
-            { label: '编辑', value: 'EditOutlined' },
-            { label: '设置', value: 'SettingOutlined' },
-          ],
+          'x-component': 'Input',
         },
       },
       defaultParams: {
-        type: 'primary',
+        type: '{{ctx.type.primary}}',
       },
       // 步骤处理函数，设置模型属性
       handler(ctx, params) {
@@ -77,6 +47,15 @@ class PluginHelloModel extends Plugin {
     // 启用 Flow Settings
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ MyModel });
+    this.flowEngine.context.defineProperty('type', {
+      get: async () => ({
+        default: 'default',
+        primary: 'primary',
+        link: 'link',
+        dashed: 'dashed',
+        text: 'text',
+      }),
+    });
     const model = this.flowEngine.createModel({
       uid: 'my-model',
       use: 'MyModel',
@@ -84,7 +63,6 @@ class PluginHelloModel extends Plugin {
         buttonSettings: {
           general: {
             title: 'Primary Button',
-            type: 'primary',
           },
         },
       },
