@@ -96,6 +96,10 @@ export async function resolveParamsExpressions<TModel extends FlowModel = FlowMo
     return source;
   };
 
+  if (ctx.skipResolveParams) {
+    return params;
+  }
+
   return compile(params);
 }
 
