@@ -61,7 +61,7 @@ export interface MetaTreeNode {
   type: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -70,7 +70,7 @@ export interface PropertyMeta {
   title: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
@@ -230,7 +230,7 @@ export class FlowContext {
       type: meta.type,
       interface: meta.interface,
       uiSchema: meta.uiSchema,
-      hide: meta.hide,
+      // display: meta.display,
       children: meta.properties
         ? typeof meta.properties === 'function'
           ? async () => {
@@ -571,7 +571,7 @@ export class FlowRuntimeContext<
   constructor(
     public model: TModel,
     public flowKey: string,
-    protected mode: TMode = 'runtime' as TMode,
+    protected _mode: TMode = 'runtime' as TMode,
   ) {
     super();
     this.addDelegate(this.model.context);
@@ -638,6 +638,10 @@ export class FlowRuntimeContext<
 
   exit() {
     throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+
+  get mode() {
+    return this._mode;
   }
 }
 
