@@ -10,6 +10,7 @@
 import type { FlowRuntimeContext } from '../flowContext';
 import type { FlowDefinition } from '../types';
 import { FlowModel } from '../models/flowModel';
+import { escapeT } from './translation';
 
 /**
  * 为 FlowRuntimeContext 设置 steps 属性及其 meta 信息
@@ -50,26 +51,23 @@ export function setupRuntimeContextSteps(
         }
       }
 
-      // 构建 meta 信息 - 始终为所有步骤构建，但对空的进行特殊标记
-      const hasUISchema = flowStep.uiSchema && Object.keys(flowStep.uiSchema).length > 0;
-      const hasParams = stepParams && Object.keys(stepParams).length > 0;
+      // 如果没有参数属性，则隐藏整个step
+      const hasParams = Object.keys(paramsProperties).length > 0;
 
       stepsMetaProperties[stepKey] = {
         type: 'object',
         title: ctx.t(flowStep.title) || stepKey,
-        properties: {
-          params: {
-            type: 'object',
-            title: 'Parameters',
-            properties: Object.keys(paramsProperties).length > 0 ? paramsProperties : undefined,
-            hide: !hasParams,
-          },
-          result: {
-            type: 'any',
-            title: 'Result',
-          },
-        },
-        hide: !(hasUISchema || hasParams),
+        display: hasParams ? 'default' : 'none',
+        properties: hasParams
+          ? {
+              params: {
+                type: 'object',
+                title: 'Parameters',
+                display: 'flatten',
+                properties: paramsProperties,
+              },
+            }
+          : undefined,
       };
 
       // 始终创建步骤对象，确保运行时能够访问
@@ -90,7 +88,7 @@ export function setupRuntimeContextSteps(
     get: () => steps,
     meta: {
       type: 'object',
-      title: 'Steps',
+      title: escapeT('Settings'),
       properties: stepsMetaProperties,
     },
   });

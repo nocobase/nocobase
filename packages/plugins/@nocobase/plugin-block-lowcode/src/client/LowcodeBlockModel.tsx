@@ -213,7 +213,12 @@ ctx.element.innerHTML = \`
 \`;
         `.trim(),
       },
-      settingMode: 'drawer',
+      uiMode: {
+        type: 'drawer',
+        props: {
+          width: '60%',
+        },
+      },
       async handler(flowContext, params: any) {
         // Check if URL ends with skip_nocobase_lowcode=true and return early if so
         // Giving a way to avoid some bad js code (or breaking changes in future versions) break the page and can't recover from ui

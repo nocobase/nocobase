@@ -10,6 +10,7 @@
 import { Input } from '@formily/antd-v5';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import React from 'react';
+import { largeField } from '@nocobase/flow-engine';
 import { MarkdownReadPretty } from '../../../../internal/components/MarkdownReadPretty';
 import { FormFieldModel } from '../FormFieldModel';
 
@@ -22,6 +23,7 @@ const Markdown: any = connect(
   }),
   mapReadPretty((props) => <MarkdownReadPretty {...props} />),
 );
+@largeField()
 export class MarkdownEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['markdown'];
 

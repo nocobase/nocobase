@@ -72,7 +72,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
   onSubModelAdded,
 }) => {
   const defaultChildren = useMemo(() => {
-    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Configure fields')}</FlowSettingsButton>;
+    return <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>;
   }, [model]);
 
   // 动态获取基于 subModelBaseClass 的额外菜单项

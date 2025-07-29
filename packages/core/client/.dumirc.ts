@@ -101,10 +101,10 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-            // {
-            //   title: '可拖拽的布局',
-            //   link: '/examples/flow-models/draggable-layout',
-            // },
+            {
+              title: '生命周期',
+              link: '/examples/flow-models/lifecycle',
+            },
           ],
         },
         {
@@ -212,6 +212,10 @@ export default defineConfig({
               link: '/examples/flow-context/ref',
             },
             {
+              title: 'ctx.renderJson',
+              link: '/examples/flow-context/render-json',
+            },
+            {
               title: 'ctx.requirejs',
               link: '/examples/flow-context/requirejs',
             },
@@ -222,6 +226,10 @@ export default defineConfig({
             {
               title: 'ctx.runjs',
               link: '/examples/flow-context/runjs',
+            },
+            {
+              title: 'ctx.runsql',
+              link: '/examples/flow-context/runsql',
             },
             {
               title: 'ctx.api',
@@ -352,6 +360,10 @@ export default defineConfig({
             {
               title: 'FlowModel',
               link: '/learn/flow-model',
+            },
+            {
+              title: 'Observable',
+              link: '/learn/observable',
             },
           ],
         },

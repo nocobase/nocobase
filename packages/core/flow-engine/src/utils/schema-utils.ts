@@ -12,7 +12,7 @@ import { Schema } from '@formily/json-schema';
 import { toJS } from '@formily/reactive';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
-import type { StepDefinition } from '../types';
+import type { StepDefinition, StepUIMode } from '../types';
 import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
@@ -44,6 +44,34 @@ async function resolveUiSchema<TModel extends FlowModel = FlowModel>(
   }
 
   return uiSchema;
+}
+
+/**
+ * 解析 uiMode，支持静态值和函数形式
+ * 函数可以接收 FlowRuntimeContext
+ * @param {StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)} uiMode UI模式定义
+ * @param {FlowRuntimeContext<TModel>} ctx 上下文
+ * @returns {Promise<StepUIMode>} 解析后的 UI 模式
+ */
+export async function resolveUiMode<TModel extends FlowModel = FlowModel>(
+  uiMode: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>) | undefined,
+  ctx: FlowRuntimeContext<TModel>,
+): Promise<StepUIMode> {
+  if (!uiMode) {
+    return 'dialog';
+  }
+
+  if (typeof uiMode === 'function') {
+    try {
+      const result = await uiMode(ctx);
+      return result || 'dialog';
+    } catch (error) {
+      console.error('Error resolving uiMode function:', error);
+      return 'dialog';
+    }
+  }
+
+  return uiMode;
 }
 
 // 模块级全局缓存，与 useCompile 保持一致

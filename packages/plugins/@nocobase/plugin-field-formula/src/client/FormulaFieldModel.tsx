@@ -29,7 +29,7 @@ const TypedComponents = {
 };
 
 function getValuesByPath(values, key, index?) {
-  const targetValue = values[key];
+  const targetValue = values?.[key];
   if (Array.isArray(targetValue)) {
     return targetValue[index];
   }
@@ -43,7 +43,7 @@ function getValuesByPath(values, key, index?) {
 function getValuesByFullPath(values, fieldPath) {
   const fieldPaths = fieldPath.split('.');
   let currentKeyIndex = 0;
-  let value = values;
+  let value = values || {};
   //loop to get the last field
   while (currentKeyIndex < fieldPaths.length) {
     const fieldName = fieldPaths[currentKeyIndex];
@@ -88,7 +88,7 @@ function Result(props) {
       if ((fieldPath as string).indexOf('.') >= 0 || currentForm?.readPretty) {
         return;
       }
-      const scope = toJS(getValuesByFullPath(form.values, fieldPath));
+      const scope = toJS(getValuesByFullPath(form.values, field.address.entire));
       let v;
       try {
         v = evaluate(expression, scope);

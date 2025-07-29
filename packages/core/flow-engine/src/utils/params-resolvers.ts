@@ -8,7 +8,7 @@
  */
 
 import { Schema } from '@formily/json-schema';
-import { FlowRuntimeContext, FlowModelContext } from '../flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 
 /**
@@ -19,7 +19,7 @@ import type { FlowModel } from '../models';
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
   defaultParams: Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>) | undefined,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<Record<string, any>> {
   if (!defaultParams) {
     return {};
@@ -74,7 +74,7 @@ export async function resolveDefaultOptions(
  */
 export async function resolveParamsExpressions<TModel extends FlowModel = FlowModel>(
   params: any,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<any> {
   const compile = async (source: any): Promise<any> => {
     if (typeof source === 'string' && /\{\{.*?\}\}/.test(source)) {
@@ -96,6 +96,12 @@ export async function resolveParamsExpressions<TModel extends FlowModel = FlowMo
     return source;
   };
 
+  // 有一些场景需要跳过解析，例如默认值设置变量后，设置菜单里面的 model defaultvalue应该显示的是原始变量字符串
+  // 此时上下文还是处于runtime模式的，暂时通过上下文的字段让其跳过解析
+  if (ctx.skipResolveParams) {
+    return params;
+  }
+
   return compile(params);
 }
 
@@ -104,7 +110,7 @@ export async function resolveParamsExpressions<TModel extends FlowModel = FlowMo
  */
 async function compileExpression<TModel extends FlowModel = FlowModel>(
   expression: string,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<any> {
   try {
     // 单个表达式直接返回值，保持原始类型
