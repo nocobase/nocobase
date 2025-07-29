@@ -8,6 +8,7 @@
  */
 
 import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 
@@ -117,20 +118,36 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(
     const singleMatch = expression.match(/^\{\{\s*(ctx\.[^}]+)\s*\}\}$/);
     if (singleMatch) {
       const path = singleMatch[1];
+      const [prefix, key, ...rest] = path.split('.');
+      const firstKey = `${prefix}.${key}`;
+      const r = await ctx.runjs(
+        `
+        const firstValue = await ${firstKey};
+        if (restPath) {
+          return await _.get(firstValue, restPath);
+        } else {
+          return firstValue;
+        }
+        `,
+        { _, restPath: rest.join('.') },
+      );
+
+      const result = r?.value;
 
       // 使用 new Function 直接访问 ctx
-      const result = await new Function(
-        'ctx',
-        `
-        return (async () => {
-          try {
-            return await ${path};
-          } catch (e) {
-            return undefined;
-          }
-        })();
-      `,
-      )(ctx);
+      // const result = await new Function(
+      //   'ctx',
+      //   `
+      //   return (async () => {
+      //     try {
+      //       const value = await ${key};
+
+      //     } catch (e) {
+      //       return undefined;
+      //     }
+      //   })();
+      // `,
+      // )(ctx);
 
       if (result !== undefined) {
         return result;
