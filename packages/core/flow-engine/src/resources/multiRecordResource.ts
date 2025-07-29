@@ -114,6 +114,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const options = {
       params: {
         filterByTk,
+        updateAssociationValues: this.getUpdateAssociationValues(),
       },
     };
     await this.runAction('update', {

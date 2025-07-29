@@ -9,6 +9,7 @@
 
 import { connect, mapProps } from '@formily/react';
 import React from 'react';
+import { largeField } from '@nocobase/flow-engine';
 import { lazy } from '../../../../../lazy-helper';
 import { FormFieldModel } from '../FormFieldModel';
 import { useRichTextStyles } from './style';
@@ -60,6 +61,7 @@ const RichTextField = connect(
     };
   }),
 );
+@largeField()
 export class RichTextEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['richText'];
 
