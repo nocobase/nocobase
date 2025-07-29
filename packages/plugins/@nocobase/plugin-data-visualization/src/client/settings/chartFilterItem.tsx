@@ -32,6 +32,7 @@ import {
   useApp,
   useIsFileField,
   FlagProvider,
+  SchemaComponentContext,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema, ISchema } from '@formily/react';
@@ -298,7 +299,11 @@ const EditDefaultValue = () => {
         setDefaultValue(field, variables, localVariables);
       }}
       ModalContextProvider={(props: any) => {
-        return <FlagProvider collectionField={collectionField}>{props.children}</FlagProvider>;
+        return (
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            <FlagProvider collectionField={collectionField || {}}>{props.children}</FlagProvider>
+          </SchemaComponentContext.Provider>
+        );
       }}
     />
   );
