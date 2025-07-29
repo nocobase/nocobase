@@ -13,6 +13,7 @@ import { CollectionActionModel, Cascader } from '@nocobase/client';
 import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
 import { createForm } from '@formily/core';
+import { observer } from '@formily/reactive-react';
 import { FormButtonGroup, FormLayout, FormItem } from '@formily/antd-v5';
 import { Button, Upload } from 'antd';
 import { saveAs } from 'file-saver';
@@ -22,6 +23,11 @@ import { css } from '@emotion/css';
 import { useFields } from './useFields';
 
 const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'sort'];
+const INCLUDE_FILE_TYPE = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/wps-office.xlsx',
+];
 
 const initImportSettings = (fields) => {
   const importColumns = fields
@@ -66,12 +72,31 @@ const importFormSchema = {
       'x-decorator': 'FormItem',
       'x-acl-ignore': true,
       'x-component': 'Upload.Dragger',
-      'x-validator': '{{ uploadValidator }}',
+      'x-validator': (value, rule) => {
+        const { fileList } = value;
+        if (fileList.length > 1) {
+          return {
+            type: 'error',
+            message: escapeT('Only one file is allowed to be uploaded'),
+          };
+        }
+        const file = fileList[0] ?? {};
+        if (!INCLUDE_FILE_TYPE.includes(file.type)) {
+          return {
+            type: 'error',
+            message: escapeT('Please upload the file of Excel'),
+          };
+        }
+        return '';
+      },
       'x-component-props': {
         action: '',
         height: '150px',
-        tipContent: escapeT('Upload placeholder', { ns: `${NAMESPACE}` }),
-        beforeUpload: '{{ beforeUploadHandler }}',
+        maxCount: 1,
+        children: escapeT('Upload placeholder', { ns: `${NAMESPACE}` }),
+        beforeUpload: () => {
+          return false;
+        },
       },
     },
   },
@@ -112,33 +137,33 @@ ImportActionModel.registerFlow({
     import: {
       handler: async (ctx, params) => {
         const form = createForm();
-        const handelDownloadXlsxTemplateAction = async () => {
-          const currentBlock = ctx.model.context.blockModel;
-          const { resource } = currentBlock;
-          const { title, name } = currentBlock.collection;
-          const { explain, importColumns } = ctx.model.getProps().importSettings;
-          const columns = toArr(importColumns)
-            .map((column) => {
-              const field = ctx.model.context.dataSourceManager.getCollectionField(
-                `${currentBlock.collection.dataSourceKey}.${name}.${column.dataIndex[0]}`,
+        const currentBlock = ctx.model.context.blockModel;
+        const { resource } = currentBlock;
+        const { title, name } = currentBlock.collection;
+        const { explain, importColumns } = ctx.model.getProps().importSettings;
+        const columns = toArr(importColumns)
+          .map((column) => {
+            const field = ctx.model.context.dataSourceManager.getCollectionField(
+              `${currentBlock.collection.dataSourceKey}.${name}.${column.dataIndex[0]}`,
+            );
+            if (!field) {
+              return;
+            }
+            column.defaultTitle = ctx.t(field?.uiSchema?.title) || field.name;
+            if (column.dataIndex.length > 1) {
+              const subField = ctx.model.context.dataSourceManager.getCollectionField(
+                `${ctx.model.context.collection.dataSourceKey}.${name}.${column.dataIndex.join('.')}`,
               );
-              if (!field) {
+
+              if (!subField) {
                 return;
               }
-              column.defaultTitle = ctx.t(field?.uiSchema?.title) || field.name;
-              if (column.dataIndex.length > 1) {
-                const subField = ctx.model.context.dataSourceManager.getCollectionField(
-                  `${ctx.model.context.collection.dataSourceKey}.${name}.${column.dataIndex.join('.')}`,
-                );
-
-                if (!subField) {
-                  return;
-                }
-                column.defaultTitle = column.defaultTitle + '/' + ctx.t(subField?.uiSchema?.title) || subField.name;
-              }
-              return column;
-            })
-            .filter(Boolean);
+              column.defaultTitle = column.defaultTitle + '/' + ctx.t(subField?.uiSchema?.title) || subField.name;
+            }
+            return column;
+          })
+          .filter(Boolean);
+        const handelDownloadXlsxTemplateAction = async () => {
           const data = await resource.runAction('downloadXlsxTemplate', {
             data: {
               title: ctx.t(title),
@@ -152,31 +177,71 @@ ImportActionModel.registerFlow({
           saveAs(blob, `${ctx.t(title)}.xlsx`);
         };
 
+        const handelStartImport = async (popover) => {
+          const { upload } = form.values;
+          const { fileList } = upload;
+          const formData = new FormData();
+          const uploadFiles = fileList.map((f) => f.originFileObj);
+          formData.append('file', uploadFiles[0]);
+          formData.append('columns', JSON.stringify(columns));
+          formData.append('explain', explain);
+
+          const importMode = ctx.model.getProps().importMode;
+
+          popover.close();
+          //   setImportModalVisible(true);
+          //   setImportStatus(ImportStatus.IMPORTING);
+
+          try {
+            const { data } = await resource.runAction('importXlsx', {
+              data: formData,
+              mode: importMode,
+              timeout: 10 * 60 * 1000,
+            });
+
+            form.reset();
+
+            if (!data.data.taskId) {
+              //   setImportResult(data);
+              await resource?.refresh?.();
+              //   setImportStatus(ImportStatus.IMPORTED);
+            } else {
+              //   setImportModalVisible(false);
+              popover.close();
+            }
+          } catch (error) {
+            // setImportModalVisible(false);
+            // setVisible(true);
+          }
+        };
+
+        const ImportDialogContent = observer(({ popover }: any) => {
+          return (
+            <FormProvider form={form}>
+              <FormLayout layout="vertical">
+                <SchemaField schema={importFormSchema} scope={{ t: ctx.t, handelDownloadXlsxTemplateAction }} />
+              </FormLayout>
+              <FormButtonGroup align="right">
+                <Button onClick={() => popover.close()}>{ctx.t('Cancel')}</Button>
+                <Button
+                  type="primary"
+                  onClick={() => handelStartImport(popover)}
+                  disabled={!form.values.upload?.fileList?.length}
+                >
+                  {ctx.t('Start import')}
+                </Button>
+              </FormButtonGroup>
+            </FormProvider>
+          );
+        });
+
         await ctx.engine.context.viewOpener.open({
           mode: 'dialog',
           placement: 'center',
           width: 800,
           title: ctx.t('Import Data', { ns: `${NAMESPACE}` }),
           content: (popover) => {
-            return (
-              <FormProvider form={form}>
-                <FormLayout layout={'vertical'}>
-                  <SchemaField schema={importFormSchema} scope={{ t: ctx.t, handelDownloadXlsxTemplateAction }} />
-                </FormLayout>
-                <FormButtonGroup align="right">
-                  <Button
-                    onClick={() => {
-                      popover.close();
-                    }}
-                  >
-                    {ctx.t('Cancel')}
-                  </Button>
-                  <Button type="primary" htmlType="submit">
-                    {ctx.t('Submit')}
-                  </Button>
-                </FormButtonGroup>
-              </FormProvider>
-            );
+            return <ImportDialogContent popover={popover} />;
           },
         });
       },
