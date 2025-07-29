@@ -631,6 +631,11 @@ export class CollectionField {
     return app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(this.interface);
   }
 
+  getFilterOperators() {
+    const opts = this.getInterfaceOptions();
+    return opts?.filterable?.operators || [];
+  }
+
   getSubclassesOf(baseClass: string) {
     return this.flowEngine.getSubclassesOf(baseClass, (M, name) => {
       const interfaceMatch = isFieldInterfaceMatch(M['supportedFieldInterfaces'], this.interface);
