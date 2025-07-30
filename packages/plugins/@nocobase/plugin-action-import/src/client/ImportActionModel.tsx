@@ -226,13 +226,6 @@ ImportActionModel.registerFlow({
             if (successCount) {
               return t('{{successCount}} records have been successfully imported', { successCount }, { ns: NAMESPACE });
             }
-            // const parts = [
-            //   `${t('Total records')}: ${stats.total || 0}`,
-            //   `${t('Successfully imported')}: ${stats.success || 0}`,
-            // ];
-            // if (stats.skipped > 0) parts.push(`${t('Skipped')}: ${stats.skipped}`);
-            // if (stats.updated > 0) parts.push(`${t('Updated')}: ${stats.updated}`);
-            // return parts.join(', ');
           };
 
           const downloadFailureDataHandler = () => {
