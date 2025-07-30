@@ -345,10 +345,11 @@ const useTableColumns = (
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, active, isOver, over } = useSortable({
+  const { setNodeRef, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
+  const isOver = over?.id == id;
 
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
@@ -367,9 +368,7 @@ const SortableRow = (props: BodyRowComponentProps) => {
   }, [token.colorSettings]);
 
   const className =
-    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
-      ? classObj.topActiveClass
-      : classObj.bottomActiveClass;
+    (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
 
   const row = (
     <tr
@@ -970,7 +969,7 @@ export const Table: any = withDynamicSchemaProps(
               })
               .join('-');
           } else if (typeof rowKey === 'string') {
-            return record[rowKey].toString();
+            return record[rowKey];
           } else {
             // 如果 rowKey 是函数或未提供，使用 defaultRowKey
             return (rowKey ?? defaultRowKey)(record)?.toString();
