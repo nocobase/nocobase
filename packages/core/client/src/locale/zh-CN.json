@@ -817,6 +817,7 @@
   "Try again": "重试一下",
   "Download logs": "下载日志",
   "Download": "下载",
+  "Download failed": "下载失败",
   "File type is not supported for previewing, please download it to preview.": "不支持预览该文件类型，请下载后查看。",
   "Click or drag file to this area to upload": "点击或拖拽文件到此区域上传",
   "Support for a single or bulk upload.": "支持单个或批量上传",
