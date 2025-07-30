@@ -190,55 +190,38 @@ export default class extends Instruction {
       upstreamId: prevJob?.id ?? null,
     });
 
-    const jobDone: IJob = {
-      status: JOB_STATUS.PENDING,
-    };
+    await processor.exit();
 
-    // eslint-disable-next-line promise/catch-or-return
-    request(config, this.workflow.app)
-      .then((response) => {
-        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
-
-        jobDone.status = JOB_STATUS.RESOLVED;
-        jobDone.result = responseSuccess(response, config.onlyData);
-      })
-      .catch((error) => {
-        if (error.isAxiosError) {
-          if (error.response) {
-            processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
-          } else if (error.request) {
-            processor.logger.error(`request (#${node.id}) failed without resposne: ${error.message}`);
-          } else {
-            processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
-          }
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
+      const response = await request(config, this.workflow.app);
+      processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = responseSuccess(response, config.onlyData);
+    } catch (error) {
+      if (error.isAxiosError) {
+        if (error.response) {
+          processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
+        } else if (error.request) {
+          processor.logger.error(`request (#${node.id}) failed without response: ${error.message}`);
         } else {
-          processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
+          processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
         }
-
-        jobDone.status = JOB_STATUS.FAILED;
-        jobDone.result = responseFailure(error);
-      })
-      .finally(() => {
-        processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
-        setTimeout(async () => {
-          const job = await this.workflow.app.db.getRepository('jobs').findOne({
-            filterByTk: id,
-          });
-          if (!job) {
-            processor.logger.error(
-              `request job (${id}) not found, execution (${processor.execution.id}) cannot be resumed.`,
-            );
-            return;
-          }
-          job.set(jobDone);
-          job.execution = processor.execution;
-          this.workflow.resume(job);
-        });
+      } else {
+        processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
+      }
+      jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+      jobDone.result = responseFailure(error);
+    } finally {
+      // At this point, the job is guaranteed to be in the database.
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
 
-    processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
-
-    return null;
+      job.set(jobDone);
+      this.workflow.resume(job);
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
