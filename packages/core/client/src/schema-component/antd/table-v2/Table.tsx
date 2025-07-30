@@ -345,10 +345,9 @@ const useTableColumns = (
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, active, over } = useSortable({
+  const { setNodeRef, active, isOver, over } = useSortable({
     id,
   });
-  const isOver = over?.id == id;
   const { rowIndex, ...others } = props;
 
   const classObj = useMemo(() => {
@@ -884,6 +883,8 @@ export const Table: any = withDynamicSchemaProps(
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+      const valueRef = useRef(value);
+      valueRef.current = value;
 
       useEffect(() => {
         if (tableBlockContextBasicValue?.field) {
@@ -969,7 +970,7 @@ export const Table: any = withDynamicSchemaProps(
               })
               .join('-');
           } else if (typeof rowKey === 'string') {
-            return record[rowKey];
+            return record[rowKey].toString();
           } else {
             // 如果 rowKey 是函数或未提供，使用 defaultRowKey
             return (rowKey ?? defaultRowKey)(record)?.toString();
@@ -994,8 +995,8 @@ export const Table: any = withDynamicSchemaProps(
             }
             const fromIndex = e.active?.data.current?.sortable?.index;
             const toIndex = e.over?.data.current?.sortable?.index;
-            const from = value?.[fromIndex] || e.active;
-            const to = value?.[toIndex] || e.over;
+            const from = valueRef.current?.[fromIndex] || e.active;
+            const to = valueRef.current?.[toIndex] || e.over;
             void field.move(fromIndex, toIndex);
             onRowDragEnd({ from, to });
           }, []);
@@ -1122,7 +1123,7 @@ export const Table: any = withDynamicSchemaProps(
             ? React.createElement<Omit<SortableContextProps, 'children'>>(
                 SortableContext,
                 {
-                  items: value?.map?.(getRowKey) || [],
+                  items: valueRef.current?.map?.(getRowKey) || [],
                 },
                 children,
               )
