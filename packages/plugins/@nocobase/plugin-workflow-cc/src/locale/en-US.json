@@ -1,6 +1,6 @@
 {
   "CC": "CC",
-  "Information within the workflow can be freely configured into a view interface and made accessible to specific users. A CC task will be generated for them in the tasks center.": "Information within the workflow can be freely configured into a view interface and made accessible to specific users. A CC task will be generated for them in the tasks center.",
+  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.",
   "Recipients": "Recipients",
   "User interface": "User interface",
   "View user interface": "View user interface",
