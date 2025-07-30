@@ -7,12 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider, SupportedModel } from './provider';
+import { LLMProvider } from './provider';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import axios from 'axios';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
+import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { LLM } from '@langchain/core/language_models/llms';
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
@@ -128,9 +130,9 @@ export class AnthropicProvider extends LLMProvider {
   }
 }
 
-export const anthropicProviderOptions = {
+export const anthropicProviderOptions: LLMProviderMeta = {
   title: 'Anthropic',
-  supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  supportedModel: [SupportedModel.LLM],
   models: {
     [SupportedModel.LLM]: [
       'claude-opus-4-0',
@@ -138,15 +140,6 @@ export const anthropicProviderOptions = {
       'claude-3-7-sonnet-latest',
       'claude-3-5-sonnet-latest',
       'claude-3-5-haiku-latest',
-    ],
-    [SupportedModel.EMBEDDING]: [
-      'voyage-multimodal-3',
-      'voyage-3.5',
-      'voyage-3-large',
-      'voyage-3.5-lite',
-      'voyage-code-3',
-      'voyage-finance-2',
-      'voyage-law-2',
     ],
   },
   provider: AnthropicProvider,

@@ -32,6 +32,7 @@ import {
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
+import { dashscopeProviderOptions } from './llm-providers/dashscope';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -63,6 +64,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
   }
 

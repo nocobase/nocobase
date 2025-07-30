@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider, LLMProviderOptions, SupportedModel } from '../llm-providers/provider';
+import {
+  LLMProvider,
+  LLMProviderOptions,
+  EmbeddingProvider,
+  EmbeddingProviderOptions,
+} from '../llm-providers/provider';
 import PluginAIServer from '../plugin';
 import _ from 'lodash';
 import { ToolManager } from './tool-manager';
@@ -17,7 +22,13 @@ export type LLMProviderMeta = {
   supportedModel?: SupportedModel[];
   models?: Partial<Record<SupportedModel, string[]>>;
   provider: new (opts: LLMProviderOptions) => LLMProvider;
+  embedding?: new (opts: EmbeddingProviderOptions) => EmbeddingProvider;
 };
+
+export enum SupportedModel {
+  LLM = 'LLM',
+  EMBEDDING = 'EMBEDDING',
+}
 
 export class AIManager {
   llmProviders = new Map<string, LLMProviderMeta>();

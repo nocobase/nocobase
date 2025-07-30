@@ -8,8 +8,8 @@
  */
 
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { LLMProvider, SupportedModel } from './provider';
-import { LLMProviderMeta } from '../manager/ai-manager';
+import { LLMProvider } from './provider';
+import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 
 export class DeepSeekProvider extends LLMProvider {
   declare chatModel: ChatDeepSeek;

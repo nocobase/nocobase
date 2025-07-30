@@ -14,11 +14,7 @@ import { Application } from '@nocobase/server';
 import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
-
-export enum SupportedModel {
-  LLM = 'LLM',
-  EMBEDDING = 'EMBEDDING',
-}
+import { EmbeddingsInterface } from '@langchain/core/embeddings';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -158,5 +154,44 @@ export abstract class LLMProvider {
       },
       options,
     };
+  }
+}
+
+export interface EmbeddingProviderOptions {
+  app: Application;
+  serviceOptions?: Record<string, any>;
+  modelOptions?: Record<string, any>;
+}
+
+export abstract class EmbeddingProvider {
+  constructor(protected opts: EmbeddingProviderOptions) {}
+  abstract createEmbedding(): EmbeddingsInterface;
+  protected abstract getDefaultUrl(): string;
+
+  protected get apiKey() {
+    const { serviceOptions } = this.opts;
+    const { apiKey } = serviceOptions ?? {};
+    if (!apiKey) {
+      throw new Error('apiKey is required');
+    }
+    return apiKey;
+  }
+
+  protected get baseUrl() {
+    const { serviceOptions } = this.opts;
+    const { baseUrl } = serviceOptions ?? { baseUrl: this.getDefaultUrl() };
+    if (!baseUrl) {
+      throw new Error('baseUrl is required');
+    }
+    return baseUrl;
+  }
+
+  protected get model() {
+    const { modelOptions } = this.opts;
+    const { model } = modelOptions ?? {};
+    if (!model) {
+      throw new Error('Embedding model is required');
+    }
+    return model;
   }
 }
