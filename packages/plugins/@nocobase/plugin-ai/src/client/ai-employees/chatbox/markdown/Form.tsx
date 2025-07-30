@@ -153,10 +153,10 @@ export const Form = (props: any) => {
                         size: 'small',
                         onClick: async () => {
                           await form.submit();
-                          const targetForm = ctx[formUid]?.form;
-                          if (targetForm) {
-                            targetForm.setValues(form.values);
-                          }
+                          // const targetForm = ctx[formUid]?.form;
+                          // if (targetForm) {
+                          //   targetForm.setValues(form.values);
+                          // }
                         },
                       },
                     },
