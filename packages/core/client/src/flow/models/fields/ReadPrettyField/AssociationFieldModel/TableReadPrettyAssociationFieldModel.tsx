@@ -19,6 +19,7 @@ type Constructor<T = {}> = new (...args: any[]) => T;
 
 function TableModelMixin<TBase extends Constructor>(Base: TBase) {
   return class extends Base {
+    field: any;
     getColumns = TableModel.prototype.getColumns;
     renderComponent = TableModel.prototype.renderComponent;
     components = TableModel.prototype.components;

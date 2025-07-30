@@ -46,8 +46,9 @@ type OpenInlineProps = {
 type OpenPopoverProps = {
   mode: 'popover';
   target: any;
+  content?: React.ReactNode | ((popover: any) => React.ReactNode);
   [key: string]: any;
-} & PopoverProps;
+};
 
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
