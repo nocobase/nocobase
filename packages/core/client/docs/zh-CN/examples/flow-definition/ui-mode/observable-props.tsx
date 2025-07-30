@@ -1,6 +1,6 @@
 import { Application, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { observable } from '@formily/reactive';
+import { markObservable, observable } from '@formily/reactive';
 import { Button } from 'antd';
 import React from 'react';
 
@@ -13,11 +13,6 @@ class ObservablePropsModel extends FlowModel {
     // 初始化props状态
     this.setProps('isUpdating', false);
 
-    const maskBgColor = observable({
-      backgroundColor: 'rgba(0,0,0,0.3)',
-    });
-
-    // 创建一个observable对象来管理dialog样式
     const dialogStyles = {
       width: '60%',
       title: 'Initial Title',
@@ -25,7 +20,9 @@ class ObservablePropsModel extends FlowModel {
         transition: 'width 0.5s ease-in-out', // 添加平滑过渡动画
       },
       styles: {
-        mask: maskBgColor,
+        mask: {
+          backgroundColor: 'rgba(0,0,0,0.3)',
+        },
       },
     };
 

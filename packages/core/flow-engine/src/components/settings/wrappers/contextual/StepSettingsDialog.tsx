@@ -15,7 +15,7 @@ import React, { useEffect } from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
 import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, FlowExitException } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
-import { autorun } from '@formily/reactive';
+import { autorun, model as observableModel } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -40,7 +40,7 @@ const openStepSettingsDialog = async ({
 }: StepSettingsDialogProps & Record<string, any>): Promise<any> => {
   const t = getT(model);
   const message = model.context.message;
-
+  uiModeProps = observableModel(uiModeProps);
   if (!model) {
     message.error(t('Invalid model provided'));
     throw new Error(t('Invalid model provided'));
@@ -184,7 +184,6 @@ const openStepSettingsDialog = async ({
       const DialogContent = observable(() => {
         useEffect(() => {
           return autorun(() => {
-            JSON.stringify(uiModeProps);
             const dynamicProps = toJS(uiModeProps);
             currentDialog.update(dynamicProps);
           });
