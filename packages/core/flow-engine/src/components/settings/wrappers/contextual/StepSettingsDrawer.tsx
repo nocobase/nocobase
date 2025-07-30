@@ -19,12 +19,13 @@ import { openStepSettingsDialog } from './StepSettingsDialog';
  * @returns Promise<any> 返回表单提交的值
  */
 const openStepSettingsDrawer = async (options: StepSettingsDrawerProps): Promise<any> => {
-  const { drawerWidth, drawerTitle, ...restOptions } = options;
+  const { drawerWidth, drawerTitle, cleanup, ...restOptions } = options;
   return openStepSettingsDialog({
     ...restOptions,
     mode: 'drawer',
     dialogWidth: drawerWidth,
     dialogTitle: drawerTitle,
+    cleanup,
   });
 };
 
