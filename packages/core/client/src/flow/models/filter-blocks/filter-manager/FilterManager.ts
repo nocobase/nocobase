@@ -43,7 +43,7 @@ export class FilterManager {
     this.gridModel = gridModel;
 
     const stepValue = this.gridModel.getStepParams('blockGridSettings', FILTER_CONFIGS_STEP_KEY);
-    this.filterConfigs = stepValue.value || [];
+    this.filterConfigs = stepValue?.value || [];
   }
 
   saveFilterConfigs() {
