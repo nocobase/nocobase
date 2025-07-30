@@ -302,7 +302,7 @@ ImportActionModel.registerFlow({
 
 ImportActionModel.registerFlow({
   key: 'importActionSetting',
-  title: escapeT('Import action settings'),
+  title: escapeT('Import action settings', { ns: NAMESPACE }),
   steps: {
     importSetting: {
       title: escapeT('Importable fields'),

@@ -47,5 +47,6 @@
   "Total records": "总记录数",
   "View result": "查看结果",
   "ImportResult": "已导入 {{success}} 条，更新 {{updated}} 条，跳过 {{skipped}} 条，共 {{total}} 条",
-  "Task result": "任务结果"
+  "Task result": "任务结果",
+  "Import action settings":"导入设置"
 }
