@@ -1,7 +1,3 @@
-/**
- * defaultShowCode: true
- */
-
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer, resolveDefaultParams } from '@nocobase/flow-engine';
 import React from 'react';
@@ -38,7 +34,7 @@ HelloBlockModel.registerFlow({
         });
         ctx.onRefReady(ctx.ref, async (el) => {
           const json = await ctx.renderJson({
-            foo: '{{ctx.foo}}',
+            foo: '{{ctx.foo}}+{{ctx.foo}}',
             bar: '{{ctx.bar}}',
             type: '{{ctx.type.primary}}',
           });
@@ -54,7 +50,7 @@ class PluginHelloModel extends Plugin {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ HelloBlockModel });
     this.flowEngine.context.defineProperty('foo', {
-      get: async () => 'foovalue',
+      get: async () => 123,
     });
     const model = this.flowEngine.createModel({
       uid: 'my-model',

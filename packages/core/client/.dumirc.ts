@@ -228,6 +228,10 @@ export default defineConfig({
               link: '/examples/flow-context/runjs',
             },
             {
+              title: 'ctx.runsql',
+              link: '/examples/flow-context/runsql',
+            },
+            {
               title: 'ctx.api',
               link: '/examples/flow-context/api',
             },
