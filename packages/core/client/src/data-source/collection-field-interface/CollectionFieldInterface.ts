@@ -94,6 +94,9 @@ export abstract class CollectionFieldInterface {
       ...cloneDeep({ ...defaultProps, ...this?.properties }),
       ...defaultValueProps,
       validation: {
+        title: '{{ t("Validation") }}',
+        required: false,
+        'x-decorator': 'FormItem',
         'x-component': 'FieldValidation',
         'x-component-props': {
           type: this.validationType,

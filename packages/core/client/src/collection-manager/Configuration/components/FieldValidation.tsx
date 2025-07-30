@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined, CloseOutlined, DownOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, DownOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { Button, Dropdown, Input, Select, Space } from 'antd';
+import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ValidationRule {
@@ -36,31 +36,42 @@ interface FieldValidationProps {
 
 const VALIDATION_OPTIONS = {
   string: [
-    { key: 'max', label: 'Max' },
-    { key: 'min', label: 'Min' },
-    { key: 'required', label: 'Required' },
-    { key: 'length', label: 'Length' },
-    { key: 'pattern', label: 'Pattern' },
-    { key: 'email', label: 'Email' },
-    { key: 'url', label: 'URL' },
+    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'limit', inputType: 'number' }] },
+    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'limit', inputType: 'number' }] },
+    { key: 'required', label: 'Required', hasValue: false, params: [] },
+    { key: 'alphanum', label: 'Alphanum', hasValue: false, params: [] },
+    {
+      key: 'length',
+      label: 'Length',
+      hasValue: true,
+      params: [{ key: 'limit', label: 'Exact Length', inputType: 'number' }],
+    },
+    {
+      key: 'pattern',
+      label: 'Pattern',
+      hasValue: true,
+      params: [{ key: 'regex', label: 'Regular Expression', inputType: 'text' }],
+    },
+    { key: 'email', label: 'Email', hasValue: false, params: [] },
+    { key: 'url', label: 'URL', hasValue: false, params: [] },
   ],
   number: [
-    { key: 'max', label: 'Max' },
-    { key: 'min', label: 'Min' },
-    { key: 'required', label: 'Required' },
-    { key: 'integer', label: 'Integer' },
-    { key: 'positive', label: 'Positive' },
-    { key: 'negative', label: 'Negative' },
+    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Value', inputType: 'number' }] },
+    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Value', inputType: 'number' }] },
+    { key: 'required', label: 'Required', hasValue: false, params: [] },
+    { key: 'integer', label: 'Integer', hasValue: false, params: [] },
+    { key: 'positive', label: 'Positive', hasValue: false, params: [] },
+    { key: 'negative', label: 'Negative', hasValue: false, params: [] },
   ],
   email: [
-    { key: 'required', label: 'Required' },
-    { key: 'max', label: 'Max' },
-    { key: 'min', label: 'Min' },
+    { key: 'required', label: 'Required', hasValue: false, params: [] },
+    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Length', inputType: 'number' }] },
+    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Length', inputType: 'number' }] },
   ],
   url: [
-    { key: 'required', label: 'Required' },
-    { key: 'max', label: 'Max' },
-    { key: 'min', label: 'Min' },
+    { key: 'required', label: 'Required', hasValue: false, params: [] },
+    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Length', inputType: 'number' }] },
+    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Length', inputType: 'number' }] },
   ],
 };
 
@@ -68,61 +79,17 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const { value, onChange, type } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
 
-  // 从 value 中解构 rules，如果 value 不存在则使用空数组
-  const rules = value?.rules || [];
   const validationType = value?.type || type || 'string';
-
-  const styles = useMemo(() => {
-    return {
-      container: {
-        marginBottom: token.marginLG,
-      },
-      label: {
-        color: token.colorText,
-        fontSize: token.fontSize,
-        fontWeight: 500,
-        marginBottom: token.marginXS,
-      },
-      validationContainer: {
-        border: `1px solid ${token.colorBorder}`,
-        borderRadius: token.borderRadius,
-        padding: token.paddingSM,
-        backgroundColor: token.colorFillAlter,
-        minHeight: 40,
-      },
-      ruleItem: {
-        marginBottom: token.marginSM,
-      },
-      ruleRow: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: token.marginSM,
-        marginBottom: token.marginSM,
-      },
-      ruleSelect: {
-        minWidth: 120,
-      },
-      ruleInput: {
-        flex: 1,
-      },
-      removeButton: {
-        cursor: 'pointer',
-        color: token.colorTextSecondary,
-        fontSize: token.fontSizeLG,
-        padding: token.paddingXXS,
-        '&:hover': {
-          color: token.colorError,
-        },
-      },
-    };
-  }, [token]);
+  const rules = value?.rules || [];
 
   const validationOptions = useMemo(() => {
     return VALIDATION_OPTIONS[validationType] || VALIDATION_OPTIONS.string;
   }, [validationType]);
 
   const handleAddRule = (ruleType: string) => {
+    const option = validationOptions.find((opt) => opt.key === ruleType);
     const newRule: ValidationRule = {
       key: `r_${Date.now()}`,
       name: ruleType,
@@ -134,51 +101,111 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       type: validationType,
       rules: newRules,
     };
+
+    if (option?.hasValue && option.params.length > 0) {
+      setExpandedKeys([...expandedKeys, newRule.key]);
+    }
+
     onChange?.(newValue);
   };
 
-  const handleRemoveRule = (ruleIndex: number) => {
-    const newRules = rules.filter((_, index) => index !== ruleIndex);
+  const handleRemoveRule = (ruleKey: string) => {
+    const newRules = rules.filter((rule) => rule.key !== ruleKey);
     const newValue: ValidationData = {
       type: validationType,
       rules: newRules,
     };
+
+    setExpandedKeys(expandedKeys.filter((key) => key !== ruleKey));
+
     onChange?.(newValue);
   };
 
-  const handleRuleChange = (ruleIndex: number, field: string, fieldValue: any) => {
-    const newRules = rules.map((rule, index) => {
-      if (index === ruleIndex) {
-        if (field === 'value') {
-          let argKey = 'limit';
-          if (rule.name === 'pattern') {
-            argKey = 'regex';
-          } else {
-            fieldValue = Number(fieldValue);
-          }
-
-          return { ...rule, args: { ...rule.args, [argKey]: fieldValue } };
-        } else if (field === 'name') {
-          return { ...rule, name: fieldValue, args: {} };
-        } else {
-          return { ...rule, [field]: fieldValue };
-        }
+  const handleRuleValueChange = (ruleKey: string, argKey: string, newValue: any) => {
+    const newRules = rules.map((rule) => {
+      if (rule.key === ruleKey) {
+        return {
+          ...rule,
+          args: { ...rule.args, [argKey]: newValue },
+        };
       }
       return rule;
     });
-    const newValue: ValidationData = {
+
+    const updatedValue: ValidationData = {
       type: validationType,
       rules: newRules,
     };
-    onChange?.(newValue);
+    onChange?.(updatedValue);
+  };
+
+  const handleToggleExpand = (ruleKey: string) => {
+    const isExpanded = expandedKeys.includes(ruleKey);
+    if (isExpanded) {
+      setExpandedKeys(expandedKeys.filter((key) => key !== ruleKey));
+    } else {
+      setExpandedKeys([...expandedKeys, ruleKey]);
+    }
+  };
+
+  const renderValidationForm = (rule: ValidationRule) => {
+    const option = validationOptions.find((opt) => opt.key === rule.name);
+    if (!option) return null;
+
+    if (!option.hasValue || option.params.length === 0) {
+      return (
+        <div style={{ color: token.colorTextSecondary }}>{t('This validation rule has no additional parameters')}</div>
+      );
+    }
+
+    return (
+      <Form size="small">
+        {option.params.map((param) => {
+          const currentValue = rule.args?.[param.key];
+
+          return (
+            <Form.Item
+              key={param.key}
+              label={t(param.label)}
+              style={{ marginBottom: token.marginSM, paddingLeft: 8, paddingRight: 8 }}
+            >
+              {param.inputType === 'boolean' ? (
+                <Switch
+                  checked={currentValue || false}
+                  onChange={(checked) => handleRuleValueChange(rule.key, param.key, checked)}
+                  checkedChildren={t('Yes')}
+                  unCheckedChildren={t('No')}
+                />
+              ) : param.inputType === 'number' ? (
+                <InputNumber
+                  value={currentValue || ''}
+                  onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
+                  placeholder={t('Enter value')}
+                  style={{ width: '100%' }}
+                />
+              ) : (
+                <Input
+                  value={currentValue || ''}
+                  onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.value)}
+                  placeholder={t('Enter value')}
+                />
+              )}
+            </Form.Item>
+          );
+        })}
+      </Form>
+    );
   };
 
   const menuItems: MenuProps['items'] = useMemo(() => {
-    return validationOptions.map((option) => ({
-      key: option.key,
-      label: t(option.label),
-    }));
-  }, [validationOptions, t]);
+    const addedRuleNames = new Set(rules.map((rule) => rule.name));
+    return validationOptions
+      .filter((option) => !addedRuleNames.has(option.key))
+      .map((option) => ({
+        key: option.key,
+        label: t(option.label),
+      }));
+  }, [validationOptions, rules, t]);
 
   const menu: MenuProps = {
     items: menuItems,
@@ -188,48 +215,101 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.label}>{t('Validation')}:</div>
+    <div style={{ marginBottom: token.marginLG }}>
+      {rules.length > 0 && (
+        <List
+          size="small"
+          style={{
+            backgroundColor: token.colorFillAlter,
+            border: `1px solid ${token.colorBorder}`,
+            borderRadius: token.borderRadius,
+            marginBottom: token.marginSM,
+          }}
+          dataSource={rules}
+          renderItem={(rule) => {
+            const option = validationOptions.find((opt) => opt.key === rule.name);
+            const ruleLabel = option ? t(option.label) : rule.name;
+            const hasParams = option?.hasValue && option.params.length > 0;
+            const isExpanded = expandedKeys.includes(rule.key);
 
-      <div style={styles.validationContainer}>
-        {rules.map((rule, index) => {
-          const needsValue = !['required', 'email', 'url'].includes(rule.name);
-          const currentValue = rule.args?.limit || rule.args?.regex || '';
+            return (
+              <List.Item
+                style={{
+                  display: 'block',
+                  padding: 0,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: `${token.paddingXS}px ${token.paddingSM}px`,
+                    cursor: hasParams ? 'pointer' : 'default',
+                    backgroundColor: token.colorBgContainer,
+                    borderRadius: 6,
+                  }}
+                  onClick={() => hasParams && handleToggleExpand(rule.key)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXS }}>
+                    <div
+                      style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      {hasParams && (
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={isExpanded ? <DownOutlined /> : <RightOutlined />}
+                          style={{
+                            color: token.colorTextSecondary,
+                            width: 16,
+                            height: 16,
+                            minWidth: 16,
+                            padding: 0,
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span>{ruleLabel}</span>
+                  </div>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveRule(rule.key);
+                    }}
+                    style={{
+                      color: token.colorTextSecondary,
+                    }}
+                  />
+                </div>
+                {hasParams && isExpanded && (
+                  <div
+                    style={{
+                      padding: token.paddingSM,
+                      backgroundColor: token.colorBgContainer,
+                      borderTop: `1px solid ${token.colorBorder}`,
+                      borderRadius: '0 0 6px 6px',
+                    }}
+                  >
+                    {renderValidationForm(rule)}
+                  </div>
+                )}
+              </List.Item>
+            );
+          }}
+        />
+      )}
 
-          return (
-            <div key={rule.key} style={styles.ruleRow}>
-              <Select
-                value={rule.name}
-                onChange={(newType) => handleRuleChange(index, 'name', newType)}
-                style={styles.ruleSelect}
-                options={validationOptions.map((opt) => ({
-                  value: opt.key,
-                  label: t(opt.label),
-                }))}
-                size="small"
-              />
-
-              {needsValue && (
-                <Input
-                  value={currentValue}
-                  onChange={(e) => handleRuleChange(index, 'value', e.target.value)}
-                  placeholder={t('Enter value')}
-                  style={styles.ruleInput}
-                  size="small"
-                />
-              )}
-
-              <CloseOutlined style={styles.removeButton} onClick={() => handleRemoveRule(index)} />
-            </div>
-          );
-        })}
-
+      {menuItems.length > 0 && (
         <Dropdown menu={menu} placement="bottomLeft">
           <Button type="dashed" icon={<PlusOutlined />} size="small">
             {t('Add rule')} <DownOutlined />
           </Button>
         </Dropdown>
-      </div>
+      )}
     </div>
   );
 });
