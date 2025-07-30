@@ -8,7 +8,8 @@
  */
 
 import { Schema } from '@formily/json-schema';
-import { FlowRuntimeContext, FlowModelContext } from '../flowContext';
+import _ from 'lodash';
+import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 
 /**
@@ -19,7 +20,7 @@ import type { FlowModel } from '../models';
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
   defaultParams: Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>) | undefined,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<Record<string, any>> {
   if (!defaultParams) {
     return {};
@@ -74,7 +75,7 @@ export async function resolveDefaultOptions(
  */
 export async function resolveParamsExpressions<TModel extends FlowModel = FlowModel>(
   params: any,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<any> {
   const compile = async (source: any): Promise<any> => {
     if (typeof source === 'string' && /\{\{.*?\}\}/.test(source)) {
@@ -110,27 +111,43 @@ export async function resolveParamsExpressions<TModel extends FlowModel = FlowMo
  */
 async function compileExpression<TModel extends FlowModel = FlowModel>(
   expression: string,
-  ctx: FlowRuntimeContext<TModel>,
+  ctx: FlowContext,
 ): Promise<any> {
   try {
     // 单个表达式直接返回值，保持原始类型
     const singleMatch = expression.match(/^\{\{\s*(ctx\.[^}]+)\s*\}\}$/);
     if (singleMatch) {
       const path = singleMatch[1];
+      const [prefix, key, ...rest] = path.split('.');
+      const firstKey = `${prefix}.${key}`;
+      const r = await ctx.runjs(
+        `
+        const firstValue = await ${firstKey};
+        if (restPath) {
+          return await _.get(firstValue, restPath);
+        } else {
+          return firstValue;
+        }
+        `,
+        { _, restPath: rest.join('.') },
+      );
+
+      const result = r?.value;
 
       // 使用 new Function 直接访问 ctx
-      const result = await new Function(
-        'ctx',
-        `
-        return (async () => {
-          try {
-            return await ${path};
-          } catch (e) {
-            return undefined;
-          }
-        })();
-      `,
-      )(ctx);
+      // const result = await new Function(
+      //   'ctx',
+      //   `
+      //   return (async () => {
+      //     try {
+      //       const value = await ${key};
+
+      //     } catch (e) {
+      //       return undefined;
+      //     }
+      //   })();
+      // `,
+      // )(ctx);
 
       if (result !== undefined) {
         return result;
