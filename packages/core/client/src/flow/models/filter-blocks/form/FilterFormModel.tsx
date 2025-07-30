@@ -22,7 +22,6 @@ import { Card } from 'antd';
 import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { FilterBlockModel } from '../../base/BlockModel';
-import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 export class FilterFormModel extends FilterBlockModel {
   form: Form;

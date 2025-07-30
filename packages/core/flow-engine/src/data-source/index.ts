@@ -601,7 +601,7 @@ export class CollectionField {
   }
 
   get filterable() {
-    return this.options.filterable;
+    return this.options.filterable || this.getInterfaceOptions()?.filterable;
   }
 
   get uiSchema() {
