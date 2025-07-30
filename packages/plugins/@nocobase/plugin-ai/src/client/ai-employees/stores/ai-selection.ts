@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { create } from 'zustand';
-import { Selector } from './types';
+import { model } from '@formily/reactive';
+import { Selector } from '../types';
 
 interface AISelectionState {
   selectable: string;
@@ -17,9 +17,15 @@ interface AISelectionState {
   stopSelect: () => void;
 }
 
-export const useAISelectionStore = create<AISelectionState>((set) => ({
+export const aiSelection = model<AISelectionState>({
   selectable: '',
   selector: null,
-  startSelect: (selectType: string, selector?: Selector) => set(() => ({ selectable: selectType, selector })),
-  stopSelect: () => set(() => ({ selectable: '', selector: null })),
-}));
+  startSelect(selectType: string, selector?: Selector) {
+    this.selectable = selectType;
+    this.selector = selector;
+  },
+  stopSelect() {
+    this.selectable = '';
+    this.selector = null;
+  },
+});

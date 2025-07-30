@@ -23,7 +23,7 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../useAIEmployeesData';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();

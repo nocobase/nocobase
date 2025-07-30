@@ -11,7 +11,7 @@ import { useContext, useEffect } from 'react';
 import { useChatBoxStore } from '../stores/chat-box';
 import { aiEmployeeRole, defaultRoles } from '../roles';
 import { useChatConversationActions } from './useChatConversationActions';
-import { useAIEmployeesData } from '../../useAIEmployeesData';
+import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
 
 export const useChatBoxEffect = () => {
   const { aiEmployees } = useAIEmployeesData();

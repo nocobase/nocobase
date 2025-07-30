@@ -89,7 +89,14 @@ export const AddContextButton: React.FC<{
   }, [workContext]);
 
   return (
-    <Dropdown menu={{ items }} placement="topLeft" disabled={disabled}>
+    <Dropdown
+      menu={{ items }}
+      placement="topLeft"
+      disabled={disabled}
+      overlayStyle={{
+        zIndex: 2000,
+      }}
+    >
       <Button variant="dashed" color="default" size="small" icon={<AppstoreAddOutlined />} disabled={disabled}>
         {t('Add work context')}
       </Button>

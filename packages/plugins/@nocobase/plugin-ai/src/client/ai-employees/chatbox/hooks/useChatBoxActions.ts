@@ -150,7 +150,7 @@ export const useChatBoxActions = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments, workContext } = await parseTask(app, task);
+        const { userMessage, systemMessage, attachments, workContext } = await parseTask(task);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {

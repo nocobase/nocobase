@@ -16,7 +16,7 @@ import { tval } from '@nocobase/utils/client';
 import pkg from '../../../../package.json';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { useAISelectionStore } from '../ai-selection';
+import { aiSelection } from '../stores/ai-selection';
 
 function parseModel(node: any) {
   if (!node || typeof node !== 'object' || !node.uid || !node.use) return null;
@@ -60,7 +60,7 @@ export const FlowModelsContext: WorkContextOptions = {
       return (
         <div
           onClick={() => {
-            useAISelectionStore.getState().startSelect('flow-model', {
+            aiSelection.startSelect('flow-model', {
               onSelect: ({ uid }) => {
                 if (!uid) {
                   return;
@@ -71,8 +71,6 @@ export const FlowModelsContext: WorkContextOptions = {
                 }
                 onAdd({
                   uid,
-                  title: model.title,
-                  content: JSON.stringify(parseModel(model)),
                 });
               },
             });

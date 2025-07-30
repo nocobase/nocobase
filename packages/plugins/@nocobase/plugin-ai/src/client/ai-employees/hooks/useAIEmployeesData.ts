@@ -8,7 +8,7 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { AIEmployee } from './types';
+import { AIEmployee } from '../types';
 import { useRequest } from '@nocobase/client';
 
 export const useAIEmployeesData = () => {

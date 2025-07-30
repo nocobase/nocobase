@@ -15,37 +15,19 @@ import { useShortcuts } from './useShortcuts';
 import { useDesignable, useToken } from '@nocobase/client';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { observer } from '@formily/react';
-import { useAIEmployeesData } from '../useAIEmployeesData';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
   const { model, builtIn } = useShortcuts();
-  const { token } = useToken();
   const designMode = designable && !builtIn;
   const hasShortcuts = model?.subModels?.shortcuts?.length > 0;
 
   const { loading, aiEmployees } = useAIEmployeesData();
 
-  const [folded, setFolded] = useState(false);
-
   return (
     <>
-      {hasShortcuts && (
-        <>
-          <Button
-            variant="text"
-            color="default"
-            icon={!folded ? <RightOutlined /> : <LeftOutlined />}
-            style={{
-              height: '52px',
-              width: '12px',
-              fontSize: token.fontSizeSM,
-            }}
-            onClick={() => setFolded(!folded)}
-          />
-          {!folded && <FlowModelRenderer model={model} />}
-        </>
-      )}
+      {hasShortcuts && <FlowModelRenderer model={model} />}
       {!builtIn && (
         <AddSubModelButton
           model={model}
@@ -87,14 +69,6 @@ export const ShortcutList: React.FC = observer(() => {
             }}
           />
         </AddSubModelButton>
-      )}
-      {(hasShortcuts || designMode) && (
-        <Divider
-          type="vertical"
-          style={{
-            height: '50px',
-          }}
-        />
       )}
     </>
   );

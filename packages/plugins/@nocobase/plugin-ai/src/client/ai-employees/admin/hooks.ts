@@ -21,7 +21,7 @@ import { useT } from '../../locale';
 import { useForm } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
-import { useAIEmployeesData } from '../useAIEmployeesData';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const useCreateFormProps = () => {
   const form = useMemo(

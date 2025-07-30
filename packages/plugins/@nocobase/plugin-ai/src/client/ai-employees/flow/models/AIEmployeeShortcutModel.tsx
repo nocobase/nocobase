@@ -7,18 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
-import { Avatar, Button, Spin, Popover, Card, Tag } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Avatar, Button, Spin, Popover, Card, Tag, Tooltip } from 'antd';
 import { FlowModel, defineFlow, escapeT, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
-import { AIEmployee, Task, TriggerTaskOptions } from '../../types';
+import { AIEmployee, Task, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
 import { useToken } from '@nocobase/client';
-import { useAIEmployeesData } from '../../useAIEmployeesData';
+import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
+import { useT } from '../../../locale';
+import { AddContextButton } from '../../AddContextButton';
+import { useField } from '@formily/react';
+import { ArrayField } from '@formily/core';
+import { ContextItem } from '../../chatbox/ContextItem';
+import { aiSelection } from '../../stores/ai-selection';
+import { AIEmployeeShortcutListModel } from './AIEmployeeShortcutListModel';
+
 const { Meta } = Card;
 
-const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, tasks }) => {
+type ShortcutProps = TriggerTaskOptions & {
+  builtIn?: boolean;
+  showNotice?: boolean;
+};
+
+const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, showNotice, builtIn }) => {
   const [focus, setFocus] = useState(false);
 
   const { loading, aiEmployeesMap } = useAIEmployeesData();
@@ -31,7 +44,7 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
     if (!avatar) {
       return null;
     }
-    if (focus) {
+    if (focus || showNotice) {
       return avatars(avatar, {
         gesture: ['waveLongArm'],
         gestureProbability: 100,
@@ -39,11 +52,11 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
       });
     }
     return avatars(avatar);
-  }, [aiEmployee, focus]);
+  }, [aiEmployee, focus, showNotice]);
 
   return (
     <Spin spinning={loading}>
-      <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="topLeft">
+      <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} />}>
         <Avatar
           src={currentAvatar}
           size={52}
@@ -52,7 +65,9 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
             cursor: 'pointer',
           }}
           // @ts-ignore
-          onMouseEnter={() => setFocus(true)}
+          onMouseEnter={() => {
+            setFocus(true);
+          }}
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
             triggerTask({ aiEmployee, tasks });
@@ -64,9 +79,7 @@ const Shortcut: React.FC<TriggerTaskOptions> = ({ aiEmployee: { username }, task
 };
 
 export class AIEmployeeShortcutModel extends FlowModel {
-  public declare props: TriggerTaskOptions & {
-    builtIn?: boolean;
-  };
+  public declare props: ShortcutProps;
 
   render() {
     return <Shortcut {...this.props} />;
@@ -116,12 +129,46 @@ const Information: React.FC<{
   );
 };
 
+const WorkContext: React.FC = () => {
+  const field = useField<ArrayField>();
+  const onAdd = (contextItem: ContextItemType) => {
+    const exists = field.value.some((item) => item.type === contextItem.type && item.uid === contextItem.uid);
+    if (!exists) {
+      field.value = [...field.value, contextItem];
+    }
+  };
+  const onRemove = (type: string, uid: string) => {
+    field.value = field.value.filter((item) => !(item.type === type && item.uid === uid));
+  };
+  return (
+    <>
+      <div>
+        {field.value.map((item) => (
+          <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
+        ))}
+      </div>
+      <AddContextButton onAdd={onAdd} />
+    </>
+  );
+};
+
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
   title: escapeT('Task settings'),
   steps: {
     editTasks: {
       title: escapeT('Edit tasks'),
+      uiMode(ctx) {
+        return {
+          type: 'dialog',
+          props: {
+            styles: {
+              mask: { zIndex: aiSelection.selectable ? -1 : 311 },
+              wrapper: { zIndex: aiSelection.selectable ? -1 : 311 },
+            },
+          },
+        };
+      },
       uiSchema: async (ctx) => {
         const { aiEmployeesMap } = await ctx.aiEmployeesData;
         return {
@@ -129,22 +176,6 @@ AIEmployeeShortcutModel.registerFlow({
             type: 'void',
             'x-decorator': 'FormItem',
             'x-component': () => <Information aiEmployeesMap={aiEmployeesMap} />,
-          },
-          taskDesc: {
-            type: 'string',
-            title: escapeT('Task description'),
-            'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              tooltip: escapeT(
-                'Displays the AI employee’s assigned tasks on the profile when hovering over the button.',
-              ),
-            },
-            'x-component': 'Input.TextArea',
-            'x-component-props': {
-              autoSize: {
-                minRows: 2,
-              },
-            },
           },
           tasks: {
             type: 'array',
@@ -189,7 +220,7 @@ AIEmployeeShortcutModel.registerFlow({
                       title: escapeT('Work context'),
                       type: 'array',
                       'x-decorator': 'FormItem',
-                      'x-component': 'WorkContext',
+                      'x-component': WorkContext,
                     },
                   },
                 },

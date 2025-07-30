@@ -10,7 +10,7 @@
 import { observer, useForm } from '@formily/react';
 import { SchemaComponent, useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import React from 'react';
-import PluginAIClient from '../../';
+import PluginAIClient from '../..';
 import { useT } from '../../locale';
 
 const useModelOptionsForm = (provider: string) => {

@@ -27,6 +27,8 @@ import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
+import { aiSelection } from '../stores/ai-selection';
+import { observer } from '@formily/react';
 
 export const ChatBox: React.FC = () => {
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -142,11 +144,9 @@ export const ChatBox: React.FC = () => {
   );
 };
 
-export const ChatBoxWrapper: React.FC = () => {
-  const expanded = useChatBoxStore.use.expanded();
-  const showConversations = useChatBoxStore.use.showConversations();
-
-  return expanded ? (
+const ExpandChatBox: React.FC = observer(() => {
+  const selectable = aiSelection.selectable;
+  return (
     <Card
       style={{
         position: 'fixed',
@@ -155,7 +155,7 @@ export const ChatBoxWrapper: React.FC = () => {
         top: '50%',
         width: '95%',
         height: '95%',
-        zIndex: 1100,
+        zIndex: selectable ? -1 : 1100,
       }}
       styles={{
         body: {
@@ -166,6 +166,15 @@ export const ChatBoxWrapper: React.FC = () => {
     >
       <ChatBox />
     </Card>
+  );
+});
+
+export const ChatBoxWrapper: React.FC = () => {
+  const expanded = useChatBoxStore.use.expanded();
+  const showConversations = useChatBoxStore.use.showConversations();
+
+  return expanded ? (
+    <ExpandChatBox />
   ) : (
     <div
       style={{
