@@ -767,6 +767,10 @@ export const InternalAdminLayout = () => {
         onCollapse={onCollapse}
         collapsed={collapsed}
         onPageChange={onPageChange}
+        menu={{
+          // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
+          autoClose: false,
+        }}
         menuProps={menuProps}
       >
         <RouteContext.Consumer>
