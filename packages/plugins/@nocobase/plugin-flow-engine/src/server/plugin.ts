@@ -16,7 +16,7 @@ export class PluginFlowEngineServer extends Plugin {
     this.app.acl.allow('flowSql', 'run', 'loggedIn');
     this.app.resourceManager.registerActionHandlers({
       'flowSql:run': async (ctx, next) => {
-        const { sql, type, params } = ctx.action.params.values || {};
+        const { uid, sql, type, params } = ctx.action.params.values || {};
         const result = await this.db.sequelize.query(sql, {
           replacements: params,
         });

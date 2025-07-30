@@ -184,6 +184,7 @@ const openStepSettingsDialog = async ({
       const DialogContent = observable(() => {
         useEffect(() => {
           return autorun(() => {
+            JSON.stringify(uiModeProps);
             const dynamicProps = toJS(uiModeProps);
             currentDialog.update(dynamicProps);
           });

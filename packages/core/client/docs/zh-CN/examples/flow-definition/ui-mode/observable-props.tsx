@@ -13,14 +13,21 @@ class ObservablePropsModel extends FlowModel {
     // 初始化props状态
     this.setProps('isUpdating', false);
 
+    const maskBgColor = observable({
+      backgroundColor: 'rgba(0,0,0,0.3)',
+    });
+
     // 创建一个observable对象来管理dialog样式
-    const dialogStyles = observable({
+    const dialogStyles = {
       width: '60%',
       title: 'Initial Title',
       style: {
         transition: 'width 0.5s ease-in-out', // 添加平滑过渡动画
       },
-    });
+      styles: {
+        mask: maskBgColor,
+      },
+    };
 
     // 通过context.defineProperty定义响应式属性
     this.context.defineProperty('dialogStyles', {
@@ -54,6 +61,7 @@ class ObservablePropsModel extends FlowModel {
       console.log(`Smoothly updating width to ${currentWidth}%`);
       dialogStyles.width = `${currentWidth}%`;
       dialogStyles.title = `动态宽度 - ${currentWidth}% (${counter})`;
+      dialogStyles.styles.mask.backgroundColor = `rgba(0,0,0,${0.3 + 0.2 * Math.sin(progress * Math.PI * 2)})`;
     }, 200); // 更频繁的更新，200ms一次
   };
 
