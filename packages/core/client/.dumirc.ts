@@ -256,6 +256,14 @@ export default defineConfig({
               link: '/examples/flow-context/router',
             },
             {
+              title: 'ctx.route',
+              link: '/examples/flow-context/route',
+            },
+            {
+              title: 'ctx.location',
+              link: '/examples/flow-context/location',
+            },
+            {
               title: 'ctx.antd',
               link: '/examples/flow-context/antd',
             },

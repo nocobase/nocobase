@@ -278,21 +278,12 @@ CollectionBlockModel.registerFlow({
         // sourceId 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('sourceId')) {
           // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
-          ctx.resource.setSourceId(
-            Schema.compile(params.sourceId.replace('shared.currentFlow.', '').replace('.runtimeArgs.', '.inputArgs.'), {
-              ctx: ctx.currentFlow,
-            }),
-          );
+          ctx.resource.setSourceId(params.sourceId);
         }
         // filterByTk 为运行时参数，必须放在 runtime context 中
         if (Object.keys(params).includes('filterByTk')) {
           // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
-          ctx.resource.setFilterByTk(
-            Schema.compile(
-              params.filterByTk?.replace('shared.currentFlow.', '').replace('.runtimeArgs.', '.inputArgs.'),
-              { ctx: ctx.currentFlow },
-            ),
-          );
+          ctx.resource.setFilterByTk(params.filterByTk);
         }
       },
     },

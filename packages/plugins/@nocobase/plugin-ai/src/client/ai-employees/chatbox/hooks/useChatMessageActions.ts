@@ -9,20 +9,20 @@
 
 import { useChatMessagesStore } from '../stores/chat-messages';
 import { useCallback, useEffect, useRef } from 'react';
-import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
+import { useAPIClient, useApp, usePlugin, useRequest } from '@nocobase/client';
 import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
 import PluginAIClient from '../../..';
 import { uid } from '@formily/shared';
-import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
+import { parseWorkContext } from '../utils';
 
 export const useChatMessageActions = () => {
+  const app = useApp();
   const t = useT();
   const api = useAPIClient();
-  const { ctx } = useAISelectionContext();
   const plugin = usePlugin('ai') as PluginAIClient;
 
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
@@ -39,7 +39,6 @@ export const useChatMessageActions = () => {
   const setContextItems = useChatMessagesStore.use.setContextItems();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
-  const ctxRef = useRef(ctx);
 
   const messagesService = useRequest<{
     data: Message[];
@@ -158,7 +157,7 @@ export const useChatMessageActions = () => {
         toolCallIds.push(tool.id);
         const t = plugin.aiManager.tools.get(tool.name);
         if (t) {
-          await t.invoke(ctxRef.current, tool.args);
+          await t.invoke(app, tool.args);
         }
       }
       await confirmToolCall({
@@ -188,12 +187,13 @@ export const useChatMessageActions = () => {
       setMessages((prev) => prev.slice(0, -1));
     }
 
+    const parsedWorkContext = parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
       key: uid(),
       role: 'user',
       content: msg,
       attachments: index === 0 ? attachments : undefined,
-      workContext: index === 0 ? workContext : undefined,
+      workContext: index === 0 ? parsedWorkContext : undefined,
     }));
     addMessages(
       sendMsgs.map((msg, index) => ({
@@ -449,10 +449,6 @@ export const useChatMessageActions = () => {
     setAttachments([]);
     setContextItems([]);
   }, []);
-
-  useEffect(() => {
-    ctxRef.current = ctx;
-  }, [ctx]);
 
   return {
     messagesService,

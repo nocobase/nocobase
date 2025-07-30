@@ -25,7 +25,6 @@ import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hlj
 import { useAPIClient, useGlobalTheme, usePlugin, useRequest, useToken } from '@nocobase/client';
 import { Schema } from '@formily/react';
 import PluginAIClient from '../../..';
-import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';

@@ -13,6 +13,7 @@ import { getT, resolveUiMode, setupRuntimeContextSteps } from '../../../../utils
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
+import { autorun, model as observableModel } from '@formily/reactive';
 
 /**
  * 统一的步骤设置入口函数
@@ -52,12 +53,28 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
   // 提取模式和属性
   let settingMode: 'dialog' | 'drawer';
   let uiModeProps: Record<string, any> = {};
+  let cleanup: () => void;
 
   if (typeof resolvedUiMode === 'string') {
     settingMode = resolvedUiMode;
   } else if (typeof resolvedUiMode === 'object' && resolvedUiMode.type) {
     settingMode = resolvedUiMode.type;
-    uiModeProps = resolvedUiMode.props || {};
+    uiModeProps = observableModel(resolvedUiMode.props || {});
+    const disposer = autorun(() => {
+      resolveUiMode(step.uiMode, ctx)
+        .then((newUiMode) => {
+          if (typeof newUiMode === 'object' && newUiMode.type) {
+            Object.assign(uiModeProps, newUiMode.props || {});
+          }
+        })
+        .catch((error) => {
+          console.warn('Error resolving uiMode:', error);
+        });
+    });
+
+    cleanup = () => {
+      disposer();
+    };
   } else {
     // 默认使用 dialog 模式
     settingMode = 'dialog';
@@ -73,6 +90,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
       drawerTitle: title,
       ctx,
       uiModeProps,
+      cleanup,
     });
   } else {
     return openStepSettingsDialog({
@@ -83,47 +101,9 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
       dialogTitle: title,
       ctx,
       uiModeProps,
+      cleanup,
     });
   }
 };
 
-/**
- * 获取步骤的设置模式
- * @param stepKey 步骤Key
- * @param ctx 流程运行时上下文
- * @returns Promise<'dialog' | 'drawer' | null> 设置模式，如果步骤不存在则返回null
- */
-const getStepSettingMode = async (stepKey: string, ctx: FlowRuntimeContext): Promise<'dialog' | 'drawer' | null> => {
-  try {
-    const model = ctx.model;
-    const flowKey = ctx.flowKey;
-    const flow = model.getFlow(flowKey);
-    const step = flow?.steps?.[stepKey];
-
-    if (!step) {
-      return null;
-    }
-
-    // 确保上下文中设置了当前步骤
-    if (!ctx.currentStep || ctx.currentStep !== step) {
-      ctx.defineProperty('currentStep', { value: step });
-    }
-
-    // 解析 uiMode，支持函数式
-    const resolvedUiMode = await resolveUiMode(step.uiMode, ctx);
-
-    if (typeof resolvedUiMode === 'string') {
-      return resolvedUiMode;
-    } else if (typeof resolvedUiMode === 'object' && resolvedUiMode.type) {
-      return resolvedUiMode.type;
-    } else {
-      // 默认使用 dialog 模式
-      return 'dialog';
-    }
-  } catch (error) {
-    console.warn('Error getting step setting mode:', error);
-    return null;
-  }
-};
-
-export { getStepSettingMode, openStepSettings, openStepSettingsDialog, openStepSettingsDrawer };
+export { openStepSettings, openStepSettingsDialog, openStepSettingsDrawer };

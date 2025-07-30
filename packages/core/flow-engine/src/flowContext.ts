@@ -15,6 +15,7 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import { createRef } from 'react';
+import type { Location } from 'react-router-dom';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
@@ -46,8 +47,9 @@ type OpenInlineProps = {
 type OpenPopoverProps = {
   mode: 'popover';
   target: any;
+  content?: React.ReactNode | ((popover: any) => React.ReactNode);
   [key: string]: any;
-} & PopoverProps;
+};
 
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
@@ -391,6 +393,8 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
+  declare route: { params: Record<string, any> };
+  declare location: Location;
   declare runsql: (options: RunSQLOptions) => Promise<any>;
 
   // public dataSourceManager: DataSourceManager;
@@ -489,6 +493,8 @@ export class FlowModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
+  declare route: { params: Record<string, any> };
+  declare location: Location;
 
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
@@ -536,6 +542,8 @@ export class FlowForkModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
+  declare route: { params: Record<string, any> };
+  declare location: Location;
 
   constructor(
     public master: FlowModel,
@@ -592,6 +600,8 @@ export class FlowRuntimeContext<
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
+  declare route: { params: Record<string, any> };
+  declare location: Location;
 
   constructor(
     public model: TModel,

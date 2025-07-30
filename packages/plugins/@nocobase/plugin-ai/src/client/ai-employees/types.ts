@@ -109,7 +109,6 @@ export type TaskMessage = {
 
 export type Task = {
   title?: string;
-  taskDesc?: string;
   message: TaskMessage;
   autoSend?: boolean;
 };

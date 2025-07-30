@@ -9,7 +9,6 @@
 
 import React, { useMemo } from 'react';
 import { Button, Dropdown, Tag, Avatar, Popover, Flex } from 'antd';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { useT } from '../../locale';
 import { useToken } from '@nocobase/client';
 import { UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -22,12 +21,10 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { EditMessageHeader } from './EditMessageHeader';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const SenderHeader: React.FC = () => {
-  const {
-    service: { loading },
-    aiEmployees,
-  } = useAIEmployeesContext();
+  const { aiEmployees } = useAIEmployeesData();
   const { token } = useToken();
   const t = useT();
 

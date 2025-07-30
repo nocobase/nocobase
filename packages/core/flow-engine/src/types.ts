@@ -299,6 +299,8 @@ export interface StepSettingsDialogProps {
   dialogTitle?: string;
   mode?: 'dialog' | 'drawer'; // 设置模式，默认为'dialog'
   ctx?: FlowRuntimeContext;
+  uiModeProps?: Record<string, any>;
+  cleanup?: () => void;
 }
 
 /**
@@ -312,6 +314,7 @@ export interface StepSettingsDrawerProps {
   drawerTitle?: string;
   ctx?: FlowRuntimeContext;
   uiModeProps?: Record<string, any>;
+  cleanup?: () => void;
 }
 
 /**

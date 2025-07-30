@@ -9,7 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
-import { matchRoutes } from 'react-router';
+import { matchRoutes, useParams } from 'react-router';
 import {
   BrowserRouterProps,
   createBrowserRouter,
@@ -26,6 +26,7 @@ import VariablesProvider from '../variables/VariablesProvider';
 import { Application } from './Application';
 import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
+import { RouterBridge } from './components/RouterBridge';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -167,14 +168,17 @@ export class RouterManager {
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);
       return (
-        <CustomRouterContextProvider>
-          <BaseLayout>
-            <VariablesProvider>
-              <Outlet />
-              {children}
-            </VariablesProvider>
-          </BaseLayout>
-        </CustomRouterContextProvider>
+        <>
+          <RouterBridge app={this.app} />
+          <CustomRouterContextProvider>
+            <BaseLayout>
+              <VariablesProvider>
+                <Outlet />
+                {children}
+              </VariablesProvider>
+            </BaseLayout>
+          </CustomRouterContextProvider>
+        </>
       );
     };
 

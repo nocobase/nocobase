@@ -11,25 +11,25 @@ import React, { useMemo, useState } from 'react';
 import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.png';
 import { css } from '@emotion/css';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { useAISelectionContext } from '../selector/AISelectorProvider';
 import { PauseCircleFilled, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const ChatButton: React.FC = () => {
-  const { aiEmployees } = useAIEmployeesContext();
+  const { aiEmployees } = useAIEmployeesData();
 
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const { stopSelect, selectable } = useAISelectionContext();
   const { token } = useToken();
+
+  const [folded, setFolded] = useState(false);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -56,7 +56,7 @@ export const ChatButton: React.FC = () => {
         border-radius: 8px;
         gap: 8px;
         position: fixed;
-        bottom: 48px;
+        bottom: 42px;
         align-items: center;
         inset-inline-end: 8px;
         width: fit-content;
@@ -70,31 +70,40 @@ export const ChatButton: React.FC = () => {
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
       `}
     >
-      <ShortcutList />
-      {!selectable ? (
-        <Dropdown menu={{ items }} placement="topRight">
-          <Avatar
-            src={icon}
-            size={52}
-            shape="square"
-            onClick={() => {
-              setOpen(!open);
+      <>
+        <Button
+          variant="text"
+          color="default"
+          icon={!folded ? <RightOutlined /> : <LeftOutlined />}
+          style={{
+            height: '52px',
+            width: '12px',
+            fontSize: token.fontSizeSM,
+          }}
+          onClick={() => setFolded(!folded)}
+        />
+      </>
+
+      {!folded && (
+        <>
+          <ShortcutList />
+          <Divider
+            type="vertical"
+            style={{
+              height: '50px',
             }}
           />
-        </Dropdown>
-      ) : (
-        <Button
-          icon={
-            <PauseCircleFilled
-              style={{
-                color: token.colorErrorText,
+          <Dropdown menu={{ items }} placement="topRight">
+            <Avatar
+              src={icon}
+              size={52}
+              shape="square"
+              onClick={() => {
+                setOpen(!open);
               }}
             />
-          }
-          onClick={() => {
-            stopSelect();
-          }}
-        />
+          </Dropdown>
+        </>
       )}
     </div>
   );

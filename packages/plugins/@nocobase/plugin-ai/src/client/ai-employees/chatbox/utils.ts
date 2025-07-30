@@ -8,7 +8,7 @@
  */
 
 import { Application, useLocalVariables, useVariables } from '@nocobase/client';
-import { TaskMessage } from '../types';
+import { ContextItem, TaskMessage } from '../types';
 import PluginAIClient from '../..';
 
 async function replaceVariables(template, variables, localVariables = {}) {
@@ -53,12 +53,7 @@ async function replaceVariables(template, variables, localVariables = {}) {
   return result;
 }
 
-export const parseTask = async (
-  app: Application,
-  task: {
-    message: TaskMessage;
-  },
-) => {
+export const parseTask = async (task: { message: TaskMessage }) => {
   let userMessage: any;
   const { message } = task;
   if (message?.user) {
@@ -91,27 +86,29 @@ export const parseTask = async (
       }
     }
   }
-  const workContext = [];
-  if (message.workContext) {
-    const plugin = app.pm.get('ai') as PluginAIClient;
-    for (const context of message.workContext) {
-      if (context.content) {
-        workContext.push(context);
-        continue;
-      }
-      const contextOptions = plugin.aiManager.workContext.get(context.type);
-      if (!(contextOptions && contextOptions.getContent)) {
-        workContext.push(context);
-        continue;
-      }
-      const content = contextOptions.getContent(app, context);
-      workContext.push({
-        ...context,
-        content,
-      });
+  return { userMessage, systemMessage, attachments, workContext: message.workContext };
+};
+
+export const parseWorkContext = (app: Application, workContext: ContextItem[]) => {
+  const parsed = [];
+  const plugin = app.pm.get('ai') as PluginAIClient;
+  for (const context of workContext) {
+    if (context.content) {
+      parsed.push(context);
+      continue;
     }
+    const contextOptions = plugin.aiManager.workContext.get(context.type);
+    if (!(contextOptions && contextOptions.getContent)) {
+      parsed.push(context);
+      continue;
+    }
+    const content = contextOptions.getContent(app, context);
+    parsed.push({
+      ...context,
+      content,
+    });
   }
-  return { userMessage, systemMessage, attachments, workContext };
+  return parsed;
 };
 
 const publicPath = window['__nocobase_dev_public_path__'] || window['__nocobase_public_path__'] || '/';

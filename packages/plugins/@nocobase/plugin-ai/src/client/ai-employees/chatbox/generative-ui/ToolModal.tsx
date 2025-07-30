@@ -112,8 +112,13 @@ export const ToolModal: React.FC = () => {
         setOpen(false);
       }}
       okButtonProps={{
-        disabled: activeTool.invokeStatus !== 'init',
+        disabled: !['init', 'pending'].includes(activeTool.invokeStatus),
       }}
+      footer={(_, { OkBtn }) => (
+        <>
+          <OkBtn />
+        </>
+      )}
     >
       {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
     </Modal>

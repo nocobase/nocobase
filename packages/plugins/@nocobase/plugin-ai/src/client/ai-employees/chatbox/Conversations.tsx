@@ -16,7 +16,6 @@ import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 const { Header, Content } = Layout;
 import { ConversationsProps } from '@ant-design/x';
 import { useForm } from '@formily/react';
-import { useAIEmployeesContext } from '../AIEmployeesProvider';
 import { uid } from '@formily/shared';
 import { useChatConversationActions } from './hooks/useChatConversationActions';
 import { useChatConversationsStore } from './stores/chat-conversations';
@@ -24,6 +23,7 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useChatBoxStore } from './stores/chat-box';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -132,7 +132,7 @@ export const Conversations: React.FC = memo(() => {
   const api = useAPIClient();
   const { modal, message } = App.useApp();
   const { token } = useToken();
-  const { aiEmployeesMap } = useAIEmployeesContext();
+  const { aiEmployeesMap } = useAIEmployeesData();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();
