@@ -226,11 +226,17 @@ export class RecordProxy {
         return this.#executeRequest(path)
           .then((data) => {
             if (Array.isArray(data)) {
-              // 如果是数组，提取每个元素的属性，过滤掉undefined
-              const result = data
-                .map((item) => item && item[property])
-                .filter((value) => value !== undefined && value !== null);
-              resolve(result);
+              // 如果是数组，首先检查是否为数组的内置属性
+              if (property in data || typeof data[property] !== 'undefined') {
+                // 数组的内置属性（如length）或方法，直接从数组对象获取
+                resolve(data[property]);
+              } else {
+                // 否则从每个元素中提取属性，过滤掉undefined
+                const result = data
+                  .map((item) => item && item[property])
+                  .filter((value) => value !== undefined && value !== null);
+                resolve(result);
+              }
             } else if (this.#isValidObject(data)) {
               // 如果是对象，直接提取属性
               resolve(data[property]);

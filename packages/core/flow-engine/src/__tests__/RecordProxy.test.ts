@@ -720,6 +720,54 @@ describe('RecordProxy', () => {
       expect(mockApiRequest).toHaveBeenCalledTimes(1); // 使用缓存，不再调用API
       expect(entryDetails).toEqual(['First entry', 'Second entry', 'Third entry']);
     });
+
+    /**
+     * 测试数组内置属性访问功能
+     * 场景：访问关联数据数组的内置属性（如 length）和自定义属性
+     * 预期：访问内置属性时返回数组本身的属性值，访问自定义属性时从每个元素中提取
+     * 核心功能：验证数组内置属性（length、方法等）的正确处理，避免被误解为元素属性
+     */
+    it('should handle array built-in properties correctly', async () => {
+      const record = { id: 1, title: 'Test Post' };
+      const commentsData = [
+        { id: 101, content: 'Comment 1', priority: 'high' },
+        { id: 102, content: 'Comment 2', priority: 'medium' },
+        { id: 103, content: 'Comment 3', priority: 'low' },
+      ];
+
+      mockApiRequest.mockResolvedValue({
+        data: {
+          data: {
+            id: 1,
+            title: 'Test Post',
+            comments: commentsData,
+          },
+        },
+      });
+
+      const proxy = new RecordProxy(record, postsCollection, model.context);
+
+      // 测试访问数组的内置属性 length
+      const commentsLength = await proxy.comments.length;
+      expect(mockApiRequest).toHaveBeenCalledTimes(1);
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          params: expect.objectContaining({
+            appends: ['comments'],
+          }),
+        }),
+      );
+      expect(commentsLength).toBe(3); // 应该返回数组的长度，而不是从每个元素提取 length 属性
+
+      // 测试访问非内置属性（从每个元素中提取）
+      const priorities = await proxy.comments.priority;
+      expect(mockApiRequest).toHaveBeenCalledTimes(1); // 使用缓存，不再调用 API
+      expect(priorities).toEqual(['high', 'medium', 'low']); // 应该从每个元素中提取 priority 属性
+
+      // 验证原始数据结构未被破坏
+      expect(proxy.comments).toHaveLength(3);
+      expect(proxy.comments[0]).toEqual({ id: 101, content: 'Comment 1', priority: 'high' });
+    });
   });
 
   /**
