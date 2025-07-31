@@ -33,6 +33,10 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   protected filterGroups = new Map<string, any>();
 
+  get supportsFilter() {
+    return true;
+  }
+
   protected splitValue(value: string | string[]): string[] {
     if (typeof value === 'string') {
       return value.split(',').map((item) => item.trim());

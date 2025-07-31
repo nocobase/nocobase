@@ -8,13 +8,13 @@
  */
 
 import { AddFieldButton, FlowModel } from '@nocobase/flow-engine';
-import { GridModel } from '../../base/GridModel';
 import React from 'react';
-import { buildFieldMenuItems } from './buildFieldMenuItems';
-import { getAllDataModels } from '../utils';
-import { FilterFormEditableFieldModel } from './fields';
-import { FilterBlockModel } from '../../base/BlockModel';
 import { CreateFormModel } from '../..';
+import { CollectionBlockModel, FilterBlockModel } from '../../base/BlockModel';
+import { GridModel } from '../../base/GridModel';
+import { getAllDataModels } from '../utils';
+import { buildFieldMenuItems } from './buildFieldMenuItems';
+import { FilterFormEditableFieldModel } from './fields';
 
 export class FilterFormFieldGridModel extends GridModel {
   itemFlowSettings = {

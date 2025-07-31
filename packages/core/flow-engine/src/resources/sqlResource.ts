@@ -25,6 +25,10 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     headers: {} as Record<string, any>,
   };
 
+  get supportsFilter() {
+    return true;
+  }
+
   protected buildURL(action?: string): string {
     return `flowSql:${action || 'run'}`;
   }

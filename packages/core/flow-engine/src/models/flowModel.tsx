@@ -1046,6 +1046,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return model;
   }
 
+  filterSubModels<K extends keyof Structure['subModels'], R>(
+    subKey: K,
+    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => boolean,
+  ): ArrayElementType<Structure['subModels'][K]>[] {
+    const model = (this.subModels as any)[subKey as string];
+
+    if (!model) {
+      return [];
+    }
+
+    const results: ArrayElementType<Structure['subModels'][K]>[] = [];
+
+    _.castArray(model)
+      .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
+      .forEach((item, index) => {
+        const result = (callback as (model: any, index: number) => boolean)(item, index);
+        if (result) {
+          results.push(item);
+        }
+      });
+
+    return results;
+  }
+
   mapSubModels<K extends keyof Structure['subModels'], R>(
     subKey: K,
     callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
