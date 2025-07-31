@@ -16,11 +16,10 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import { reaction } from '@formily/reactive';
 import { observer } from '@formily/reactive-react';
-import { Icon, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
+import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
 import { MobilePopup } from '@nocobase/plugin-mobile/client';
-import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
+import { Badge, Button, ConfigProvider, Drawer, theme, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { FC, useCallback, useEffect, useState } from 'react';
 import { useLocalTranslation } from '../../locale';
@@ -28,10 +27,7 @@ import { Channel } from '../../types';
 import {
   fetchChannels,
   inboxVisible,
-  liveSSEObs,
   messageMapObs,
-  selectedChannelNameObs,
-  startMsgSSEStreamWithRetry,
   unreadMsgsCountObs,
   updateUnreadMsgsCount,
   userIdObs,
@@ -89,11 +85,17 @@ const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> =
 };
 
 const InnerInbox = (props) => {
+  const app = useApp();
   const { t } = useLocalTranslation();
   const { styles } = useStyles();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
-  const { token } = theme.useToken();
+
+  const onMessageUpdated = useCallback(({ detail }: CustomEvent) => {
+    messageMapObs.value[detail.id] = detail;
+    fetchChannels({ filter: { name: detail.channelName } });
+    updateUnreadMsgsCount();
+  }, []);
 
   useEffect(() => {
     updateUnreadMsgsCount();
@@ -108,64 +110,13 @@ const InnerInbox = (props) => {
   }, []);
 
   useEffect(() => {
-    const disposes: Array<() => void> = [];
-    disposes.push(startMsgSSEStreamWithRetry());
-    const disposeAll = () => {
-      while (disposes.length > 0) {
-        const dispose = disposes.pop();
-        dispose && dispose();
-      }
-    };
+    app.eventBus.addEventListener('ws:message:in-app-message:updated', onMessageUpdated);
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        disposes.push(startMsgSSEStreamWithRetry());
-      } else {
-        disposeAll();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
-      disposeAll();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      app.eventBus.removeEventListener('ws:message:in-app-message:updated', onMessageUpdated);
     };
-  }, []);
-  useEffect(() => {
-    const dispose = reaction(
-      () => liveSSEObs.value,
-      (sseData) => {
-        if (!sseData) return;
+  }, [app.eventBus, onMessageUpdated]);
 
-        if (['message:created', 'message:updated'].includes(sseData.type)) {
-          const { data } = sseData;
-          messageMapObs.value[data.id] = data;
-          if (sseData.type === 'message:created') {
-            notification.info({
-              message: (
-                <div
-                  style={{
-                    textOverflow: 'ellipsis',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {data.title}
-                </div>
-              ),
-              description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
-              onClick: () => {
-                inboxVisible.value = true;
-                selectedChannelNameObs.value = data.channelName;
-                notification.destroy();
-              },
-            });
-          }
-        }
-      },
-    );
-    return dispose;
-  }, []);
   return (
     <ConfigProvider
       theme={{

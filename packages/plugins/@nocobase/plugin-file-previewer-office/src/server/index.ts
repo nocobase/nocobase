@@ -7,7 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './channel';
-export * from './message';
-export * from './inbox';
-export * from './user';
+export { default } from './plugin';
