@@ -23,7 +23,7 @@ import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
 import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
-import { FlowExitException, resolveDefaultParams, resolveParamsExpressions } from './utils';
+import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -429,7 +429,7 @@ export class FlowEngineContext extends FlowContext {
       return i18n.translate(keyOrTemplate, options);
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -522,7 +522,7 @@ export class FlowModelContext extends FlowContext {
       },
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -574,7 +574,7 @@ export class FlowForkModelContext extends FlowContext {
       },
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -638,7 +638,7 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
