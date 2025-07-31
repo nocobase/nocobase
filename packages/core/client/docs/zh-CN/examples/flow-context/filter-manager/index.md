@@ -79,40 +79,46 @@ class CustomResource extends APIResource {
 
 ```ts
 filterManager.addFilterConfig({
-  filterModelUid,
-  targetModelUid,
-  targetFieldPaths,
+  filterId, // 提供筛选条件的 FilterModel 的 UID
+  targetId, // 被筛选的 TargetModel 的 UID
+  filterKeys, // 筛选键
   operator,
 });
+```
+
+完整的 Filter 协议
+
+```ts
+type Filter = Record<FilterKey, Record<Operator, FilterValue>>
 ```
 
 ### 删除筛选连接的配置
 
 ```ts
 filterManager.removeFilterConfig({
-  filterModelUid, // 删除所有与 filterModelUid 匹配的记录
-  targetModelUid, // 删除所有与 targetModelUid 匹配的记录
+  filterId, // 删除所有与 filterId 匹配的记录
+  targetId, // 删除所有与 targetId 匹配的记录
 });
 ```
 
 ### 将筛选配置绑定到 TargetModel
 
 ```ts
-filterManager.bindToTarget(targetModelUid);
+filterManager.bindToTarget(targetId);
 ```
 
 ### 将筛选配置从 TargetModel 解除绑定
 
 ```ts
-filterManager.unbindFromTarget(targetModelUid);
+filterManager.unbindFromTarget(targetId);
 ```
 
 ### 根据筛选条件，筛选所有符合条件的 TargetModel
 
-- 单个 filterModelUid 时，刷新对应的目标模型筛选。
+- 单个 filterId 时，刷新对应的目标模型筛选。
 - 传入数组时，同时刷新多个 FilterModel 关联的目标模型。
 
 ```ts
-filterManager.refreshTargetsByFilter(filterModelUid);
-filterManager.refreshTargetsByFilter([filterModelUid1, filterModelUid2]);
+filterManager.refreshTargetsByFilter(filterId);
+filterManager.refreshTargetsByFilter([filterId1, filterId2]);
 ```
