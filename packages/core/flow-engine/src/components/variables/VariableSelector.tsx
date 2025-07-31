@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { Cascader, Button, theme } from 'antd';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { Cascader, Button, theme, Dropdown } from 'antd';
 import { useFlowSettingsContext } from '../../hooks';
 import { MetaTreeNode } from '../../flowContext';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,8 @@ interface VariableSelectorProps {
   buttonContent?: React.ReactNode;
   /** 级联选择器的其他props */
   cascaderProps?: any;
+  /** 自定义变量元数据树，支持函数形式 */
+  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
 interface CascaderOption {
@@ -38,6 +40,10 @@ interface CascaderOption {
   // 添加路径信息，用于追踪被flatten的节点
   fullPath?: string[];
   originalPath?: string[];
+  // 用于标识是否为叶子节点
+  isLeaf?: boolean;
+  // 父级选项路径
+  parentPath?: string[];
 }
 
 const convertMetaTreeToCascaderData = (
@@ -78,12 +84,15 @@ const convertMetaTreeToCascaderData = (
       label: t(node.title || node.name),
       fullPath: currentPath, // 完整路径，包含被flatten的节点
       originalPath: [node.name], // 原始选择路径
+      parentPath: parentPath, // 父级路径
       children: node.children
         ? typeof node.children === 'function'
           ? [] // 异步函数，留空待加载
           : convertMetaTreeToCascaderData(node.children, t, currentPath) // 递归处理子节点
         : undefined,
       isLeaf: !node.children,
+      // 添加自定义属性用于标识路径
+      pathString: currentPath.join('.'),
     });
   }
 
@@ -103,6 +112,7 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
   buttonStyle,
   buttonContent = 'x',
   cascaderProps,
+  propertyMetaTree,
 }) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
@@ -110,21 +120,39 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
 
   const [cascaderData, setCascaderData] = useState<CascaderOption[]>([]);
   const [metaTreeCache, setMetaTreeCache] = useState<Map<string, MetaTreeNode[]>>(new Map());
+  const cascaderRef = useRef<any>(null);
 
   // 初始化数据
   useEffect(() => {
-    try {
-      const metaTree = flowContext.getPropertyMetaTree();
-      const cascaderOptions = convertMetaTreeToCascaderData(metaTree, flowContext.t);
-      setCascaderData(cascaderOptions);
+    const initializeMetaTree = async () => {
+      try {
+        let metaTree: MetaTreeNode[];
 
-      // 缓存根级别的MetaTreeNode
-      setMetaTreeCache(new Map([['root', metaTree]]));
-    } catch (error) {
-      console.error('Failed to get property meta tree:', error);
-      setCascaderData([]);
-    }
-  }, [flowContext]);
+        if (propertyMetaTree) {
+          // 使用自定义的 propertyMetaTree
+          if (typeof propertyMetaTree === 'function') {
+            metaTree = await propertyMetaTree();
+          } else {
+            metaTree = propertyMetaTree;
+          }
+        } else {
+          // 使用 flowContext 的默认 propertyMetaTree
+          metaTree = flowContext.getPropertyMetaTree();
+        }
+
+        const cascaderOptions = convertMetaTreeToCascaderData(metaTree, flowContext.t);
+        setCascaderData(cascaderOptions);
+
+        // 缓存根级别的MetaTreeNode
+        setMetaTreeCache(new Map([['root', metaTree]]));
+      } catch (error) {
+        console.error('Failed to get property meta tree:', error);
+        setCascaderData([]);
+      }
+    };
+
+    initializeMetaTree();
+  }, [flowContext, propertyMetaTree]);
 
   // 动态加载子菜单
   const loadData = useCallback(
@@ -174,8 +202,11 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
           newCache.set(pathKey, childNodes);
           setMetaTreeCache(newCache);
 
-          // 更新cascader选项
-          targetOption.children = childOptions;
+          // 更新cascader选项，添加parentPath
+          targetOption.children = childOptions.map((option) => ({
+            ...option,
+            parentPath: path,
+          }));
           targetOption.isLeaf = childOptions.length === 0;
           setCascaderData([...cascaderData]);
         }
@@ -215,8 +246,19 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
     [onChange],
   );
 
+  // 自定义下拉菜单
+  const customDropdownRender = useCallback((menus: React.ReactNode) => {
+    return <div>{menus}</div>;
+  }, []);
+
+  // 自定义选项渲染
+  const handleDisplayRender = useCallback((labels: string[], selectedOptions: CascaderOption[]) => {
+    return <span>{labels[labels.length - 1]}</span>;
+  }, []);
+
   return (
     <Cascader
+      ref={cascaderRef}
       options={options}
       onChange={handleChange}
       changeOnSelect={true}
@@ -224,6 +266,9 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
       value={value}
       expandTrigger="hover"
       loadData={loadData}
+      dropdownRender={customDropdownRender}
+      fieldNames={{ label: 'label', value: 'value', children: 'children' }}
+      displayRender={handleDisplayRender}
       {...cascaderProps}
     >
       <Button type={isPrimary ? 'primary' : 'default'} disabled={disabled} style={buttonStyle}>

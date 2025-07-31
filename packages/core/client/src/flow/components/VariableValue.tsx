@@ -63,48 +63,24 @@ export const VariableValue = connect((props: VariableValueProps) => {
     model.invalidateAutoFlowCache(true);
     // 设置 VariableFieldModel 的原始组件信息
     const variableFieldModel = model.subModels['fields'][0];
-    console.log('VariableValue model setup:', {
-      variableFieldModel: !!variableFieldModel,
-      originalComponent,
-      fieldPath,
-    });
     if (variableFieldModel && originalComponent) {
       if (Array.isArray(originalComponent)) {
         variableFieldModel.originalComponent = originalComponent[0];
         variableFieldModel.originalComponentProps = originalComponent[1] || {};
-        console.log('VariableValue: Set array component:', {
-          component: originalComponent[0],
-          props: originalComponent[1],
-        });
       } else {
         variableFieldModel.originalComponent = originalComponent;
         variableFieldModel.originalComponentProps = {};
-        console.log('VariableValue: Set direct component:', originalComponent);
       }
-    } else {
-      console.log('VariableValue: NO originalComponent set!', {
-        hasVariableFieldModel: !!variableFieldModel,
-        hasOriginalComponent: !!originalComponent,
-      });
     }
 
     const handleValueChange = (values: any) => {
       // 防止循环调用
       if (isUpdatingRef.current) {
-        console.log('VariableValue handleValueChange: Skipping due to isUpdatingRef');
         return;
       }
 
-      console.log('VariableValue handleValueChange:', {
-        values,
-        fieldPath,
-        currentValue: value,
-        newValue: values[fieldPath],
-      });
-
       // 只有当值真的发生变化时才调用 onChange
       if (values[fieldPath] !== value) {
-        console.log('VariableValue: Value changed, calling onChange');
         isUpdatingRef.current = true;
         onChange?.(values[fieldPath]);
 
@@ -112,8 +88,6 @@ export const VariableValue = connect((props: VariableValueProps) => {
         setTimeout(() => {
           isUpdatingRef.current = false;
         }, 0);
-      } else {
-        console.log('VariableValue: Value unchanged, not calling onChange');
       }
     };
 
@@ -133,16 +107,7 @@ export const VariableValue = connect((props: VariableValueProps) => {
 
   // 使用 useEffect 来同步值变化，但不重建模型
   useEffect(() => {
-    console.log('VariableValue useEffect:', {
-      isUpdatingRef: isUpdatingRef.current,
-      value,
-      currentFormValue: model.form.values[ctx.model.fieldPath],
-      variableChange: !!variableChange,
-      variableValue,
-    });
-
     if (isUpdatingRef.current) {
-      console.log('VariableValue useEffect: Skipping due to isUpdatingRef');
       return;
     }
 
@@ -157,7 +122,6 @@ export const VariableValue = connect((props: VariableValueProps) => {
     }
 
     if (model.form.values[fieldPath] !== value) {
-      console.log('VariableValue useEffect: Setting form value from', model.form.values[fieldPath], 'to', value);
       // 直接设置值
       model.form.setValues({ [fieldPath]: value });
 
@@ -165,8 +129,6 @@ export const VariableValue = connect((props: VariableValueProps) => {
       if (model.onChange) {
         model.onChange({ [fieldPath]: value });
       }
-    } else {
-      console.log('VariableValue useEffect: Form value already matches');
     }
   }, [value, model, variableChange, variableValue, disabled, propertyMetaTree]);
 

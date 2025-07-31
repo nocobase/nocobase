@@ -62,8 +62,6 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
   // 处理 VariableValue 的变化
   const handleVariableValueChange = useCallback(
     (newValue: any) => {
-      console.log('handleVariableValueChange called with:', newValue);
-      console.log('onChange function exists:', !!onChange);
       onChange?.(newValue);
     },
     [onChange],
@@ -71,12 +69,9 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
 
   // 处理 VariableSelector 的变化
   const handleVariableChange = useCallback(
-    (next: string[], optionPath: any[], isDoubleClick?: boolean) => {
-      console.log('handleVariableChange called:', { next, optionPath, isDoubleClick });
-
+    (next: string[], optionPath: any[]) => {
       if (next[0] === '') {
         // 选择了 null
-        console.log('Setting null value');
         handleVariableValueChange('');
         return;
       }
@@ -84,43 +79,15 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
       if (next[0] === 'constant') {
         // 选择了 constant，切换为常规值模式
         // 如果当前是变量值，则清空；否则保持当前值
-        console.log('Setting constant mode, isVariableValue:', isVariableValue);
         if (isVariableValue) {
           handleVariableValueChange('');
         }
         return;
       }
 
-      // 选择了变量
-      const lastOption = optionPath[optionPath.length - 1];
-      console.log('Variable selected, lastOption:', lastOption);
-
-      // 判断是否为叶子节点：明确标记为叶子节点 或者 没有子节点 或者 子节点数组为空
-      const isLeafNode =
-        lastOption?.isLeaf === true ||
-        !lastOption?.children ||
-        (Array.isArray(lastOption?.children) && lastOption.children.length === 0);
-
-      console.log(
-        'isLeafNode:',
-        isLeafNode,
-        'lastOption.isLeaf:',
-        lastOption?.isLeaf,
-        'lastOption.children:',
-        lastOption?.children,
-      );
-
-      // 如果是叶子节点，或者是双击选择的非叶子节点，都创建变量
-      if (isLeafNode || (isDoubleClick && !isLeafNode)) {
-        const newVariable = `{{ ctx.${next.join('.')} }}`;
-        console.log('Creating variable:', newVariable);
-        console.log('Calling onChange directly with variable:', newVariable);
-        onChange?.(newVariable);
-      } else if (!isLeafNode && !isDoubleClick) {
-        console.log('Non-leaf node clicked (not double-click), not creating variable');
-      } else {
-        console.log('Not creating variable for unknown reason');
-      }
+      // 选择了变量 - 单击就创建变量（无论是叶子节点还是非叶子节点）
+      const newVariable = `{{ ctx.${next.join('.')} }}`;
+      onChange?.(newVariable);
     },
     [isVariableValue, handleVariableValueChange, onChange],
   );
