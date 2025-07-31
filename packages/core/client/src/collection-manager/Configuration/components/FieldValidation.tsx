@@ -9,11 +9,12 @@
 
 import { PlusOutlined, DeleteOutlined, DownOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox } from 'antd';
+import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox, Radio, Select } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FIELDS_VALIDATION_OPTIONS } from '../../constants';
 
 interface ValidationRule {
   key: string;
@@ -32,51 +33,11 @@ interface FieldValidationProps {
   value?: ValidationData;
   onChange?: (value: ValidationData) => void;
   type?: string;
+  availableValidationOptions?: string[];
 }
 
-const VALIDATION_OPTIONS = {
-  string: [
-    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'limit', inputType: 'number' }] },
-    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'limit', inputType: 'number' }] },
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
-    { key: 'alphanum', label: 'Alphanum', hasValue: false, params: [] },
-    {
-      key: 'length',
-      label: 'Length',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Exact Length', inputType: 'number' }],
-    },
-    {
-      key: 'pattern',
-      label: 'Pattern',
-      hasValue: true,
-      params: [{ key: 'regex', label: 'Regular Expression', inputType: 'text' }],
-    },
-    { key: 'email', label: 'Email', hasValue: false, params: [] },
-    { key: 'url', label: 'URL', hasValue: false, params: [] },
-  ],
-  number: [
-    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Value', inputType: 'number' }] },
-    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Value', inputType: 'number' }] },
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
-    { key: 'integer', label: 'Integer', hasValue: false, params: [] },
-    { key: 'positive', label: 'Positive', hasValue: false, params: [] },
-    { key: 'negative', label: 'Negative', hasValue: false, params: [] },
-  ],
-  email: [
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
-    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Length', inputType: 'number' }] },
-    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Length', inputType: 'number' }] },
-  ],
-  url: [
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
-    { key: 'max', label: 'Max', hasValue: true, params: [{ key: 'limit', label: 'Max Length', inputType: 'number' }] },
-    { key: 'min', label: 'Min', hasValue: true, params: [{ key: 'limit', label: 'Min Length', inputType: 'number' }] },
-  ],
-};
-
 export const FieldValidation = observer((props: FieldValidationProps) => {
-  const { value, onChange, type } = props;
+  const { value, onChange, type, availableValidationOptions } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -85,8 +46,16 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const rules = value?.rules || [];
 
   const validationOptions = useMemo(() => {
-    return VALIDATION_OPTIONS[validationType] || VALIDATION_OPTIONS.string;
-  }, [validationType]);
+    const allOptions = FIELDS_VALIDATION_OPTIONS[validationType] || FIELDS_VALIDATION_OPTIONS.string;
+
+    if (!availableValidationOptions || availableValidationOptions.length === 0) {
+      return allOptions;
+    }
+
+    const intersection = availableValidationOptions.map((key) => allOptions.find((x) => x.key === key));
+
+    return intersection.length > 0 ? intersection : allOptions;
+  }, [validationType, availableValidationOptions]);
 
   const handleAddRule = (ruleType: string) => {
     const option = validationOptions.find((opt) => opt.key === ruleType);
@@ -95,6 +64,14 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       name: ruleType,
       args: {},
     };
+
+    if (option?.params) {
+      option.params.forEach((param) => {
+        if (param.defaultValue !== undefined) {
+          newRule.args![param.key] = param.defaultValue;
+        }
+      });
+    }
 
     const newRules = [...rules, newRule];
     const newValue: ValidationData = {
@@ -161,31 +138,142 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     return (
       <Form size="small">
         {option.params.map((param) => {
-          const currentValue = rule.args?.[param.key];
+          const currentValue = rule.args?.[param.key] ?? param.defaultValue;
 
           return (
             <Form.Item
               key={param.key}
-              label={t(param.label)}
+              label={param.componentType === 'checkbox' ? null : t(param.label)}
+              valuePropName={param.componentType === 'checkbox' ? 'checked' : 'value'}
               style={{ marginBottom: token.marginSM, paddingLeft: 8, paddingRight: 8 }}
             >
-              {param.inputType === 'boolean' ? (
-                <Switch
+              {param.componentType === 'checkbox' ? (
+                <Checkbox
                   checked={currentValue || false}
-                  onChange={(checked) => handleRuleValueChange(rule.key, param.key, checked)}
-                  checkedChildren={t('Yes')}
-                  unCheckedChildren={t('No')}
-                />
-              ) : param.inputType === 'number' ? (
+                  onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.checked)}
+                >
+                  {t(param.label)}
+                </Checkbox>
+              ) : param.componentType === 'radio' ? (
+                <div>
+                  <Radio.Group
+                    value={currentValue}
+                    onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.value)}
+                  >
+                    {param.options?.map((option) => (
+                      <Radio key={option.value} value={option.value}>
+                        {t(option.label)}
+                      </Radio>
+                    ))}
+                  </Radio.Group>
+                  {param.options?.map((option) => {
+                    if (option.value === currentValue && option.componentType) {
+                      return (
+                        <div key={`${option.value}-component`} style={{ marginTop: token.marginXS }}>
+                          {option.componentType === 'text' ? (
+                            <Input
+                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
+                              onChange={(e) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.value)
+                              }
+                              style={{ width: '100%' }}
+                            />
+                          ) : option.componentType === 'inputNumber' ? (
+                            <InputNumber
+                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
+                              onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${option.value}`, val)}
+                              style={{ width: '100%' }}
+                            />
+                          ) : option.componentType === 'checkbox' ? (
+                            <Checkbox
+                              checked={rule.args?.[`${param.key}_${option.value}`] || false}
+                              onChange={(e) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.checked)
+                              }
+                            >
+                              {t(option.label)}
+                            </Checkbox>
+                          ) : null}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              ) : param.componentType === 'singleSelect' ? (
+                <div>
+                  <Select
+                    value={currentValue}
+                    onChange={(value) => handleRuleValueChange(rule.key, param.key, value)}
+                    placeholder={t('Please select')}
+                    style={{ width: '100%' }}
+                    allowClear
+                  >
+                    {param.options?.map((option) => (
+                      <Select.Option key={option.value} value={option.value}>
+                        {t(option.label)}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                  {param.options?.map((option) => {
+                    if (option.value === currentValue && option.componentType) {
+                      return (
+                        <div key={`${option.value}-component`} style={{ marginTop: token.marginXS }}>
+                          {option.componentType === 'text' ? (
+                            <Input
+                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
+                              onChange={(e) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.value)
+                              }
+                              style={{ width: '100%' }}
+                            />
+                          ) : option.componentType === 'inputNumber' ? (
+                            <InputNumber
+                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
+                              onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${option.value}`, val)}
+                              style={{ width: '100%' }}
+                            />
+                          ) : option.componentType === 'checkbox' ? (
+                            <Checkbox
+                              checked={rule.args?.[`${param.key}_${option.value}`] || false}
+                              onChange={(e) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.checked)
+                              }
+                            >
+                              {t(option.label)}
+                            </Checkbox>
+                          ) : null}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              ) : param.componentType === 'multipleSelect' ? (
+                <Select
+                  mode="multiple"
+                  value={currentValue}
+                  onChange={(value) => handleRuleValueChange(rule.key, param.key, value)}
+                  placeholder={t('Please select')}
+                  style={{ width: '100%' }}
+                  allowClear
+                >
+                  {param.options?.map((option) => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {t(option.label)}
+                    </Select.Option>
+                  ))}
+                </Select>
+              ) : param.componentType === 'inputNumber' ? (
                 <InputNumber
-                  value={currentValue || ''}
+                  value={currentValue !== undefined ? currentValue : ''}
                   onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
                   placeholder={t('Enter value')}
                   style={{ width: '100%' }}
                 />
               ) : (
                 <Input
-                  value={currentValue || ''}
+                  value={currentValue !== undefined ? currentValue : ''}
                   onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.value)}
                   placeholder={t('Enter value')}
                 />
