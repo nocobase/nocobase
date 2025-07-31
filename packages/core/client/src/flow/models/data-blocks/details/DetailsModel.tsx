@@ -103,7 +103,6 @@ export class DetailsModel extends CollectionBlockModel<{
   }
 
   renderComponent() {
-    console.log(this.props);
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
 
     return (

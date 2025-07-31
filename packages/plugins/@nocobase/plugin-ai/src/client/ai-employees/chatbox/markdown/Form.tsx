@@ -12,7 +12,6 @@ import { SchemaComponent, useAPIClient } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { createForm } from '@formily/core';
 import { useT } from '../../../locale';
-import { useAISelectionContext } from '../../selector/AISelectorProvider';
 import { Generating } from './Generating';
 import { Alert } from 'antd';
 import { CodeInternal } from './Code';
@@ -53,7 +52,6 @@ function replaceFormContentByUid(content: string, uid: string, values: string): 
 
 export const Form = (props: any) => {
   const t = useT();
-  const { ctx } = useAISelectionContext();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
@@ -64,7 +62,7 @@ export const Form = (props: any) => {
   // const { resendMessages, messagesService, updateMessage } = useChatMessageActions();
   const { children, node, message } = props;
   const { uid: formUid, datasource: dataSource, collection } = node.properties;
-  const fieldSchema = ctx[formUid]?.fieldSchema;
+  const fieldSchema = null;
   const fields = useMemo(() => {
     if (!fieldSchema) {
       return {};
@@ -155,10 +153,10 @@ export const Form = (props: any) => {
                         size: 'small',
                         onClick: async () => {
                           await form.submit();
-                          const targetForm = ctx[formUid]?.form;
-                          if (targetForm) {
-                            targetForm.setValues(form.values);
-                          }
+                          // const targetForm = ctx[formUid]?.form;
+                          // if (targetForm) {
+                          //   targetForm.setValues(form.values);
+                          // }
                         },
                       },
                     },

@@ -8,7 +8,6 @@
  */
 
 import { Card, CardProps, theme } from 'antd';
-import classNames from 'classnames';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,7 +51,7 @@ export const BlockItemCard = React.forwardRef((props: CardProps & { description?
       styles={{
         body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
       }}
-      className={classNames('nocobase-block-item-card', className)}
+      className={className}
       {...rest}
     >
       {children}

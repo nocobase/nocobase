@@ -6,8 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { escapeT } from '@nocobase/flow-engine';
-
+import { escapeT, largeField } from '@nocobase/flow-engine';
 import { connect, mapReadPretty } from '@formily/react';
 import { css, FormFieldModel } from '@nocobase/client';
 import React from 'react';
@@ -29,7 +28,7 @@ const InternalMap = connect((props) => {
     </div>
   );
 }, mapReadPretty(PointReadPretty));
-
+@largeField()
 export class MapEditableFieldModel extends FormFieldModel {
   getMapFieldType() {
     return null;

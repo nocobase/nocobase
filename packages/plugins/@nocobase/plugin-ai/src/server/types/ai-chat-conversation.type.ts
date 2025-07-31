@@ -8,6 +8,7 @@
  */
 
 import { Transaction } from '@nocobase/database';
+import { LLMProvider } from '../llm-providers/provider';
 
 export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
   getSessionId(): string;
@@ -88,6 +89,7 @@ export type AIMessageRemoveOptions = {
 };
 
 export type AIChatContextOptions = {
+  provider: LLMProvider;
   systemPrompt?: string;
   tools?: any[];
 } & AIMessageQuery;

@@ -104,7 +104,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
         }
 
         // 默认取 master 上的值
-        const value = (target.master as any)[prop];
+        const value = (target.master as any)?.[prop];
 
         // 如果是函数，需要绑定到 fork 实例，让 this 指向 fork
         // 使用闭包捕获正确的 constructor，避免异步方法中的竞态条件

@@ -8,3 +8,4 @@
  */
 
 export { reactive } from './reactive';
+export { largeField } from './largeField';

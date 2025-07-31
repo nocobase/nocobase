@@ -14,6 +14,7 @@ import { BaseRecordResource } from './baseRecordResource';
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
   protected _data = observable.ref<TDataItem[]>([]);
   protected _meta = observable.ref<Record<string, any>>({});
+  private refreshTimer: NodeJS.Timeout | null = null;
 
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
@@ -114,6 +115,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const options = {
       params: {
         filterByTk,
+        updateAssociationValues: this.getUpdateAssociationValues(),
       },
     };
     await this.runAction('update', {
@@ -152,19 +154,42 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     this.setData(newData);
   }
 
+  /**
+   * 在同一个事件循环内多次调用 refresh 方法时，只有最后一次调用会生效。避免触发多次相同的接口请求。
+   * @returns
+   */
   async refresh(): Promise<void> {
-    const { data, meta } = await this.runAction<TDataItem[], any>('list', {
-      method: 'get',
-      ...this.getRefreshRequestOptions(),
+    // 清除之前的定时器，确保只有最后一次调用生效
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
+
+    // 设置新的定时器，在下一个事件循环执行
+    return new Promise<void>((resolve, reject) => {
+      this.refreshTimer = setTimeout(async () => {
+        try {
+          this.loading = true;
+          const { data, meta } = await this.runAction<TDataItem[], any>('list', {
+            method: 'get',
+            ...this.getRefreshRequestOptions(),
+          });
+          this.setData(data).setMeta(meta);
+          if (meta?.page) {
+            this.setPage(meta.page);
+          }
+          if (meta?.pageSize) {
+            this.setPageSize(meta.pageSize);
+          }
+          this.emit('refresh');
+          this.loading = false;
+          resolve();
+        } catch (error) {
+          this.loading = false;
+          reject(error instanceof Error ? error : new Error(String(error)));
+        } finally {
+          this.refreshTimer = null;
+        }
+      });
     });
-    this.setData(data).setMeta(meta);
-    if (meta?.page) {
-      this.setPage(meta.page);
-    }
-    if (meta?.pageSize) {
-      this.setPageSize(meta.pageSize);
-    }
-    this.loading = false;
-    this.emit('refresh');
   }
 }

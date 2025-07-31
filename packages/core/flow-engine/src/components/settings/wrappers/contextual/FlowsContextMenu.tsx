@@ -15,7 +15,8 @@ import { observer } from '@formily/react';
 import { FlowModel } from '../../../../models';
 import { useFlowModelById } from '../../../../hooks';
 import { openStepSettingsDialog } from './StepSettingsDialog';
-import { getT } from '../../../../utils';
+import { getT, setupRuntimeContextSteps } from '../../../../utils';
+import { FlowRuntimeContext } from '../../../../flowContext';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {
@@ -99,10 +100,24 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           // 处理step配置，key格式为 "flowKey:stepKey"
           const [flowKey, stepKey] = key.split(':');
           try {
+            // 创建流程运行时上下文
+            const flow = model.getFlow(flowKey);
+            const step = flow?.steps?.[stepKey];
+
+            if (!flow || !step) {
+              console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+              return;
+            }
+
+            const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+            setupRuntimeContextSteps(ctx, flow, model, flowKey);
+            ctx.defineProperty('currentStep', { value: step });
+
             openStepSettingsDialog({
               model,
               flowKey,
               stepKey,
+              ctx,
             });
           } catch (error) {
             // 用户取消或出错，静默处理

@@ -812,15 +812,6 @@ describe('ForkFlowModel', () => {
       expect(fork.props).toEqual(originalProps);
     });
 
-    test('should handle master being null during property access', () => {
-      // Force master to null (simulating a disposed state)
-      (fork as any).master = null;
-
-      expect(() => {
-        void (fork as any).someProperty;
-      }).toThrow('Cannot read properties of null');
-    });
-
     test('should handle setProps with null/undefined values', () => {
       fork.setProps('nullProp', null);
       fork.setProps('undefinedProp', undefined);

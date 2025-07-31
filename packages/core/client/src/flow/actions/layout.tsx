@@ -86,15 +86,16 @@ export const layout = defineAction({
     },
   },
 
-  defaultParams: {
-    layout: 'vertical',
-    labelAlign: 'left',
-    labelWidth: 120,
-    labelWrap: true,
-    colon: true,
+  defaultParams: (ctx) => {
+    return {
+      layout: 'vertical',
+      labelAlign: 'left',
+      labelWidth: 120,
+      labelWrap: true,
+      colon: true,
+    };
   },
   handler(ctx, params) {
-    console.log(params);
-    ctx.model.setProps({ ...params });
+    ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
   },
 });

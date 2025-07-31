@@ -225,8 +225,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   preset?: boolean;
   paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
   hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
-  settingMode?: 'dialog' | 'drawer'; // Optional: whether to open settings in dialog or drawer mode, defaults to 'dialog'
-  uiMode?: StepUIMode;
+  uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 
 /**
@@ -310,6 +309,9 @@ export interface StepSettingsDialogProps {
   dialogWidth?: number | string;
   dialogTitle?: string;
   mode?: 'dialog' | 'drawer'; // 设置模式，默认为'dialog'
+  ctx?: FlowRuntimeContext;
+  uiModeProps?: Record<string, any>;
+  cleanup?: () => void;
 }
 
 /**
@@ -321,6 +323,9 @@ export interface StepSettingsDrawerProps {
   stepKey: string;
   drawerWidth?: number | string;
   drawerTitle?: string;
+  ctx?: FlowRuntimeContext;
+  uiModeProps?: Record<string, any>;
+  cleanup?: () => void;
 }
 
 /**

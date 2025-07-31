@@ -230,16 +230,35 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    const field = this.context.dataSourceManager.getCollectionField(
-      `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
-    ) as CollectionField;
-    if (!field) {
-      return;
-    }
-    if (field.isAssociationField()) {
-      (this.resource as BaseRecordResource).addAppends(field.name);
-      if (refresh) {
-        this.resource.refresh();
+    if (fieldPath.includes('.')) {
+      // 关系数据
+      const [field1, field2] = fieldPath.split('.');
+      const associationField = this.context.dataSourceManager.getCollectionField(
+        `${this.collection.dataSourceKey}.${this.collection.name}.${field1}`,
+      ) as CollectionField;
+      const targetCollectionName = associationField.target;
+      const collectionField = this.context.dataSourceManager.getCollectionField(
+        `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,
+      ) as CollectionField;
+
+      if (collectionField.isAssociationField()) {
+        (this.resource as BaseRecordResource).addAppends(fieldPath);
+        if (refresh) {
+          this.resource.refresh();
+        }
+      }
+    } else {
+      const field = this.context.dataSourceManager.getCollectionField(
+        `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
+      ) as CollectionField;
+      if (!field) {
+        return;
+      }
+      if (field.isAssociationField()) {
+        (this.resource as BaseRecordResource).addAppends(field.name);
+        if (refresh) {
+          this.resource.refresh();
+        }
       }
     }
   }
@@ -257,11 +276,13 @@ CollectionBlockModel.registerFlow({
           throw new Error('collectionName is required');
         }
         // sourceId 为运行时参数，必须放在 runtime context 中
-        if (params.sourceId) {
+        if (Object.keys(params).includes('sourceId')) {
+          // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
           ctx.resource.setSourceId(params.sourceId);
         }
         // filterByTk 为运行时参数，必须放在 runtime context 中
-        if (params.filterByTk) {
+        if (Object.keys(params).includes('filterByTk')) {
+          // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
           ctx.resource.setFilterByTk(params.filterByTk);
         }
       },

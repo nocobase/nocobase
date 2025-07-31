@@ -36,7 +36,7 @@ import {
   isInheritedFrom,
   mergeFlowDefinitions,
   resolveDefaultParams,
-  resolveParamsExpressions,
+  resolveExpressions,
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
@@ -503,7 +503,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       value: this.reactView,
     });
     flowContext.defineProperty('inputArgs', {
-      value: inputArgs,
+      value: {
+        // currentFlow 里面包含的数据相关参数要透传给下一个model上下文， 之前是解析参数时来兼容的
+        // TODO: 这里是不是应该将currentFlow的所有inputArgs透传给下一个model上下文?
+        // 1. 直接委托？ ---> 可能存在污染
+        // 2. 全部inputArgs 参数？ ---> 部分参数会不符合预期，弹窗会直接变成字页面
+        ..._.pick(this.context.currentFlow?.inputArgs, ['filterByTk', 'sourceId', 'collectionName', 'associationName']),
+        ...inputArgs,
+      },
     });
     flowContext.defineProperty('runId', {
       value: runId || `run-${Date.now()}`,
@@ -556,7 +563,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         }
 
         // 解析 combinedParams 中的表达式
-        combinedParams = await resolveParamsExpressions(combinedParams, flowContext);
+        combinedParams = await resolveExpressions(combinedParams, flowContext);
 
         try {
           if (!handler) {
@@ -1207,10 +1214,24 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {void}
    */
   openStepSettingsDialog(flowKey: string, stepKey: string) {
+    // 创建流程运行时上下文
+    const flow = this.getFlow(flowKey);
+    const step = flow?.steps?.[stepKey];
+
+    if (!flow || !step) {
+      console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+      return;
+    }
+
+    const ctx = new FlowRuntimeContext(this, flowKey, 'settings');
+    setupRuntimeContextSteps(ctx, flow, this, flowKey);
+    ctx.defineProperty('currentStep', { value: step });
+
     return openStepSettingsDialogFn({
       model: this,
       flowKey,
       stepKey,
+      ctx,
     });
   }
 

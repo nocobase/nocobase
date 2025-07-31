@@ -10,11 +10,13 @@
 import React from 'react';
 import { WorkContextOptions } from '../types';
 import { BuildOutlined, StarOutlined } from '@ant-design/icons';
+import { useT } from '../../locale';
 import { tval } from '@nocobase/utils/client';
 // @ts-ignore
 import pkg from '../../../../package.json';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { aiSelection } from '../stores/ai-selection';
 
 function parseModel(node: any) {
   if (!node || typeof node !== 'object' || !node.uid || !node.use) return null;
@@ -50,6 +52,35 @@ function parseModel(node: any) {
 
 export const FlowModelsContext: WorkContextOptions = {
   name: 'flow-model',
+  menu: {
+    icon: <BuildOutlined />,
+    Component: ({ onAdd }) => {
+      const t = useT();
+      const flowEngine = useFlowEngine();
+      return (
+        <div
+          onClick={() => {
+            aiSelection.startSelect('flow-model', {
+              onSelect: ({ uid }) => {
+                if (!uid) {
+                  return;
+                }
+                const model = flowEngine.getModel(uid);
+                if (!model) {
+                  return;
+                }
+                onAdd({
+                  uid,
+                });
+              },
+            });
+          }}
+        >
+          {t('Select block')}
+        </div>
+      );
+    },
+  },
   tag: {
     Component: ({ item }) => {
       const flowEngine = useFlowEngine();

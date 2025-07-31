@@ -9,20 +9,13 @@
 
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { toJS } from '@formily/reactive';
+import { observable, toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StepSettingsDialogProps } from '../../../../types';
-import {
-  compileUiSchema,
-  getT,
-  resolveDefaultParams,
-  resolveStepUiSchema,
-  setupRuntimeContextSteps,
-  FlowExitException,
-} from '../../../../utils';
+import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, FlowExitException } from '../../../../utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
-import { FlowRuntimeContext } from '../../../../flowContext';
+import { autorun, model as observableModel } from '@formily/reactive';
 
 const SchemaField = createSchemaField();
 
@@ -42,10 +35,12 @@ const openStepSettingsDialog = async ({
   dialogWidth = 600,
   dialogTitle,
   mode = 'dialog',
+  ctx,
+  uiModeProps,
+  cleanup,
 }: StepSettingsDialogProps): Promise<any> => {
   const t = getT(model);
   const message = model.context.message;
-
   if (!model) {
     message.error(t('Invalid model provided'));
     throw new Error(t('Invalid model provided'));
@@ -91,11 +86,12 @@ const openStepSettingsDialog = async ({
     return {};
   }
 
-  // 创建流程运行时上下文用于解析默认参数
-  const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+  const flowRuntimeContext = ctx;
 
-  flowRuntimeContext.defineProperty('currentStep', { value: step });
+  // 确保上下文中设置了当前步骤
+  if (!flowRuntimeContext.currentStep || flowRuntimeContext.currentStep !== step) {
+    flowRuntimeContext.defineProperty('currentStep', { value: step });
+  }
 
   const flowEngine = model.flowEngine;
   const scopes = {
@@ -139,6 +135,12 @@ const openStepSettingsDialog = async ({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
+    ...toJS(uiModeProps),
+    onClose: () => {
+      if (cleanup) {
+        cleanup();
+      }
+    },
     footer: (
       <Space align="end">
         <Button
@@ -184,21 +186,31 @@ const openStepSettingsDialog = async ({
       </Space>
     ),
     content: (currentDialog) => {
-      // 编译 formSchema 中的表达式
-      const compiledFormSchema = compileUiSchema(scopes, formSchema);
-      return (
-        <FormProvider form={form}>
-          <FlowSettingsContextProvider value={flowRuntimeContext}>
-            <SchemaField
-              schema={compiledFormSchema}
-              components={{
-                ...flowEngine.flowSettings?.components,
-              }}
-              scope={scopes}
-            />
-          </FlowSettingsContextProvider>
-        </FormProvider>
-      );
+      const DialogContent = observable(() => {
+        useEffect(() => {
+          return autorun(() => {
+            const dynamicProps = toJS(uiModeProps);
+            currentDialog.update(dynamicProps);
+          });
+        }, []);
+
+        const compiledFormSchema = compileUiSchema(scopes, formSchema);
+        return (
+          <FormProvider form={form}>
+            <FlowSettingsContextProvider value={flowRuntimeContext}>
+              <SchemaField
+                schema={compiledFormSchema}
+                components={{
+                  ...flowEngine.flowSettings?.components,
+                }}
+                scope={scopes}
+              />
+            </FlowSettingsContextProvider>
+          </FormProvider>
+        );
+      });
+
+      return <DialogContent />;
     },
   });
 };

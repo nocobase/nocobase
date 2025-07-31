@@ -31,10 +31,10 @@ export { mergeFlowDefinitions, defineAction } from './flow-definitions';
 export { isInheritedFrom } from './inheritance';
 
 // 参数解析器
-export { resolveDefaultParams, resolveDefaultOptions, resolveParamsExpressions } from './params-resolvers';
+export { resolveDefaultParams, resolveDefaultOptions, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
-export { compileUiSchema, resolveStepUiSchema } from './schema-utils';
+export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
 
 // 菜单构建器
 export { buildFieldItems, buildActionItems, buildBlockItems, processMetaChildren } from './menu-builders';
