@@ -78,10 +78,6 @@ export async function resolveExpressions<TModel extends FlowModel = FlowModel>(
   params: Record<string, any>,
   ctx: FlowContext,
 ): Promise<any> {
-  if (ctx.skipResolveParams) {
-    return params;
-  }
-
   const compile = async (source: any): Promise<any> => {
     /**
      * 检测字符串中是否包含表达式
@@ -142,7 +138,6 @@ async function processExpression(expression: string, ctx: FlowContext): Promise<
 /**
  * 预处理表达式字符串，插入必要的 await 和 RecordProxy 检查
  *
- * 优化策略：
  * 1. 统一提取所有一层 ctx 路径（如 ctx.record, ctx.user）
  * 2. 批量 await 获取这些值，判断是否为 RecordProxy 实例
  * 3. 根据预处理结果决定每个多层路径的 await 插入方式
@@ -212,10 +207,10 @@ export async function preprocessExpression(expression: string, ctx: FlowContext)
   for (const firstKey of firstLevelKeys) {
     try {
       // 检查原始值是否为 RecordProxy 实例（不通过 await）
-      const rawValue = ctx[firstKey];
-      const isRecordProxy = rawValue instanceof RecordProxy;
+      const rawValue = await ctx[firstKey];
+      const isRecordProxy = rawValue && rawValue.__isRecordProxy__ === true;
       recordProxyMap.set(firstKey, isRecordProxy);
-    } catch {
+    } catch (error) {
       recordProxyMap.set(firstKey, false);
     }
   }

@@ -69,6 +69,12 @@ export class RecordProxy {
 
     return new Proxy(initialTarget, {
       get: (target, prop: string, receiver) => {
+        // constructor 直接返回proxy会导致 instance RecordProxy 失效
+        // 因此添加 RecordProxy 标识符， 用于判断是否为 RcordProxy 实例
+        if (prop === '__isRecordProxy__') {
+          return true;
+        }
+
         // 获取当前的实际 target
         const actualTarget = self.#getCurrentTarget();
 
