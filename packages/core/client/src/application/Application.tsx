@@ -298,12 +298,33 @@ export class Application {
       get: () => document.title,
     });
     class Route {
-      #params = observable.ref({});
+      #options: any = observable.shallow({});
       set params(params: Record<string, any>) {
-        this.#params.value = params;
+        this.#options.params = params;
       }
       get params() {
-        return this.#params.value;
+        return this.#options.params || {};
+      }
+      set id(id: string) {
+        this.#options.id = id;
+      }
+      get id() {
+        return this.#options.id;
+      }
+      set path(path: string) {
+        this.#options.path = path;
+      }
+      get path() {
+        return this.#options.path;
+      }
+      set pathname(pathname: string) {
+        this.#options.pathname = pathname;
+      }
+      get pathname() {
+        return this.#options.pathname;
+      }
+      toJSON() {
+        return this.#options;
       }
     }
     this.flowEngine.context.defineProperty('route', {

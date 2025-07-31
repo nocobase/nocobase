@@ -23,7 +23,7 @@ import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
 import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
-import { FlowExitException, resolveDefaultParams, resolveParamsExpressions } from './utils';
+import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -84,6 +84,13 @@ export interface PropertyOptions {
   observable?: boolean; // 是否为 observable 属性
   meta?: PropertyMeta;
 }
+
+type RouteOptions = {
+  id?: string; // 路由唯一标识
+  path?: string; // 路由模板
+  params?: Record<string, any>; // 路由参数
+  pathname?: string; // 路由的完整路径
+};
 
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
@@ -393,7 +400,7 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
   declare runsql: (options: RunSQLOptions) => Promise<any>;
 
@@ -422,7 +429,7 @@ export class FlowEngineContext extends FlowContext {
       return i18n.translate(keyOrTemplate, options);
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -493,7 +500,7 @@ export class FlowModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(model: FlowModel) {
@@ -515,7 +522,7 @@ export class FlowModelContext extends FlowContext {
       },
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -542,7 +549,7 @@ export class FlowForkModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(
@@ -567,7 +574,7 @@ export class FlowForkModelContext extends FlowContext {
       },
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -600,7 +607,7 @@ export class FlowRuntimeContext<
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(
@@ -631,7 +638,7 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveParamsExpressions(template, this);
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({

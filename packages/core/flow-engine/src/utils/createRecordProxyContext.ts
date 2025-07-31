@@ -8,24 +8,33 @@
  */
 
 import { RecordProxy } from '../RecordProxy';
-import type { Collection } from '../data-source';
+import type { Collection, CollectionField } from '../data-source';
 import type { FlowModelContext } from '../flowContext';
+
+// 类型常量定义
+const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'] as const;
+const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 
 /**
  * 创建用于 FlowContext.defineProperty 的记录代理上下文。
  *
- * @param record 要代理的记录对象
+ * @param recordOrFactory 要代理的记录对象或记录工厂函数
  * @param collection 记录所属的集合
  * @returns 包含 get 和 meta 属性的对象，可用于 defineProperty
  *
  * @example
+ * // 使用静态记录
  * const recordContext = createRecordProxyContext(record, collection);
  * flowContext.defineProperty('currentRecord', recordContext);
+ *
+ * // 使用函数
+ * const dynamicContext = createRecordProxyContext(() => getCurrentRecord(), collection);
+ * flowContext.defineProperty('dynamicRecord', dynamicContext);
  */
-export function createRecordProxyContext(record: any, collection: Collection) {
+export function createRecordProxyContext(recordOrFactory: any | (() => any), collection: Collection) {
   return {
     get: (flowCtx: FlowModelContext) => {
-      return new RecordProxy(record, collection, flowCtx);
+      return new RecordProxy(recordOrFactory, collection, flowCtx);
     },
     meta: {
       type: 'object',
@@ -33,52 +42,10 @@ export function createRecordProxyContext(record: any, collection: Collection) {
       properties: async () => {
         const properties: Record<string, any> = {};
 
-        // 添加记录的直接字段
-        for (const [fieldName, field] of collection.fields) {
-          if (field.name in record) {
-            properties[field.name] = {
-              type: getFieldType(field),
-              title: field.title || field.name,
-              interface: field.interface,
-              uiSchema: field.uiSchema,
-              hide: field.options?.hidden,
-            };
-          }
-        }
-
-        // 添加关联字段
-        for (const [fieldName, field] of collection.fields) {
-          if (field.isAssociationField()) {
-            const targetCollection = field.targetCollection;
-            if (targetCollection) {
-              const isToMany = ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type);
-
-              properties[field.name] = {
-                type: isToMany ? 'array' : 'object',
-                title: field.title || field.name,
-                interface: field.interface,
-                uiSchema: field.uiSchema,
-                hide: field.options?.hidden,
-                properties: isToMany
-                  ? undefined
-                  : async () => {
-                      // 为关联记录生成子属性
-                      const subProperties: Record<string, any> = {};
-                      for (const [subFieldName, subField] of targetCollection.fields) {
-                        subProperties[subField.name] = {
-                          type: getFieldType(subField),
-                          title: subField.title || subField.name,
-                          interface: subField.interface,
-                          uiSchema: subField.uiSchema,
-                          hide: subField.options?.hidden,
-                        };
-                      }
-                      return subProperties;
-                    },
-              };
-            }
-          }
-        }
+        // 添加所有字段
+        collection.fields.forEach((field) => {
+          properties[field.name] = createFieldMetadata(field);
+        });
 
         return properties;
       },
@@ -87,28 +54,80 @@ export function createRecordProxyContext(record: any, collection: Collection) {
 }
 
 /**
+ * 创建字段的完整元数据（统一处理关联和非关联字段）
+ */
+function createFieldMetadata(field: CollectionField) {
+  const baseProperties = createMetaBaseProperties(field);
+
+  if (field.isAssociationField()) {
+    const targetCollection = field.targetCollection;
+    if (!targetCollection) {
+      // 没有目标集合的关联字段，当作普通 object 处理
+      return {
+        type: 'object',
+        ...baseProperties,
+      };
+    }
+
+    return {
+      type: 'object', // 所有关系字段统一使用 object 类型
+      ...baseProperties,
+      properties: async () => {
+        const subProperties: Record<string, any> = {};
+        targetCollection.fields.forEach((subField) => {
+          subProperties[subField.name] = {
+            type: getFieldType(subField),
+            ...createMetaBaseProperties(subField),
+          };
+        });
+        return subProperties;
+      },
+    };
+  }
+
+  // 非关联字段处理
+  return {
+    type: getFieldType(field),
+    ...baseProperties,
+  };
+}
+
+/**
  * 将字段类型转换为元数据类型
  */
-function getFieldType(field: any): string {
-  const typeMap: Record<string, string> = {
-    string: 'string',
-    text: 'string',
-    integer: 'number',
-    float: 'number',
-    double: 'number',
-    decimal: 'number',
-    boolean: 'boolean',
-    date: 'string',
-    time: 'string',
-    datetime: 'string',
-    json: 'object',
-    array: 'array',
-    belongsTo: 'object',
-    hasOne: 'object',
-    hasMany: 'array',
-    belongsToMany: 'array',
-    belongsToArray: 'array',
-  };
+function getFieldType(field: CollectionField) {
+  const fieldType = field.type;
 
-  return typeMap[field.type] || 'string';
+  // 关系字段统一映射为 object 类型
+  if (RELATION_FIELD_TYPES.includes(fieldType)) {
+    return 'object';
+  }
+
+  // 数字类型
+  if (NUMERIC_FIELD_TYPES.includes(fieldType)) {
+    return 'number';
+  }
+
+  // 其他类型映射
+  switch (fieldType) {
+    case 'boolean':
+      return 'boolean';
+    case 'json':
+      return 'object';
+    case 'array':
+      return 'array';
+    default:
+      return 'string'; // string, text, date, datetime, time等
+  }
+}
+
+/**
+ * 创建字段的基础属性（标题、接口、UI模式等）
+ */
+function createMetaBaseProperties(field: CollectionField) {
+  return {
+    title: field.title || field.name,
+    interface: field.interface,
+    uiSchema: field.uiSchema || {},
+  };
 }
