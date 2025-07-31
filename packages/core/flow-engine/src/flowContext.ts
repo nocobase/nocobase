@@ -386,7 +386,8 @@ export class FlowContext {
 type RunSQLOptions = {
   uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
   sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
-  params?: Record<string, any>; // 可选，SQL 参数
+  bind?: Record<string, any>; // 可选，SQL bind 参数
+  filter?: Record<string, any>; // 可选，SQL 过滤条件
   type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
   debug?: boolean;
 };
