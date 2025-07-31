@@ -87,7 +87,7 @@ const AddFieldColumn = ({ model }) => {
 
 export const SubTable = observer((props: any) => {
   const field = useField<ArrayField>();
-  const model = useFlowModel();
+  const model: any = useFlowModel();
   const { t } = useTranslation();
   const form = useForm();
   const { allowAddNew, enableIndexColumn } = props;
@@ -157,13 +157,18 @@ export const SubTable = observer((props: any) => {
     const disposer = form.subscribe(({ type }) => {
       // 当子字段有默认值时，form.reset 无法清空值
       if (type === 'onFieldReset') {
-        field.onInput(undefined);
+        form.clearFormGraph(model.fieldPath);
+        requestAnimationFrame(() => {
+          model.createField();
+        });
       }
     });
     return () => {
       form.unsubscribe(disposer);
     };
   }, [form, field]);
+
+  console.log(field.value);
   const HeaderWrapperComponent = React.memo((props) => {
     const engine = useFlowEngine();
 
