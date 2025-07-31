@@ -203,6 +203,10 @@ export const toItem = (file) => {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
+    url:
+      file.url.startsWith('https://') || file.url.startsWith('http://')
+        ? file.url
+        : `${location.origin}/${file.url.replace(/^\//, '')}`,
   };
 };
 
