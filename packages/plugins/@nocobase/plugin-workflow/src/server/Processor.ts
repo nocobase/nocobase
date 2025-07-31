@@ -290,7 +290,7 @@ export default class Processor {
             job.changed('status', false);
           }
           if (job.changed('result')) {
-            changes.push([`result`, JSON.stringify(job.result)]);
+            changes.push([`result`, JSON.stringify(job.result ?? null)]);
             job.changed('result', false);
           }
           if (changes.length) {
