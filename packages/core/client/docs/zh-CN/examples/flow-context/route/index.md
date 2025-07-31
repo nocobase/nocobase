@@ -6,8 +6,8 @@
 type RouteOptions = {
   name?: string; // 路由唯一标识
   path?: string; // 路由模板
-  params?: Record<string, any>; // 路由参数
   pathname?: string; // 路由的完整路径
+  params?: Record<string, any>; // 路由参数
 };
 ```
 

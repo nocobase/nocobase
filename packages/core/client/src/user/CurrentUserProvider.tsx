@@ -12,6 +12,7 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useApp, useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
+import { createRecordProxyContext } from '@nocobase/flow-engine';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -56,6 +57,15 @@ export const CurrentUserProvider = (props) => {
         app.flowEngine.context.defineProperty('user', {
           value: res?.data?.data,
         });
+
+        app.flowEngine.context.defineProperty(
+          'userAsync',
+          createRecordProxyContext(
+            () => app.flowEngine.context.user,
+            () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+          ),
+        );
+
         return res?.data;
       }),
   );

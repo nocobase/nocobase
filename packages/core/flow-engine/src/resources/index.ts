@@ -12,4 +12,5 @@ export * from './baseRecordResource';
 export * from './flowResource';
 export * from './multiRecordResource';
 export * from './singleRecordResource';
+export * from './sqlResource';
 //
