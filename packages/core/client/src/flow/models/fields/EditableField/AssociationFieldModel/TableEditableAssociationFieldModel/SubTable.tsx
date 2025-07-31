@@ -167,8 +167,6 @@ export const SubTable = observer((props: any) => {
       form.unsubscribe(disposer);
     };
   }, [form, field]);
-
-  console.log(field.value);
   const HeaderWrapperComponent = React.memo((props) => {
     const engine = useFlowEngine();
 
