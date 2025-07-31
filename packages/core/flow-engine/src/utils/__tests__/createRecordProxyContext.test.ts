@@ -133,7 +133,7 @@ describe('createRecordProxyContext', () => {
       const currentRecordNode = metaTree.find((node) => node.name === 'currentRecord');
       expect(currentRecordNode).toBeDefined();
       expect(currentRecordNode.type).toBe('object');
-      expect(currentRecordNode.title).toBe('Posts');
+      expect(currentRecordNode.title).toBe('currentRecord'); // 延迟加载使用属性名作为默认 title
 
       // children 是一个异步函数，需要调用它来获取实际的字段数组
       expect(typeof currentRecordNode.children).toBe('function');
@@ -255,7 +255,7 @@ describe('createRecordProxyContext', () => {
       const testRecordNode = metaTree.find((node) => node.name === 'testRecord');
 
       expect(testRecordNode).toBeDefined();
-      expect(testRecordNode.title).toBe('posts'); // 使用 collection name 作为回退
+      expect(testRecordNode.title).toBe('testRecord'); // 延迟加载使用属性名作为默认 title
     });
   });
 
@@ -287,7 +287,7 @@ describe('createRecordProxyContext', () => {
 
       expect(dynamicRecordNode).toBeDefined();
       expect(dynamicRecordNode.type).toBe('object');
-      expect(dynamicRecordNode.title).toBe('Posts');
+      expect(dynamicRecordNode.title).toBe('dynamicRecord'); // 延迟加载使用属性名作为默认 title
 
       // children 是异步函数，需要调用来获取字段数组
       expect(typeof dynamicRecordNode.children).toBe('function');

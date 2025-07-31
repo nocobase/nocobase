@@ -82,7 +82,7 @@ export interface PropertyOptions {
   get?: Getter;
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
-  meta?: PropertyMeta;
+  meta?: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>); // 支持静态、函数和异步函数
 }
 
 type RouteOptions = {
@@ -230,47 +230,85 @@ export class FlowContext {
     return !!this._props[key];
   }
 
+  /**
+   * 获取属性元数据树
+   * 返回的 MetaTreeNode 中可能包含异步的延迟加载逻辑
+   * @returns MetaTreeNode[]
+   *
+   * @example
+   * // 同步调用，获取 meta tree（现有代码无需修改）
+   * const metaTree = flowContext.getPropertyMetaTree();
+   *
+   * // 某些节点可能包含异步的 children 加载逻辑
+   */
   getPropertyMetaTree(): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
 
-    const toTreeNode = (name: string, meta: PropertyMeta): MetaTreeNode => ({
-      name,
-      title: meta.title,
-      type: meta.type,
-      interface: meta.interface,
-      uiSchema: meta.uiSchema,
-      // display: meta.display,
-      children: meta.properties
-        ? typeof meta.properties === 'function'
-          ? async () => {
-              const resolvedProperties = await (meta.properties as () => Promise<Record<string, PropertyMeta>>)();
-              return Object.entries(resolvedProperties).map(([childName, childMeta]) =>
-                toTreeNode(childName, childMeta),
-              );
-            }
-          : Object.entries(meta.properties as Record<string, PropertyMeta>).map(([childName, childMeta]) =>
-              toTreeNode(childName, childMeta),
-            )
-        : undefined,
-    });
+    const createChildNodes = (
+      properties: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>),
+    ) => {
+      return typeof properties === 'function'
+        ? async () => {
+            const resolved = await properties();
+            return Object.entries(resolved).map(([name, meta]) => toTreeNode(name, meta));
+          }
+        : Object.entries(properties).map(([name, meta]) => toTreeNode(name, meta));
+    };
 
-    return Object.entries(metaMap).map(([key, meta]) => toTreeNode(key, meta));
+    const toTreeNode = (name: string, metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>)): MetaTreeNode => {
+      if (typeof metaOrFactory === 'function') {
+        // 异步 meta：延迟加载节点
+        return {
+          name,
+          title: name,
+          type: 'object',
+          interface: undefined,
+          uiSchema: undefined,
+          // display: 'default',
+          children: async () => {
+            try {
+              const meta = await metaOrFactory();
+              if (!meta?.properties) return [];
+              const childNodes = createChildNodes(meta.properties);
+              return Array.isArray(childNodes) ? childNodes : await childNodes();
+            } catch (error) {
+              console.warn(`Failed to load meta for ${name}:`, error);
+              return [];
+            }
+          },
+        };
+      }
+
+      // 同步 meta：直接创建节点
+      return {
+        name,
+        title: metaOrFactory.title,
+        type: metaOrFactory.type,
+        interface: metaOrFactory.interface,
+        uiSchema: metaOrFactory.uiSchema,
+        children: metaOrFactory.properties ? createChildNodes(metaOrFactory.properties) : undefined,
+      };
+    };
+
+    return Object.entries(metaMap).map(([key, metaOrFactory]) => toTreeNode(key, metaOrFactory));
   }
 
-  _getPropertiesMeta() {
-    // 合并自身和委托链上的所有 meta 属性
-    const metaMap: Record<string, PropertyMeta> = {};
-    // 先加委托链（不覆盖自身）
+  _getPropertiesMeta(): Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> {
+    const metaMap: Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> = {};
+
+    // 先处理委托链（委托链的 meta 优先级较低）
     for (const delegate of this._delegates) {
-      const delegateMeta = delegate._getPropertiesMeta();
-      Object.assign(metaMap, delegateMeta); // 合并，后面的覆盖前面的
+      Object.assign(metaMap, delegate._getPropertiesMeta());
     }
-    // 先加自身
+
+    // 处理自身属性（自身属性优先级较高）
     for (const [key, options] of Object.entries(this._props)) {
       if (options.meta) {
-        metaMap[key] = options.meta;
+        metaMap[key] =
+          typeof options.meta === 'function' ? (options.meta as () => Promise<PropertyMeta>) : options.meta;
       }
     }
+
     return metaMap;
   }
 

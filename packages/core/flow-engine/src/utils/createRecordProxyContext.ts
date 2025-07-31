@@ -19,36 +19,61 @@ const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
  * 创建用于 FlowContext.defineProperty 的记录代理上下文。
  *
  * @param recordOrFactory 要代理的记录对象或记录工厂函数
- * @param collection 记录所属的集合
+ * @param collectionOrFactory 记录所属的集合或获取集合的工厂函数
  * @returns 包含 get 和 meta 属性的对象，可用于 defineProperty
  *
  * @example
- * // 使用静态记录
+ * // 使用静态记录和集合
  * const recordContext = createRecordProxyContext(record, collection);
  * flowContext.defineProperty('currentRecord', recordContext);
  *
  * // 使用函数
  * const dynamicContext = createRecordProxyContext(() => getCurrentRecord(), collection);
  * flowContext.defineProperty('dynamicRecord', dynamicContext);
+ *
+ * // 使用延迟加载的集合
+ * const lazyContext = createRecordProxyContext(
+ *   () => getCurrentRecord(),
+ *   () => dataSource.getCollection('users')
+ * );
+ * flowContext.defineProperty('userRecord', lazyContext);
  */
-export function createRecordProxyContext(recordOrFactory: any | (() => any), collection: Collection) {
+export function createRecordProxyContext(
+  recordOrFactory: any | (() => any),
+  collectionOrFactory: Collection | (() => Collection | null),
+) {
   return {
     get: (flowCtx: FlowModelContext) => {
+      const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
+
+      if (!collection) {
+        throw new Error('Collection not available for record proxy');
+      }
+
       return new RecordProxy(recordOrFactory, collection, flowCtx);
     },
-    meta: {
-      type: 'object',
-      title: collection.title || collection.name,
-      properties: async () => {
-        const properties: Record<string, any> = {};
+    meta: async () => {
+      const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
 
-        // 添加所有字段
-        collection.fields.forEach((field) => {
-          properties[field.name] = createFieldMetadata(field);
-        });
+      if (!collection) {
+        // 返回 null 表示 meta 暂不可用，不会导致整个 meta tree 构建失败
+        return null;
+      }
 
-        return properties;
-      },
+      return {
+        type: 'object',
+        title: collection.title || collection.name,
+        properties: async () => {
+          const properties: Record<string, any> = {};
+
+          // 添加所有字段
+          collection.fields.forEach((field) => {
+            properties[field.name] = createFieldMetadata(field);
+          });
+
+          return properties;
+        },
+      };
     },
   };
 }
