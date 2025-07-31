@@ -100,10 +100,7 @@ function createFieldMetadata(field: CollectionField) {
       properties: async () => {
         const subProperties: Record<string, any> = {};
         targetCollection.fields.forEach((subField) => {
-          subProperties[subField.name] = {
-            type: getFieldType(subField),
-            ...createMetaBaseProperties(subField),
-          };
+          subProperties[subField.name] = createFieldMetadata(subField);
         });
         return subProperties;
       },

@@ -18,8 +18,8 @@ import { ArrayField } from '@formily/core';
 import { Table, Card, Space } from 'antd';
 import { castArray } from 'lodash';
 import { PlusOutlined } from '@ant-design/icons';
-import { useField, observer } from '@formily/react';
-import React, { useMemo } from 'react';
+import { useField, observer, useForm } from '@formily/react';
+import React, { useMemo, useEffect } from 'react';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 
@@ -89,6 +89,7 @@ export const SubTable = observer((props: any) => {
   const field = useField<ArrayField>();
   const model = useFlowModel();
   const { t } = useTranslation();
+  const form = useForm();
   const { allowAddNew, enableIndexColumn } = props;
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
@@ -152,6 +153,17 @@ export const SubTable = observer((props: any) => {
     [field.value],
   );
 
+  useEffect(() => {
+    const disposer = form.subscribe(({ type }) => {
+      // 当子字段有默认值时，form.reset 无法清空值
+      if (type === 'onFieldReset') {
+        field.onInput(undefined);
+      }
+    });
+    return () => {
+      form.unsubscribe(disposer);
+    };
+  }, [form, field]);
   const HeaderWrapperComponent = React.memo((props) => {
     const engine = useFlowEngine();
 
