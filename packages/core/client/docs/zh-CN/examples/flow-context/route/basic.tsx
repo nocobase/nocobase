@@ -3,14 +3,6 @@ import { FlowModel, FlowModelRenderer, reaction } from '@nocobase/flow-engine';
 import React from 'react';
 
 class HomeModel extends FlowModel {
-  onInit(options: any): void {
-    const disposer = reaction(
-      () => this.context.route.params.name, // 观察的字段
-      (value, oldValue) => {
-        console.log('reaction', { value, oldValue });
-      },
-    );
-  }
   render() {
     return (
       <div>

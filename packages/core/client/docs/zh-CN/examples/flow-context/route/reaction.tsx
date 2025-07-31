@@ -1,13 +1,27 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, reaction } from '@nocobase/flow-engine';
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 
 class HomeModel extends FlowModel {
+  onInit(options: any): void {
+    const disposer = reaction(
+      () => this.context.route, // 观察的字段
+      (route, oldRoute) => {
+        if (route?.path === '/posts/:name') {
+          this.context.modal.info({
+            title: 'Route Changed',
+            content: `Route changed from ${route?.pathname} to ${oldRoute?.pathname}`,
+          });
+        }
+      },
+    );
+  }
   render() {
-    const location = this.context.location;
+    const { route } = this.context;
     return (
       <div>
-        <h1>HomeModel - {location.pathname}</h1>
+        <h1>HomeModel - {route.pathname}</h1>
         <p>Welcome to the Home Page!</p>
         <p>This is a simple example of a FlowModel in NocoBase.</p>
         <p>
@@ -30,6 +44,7 @@ class HomeModel extends FlowModel {
             Go to post-2
           </a>
         </p>
+        <Outlet />
       </div>
     );
   }
@@ -37,12 +52,9 @@ class HomeModel extends FlowModel {
 
 class PostModel extends FlowModel {
   render() {
-    const location = this.context.location;
+    const { route } = this.context;
     return (
       <div>
-        <h1>PostModel - {location.pathname}</h1>
-        <p>This is the Post Page.</p>
-        <p>Here you can find more information about this example.</p>
         <p>
           <a
             onClick={(e) => {
@@ -53,6 +65,7 @@ class PostModel extends FlowModel {
             Go back to Home Page
           </a>
         </p>
+        <pre>{JSON.stringify(route, null, 2)}</pre>
       </div>
     );
   }
@@ -78,7 +91,7 @@ class PluginHelloModel extends Plugin {
       path: '/',
       element: <FlowModelRenderer model={homeModel} />,
     });
-    this.router.add('post', {
+    this.router.add('home.post', {
       path: '/posts/:name',
       element: <FlowModelRenderer model={postModel} />,
     });

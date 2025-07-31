@@ -297,38 +297,9 @@ export class Application {
     this.flowEngine.context.defineProperty('documentTitle', {
       get: () => document.title,
     });
-    class Route {
-      #options: any = observable.shallow({});
-      set params(params: Record<string, any>) {
-        this.#options.params = params;
-      }
-      get params() {
-        return this.#options.params || {};
-      }
-      set id(id: string) {
-        this.#options.id = id;
-      }
-      get id() {
-        return this.#options.id;
-      }
-      set path(path: string) {
-        this.#options.path = path;
-      }
-      get path() {
-        return this.#options.path;
-      }
-      set pathname(pathname: string) {
-        this.#options.pathname = pathname;
-      }
-      get pathname() {
-        return this.#options.pathname;
-      }
-      toJSON() {
-        return this.#options;
-      }
-    }
     this.flowEngine.context.defineProperty('route', {
-      get: () => new Route(),
+      get: () => {},
+      observable: true,
     });
     this.flowEngine.context.defineProperty('location', {
       get: () => location,
