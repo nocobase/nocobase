@@ -176,7 +176,10 @@ async function multipart(ctx: Context, next: Next) {
   const values = storageInstance.getFileData(file, ctx.request.body);
 
   ctx.action.mergeParams({
-    values,
+    values: {
+      ...values,
+      storage: { id: storage.id },
+    },
   });
 
   await next();
