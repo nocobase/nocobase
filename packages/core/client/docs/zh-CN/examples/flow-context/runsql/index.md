@@ -11,7 +11,8 @@
 type RunSQLOptions = {
   uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
   sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
-  params?: Record<string, any>; // 可选，SQL 参数
+  bind?: Record<string, any>; // 可选，SQL bind 参数
+  filter?: Record<string, any>; // 可选，过滤条件，支持以 filter 协议的标准，处理 SQL WHERE
   type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
   debug?: boolean;
 };
@@ -27,8 +28,8 @@ declare runsql: (options: RunSQLOptions) => Promise<any>;
 ```ts
 const options = {
   uid: 'uid3',
-  sql: 'SELECT * FROM users WHERE age > :age',
-  params: { age: 30 },
+  sql: 'SELECT * FROM users WHERE age > $age',
+  bind: { age: 30 },
 };
 await ctx.runsql(options);
 ```
@@ -41,8 +42,8 @@ await ctx.runsql(options);
 const options = {
   uid: 'uid1',
   type: 'selectRow',
-  sql: 'SELECT * FROM users WHERE id = :userId',
-  params: { userId: 1 },
+  sql: 'SELECT * FROM users WHERE id = $userId',
+  bind: { userId: 1 },
 };
 await ctx.runsql(options);
 ```
@@ -60,3 +61,16 @@ const options = {
 await ctx.runsql(options);
 ```
 
+### filter
+
+支持以 filter 协议的标准，处理 SQL WHERE
+
+```ts
+const options = {
+  uid: 'uid1',
+  sql: 'SELECT * FROM users',
+  filter: { id: 1 },
+};
+await ctx.runsql(options);
+// SELECT * FROM users WHERE id = 1
+```

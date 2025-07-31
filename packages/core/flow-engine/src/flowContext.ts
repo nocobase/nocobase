@@ -22,7 +22,7 @@ import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
-import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
+import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -386,7 +386,8 @@ export class FlowContext {
 type RunSQLOptions = {
   uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
   sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
-  params?: Record<string, any>; // 可选，SQL 参数
+  bind?: Record<string, any>; // 可选，SQL bind 参数
+  filter?: Record<string, any>; // 可选，SQL 过滤条件
   type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
   debug?: boolean;
 };
@@ -617,19 +618,22 @@ export class FlowRuntimeContext<
   ) {
     super();
     this.addDelegate(this.model.context);
-    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource };
-    this.defineMethod('useResource', (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => {
-      if (model['resource']) {
-        return;
-      }
-      const R = ResourceMap[className];
-      if (!R) {
-        throw new Error(`Resource class ${className} not found in ResourceMap`);
-      }
-      const resource = new R() as APIResource;
-      resource.setAPIClient(this.api);
-      model['resource'] = resource;
-    });
+    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
+    this.defineMethod(
+      'useResource',
+      (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
+        if (model['resource']) {
+          return;
+        }
+        const R = ResourceMap[className];
+        if (!R) {
+          throw new Error(`Resource class ${className} not found in ResourceMap`);
+        }
+        const resource = new R() as APIResource;
+        resource.setAPIClient(this.api);
+        model['resource'] = resource;
+      },
+    );
     this.defineProperty('resource', {
       get: () => model['resource'] || model.context['resource'],
       cache: false,
