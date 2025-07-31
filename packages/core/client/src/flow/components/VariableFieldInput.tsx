@@ -10,6 +10,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { connect } from '@formily/react';
 import { VariableValue } from './VariableValue';
+import { MetaTreeNode } from '@nocobase/flow-engine';
 
 interface VariableFieldInputProps {
   /** 当前值 */
@@ -18,6 +19,8 @@ interface VariableFieldInputProps {
   onChange?: (value: any) => void;
   /** 是否禁用 */
   disabled?: boolean;
+  /** 自定义变量元数据树，支持函数形式 */
+  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
 /**
@@ -28,7 +31,7 @@ interface VariableFieldInputProps {
  * VariableValue 内部支持自动组件切换。
  */
 export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
-  const { value, onChange, disabled = false } = props;
+  const { value, onChange, disabled = false, propertyMetaTree } = props;
 
   // 判断当前值是否为变量格式
   const isVariableValue = useMemo(() => {
@@ -68,8 +71,8 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
 
   // 处理 VariableSelector 的变化
   const handleVariableChange = useCallback(
-    (next: string[], optionPath: any[]) => {
-      console.log('handleVariableChange called:', { next, optionPath });
+    (next: string[], optionPath: any[], isDoubleClick?: boolean) => {
+      console.log('handleVariableChange called:', { next, optionPath, isDoubleClick });
 
       if (next[0] === '') {
         // 选择了 null
@@ -107,13 +110,16 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
         lastOption?.children,
       );
 
-      if (isLeafNode) {
+      // 如果是叶子节点，或者是双击选择的非叶子节点，都创建变量
+      if (isLeafNode || (isDoubleClick && !isLeafNode)) {
         const newVariable = `{{ ctx.${next.join('.')} }}`;
         console.log('Creating variable:', newVariable);
         console.log('Calling onChange directly with variable:', newVariable);
         onChange?.(newVariable);
+      } else if (!isLeafNode && !isDoubleClick) {
+        console.log('Non-leaf node clicked (not double-click), not creating variable');
       } else {
-        console.log('Not a leaf node, not creating variable');
+        console.log('Not creating variable for unknown reason');
       }
     },
     [isVariableValue, handleVariableValueChange, onChange],
@@ -126,6 +132,7 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
       disabled={disabled}
       variableChange={handleVariableChange}
       variableValue={cascaderValue}
+      propertyMetaTree={propertyMetaTree}
     />
   );
 });

@@ -12,11 +12,27 @@ import { FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine
 import React, { useMemo, useEffect, useRef } from 'react';
 import { FieldModel } from '../models/base/FieldModel';
 import { VariableValueFormModel } from '../models/fields/EditableField/VariableValueFormModel';
+import { MetaTreeNode } from '@nocobase/flow-engine';
 
 const VARIABLE_REGEX = /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/;
 
-export const VariableValue = connect((props) => {
-  const { value, onChange, variableChange, variableValue, disabled } = props;
+interface VariableValueProps {
+  /** 当前值 */
+  value?: any;
+  /** 值改变回调 */
+  onChange?: (value: any) => void;
+  /** 变量选择器变化回调 */
+  variableChange?: (value: string[], optionPath?: any[]) => void;
+  /** 变量选择器的当前值 */
+  variableValue?: string[];
+  /** 是否禁用 */
+  disabled?: boolean;
+  /** 自定义变量元数据树，支持函数形式 */
+  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
+}
+
+export const VariableValue = connect((props: VariableValueProps) => {
+  const { value, onChange, variableChange, variableValue, disabled, propertyMetaTree } = props;
   const ctx = useFlowSettingsContext<FieldModel>();
   const isUpdatingRef = useRef(false);
 
@@ -107,12 +123,13 @@ export const VariableValue = connect((props) => {
     if (variableFieldModel) {
       variableFieldModel.variableChange = variableChange;
       variableFieldModel.variableValue = variableValue;
+      variableFieldModel.propertyMetaTree = propertyMetaTree;
     }
 
     model.form.setValues({ [fieldPath]: value });
 
     return model;
-  }, [ctx.model.uid, ctx.model.fieldPath, variableChange, variableValue, disabled]);
+  }, [ctx.model.uid, ctx.model.fieldPath, variableChange, variableValue, disabled, propertyMetaTree]);
 
   // 使用 useEffect 来同步值变化，但不重建模型
   useEffect(() => {
@@ -136,6 +153,7 @@ export const VariableValue = connect((props) => {
     if (variableFieldModel) {
       variableFieldModel.variableChange = variableChange;
       variableFieldModel.variableValue = variableValue;
+      variableFieldModel.propertyMetaTree = propertyMetaTree;
     }
 
     if (model.form.values[fieldPath] !== value) {
@@ -150,7 +168,7 @@ export const VariableValue = connect((props) => {
     } else {
       console.log('VariableValue useEffect: Form value already matches');
     }
-  }, [value, model, variableChange, variableValue, disabled]);
+  }, [value, model, variableChange, variableValue, disabled, propertyMetaTree]);
 
   return (
     <div>

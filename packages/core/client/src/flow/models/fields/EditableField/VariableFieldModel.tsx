@@ -11,7 +11,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Tag, theme, Space } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { EditableFieldModel } from './EditableFieldModel';
-import { VariableSelector } from '@nocobase/flow-engine';
+import { VariableSelector, MetaTreeNode } from '@nocobase/flow-engine';
 
 const VARIABLE_REGEX = /^\{\{\s*ctx\.([^}]+?)\s*\}\}$/;
 
@@ -137,8 +137,9 @@ const SmartVariableComponent: React.FC<{
   originalComponent: any;
   originalComponentProps: any;
   flowContext: any;
-  variableChange?: (value: string[], optionPath: any[]) => void;
+  variableChange?: (value: string[], optionPath: any[], isDoubleClick?: boolean) => void;
   variableValue?: string[];
+  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }> = ({
   value,
   onChange,
@@ -148,6 +149,7 @@ const SmartVariableComponent: React.FC<{
   flowContext,
   variableChange,
   variableValue,
+  propertyMetaTree,
 }) => {
   const { token } = theme.useToken();
 
@@ -175,6 +177,7 @@ const SmartVariableComponent: React.FC<{
               height: '32px',
             }}
             buttonContent="x"
+            propertyMetaTree={propertyMetaTree}
           />
         </Space.Compact>
       );
@@ -202,6 +205,7 @@ const SmartVariableComponent: React.FC<{
             height: '32px',
           }}
           buttonContent="x"
+          propertyMetaTree={propertyMetaTree}
         />
       </Space.Compact>
     );
@@ -217,6 +221,7 @@ export class VariableFieldModel extends EditableFieldModel {
   originalComponentProps: any = {};
   variableChange: any = null;
   variableValue: any = null;
+  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 
   get component() {
     return [
@@ -227,6 +232,7 @@ export class VariableFieldModel extends EditableFieldModel {
         flowContext: this.context,
         variableChange: this.variableChange,
         variableValue: this.variableValue,
+        propertyMetaTree: this.propertyMetaTree,
       },
     ];
   }
