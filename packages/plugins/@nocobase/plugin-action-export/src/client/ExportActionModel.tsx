@@ -16,7 +16,9 @@ import { useFields } from './useFields';
 import { NAMESPACE } from './locale';
 
 const initExportSettings = (fields) => {
-  const exportSettings = fields?.filter((f) => !f.isAssociationField()).map((f) => ({ dataIndex: [f.name] }));
+  const exportSettings = fields
+    ?.filter((f) => !f.isAssociationField() && f.options.interface)
+    .map((f) => ({ dataIndex: [f.name] }));
   return exportSettings;
 };
 export class ExportActionModel extends CollectionActionModel {
@@ -48,7 +50,7 @@ ExportActionModel.registerFlow({
         const { exportSettings } = ctx.model.getProps();
         const currentBlock = ctx.model.context.blockModel;
         const { resource } = currentBlock;
-        const { getField, name, title, fields } = currentBlock.collection;
+        const { name, title, fields } = currentBlock.collection;
         exportSettings.forEach((es) => {
           const { uiSchema, interface: fieldInterface } = fields.get(es.dataIndex[0]) ?? {};
           // @ts-ignore
@@ -62,17 +64,17 @@ ExportActionModel.registerFlow({
           es.defaultTitle = ctx.t(uiSchema?.title);
         });
 
-        const { data } = await resource.runAction('export', {
+        const data = await resource.runAction('export', {
           data: {
             columns: exportSettings,
           },
+          responseType: 'blob',
           params: {
             title: ctx.t(title),
             appends: resource.getAppends(),
             sort: resource.getSort(),
             filter: resource.getFilter(),
           },
-          responseType: 'blob',
         });
         const blob = new Blob([data], { type: 'application/x-xls' });
         saveAs(blob, `${ctx.t(title)}.xlsx`);
