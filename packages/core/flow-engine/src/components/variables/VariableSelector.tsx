@@ -36,7 +36,6 @@ interface CascaderOption {
   value: string;
   label: string;
   children?: CascaderOption[];
-  isLeaf?: boolean;
   // 添加路径信息，用于追踪被flatten的节点
   fullPath?: string[];
   originalPath?: string[];
@@ -44,6 +43,8 @@ interface CascaderOption {
   isLeaf?: boolean;
   // 父级选项路径
   parentPath?: string[];
+  // 路径字符串
+  pathString?: string;
 }
 
 const convertMetaTreeToCascaderData = (
@@ -131,7 +132,7 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({
         if (propertyMetaTree) {
           // 使用自定义的 propertyMetaTree
           if (typeof propertyMetaTree === 'function') {
-            metaTree = await propertyMetaTree();
+            metaTree = await (propertyMetaTree as () => Promise<MetaTreeNode[]>)();
           } else {
             metaTree = propertyMetaTree;
           }
