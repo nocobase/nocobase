@@ -33,7 +33,7 @@ export class PluginCollectionSQLServer extends Plugin {
     this.app.acl.allow('flowSql', 'run', 'loggedIn');
     this.app.resourceManager.registerActionHandlers({
       'flowSql:run': async (ctx, next) => {
-        const { uid, sql, type, filter, bind } = ctx.action.params.values || {};
+        const { uid, sql, type = 'selectRows', filter, bind } = ctx.action.params.values || {};
         if (!uid) {
           ctx.throw(400, 'UID is required');
         }
