@@ -29,7 +29,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return `flowSql:${action || 'run'}`;
   }
 
-  setType(type: 'selectRows' | 'selectRow' | 'selectVar') {
+  setSQLType(type: 'selectRows' | 'selectRow' | 'selectVar') {
     this.request.data.type = type;
     return this;
   }
