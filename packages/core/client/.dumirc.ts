@@ -480,6 +480,10 @@ export default defineConfig({
                   title: 'MultiRecordResource',
                   link: '/api/flow-engine/flow-resource/multi-record-resource',
                 },
+                {
+                  title: 'SQLResource',
+                  link: '/api/flow-engine/flow-resource/sql-resource',
+                },
               ],
             },
             {
