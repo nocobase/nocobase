@@ -8,6 +8,7 @@
  */
 
 import { Collection, createMockDatabase, Database } from '@nocobase/database';
+import { randomStr } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 
 describe('create with hasMany', () => {
@@ -381,6 +382,79 @@ describe('validation', () => {
           },
         }),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('association field validation', () => {
+    let User: Collection;
+    let Profile: Collection;
+    beforeEach(async () => {
+      User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'hasOne', name: 'profile' },
+          { type: 'belongsTo', name: 'group' },
+          { type: 'string', name: 'name' },
+        ],
+      });
+
+      Profile = db.collection({
+        name: 'profiles',
+        fields: [
+          {
+            type: 'string',
+            name: 'avatar',
+            validation: {
+              type: 'string',
+              rules: [{ key: `r_${uid()}`, name: 'length', args: { limit: 2 } }],
+            },
+          },
+        ],
+      });
+
+      await db.sync();
+    });
+
+    it('should throw validation error for invalid avatar', async () => {
+      await expect(
+        User.repository.create({
+          values: {
+            name: randomStr().slice(0, 2),
+            profile: {
+              avatar: 'avatar',
+            },
+          },
+        }),
+      ).rejects.toThrow();
+    });
+    it('should succeed with valid profile', async () => {
+      const user = await User.repository.create({
+        values: {
+          name: randomStr().slice(0, 2),
+          profile: {
+            avatar: 'av',
+          },
+        },
+      });
+
+      expect(await user.getProfile()).toMatchObject({ avatar: 'av' });
+    });
+
+    it('should succeed when creating user with existing profile', async () => {
+      const profile = await Profile.model.create({
+        avatar: 'avatar',
+      });
+      const user = await User.repository.create({
+        values: {
+          name: randomStr().slice(0, 2),
+          profile: {
+            id: profile.get('id'),
+            avatar: 'avatar',
+          },
+        },
+      });
+
+      expect(await user.getProfile()).toMatchObject({ avatar: 'avatar' });
     });
   });
 });

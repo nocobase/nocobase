@@ -9,6 +9,7 @@
 
 import Joi, { AnySchema, Root } from 'joi';
 import { ValidationOptions } from '../fields';
+import _ from 'lodash';
 
 export function buildJoiSchema(validation: ValidationOptions): AnySchema {
   const { type, rules } = validation;
@@ -21,7 +22,7 @@ export function buildJoiSchema(validation: ValidationOptions): AnySchema {
 
   if (rules) {
     rules.forEach((rule) => {
-      if (rule.args) {
+      if (!_.isEmpty(rule.args)) {
         schema = schema[rule.name](...Object.values(rule.args));
       } else {
         schema = schema[rule.name]();
