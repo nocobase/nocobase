@@ -4,8 +4,9 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 
 class HomeModel extends FlowModel {
-  onInit(options: any): void {
-    const disposer = reaction(
+  #disposer: () => void | null = null;
+  onMount() {
+    this.#disposer = reaction(
       () => this.context.route, // 观察的字段
       (route, oldRoute) => {
         if (route?.path === '/posts/:name') {
@@ -16,6 +17,12 @@ class HomeModel extends FlowModel {
         }
       },
     );
+  }
+  onUnmount() {
+    if (this.#disposer) {
+      this.#disposer(); // 取消 reaction 监听
+      this.#disposer = null;
+    }
   }
   render() {
     const { route } = this.context;
