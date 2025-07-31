@@ -199,15 +199,18 @@ export const toItem = (file) => {
       ...file.response.data,
     };
   }
-  return {
+  const result = {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
-    url:
+  };
+  if (file.url) {
+    result.url =
       file.url.startsWith('https://') || file.url.startsWith('http://')
         ? file.url
-        : `${location.origin}/${file.url.replace(/^\//, '')}`,
-  };
+        : `${location.origin}/${file.url.replace(/^\//, '')}`;
+  }
+  return result;
 };
 
 export const toFileList = (fileList: any) => {
