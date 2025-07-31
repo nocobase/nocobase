@@ -12,6 +12,7 @@ type RunSQLOptions = {
   uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
   sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
   bind?: Record<string, any>; // 可选，SQL bind 参数
+  filter?: Record<string, any>; // 可选，过滤条件，支持以 filter 协议的标准，处理 SQL WHERE
   type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
   debug?: boolean;
 };
