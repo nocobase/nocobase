@@ -213,7 +213,13 @@ export class RouterManager {
   }
 
   add(name: string, route: RouteType) {
-    this.routes[name] = route;
+    this.routes[name] = {
+      id: name,
+      ...route,
+      handle: {
+        path: route.path,
+      },
+    };
   }
 
   get(name: string) {

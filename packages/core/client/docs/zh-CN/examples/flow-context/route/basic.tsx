@@ -1,12 +1,16 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, reaction } from '@nocobase/flow-engine';
 import React from 'react';
 
-/**
- * HelloModel 是一个简单的 FlowModel。
- * 它定义了一个 render 方法，用于渲染一个包含标题和描述的 UI 块。
- */
 class HomeModel extends FlowModel {
+  onInit(options: any): void {
+    const disposer = reaction(
+      () => this.context.route.params.name, // 观察的字段
+      (value, oldValue) => {
+        console.log('reaction', { value, oldValue });
+      },
+    );
+  }
   render() {
     return (
       <div>
@@ -40,13 +44,13 @@ class HomeModel extends FlowModel {
 
 class PostModel extends FlowModel {
   render() {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { params } = this.context.route;
+    const { route } = this.context;
     return (
       <div>
-        <h1>PostModel - {params.name}</h1>
+        <h1>PostModel - {route.params.name}</h1>
         <p>This is the Post Page.</p>
         <p>Here you can find more information about this example.</p>
+        <pre>{JSON.stringify(route, null, 2)}</pre>
         <p>
           <a
             onClick={(e) => {

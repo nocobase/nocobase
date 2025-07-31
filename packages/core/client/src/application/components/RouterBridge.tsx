@@ -9,17 +9,26 @@
 
 import { observable } from '@formily/reactive';
 import { useEffect, useMemo } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useMatch, useMatches, useParams } from 'react-router-dom';
 import { Application } from '../Application';
 
 export function useRouterSync(app: Application) {
   const params = useParams();
   const location = useLocation();
+  const matches = useMatches();
   const engine = app.flowEngine;
-  console.log('useRouterSync', params, location);
   useEffect(() => {
     engine.context.route.params = params;
-  }, [engine.context, params]);
+    const last = matches[matches.length - 1];
+    if (!last) {
+      return;
+    }
+    engine.context.route.id = last.id;
+    engine.context.route.pathname = last.pathname;
+    if (last.handle?.['path']) {
+      engine.context.route.path = last.handle['path'];
+    }
+  }, [engine.context, params, matches]);
   useEffect(() => {
     engine.context['_observableCache']['location'] = location;
   }, [engine.context, location]);

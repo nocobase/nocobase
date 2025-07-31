@@ -85,6 +85,13 @@ export interface PropertyOptions {
   meta?: PropertyMeta;
 }
 
+type RouteOptions = {
+  id?: string; // 路由唯一标识
+  path?: string; // 路由模板
+  params?: Record<string, any>; // 路由参数
+  pathname?: string; // 路由的完整路径
+};
+
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
   _methods: Record<string, (...args: any[]) => any> = {};
@@ -393,7 +400,7 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
   declare runsql: (options: RunSQLOptions) => Promise<any>;
 
@@ -493,7 +500,7 @@ export class FlowModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(model: FlowModel) {
@@ -542,7 +549,7 @@ export class FlowForkModelContext extends FlowContext {
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(
@@ -600,7 +607,7 @@ export class FlowRuntimeContext<
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
-  declare route: { params: Record<string, any> };
+  declare route: RouteOptions;
   declare location: Location;
 
   constructor(
