@@ -502,7 +502,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       value: this.reactView,
     });
     flowContext.defineProperty('inputArgs', {
-      value: inputArgs,
+      value: {
+        // currentFlow 里面包含的数据相关参数要透传给下一个model上下文， 之前是解析参数时来兼容的
+        // TODO: 这里是不是应该将currentFlow的所有inputArgs透传给下一个model上下文?
+        // 1. 直接委托？ ---> 可能存在污染
+        // 2. 全部inputArgs 参数？ ---> 部分参数会不符合预期，弹窗会直接变成字页面
+        ..._.pick(this.context.currentFlow?.inputArgs, ['filterByTk', 'sourceId', 'collectionName', 'associationName']),
+        ...inputArgs,
+      },
     });
     flowContext.defineProperty('runId', {
       value: runId || `run-${Date.now()}`,
