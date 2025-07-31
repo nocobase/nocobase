@@ -2031,29 +2031,34 @@ describe('FlowModel', () => {
               return Promise.resolve({ data: null });
             }),
           })),
-          request: vi.fn().mockImplementation(({ url }) => {
-            if (url === 'articles/1/author:get') {
+          request: vi.fn().mockImplementation(({ url, params }) => {
+            if (url === 'articles:get' && params?.appends) {
+              const appends = params.appends;
+              const responseData = {
+                id: 1,
+                title: 'Test Article',
+              };
+
+              // 根据appends参数添加相应的关联数据
+              if (appends.includes('author')) {
+                (responseData as any).author = { id: 2, name: 'Jane Smith', email: 'jane@example.com' };
+              }
+              if (appends.includes('category')) {
+                (responseData as any).category = { id: 3, title: 'Technology', slug: 'tech' };
+              }
+              if (appends.includes('tags')) {
+                (responseData as any).tags = [
+                  { id: 4, name: 'React' },
+                  { id: 5, name: 'TypeScript' },
+                  { id: 6, name: 'Testing' },
+                ];
+              }
+
               return Promise.resolve({
-                data: { data: { id: 2, name: 'Jane Smith', email: 'jane@example.com' } },
+                data: { data: responseData },
               });
             }
-            if (url === 'articles/1/category:get') {
-              return Promise.resolve({
-                data: { data: { id: 3, title: 'Technology', slug: 'tech' } },
-              });
-            }
-            if (url === 'articles/1/tags:list') {
-              return Promise.resolve({
-                data: {
-                  data: [
-                    { id: 4, name: 'React' },
-                    { id: 5, name: 'TypeScript' },
-                    { id: 6, name: 'Testing' },
-                  ],
-                  meta: { count: 3 },
-                },
-              });
-            }
+
             return Promise.resolve({ data: { data: null } });
           }),
         };
@@ -2084,17 +2089,29 @@ describe('FlowModel', () => {
         // 验证真正的RecordProxy API调用
         expect(mockApiClient.request).toHaveBeenCalledWith(
           expect.objectContaining({
-            url: 'articles/1/author:get',
+            url: 'articles:get',
+            params: expect.objectContaining({
+              filterByTk: 1,
+              appends: ['author'],
+            }),
           }),
         );
         expect(mockApiClient.request).toHaveBeenCalledWith(
           expect.objectContaining({
-            url: 'articles/1/category:get',
+            url: 'articles:get',
+            params: expect.objectContaining({
+              filterByTk: 1,
+              appends: ['category'],
+            }),
           }),
         );
         expect(mockApiClient.request).toHaveBeenCalledWith(
           expect.objectContaining({
-            url: 'articles/1/tags:list',
+            url: 'articles:get',
+            params: expect.objectContaining({
+              filterByTk: 1,
+              appends: ['tags'],
+            }),
           }),
         );
       });
@@ -2159,12 +2176,25 @@ describe('FlowModel', () => {
               data: { id: 2, name: 'Alice Brown' },
             }),
           }),
-          request: vi.fn().mockImplementation(({ url }) => {
-            if (url === 'articles/1/author:get') {
+          request: vi.fn().mockImplementation(({ url, params }) => {
+            // 处理RecordProxy的实际请求格式: articles:get with appends
+            if (url === 'articles:get' && params?.appends) {
+              const appends = params.appends;
+              const responseData = {
+                id: 1,
+                title: 'Test Article',
+              };
+
+              // 根据appends参数添加相应的关联数据
+              if (appends.includes('author')) {
+                (responseData as any).author = { id: 2, name: 'Alice Brown' };
+              }
+
               return Promise.resolve({
-                data: { data: { id: 2, name: 'Alice Brown' } },
+                data: { data: responseData },
               });
             }
+
             return Promise.resolve({ data: { data: null } });
           }),
         };
@@ -2284,22 +2314,44 @@ describe('FlowModel', () => {
         };
 
         const mockApiClient = {
-          request: vi.fn().mockImplementation(({ url }) => {
-            if (url === 'articles/1/author:get') {
-              return Promise.resolve({ data: { data: { id: 2, name: 'Author Name' } } });
-            }
-            if (url === 'users/2/profile:get') {
-              return Promise.resolve({ data: { data: { id: 3, bio: 'Author bio' } } });
-            }
-            if (url === 'profiles/3/company:get') {
-              return Promise.resolve({ data: { data: { id: 4, name: 'Tech Corp' } } });
-            }
-            if (url === 'profiles/3/department:get') {
-              return Promise.resolve({ data: { data: { id: 5, code: 'ENG-001', name: 'Engineering' } } });
-            }
-            if (url === 'departments/5/manager:get') {
+          request: vi.fn().mockImplementation(({ url, params }) => {
+            // 处理RecordProxy的实际请求格式: articles:get with appends
+            if (url === 'articles:get' && params?.appends) {
+              const responseData = {
+                id: 1,
+                title: 'Test Article',
+              };
+
+              // 根据appends参数添加相应的嵌套关联数据
+              const data = responseData as any;
+
+              // 初始化基础结构
+              if (!data.author) {
+                data.author = { id: 2, name: 'Author Name' };
+              }
+              if (!data.author.profile) {
+                data.author.profile = { id: 3, bio: 'Author bio' };
+              }
+
+              // 由于测试显示只会发起一个请求，我们在任何请求中都返回完整的数据结构
+              // 这样确保所有表达式都能正确解析
+              data.author.profile.company = {
+                id: 4,
+                name: 'Tech Corp',
+              };
+              data.author.profile.department = {
+                id: 5,
+                code: 'ENG-001',
+                name: 'Engineering',
+                manager: {
+                  id: 6,
+                  name: 'Manager Name',
+                  email: 'manager@techcorp.com',
+                },
+              };
+
               return Promise.resolve({
-                data: { data: { id: 6, name: 'Manager Name', email: 'manager@techcorp.com' } },
+                data: { data: responseData },
               });
             }
             return Promise.resolve({ data: { data: null } });
