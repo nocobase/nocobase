@@ -375,16 +375,20 @@ export default defineConfig({
             },
           ],
         },
-        // {
-        //   title: 'Best Practices',
-        //   type: 'group',
-        //   children: [
-        //     {
-        //       title: 'Best Practices',
-        //       link: '/learn/best-practices',
-        //     }
-        //   ]
-        // }
+        {
+          title: '最佳实践',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel 使用指南',
+              link: '/learn/best-practices/flow-model',
+            },
+            {
+              title: '1.0 vs 2.0',
+              link: '/learn/best-practices/1-0-vs-2-0',
+            }
+          ]
+        }
       ],
       '/api': [
         {
