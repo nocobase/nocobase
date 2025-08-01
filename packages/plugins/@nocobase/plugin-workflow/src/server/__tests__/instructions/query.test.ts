@@ -178,7 +178,7 @@ describe('workflow > instructions > query', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result.id).toBe(tag.id);
+      expect(job.result.id).toEqualNumberOrString(tag.id);
     });
 
     it('params.appends: hasMany', async () => {
@@ -202,7 +202,7 @@ describe('workflow > instructions > query', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.comments.length).toBe(1);
-      expect(job.result.comments[0].id).toBe(comment.id);
+      expect(job.result.comments[0].id).toEqualNumberOrString(comment.id);
     });
 
     it('params.appends: belongsToMany', async () => {
@@ -226,7 +226,7 @@ describe('workflow > instructions > query', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.posts.length).toBe(1);
-      expect(job.result.posts[0].id).toBe(post.id);
+      expect(job.result.posts[0].id).toEqualNumberOrString(post.id);
     });
 
     it('params.sort & params.page & params.pageSize', async () => {

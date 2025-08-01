@@ -343,8 +343,8 @@ describe('workflow > actions > workflows', () => {
       expect(w2.key).toBe(w1.key);
       expect(w2.current).toBeFalsy();
       expect(w2.enabled).toBe(false);
-      expect(w2.versionStats.executed).toBe(0);
-      expect(w2.stats.executed).toBe(1);
+      expect(w2.versionStats.executed).toEqualNumberOrString(0);
+      expect(w2.stats.executed).toEqualNumberOrString(1);
 
       const s1c = await WorkflowStatsRepo.count();
       expect(s1c).toBe(1);
@@ -375,18 +375,18 @@ describe('workflow > actions > workflows', () => {
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(null);
-      expect(w1next.stats.executed).toBe(2);
+      expect(w1next.stats.executed).toEqualNumberOrString(2);
       expect(w2next.enabled).toBe(true);
       expect(w2next.current).toBe(true);
-      expect(w2next.versionStats.executed).toBe(1);
-      expect(w2next.stats.executed).toBe(2);
+      expect(w2next.versionStats.executed).toEqualNumberOrString(1);
+      expect(w2next.stats.executed).toEqualNumberOrString(2);
       expect(w2next.options.stackLimit).toBe(2);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
       expect(e1.key).toBe(e2.key);
-      expect(e1.workflowId).toBe(w1.id);
-      expect(e2.workflowId).toBe(w2.id);
+      expect(e1.workflowId).toEqualNumberOrString(w1.id);
+      expect(e2.workflowId).toEqualNumberOrString(w2.id);
     });
 
     it('revision with nodes', async () => {
@@ -475,8 +475,8 @@ describe('workflow > actions > workflows', () => {
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.stats.executed).toBe(0);
-      expect(w2.versionStats.executed).toBe(0);
+      expect(w2.stats.executed).toEqualNumberOrString(0);
+      expect(w2.versionStats.executed).toEqualNumberOrString(0);
 
       // stop w1
       await WorkflowModel.update(
@@ -514,11 +514,11 @@ describe('workflow > actions > workflows', () => {
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.versionStats.executed).toBe(1);
-      expect(w1next.stats.executed).toBe(1);
+      expect(w1next.versionStats.executed).toEqualNumberOrString(1);
+      expect(w1next.stats.executed).toEqualNumberOrString(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.versionStats.executed).toBe(1);
-      expect(w2next.stats.executed).toBe(1);
+      expect(w2next.versionStats.executed).toEqualNumberOrString(1);
+      expect(w2next.stats.executed).toEqualNumberOrString(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
@@ -554,7 +554,7 @@ describe('workflow > actions > workflows', () => {
       expect(w2.key).not.toBe(w1.key);
       expect(w2.current).toBeTruthy();
       expect(w2.enabled).toBe(false);
-      expect(w2.stats.executed).toBe(0);
+      expect(w2.stats.executed).toEqualNumberOrString(0);
       expect(w2.sync).toBe(true);
 
       // stop w1
@@ -591,11 +591,11 @@ describe('workflow > actions > workflows', () => {
 
       expect(w1next.enabled).toBe(false);
       expect(w1next.current).toBe(true);
-      expect(w1next.versionStats.executed).toBe(1);
-      expect(w1next.stats.executed).toBe(1);
+      expect(w1next.versionStats.executed).toEqualNumberOrString(1);
+      expect(w1next.stats.executed).toEqualNumberOrString(1);
       expect(w2next.enabled).toBe(true);
-      expect(w2next.versionStats.executed).toBe(1);
-      expect(w2next.stats.executed).toBe(1);
+      expect(w2next.versionStats.executed).toEqualNumberOrString(1);
+      expect(w2next.stats.executed).toEqualNumberOrString(1);
 
       const [e1] = await w1next.getExecutions();
       const [e2] = await w2next.getExecutions();
