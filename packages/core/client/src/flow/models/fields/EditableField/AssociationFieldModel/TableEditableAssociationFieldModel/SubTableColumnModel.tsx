@@ -47,7 +47,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         placement: 'rightTop',
         styles: {
           body: {
-            minWidth: 200,
+            minWidth: 400,
           },
         },
         content: (popover) => {
