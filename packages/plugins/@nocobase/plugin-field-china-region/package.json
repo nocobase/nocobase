@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-china-region",
-  "version": "1.9.0-beta.4",
+  "version": "1.9.0-beta.5",
   "displayName": "Collection field: administrative divisions of China",
   "displayName.zh-CN": "数据表字段：中国行政区划",
   "description": "Provides data and field type for administrative divisions of China.",

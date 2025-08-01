@@ -1,0 +1,18 @@
+{
+  "name": "@nocobase/plugin-file-previewer-office",
+  "displayName": "Office File Previewer",
+  "displayName.zh-CN": "Office 文件预览",
+  "description": "A plugin for previewing office files via Microsoft live preview service.",
+  "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
+  "version": "1.9.0-beta.5",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "keywords": [
+    "File manager",
+    "Collection fields"
+  ]
+}
