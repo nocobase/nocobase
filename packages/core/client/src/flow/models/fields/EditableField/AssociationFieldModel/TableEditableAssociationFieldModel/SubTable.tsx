@@ -35,7 +35,7 @@ const AddFieldColumn = ({ model }) => {
   const items = buildFieldItems(
     model.collection.getFields(),
     model,
-    'EditableFieldModel',
+    'FormFieldModel',
     'columns',
     ({ defaultOptions, fieldPath }) => {
       return {
@@ -66,6 +66,7 @@ const AddFieldColumn = ({ model }) => {
       };
     },
   );
+  console.log(items);
   return (
     <AddFieldButton
       model={model}
