@@ -83,7 +83,7 @@ export async function updateModelByValues(instance: Model, values: UpdateValue, 
     guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
     values = guard.sanitize(values);
   }
-
+  (instance.constructor as typeof Model).collection.validate(values as any);
   await instance.update(values, options);
   await updateAssociations(instance, values, options);
 }
@@ -369,6 +369,7 @@ export async function updateSingleAssociation(
     }
   }
 
+  (association.target as typeof Model).collection.validate(value);
   const instance = await model[createAccessor](value, { context, transaction });
 
   await updateAssociations(instance, value, {
@@ -506,6 +507,7 @@ export async function updateMultipleAssociation(
 
     if (isUndefinedOrNull(item[targetKey])) {
       // create new record
+      (association.target as typeof Model).collection.validate(item);
       const instance = await model[createAccessor](item, accessorOptions);
 
       await updateAssociations(instance, item, {
@@ -526,6 +528,7 @@ export async function updateMultipleAssociation(
       });
       if (!instance) {
         // create new record
+        (association.target as typeof Model).collection.validate(item);
         instance = await model[createAccessor](item, accessorOptions);
         await updateAssociations(instance, item, {
           ...options,

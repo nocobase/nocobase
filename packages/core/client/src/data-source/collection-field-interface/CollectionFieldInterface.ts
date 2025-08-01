@@ -13,6 +13,7 @@ import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
 import { tval } from '@nocobase/utils/client';
+import { AvailableValidationOption, FIELDS_VALIDATION_OPTIONS } from '../../collection-manager/constants';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -45,6 +46,8 @@ export abstract class CollectionFieldInterface {
   isAssociation?: boolean;
   operators?: any[];
   properties?: any;
+  validationType?: string;
+  availableValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
@@ -92,6 +95,16 @@ export abstract class CollectionFieldInterface {
     return {
       ...cloneDeep({ ...defaultProps, ...this?.properties }),
       ...defaultValueProps,
+      validation: {
+        title: '{{ t("Validation") }}',
+        required: false,
+        'x-decorator': 'FormItem',
+        'x-component': 'FieldValidation',
+        'x-component-props': {
+          type: this.validationType,
+          availableValidationOptions: this.availableValidationOptions,
+        },
+      },
     };
   }
   getDefaultValueProperty() {

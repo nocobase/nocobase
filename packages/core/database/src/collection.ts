@@ -22,10 +22,11 @@ import {
 } from 'sequelize';
 import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
-import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { buildJoiSchema } from './utils/field-validation';
 
 export type RepositoryType = typeof Repository;
 
@@ -226,6 +227,24 @@ export class Collection<
     for (const [_, field] of this.fields) {
       if (field.options.treeChildren) {
         return field;
+      }
+    }
+  }
+
+  validate(values: Record<string, any>[]) {
+    values = Array.isArray(values) ? values : [values];
+    for (const value of values) {
+      for (const [, field] of this.fields) {
+        const val = value[field.name];
+        if (!field.options.validation) {
+          continue;
+        }
+
+        const joiSchema = buildJoiSchema(field.options.validation);
+        const { error } = joiSchema.validate(val);
+        if (error) {
+          throw new Error(`Validation error for field "${field.name}", value: ${val}, details: ${error.message}`);
+        }
       }
     }
   }
