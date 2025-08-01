@@ -211,8 +211,8 @@ export function parseDate(value: any, options = {} as { timezone?: string }) {
 function parseDateBetween(value: any, options = {} as { timezone?: string }) {
   if (Array.isArray(value) && value.length > 1) {
     const [startValue, endValue, op = '[]', timezone] = value;
-    const r0 = parseDate(startValue, { timezone });
-    const r1 = parseDate(endValue, { timezone });
+    const r0 = parseDate(startValue, { timezone: options.timezone || timezone });
+    const r1 = parseDate(endValue, { timezone: options.timezone || timezone });
     let start;
     let startOp;
     let end;

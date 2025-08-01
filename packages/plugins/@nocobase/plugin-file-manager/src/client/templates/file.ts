@@ -126,20 +126,25 @@ export class FileCollectionTemplate extends CollectionTemplate {
         },
       },
       {
-        comment: '存储引擎',
         type: 'belongsTo',
         name: 'storage',
         target: 'storages',
         foreignKey: 'storageId',
         deletable: false,
+        interface: 'm2o',
         uiSchema: {
-          type: 'string',
+          type: 'object',
           title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
-          'x-component': 'Input',
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            fieldNames: {
+              value: 'id',
+              label: 'title',
+            },
+          },
           'x-read-pretty': true,
         },
       },
-      // '其他文件信息（如图片的宽高）',
       {
         type: 'jsonb',
         name: 'meta',
