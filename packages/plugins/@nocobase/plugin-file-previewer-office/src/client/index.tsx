@@ -32,9 +32,18 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
   );
   const onDownload = useCallback(
     (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      fetch(file.url)
+        .then((res) => res.blob())
+        .then((blob) => {
+          saveAs(blob, `${file.title}${file.extname}`);
+        })
+        .catch((err) => {
+          console.error('Download failed:', err);
+          Modal.error({
+            title: t('Download failed'),
+            content: err.message,
+          });
+        });
     },
     [file.extname, file.title, file.url],
   );

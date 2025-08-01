@@ -62,11 +62,22 @@ attachmentFileTypes.add({
     return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
+    const { t } = useTranslation();
     const onDownload = useCallback(
       (e) => {
-        e.preventDefault();
         const file = list[index];
-        saveAs(file.url, `${file.title}${file.extname}`);
+        fetch(file.url)
+          .then((res) => res.blob())
+          .then((blob) => {
+            saveAs(blob, `${file.title}${file.extname}`);
+          })
+          .catch((err) => {
+            console.error('Download failed:', err);
+            Modal.error({
+              title: t('Download failed'),
+              content: err.message,
+            });
+          });
       },
       [index, list],
     );
@@ -117,9 +128,18 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
   );
   const onDownload = useCallback(
     (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      saveAs(url, `${file.title}${file.extname}`);
+      fetch(file.url)
+        .then((res) => res.blob())
+        .then((blob) => {
+          saveAs(blob, `${file.title}${file.extname}`);
+        })
+        .catch((err) => {
+          console.error('Download failed:', err);
+          Modal.error({
+            title: t('Download failed'),
+            content: err.message,
+          });
+        });
     },
     [file.extname, file.title, url],
   );
@@ -271,9 +291,23 @@ function AttachmentListItem(props) {
   const onDelete = useCallback(() => {
     propsOnDelete?.(file);
   }, [file, propsOnDelete]);
-  const onDownload = useCallback(() => {
-    saveAs(file.url, `${file.title}${file.extname}`);
-  }, [file]);
+  const onDownload = useCallback(
+    (e) => {
+      fetch(file.url)
+        .then((res) => res.blob())
+        .then((blob) => {
+          saveAs(blob, `${file.title}${file.extname}`);
+        })
+        .catch((err) => {
+          console.error('Download failed:', err);
+          Modal.error({
+            title: t('Download failed'),
+            content: err.message,
+          });
+        });
+    },
+    [file],
+  );
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
