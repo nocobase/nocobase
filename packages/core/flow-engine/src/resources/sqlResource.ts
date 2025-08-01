@@ -33,6 +33,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return `flowSql:${action || 'run'}`;
   }
 
+  setDataSourceKey(dataSourceKey: string): this {
+    this.request.data.dataSourceKey = dataSourceKey;
+    return this;
+  }
+
   setSQLType(type: 'selectRows' | 'selectRow' | 'selectVar') {
     this.request.data.type = type;
     return this;

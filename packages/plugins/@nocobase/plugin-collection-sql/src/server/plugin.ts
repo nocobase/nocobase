@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Collection } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import sqlResourcer from './resources/sql';
@@ -33,9 +34,14 @@ export class PluginCollectionSQLServer extends Plugin {
     this.app.acl.allow('flowSql', 'run', 'loggedIn');
     this.app.resourceManager.registerActionHandlers({
       'flowSql:run': async (ctx, next) => {
-        const { uid, sql, type = 'selectRows', filter, bind } = ctx.action.params.values || {};
+        const { uid, sql, type = 'selectRows', filter, bind, dataSourceKey = 'main' } = ctx.action.params.values || {};
         if (!uid) {
           ctx.throw(400, 'UID is required');
+        }
+        const dataSource = this.app.dataSourceManager.get(dataSourceKey);
+        const cm = dataSource.collectionManager as SequelizeCollectionManager;
+        if (!cm.db) {
+          ctx.throw(400, 'dataSourceKey is not valid');
         }
         const roles = ctx.state.currentUser?.roles || [];
         const r = this.db.getRepository('flowSql');
@@ -65,10 +71,10 @@ export class PluginCollectionSQLServer extends Plugin {
         let whereSQL = '';
         if (filter) {
           let where = {};
-          const tmpCollection = new SQLCollection({ name: 'tmp', sql: record.sql }, { database: ctx.db });
+          const tmpCollection = new SQLCollection({ name: 'tmp', sql: record.sql }, { database: cm.db });
           const r = tmpCollection.repository;
           where = r.buildQueryOptions({ filter }).where;
-          const queryGenerator = this.db.sequelize.getQueryInterface().queryGenerator as any;
+          const queryGenerator = cm.db.sequelize.getQueryInterface().queryGenerator as any;
           const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
           if (wSQL) {
             const hasWhere = /\bwhere\b/i.test(record.sql);
@@ -79,7 +85,7 @@ export class PluginCollectionSQLServer extends Plugin {
             }
           }
         }
-        const result = await this.db.sequelize.query(record.sql + whereSQL, { bind });
+        const result = await cm.db.sequelize.query(record.sql + whereSQL, { bind });
         if (type === 'selectVar') {
           ctx.body = Object.values(result[0][0] || {}).shift();
           return;
