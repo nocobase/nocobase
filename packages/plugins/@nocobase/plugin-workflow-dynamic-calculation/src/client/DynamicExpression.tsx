@@ -13,7 +13,7 @@ import { Tag } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCollectionManager_deprecated, useCompile, useRecord, Variable } from '@nocobase/client';
+import { useCollectionManager, useCompile, useRecord, Variable } from '@nocobase/client';
 import { getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
@@ -28,7 +28,7 @@ const InternalExpression = observer(
     const collectionPath = [...basePath, 'sourceCollection'].join('.');
     const [collection, setCollection] = useState(form.getValuesIn(collectionPath));
     const compile = useCompile();
-    const { getCollectionFields } = useCollectionManager_deprecated();
+    const collectionManager = useCollectionManager();
 
     useFormEffects(() => {
       onFormInitialValuesChange((form) => {
@@ -40,7 +40,7 @@ const InternalExpression = observer(
       });
     });
 
-    const options = getCollectionFieldOptions({ collection, compile, getCollectionFields });
+    const options = getCollectionFieldOptions({ collection, compile, collectionManager });
 
     return <Variable.TextArea {...props} scope={options} />;
   },
@@ -51,10 +51,10 @@ function Result(props) {
   const { t } = useTranslation();
   const values = useRecord();
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager_deprecated();
+  const collectionManager = useCollectionManager();
   const options = useMemo(
-    () => getCollectionFieldOptions({ collection: values.sourceCollection, compile, getCollectionFields }),
-    [values.sourceCollection, values.sourceCollection],
+    () => getCollectionFieldOptions({ collection: values.sourceCollection, compile, collectionManager }),
+    [collectionManager, compile, values.sourceCollection],
   );
   return props.value ? (
     <Variable.TextArea {...props} scope={options} />
