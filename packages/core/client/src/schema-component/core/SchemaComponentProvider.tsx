@@ -16,6 +16,14 @@ import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions, useSchemaOptionsContext } from './SchemaComponentOptions';
+import 'ses';
+
+setTimeout(() => {
+  lockdown({
+    legacyRegeneratorRuntimeTaming: 'unsafe-ignore',
+    // ...其他配置项
+  });
+}, 0);
 
 const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
@@ -25,20 +33,22 @@ Schema.silent(true);
 
 const results = {};
 
-const Registry = {
+export const Registry = {
   silent: true,
   compile(expression: string, scope = {}) {
     const fn = () => {
+      const compartment = new Compartment(scope);
       if (Registry.silent) {
         try {
-          return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+          return compartment.evaluate(`(${expression})`);
         } catch {
           return `{{${expression}}}`;
         }
       } else {
-        return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+        return compartment.evaluate(`(${expression})`);
       }
     };
+
     if (results[expression]) {
       return results[expression];
     }
