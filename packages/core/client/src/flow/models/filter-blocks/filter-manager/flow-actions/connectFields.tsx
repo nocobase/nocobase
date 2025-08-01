@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
-import { TreeSelect, Button, Dropdown, Switch, Select, Divider } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { Button, Divider, Dropdown, Select, Switch, TreeSelect } from 'antd';
+import _ from 'lodash';
 import React, { useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
-import { getAllDataModels } from '../../utils';
-import _ from 'lodash';
 import { FilterFormEditableFieldModel } from '../../form-v2/fields';
+import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
 
 export const connectFields = defineAction({
@@ -253,7 +253,7 @@ function ConnectFields(
             <Select
               options={operatorOptions}
               placeholder="请选择操作符"
-              value={value.operator}
+              value={value?.operator}
               onChange={handleDefaultOperatorChange}
             />
           </FormItem>
