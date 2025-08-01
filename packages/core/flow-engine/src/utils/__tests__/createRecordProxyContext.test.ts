@@ -133,7 +133,7 @@ describe('createRecordProxyContext', () => {
       const currentRecordNode = metaTree.find((node) => node.name === 'currentRecord');
       expect(currentRecordNode).toBeDefined();
       expect(currentRecordNode.type).toBe('object');
-      expect(currentRecordNode.title).toBe('Posts');
+      expect(currentRecordNode.title).toBe('currentRecord'); // 延迟加载使用属性名作为默认 title
 
       // children 是一个异步函数，需要调用它来获取实际的字段数组
       expect(typeof currentRecordNode.children).toBe('function');
@@ -255,7 +255,7 @@ describe('createRecordProxyContext', () => {
       const testRecordNode = metaTree.find((node) => node.name === 'testRecord');
 
       expect(testRecordNode).toBeDefined();
-      expect(testRecordNode.title).toBe('posts'); // 使用 collection name 作为回退
+      expect(testRecordNode.title).toBe('testRecord'); // 延迟加载使用属性名作为默认 title
     });
   });
 
@@ -287,7 +287,7 @@ describe('createRecordProxyContext', () => {
 
       expect(dynamicRecordNode).toBeDefined();
       expect(dynamicRecordNode.type).toBe('object');
-      expect(dynamicRecordNode.title).toBe('Posts');
+      expect(dynamicRecordNode.title).toBe('dynamicRecord'); // 延迟加载使用属性名作为默认 title
 
       // children 是异步函数，需要调用来获取字段数组
       expect(typeof dynamicRecordNode.children).toBe('function');
@@ -348,6 +348,86 @@ describe('createRecordProxyContext', () => {
         }),
       );
       expect(author).toEqual(authorData);
+    });
+  });
+
+  /**
+   * 递归关联字段处理测试组
+   *
+   * 验证多层嵌套的关联字段能够正确生成元数据结构
+   */
+  describe('recursive association field processing', () => {
+    /**
+     * 测试循环关联引用的处理
+     * 场景：用户关联到部门，部门关联回用户，形成 user -> department -> user 的循环引用
+     * 输入：包含循环引用的 Collection 结构
+     * 预期：每一层都能正确生成元数据
+     * 核心功能：验证递归函数能够安全处理循环引用, 按需加载
+     */
+    it('should handle circular association references without infinite recursion', async () => {
+      // 创建循环引用的 Collection 结构
+      const usersCollection = new Collection({
+        name: 'users',
+        title: 'Users',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'id', type: 'integer', title: 'ID' },
+          { name: 'name', type: 'string', title: 'User Name' },
+          { name: 'department', type: 'belongsTo', title: 'Department', target: 'departments', interface: 'select' },
+        ],
+      });
+
+      const departmentsCollection = new Collection({
+        name: 'departments',
+        title: 'Departments',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'id', type: 'integer', title: 'ID' },
+          { name: 'name', type: 'string', title: 'Department Name' },
+          { name: 'manager', type: 'belongsTo', title: 'Manager', target: 'users', interface: 'select' }, // 循环引用回 users
+        ],
+      });
+
+      // 添加到数据源
+      const dataSourceManager = engine.context.dataSourceManager;
+      const dataSource = dataSourceManager.getDataSource('main');
+      dataSource.addCollection(usersCollection);
+      dataSource.addCollection(departmentsCollection);
+
+      const record = { id: 1, name: 'Test User' };
+      const flowContext = new FlowContext();
+
+      const recordContext = createRecordProxyContext(record, usersCollection);
+      flowContext.defineProperty('currentUser', recordContext);
+
+      const metaTree = flowContext.getPropertyMetaTree();
+      const currentUserNode = metaTree.find((node) => node.name === 'currentUser');
+      const fields = await getChildren(currentUserNode);
+
+      // 第一层：用户字段
+      const departmentField = fields.find((f) => f.name === 'department');
+      expect(departmentField.type).toBe('object');
+      expect(departmentField.title).toBe('Department');
+      expect(typeof departmentField.children).toBe('function');
+
+      // 第二层：部门字段（包含循环引用回用户的字段）
+      const departmentChildren = await getChildren(departmentField);
+      const managerField = departmentChildren.find((f) => f.name === 'manager');
+      expect(managerField.type).toBe('object');
+      expect(managerField.title).toBe('Manager');
+      expect(typeof managerField.children).toBe('function');
+
+      // 第三层：用户字段（再次回到用户，但应该能正确处理）
+      const managerChildren = await getChildren(managerField);
+      const managerDepartmentField = managerChildren.find((f) => f.name === 'department');
+      expect(managerDepartmentField.type).toBe('object');
+      expect(managerDepartmentField.title).toBe('Department');
+      expect(typeof managerDepartmentField.children).toBe('function');
+
+      // 验证循环引用中的基本字段仍然正确
+      const userNameField = managerChildren.find((f) => f.name === 'name');
+      expect(userNameField.type).toBe('string');
+      expect(userNameField.title).toBe('User Name');
     });
   });
 });

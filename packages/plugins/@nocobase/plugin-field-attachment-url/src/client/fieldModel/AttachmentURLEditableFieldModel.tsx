@@ -25,6 +25,10 @@ const CardUpload = (props) => {
   const handleChange = (newFileList) => {
     setFileList(newFileList);
     const file = newFileList[0];
+    if (!file) {
+      props.onChange?.(undefined);
+      return;
+    }
     if (file.status === 'done') {
       const url = file.response?.url || file.url;
       props.onChange?.(url);

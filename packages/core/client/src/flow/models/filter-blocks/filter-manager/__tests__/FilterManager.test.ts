@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterManager, FILTER_CONFIGS_STEP_KEY } from '../FilterManager';
+import { FILTER_CONFIGS_STEP_KEY, FILTER_MANAGER_FLOW_KEY, FilterManager } from '../FilterManager';
 
 // Mock FlowModel
 const mockFlowModel = {
@@ -29,7 +29,7 @@ describe('FilterManager', () => {
       mockFlowModel.getStepParams.mockReturnValue(undefined);
       filterManager = new FilterManager(mockFlowModel as any);
 
-      expect(mockFlowModel.getStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY);
+      expect(mockFlowModel.getStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
       // 验证可以正常获取配置（应该返回 undefined，因为没有配置）
       const result = filterManager.getConnectFieldsConfig('test');
       expect(result).toBeUndefined();
@@ -48,7 +48,7 @@ describe('FilterManager', () => {
 
       filterManager = new FilterManager(mockFlowModel as any);
 
-      expect(mockFlowModel.getStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY);
+      expect(mockFlowModel.getStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
       // 验证可以正常获取配置
       const result = filterManager.getConnectFieldsConfig('filter1');
       expect(result).toEqual({
@@ -68,7 +68,7 @@ describe('FilterManager', () => {
       filterManager.saveFilterConfigs();
 
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
-        'blockGridSettings',
+        FILTER_MANAGER_FLOW_KEY,
         FILTER_CONFIGS_STEP_KEY,
         expect.any(Array),
       );
@@ -159,7 +159,7 @@ describe('FilterManager', () => {
 
       filterManager.saveConnectFieldsConfig('filter1', config);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter1',
           targetModelUid: 'target1',
@@ -206,7 +206,7 @@ describe('FilterManager', () => {
 
       filterManager.saveConnectFieldsConfig('filter1', newConfig);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter2',
           targetModelUid: 'target2',
@@ -252,7 +252,7 @@ describe('FilterManager', () => {
     it('should delete all configs with matching filterModelUid', () => {
       filterManager.deleteFilterModelConfig('filter1');
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter2',
           targetModelUid: 'target3',
@@ -265,7 +265,7 @@ describe('FilterManager', () => {
     it('should do nothing when filterModelUid not found', () => {
       filterManager.deleteFilterModelConfig('nonexistent');
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter1',
           targetModelUid: 'target1',
@@ -317,7 +317,7 @@ describe('FilterManager', () => {
     it('should delete all configs with matching targetModelUid', () => {
       filterManager.deleteTargetModelConfig('target1');
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter1',
           targetModelUid: 'target2',
@@ -330,7 +330,7 @@ describe('FilterManager', () => {
     it('should do nothing when targetModelUid not found', () => {
       filterManager.deleteTargetModelConfig('nonexistent');
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, [
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
           filterModelUid: 'filter1',
           targetModelUid: 'target1',
@@ -362,7 +362,7 @@ describe('FilterManager', () => {
 
       filterManager.saveConnectFieldsConfig('filter1', config);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith('blockGridSettings', FILTER_CONFIGS_STEP_KEY, []);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, []);
     });
 
     it('should handle constructor with object instead of array', () => {

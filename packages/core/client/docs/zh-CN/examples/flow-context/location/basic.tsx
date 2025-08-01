@@ -4,9 +4,10 @@ import React from 'react';
 
 class HomeModel extends FlowModel {
   render() {
+    const location = this.context.location;
     return (
       <div>
-        <h1>HomeModel</h1>
+        <h1>HomeModel - {location.pathname}</h1>
         <p>Welcome to the Home Page!</p>
         <p>This is a simple example of a FlowModel in NocoBase.</p>
         <p>

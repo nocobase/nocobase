@@ -34,6 +34,7 @@ export type ConnectFieldsConfig = {
 };
 
 export const FILTER_CONFIGS_STEP_KEY = 'filterConfigs';
+export const FILTER_MANAGER_FLOW_KEY = 'filterManagerSettings';
 
 export class FilterManager {
   private readonly filterConfigs: FilterConfig[];
@@ -41,13 +42,12 @@ export class FilterManager {
 
   constructor(gridModel: FlowModel) {
     this.gridModel = gridModel;
-
-    const stepValue = this.gridModel.getStepParams('blockGridSettings', FILTER_CONFIGS_STEP_KEY);
+    const stepValue = this.gridModel.getStepParams(FILTER_CONFIGS_STEP_KEY, FILTER_CONFIGS_STEP_KEY);
     this.filterConfigs = stepValue?.value || [];
   }
 
   saveFilterConfigs() {
-    this.gridModel.setStepParams('blockGridSettings', FILTER_CONFIGS_STEP_KEY, { value: this.filterConfigs });
+    this.gridModel.setStepParams(FILTER_CONFIGS_STEP_KEY, FILTER_CONFIGS_STEP_KEY, { value: this.filterConfigs });
     this.gridModel.save();
   }
 

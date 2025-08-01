@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel, ForkFlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext } from '../flowContext';
 
@@ -758,5 +758,139 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     ctx.defineProperty('foo', { value: 1, once: true });
     ctx.defineProperty('foo', { value: 2 });
     expect(ctx.foo).toBe(1);
+  });
+});
+
+describe('FlowContext delayed meta loading', () => {
+  // 测试场景：属性定义时 meta 为异步函数，首次访问时延迟加载
+  // 输入：属性带有异步 meta 函数
+  // 期望：getPropertyMetaTree() 同步返回，节点包含异步 children 函数
+  it('should create lazy-loaded meta tree node with async meta function', async () => {
+    const ctx = new FlowContext();
+
+    // 模拟延迟加载的 meta（如 collection 不可用时的情况）
+    const delayedMeta = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return {
+        type: 'object',
+        title: 'Delayed User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+          name: { type: 'string', title: 'Username' },
+        },
+      };
+    });
+
+    ctx.defineProperty('userAsync', {
+      meta: delayedMeta,
+    });
+
+    // 同步获取 meta tree
+    const tree = ctx.getPropertyMetaTree();
+
+    expect(tree).toHaveLength(1);
+    const userNode = tree[0];
+
+    // 验证延迟加载节点的默认属性
+    expect(userNode.name).toBe('userAsync');
+    expect(userNode.title).toBe('userAsync'); // 默认使用 name
+    expect(userNode.type).toBe('object'); // 默认类型
+    expect(typeof userNode.children).toBe('function'); // 异步加载函数
+
+    // 此时还未调用 meta 函数
+    expect(delayedMeta).not.toHaveBeenCalled();
+
+    // 首次访问 children 时才调用 meta 函数
+    const children = await (userNode.children as () => Promise<any>)();
+    expect(delayedMeta).toHaveBeenCalledTimes(1);
+
+    // 验证加载后的子节点
+    expect(children).toHaveLength(2);
+    expect(children[0]).toEqual({
+      name: 'id',
+      title: 'User ID',
+      type: 'number',
+      interface: undefined,
+      uiSchema: undefined,
+      display: undefined,
+      children: undefined,
+    });
+    expect(children[1]).toEqual({
+      name: 'name',
+      title: 'Username',
+      type: 'string',
+      interface: undefined,
+      uiSchema: undefined,
+      display: undefined,
+      children: undefined,
+    });
+  });
+
+  // 测试场景：异步 meta 函数抛出异常时的错误处理
+  // 输入：meta 函数抛出错误（如网络异常）
+  // 期望：children 函数返回空数组，记录警告但不中断程序
+  it('should handle async meta function errors gracefully', async () => {
+    const ctx = new FlowContext();
+
+    const failingMeta = vi.fn(async () => {
+      throw new Error('Collection load failed');
+    });
+    ctx.defineProperty('errorProp', { meta: failingMeta });
+
+    const tree = ctx.getPropertyMetaTree();
+    const node = tree[0];
+
+    // 模拟 console.warn 以验证错误处理
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const children = await (node.children as () => Promise<any>)();
+    expect(children).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
+
+  // 测试场景：异步 meta 包含嵌套异步 properties 的深度延迟加载
+  // 输入：异步 meta 返回的 properties 本身也是异步函数
+  // 期望：支持多层异步嵌套加载，每层按需加载
+  it('should support nested async properties in delayed meta loading', async () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('deepAsync', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Deep Async Root',
+        properties: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return {
+            level1: {
+              type: 'object',
+              title: 'Level 1',
+              properties: {
+                level2Field: { type: 'string', title: 'Level 2 Field' },
+              },
+            },
+          };
+        },
+      }),
+    });
+
+    const tree = ctx.getPropertyMetaTree();
+    const rootNode = tree[0];
+
+    // 第一层异步加载
+    const level1Children = await (rootNode.children as () => Promise<any>)();
+    expect(level1Children).toHaveLength(1);
+
+    const level1Node = level1Children[0];
+    expect(level1Node.name).toBe('level1');
+    expect(level1Node.title).toBe('Level 1');
+    expect(Array.isArray(level1Node.children)).toBe(true);
+
+    // 第二层直接可用（同步 properties）
+    const level2Children = level1Node.children as any[];
+    expect(level2Children).toHaveLength(1);
+    expect(level2Children[0].name).toBe('level2Field');
+    expect(level2Children[0].title).toBe('Level 2 Field');
   });
 });

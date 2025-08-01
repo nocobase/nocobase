@@ -18,16 +18,14 @@ export function useRouterSync(app: Application) {
   const matches = useMatches();
   const engine = app.flowEngine;
   useEffect(() => {
-    engine.context.route.params = params;
     const last = matches[matches.length - 1];
-    if (!last) {
-      return;
-    }
-    engine.context.route.id = last.id;
-    engine.context.route.pathname = last.pathname;
-    if (last.handle?.['path']) {
-      engine.context.route.path = last.handle['path'];
-    }
+    if (!last) return;
+    engine.context['_observableCache']['route'] = {
+      name: last.id,
+      pathname: last.pathname,
+      path: last.handle?.['path'] || null,
+      params,
+    };
   }, [engine.context, params, matches]);
   useEffect(() => {
     engine.context['_observableCache']['location'] = location;
