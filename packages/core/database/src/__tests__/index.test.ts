@@ -45,6 +45,7 @@ describe('database', () => {
           fields: [fieldName1, fieldName2],
         },
       ],
+      autoGenId: false,
       fields: [
         {
           type: 'string',
@@ -56,31 +57,35 @@ describe('database', () => {
         },
       ],
     });
-    // db.collection({
-    //   name: 'a',
-    //   fields: [
-    //     {
-    //       type: 'string',
-    //       name: 'fieldName1',
-    //     },
-    //     {
-    //       type: 'string',
-    //       name: 'fieldName2',
-    //     },
-    //   ],
-    // });
-    // db.collection({
-    //   name: 'b',
-    //   fields: [
-    //     {
-    //       type: 'belongsToMany',
-    //       name: 'b2a',
-    //       target: tableName1,
-    //       foreignKey: fieldName1,
-    //       otherKey: fieldName2,
-    //     },
-    //   ],
-    // });
+    db.collection({
+      name: 'a',
+      fields: [
+        {
+          type: 'string',
+          name: fieldName1,
+          unique: true,
+        },
+      ],
+    });
+    db.collection({
+      name: 'b',
+      fields: [
+        {
+          type: 'string',
+          name: fieldName2,
+          unique: true,
+        },
+        {
+          type: 'belongsToMany',
+          name: 'a',
+          through: tableName1,
+          foreignKey: fieldName1,
+          otherKey: fieldName2,
+          sourceKey: fieldName2,
+          targetKey: fieldName1,
+        },
+      ],
+    });
     await db.sync();
   });
 });
