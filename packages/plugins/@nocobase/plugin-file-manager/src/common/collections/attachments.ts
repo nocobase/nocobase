@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NAMESPACE } from '../../client/locale';
-
 export default {
   dumpRules: {
     group: 'user',
@@ -61,7 +59,7 @@ export default {
       interface: 'm2o',
       uiSchema: {
         type: 'object',
-        title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
+        title: 'Storage',
         'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {
