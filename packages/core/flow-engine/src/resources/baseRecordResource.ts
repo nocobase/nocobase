@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { APIResource } from './apiResource';
+import { FilterItem } from './filterItem';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
   protected resourceName: string;
@@ -125,7 +126,10 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     this.setFilter(this.getFilter());
   }
 
-  addFilterGroup(key: string, filter) {
+  addFilterGroup(key: string, filter: FilterItem | Record<string, any>) {
+    if (filter instanceof FilterItem) {
+      filter = filter.toJSON();
+    }
     this.filterGroups.set(key, filter);
     this.resetFilter();
   }
