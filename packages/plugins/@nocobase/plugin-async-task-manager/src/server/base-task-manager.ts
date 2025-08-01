@@ -48,8 +48,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     : 3;
 
   private idle = () => {
-    return true;
-    return this.tasks.size < this.concurrency;
+    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.tasks.size < this.concurrency;
   };
 
   private onQueueTask = async ({ id }: QueueMessage) => {
@@ -182,13 +181,11 @@ export class BaseTaskManager implements AsyncTasksManager {
     const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
 
     this.app.on('afterLoad', () => {
-      if (this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS)) {
-        this.app.eventQueue.subscribe(`${plugin.name}.task`, {
-          idle: this.idle,
-          process: this.onQueueTask,
-          concurrency: this.concurrency,
-        });
-      }
+      this.app.eventQueue.subscribe(`${plugin.name}.task`, {
+        idle: this.idle,
+        process: this.onQueueTask,
+        concurrency: this.concurrency,
+      });
       this.app.pubSubManager.subscribe(`${plugin.name}.task.cancel`, this.onTaskCancelSignal);
 
       if (!this.cleanupTimer) {
