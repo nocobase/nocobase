@@ -6335,11 +6335,6 @@
     "@nocobase/license-kit-win32-ia32-msvc" "0.2.12"
     "@nocobase/license-kit-win32-x64-msvc" "0.2.12"
 
-"@nocobase/plugin-workflow-test@1.8.7":
-  version "1.8.7"
-  resolved "https://registry.npmmirror.com/@nocobase/plugin-workflow-test/-/plugin-workflow-test-1.8.7.tgz#fb9a9f27a59d0d5c4ae9bfb21f79a06aab473b44"
-  integrity sha512-phJg0BMDNKR3lfe5EF6kw9iczkvO8VsNt9ICmqhzrfexBaNYFE2wnVV0aNB6zoAOX/99NfrUkGc5albdPOOCgw==
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
   resolved "https://registry.npmmirror.com/@node-saml/node-saml/-/node-saml-4.0.5.tgz#039e387095b54639b06df62b1b4a6d8941c6d907"
