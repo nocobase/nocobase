@@ -21,11 +21,12 @@ export const BreadcumbTitle = () => {
   const { name } = useParams();
   const compile = useCompile();
   const dm = useDataSourceManager();
-  const { displayName } = dm.getDataSource(name) || {};
+  const dataSourceKey = name || 'main';
+  const { displayName } = dm.getDataSource(dataSourceKey) || {};
   const { dataSource } = useContext(DataSourceContext);
   const dataSourceValue = useMemo(
-    () => (dataSource && dataSource?.name === name ? dataSource : dm.getDataSource(name)),
-    [dataSource, name],
+    () => (dataSource && dataSource?.name === dataSourceKey ? dataSource : dm.getDataSource(dataSourceKey)),
+    [dataSource, dataSourceKey, dm.getDataSource(dataSourceKey)?.status],
   );
   const items = useMemo(() => {
     const status = dataSourceValue?.status;
