@@ -881,6 +881,16 @@ export const Table: any = withDynamicSchemaProps(
           }
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
+      const { enableZebraStriping = false } = schema?.parent?.['x-decorator-props'] || {};
+      const zebrastripingCss = useMemo(() => {
+        return enableZebraStriping === true
+          ? css`
+              &:nth-child(2n) > td {
+                background-color: ${token.controlItemBgHover} !important;
+              }
+            `
+          : '';
+      }, [enableZebraStriping, token.controlItemBgHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
       const valueRef = useRef(value);
       valueRef.current = value;
@@ -1140,8 +1150,8 @@ export const Table: any = withDynamicSchemaProps(
       }, [tableHeight, dataSource]);
 
       const rowClassName = useCallback(
-        (record) => (selectedRow.includes(record[rowKey]) ? highlightRow : ''),
-        [selectedRow, highlightRow, JSON.stringify(rowKey)],
+        (record) => classNames(zebrastripingCss, { [highlightRow]: selectedRow.includes(record[rowKey]) }),
+        [selectedRow, highlightRow, JSON.stringify(rowKey), zebrastripingCss],
       );
 
       const onExpandValue = useCallback(
