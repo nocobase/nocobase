@@ -39,6 +39,12 @@ describe('database', () => {
     const fieldName2 = generateRandomTableName(63);
     db.collection({
       name: tableName1,
+      indexes: [
+        {
+          type: 'UNIQUE',
+          fields: [fieldName1, fieldName2],
+        },
+      ],
       fields: [
         {
           type: 'string',
@@ -50,31 +56,31 @@ describe('database', () => {
         },
       ],
     });
-    db.collection({
-      name: 'a',
-      fields: [
-        {
-          type: 'string',
-          name: 'fieldName1',
-        },
-        {
-          type: 'string',
-          name: 'fieldName2',
-        },
-      ],
-    });
-    db.collection({
-      name: 'b',
-      fields: [
-        {
-          type: 'belongsToMany',
-          name: 'b2a',
-          target: tableName1,
-          foreignKey: fieldName1,
-          otherKey: fieldName2,
-        },
-      ],
-    });
+    // db.collection({
+    //   name: 'a',
+    //   fields: [
+    //     {
+    //       type: 'string',
+    //       name: 'fieldName1',
+    //     },
+    //     {
+    //       type: 'string',
+    //       name: 'fieldName2',
+    //     },
+    //   ],
+    // });
+    // db.collection({
+    //   name: 'b',
+    //   fields: [
+    //     {
+    //       type: 'belongsToMany',
+    //       name: 'b2a',
+    //       target: tableName1,
+    //       foreignKey: fieldName1,
+    //       otherKey: fieldName2,
+    //     },
+    //   ],
+    // });
     await db.sync();
   });
 });
