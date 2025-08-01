@@ -206,6 +206,46 @@ export const openModeSettingsItem: SchemaSettingsItemType = {
     return (fieldSchema?.['x-read-pretty'] || field.readPretty) && fieldSchema?.['x-component-props']?.enableLink;
   },
 };
+
+export const autoFocusSettingsItem: SchemaSettingsItemType = {
+  name: 'autoFocus',
+  type: 'switch',
+  useVisible() {
+    const field = useField();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    return !fieldSchema?.['x-read-pretty'] && !field.readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField();
+    const { fieldSchema: columnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = columnSchema || schema;
+    const { dn } = useDesignable();
+    return {
+      title: t('Auto focus'),
+      checked: fieldSchema?.['x-component-props']?.autoFocus,
+      onChange(flag) {
+        fieldSchema['x-component-props'] = {
+          ...fieldSchema?.['x-component-props'],
+          autoFocus: flag,
+        };
+        field.componentProps['autoFocus'] = flag;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema?.['x-component-props'],
+            },
+          },
+        });
+      },
+    };
+  },
+};
+
 export const inputComponentSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
   items: [
@@ -214,5 +254,6 @@ export const inputComponentSettings = new SchemaSettings({
     openModeSettingsItem,
     enableScanSettingsItem,
     disableManualInputSettingsItem,
+    autoFocusSettingsItem,
   ],
 });

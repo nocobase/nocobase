@@ -1139,5 +1139,6 @@
   "Scan to input":"扫码录入",
   "Disable manual input":"禁止手动输入",
   "Enable Scan":"启用扫码录入",
+  "Auto focus":"自动聚焦",
   "Date variables(Deprecated)":"日期变量(废弃)"
 }
