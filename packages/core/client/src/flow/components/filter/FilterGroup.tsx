@@ -42,13 +42,13 @@ interface FilterGroupProps {
  * 筛选条件组组件
  *
  * 支持嵌套的逻辑组合，使用新的数据结构：
- * - logic: 'and' | 'or' 表示逻辑关系
+ * - logic: '$and' | '$or' 表示逻辑关系
  * - items: 数组，包含条件项或嵌套的筛选组
  *
  * @example
  * ```typescript
  * const filterValue = observable({
- *   logic: 'and',
+ *   logic: '$and',
  *   items: [
  *     {
  *       leftValue: 'name',
@@ -56,7 +56,7 @@ interface FilterGroupProps {
  *       rightValue: 'test'
  *     },
  *     {
- *       logic: 'or',
+ *       logic: '$or',
  *       items: [...]
  *     }
  *   ]
@@ -75,7 +75,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
 
     // 确保 value 有正确的默认结构
     if (!value.logic) {
-      value.logic = 'and';
+      value.logic = '$and';
     }
     if (!Array.isArray(value.items)) {
       value.items = [];
@@ -95,21 +95,21 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
           marginBottom: token.marginXS,
         };
 
-    const handleLogicChange = (newLogic: 'and' | 'or') => {
+    const handleLogicChange = (newLogic: '$and' | '$or') => {
       value.logic = newLogic;
     };
 
     const handleAddCondition = () => {
       items.push({
         leftValue: '',
-        operator: 'eq',
+        operator: '$eq',
         rightValue: '',
       });
     };
 
     const handleAddConditionGroup = () => {
       items.push({
-        logic: 'and',
+        logic: '$and',
         items: [],
       });
     };
@@ -153,8 +153,8 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               value={logic}
               onChange={handleLogicChange}
             >
-              <Select.Option value="and">All</Select.Option>
-              <Select.Option value="or">Any</Select.Option>
+              <Select.Option value="$and">All</Select.Option>
+              <Select.Option value="$or">Any</Select.Option>
             </Select>
             {' conditions in the group'}
           </Trans>

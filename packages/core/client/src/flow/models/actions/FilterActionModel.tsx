@@ -12,7 +12,7 @@ import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { CollectionActionModel } from '../base/ActionModel';
-import { FilterGroup, FilterItem } from '../../components/filter';
+import { FilterGroup, FilterItem, transformFilter } from '../../components/filter';
 
 export class FilterActionModel extends CollectionActionModel {
   declare props: ButtonProps & {
@@ -26,7 +26,7 @@ export class FilterActionModel extends CollectionActionModel {
     type: 'default',
     title: escapeT('Filter'),
     icon: 'FilterOutlined',
-    filterValue: { logic: 'and', items: [] },
+    filterValue: { logic: '$and', items: [] },
   };
 
   render() {
@@ -159,10 +159,15 @@ FilterActionModel.registerFlow({
           return;
         }
 
-        if (!isEmptyFilter(ctx.model.props.filterValue)) {
-          resource.addFilterGroup(ctx.model.uid, removeNullCondition(ctx.model.props.filterValue));
+        const filter = removeNullCondition(transformFilter(ctx.model.props.filterValue));
+
+        if (!isEmptyFilter(filter)) {
+          resource.addFilterGroup(ctx.model.uid, filter);
           resource.setPage(1);
+        } else {
+          resource.removeFilterGroup(ctx.model.uid);
         }
+
         resource.refresh();
         ctx.model.setProps('open', false);
       },
