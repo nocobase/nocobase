@@ -66,7 +66,6 @@ const AddFieldColumn = ({ model }) => {
       };
     },
   );
-  console.log(items);
   return (
     <AddFieldButton
       model={model}
