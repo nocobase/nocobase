@@ -10,6 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
+import { getInstanceIdAsync } from '@nocobase/license-kit';
 
 let instanceIdIsCreate = false;
 export async function getInstanceId() {
@@ -19,8 +20,12 @@ export async function getInstanceId() {
     await createInstanceId(true);
     instanceIdIsCreate = true;
   }
-  const id = fs.readFileSync(filePath, 'utf-8');
-  return id;
+  try {
+    const id = fs.readFileSync(filePath, 'utf-8');
+    return id;
+  } catch (e) {
+    return await getInstanceIdAsync();
+  }
 }
 
 export async function createInstanceId(force = false) {
