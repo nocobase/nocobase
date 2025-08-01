@@ -15,6 +15,7 @@ import { ZeroColumnTableError } from './errors/zero-column-table-error';
 import { InheritedCollection } from './inherited-collection';
 import { InheritedSyncRunner } from './inherited-sync-runner';
 import { Model } from './model';
+import { md5 } from './utils';
 
 export class SyncRunner {
   private readonly collection: Collection;
@@ -169,10 +170,14 @@ export class SyncRunner {
             options,
           );
         } else {
+          let name = `${this.collection.tableName()}_${columnsWillBePrimaryKey.join('_')}_pk`;
+          if (name.length > 63) {
+            name = 'pk_' + md5(name);
+          }
           await this.queryInterface.addConstraint(this.tableName, {
             type: 'primary key',
             fields: columnsWillBePrimaryKey,
-            name: `${this.collection.tableName()}_${columnsWillBePrimaryKey.join('_')}_pk`,
+            name,
             transaction: options?.transaction,
           });
         }
@@ -297,10 +302,14 @@ export class SyncRunner {
       });
 
       if (!indexExists) {
+        let name = `${this.collection.tableName()}_${this.rawAttributes[uniqueAttribute].field}_uk`;
+        if (name.length > 63) {
+          name = 'uk_' + md5(name);
+        }
         await this.queryInterface.addIndex(this.tableName, [this.rawAttributes[uniqueAttribute].field], {
           unique: true,
           transaction: options?.transaction,
-          name: `${this.collection.tableName()}_${this.rawAttributes[uniqueAttribute].field}_uk`,
+          name,
         });
       }
     }
