@@ -13,6 +13,7 @@ import { FILTER_CONFIGS_STEP_KEY, FILTER_MANAGER_FLOW_KEY, FilterManager } from 
 const mockFlowModel = {
   getStepParams: vi.fn(),
   setStepParams: vi.fn(),
+  save: vi.fn(),
 };
 
 describe('FilterManager', () => {
@@ -41,7 +42,7 @@ describe('FilterManager', () => {
           filterModelUid: 'filter1',
           targetModelUid: 'target1',
           targetFieldPaths: ['field1'],
-          defaultOperator: 'eq',
+          defaultOperator: '$eq',
         },
       ];
       mockFlowModel.getStepParams.mockReturnValue(existingConfigs);
@@ -52,7 +53,7 @@ describe('FilterManager', () => {
       // 验证可以正常获取配置
       const result = filterManager.getConnectFieldsConfig('filter1');
       expect(result).toEqual({
-        operator: 'eq',
+        operator: '$eq',
         targets: [
           {
             targetModelUid: 'target1',
@@ -372,7 +373,7 @@ describe('FilterManager', () => {
       expect(() => {
         filterManager = new FilterManager(mockFlowModel as any);
         filterManager.getConnectFieldsConfig('test');
-      }).toThrow('filterConfigs should be an array');
+      }).toThrow('this.filterConfigs.filter is not a function');
     });
   });
 });

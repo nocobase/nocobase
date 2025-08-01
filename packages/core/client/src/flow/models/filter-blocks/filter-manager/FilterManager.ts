@@ -8,7 +8,6 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import _ from 'lodash';
 
 type FilterConfig = {
   /** 筛选器的 model uid */
@@ -42,12 +41,12 @@ export class FilterManager {
 
   constructor(gridModel: FlowModel) {
     this.gridModel = gridModel;
-    const stepValue = this.gridModel.getStepParams(FILTER_CONFIGS_STEP_KEY, FILTER_CONFIGS_STEP_KEY);
-    this.filterConfigs = stepValue?.value || [];
+    const stepValue = this.gridModel.getStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
+    this.filterConfigs = stepValue || [];
   }
 
   saveFilterConfigs() {
-    this.gridModel.setStepParams(FILTER_CONFIGS_STEP_KEY, FILTER_CONFIGS_STEP_KEY, { value: this.filterConfigs });
+    this.gridModel.setStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, this.filterConfigs);
     this.gridModel.save();
   }
 
