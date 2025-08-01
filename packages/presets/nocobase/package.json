@@ -43,6 +43,7 @@
     "@nocobase/plugin-field-sequence": "1.8.11",
     "@nocobase/plugin-field-sort": "1.8.11",
     "@nocobase/plugin-file-manager": "1.8.11",
+    "@nocobase/plugin-file-previewer-office": "1.8.11",
     "@nocobase/plugin-gantt": "1.8.11",
     "@nocobase/plugin-graph-collection-manager": "1.8.11",
     "@nocobase/plugin-kanban": "1.8.11",
