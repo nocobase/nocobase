@@ -9,10 +9,10 @@
 
 import { defineAction, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { isEmptyFilter, tval } from '@nocobase/utils/client';
-import { FilterGroup } from '../components/FilterGroup';
+import { isEmptyFilter, removeNullCondition, tval } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { FieldModel } from '../models/base/FieldModel';
+import { FilterGroup, FilterItem, transformFilter } from '../components/filter';
 
 export const dataScope = defineAction({
   name: 'dataScope',
@@ -23,21 +23,10 @@ export const dataScope = defineAction({
       'x-decorator': 'FormItem',
       'x-component': function Component(props) {
         const flowContext = useFlowSettingsContext<FieldModel>();
-        let fields;
-        const collectionField = flowContext.model.collectionField;
-        if (collectionField) {
-          fields = collectionField.targetCollection.fields;
-        } else {
-          const currentBlockModel = flowContext.model.context.blockModel;
-          fields = currentBlockModel.collection.getFields();
-        }
-        const ignoreFieldsNames = flowContext.model.props.ignoreFieldsNames || [];
         return (
           <FilterGroup
             value={props.value}
-            fields={fields}
-            ignoreFieldsNames={ignoreFieldsNames}
-            model={flowContext.model}
+            FilterItem={(props) => <FilterItem {...props} model={flowContext.model} noIgnore />}
           />
         );
       },
@@ -45,7 +34,7 @@ export const dataScope = defineAction({
   },
   defaultParams(ctx) {
     return {
-      filter: { $and: [] },
+      filter: { logic: '$and', items: [] },
     };
   },
   async handler(ctx, params) {
@@ -55,12 +44,12 @@ export const dataScope = defineAction({
       return;
     }
 
-    if (isEmptyFilter(params.filter)) {
+    const filter = removeNullCondition(transformFilter(params.filter));
+
+    if (isEmptyFilter(filter)) {
       resource.removeFilterGroup(ctx.model.uid);
     } else {
-      resource.addFilterGroup(ctx.model.uid, params.filter);
+      resource.addFilterGroup(ctx.model.uid, filter);
     }
-
-    // resource.refresh();
   },
 });

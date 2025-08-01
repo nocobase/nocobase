@@ -211,10 +211,6 @@ export function transformFilter(filter: FilterGroup): QueryObject {
     throw new Error('Invalid filter: items must be an array');
   }
 
-  if (filter.items.length === 0) {
-    throw new Error('Invalid filter: items cannot be empty');
-  }
-
   return transformGroup(filter);
 }
 

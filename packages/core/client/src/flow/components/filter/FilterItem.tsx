@@ -24,6 +24,7 @@ export interface FilterItemProps {
     rightValue: string;
   };
   model: FlowModel;
+  noIgnore?: boolean;
 }
 
 /**
@@ -67,7 +68,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
         );
       }),
       1,
-      ignoreFieldsNames,
+      props.noIgnore ? [] : ignoreFieldsNames,
       t,
     ).filter(Boolean);
 
