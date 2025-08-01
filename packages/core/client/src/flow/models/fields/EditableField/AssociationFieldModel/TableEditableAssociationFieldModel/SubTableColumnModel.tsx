@@ -130,6 +130,7 @@ export class SubTableColumnModel extends FieldModel {
     };
   }
   render() {
+    (this.subModels.field as EditableFieldModel).enableFormItem = false;
     return (value, record, index) => (
       <div
         className={css`
@@ -140,7 +141,6 @@ export class SubTableColumnModel extends FieldModel {
       >
         {this.mapSubModels('field', (action: EditableFieldModel) => {
           record.__key = record.__key || uid();
-          action.enableFormItem = false;
           const fork: any = action.createFork({}, `${record.__key}`);
           fork.context.defineProperty('basePath', {
             get: () => {
