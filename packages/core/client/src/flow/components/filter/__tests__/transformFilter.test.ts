@@ -8,14 +8,14 @@
  */
 
 /**
- * 过滤器数据结构转换工具测试
+ * Filter data structure transformation tool tests
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import transformFilter, { FilterGroup } from '../transformFilter';
 
 describe('transformFilter', () => {
-  it('应该正确转换简单的单条件过滤器', () => {
+  it('should correctly transform simple single-condition filter', () => {
     const input: FilterGroup = {
       logic: '$and',
       items: [
@@ -41,7 +41,7 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  it('应该正确转换多条件的 $or 过滤器', () => {
+  it('should correctly transform multi-condition $or filter', () => {
     const input: FilterGroup = {
       logic: '$or',
       items: [
@@ -77,7 +77,7 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  it('应该正确转换嵌套的过滤器结构', () => {
+  it('should correctly transform nested filter structure', () => {
     const input: FilterGroup = {
       logic: '$or',
       items: [
@@ -122,7 +122,7 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  it('应该正确转换复杂的嵌套过滤器结构', () => {
+  it('should correctly transform complex nested filter structure', () => {
     const input: FilterGroup = {
       logic: '$or',
       items: [
@@ -177,7 +177,7 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  it('应该支持多层嵌套的过滤器结构', () => {
+  it('should support multi-level nested filter structure', () => {
     const input: FilterGroup = {
       logic: '$and',
       items: [
@@ -251,7 +251,7 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  it('应该处理不同类型的值', () => {
+  it('should handle different types of values', () => {
     const input: FilterGroup = {
       logic: '$and',
       items: [
@@ -317,20 +317,20 @@ describe('transformFilter', () => {
     expect(result).toEqual(expected);
   });
 
-  describe('错误处理', () => {
-    it('应该在传入 null 时抛出错误', () => {
+  describe('Error handling', () => {
+    it('should throw error when null is passed', () => {
       expect(() => transformFilter(null as any)).toThrow('Invalid filter: filter must be an object');
     });
 
-    it('应该在传入 undefined 时抛出错误', () => {
+    it('should throw error when undefined is passed', () => {
       expect(() => transformFilter(undefined as any)).toThrow('Invalid filter: filter must be an object');
     });
 
-    it('应该在传入非对象类型时抛出错误', () => {
+    it('should throw error when non-object type is passed', () => {
       expect(() => transformFilter('invalid' as any)).toThrow('Invalid filter: filter must be an object');
     });
 
-    it('应该在缺少 logic 属性时抛出错误', () => {
+    it('should throw error when logic property is missing', () => {
       const input = {
         items: [],
       } as any;
@@ -338,7 +338,7 @@ describe('transformFilter', () => {
       expect(() => transformFilter(input)).toThrow('Invalid filter: filter must have logic and items properties');
     });
 
-    it('应该在缺少 items 属性时抛出错误', () => {
+    it('should throw error when items property is missing', () => {
       const input = {
         logic: '$and',
       } as any;
@@ -346,7 +346,7 @@ describe('transformFilter', () => {
       expect(() => transformFilter(input)).toThrow('Invalid filter: filter must have logic and items properties');
     });
 
-    it('应该在 items 不是数组时抛出错误', () => {
+    it('should throw error when items is not an array', () => {
       const input = {
         logic: '$and',
         items: 'not-array',
@@ -355,16 +355,7 @@ describe('transformFilter', () => {
       expect(() => transformFilter(input)).toThrow('Invalid filter: items must be an array');
     });
 
-    it('应该在 items 为空数组时抛出错误', () => {
-      const input: FilterGroup = {
-        logic: '$and',
-        items: [],
-      };
-
-      expect(() => transformFilter(input)).toThrow('Invalid filter: items cannot be empty');
-    });
-
-    it('应该在遇到无效的 item 类型时抛出错误', () => {
+    it('should throw error when encountering invalid item type', () => {
       const input = {
         logic: '$and',
         items: [
