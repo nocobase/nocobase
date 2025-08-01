@@ -126,11 +126,13 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model: modelInstance } = useFlowSettingsContext();
-            const currentBlockModel = modelInstance.context.blockModel;
-            const fields = currentBlockModel.collection.getFields();
-            const ignoreFieldsNames = modelInstance.props.ignoreFieldsNames || [];
 
-            return <FilterGroup value={props.value || {}} />;
+            return (
+              <FilterGroup
+                value={props.value || {}}
+                FilterItem={(props) => <FilterItem {...props} model={modelInstance} />}
+              />
+            );
           },
         },
       },
