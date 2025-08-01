@@ -328,24 +328,24 @@ export const AsyncTasks = () => {
     refresh();
     console.log('handleTaskStatus');
   }, []);
-  const handleTaskCancelled = useCallback(() => {
+  const handleTaskDeleted = useCallback(() => {
     refresh();
-    console.log('handleTaskCancelled');
+    console.log('handleTaskDeleted');
   }, []);
 
   useEffect(() => {
     app.eventBus.addEventListener('ws:message:async-tasks:created', handleTaskCreated);
     app.eventBus.addEventListener('ws:message:async-tasks:progress', handleTaskProgress);
     app.eventBus.addEventListener('ws:message:async-tasks:status', handleTaskStatus);
-    app.eventBus.addEventListener('ws:message:async-tasks:cancelled', handleTaskCancelled);
+    app.eventBus.addEventListener('ws:message:async-tasks:deleted', handleTaskDeleted);
 
     return () => {
       app.eventBus.removeEventListener('ws:message:async-tasks:created', handleTaskCreated);
       app.eventBus.removeEventListener('ws:message:async-tasks:progress', handleTaskProgress);
       app.eventBus.removeEventListener('ws:message:async-tasks:status', handleTaskStatus);
-      app.eventBus.removeEventListener('ws:message:async-tasks:cancelled', handleTaskCancelled);
+      app.eventBus.removeEventListener('ws:message:async-tasks:deleted', handleTaskDeleted);
     };
-  }, [app, handleTaskCancelled, handleTaskCreated, handleTaskProgress, handleTaskStatus]);
+  }, [app, handleTaskDeleted, handleTaskCreated, handleTaskProgress, handleTaskStatus]);
 
   return tasks?.length > 0 && <AsyncTasksButton {...{ tasks, refresh, popoverVisible, setPopoverVisible }} />;
 };

@@ -218,6 +218,7 @@ export class WSServer extends EventEmitter {
     });
 
     app.pubSubManager.subscribe('ws:sendToUser', ({ userId, message }) => {
+      app.logger.trace(`[broadcasting message] ws:sendToUser for user ${userId}`, { message });
       this.sendToAppUser(app.name, userId, message);
     });
   }

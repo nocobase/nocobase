@@ -114,6 +114,21 @@ export class BaseTaskManager implements AsyncTasksManager {
     }
   };
 
+  private onTaskAfterDelete = (task) => {
+    this.tasks.delete(task.id);
+    this.progressThrottles.delete(task.id);
+    const userId = task.createdById;
+    if (userId) {
+      this.app.emit('ws:sendToUser', {
+        userId,
+        message: {
+          type: 'async-tasks:deleted',
+          payload: { id: task.id },
+        },
+      });
+    }
+  };
+
   private onTaskCancelSignal = async (data) => {
     return this.cancelTask(data.id, true);
   };
@@ -147,6 +162,7 @@ export class BaseTaskManager implements AsyncTasksManager {
 
     await TaskRepo.destroy({
       filterByTk: tasksToCleanup.map((task) => task.id),
+      individualHooks: true,
     });
   };
 
@@ -201,8 +217,8 @@ export class BaseTaskManager implements AsyncTasksManager {
     });
 
     this.app.db.on('asyncTasks.afterCreate', this.onTaskAfterCreate);
-
     this.app.db.on('asyncTasks.afterUpdate', this.onTaskStatusChanged);
+    this.app.db.on('asyncTasks.afterDestroy', this.onTaskAfterDelete);
   }
 
   private enqueueTask(task: ITask, queueOptions): void {
