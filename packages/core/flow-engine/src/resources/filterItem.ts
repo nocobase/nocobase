@@ -14,6 +14,9 @@ type FilterOptions = {
 };
 export class FilterItem {
   constructor(protected options: FilterOptions) {
+    if (options instanceof FilterItem) {
+      return options;
+    }
     this.options = options;
   }
   toJSON() {
@@ -26,6 +29,45 @@ export class FilterItem {
     }
     return {
       [this.options.key]: this.options.value,
+    };
+  }
+}
+
+type FilterGroupOptions = {
+  logic: '$and' | '$or';
+  items: Array<FilterItem | FilterOptions | FilterGroup | FilterGroupOptions>;
+};
+export class FilterGroup {
+  protected options: {
+    logic: '$and' | '$or';
+    items: Array<FilterItem | FilterGroup>;
+  };
+  constructor(options: FilterGroupOptions) {
+    if (options instanceof FilterGroup) {
+      return options;
+    }
+    if (options.logic !== '$and' && options.logic !== '$or') {
+      throw new Error('Logic must be either $and or $or');
+    }
+    if (!Array.isArray(options.items)) {
+      throw new Error('Items must be an array');
+    }
+    this.options = {
+      logic: options.logic,
+      items: options.items.map((item: any) => {
+        if (item.logic) {
+          return new FilterGroup(item);
+        }
+        return new FilterItem(item);
+      }),
+    };
+  }
+
+  toJSON() {
+    return {
+      [this.options.logic]: this.options.items.map((item) => {
+        return item.toJSON();
+      }),
     };
   }
 }
