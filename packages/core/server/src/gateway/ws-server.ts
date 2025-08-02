@@ -189,6 +189,7 @@ export class WSServer extends EventEmitter {
 
     app.on('ws:sendToUser', ({ userId, message }) => {
       this.sendToAppUser(app.name, userId, message);
+      app.logger.debug(`[broadcasting message] ws:sendToUser for user ${userId}`, { message });
       app.pubSubManager.publish(
         'ws:sendToUser',
         {
@@ -217,9 +218,11 @@ export class WSServer extends EventEmitter {
       this.sendToClient(clientId, { type: 'authorized' });
     });
 
-    app.pubSubManager.subscribe('ws:sendToUser', ({ userId, message }) => {
-      app.logger.trace(`[broadcasting message] ws:sendToUser for user ${userId}`, { message });
-      this.sendToAppUser(app.name, userId, message);
+    app.on('afterLoad', () => {
+      app.pubSubManager.subscribe('ws:sendToUser', ({ userId, message }) => {
+        app.logger.debug(`[receive broadcasting message] ws:sendToUser for user ${userId}`, { message });
+        this.sendToAppUser(app.name, userId, message);
+      });
     });
   }
 
