@@ -12,6 +12,10 @@ import { BaseRecordResource } from './baseRecordResource';
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
   isNewRecord = false;
 
+  get supportsFilter() {
+    return !this.isNewRecord;
+  }
+
   setFilterByTk(filterByTk: any) {
     this.isNewRecord = false;
     return super.setFilterByTk(filterByTk);

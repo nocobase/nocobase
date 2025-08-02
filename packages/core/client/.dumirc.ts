@@ -228,8 +228,8 @@ export default defineConfig({
               link: '/examples/flow-context/runjs',
             },
             {
-              title: 'ctx.runsql',
-              link: '/examples/flow-context/runsql',
+              title: 'ctx.sql',
+              link: '/examples/flow-context/sql',
             },
             {
               title: 'ctx.api',
@@ -329,6 +329,10 @@ export default defineConfig({
               title: 'MultiRecordResource',
               link: '/examples/flow-resources/multi-record-resource',
             },
+            {
+              title: 'SQLResource',
+              link: '/examples/flow-resources/sql-resource',
+            },
           ],
         },
         {
@@ -375,16 +379,20 @@ export default defineConfig({
             },
           ],
         },
-        // {
-        //   title: 'Best Practices',
-        //   type: 'group',
-        //   children: [
-        //     {
-        //       title: 'Best Practices',
-        //       link: '/learn/best-practices',
-        //     }
-        //   ]
-        // }
+        {
+          title: '最佳实践',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowModel 使用指南',
+              link: '/learn/best-practices/flow-model',
+            },
+            {
+              title: '1.0 vs 2.0',
+              link: '/learn/best-practices/1-0-vs-2-0',
+            }
+          ]
+        }
       ],
       '/api': [
         {
@@ -489,6 +497,10 @@ export default defineConfig({
             {
               title: 'FlowSettings',
               link: '/api/flow-engine/flow-settings',
+            },
+            {
+              title: 'FlowSQLRepository',
+              link: '/api/flow-engine/flow-sql-repository',
             },
           ]
         }

@@ -22,7 +22,14 @@ import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
-import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
+import {
+  APIResource,
+  BaseRecordResource,
+  FlowSQLRepository,
+  MultiRecordResource,
+  SingleRecordResource,
+  SQLResource,
+} from './resources';
 import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -421,16 +428,7 @@ export class FlowContext {
   }
 }
 
-type RunSQLOptions = {
-  uid: string; // 必填，SQL 唯一标识，非调试模式时，后端会根据 `uid` 查找对应 SQL。
-  sql: string; // 调试模式时，以 upsert 方式创建或更新 SQL。
-  bind?: Record<string, any>; // 可选，SQL bind 参数
-  filter?: Record<string, any>; // 可选，SQL 过滤条件
-  type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
-  debug?: boolean;
-};
-
-export class FlowEngineContext extends FlowContext {
+class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
@@ -439,10 +437,19 @@ export class FlowEngineContext extends FlowContext {
   declare api: APIClient;
   declare viewOpener: ViewOpener;
   declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
   declare route: RouteOptions;
   declare location: Location;
-  declare runsql: (options: RunSQLOptions) => Promise<any>;
+  declare sql: FlowSQLRepository;
+}
 
+class BaseFlowModelContext extends BaseFlowEngineContext {
+  declare model: FlowModel;
+  declare ref: React.RefObject<HTMLDivElement>;
+}
+
+export class FlowEngineContext extends BaseFlowEngineContext {
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
@@ -459,6 +466,9 @@ export class FlowEngineContext extends FlowContext {
     dataSourceManager.addDataSource(mainDataSource);
     this.defineProperty('engine', {
       value: this.engine,
+    });
+    this.defineProperty('sql', {
+      get: () => new FlowSQLRepository(this),
     });
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
@@ -525,23 +535,7 @@ export class FlowEngineContext extends FlowContext {
   }
 }
 
-export class FlowModelContext extends FlowContext {
-  declare router: Router;
-  declare dataSourceManager: DataSourceManager;
-  declare model: FlowModel;
-  declare engine: FlowEngine;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare renderJson: (template: any) => Promise<any>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
-  declare runsql: (options: RunSQLOptions) => Promise<any>;
-  declare viewOpener: ViewOpener;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
-  declare route: RouteOptions;
-  declare location: Location;
-
+export class FlowModelContext extends BaseFlowModelContext {
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
@@ -575,22 +569,7 @@ export class FlowModelContext extends FlowContext {
   }
 }
 
-export class FlowForkModelContext extends FlowContext {
-  declare router: Router;
-  declare dataSourceManager: DataSourceManager;
-  // declare model: FlowModel;
-  declare engine: FlowEngine;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare renderJson: (template: any) => Promise<any>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runsql: (options: RunSQLOptions) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
-  declare route: RouteOptions;
-  declare location: Location;
-
+export class FlowForkModelContext extends BaseFlowModelContext {
   constructor(
     public master: FlowModel,
     public fork: ForkFlowModel,
@@ -630,24 +609,9 @@ export class FlowForkModelContext extends FlowContext {
 export class FlowRuntimeContext<
   TModel extends FlowModel = FlowModel,
   TMode extends 'runtime' | 'settings' = any,
-> extends FlowContext {
+> extends BaseFlowModelContext {
   stepResults: Record<string, any> = {};
-  declare router: Router;
-  declare engine: FlowEngine;
-  declare onRefReady: <T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout?: number) => void;
-  declare dataSourceManager: DataSourceManager;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare renderJson: (template: any) => Promise<any>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runsql: (options: RunSQLOptions) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
-  declare viewOpener: ViewOpener;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
-  declare route: RouteOptions;
-  declare location: Location;
 
   constructor(
     public model: TModel,

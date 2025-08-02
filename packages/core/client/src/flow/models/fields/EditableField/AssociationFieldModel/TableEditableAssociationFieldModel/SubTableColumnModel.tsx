@@ -47,8 +47,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         placement: 'rightTop',
         styles: {
           body: {
-            maxWidth: 400,
-            minWidth: 200,
+            minWidth: 400,
           },
         },
         content: (popover) => {
@@ -131,6 +130,7 @@ export class SubTableColumnModel extends FieldModel {
     };
   }
   render() {
+    (this.subModels.field as EditableFieldModel).enableFormItem = false;
     return (value, record, index) => (
       <div
         className={css`
@@ -141,7 +141,6 @@ export class SubTableColumnModel extends FieldModel {
       >
         {this.mapSubModels('field', (action: EditableFieldModel) => {
           record.__key = record.__key || uid();
-          action.enableFormItem = false;
           const fork: any = action.createFork({}, `${record.__key}`);
           fork.context.defineProperty('basePath', {
             get: () => {
