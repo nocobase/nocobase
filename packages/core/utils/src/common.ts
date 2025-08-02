@@ -151,9 +151,12 @@ export const removeNullCondition = (filter, customFlat = flat) => {
   const values = {};
   for (const key in items) {
     const value = items[key];
-    if (value != null && !isEmpty(value)) {
+    if (value != null && !isEmpty(value) && value !== '') {
       values[key] = value;
     }
   }
-  return customFlat.unflatten(values);
+
+  const result = customFlat.unflatten(values);
+
+  return _.isEmpty(result) ? undefined : result;
 };

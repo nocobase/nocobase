@@ -22,3 +22,20 @@ export class SelectEditableFieldModel extends FormFieldModel {
     ];
   }
 }
+
+SelectEditableFieldModel.registerFlow({
+  key: 'selectFieldSetting',
+  sort: 400,
+  steps: {
+    initProps: {
+      handler(ctx) {
+        const collectionField = ctx.model.collectionField;
+        if (collectionField.type === 'array') {
+          ctx.model.field.setComponentProps({
+            mode: 'multiple',
+          });
+        }
+      },
+    },
+  },
+});

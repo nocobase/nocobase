@@ -35,6 +35,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
+import { BaseDialect } from './dialects/base-dialect';
 import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -84,7 +85,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -129,6 +129,13 @@ export type AddMigrationsOptions = {
 };
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
+type RunSQLOptions = {
+  sql: string;
+  filter?: Record<string, any>;
+  bind?: Record<string, any> | Array<any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+};
 
 export class Database extends EventEmitter implements AsyncEmitter {
   static dialects = new Map<string, typeof BaseDialect>();
@@ -1013,6 +1020,38 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return;
       },
     });
+  }
+
+  async runSQL(options: RunSQLOptions) {
+    const { sql, filter, bind, type } = options;
+    let whereSQL = '';
+    if (filter) {
+      let where = {};
+      const tmpCollection = new Collection({ name: 'tmp' }, { database: this });
+      const r = tmpCollection.repository;
+      where = r.buildQueryOptions({ filter }).where;
+      const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
+      const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
+      if (wSQL) {
+        const hasWhere = /\bwhere\b/i.test(sql);
+        if (hasWhere) {
+          whereSQL = ` AND ${wSQL}`;
+        } else {
+          whereSQL = ` WHERE ${wSQL}`;
+        }
+      }
+    }
+    const result = await this.sequelize.query(sql + whereSQL, { bind });
+    if (type === 'selectVar') {
+      return Object.values(result[0][0] || {}).shift();
+    }
+    if (type === 'selectRow') {
+      return result[0][0] || null;
+    }
+    if (type === 'selectRows') {
+      return result[0] || [];
+    }
+    return result[0];
   }
 }
 

@@ -35,6 +35,10 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     headers: {} as Record<string, any>,
   };
 
+  get supportsFilter() {
+    return true;
+  }
+
   setSelectedRows(selectedRows: TDataItem[]) {
     this.setMeta({ selectedRows });
     return this;

@@ -8,15 +8,6 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import _ from 'lodash';
-
-type RunSQLOptions = {
-  uid: string;
-  sql?: string;
-  bind?: Record<string, any> | Array<any>;
-  type?: 'selectVar' | 'selectRow' | 'selectRows';
-  debug?: boolean;
-};
 
 export class PluginCollectionSqlClient extends Plugin {
   async afterAdd() {
@@ -27,21 +18,6 @@ export class PluginCollectionSqlClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    const ctx = this.flowEngine.context;
-    ctx.defineMethod('runsql', async (options: RunSQLOptions) => {
-      if (!options.uid) {
-        throw new Error('UID is required');
-      }
-      const { data } = await ctx.api.request({
-        method: 'POST',
-        url: 'flowSql:run',
-        data: {
-          type: 'selectRows',
-          ..._.pick(options, ['sql', 'uid', 'bind', 'filter', 'type']),
-        },
-      });
-      return data?.data;
-    });
     // this.app.addComponents({})
     // this.app.addScopes({})
     // this.app.addProvider()

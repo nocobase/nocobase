@@ -14,10 +14,12 @@ import { CollectionBlockModel, useSortFields } from '../../';
 import { useCompile } from '../../schema-component';
 
 const SelectOptions = (props) => {
-  const flowContext = useFlowSettingsContext<CollectionBlockModel>();
+  const flowContext: any = useFlowSettingsContext<CollectionBlockModel>();
   const resource = flowContext.model.resource;
+  const collectionField = flowContext.model.collectionField;
   const compile = useCompile();
-  const sortFields = useSortFields(resource?.getResourceName());
+  const collectionName = resource?.getResourceName() || collectionField.target;
+  const sortFields = useSortFields(collectionName);
   return <Select {...props} options={compile(sortFields)} />;
 };
 

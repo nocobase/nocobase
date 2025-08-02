@@ -47,8 +47,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         placement: 'rightTop',
         styles: {
           body: {
-            maxWidth: 400,
-            minWidth: 200,
+            minWidth: 400,
           },
         },
         content: (popover) => {
@@ -131,6 +130,7 @@ export class SubTableColumnModel extends FieldModel {
     };
   }
   render() {
+    (this.subModels.field as EditableFieldModel).enableFormItem = false;
     return (value, record, index) => (
       <div
         className={css`
@@ -141,7 +141,6 @@ export class SubTableColumnModel extends FieldModel {
       >
         {this.mapSubModels('field', (action: EditableFieldModel) => {
           record.__key = record.__key || uid();
-          action.enableFormItem = false;
           const fork: any = action.createFork({}, `${record.__key}`);
           fork.context.defineProperty('basePath', {
             get: () => {
@@ -193,26 +192,56 @@ SubTableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-        if ((ctx.model.subModels.field.constructor as any).isLargeField) {
-          const use = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-          const model = (ctx.model.subModels.field as FieldModel).setSubModel('readPrettyField', {
-            use,
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: ctx.model.collectionField.dataSourceKey,
-                  collectionName: field.collection.name,
-                  fieldPath: ctx.model.fieldPath,
-                },
-              },
-            },
-          });
-          await model.applyAutoFlows();
-        }
+
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);
         }
+      },
+    },
+    subModel: {
+      title: escapeT('Field component'),
+      uiSchema: (ctx) => {
+        const classes = [...ctx.model.collectionField.getSubclassesOf('ReadPrettyFieldModel').keys()];
+        if (classes.length === 1) {
+          return null;
+        }
+        if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => ({
+              label: model,
+              value: model,
+            })),
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+        };
+      },
+      async handler(ctx, params) {
+        const field = ctx.model.collectionField;
+        const use = params.use;
+        const model = (ctx.model.subModels.field as FieldModel).setSubModel('readPrettyField', {
+          use,
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                collectionName: field.collection.name,
+                fieldPath: ctx.model.fieldPath,
+              },
+            },
+          },
+        });
+        await model.applyAutoFlows();
       },
     },
     title: {
