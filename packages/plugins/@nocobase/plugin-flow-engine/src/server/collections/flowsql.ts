@@ -18,6 +18,10 @@ export default defineCollection({
       unique: true,
     },
     {
+      type: 'string',
+      name: 'dataSourceKey',
+    },
+    {
       type: 'text',
       name: 'sql',
       allowNull: false,

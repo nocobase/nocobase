@@ -9,7 +9,68 @@
 
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
+import { FlowEngineContext } from '../flowContext';
 import { BaseRecordResource } from './baseRecordResource';
+
+type SQLRunOptions = {
+  bind?: Record<string, any> | Array<any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+  dataSourceKey?: string;
+  filter?: Record<string, any>;
+};
+
+type SQLSaveOptions = {
+  uid: string;
+  sql: string;
+  dataSourceKey?: string;
+};
+
+export class SQLRepository {
+  constructor(protected ctx: FlowEngineContext) {}
+
+  async run(sql: string, options: SQLRunOptions = {}) {
+    const { data } = await this.ctx.api.request({
+      method: 'POST',
+      url: 'flowSql:run',
+      data: {
+        sql,
+        ...options,
+      },
+    });
+    return data?.data;
+  }
+
+  async save(data: SQLSaveOptions) {
+    await this.ctx.api.request({
+      method: 'POST',
+      url: 'flowSql:save',
+      data: {
+        ...data,
+      },
+    });
+  }
+
+  async runById(uid: string, options?: SQLRunOptions) {
+    const { data } = await this.ctx.api.request({
+      method: 'POST',
+      url: 'flowSql:runById',
+      data: {
+        uid,
+        ...options,
+      },
+    });
+    return data?.data;
+  }
+
+  async destroy(uid: string) {
+    await this.ctx.api.request({
+      url: 'flowSql:destroy',
+      params: {
+        filterByTk: uid,
+      },
+    });
+  }
+}
 
 export class SQLResource<TData = any> extends BaseRecordResource<TData> {
   protected _data = observable.ref<TData>(null);
@@ -30,7 +91,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
   }
 
   protected buildURL(action?: string): string {
-    return `flowSql:${action || 'run'}`;
+    return `flowSql:${action || 'runById'}`;
   }
 
   setDataSourceKey(dataSourceKey: string): this {
@@ -53,18 +114,8 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
-  setSQL(sql: string) {
-    this.request.data.sql = sql;
-    return this;
-  }
-
   setBind(bind: Record<string, any> | Array<any>) {
     this.request.data.bind = bind;
-    return this;
-  }
-
-  setDebug(debug = true) {
-    this.request.data.debug = debug;
     return this;
   }
 
@@ -83,7 +134,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
       this.refreshTimer = setTimeout(async () => {
         try {
           this.loading = true;
-          const { data, meta } = await this.runAction<TData, any>('run', {
+          const { data, meta } = await this.runAction<TData, any>('runById', {
             method: 'post',
             ...this.getRefreshRequestOptions(),
           });
