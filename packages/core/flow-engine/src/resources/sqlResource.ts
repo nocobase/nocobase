@@ -63,6 +63,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
+  setDebug(debug = true) {
+    this.request.data.debug = debug;
+    return this;
+  }
+
   /**
    * 在同一个事件循环内多次调用 refresh 方法时，只有最后一次调用会生效。避免触发多次相同的接口请求。
    * @returns

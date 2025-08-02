@@ -34,8 +34,16 @@ export class PluginCollectionSQLServer extends Plugin {
     this.app.acl.allow('flowSql', 'run', 'loggedIn');
     this.app.resourceManager.registerActionHandlers({
       'flowSql:run': async (ctx, next) => {
-        const { uid, sql, type = 'selectRows', filter, bind, dataSourceKey = 'main' } = ctx.action.params.values || {};
-        if (!uid) {
+        const {
+          uid,
+          sql,
+          type = 'selectRows',
+          filter,
+          bind,
+          dataSourceKey = 'main',
+          debug,
+        } = ctx.action.params.values || {};
+        if (!uid && !debug) {
           ctx.throw(400, 'UID is required');
         }
         const dataSource = this.app.dataSourceManager.get(dataSourceKey);
@@ -48,13 +56,17 @@ export class PluginCollectionSQLServer extends Plugin {
         let record;
         const allowed = await this.hasPermission(roles);
         if (allowed && sql) {
-          record = await r.updateOrCreate({
-            filterKeys: ['uid'],
-            values: {
-              uid,
-              sql,
-            },
-          });
+          if (debug) {
+            record = { sql };
+          } else {
+            record = await r.updateOrCreate({
+              filterKeys: ['uid'],
+              values: {
+                uid,
+                sql,
+              },
+            });
+          }
           if (Array.isArray(record)) {
             record = record[0];
           }

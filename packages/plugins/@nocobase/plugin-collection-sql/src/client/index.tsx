@@ -15,6 +15,8 @@ type RunSQLOptions = {
   sql?: string;
   bind?: Record<string, any> | Array<any>;
   type?: 'selectVar' | 'selectRow' | 'selectRows';
+  dataSourceKey?: string;
+  filter?: Record<string, any>;
   debug?: boolean;
 };
 
@@ -37,7 +39,7 @@ export class PluginCollectionSqlClient extends Plugin {
         url: 'flowSql:run',
         data: {
           type: 'selectRows',
-          ..._.pick(options, ['sql', 'uid', 'bind', 'filter', 'type']),
+          ..._.pick(options, ['sql', 'uid', 'bind', 'filter', 'type', 'dataSourceKey', 'debug']),
         },
       });
       return data?.data;

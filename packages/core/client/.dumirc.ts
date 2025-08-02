@@ -329,6 +329,10 @@ export default defineConfig({
               title: 'MultiRecordResource',
               link: '/examples/flow-resources/multi-record-resource',
             },
+            {
+              title: 'SQLResource',
+              link: '/examples/flow-resources/sql-resource',
+            },
           ],
         },
         {

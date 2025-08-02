@@ -428,6 +428,7 @@ type RunSQLOptions = {
   filter?: Record<string, any>; // 可选，SQL 过滤条件
   type?: 'selectRows' | 'selectRow' | 'selectVar'; // 可选，默认 selectRows
   debug?: boolean;
+  dataSourceKey?: string; // 可选，数据源键，默认为 'main'
 };
 
 export class FlowEngineContext extends FlowContext {
