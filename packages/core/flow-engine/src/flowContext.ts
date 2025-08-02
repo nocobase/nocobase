@@ -25,9 +25,9 @@ import { FlowModel, ForkFlowModel } from './models';
 import {
   APIResource,
   BaseRecordResource,
+  FlowSQLRepository,
   MultiRecordResource,
   SingleRecordResource,
-  SQLRepository,
   SQLResource,
 } from './resources';
 import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
@@ -441,7 +441,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare notification: NotificationInstance;
   declare route: RouteOptions;
   declare location: Location;
-  declare sql: SQLRepository;
+  declare sql: FlowSQLRepository;
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -468,7 +468,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       value: this.engine,
     });
     this.defineProperty('sql', {
-      get: () => new SQLRepository(this),
+      get: () => new FlowSQLRepository(this),
     });
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,

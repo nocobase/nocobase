@@ -228,8 +228,8 @@ export default defineConfig({
               link: '/examples/flow-context/runjs',
             },
             {
-              title: 'ctx.runsql',
-              link: '/examples/flow-context/runsql',
+              title: 'ctx.sql',
+              link: '/examples/flow-context/sql',
             },
             {
               title: 'ctx.api',
@@ -497,6 +497,10 @@ export default defineConfig({
             {
               title: 'FlowSettings',
               link: '/api/flow-engine/flow-settings',
+            },
+            {
+              title: 'FlowSQLRepository',
+              link: '/api/flow-engine/flow-sql-repository',
             },
           ]
         }

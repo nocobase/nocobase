@@ -25,7 +25,7 @@ type SQLSaveOptions = {
   dataSourceKey?: string;
 };
 
-export class SQLRepository {
+export class FlowSQLRepository {
   constructor(protected ctx: FlowEngineContext) {}
 
   async run(sql: string, options: SQLRunOptions = {}) {
