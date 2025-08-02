@@ -9,7 +9,7 @@ import { mergeConfig, defineConfig as vitestConfig } from 'vitest/config';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const CORE_CLIENT_PACKAGES = ['sdk', 'client'];
+const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'flow-engine'];
 
 const relativePathToAbsolute = (relativePath) => {
   return path.resolve(process.cwd(), relativePath);
