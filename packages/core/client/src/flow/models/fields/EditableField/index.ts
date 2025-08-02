@@ -29,5 +29,5 @@ export * from './TextareaEditableFieldModel';
 export * from './TimeEditableFieldModel';
 export * from './UploadEditableFieldModel';
 export * from './VariableFieldModel';
-export * from './VariableValueFormModel';
+export * from './VariableFieldFormModel';
 //

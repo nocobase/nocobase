@@ -11,4 +11,6 @@ export * from './EllipsisWithTooltip';
 export * from './ExpiresRadio';
 export * from './drag-drop';
 export * from './VariableFieldInput';
-export * from './VariableValue';
+export * from './VariableTag';
+export * from './VariableSelector';
+export * from './VariableEditableValue';

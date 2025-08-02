@@ -7,99 +7,77 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo } from 'react';
 import { connect } from '@formily/react';
-import { VariableValue } from './VariableValue';
-import { MetaTreeNode } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
+import { FlowModelRenderer, MetaTreeNode, useFlowSettingsContext } from '@nocobase/flow-engine';
+import React, { useMemo } from 'react';
+import { EditableFieldModel } from '../models/fields/EditableField/EditableFieldModel';
+import { VariableFieldFormModel } from '../models/fields/EditableField/VariableFieldFormModel';
 
 interface VariableFieldInputProps {
-  /** 当前值 */
-  value?: any;
-  /** 值改变回调 */
-  onChange?: (value: any) => void;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 自定义变量元数据树，支持函数形式 */
-  propertyMetaTree?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
+  value: any; // 任意类型，表示当前值
+  onChange: (value: any) => void; // 表示值改变的回调
+  metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>); // 表示元数据树，可能是异步函数
+  model: EditableFieldModel; // EditableFieldModel 及其子类的实例
 }
 
-/**
- * 变量字段输入组件
- *
- * 将 VariableValue 表单组件和 VariableSelector 组合，
- * 提供既可以输入常规值，也可以选择变量的复合输入界面。
- * VariableValue 内部支持自动组件切换。
- */
 export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
-  const { value, onChange, disabled = false, propertyMetaTree } = props;
+  const { value, onChange, model, metaTree } = props;
+  const ctx = useFlowSettingsContext<EditableFieldModel>();
 
-  // 判断当前值是否为变量格式
-  const isVariableValue = useMemo(() => {
-    return typeof value === 'string' && /^\{\{\s*ctx\./.test(value);
-  }, [value]);
+  console.log('🔍 VariableFieldInput render:', { value, fieldPath: ctx.model.fieldPath });
 
-  // 计算 VariableSelector 的当前值（移到前面）
-  const cascaderValue = useMemo(() => {
-    if (!value) {
-      return [''];
+  // 该组件实际要渲染的是一个 formily 里的 form, form可以直接用 VariableFieldFormModel
+  // 这个表单里面会有一自己的model， 可以叫做newModel, 这个newModel 就是利用该组件的 model 参数的 serialize() 方法获得的参数，来创建的新model
+  const newModel = useMemo(() => {
+    const fieldPath = ctx.model.fieldPath;
+    const options = {
+      use: 'VariableFieldFormModel',
+      subModels: {
+        fields: [
+          {
+            ...model.serialize(),
+            use: 'VariableFieldModel', // 使用VariableFieldModel而不是原始model
+            uid: uid(),
+            parentId: null,
+            subKey: null,
+            subType: null,
+          },
+        ],
+      },
+    };
+    // 新model可以取名为 VariableFieldModel, 创建model实例时应该用 flowEngine.createModel，不要直接new
+    const newModel = model.context.engine.createModel(options as any) as VariableFieldFormModel;
+
+    return newModel;
+  }, [model.uid, ctx.model.fieldPath]); // 只依赖稳定的值，移除 onChange 依赖
+
+  // 单独更新 form 值和 VariableFieldModel props，避免重新创建 model
+  React.useEffect(() => {
+    const fieldPath = ctx.model.fieldPath;
+    console.log('🔄 useEffect triggered:', { value, fieldPath, currentFormValues: newModel.form.values });
+
+    // 设置VariableFieldModel的props，让它直接与外部同步，不通过表单
+    const variableFieldModel = newModel.subModels.fields[0];
+    if (variableFieldModel) {
+      console.log('🔧 Setting VariableFieldModel props:', { value, fieldPath, oldProps: variableFieldModel.props });
+      variableFieldModel.setProps({
+        value: value,
+        // 直接调用外部 onChange，绕过表单机制
+        onChange: (newValue: any) => {
+          console.log('⚡ VariableFieldModel.onChange called:', { newValue, fieldPath });
+          // 直接调用外部 onChange，而不是通过表单
+          onChange(newValue);
+        },
+        metaTree: metaTree,
+        originalModel: model,
+      });
     }
-
-    if (isVariableValue) {
-      // 提取变量路径
-      const match = value.match(/^\{\{\s*ctx\.([^}]+?)\s*\}\}$/);
-      if (match) {
-        const path = match[1].trim().split('.');
-        return path;
-      }
-    } else if (value) {
-      // 非空的常规值
-      return ['constant'];
-    }
-
-    return [''];
-  }, [value, isVariableValue]);
-
-  // 处理 VariableValue 的变化
-  const handleVariableValueChange = useCallback(
-    (newValue: any) => {
-      onChange?.(newValue);
-    },
-    [onChange],
-  );
-
-  // 处理 VariableSelector 的变化
-  const handleVariableChange = useCallback(
-    (next: string[], optionPath: any[]) => {
-      if (next[0] === '') {
-        // 选择了 null
-        handleVariableValueChange('');
-        return;
-      }
-
-      if (next[0] === 'constant') {
-        // 选择了 constant，切换为常规值模式
-        // 如果当前是变量值，则清空；否则保持当前值
-        if (isVariableValue) {
-          handleVariableValueChange('');
-        }
-        return;
-      }
-
-      // 选择了变量 - 单击就创建变量（无论是叶子节点还是非叶子节点）
-      const newVariable = `{{ ctx.${next.join('.')} }}`;
-      onChange?.(newVariable);
-    },
-    [isVariableValue, handleVariableValueChange, onChange],
-  );
+  }, [value, metaTree, newModel, ctx.model.fieldPath, model, onChange]);
 
   return (
-    <VariableValue
-      value={value}
-      onChange={handleVariableValueChange}
-      disabled={disabled}
-      variableChange={handleVariableChange}
-      variableValue={cascaderValue}
-      propertyMetaTree={propertyMetaTree}
-    />
+    <div>
+      <FlowModelRenderer model={newModel} showFlowSettings={false} />
+    </div>
   );
 });

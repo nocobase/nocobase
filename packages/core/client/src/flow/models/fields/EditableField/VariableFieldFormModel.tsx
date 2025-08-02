@@ -13,7 +13,7 @@ import { FormProvider } from '@formily/react';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 
-export class VariableValueFormModel extends FlowModel {
+export class VariableFieldFormModel extends FlowModel {
   form: Form;
   onChange;
 
