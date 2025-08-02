@@ -35,6 +35,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
+import { BaseDialect } from './dialects/base-dialect';
 import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -84,7 +85,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -129,6 +129,12 @@ export type AddMigrationsOptions = {
 };
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
+type RunSQLOptions = {
+  filter?: Record<string, any>;
+  bind?: Record<string, any> | Array<any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+} & Transactionable;
 
 export class Database extends EventEmitter implements AsyncEmitter {
   static dialects = new Map<string, typeof BaseDialect>();
@@ -527,8 +533,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (this.options.underscored) {
-      options.underscored = true;
+    if (typeof options.underscored !== 'boolean') {
+      if (this.options.underscored) {
+        options.underscored = true;
+      }
     }
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
@@ -1013,6 +1021,78 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return;
       },
     });
+  }
+
+  async runSQL(sql: string, options: RunSQLOptions = {}) {
+    const { filter, bind, type, transaction } = options;
+    let finalSQL = sql;
+
+    if (filter) {
+      let where = {};
+      const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
+      const r = tmpCollection.repository;
+      where = r.buildQueryOptions({ filter }).where;
+      const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
+      const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
+
+      if (wSQL) {
+        // 标准化 SQL，去除多余空格
+        const normalizedSQL = sql.replace(/\s+/g, ' ').trim();
+
+        // 检查是否已有 WHERE 子句
+        const hasWhere = /\bwhere\b/i.test(normalizedSQL);
+
+        // 在标准化的 SQL 上查找关键字位置
+        const orderByMatch = normalizedSQL.match(/\border\s+by\b/i);
+        const groupByMatch = normalizedSQL.match(/\bgroup\s+by\b/i);
+        const havingMatch = normalizedSQL.match(/\bhaving\b/i);
+        const limitMatch = normalizedSQL.match(/\blimit\b/i);
+        const offsetMatch = normalizedSQL.match(/\boffset\b/i);
+
+        // 找到最早出现的关键字位置
+        const matches = [orderByMatch, groupByMatch, havingMatch, limitMatch, offsetMatch]
+          .filter((match) => match !== null)
+          .map((match) => ({ index: match.index, keyword: match[0] }));
+
+        if (matches.length > 0) {
+          // 有后续子句，需要在它们之前插入 WHERE 条件
+          const earliestMatch = matches.reduce((prev, curr) => (prev.index < curr.index ? prev : curr));
+
+          // 使用标准化的 SQL 进行分割，确保索引位置正确
+          const beforeClause = normalizedSQL.substring(0, earliestMatch.index).trim();
+          const afterClause = normalizedSQL.substring(earliestMatch.index).trim();
+
+          if (hasWhere) {
+            finalSQL = `${beforeClause} AND (${wSQL}) ${afterClause}`;
+          } else {
+            finalSQL = `${beforeClause} WHERE (${wSQL}) ${afterClause}`;
+          }
+        } else {
+          // 没有后续子句，直接在末尾添加
+          if (hasWhere) {
+            finalSQL = `${normalizedSQL} AND (${wSQL})`;
+          } else {
+            // 处理末尾分号
+            if (normalizedSQL.endsWith(';')) {
+              finalSQL = `${normalizedSQL.slice(0, -1)} WHERE (${wSQL});`;
+            } else {
+              finalSQL = `${normalizedSQL} WHERE (${wSQL})`;
+            }
+          }
+        }
+      }
+    }
+    const result = await this.sequelize.query(finalSQL, { bind, transaction });
+    if (type === 'selectVar') {
+      return Object.values(result[0][0] || {}).shift();
+    }
+    if (type === 'selectRow') {
+      return result[0][0] || null;
+    }
+    if (type === 'selectRows') {
+      return result[0] || [];
+    }
+    return result[0];
   }
 }
 

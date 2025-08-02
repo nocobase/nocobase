@@ -18,6 +18,7 @@ import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
+import { PreviewReadPrettyFieldModel } from './fieldModels/PreviewReadPrettyFieldModel';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -65,6 +66,8 @@ export class PluginFileManagerClient extends Plugin {
     this.app.addComponents({
       FileSizeField,
     });
+
+    this.flowEngine.registerModels({ PreviewReadPrettyFieldModel });
   }
 
   registerStorageType(name: string, options) {

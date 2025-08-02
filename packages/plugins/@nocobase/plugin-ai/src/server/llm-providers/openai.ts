@@ -11,6 +11,8 @@ import { ChatOpenAI } from '@langchain/openai';
 import { LLMProvider } from './provider';
 
 export class OpenAIProvider extends LLMProvider {
+  declare chatModel: ChatOpenAI;
+
   get baseURL() {
     return 'https://api.openai.com/v1';
   }
@@ -34,6 +36,7 @@ export class OpenAIProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
+      verbose: true,
     });
   }
 }
