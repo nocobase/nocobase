@@ -9,21 +9,18 @@
 
 import { ScanOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { withAutoFocus } from '../../../../hoc/withAutoFocus';
 import { NocoBaseInputProps } from '../Input';
 import { QRCodeScanner } from './QRCodeScanner';
+
+const InputWithAutoFocus = withAutoFocus(Input);
 
 const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, disableManualInput, autoFocus }) => {
   const { t } = useTranslation();
   const [scanVisible, setScanVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (autoFocus && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [autoFocus]);
 
   const handleScanSuccess = (text: any) => {
     setScanVisible(false);
@@ -39,7 +36,7 @@ const ScanInput: React.FC<NocoBaseInputProps> = ({ value, onChange, disabled, di
 
   return (
     <>
-      <Input
+      <InputWithAutoFocus
         ref={inputRef as any}
         value={value}
         onChange={handleInputChange}
