@@ -233,6 +233,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
     const event = this.events.get(channel);
     if (!event) {
+      console.debug(`memory queue (${channel}) not subscribed, skip`);
       return;
     }
     if (!this.queues.get(channel)) {
@@ -347,6 +348,7 @@ export class EventQueue {
       throw new Error('no adapter set, cannot connect');
     }
     await this.adapter.connect();
+    this.app.logger.debug(`connected to adapter, using memory? ${this.adapter instanceof MemoryEventQueueAdapter}`);
 
     for (const [channel, event] of this.events.entries()) {
       this.adapter.subscribe(this.getFullChannel(channel), event);
@@ -390,7 +392,7 @@ export class EventQueue {
       throw new Error('event queue not connected, cannot publish');
     }
     const c = this.getFullChannel(channel);
-    this.app.logger.debug('event queue publishing:', { channel: c, message });
+    this.app.logger.debug(`event queue publishing to channel(${c})`, { message });
     await this.adapter.publish(c, message, {
       timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
       ...options,
