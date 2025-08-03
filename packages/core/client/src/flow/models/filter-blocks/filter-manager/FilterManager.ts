@@ -9,6 +9,7 @@
 
 import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { getDefaultOperator } from './utils';
 
 type FilterConfig = {
   /** 筛选器的 model uid */
@@ -17,14 +18,11 @@ type FilterConfig = {
   targetModelUid: string;
   /** 被筛选区块的数据表字段路径 */
   targetFieldPaths: string[];
-  /** 默认操作符，每个条件的默认操作符都一样 */
-  defaultOperator?: string;
   /** 筛选操作符，每个条件的操作符可以不一样 */
   operator?: string;
 };
 
 export type ConnectFieldsConfig = {
-  operator: string;
   targets: {
     /** 数据区块或者图表区块的 model uid */
     targetModelUid: string;
@@ -59,10 +57,7 @@ export class FilterManager {
       return undefined;
     }
 
-    // 2. 把 filterConfigs 中的配置转换成 ConnectFieldsConfig 格式并返回
-    const firstConfig = relatedConfigs[0];
     return {
-      operator: firstConfig.defaultOperator,
       targets: relatedConfigs.map((config) => ({
         targetModelUid: config.targetModelUid,
         targetFieldPaths: config.targetFieldPaths,
@@ -76,7 +71,6 @@ export class FilterManager {
       filterModelUid,
       targetModelUid: target.targetModelUid,
       targetFieldPaths: target.targetFieldPaths,
-      defaultOperator: config.operator,
     }));
 
     // 2. 先删除 filterConfigs 中的旧配置，再把新的配置添加进去
@@ -107,7 +101,7 @@ export class FilterManager {
    */
   addFilterConfig(filterConfig: FilterConfig) {
     // 1. 验证必填字段
-    if (!filterConfig.filterModelUid || !filterConfig.targetModelUid || !filterConfig.defaultOperator) {
+    if (!filterConfig.filterModelUid || !filterConfig.targetModelUid) {
       throw new Error('FilterConfig must have filterModelUid, targetModelUid, and defaultOperator');
     }
 
@@ -276,7 +270,7 @@ export class FilterManager {
       // 构建筛选条件
       const filterConditions = config.targetFieldPaths.map((fieldPath) => ({
         key: fieldPath,
-        operator: config.operator || config.defaultOperator,
+        operator: config.operator || getDefaultOperator(filterModel),
         value: filterValue,
       }));
 

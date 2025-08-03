@@ -17,7 +17,6 @@ import { CollectionBlockModel } from '../../../base/BlockModel';
 import { FilterFormEditableFieldModel } from '../../form-v2/fields';
 import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
-import { getDefaultOperator } from '../utils';
 
 export const connectFields = defineAction({
   name: 'connectFields',
@@ -87,11 +86,6 @@ function ConnectFields(
 ) {
   const ctx = useFlowSettingsContext<FilterFormEditableFieldModel>();
   const allDataModels = getAllDataModels(ctx.blockGridModel);
-  const operatorOptions = (ctx.model.context.collectionField.filterable?.operators || []).map((op) => ({
-    ...op,
-    label: ctx.t(op.label),
-  }));
-  const defaultOperator = getDefaultOperator(ctx.model) || operatorOptions[0]?.value || '';
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
   const handleSelectChange = (modelUid: string, values: string[]) => {
@@ -114,11 +108,9 @@ function ConnectFields(
     const allSelectedTargets = Object.values(newValues);
 
     props.onChange?.({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
     setValue({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };
@@ -144,11 +136,9 @@ function ConnectFields(
 
     const allSelectedTargets = Object.values(newValues);
     props.onChange?.({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
     setValue({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };
@@ -165,11 +155,9 @@ function ConnectFields(
 
     const allSelectedTargets = Object.values(newValues);
     props.onChange?.({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
     setValue({
-      operator: value?.operator || defaultOperator,
       targets: allSelectedTargets,
     });
   };

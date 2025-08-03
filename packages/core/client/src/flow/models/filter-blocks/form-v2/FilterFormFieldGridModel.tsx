@@ -10,7 +10,7 @@
 import { AddFieldButton, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { CreateFormModel } from '../..';
-import { CollectionBlockModel, FilterBlockModel } from '../../base/BlockModel';
+import { FilterBlockModel } from '../../base/BlockModel';
 import { GridModel } from '../../base/GridModel';
 import { getAllDataModels } from '../utils';
 import { buildFieldMenuItems } from './buildFieldMenuItems';
@@ -125,10 +125,8 @@ export class FilterFormFieldGridModel extends GridModel {
         targetFieldPaths: [fieldPath],
       }));
 
-      const operatorOptions = subModel.context.collectionField.filterable?.operators || [];
       // 存到数据库中
       this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
-        operator: operatorOptions[0]?.value || '$eq',
         targets,
       });
     }
