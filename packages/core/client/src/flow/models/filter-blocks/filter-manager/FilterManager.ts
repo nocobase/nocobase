@@ -284,7 +284,59 @@ export class FilterManager {
     });
   }
 
-  unbindFromTarget(targetModelUid: string) {}
+  /**
+   * 将筛选配置从 TargetModel 解除绑定
+   *
+   * 根据提供的 targetModelUid 查找与之关联的已存在的筛选配置，
+   * 然后通过 targetModel.resource.removeFilterGroup 方法将这些配置从目标模型中移除。
+   *
+   * @param targetModelUid - 目标模型的唯一标识符
+   * @throws 当 targetModelUid 为空或目标模型不存在时抛出错误
+   *
+   * @example
+   * ```typescript
+   * filterManager.unbindFromTarget('target-model-uid');
+   * ```
+   */
+  unbindFromTarget(targetModelUid: string) {
+    // 1. 参数验证
+    if (!targetModelUid || typeof targetModelUid !== 'string') {
+      throw new Error('targetModelUid must be a non-empty string');
+    }
+
+    // 2. 通过 flowEngine 查找目标模型
+    const targetModel = this.gridModel.flowEngine.getModel(targetModelUid);
+
+    // 3. 验证目标模型是否存在
+    if (!targetModel) {
+      throw new Error(`Target model with uid "${targetModelUid}" not found`);
+    }
+
+    // 4. 验证目标模型是否具有 resource 属性
+    if (!(targetModel as any).resource || typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
+      throw new Error(
+        `Target model with uid "${targetModelUid}" does not have a valid resource with removeFilterGroup method`,
+      );
+    }
+
+    // 5. 获取与目标模型相关的筛选配置
+    const relatedConfigs = this.filterConfigs.filter((config) => config.targetModelUid === targetModelUid);
+
+    if (relatedConfigs.length === 0) {
+      // 没有相关配置，但不抛出错误，只是没有筛选条件需要解除绑定
+      return;
+    }
+
+    // 6. 从目标模型中移除筛选配置
+    relatedConfigs.forEach((config) => {
+      try {
+        // 通过筛选器模型 UID 移除对应的筛选组
+        (targetModel as any).resource.removeFilterGroup(config.filterModelUid);
+      } catch (error) {
+        throw new Error(`Failed to unbind filter configuration from target model: ${error.message}`);
+      }
+    });
+  }
 
   refreshTargetsByFilter(filterModelUid: string | string[]) {}
 }
