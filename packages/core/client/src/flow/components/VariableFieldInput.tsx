@@ -161,23 +161,6 @@ function createVariableFieldModelClass(ModelClass: any) {
 
 export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
   const { value, onChange, model, metaTree } = props;
-  const ctx = useFlowSettingsContext<EditableFieldModel>();
-
-  console.log('🔍 VariableFieldInput render:', { value, fieldPath: ctx.model.fieldPath });
-
-  // // 包装 onChange 增加日志
-  // const onChange = React.useCallback(
-  //   (newValue: any) => {
-  //     console.log('🚀 VariableFieldInput外部onChange被调用:', {
-  //       oldValue: value,
-  //       newValue,
-  //       fieldPath: ctx.model.fieldPath,
-  //       hasOriginalOnChange: !!originalOnChange,
-  //     });
-  //     originalOnChange?.(newValue);
-  //   },
-  //   [value, originalOnChange, ctx.model.fieldPath],
-  // );
 
   const newModel = useMemo(() => {
     // 首先获得model实例的类
@@ -191,7 +174,6 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
     const engine = model.context.engine;
     engine.registerModels({ [tempClassName]: TempVariableModel });
 
-    const fieldPath = ctx.model.fieldPath;
     const options = {
       use: 'VariableFieldFormModel',
       subModels: {
@@ -211,11 +193,11 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
     const newModel = model.context.engine.createModel(options as any);
 
     return newModel;
-  }, [model.uid, ctx.model.fieldPath]); // 只依赖稳定的值，移除 onChange 依赖
+  }, [model]);
 
   // 单独更新 form 值和 VariableFieldModel props，避免重新创建 model
   React.useEffect(() => {
-    const fieldPath = ctx.model.fieldPath;
+    const fieldPath = model.fieldPath;
     console.log('🔄 useEffect triggered:', { value, fieldPath, currentFormValues: newModel.form.values });
 
     const variableFieldModel = newModel.subModels.fields[0];
@@ -232,7 +214,7 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
         originalModel: model,
       });
     }
-  }, [value, metaTree, newModel, ctx.model.fieldPath, model, onChange]);
+  }, [value, metaTree, newModel, model, onChange]);
 
   return (
     <div>
