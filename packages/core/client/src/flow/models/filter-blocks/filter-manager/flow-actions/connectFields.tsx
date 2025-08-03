@@ -10,7 +10,7 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
 import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Button, Divider, Dropdown, Select, Switch, TreeSelect } from 'antd';
+import { Button, Dropdown, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
