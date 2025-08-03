@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 
 type FilterConfig = {
@@ -201,7 +201,88 @@ export class FilterManager {
     return removedCount;
   }
 
-  bindToTarget(targetModelUid: string) {}
+  /**
+   * 将筛选配置绑定到 TargetModel
+   *
+   * 根据提供的 targetModelUid 查找与之关联的已存在的筛选配置，
+   * 然后通过 targetModel.resource.addFilterGroup 方法将这些配置添加到目标模型中。
+   *
+   * @param targetModelUid - 目标模型的唯一标识符
+   * @throws 当 targetModelUid 为空或目标模型不存在时抛出错误
+   *
+   * @example
+   * ```typescript
+   * filterManager.bindToTarget('target-model-uid');
+   * ```
+   */
+  bindToTarget(targetModelUid: string) {
+    // 1. 参数验证
+    if (!targetModelUid || typeof targetModelUid !== 'string') {
+      throw new Error('targetModelUid must be a non-empty string');
+    }
+
+    // 2. 通过 flowEngine 查找目标模型
+    const targetModel = this.gridModel.flowEngine.getModel(targetModelUid);
+
+    // 3. 验证目标模型是否存在
+    if (!targetModel) {
+      throw new Error(`Target model with uid "${targetModelUid}" not found`);
+    }
+
+    // 4. 验证目标模型是否具有 resource 属性
+    if (!(targetModel as any).resource || typeof (targetModel as any).resource.addFilterGroup !== 'function') {
+      throw new Error(
+        `Target model with uid "${targetModelUid}" does not have a valid resource with addFilterGroup method`,
+      );
+    }
+
+    // 5. 获取与目标模型相关的筛选配置
+    const relatedConfigs = this.filterConfigs.filter((config) => config.targetModelUid === targetModelUid);
+
+    if (relatedConfigs.length === 0) {
+      // 没有相关配置，但不抛出错误，只是没有筛选条件需要绑定
+      return;
+    }
+
+    // 6. 将筛选配置应用到目标模型
+    relatedConfigs.forEach((config) => {
+      const filterModel: any = this.gridModel.flowEngine.getModel(config.filterModelUid);
+
+      if (!filterModel.getFilterValue) {
+        throw new Error(`Filter model with uid "${config.filterModelUid}" does not have getFilterValue method`);
+      }
+
+      // 构建筛选条件
+      const filterConditions = config.targetFieldPaths.map((fieldPath) => ({
+        key: fieldPath,
+        operator: config.operator || config.defaultOperator,
+        // 这里暂时不设置值，值会在实际筛选时动态设置
+        value: filterModel.getFilterValue(),
+      }));
+
+      // 添加筛选组到目标模型
+      try {
+        if (filterConditions.length === 1) {
+          (targetModel as any).resource.addFilterGroup(
+            config.filterModelUid,
+            new FilterItem({
+              key: filterConditions[0].key,
+              operator: filterConditions[0].operator,
+              value: filterConditions[0].value,
+            }),
+          );
+        } else if (filterConditions.length > 1) {
+          const filterGroup = {
+            logic: '$or' as '$and' | '$or',
+            items: filterConditions,
+          };
+          (targetModel as any).resource.addFilterGroup(config.filterModelUid, new FilterGroup(filterGroup));
+        }
+      } catch (error) {
+        throw new Error(`Failed to bind filter configuration to target model: ${error.message}`);
+      }
+    });
+  }
 
   unbindFromTarget(targetModelUid: string) {}
 
