@@ -48,7 +48,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     : 3;
 
   private idle = () => {
-    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.tasks.size < this.concurrency;
+    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS);
   };
 
   private onQueueTask = async ({ id }: QueueMessage) => {

@@ -163,7 +163,8 @@ const AsyncTasksButton = (props) => {
       render: (_, record: any) => {
         const actions = [];
         const stopping = false;
-        const { Result, ResultButton } = plugin.taskOrigins.get(record.origin);
+        const { Result, ResultButton } = plugin.taskOrigins.get(record.origin) ?? {};
+        const ResultComponent = Result || (() => null);
 
         if (record.cancelable && (record.status === TASK_STATUS.RUNNING || record.status === TASK_STATUS.PENDING)) {
           actions.push(
@@ -208,7 +209,7 @@ const AsyncTasksButton = (props) => {
                   Modal.info({
                     title: t('Task result'),
                     content: Result ? (
-                      <Result payload={record.result} task={record} />
+                      <ResultComponent payload={record.result} task={record} />
                     ) : (
                       <div>{t(`No renderer available for this task type, payload: ${record.result}`)}</div>
                     ),
