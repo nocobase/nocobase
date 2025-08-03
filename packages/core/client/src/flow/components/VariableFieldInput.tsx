@@ -144,31 +144,41 @@ function createVariableFieldModelClass(ModelClass: any) {
     }
   }
 
+  EditableFieldModel.registerFlow({
+    key: 'variableFieldSettings',
+    sort: 1000,
+    steps: {
+      valueChangeEvent: {
+        handler(ctx) {
+          ctx.model.field.setComponentProps({ onChange: ctx.model.props.onChange });
+        },
+      },
+    },
+  });
+
   return TempVariableModel;
 }
 
 export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
-  const { value, onChange: originalOnChange, model, metaTree } = props;
+  const { value, onChange, model, metaTree } = props;
   const ctx = useFlowSettingsContext<EditableFieldModel>();
 
   console.log('🔍 VariableFieldInput render:', { value, fieldPath: ctx.model.fieldPath });
 
-  // 包装 onChange 增加日志
-  const onChange = React.useCallback(
-    (newValue: any) => {
-      console.log('🚀 VariableFieldInput外部onChange被调用:', {
-        oldValue: value,
-        newValue,
-        fieldPath: ctx.model.fieldPath,
-        hasOriginalOnChange: !!originalOnChange,
-      });
-      originalOnChange?.(newValue);
-    },
-    [value, originalOnChange, ctx.model.fieldPath],
-  );
+  // // 包装 onChange 增加日志
+  // const onChange = React.useCallback(
+  //   (newValue: any) => {
+  //     console.log('🚀 VariableFieldInput外部onChange被调用:', {
+  //       oldValue: value,
+  //       newValue,
+  //       fieldPath: ctx.model.fieldPath,
+  //       hasOriginalOnChange: !!originalOnChange,
+  //     });
+  //     originalOnChange?.(newValue);
+  //   },
+  //   [value, originalOnChange, ctx.model.fieldPath],
+  // );
 
-  // 该组件实际要渲染的是一个 formily 里的 form, form可以直接用 VariableFieldFormModel
-  // 这个表单里面会有一自己的model， 可以叫做newModel, 这个newModel 就是利用该组件的 model 参数的 serialize() 方法获得的参数，来创建的新model
   const newModel = useMemo(() => {
     // 首先获得model实例的类
     const ModelClass = model.constructor as any;
@@ -188,7 +198,7 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
         fields: [
           {
             ...model.serialize(),
-            use: tempClassName, // 相当于继承自 model.use, 假如这个是 DateTimeTzEditableFieldModel, 它为啥选择日期后不回填？
+            use: tempClassName, // 相当于继承自 model.use
             // use: model.use,
             uid: uid(),
             parentId: null,
@@ -198,8 +208,7 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
         ],
       },
     };
-    // 新model可以取名为 VariableFieldModel, 创建model实例时应该用 flowEngine.createModel，不要直接new
-    const newModel = model.context.engine.createModel(options as any) as VariableFieldFormModel;
+    const newModel = model.context.engine.createModel(options as any);
 
     return newModel;
   }, [model.uid, ctx.model.fieldPath]); // 只依赖稳定的值，移除 onChange 依赖
@@ -209,38 +218,14 @@ export const VariableFieldInput = connect((props: VariableFieldInputProps) => {
     const fieldPath = ctx.model.fieldPath;
     console.log('🔄 useEffect triggered:', { value, fieldPath, currentFormValues: newModel.form.values });
 
-    // 设置VariableFieldModel的props，让它直接与外部同步，不通过表单
     const variableFieldModel = newModel.subModels.fields[0];
 
-    // 设置 VariableFieldFormModel 的 onChange，同步内部表单值到外部
-    newModel.onChange = (formValues: any) => {
-      console.log('📋 VariableFieldFormModel.onChange called:', {
-        formValues,
-        fieldPath,
-        variableFieldModelUid: variableFieldModel?.uid,
-        formValuesStringified: JSON.stringify(formValues, null, 2),
-      });
-      // 从表单值中提取对应字段的值，使用 fieldPath 而不是 uid
-      const fieldValue = formValues[fieldPath];
-      console.log('🔍 尝试提取fieldValue:', {
-        fieldValue,
-        hasValue: fieldValue !== undefined,
-        allKeys: Object.keys(formValues),
-        usedKey: fieldPath,
-      });
-      if (fieldValue !== undefined) {
-        console.log('🚀 调用外部onChange:', fieldValue);
-        onChange(fieldValue);
-      }
-    };
     if (variableFieldModel) {
       console.log('🔧 Setting VariableFieldModel props:', { value, fieldPath, oldProps: variableFieldModel.props });
       variableFieldModel.setProps({
         value: value,
-        // 直接调用外部 onChange，绕过表单机制
         onChange: (newValue: any) => {
           console.log('⚡ VariableFieldModel.onChange called:', { newValue, fieldPath });
-          // 直接调用外部 onChange，而不是通过表单
           onChange(newValue);
         },
         metaTree: metaTree,

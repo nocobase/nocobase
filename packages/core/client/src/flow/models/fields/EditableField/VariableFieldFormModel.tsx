@@ -8,7 +8,7 @@
  */
 
 import { FormLayout } from '@formily/antd-v5';
-import { createForm, Form, onFormValuesChange } from '@formily/core';
+import { createForm, Form, onFieldValueChange, onFormValuesChange } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
@@ -25,6 +25,11 @@ export class VariableFieldFormModel extends FlowModel {
       effects(form) {
         onFormValuesChange((form) => {
           self.onChange?.(form.values);
+        });
+        // 添加字段级别的变化监听
+        onFieldValueChange('*', (field) => {
+          // 触发字段的 onChange 事件
+          field.componentProps?.onChange?.(field.value);
         });
       },
     });
