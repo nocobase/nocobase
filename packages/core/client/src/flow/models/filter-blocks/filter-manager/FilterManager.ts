@@ -359,6 +359,65 @@ export class FilterManager {
   }
 
   /**
+   * 将筛选器从所有相关的目标模型中解除绑定
+   *
+   * 根据提供的筛选器模型 UID，查找所有与之关联的筛选配置，
+   * 然后通过各个目标模型的 resource.removeFilterGroup 方法将该筛选器从所有目标模型中移除。
+   *
+   * @param filterModelUid - 筛选器模型的唯一标识符
+   * @throws 当 filterModelUid 为空或目标模型不存在时抛出错误
+   *
+   * @example
+   * ```typescript
+   * filterManager.unbindFromFilter('filter-model-uid');
+   * ```
+   */
+  unbindFromFilter(filterModelUid: string) {
+    // 1. 参数验证
+    if (!filterModelUid || typeof filterModelUid !== 'string') {
+      throw new Error('filterModelUid must be a non-empty string');
+    }
+
+    // 2. 获取与筛选器模型相关的筛选配置
+    const relatedConfigs = this.filterConfigs.filter((config) => config.filterModelUid === filterModelUid);
+
+    if (relatedConfigs.length === 0) {
+      // 没有相关配置，但不抛出错误，只是没有筛选条件需要解除绑定
+      return;
+    }
+
+    // 3. 提取所有相关的 targetModelUid 并去重
+    const targetModelUids = [...new Set(relatedConfigs.map((config) => config.targetModelUid))];
+
+    // 4. 从所有相关的目标模型中移除该筛选器的配置
+    targetModelUids.forEach((targetModelUid) => {
+      try {
+        // 4.1 通过 flowEngine 查找目标模型
+        const targetModel = this.gridModel.flowEngine.getModel(targetModelUid);
+
+        // 4.2 验证目标模型是否存在
+        if (!targetModel) {
+          throw new Error(`Target model with uid "${targetModelUid}" not found`);
+        }
+
+        // 4.3 验证目标模型是否具有 resource 属性
+        if (!(targetModel as any).resource || typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
+          throw new Error(
+            `Target model with uid "${targetModelUid}" does not have a valid resource with removeFilterGroup method`,
+          );
+        }
+
+        // 4.4 通过筛选器模型 UID 移除对应的筛选组
+        (targetModel as any).resource.removeFilterGroup(filterModelUid);
+      } catch (error) {
+        throw new Error(
+          `Failed to unbind filter "${filterModelUid}" from target model "${targetModelUid}": ${error.message}`,
+        );
+      }
+    });
+  }
+
+  /**
    * 根据筛选器刷新相关的目标模型
    *
    * 通过提供的筛选器模型 UID，找出所有相关的筛选配置，
