@@ -176,11 +176,7 @@ export class BaseTaskManager implements AsyncTasksManager {
               userId,
               message: {
                 type: 'async-tasks:progress',
-                payload: {
-                  id: record.id,
-                  progressCurrent: record.progressCurrent,
-                  progressTotal: record.progressTotal,
-                },
+                payload: record.toJSON(),
               },
             });
           },
