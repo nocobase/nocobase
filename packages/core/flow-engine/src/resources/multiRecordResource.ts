@@ -172,6 +172,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return new Promise<void>((resolve, reject) => {
       this.refreshTimer = setTimeout(async () => {
         try {
+          this.clearError();
           this.loading = true;
           const { data, meta } = await this.runAction<TDataItem[], any>('list', {
             method: 'get',
@@ -188,10 +189,11 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
           this.loading = false;
           resolve();
         } catch (error) {
-          this.loading = false;
+          this.setError(error);
           reject(error instanceof Error ? error : new Error(String(error)));
         } finally {
           this.refreshTimer = null;
+          this.loading = false;
         }
       });
     });

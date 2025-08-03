@@ -133,6 +133,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return new Promise<void>((resolve, reject) => {
       this.refreshTimer = setTimeout(async () => {
         try {
+          this.clearError();
           this.loading = true;
           const { data, meta } = await this.runAction<TData, any>('runById', {
             method: 'post',
@@ -143,10 +144,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
           this.loading = false;
           resolve();
         } catch (error) {
-          this.loading = false;
+          this.setError(error);
           reject(error instanceof Error ? error : new Error(String(error)));
         } finally {
           this.refreshTimer = null;
+          this.loading = false;
         }
       });
     });
