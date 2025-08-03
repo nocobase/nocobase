@@ -91,6 +91,10 @@ export class FlowResource<TData = any> {
     return this;
   }
 
+  get errror(): ResourceError | null {
+    return this._error.value;
+  }
+
   getError(): ResourceError | null {
     return this._error.value;
   }
