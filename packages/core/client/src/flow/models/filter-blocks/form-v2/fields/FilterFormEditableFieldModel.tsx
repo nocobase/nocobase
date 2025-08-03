@@ -8,10 +8,8 @@
  */
 
 import { reaction } from '@formily/reactive';
-import _, { debounce } from 'lodash';
-import { CollectionBlockModel } from '../../../base/BlockModel';
+import { debounce } from 'lodash';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
-import { FilterManager } from '../../filter-manager/FilterManager';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
@@ -51,91 +49,6 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
       ...this.props,
       decorator: this.decorator,
       component: this.component,
-    });
-  }
-
-  addFilterGroupToTargetModels() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const operator = connectFieldsConfig?.operator || '$eq';
-    const targets = connectFieldsConfig.targets || [];
-
-    if (!operator || !targets.length) {
-      return;
-    }
-
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        const value = this.getFilterValue();
-        if (value != null && value !== '' && !_.isEmpty(value) && target.targetFieldPaths?.length) {
-          const targetFieldPaths = target.targetFieldPaths;
-
-          if (targetFieldPaths.length === 1) {
-            const path = targetFieldPaths[0];
-            const targetField = model.collection.getField(path);
-
-            // 如果是关系字段，则需拼接上 filterTargetKey
-            if (targetField?.targetCollection) {
-              model.resource.addFilterGroup(this.uid, {
-                [`${path}.${targetField.targetCollection.filterTargetKey}`]: {
-                  [operator]: value,
-                },
-              });
-            } else {
-              model.resource.addFilterGroup(this.uid, {
-                [path]: {
-                  [operator]: value,
-                },
-              });
-            }
-          } else {
-            // 如果有多个目标字段，则使用 $or 连接
-            const orConditions = targetFieldPaths.map((path) => {
-              const targetField = model.collection.getField(path);
-
-              // 如果是关系字段，则需拼接上 filterTargetKey
-              if (targetField?.targetCollection) {
-                return {
-                  [`${path}.${targetField.targetCollection.filterTargetKey}`]: {
-                    [operator]: value,
-                  },
-                };
-              } else {
-                return {
-                  [path]: {
-                    [operator]: value,
-                  },
-                };
-              }
-            });
-
-            model.resource.addFilterGroup(this.uid, {
-              $or: orConditions,
-            });
-          }
-        } else {
-          model.resource.removeFilterGroup(this.uid);
-        }
-      }
-    });
-  }
-
-  removeFilterGroupFromTargetModels() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const operator = connectFieldsConfig.operator || '$eq';
-    const targets = connectFieldsConfig.targets || [];
-
-    if (!operator || !targets.length) {
-      return;
-    }
-
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.removeFilterGroup(this.uid);
-      }
     });
   }
 
