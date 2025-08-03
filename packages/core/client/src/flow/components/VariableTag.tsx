@@ -132,7 +132,7 @@ export const VariableTag: React.FC<VariableTagProps> = ({ value, metaTree, onCle
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        minHeight: '32px', // 与 Input 组件高度保持一致
+        height: '100%', // 自适应容器高度
         ...style,
       }}
     >
@@ -140,15 +140,15 @@ export const VariableTag: React.FC<VariableTagProps> = ({ value, metaTree, onCle
         style={{
           margin: 0,
           borderRadius: '10px', // 圆角标签
-          fontSize: '12px',
-          lineHeight: '20px',
-          padding: '0 8px',
+          fontSize: '10px',
+          lineHeight: '16px',
+          padding: '0 6px',
           border: '1px solid #1890ff',
           background: '#e6f7ff',
           color: '#1890ff',
         }}
       >
-        {loading ? '加载中...' : displayLabel || fallbackDisplay}
+        {loading ? 'Loading...' : displayLabel || fallbackDisplay}
       </Tag>
 
       {/* 清除图标 */}
