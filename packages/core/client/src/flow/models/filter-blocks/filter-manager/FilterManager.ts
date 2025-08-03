@@ -8,6 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
+import _ from 'lodash';
 
 type FilterConfig = {
   /** 筛选器的 model uid */
@@ -36,13 +37,13 @@ export const FILTER_CONFIGS_STEP_KEY = 'filterConfigs';
 export const FILTER_MANAGER_FLOW_KEY = 'filterManagerSettings';
 
 export class FilterManager {
-  private readonly filterConfigs: FilterConfig[];
+  private filterConfigs: FilterConfig[];
   private readonly gridModel: FlowModel;
 
   constructor(gridModel: FlowModel) {
     this.gridModel = gridModel;
     const stepValue = this.gridModel.getStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
-    this.filterConfigs = stepValue || [];
+    this.filterConfigs = _.isPlainObject(stepValue) ? Object.values(stepValue) : stepValue || [];
   }
 
   saveFilterConfigs() {
@@ -80,7 +81,7 @@ export class FilterManager {
 
     // 2. 先删除 filterConfigs 中的旧配置，再把新的配置添加进去
     const filteredConfigs = this.filterConfigs.filter((config) => config.filterModelUid !== filterModelUid);
-    this.filterConfigs.length = 0;
+    this.filterConfigs = [];
     this.filterConfigs.push(...filteredConfigs, ...newFilterConfigs);
 
     // 3. 保存 this.filterConfigs 的值
