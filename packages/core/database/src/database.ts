@@ -1093,7 +1093,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         }
       }
     }
-    console.debug(`runSQL: ${finalSQL}`);
+    this.logger.debug('runSQL', { finalSQL });
     const result = await this.sequelize.query(finalSQL, { bind, transaction });
     if (type === 'selectVar') {
       return Object.values(result[0][0] || {}).shift();
