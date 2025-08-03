@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, FlowContext } from '@nocobase/flow-engine';
+import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
 
 export const defaultOperator = defineAction({
   name: 'defaultOperator',
   title: 'Default operator',
   uiSchema(ctx: FlowContext) {
-    const operatorOptions = getOperatorOptions(ctx);
+    const operatorOptions = getOperatorOptions(ctx.model);
 
     if (!ctx.model.enableOperator) {
       return;
@@ -29,7 +29,7 @@ export const defaultOperator = defineAction({
     };
   },
   defaultParams(ctx) {
-    const operatorOptions = getOperatorOptions(ctx);
+    const operatorOptions = getOperatorOptions(ctx.model);
     return {
       value: operatorOptions.length > 0 ? operatorOptions[0].value : '',
     };
@@ -37,9 +37,9 @@ export const defaultOperator = defineAction({
   handler(ctx, params) {},
 });
 
-function getOperatorOptions(ctx: FlowContext) {
-  return (ctx.model.context.collectionField.filterable?.operators || []).map((op) => ({
+function getOperatorOptions(model: FlowModel) {
+  return (model.context.collectionField.filterable?.operators || []).map((op) => ({
     ...op,
-    label: ctx.t(op.label),
+    label: model.translate(op.label),
   }));
 }

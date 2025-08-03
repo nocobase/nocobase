@@ -18,7 +18,7 @@ type FilterConfig = {
   /** 被筛选区块的数据表字段路径 */
   targetFieldPaths: string[];
   /** 默认操作符，每个条件的默认操作符都一样 */
-  defaultOperator: string;
+  defaultOperator?: string;
   /** 筛选操作符，每个条件的操作符可以不一样 */
   operator?: string;
 };

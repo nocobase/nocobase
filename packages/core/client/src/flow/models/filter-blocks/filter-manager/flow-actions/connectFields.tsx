@@ -93,10 +93,6 @@ function ConnectFields(
   const defaultOperator = getDefaultOperator(ctx) || operatorOptions[0]?.value || '';
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
-  if (!value?.operator) {
-    _.set(props, 'value.operator', defaultOperator);
-  }
-
   const handleSelectChange = (modelUid: string, values: string[]) => {
     const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
     const selectedValues = value?.targets || [];
