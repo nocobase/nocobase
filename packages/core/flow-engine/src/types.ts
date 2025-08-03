@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { ISchema } from '@formily/json-schema';
 import { SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
@@ -151,16 +150,6 @@ export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
 export interface IModelComponentProps {
   [key: string]: any;
 }
-
-/**
- * Step input component type - supports both function and React component forms
- * This is used for rendering input components in flow step settings.
- */
-export type StepInputComponent =
-  | ((ctx: FlowSettingsContext) => React.ReactNode)
-  | React.ComponentType<any>
-  | React.ReactNode
-  | null;
 
 // 定义只读版本的props类型
 export type ReadonlyModelProps = Readonly<IModelComponentProps>;

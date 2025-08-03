@@ -26,7 +26,6 @@ import type {
   FlowModelMeta,
   FlowModelOptions,
   ParentFlowModel,
-  StepInputComponent,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -988,19 +987,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
     return <div {...this.props}></div>;
   }
-
-  /**
-   * Step input component for this flow model.
-   * Can be either:
-   * 1. A function that takes FlowSettingsContext and returns React.ReactNode
-   * 2. A React component
-   * 3. Direct React.ReactNode
-   * 4. null (default)
-   *
-   * This is used for rendering input components in flow step settings,
-   * such as within VariableInput or other configuration panels.
-   */
-  public stepInputComponent: StepInputComponent = null;
 
   async rerender() {
     await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);

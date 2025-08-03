@@ -70,7 +70,7 @@ export interface MetaTreeNode {
   type: string;
   interface?: string;
   uiSchema?: any;
-  display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -79,7 +79,7 @@ export interface PropertyMeta {
   title: string;
   interface?: string;
   uiSchema?: any;
-  display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
