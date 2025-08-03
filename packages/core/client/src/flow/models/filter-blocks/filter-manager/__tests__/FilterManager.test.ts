@@ -399,4 +399,153 @@ describe('FilterManager', () => {
       ]);
     });
   });
+
+  describe('removeFilterConfig', () => {
+    beforeEach(() => {
+      // Setup initial filter configs for testing removal
+      const initialConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-2',
+          targetFieldPaths: ['age'],
+          defaultOperator: '$gt',
+        },
+        {
+          filterModelUid: 'filter-2',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['email'],
+          defaultOperator: '$like',
+        },
+        {
+          filterModelUid: 'filter-2',
+          targetModelUid: 'target-3',
+          targetFieldPaths: ['status'],
+          defaultOperator: '$eq',
+        },
+      ];
+      mockFlowModel.getStepParams.mockReturnValue(initialConfigs);
+      filterManager = new FilterManager(mockFlowModel as any);
+    });
+
+    it('should throw error when no parameters provided', () => {
+      expect(() => {
+        filterManager.removeFilterConfig({});
+      }).toThrow('At least one of filterModelUid or targetModelUid must be provided');
+    });
+
+    it('should remove all configs for a specific filter when only filterModelUid provided', () => {
+      const removedCount = filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+
+      expect(removedCount).toBe(2);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
+        FILTER_MANAGER_FLOW_KEY,
+        FILTER_CONFIGS_STEP_KEY,
+        expect.arrayContaining([
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-1' }),
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+        ]),
+      );
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should remove all configs for a specific target when only targetModelUid provided', () => {
+      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'target-1' });
+
+      expect(removedCount).toBe(2);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
+        FILTER_MANAGER_FLOW_KEY,
+        FILTER_CONFIGS_STEP_KEY,
+        expect.arrayContaining([
+          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-2' }),
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+        ]),
+      );
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should remove specific config when both filterModelUid and targetModelUid provided', () => {
+      const removedCount = filterManager.removeFilterConfig({
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-2',
+      });
+
+      expect(removedCount).toBe(1);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
+        FILTER_MANAGER_FLOW_KEY,
+        FILTER_CONFIGS_STEP_KEY,
+        expect.arrayContaining([
+          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-1' }),
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-1' }),
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+        ]),
+      );
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should return 0 when no matching configs found', () => {
+      const removedCount = filterManager.removeFilterConfig({ filterModelUid: 'non-existent' });
+
+      expect(removedCount).toBe(0);
+      expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
+      expect(mockFlowModel.save).not.toHaveBeenCalled();
+    });
+
+    it('should not save when no configs are removed', () => {
+      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'non-existent' });
+
+      expect(removedCount).toBe(0);
+      expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
+      expect(mockFlowModel.save).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty filterConfigs array', () => {
+      mockFlowModel.getStepParams.mockReturnValue([]);
+      const emptyFilterManager = new FilterManager(mockFlowModel as any);
+
+      const removedCount = emptyFilterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+
+      expect(removedCount).toBe(0);
+      expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
+      expect(mockFlowModel.save).not.toHaveBeenCalled();
+    });
+
+    it('should remove all remaining configs when removing by existing targetModelUid', () => {
+      // First remove some configs to make the array smaller
+      filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+
+      // Reset mocks to track the next call
+      vi.clearAllMocks();
+
+      // Now remove by target
+      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'target-3' });
+
+      expect(removedCount).toBe(1);
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should preserve other configs when removing specific combination', () => {
+      const removedCount = filterManager.removeFilterConfig({
+        filterModelUid: 'filter-2',
+        targetModelUid: 'target-1',
+      });
+
+      expect(removedCount).toBe(1);
+
+      const savedConfigs = mockFlowModel.setStepParams.mock.calls[0][2];
+      expect(savedConfigs).toHaveLength(3);
+      expect(savedConfigs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-1' }),
+          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-2' }),
+          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+        ]),
+      );
+    });
+  });
 });

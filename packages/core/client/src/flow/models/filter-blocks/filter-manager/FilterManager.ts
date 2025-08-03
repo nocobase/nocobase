@@ -132,7 +132,74 @@ export class FilterManager {
     this.saveFilterConfigs();
   }
 
-  removeFilterConfig({ filterModelUid, targetModelUid }: { filterModelUid?: string; targetModelUid?: string }) {}
+  /**
+   * 删除筛选配置
+   *
+   * 根据提供的参数删除对应的筛选配置。支持多种删除策略：
+   * - 仅提供 filterModelUid：删除该筛选器相关的所有配置
+   * - 仅提供 targetModelUid：删除该目标相关的所有配置
+   * - 两个都提供：删除特定的筛选器-目标组合配置
+   *
+   * @param options - 删除选项
+   * @param options.filterModelUid - 筛选器模型 UID（可选）
+   * @param options.targetModelUid - 目标模型 UID（可选）
+   * @returns 返回被删除的配置数量
+   * @throws 当两个参数都未提供时抛出错误
+   *
+   * @example
+   * ```typescript
+   * // 删除筛选器的所有配置
+   * const removedCount = filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+   *
+   * // 删除目标的所有配置
+   * const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'target-1' });
+   *
+   * // 删除特定的筛选器-目标组合配置
+   * const removedCount = filterManager.removeFilterConfig({
+   *   filterModelUid: 'filter-1',
+   *   targetModelUid: 'target-1'
+   * });
+   * ```
+   */
+  removeFilterConfig({ filterModelUid, targetModelUid }: { filterModelUid?: string; targetModelUid?: string }): number {
+    // 1. 验证参数：至少需要提供一个参数
+    if (!filterModelUid && !targetModelUid) {
+      throw new Error('At least one of filterModelUid or targetModelUid must be provided');
+    }
+
+    // 2. 记录删除前的配置数量
+    const originalLength = this.filterConfigs.length;
+
+    // 3. 根据提供的参数过滤配置
+    this.filterConfigs = this.filterConfigs.filter((config) => {
+      // 如果两个参数都提供，需要同时匹配
+      if (filterModelUid && targetModelUid) {
+        return !(config.filterModelUid === filterModelUid && config.targetModelUid === targetModelUid);
+      }
+
+      // 如果只提供 filterModelUid，删除该筛选器的所有配置
+      if (filterModelUid) {
+        return config.filterModelUid !== filterModelUid;
+      }
+
+      // 如果只提供 targetModelUid，删除该目标的所有配置
+      if (targetModelUid) {
+        return config.targetModelUid !== targetModelUid;
+      }
+
+      return true;
+    });
+
+    // 4. 计算被删除的配置数量
+    const removedCount = originalLength - this.filterConfigs.length;
+
+    // 5. 如果有配置被删除，则保存更改
+    if (removedCount > 0) {
+      this.saveFilterConfigs();
+    }
+
+    return removedCount;
+  }
 
   bindToTarget(targetModelUid: string) {}
 
