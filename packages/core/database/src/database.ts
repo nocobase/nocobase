@@ -1023,10 +1023,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
   }
 
+  // 如果需要手动引用标识符，可以添加辅助方法
+  quoteIdentifier(identifier: string): string {
+    return this.sequelize.getQueryInterface().queryGenerator['quoteIdentifier'](identifier);
+  }
+
+  quoteTable(tableName: string): string {
+    return this.sequelize.getQueryInterface().queryGenerator['quoteTable'](tableName);
+  }
+
   async runSQL(sql: string, options: RunSQLOptions = {}) {
     const { filter, bind, type, transaction } = options;
     let finalSQL = sql;
-
+    if (!finalSQL.replace(/\s+/g, ' ').trim()) {
+      throw new Error('SQL cannot be empty');
+    }
     if (filter) {
       let where = {};
       const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
@@ -1082,6 +1093,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         }
       }
     }
+    console.debug(`runSQL: ${finalSQL}`);
     const result = await this.sequelize.query(finalSQL, { bind, transaction });
     if (type === 'selectVar') {
       return Object.values(result[0][0] || {}).shift();

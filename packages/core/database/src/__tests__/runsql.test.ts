@@ -425,12 +425,15 @@ describe('runSQL + underscored=false', function () {
 
   describe('basic queries', () => {
     test('should execute simple SELECT query', async () => {
-      const result = await db.runSQL('SELECT * FROM aTest ORDER BY aNum');
+      const aTest = db.quoteIdentifier('aTest');
+      const aNum = db.quoteIdentifier('aNum');
+      const result = await db.runSQL(`SELECT * FROM ${aTest} ORDER BY ${aNum}`);
       expect(result).toHaveLength(3);
       expect(result[0]).toMatchObject({ aNum: 1, aName: 'Alice', aAge: 25 });
     });
     test('should apply complex filter with AND condition', async () => {
-      const result = await db.runSQL('SELECT * FROM aTest', {
+      const aTest = db.quoteIdentifier('aTest');
+      const result = await db.runSQL(`SELECT * FROM ${aTest}`, {
         filter: {
           $and: [{ aAge: { $gte: 25 } }, { aName: { $ne: 'Charlie' } }],
         },
