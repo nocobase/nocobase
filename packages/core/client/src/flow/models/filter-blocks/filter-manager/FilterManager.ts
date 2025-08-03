@@ -358,5 +358,76 @@ export class FilterManager {
     });
   }
 
-  refreshTargetsByFilter(filterModelUid: string | string[]) {}
+  /**
+   * 根据筛选器刷新相关的目标模型
+   *
+   * 通过提供的筛选器模型 UID，找出所有相关的筛选配置，
+   * 然后重新绑定筛选条件并刷新对应的目标模型数据。
+   *
+   * @param filterModelUid - 筛选器模型的 UID，可以是单个字符串或字符串数组
+   * @returns Promise，当所有目标模型都刷新完成后解决
+   * @throws 当参数为空或目标模型不存在时抛出错误
+   *
+   * @example
+   * ```typescript
+   * // 刷新单个筛选器相关的目标
+   * await filterManager.refreshTargetsByFilter('filter-1');
+   *
+   * // 刷新多个筛选器相关的目标
+   * await filterManager.refreshTargetsByFilter(['filter-1', 'filter-2']);
+   * ```
+   */
+  async refreshTargetsByFilter(filterModelUid: string | string[]): Promise<void> {
+    // 1. 参数验证和标准化
+    if (!filterModelUid) {
+      throw new Error('filterModelUid must be provided');
+    }
+
+    const filterModelUids = Array.isArray(filterModelUid) ? filterModelUid : [filterModelUid];
+
+    if (filterModelUids.length === 0 || filterModelUids.some((uid) => !uid || typeof uid !== 'string')) {
+      throw new Error('filterModelUid must be non-empty string(s)');
+    }
+
+    // 2. 查找相关的筛选配置
+    const relatedConfigs = this.filterConfigs.filter((config) => filterModelUids.includes(config.filterModelUid));
+
+    if (relatedConfigs.length === 0) {
+      // 没有相关配置，直接返回
+      return;
+    }
+
+    // 3. 提取所有相关的 targetModelUid 并去重
+    const targetModelUids = [...new Set(relatedConfigs.map((config) => config.targetModelUid))];
+
+    // 4. 并行处理所有目标模型
+    const refreshPromises = targetModelUids.map(async (targetModelUid) => {
+      try {
+        // 4.1 重新绑定筛选配置
+        this.bindToTarget(targetModelUid);
+
+        // 4.2 获取目标模型
+        const targetModel = this.gridModel.flowEngine.getModel(targetModelUid);
+
+        if (!targetModel) {
+          throw new Error(`Target model with uid "${targetModelUid}" not found`);
+        }
+
+        // 4.3 验证目标模型是否有 refresh 方法
+        if (!(targetModel as any).resource || typeof (targetModel as any).resource.refresh !== 'function') {
+          throw new Error(
+            `Target model with uid "${targetModelUid}" does not have a valid resource with refresh method`,
+          );
+        }
+
+        // 4.4 调用 refresh 方法
+        await (targetModel as any).resource.refresh();
+      } catch (error) {
+        throw new Error(`Failed to refresh target model "${targetModelUid}": ${error.message}`);
+      }
+    });
+
+    // 5. 等待所有 refresh 操作完成
+    await Promise.all(refreshPromises);
+  }
 }
