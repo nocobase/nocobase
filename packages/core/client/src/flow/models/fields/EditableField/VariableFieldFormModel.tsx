@@ -26,9 +26,7 @@ export class VariableFieldFormModel extends FlowModel {
         onFormValuesChange((form) => {
           self.onChange?.(form.values);
         });
-        // 添加字段级别的变化监听
         onFieldValueChange('*', (field) => {
-          // 触发字段的 onChange 事件
           field.componentProps?.onChange?.(field.value);
         });
       },
