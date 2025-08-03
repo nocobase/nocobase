@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FILTER_CONFIGS_STEP_KEY, FILTER_MANAGER_FLOW_KEY, FilterManager } from '../FilterManager';
 
 // Mock FlowModel
@@ -234,6 +235,168 @@ describe('FilterManager', () => {
       filterManager.saveConnectFieldsConfig('filter1', config);
 
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, []);
+    });
+  });
+
+  describe('addFilterConfig', () => {
+    it('should add a new filter config successfully', () => {
+      const filterConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+
+      filterManager.addFilterConfig(filterConfig);
+
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
+        filterConfig,
+      ]);
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should update existing filter config with same filterModelUid and targetModelUid', () => {
+      // Setup initial config
+      const initialConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+      mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
+      filterManager = new FilterManager(mockFlowModel as any);
+
+      // Add updated config
+      const updatedConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['email'],
+        defaultOperator: '$ne',
+        operator: '$contains',
+      };
+
+      filterManager.addFilterConfig(updatedConfig);
+
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
+        updatedConfig,
+      ]);
+      expect(mockFlowModel.save).toHaveBeenCalled();
+    });
+
+    it('should add multiple different filter configs', () => {
+      const config1 = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+
+      const config2 = {
+        filterModelUid: 'filter-2',
+        targetModelUid: 'target-2',
+        targetFieldPaths: ['email'],
+        defaultOperator: '$ne',
+      };
+
+      filterManager.addFilterConfig(config1);
+      filterManager.addFilterConfig(config2);
+
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
+        config1,
+        config2,
+      ]);
+    });
+
+    it('should throw error when filterModelUid is missing', () => {
+      const filterConfig = {
+        filterModelUid: '',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+
+      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
+        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+      );
+    });
+
+    it('should throw error when targetModelUid is missing', () => {
+      const filterConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: '',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+
+      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
+        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+      );
+    });
+
+    it('should throw error when defaultOperator is missing', () => {
+      const filterConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '',
+      };
+
+      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
+        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+      );
+    });
+
+    it('should throw error when targetFieldPaths is empty array', () => {
+      const filterConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: [],
+        defaultOperator: '$eq',
+      };
+
+      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
+        'FilterConfig must have non-empty targetFieldPaths array',
+      );
+    });
+
+    it('should throw error when targetFieldPaths is not an array', () => {
+      const filterConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: 'name' as any,
+        defaultOperator: '$eq',
+      };
+
+      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
+        'FilterConfig must have non-empty targetFieldPaths array',
+      );
+    });
+
+    it('should add config when same filterModelUid exists but different targetModelUid', () => {
+      // Setup initial config
+      const initialConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-1',
+        targetFieldPaths: ['name'],
+        defaultOperator: '$eq',
+      };
+      mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
+      filterManager = new FilterManager(mockFlowModel as any);
+
+      // Add config with same filter but different target
+      const newConfig = {
+        filterModelUid: 'filter-1',
+        targetModelUid: 'target-2',
+        targetFieldPaths: ['email'],
+        defaultOperator: '$ne',
+      };
+
+      filterManager.addFilterConfig(newConfig);
+
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
+        initialConfig,
+        newConfig,
+      ]);
     });
   });
 });

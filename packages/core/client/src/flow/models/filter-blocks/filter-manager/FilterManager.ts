@@ -87,4 +87,56 @@ export class FilterManager {
     // 3. 保存 this.filterConfigs 的值
     this.saveFilterConfigs();
   }
+
+  /**
+   * 添加筛选配置
+   *
+   * 将新的筛选配置添加到管理器中。如果相同的筛选器和目标组合已存在，则会更新配置。
+   *
+   * @param filterConfig - 要添加的筛选配置
+   *
+   * @example
+   * ```typescript
+   * filterManager.addFilterConfig({
+   *   filterModelUid: 'filter-1',
+   *   targetModelUid: 'target-1',
+   *   targetFieldPaths: ['name'],
+   *   defaultOperator: '$eq'
+   * });
+   * ```
+   */
+  addFilterConfig(filterConfig: FilterConfig) {
+    // 1. 验证必填字段
+    if (!filterConfig.filterModelUid || !filterConfig.targetModelUid || !filterConfig.defaultOperator) {
+      throw new Error('FilterConfig must have filterModelUid, targetModelUid, and defaultOperator');
+    }
+
+    if (!Array.isArray(filterConfig.targetFieldPaths) || filterConfig.targetFieldPaths.length === 0) {
+      throw new Error('FilterConfig must have non-empty targetFieldPaths array');
+    }
+
+    // 2. 检查是否已存在相同的配置（相同的 filterModelUid 和 targetModelUid 组合）
+    const existingIndex = this.filterConfigs.findIndex(
+      (config) =>
+        config.filterModelUid === filterConfig.filterModelUid && config.targetModelUid === filterConfig.targetModelUid,
+    );
+
+    // 3. 如果存在则更新，否则添加新配置
+    if (existingIndex >= 0) {
+      this.filterConfigs[existingIndex] = { ...filterConfig };
+    } else {
+      this.filterConfigs.push({ ...filterConfig });
+    }
+
+    // 4. 保存配置
+    this.saveFilterConfigs();
+  }
+
+  removeFilterConfig({ filterModelUid, targetModelUid }: { filterModelUid?: string; targetModelUid?: string }) {}
+
+  bindToTarget(targetModelUid: string) {}
+
+  unbindFromTarget(targetModelUid: string) {}
+
+  refreshTargetsByFilter(filterModelUid: string | string[]) {}
 }
