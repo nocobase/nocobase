@@ -87,5 +87,8 @@ FilterFormEditableFieldModel.registerFlow({
     connectFields: {
       use: 'connectFields',
     },
+    defaultOperator: {
+      use: 'defaultOperator',
+    },
   },
 });

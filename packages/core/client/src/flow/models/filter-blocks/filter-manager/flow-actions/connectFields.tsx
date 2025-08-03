@@ -90,7 +90,7 @@ function ConnectFields(
     ...op,
     label: ctx.t(op.label),
   }));
-  const defaultOperator = operatorOptions[0]?.value || '';
+  const defaultOperator = getDefaultOperator(ctx) || operatorOptions[0]?.value || '';
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
   if (!value?.operator) {
@@ -177,17 +177,6 @@ function ConnectFields(
     });
   };
 
-  const handleDefaultOperatorChange = (v) => {
-    props.onChange?.({
-      operator: v?.operator || defaultOperator,
-      targets: value?.targets || [],
-    });
-    setValue({
-      operator: v,
-      targets: value?.targets || [],
-    });
-  };
-
   // 获取已选择的区块UIDs
   const selectedModelUids = (value?.targets || []).map((item) => item.targetModelUid);
 
@@ -247,20 +236,6 @@ function ConnectFields(
           <li>支持同时筛选多个区块，支持关系字段深层选择（如：用户/部门/名称）</li>
         </ul>
       </div>
-      {ctx.model.enableOperator && (
-        <>
-          <FormItem label="默认操作符">
-            <Select
-              options={operatorOptions}
-              placeholder="请选择操作符"
-              value={value?.operator}
-              onChange={handleDefaultOperatorChange}
-            />
-          </FormItem>
-          <Divider />
-        </>
-      )}
-
       {allDataModels
         .filter((model: CollectionBlockModel) => {
           if (!(model instanceof CollectionBlockModel)) {
@@ -390,4 +365,8 @@ function TreeSelectWrapper(props) {
       treeNodeLabelProp="fullLabel"
     />
   );
+}
+
+function getDefaultOperator(ctx: FlowContext) {
+  return ctx.model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;
 }
