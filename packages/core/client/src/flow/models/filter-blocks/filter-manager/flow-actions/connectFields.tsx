@@ -17,6 +17,7 @@ import { CollectionBlockModel } from '../../../base/BlockModel';
 import { FilterFormEditableFieldModel } from '../../form-v2/fields';
 import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
+import { getDefaultOperator } from '../utils';
 
 export const connectFields = defineAction({
   name: 'connectFields',
@@ -90,7 +91,7 @@ function ConnectFields(
     ...op,
     label: ctx.t(op.label),
   }));
-  const defaultOperator = getDefaultOperator(ctx) || operatorOptions[0]?.value || '';
+  const defaultOperator = getDefaultOperator(ctx.model) || operatorOptions[0]?.value || '';
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
   const handleSelectChange = (modelUid: string, values: string[]) => {
@@ -361,8 +362,4 @@ function TreeSelectWrapper(props) {
       treeNodeLabelProp="fullLabel"
     />
   );
-}
-
-function getDefaultOperator(ctx: FlowContext) {
-  return ctx.model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;
 }
