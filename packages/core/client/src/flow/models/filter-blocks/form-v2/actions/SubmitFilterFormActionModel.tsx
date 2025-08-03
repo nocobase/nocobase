@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
-import { FilterManager } from '../../filter-manager/FilterManager';
-import { FilterFormEditableFieldModel } from '../fields';
+import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
+import { FilterFormEditableFieldModel } from '../fields';
 
 export class SubmitFilterFormActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
@@ -38,12 +37,13 @@ SubmitFilterFormActionModel.registerFlow({
   steps: {
     doFilter: {
       async handler(ctx, params) {
-        const filterManager: FilterManager = ctx.model.context.filterManager;
         const blockModel = ctx.model.context.blockModel;
         const gridModel = blockModel.subModels.grid;
         const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
 
-        filterManager.refreshTargetsByFilter(fieldModels.map((fieldModel) => fieldModel.uid));
+        fieldModels.forEach((fieldModel) => {
+          fieldModel.doFilter();
+        });
       },
     },
   },
