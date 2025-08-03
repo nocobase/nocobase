@@ -15,6 +15,9 @@ const mockFlowModel = {
   getStepParams: vi.fn(),
   setStepParams: vi.fn(),
   save: vi.fn(),
+  flowEngine: {
+    getModel: vi.fn(),
+  },
 };
 
 describe('FilterManager', () => {
@@ -545,6 +548,345 @@ describe('FilterManager', () => {
           expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-2' }),
           expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
         ]),
+      );
+    });
+  });
+
+  describe('refreshTargetsByFilter', () => {
+    it('should throw error when filterModelUid is not provided', async () => {
+      await expect(filterManager.refreshTargetsByFilter('')).rejects.toThrow('filterModelUid must be provided');
+      await expect(filterManager.refreshTargetsByFilter(null as any)).rejects.toThrow(
+        'filterModelUid must be provided',
+      );
+      await expect(filterManager.refreshTargetsByFilter(undefined as any)).rejects.toThrow(
+        'filterModelUid must be provided',
+      );
+    });
+
+    it('should throw error when filterModelUid array contains invalid values', async () => {
+      await expect(filterManager.refreshTargetsByFilter([])).rejects.toThrow(
+        'filterModelUid must be non-empty string(s)',
+      );
+      await expect(filterManager.refreshTargetsByFilter(['', 'valid'])).rejects.toThrow(
+        'filterModelUid must be non-empty string(s)',
+      );
+      await expect(filterManager.refreshTargetsByFilter([null as any, 'valid'])).rejects.toThrow(
+        'filterModelUid must be non-empty string(s)',
+      );
+    });
+
+    it('should return early when no related configs found', async () => {
+      // No filter configs exist
+      await expect(filterManager.refreshTargetsByFilter('filter-1')).resolves.toBeUndefined();
+      expect(mockFlowModel.flowEngine.getModel).not.toHaveBeenCalled();
+    });
+
+    it('should process single filterModelUid successfully', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-2',
+          targetFieldPaths: ['title'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      // Mock private property
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock target models with refresh method
+      const mockTargetModel1 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockTargetModel2 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel1;
+        if (uid === 'target-2') return mockTargetModel2;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter('filter-1');
+
+      // Verify both target models were refreshed
+      expect(mockTargetModel1.resource.refresh).toHaveBeenCalledTimes(1);
+      expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('should process multiple filterModelUids successfully', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-2',
+          targetModelUid: 'target-1', // Same target for different filters
+          targetFieldPaths: ['title'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-2',
+          targetModelUid: 'target-2',
+          targetFieldPaths: ['description'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      // Mock private property
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock target models
+      const mockTargetModel1 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockTargetModel2 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel1;
+        if (uid === 'target-2') return mockTargetModel2;
+        if (uid === 'filter-1' || uid === 'filter-2') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter(['filter-1', 'filter-2']);
+
+      // Verify both target models were refreshed (target-1 should be refreshed only once despite having multiple filters)
+      expect(mockTargetModel1.resource.refresh).toHaveBeenCalledTimes(1);
+      expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw error when target model not found', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock filter model but return null for target models
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'filter-1') return mockFilterModel;
+        return null; // target model not found
+      });
+
+      await expect(filterManager.refreshTargetsByFilter('filter-1')).rejects.toThrow(
+        'Failed to refresh target model "target-1": Target model with uid "target-1" not found',
+      );
+    });
+
+    it('should throw error when target model lacks refresh method', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock target model without refresh method
+      const mockTargetModelInvalid = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          // Missing refresh method
+        },
+      };
+
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModelInvalid;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await expect(filterManager.refreshTargetsByFilter('filter-1')).rejects.toThrow(
+        'Failed to refresh target model "target-1": Target model with uid "target-1" does not have a valid resource with refresh method',
+      );
+    });
+
+    it('should handle refresh method failures gracefully', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock target model with failing refresh method
+      const mockTargetModel = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockRejectedValue(new Error('Network error')),
+        },
+      };
+
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await expect(filterManager.refreshTargetsByFilter('filter-1')).rejects.toThrow(
+        'Failed to refresh target model "target-1": Network error',
+      );
+    });
+
+    it('should deduplicate target model UIDs correctly', async () => {
+      // Setup filter configs with duplicate target UIDs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1', // Duplicate target
+          targetFieldPaths: ['email'],
+          defaultOperator: '$eq',
+        },
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-2',
+          targetFieldPaths: ['title'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      const mockTargetModel1 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockTargetModel2 = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel1;
+        if (uid === 'target-2') return mockTargetModel2;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter('filter-1');
+
+      // Each target model should be refreshed only once despite duplicate configs
+      expect(mockTargetModel1.resource.refresh).toHaveBeenCalledTimes(1);
+      expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle bindToTarget errors correctly', async () => {
+      // Setup filter configs
+      const filterConfigs = [
+        {
+          filterModelUid: 'filter-1',
+          targetModelUid: 'target-1',
+          targetFieldPaths: ['name'],
+          defaultOperator: '$eq',
+        },
+      ];
+
+      (filterManager as any).filterConfigs = filterConfigs;
+
+      // Mock target model that exists but filter model that doesn't
+      const mockTargetModel = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel;
+        return null; // filter model not found
+      });
+
+      await expect(filterManager.refreshTargetsByFilter('filter-1')).rejects.toThrow(
+        'Failed to refresh target model "target-1"',
       );
     });
   });
