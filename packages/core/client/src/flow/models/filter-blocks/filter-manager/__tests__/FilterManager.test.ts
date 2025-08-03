@@ -43,10 +43,9 @@ describe('FilterManager', () => {
     it('should initialize with existing filter configs', () => {
       const existingConfigs = [
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'target1',
-          targetFieldPaths: ['field1'],
-          defaultOperator: '$eq',
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['field1'],
         },
       ];
       mockFlowModel.getStepParams.mockReturnValue(existingConfigs);
@@ -57,11 +56,10 @@ describe('FilterManager', () => {
       // 验证可以正常获取配置
       const result = filterManager.getConnectFieldsConfig('filter1');
       expect(result).toEqual({
-        operator: '$eq',
         targets: [
           {
-            targetModelUid: 'target1',
-            targetFieldPaths: ['field1'],
+            targetId: 'target1',
+            filterPaths: ['field1'],
           },
         ],
       });
@@ -85,47 +83,46 @@ describe('FilterManager', () => {
     beforeEach(() => {
       const mockConfigs = [
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'target1',
-          targetFieldPaths: ['field1'],
-          defaultOperator: 'eq',
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['field1'],
+          operator: 'eq',
         },
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'target2',
-          targetFieldPaths: ['field2'],
-          defaultOperator: 'eq',
+          filterId: 'filter1',
+          targetId: 'target2',
+          filterPaths: ['field2'],
+          operator: 'eq',
         },
         {
-          filterModelUid: 'filter2',
-          targetModelUid: 'target3',
-          targetFieldPaths: ['field3'],
-          defaultOperator: 'ne',
+          filterId: 'filter2',
+          targetId: 'target3',
+          filterPaths: ['field3'],
+          operator: 'ne',
         },
       ];
       mockFlowModel.getStepParams.mockReturnValue(mockConfigs);
       filterManager = new FilterManager(mockFlowModel as any);
     });
 
-    it('should return undefined when no configs found for filterModelUid', () => {
+    it('should return undefined when no configs found for filterId', () => {
       const result = filterManager.getConnectFieldsConfig('nonexistent');
 
       expect(result).toBeUndefined();
     });
 
-    it('should return correct ConnectFieldsConfig for existing filterModelUid', () => {
+    it('should return correct ConnectFieldsConfig for existing filterId', () => {
       const result = filterManager.getConnectFieldsConfig('filter1');
 
       expect(result).toEqual({
-        operator: 'eq',
         targets: [
           {
-            targetModelUid: 'target1',
-            targetFieldPaths: ['field1'],
+            targetId: 'target1',
+            filterPaths: ['field1'],
           },
           {
-            targetModelUid: 'target2',
-            targetFieldPaths: ['field2'],
+            targetId: 'target2',
+            filterPaths: ['field2'],
           },
         ],
       });
@@ -135,11 +132,10 @@ describe('FilterManager', () => {
       const result = filterManager.getConnectFieldsConfig('filter2');
 
       expect(result).toEqual({
-        operator: 'ne',
         targets: [
           {
-            targetModelUid: 'target3',
-            targetFieldPaths: ['field3'],
+            targetId: 'target3',
+            filterPaths: ['field3'],
           },
         ],
       });
@@ -149,15 +145,14 @@ describe('FilterManager', () => {
   describe('saveConnectFieldsConfig', () => {
     it('should save new config correctly', () => {
       const config = {
-        operator: 'contains',
         targets: [
           {
-            targetModelUid: 'target1',
-            targetFieldPaths: ['name'],
+            targetId: 'target1',
+            filterPaths: ['name'],
           },
           {
-            targetModelUid: 'target2',
-            targetFieldPaths: ['title'],
+            targetId: 'target2',
+            filterPaths: ['title'],
           },
         ],
       };
@@ -166,45 +161,42 @@ describe('FilterManager', () => {
 
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'target1',
-          targetFieldPaths: ['name'],
-          defaultOperator: 'contains',
+          filterId: 'filter1',
+          targetId: 'target1',
+          filterPaths: ['name'],
         },
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'target2',
-          targetFieldPaths: ['title'],
-          defaultOperator: 'contains',
+          filterId: 'filter1',
+          targetId: 'target2',
+          filterPaths: ['title'],
         },
       ]);
     });
 
-    it('should replace existing config for same filterModelUid', () => {
+    it('should replace existing config for same filterId', () => {
       // Initialize with existing config
       const initialConfigs = [
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'oldTarget',
-          targetFieldPaths: ['oldField'],
-          defaultOperator: 'eq',
+          filterId: 'filter1',
+          targetId: 'oldTarget',
+          filterPaths: ['oldField'],
+          operator: 'eq',
         },
         {
-          filterModelUid: 'filter2',
-          targetModelUid: 'target2',
-          targetFieldPaths: ['field2'],
-          defaultOperator: 'ne',
+          filterId: 'filter2',
+          targetId: 'target2',
+          filterPaths: ['field2'],
+          operator: 'ne',
         },
       ];
       mockFlowModel.getStepParams.mockReturnValue(initialConfigs);
       filterManager = new FilterManager(mockFlowModel as any);
 
       const newConfig = {
-        operator: 'contains',
         targets: [
           {
-            targetModelUid: 'newTarget',
-            targetFieldPaths: ['newField'],
+            targetId: 'newTarget',
+            filterPaths: ['newField'],
           },
         ],
       };
@@ -213,16 +205,15 @@ describe('FilterManager', () => {
 
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
         {
-          filterModelUid: 'filter2',
-          targetModelUid: 'target2',
-          targetFieldPaths: ['field2'],
-          defaultOperator: 'ne',
+          filterId: 'filter2',
+          targetId: 'target2',
+          filterPaths: ['field2'],
+          operator: 'ne',
         },
         {
-          filterModelUid: 'filter1',
-          targetModelUid: 'newTarget',
-          targetFieldPaths: ['newField'],
-          defaultOperator: 'contains',
+          filterId: 'filter1',
+          targetId: 'newTarget',
+          filterPaths: ['newField'],
         },
       ]);
     });
@@ -231,7 +222,6 @@ describe('FilterManager', () => {
   describe('edge cases', () => {
     it('should handle empty targets in saveConnectFieldsConfig', () => {
       const config = {
-        operator: 'eq',
         targets: [],
       };
 
@@ -244,10 +234,10 @@ describe('FilterManager', () => {
   describe('addFilterConfig', () => {
     it('should add a new filter config successfully', () => {
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
 
       filterManager.addFilterConfig(filterConfig);
@@ -258,23 +248,22 @@ describe('FilterManager', () => {
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
-    it('should update existing filter config with same filterModelUid and targetModelUid', () => {
+    it('should update existing filter config with same filterId and targetId', () => {
       // Setup initial config
       const initialConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
       filterManager = new FilterManager(mockFlowModel as any);
 
       // Add updated config
       const updatedConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$ne',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['email'],
         operator: '$contains',
       };
 
@@ -288,17 +277,17 @@ describe('FilterManager', () => {
 
     it('should add multiple different filter configs', () => {
       const config1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
 
       const config2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-2',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$ne',
+        filterId: 'filter-2',
+        targetId: 'target-2',
+        filterPaths: ['email'],
+        operator: '$ne',
       };
 
       filterManager.addFilterConfig(config1);
@@ -310,88 +299,75 @@ describe('FilterManager', () => {
       ]);
     });
 
-    it('should throw error when filterModelUid is missing', () => {
+    it('should throw error when filterId is missing', () => {
       const filterConfig = {
-        filterModelUid: '',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: '',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
 
       expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
-        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+        'FilterConfig must have filterId, targetId, and operator',
       );
     });
 
-    it('should throw error when targetModelUid is missing', () => {
+    it('should throw error when targetId is missing', () => {
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: '',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: '',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
 
       expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
-        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+        'FilterConfig must have filterId, targetId, and operator',
       );
     });
 
-    it('should throw error when defaultOperator is missing', () => {
+    it('should throw error when filterPaths is empty array', () => {
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: [],
+        operator: '$eq',
       };
 
       expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
-        'FilterConfig must have filterModelUid, targetModelUid, and defaultOperator',
+        'FilterConfig must have non-empty filterPaths array',
       );
     });
 
-    it('should throw error when targetFieldPaths is empty array', () => {
+    it('should throw error when filterPaths is not an array', () => {
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: [],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: 'name' as any,
+        operator: '$eq',
       };
 
       expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
-        'FilterConfig must have non-empty targetFieldPaths array',
+        'FilterConfig must have non-empty filterPaths array',
       );
     });
 
-    it('should throw error when targetFieldPaths is not an array', () => {
-      const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: 'name' as any,
-        defaultOperator: '$eq',
-      };
-
-      expect(() => filterManager.addFilterConfig(filterConfig)).toThrow(
-        'FilterConfig must have non-empty targetFieldPaths array',
-      );
-    });
-
-    it('should add config when same filterModelUid exists but different targetModelUid', () => {
+    it('should add config when same filterId exists but different targetId', () => {
       // Setup initial config
       const initialConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
       filterManager = new FilterManager(mockFlowModel as any);
 
       // Add config with same filter but different target
       const newConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-2',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$ne',
+        filterId: 'filter-1',
+        targetId: 'target-2',
+        filterPaths: ['email'],
+        operator: '$ne',
       };
 
       filterManager.addFilterConfig(newConfig);
@@ -408,28 +384,28 @@ describe('FilterManager', () => {
       // Setup initial filter configs for testing removal
       const initialConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-2',
-          targetFieldPaths: ['age'],
-          defaultOperator: '$gt',
+          filterId: 'filter-1',
+          targetId: 'target-2',
+          filterPaths: ['age'],
+          operator: '$gt',
         },
         {
-          filterModelUid: 'filter-2',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['email'],
-          defaultOperator: '$like',
+          filterId: 'filter-2',
+          targetId: 'target-1',
+          filterPaths: ['email'],
+          operator: '$like',
         },
         {
-          filterModelUid: 'filter-2',
-          targetModelUid: 'target-3',
-          targetFieldPaths: ['status'],
-          defaultOperator: '$eq',
+          filterId: 'filter-2',
+          targetId: 'target-3',
+          filterPaths: ['status'],
+          operator: '$eq',
         },
       ];
       mockFlowModel.getStepParams.mockReturnValue(initialConfigs);
@@ -439,43 +415,43 @@ describe('FilterManager', () => {
     it('should throw error when no parameters provided', () => {
       expect(() => {
         filterManager.removeFilterConfig({});
-      }).toThrow('At least one of filterModelUid or targetModelUid must be provided');
+      }).toThrow('At least one of filterId or targetId must be provided');
     });
 
-    it('should remove all configs for a specific filter when only filterModelUid provided', () => {
-      const removedCount = filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+    it('should remove all configs for a specific filter when only filterId provided', () => {
+      const removedCount = filterManager.removeFilterConfig({ filterId: 'filter-1' });
 
       expect(removedCount).toBe(2);
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
         FILTER_MANAGER_FLOW_KEY,
         FILTER_CONFIGS_STEP_KEY,
         expect.arrayContaining([
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-1' }),
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-1' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
       );
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
-    it('should remove all configs for a specific target when only targetModelUid provided', () => {
-      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'target-1' });
+    it('should remove all configs for a specific target when only targetId provided', () => {
+      const removedCount = filterManager.removeFilterConfig({ targetId: 'target-1' });
 
       expect(removedCount).toBe(2);
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
         FILTER_MANAGER_FLOW_KEY,
         FILTER_CONFIGS_STEP_KEY,
         expect.arrayContaining([
-          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-2' }),
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+          expect.objectContaining({ filterId: 'filter-1', targetId: 'target-2' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
       );
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
-    it('should remove specific config when both filterModelUid and targetModelUid provided', () => {
+    it('should remove specific config when both filterId and targetId provided', () => {
       const removedCount = filterManager.removeFilterConfig({
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-2',
+        filterId: 'filter-1',
+        targetId: 'target-2',
       });
 
       expect(removedCount).toBe(1);
@@ -483,16 +459,16 @@ describe('FilterManager', () => {
         FILTER_MANAGER_FLOW_KEY,
         FILTER_CONFIGS_STEP_KEY,
         expect.arrayContaining([
-          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-1' }),
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-1' }),
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+          expect.objectContaining({ filterId: 'filter-1', targetId: 'target-1' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-1' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
       );
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
     it('should return 0 when no matching configs found', () => {
-      const removedCount = filterManager.removeFilterConfig({ filterModelUid: 'non-existent' });
+      const removedCount = filterManager.removeFilterConfig({ filterId: 'non-existent' });
 
       expect(removedCount).toBe(0);
       expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
@@ -500,7 +476,7 @@ describe('FilterManager', () => {
     });
 
     it('should not save when no configs are removed', () => {
-      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'non-existent' });
+      const removedCount = filterManager.removeFilterConfig({ targetId: 'non-existent' });
 
       expect(removedCount).toBe(0);
       expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
@@ -511,22 +487,22 @@ describe('FilterManager', () => {
       mockFlowModel.getStepParams.mockReturnValue([]);
       const emptyFilterManager = new FilterManager(mockFlowModel as any);
 
-      const removedCount = emptyFilterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+      const removedCount = emptyFilterManager.removeFilterConfig({ filterId: 'filter-1' });
 
       expect(removedCount).toBe(0);
       expect(mockFlowModel.setStepParams).not.toHaveBeenCalled();
       expect(mockFlowModel.save).not.toHaveBeenCalled();
     });
 
-    it('should remove all remaining configs when removing by existing targetModelUid', () => {
+    it('should remove all remaining configs when removing by existing targetId', () => {
       // First remove some configs to make the array smaller
-      filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+      filterManager.removeFilterConfig({ filterId: 'filter-1' });
 
       // Reset mocks to track the next call
       vi.clearAllMocks();
 
       // Now remove by target
-      const removedCount = filterManager.removeFilterConfig({ targetModelUid: 'target-3' });
+      const removedCount = filterManager.removeFilterConfig({ targetId: 'target-3' });
 
       expect(removedCount).toBe(1);
       expect(mockFlowModel.save).toHaveBeenCalled();
@@ -534,8 +510,8 @@ describe('FilterManager', () => {
 
     it('should preserve other configs when removing specific combination', () => {
       const removedCount = filterManager.removeFilterConfig({
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-1',
+        filterId: 'filter-2',
+        targetId: 'target-1',
       });
 
       expect(removedCount).toBe(1);
@@ -544,34 +520,28 @@ describe('FilterManager', () => {
       expect(savedConfigs).toHaveLength(3);
       expect(savedConfigs).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-1' }),
-          expect.objectContaining({ filterModelUid: 'filter-1', targetModelUid: 'target-2' }),
-          expect.objectContaining({ filterModelUid: 'filter-2', targetModelUid: 'target-3' }),
+          expect.objectContaining({ filterId: 'filter-1', targetId: 'target-1' }),
+          expect.objectContaining({ filterId: 'filter-1', targetId: 'target-2' }),
+          expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
       );
     });
   });
 
   describe('refreshTargetsByFilter', () => {
-    it('should throw error when filterModelUid is not provided', async () => {
-      await expect(filterManager.refreshTargetsByFilter('')).rejects.toThrow('filterModelUid must be provided');
-      await expect(filterManager.refreshTargetsByFilter(null as any)).rejects.toThrow(
-        'filterModelUid must be provided',
-      );
-      await expect(filterManager.refreshTargetsByFilter(undefined as any)).rejects.toThrow(
-        'filterModelUid must be provided',
-      );
+    it('should throw error when filterId is not provided', async () => {
+      await expect(filterManager.refreshTargetsByFilter('')).rejects.toThrow('filterId must be provided');
+      await expect(filterManager.refreshTargetsByFilter(null as any)).rejects.toThrow('filterId must be provided');
+      await expect(filterManager.refreshTargetsByFilter(undefined as any)).rejects.toThrow('filterId must be provided');
     });
 
-    it('should throw error when filterModelUid array contains invalid values', async () => {
-      await expect(filterManager.refreshTargetsByFilter([])).rejects.toThrow(
-        'filterModelUid must be non-empty string(s)',
-      );
+    it('should throw error when filterId array contains invalid values', async () => {
+      await expect(filterManager.refreshTargetsByFilter([])).rejects.toThrow('filterId must be non-empty string(s)');
       await expect(filterManager.refreshTargetsByFilter(['', 'valid'])).rejects.toThrow(
-        'filterModelUid must be non-empty string(s)',
+        'filterId must be non-empty string(s)',
       );
       await expect(filterManager.refreshTargetsByFilter([null as any, 'valid'])).rejects.toThrow(
-        'filterModelUid must be non-empty string(s)',
+        'filterId must be non-empty string(s)',
       );
     });
 
@@ -581,20 +551,20 @@ describe('FilterManager', () => {
       expect(mockFlowModel.flowEngine.getModel).not.toHaveBeenCalled();
     });
 
-    it('should process single filterModelUid successfully', async () => {
+    it('should process single filterId successfully', async () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-2',
-          targetFieldPaths: ['title'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-2',
+          filterPaths: ['title'],
+          operator: '$eq',
         },
       ];
 
@@ -636,26 +606,26 @@ describe('FilterManager', () => {
       expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
     });
 
-    it('should process multiple filterModelUids successfully', async () => {
+    it('should process multiple filterIds successfully', async () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-2',
-          targetModelUid: 'target-1', // Same target for different filters
-          targetFieldPaths: ['title'],
-          defaultOperator: '$eq',
+          filterId: 'filter-2',
+          targetId: 'target-1', // Same target for different filters
+          filterPaths: ['title'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-2',
-          targetModelUid: 'target-2',
-          targetFieldPaths: ['description'],
-          defaultOperator: '$eq',
+          filterId: 'filter-2',
+          targetId: 'target-2',
+          filterPaths: ['description'],
+          operator: '$eq',
         },
       ];
 
@@ -701,10 +671,10 @@ describe('FilterManager', () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
       ];
 
@@ -729,10 +699,10 @@ describe('FilterManager', () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
       ];
 
@@ -766,10 +736,10 @@ describe('FilterManager', () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
       ];
 
@@ -803,22 +773,22 @@ describe('FilterManager', () => {
       // Setup filter configs with duplicate target UIDs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1', // Duplicate target
-          targetFieldPaths: ['email'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1', // Duplicate target
+          filterPaths: ['email'],
+          operator: '$eq',
         },
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-2',
-          targetFieldPaths: ['title'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-2',
+          filterPaths: ['title'],
+          operator: '$eq',
         },
       ];
 
@@ -862,10 +832,10 @@ describe('FilterManager', () => {
       // Setup filter configs
       const filterConfigs = [
         {
-          filterModelUid: 'filter-1',
-          targetModelUid: 'target-1',
-          targetFieldPaths: ['name'],
-          defaultOperator: '$eq',
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
         },
       ];
 

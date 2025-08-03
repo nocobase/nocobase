@@ -33,24 +33,24 @@ describe('FilterManager.unbindFromTarget', () => {
   });
 
   describe('parameter validation', () => {
-    it('should throw error when targetModelUid is empty string', () => {
+    it('should throw error when targetId is empty string', () => {
       expect(() => {
         filterManager.unbindFromTarget('');
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
     });
 
-    it('should throw error when targetModelUid is not a string', () => {
+    it('should throw error when targetId is not a string', () => {
       expect(() => {
         filterManager.unbindFromTarget(null as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
 
       expect(() => {
         filterManager.unbindFromTarget(undefined as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
 
       expect(() => {
         filterManager.unbindFromTarget(123 as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
     });
   });
 
@@ -125,10 +125,10 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should not throw error when no configurations exist for the target', () => {
       // Add a filter config for a different target
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'different-target',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'different-target',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -155,10 +155,10 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should unbind single filter configuration correctly', () => {
       // Add a filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -171,22 +171,22 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should unbind multiple filter configurations for the same target', () => {
       // Add multiple filter configs for the same target
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'target-model-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
       const filterConfig3 = {
-        filterModelUid: 'filter-3',
-        targetModelUid: 'different-target',
-        targetFieldPaths: ['status'],
-        defaultOperator: '$eq',
+        filterId: 'filter-3',
+        targetId: 'different-target',
+        filterPaths: ['status'],
+        operator: '$eq',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -206,16 +206,16 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should only unbind configurations for the specified target', () => {
       // Add filter configs for multiple targets
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'other-target-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'other-target-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -246,10 +246,10 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should throw error when removeFilterGroup method fails', () => {
       // Add a filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -267,16 +267,16 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should handle errors gracefully for multiple configurations', () => {
       // Add multiple filter configs
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'target-model-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -284,7 +284,7 @@ describe('FilterManager.unbindFromTarget', () => {
 
       // Make removeFilterGroup fail for the first call only
       let callCount = 0;
-      mockTargetModel.resource.removeFilterGroup.mockImplementation((filterModelUid: string) => {
+      mockTargetModel.resource.removeFilterGroup.mockImplementation((filterId: string) => {
         callCount++;
         if (callCount === 1) {
           throw new Error('First filter removal failed');
@@ -303,10 +303,10 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should provide meaningful error messages for different failure scenarios', () => {
       // Add a filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -344,10 +344,10 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should work correctly after adding and removing filter configurations', () => {
       // Add filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -359,7 +359,7 @@ describe('FilterManager.unbindFromTarget', () => {
       mockTargetModel.resource.removeFilterGroup.mockClear();
 
       // Remove the config and try unbind again
-      filterManager.removeFilterConfig({ filterModelUid: 'filter-1' });
+      filterManager.removeFilterConfig({ filterId: 'filter-1' });
       filterManager.unbindFromTarget('target-model-uid');
 
       // Should not call removeFilterGroup since no configs exist
@@ -369,16 +369,16 @@ describe('FilterManager.unbindFromTarget', () => {
     it('should handle complex configuration scenarios', () => {
       // Add multiple configs with same filter but different targets
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-1',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-2',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-1',
+        targetId: 'target-2',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);

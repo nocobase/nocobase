@@ -34,24 +34,24 @@ describe('FilterManager.bindToTarget', () => {
   });
 
   describe('parameter validation', () => {
-    it('should throw error when targetModelUid is empty string', () => {
+    it('should throw error when targetId is empty string', () => {
       expect(() => {
         filterManager.bindToTarget('');
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
     });
 
-    it('should throw error when targetModelUid is not a string', () => {
+    it('should throw error when targetId is not a string', () => {
       expect(() => {
         filterManager.bindToTarget(null as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
 
       expect(() => {
         filterManager.bindToTarget(undefined as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
 
       expect(() => {
         filterManager.bindToTarget(123 as any);
-      }).toThrow('targetModelUid must be a non-empty string');
+      }).toThrow('targetId must be a non-empty string');
     });
   });
 
@@ -139,10 +139,10 @@ describe('FilterManager.bindToTarget', () => {
     it('should throw error when filter model does not have getFilterValue method', () => {
       // Add a filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -186,10 +186,10 @@ describe('FilterManager.bindToTarget', () => {
     it('should bind single filter condition correctly', () => {
       // Add a filter config with single target field
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -208,10 +208,10 @@ describe('FilterManager.bindToTarget', () => {
     it('should bind multiple filter conditions correctly', () => {
       // Add a filter config with multiple target fields
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name', 'email'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name', 'email'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -227,13 +227,12 @@ describe('FilterManager.bindToTarget', () => {
       expect(filterGroup).toBeInstanceOf(FilterGroup);
     });
 
-    it('should use operator over defaultOperator when available', () => {
-      // Add a filter config with both operator and defaultOperator
+    it('should use operator when available', () => {
+      // Add a filter config with operator
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
         operator: '$ne',
       };
       filterManager.addFilterConfig(filterConfig);
@@ -242,7 +241,7 @@ describe('FilterManager.bindToTarget', () => {
 
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledTimes(1);
 
-      // Verify that the FilterItem uses the operator, not defaultOperator
+      // Verify that the FilterItem uses the operator
       const call = mockTargetModel.resource.addFilterGroup.mock.calls[0];
       const filterItem = call[1];
       expect(filterItem.options.operator).toBe('$ne');
@@ -251,16 +250,16 @@ describe('FilterManager.bindToTarget', () => {
     it('should bind multiple filter configurations for the same target', () => {
       // Add multiple filter configs for the same target
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'target-model-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -312,10 +311,10 @@ describe('FilterManager.bindToTarget', () => {
     it('should throw error when addFilterGroup method fails', () => {
       // Add a filter config
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -333,16 +332,16 @@ describe('FilterManager.bindToTarget', () => {
     it('should handle errors gracefully for multiple configurations', () => {
       // Add multiple filter configs
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'target-model-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -402,10 +401,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue(null);
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -420,10 +419,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue(undefined);
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -438,10 +437,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue('');
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -469,16 +468,16 @@ describe('FilterManager.bindToTarget', () => {
 
       // Add configs for both filters
       const filterConfig1 = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       const filterConfig2 = {
-        filterModelUid: 'filter-2',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['email'],
-        defaultOperator: '$contains',
+        filterId: 'filter-2',
+        targetId: 'target-model-uid',
+        filterPaths: ['email'],
+        operator: '$contains',
       };
 
       filterManager.addFilterConfig(filterConfig1);
@@ -495,10 +494,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue(null);
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -517,10 +516,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue('valid-value');
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['name'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['name'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -535,10 +534,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue(0);
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['count'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['count'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
@@ -553,10 +552,10 @@ describe('FilterManager.bindToTarget', () => {
       mockFilterModel.getFilterValue.mockReturnValue(false);
 
       const filterConfig = {
-        filterModelUid: 'filter-1',
-        targetModelUid: 'target-model-uid',
-        targetFieldPaths: ['active'],
-        defaultOperator: '$eq',
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['active'],
+        operator: '$eq',
       };
       filterManager.addFilterConfig(filterConfig);
 
