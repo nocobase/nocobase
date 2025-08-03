@@ -9,7 +9,7 @@
 
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { EditableFieldModel } from '../models/fields/EditableField/EditableFieldModel';
+import { EditableFieldModel } from '../../models/fields/EditableField/EditableFieldModel';
 import { VariableFieldInput } from './VariableFieldInput';
 
 interface VariableEditableValueProps {

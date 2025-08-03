@@ -11,10 +11,10 @@ import { connect, FieldContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import { FlowModelRenderer, MetaTreeNode } from '@nocobase/flow-engine';
 import React, { useMemo } from 'react';
-import { EditableFieldModel } from '../models/fields/EditableField/EditableFieldModel';
-import { VariableFieldFormModel } from '../models/fields/EditableField/VariableFieldFormModel';
+import { EditableFieldModel } from '../../models/fields/EditableField/EditableFieldModel';
+import { VariableFieldFormModel } from '../../models/fields/EditableField/VariableFieldFormModel';
 import { Space } from 'antd';
-import { ReactiveField } from '../formily/ReactiveField';
+import { ReactiveField } from '../../formily/ReactiveField';
 import { VariableTag } from './VariableTag';
 import { VariableSelector } from './VariableSelector';
 
