@@ -26,7 +26,6 @@ async function getTreePath(
     });
 
     if (parent && parent.get('parentId') !== model.get('id')) {
-      path = `/${parent.get('id')}${path}`;
       const collectionTreePath = db.getCollection(pathCollectionName);
       const nodePkColumnName = collectionTreePath.getField('nodePk').columnName();
       const parentPathData = await db.getRepository(pathCollectionName).findOne({
@@ -35,7 +34,15 @@ async function getTreePath(
       });
       const parentPath = lodash.get(parentPathData, 'path', null);
       if (parentPath == null) {
-        path = await getTreePath(db, parent, path, collection, pathCollectionName, transaction);
+        const parentFullPath = await getTreePath(
+          db,
+          parent,
+          `/${parent.get('id')}`,
+          collection,
+          pathCollectionName,
+          transaction,
+        );
+        path = `${parentFullPath}/${model.get('id')}`;
       } else {
         path = `${parentPath}/${model.get('id')}`;
       }
