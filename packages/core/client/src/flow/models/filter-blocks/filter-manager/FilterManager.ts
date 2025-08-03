@@ -87,24 +87,4 @@ export class FilterManager {
     // 3. 保存 this.filterConfigs 的值
     this.saveFilterConfigs();
   }
-
-  deleteFilterModelConfig(filterModelUid: string) {
-    // 1. 找到 filterConfigs 中包含 filterModelUid 的配置并删除
-    const filteredConfigs = this.filterConfigs.filter((config) => config.filterModelUid !== filterModelUid);
-    this.filterConfigs.length = 0;
-    this.filterConfigs.push(...filteredConfigs);
-
-    // 2. 保存 this.filterConfigs 的值
-    this.saveFilterConfigs();
-  }
-
-  deleteTargetModelConfig(targetModelUid: string) {
-    // 1. 找到 filterConfigs 中 包含 targetModelUid 的配置并删除
-    const filteredConfigs = this.filterConfigs.filter((config) => config.targetModelUid !== targetModelUid);
-    this.filterConfigs.length = 0;
-    this.filterConfigs.push(...filteredConfigs);
-
-    // 2. 保存 this.filterConfigs 的值
-    this.saveFilterConfigs();
-  }
 }
