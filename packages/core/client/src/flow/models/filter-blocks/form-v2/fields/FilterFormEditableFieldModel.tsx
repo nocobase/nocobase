@@ -144,21 +144,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   }
 
   doReset() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const targets = connectFieldsConfig?.targets || [];
-
-    if (!targets.length) {
-      return;
-    }
-
-    this.removeFilterGroupFromTargetModels();
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.refresh();
-      }
-    });
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
