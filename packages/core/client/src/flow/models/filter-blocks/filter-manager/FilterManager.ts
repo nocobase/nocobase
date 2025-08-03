@@ -236,6 +236,13 @@ export class FilterManager {
       );
     }
 
+    // 验证目标模型是否具有 removeFilterGroup 方法
+    if (typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
+      throw new Error(
+        `Target model with uid "${targetModelUid}" does not have a valid resource with removeFilterGroup method`,
+      );
+    }
+
     // 5. 获取与目标模型相关的筛选配置
     const relatedConfigs = this.filterConfigs.filter((config) => config.targetModelUid === targetModelUid);
 
@@ -252,12 +259,25 @@ export class FilterManager {
         throw new Error(`Filter model with uid "${config.filterModelUid}" does not have getFilterValue method`);
       }
 
+      // 获取筛选值
+      const filterValue = filterModel.getFilterValue();
+
+      // 检查筛选值是否为空（null、undefined 或空字符串）
+      if (filterValue === null || filterValue === undefined || filterValue === '') {
+        // 移除现有的筛选组
+        try {
+          (targetModel as any).resource.removeFilterGroup(config.filterModelUid);
+        } catch (error) {
+          throw new Error(`Failed to remove filter configuration from target model: ${error.message}`);
+        }
+        return; // 跳过当前配置的处理
+      }
+
       // 构建筛选条件
       const filterConditions = config.targetFieldPaths.map((fieldPath) => ({
         key: fieldPath,
         operator: config.operator || config.defaultOperator,
-        // 这里暂时不设置值，值会在实际筛选时动态设置
-        value: filterModel.getFilterValue(),
+        value: filterValue,
       }));
 
       // 添加筛选组到目标模型
