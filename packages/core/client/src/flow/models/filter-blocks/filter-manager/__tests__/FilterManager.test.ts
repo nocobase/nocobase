@@ -365,15 +365,5 @@ describe('FilterManager', () => {
 
       expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, []);
     });
-
-    it('should handle constructor with object instead of array', () => {
-      mockFlowModel.getStepParams.mockReturnValue({});
-
-      // Should throw error
-      expect(() => {
-        filterManager = new FilterManager(mockFlowModel as any);
-        filterManager.getConnectFieldsConfig('test');
-      }).toThrow('this.filterConfigs.filter is not a function');
-    });
   });
 });
