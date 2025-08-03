@@ -26,6 +26,7 @@ interface CascaderOption {
 }
 
 export const VariableSelector: React.FC<VariableSelectorProps> = ({ metaTree, value, onChange }) => {
+  console.log('🏭 VariableSelector render:', { value, hasOnChange: !!onChange });
   const [options, setOptions] = useState<CascaderOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -164,9 +165,11 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({ metaTree, va
   // 处理选择变化
   const handleChange = useCallback(
     (selectedValues: string[]) => {
+      console.log('🔧 VariableSelector.handleChange:', { selectedValues, firstValue: selectedValues?.[0] });
       setSelectedValue(selectedValues);
 
       if (!selectedValues || selectedValues.length === 0) {
+        console.log('🔧 VariableSelector: 选择为空，返回 null');
         onChange?.(null);
         return;
       }
@@ -175,11 +178,13 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({ metaTree, va
 
       // 处理固定选项
       if (firstValue === 'null') {
+        console.log('🔧 VariableSelector: 选择 null');
         onChange?.(null);
         return;
       }
 
       if (firstValue === 'constant') {
+        console.log('🔧 VariableSelector: 选择 constant');
         onChange?.('');
         return;
       }
@@ -187,6 +192,7 @@ export const VariableSelector: React.FC<VariableSelectorProps> = ({ metaTree, va
       // 处理变量选择
       const variablePath = selectedValues.join('.');
       const variableValue = `{{ ctx.${variablePath} }}`;
+      console.log('🔧 VariableSelector: 选择变量', { variablePath, variableValue });
       onChange?.(variableValue);
     },
     [onChange],
