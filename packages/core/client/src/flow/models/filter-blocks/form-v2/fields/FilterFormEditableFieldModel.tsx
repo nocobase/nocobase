@@ -8,11 +8,10 @@
  */
 
 import { reaction } from '@formily/reactive';
-import { debounce } from 'lodash';
+import _, { debounce } from 'lodash';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
 import { FilterManager } from '../../filter-manager/FilterManager';
-import _ from 'lodash';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
@@ -141,21 +140,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   }
 
   doFilter() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const targets = connectFieldsConfig?.targets || [];
-
-    if (!targets.length) {
-      return;
-    }
-
-    this.addFilterGroupToTargetModels();
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.refresh();
-      }
-    });
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
