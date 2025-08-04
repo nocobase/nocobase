@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { useT } from '../../locale';
 import { Row, Col, Card, Tabs, Button } from 'antd';
 import { PlaySquareOutlined } from '@ant-design/icons';
@@ -18,6 +18,9 @@ import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
 import { useRequest } from '@nocobase/client';
 import { configStore } from './config-store';
+import { ChartBlockModel } from './ChartBlockModel';
+import { ResultPanel } from './ResultPanel';
+import { AxiosError } from 'axios';
 
 const RunButton: React.FC = memo(() => {
   const t = useT();
@@ -27,15 +30,20 @@ const RunButton: React.FC = memo(() => {
   const { loading, run } = useRequest(
     () => {
       const sql = form.values.query.sql;
-      return ctx.runsql({
-        uid: ctx.model.uid,
-        sql,
-      });
+      return ctx.sql.run(sql);
     },
     {
       manual: true,
       onSuccess(result) {
         configStore.setResult(result);
+      },
+      onError(
+        error: AxiosError<{
+          errors: { message: string }[];
+        }>,
+      ) {
+        const message = error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n') || error.message;
+        configStore.setError(message);
       },
     },
   );
@@ -49,6 +57,17 @@ const RunButton: React.FC = memo(() => {
 
 export const ConfigPanel: React.FC = () => {
   const t = useT();
+  const ctx = useFlowSettingsContext<ChartBlockModel>();
+
+  useEffect(() => {
+    if (!configStore.result) {
+      configStore.setResult(ctx.model.resource.getData());
+    }
+    return () => {
+      configStore.setResult(null);
+    };
+  }, [ctx.model.resource]);
+
   return (
     <Row gutter={8}>
       <Col span={6}>
@@ -72,8 +91,9 @@ export const ConfigPanel: React.FC = () => {
                 children: <QueryPanel />,
               },
               {
-                label: t('Inspect'),
-                key: 'inspect',
+                label: t('Result'),
+                key: 'result',
+                children: <ResultPanel />,
               },
             ]}
           />
@@ -98,10 +118,10 @@ export const ConfigPanel: React.FC = () => {
                 key: 'chart',
                 children: <ChartOptionsPanel />,
               },
-              {
-                label: t('Transformation'),
-                key: 'transformation',
-              },
+              // {
+              //   label: t('Transformation'),
+              //   key: 'transformation',
+              // },
               {
                 label: t('Events'),
                 key: 'events',

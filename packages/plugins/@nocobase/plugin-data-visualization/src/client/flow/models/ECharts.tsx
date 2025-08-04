@@ -24,6 +24,7 @@ interface Props {
 const ECharts: React.FC<Props> = ({ option, style, className, theme, onEvents }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<EChartsType | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver>();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -37,12 +38,14 @@ const ECharts: React.FC<Props> = ({ option, style, className, theme, onEvents })
       });
     }
 
-    const resize = () => instanceRef.current?.resize();
-    window.addEventListener('resize', resize);
+    resizeObserverRef.current = new ResizeObserver(() => {
+      instanceRef.current?.resize();
+    });
+    resizeObserverRef.current.observe(chartRef.current);
 
     return () => {
       instanceRef.current?.dispose();
-      window.removeEventListener('resize', resize);
+      resizeObserverRef.current?.disconnect();
     };
   }, [theme, onEvents]);
 

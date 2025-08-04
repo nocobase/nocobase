@@ -43,6 +43,8 @@ import { ChartRendererToolbar, ChartFilterBlockToolbar, ChartFilterItemToolbar }
 import { ChartCardItem } from './block/CardItem';
 import { Schema } from '@formily/react';
 import { ChartBlockModel } from './flow/models/ChartBlockModel';
+import PluginAIClient from '@nocobase/plugin-ai/client';
+import { buildChartBlockTool } from './ai/tools';
 
 type fieldInterfaceConfig = {
   valueFormatter: (field: any, value: any) => any;
@@ -84,6 +86,11 @@ class PluginDataVisualiztionClient extends Plugin {
     this.charts.addGroup('ant-design-charts', { title: 'Ant Design Charts', charts: g2plot });
 
     this.app.flowEngine.registerModels({ ChartBlockModel });
+
+    const ai = this.app.pm.get('ai') as PluginAIClient;
+    if (ai) {
+      ai.aiManager.registerTool(...buildChartBlockTool);
+    }
 
     // 1.x
     this.app.addComponents({

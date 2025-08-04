@@ -11,12 +11,20 @@ import { model } from '@formily/reactive';
 
 interface ConfigState {
   result: any;
+  error?: string;
   setResult: (result: any) => void;
+  setError?: (error: string) => void;
 }
 
 export const configStore = model<ConfigState>({
   result: null,
+  error: '',
   setResult(result: any) {
+    this.error = null;
     this.result = result;
+  },
+  setError(error: string) {
+    this.result = null;
+    this.error = error;
   },
 });

@@ -30,13 +30,10 @@ export class ChartBlockModel extends BlockModel {
   onInit() {
     this.context.defineProperty('resource', {
       get: () => {
-        const settings = this.getStepParams('chartSettings', 'configure');
-        const sql = settings.query.sql;
         const resource = new SQLResource();
         resource.setAPIClient(this.context.api);
         resource.setSQLType('selectRows');
         resource.setFilterByTk(this.uid);
-        resource.setSQL(sql);
         return resource;
       },
     });
@@ -80,6 +77,12 @@ ChartBlockModel.registerFlow({
           type: 'void',
           'x-component': ConfigPanel,
         },
+      },
+      async beforeParamsSave(ctx, params) {
+        return ctx.sql.save({
+          uid: ctx.model.uid,
+          sql: params.query.sql,
+        });
       },
       defaultParams(ctx) {
         return {

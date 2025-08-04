@@ -24,7 +24,7 @@ const SQLEditorComponent: React.FC<SQLEditorProps> = ({ value = '', onChange }) 
   const { isDarkTheme } = useGlobalTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView>();
-  const themeExtension = useMemo(() => (isDarkTheme ? oneDark : []), [isDarkTheme]);
+  const themeExtension = isDarkTheme ? oneDark : [];
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -52,7 +52,7 @@ const SQLEditorComponent: React.FC<SQLEditorProps> = ({ value = '', onChange }) 
     return () => {
       viewRef.current?.destroy();
     };
-  }, [onChange, themeExtension]);
+  }, []);
 
   return <div ref={editorRef} />;
 };

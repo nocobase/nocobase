@@ -12,9 +12,10 @@ import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm, observer } from '@formily/react';
 import { Chart } from './Chart';
 import { configStore } from './config-store';
+import { ChartBlockModel } from './ChartBlockModel';
 
 export const ChartPreviewer: React.FC = observer(() => {
-  const ctx = useFlowSettingsContext();
+  const ctx = useFlowSettingsContext<ChartBlockModel>();
   const form = useForm();
   const rawOption = form.values.chart.option.raw;
   const queryResult = configStore.result;

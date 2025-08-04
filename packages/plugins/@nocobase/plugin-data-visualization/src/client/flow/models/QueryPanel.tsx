@@ -7,15 +7,45 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent } from '@nocobase/client';
-import { ObjectField, Field } from '@formily/react';
+import { ObjectField, Field, connect } from '@formily/react';
 import React from 'react';
 import { SQLEditor } from './SQLEditor';
+import { Radio } from 'antd';
+import { useT } from '../../locale';
+import { BuildOutlined, ConsoleSqlOutlined } from '@ant-design/icons';
+
+const QueryMode: React.FC = connect(({ value = 'sql', onChange }) => {
+  const t = useT();
+  return (
+    <Radio.Group
+      value={value}
+      onChange={(value) => {
+        onChange(value);
+      }}
+    >
+      <Radio.Button value="builder" disabled>
+        <BuildOutlined /> {t('Query builder')}
+      </Radio.Button>
+      <Radio.Button value="sql">
+        <ConsoleSqlOutlined /> {t('SQL')}
+      </Radio.Button>
+    </Radio.Group>
+  );
+});
 
 export const QueryPanel: React.FC = () => {
   return (
-    <ObjectField name="query">
-      <Field name="sql" component={[SQLEditor]} />
-    </ObjectField>
+    <>
+      <ObjectField name="query">
+        <div
+          style={{
+            marginBottom: '8px',
+          }}
+        >
+          <Field name="mode" component={[QueryMode]} />
+        </div>
+        <Field name="sql" component={[SQLEditor]} />
+      </ObjectField>
+    </>
   );
 };
