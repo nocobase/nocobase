@@ -638,8 +638,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
-  private validate(values: Record<string, any>[]) {
-    this.collection.validate(values);
+  private validate(values: Record<string, any>[], context: { t: Function }) {
+    this.collection.validate(values, context);
   }
 
   /**
@@ -650,7 +650,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   @transaction()
   async create(options: CreateOptions) {
-    this.validate(options.values);
+    this.validate(options.values, options.context);
     if (Array.isArray(options.values)) {
       return this.createMany({
         ...options,
@@ -726,7 +726,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   @mustHaveFilter()
   @injectTargetCollection
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
-    this.validate(options.values);
+    this.validate(options.values, options.context);
     if (Array.isArray(options.values)) {
       return this.updateMany({
         ...options,

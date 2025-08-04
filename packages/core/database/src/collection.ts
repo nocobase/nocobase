@@ -26,7 +26,7 @@ import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import { buildJoiSchema } from './utils/field-validation';
+import { buildJoiSchema, getJoiErrorMessage } from './utils/field-validation';
 
 export type RepositoryType = typeof Repository;
 
@@ -231,7 +231,7 @@ export class Collection<
     }
   }
 
-  validate(values: Record<string, any>[]) {
+  validate(values: Record<string, any>[], context: { t: Function }) {
     values = Array.isArray(values) ? values : [values];
     for (const value of values) {
       for (const [, field] of this.fields) {
@@ -240,10 +240,16 @@ export class Collection<
           continue;
         }
 
-        const joiSchema = buildJoiSchema(field.options.validation);
-        const { error } = joiSchema.validate(val);
+        const fieldLabel = field.options.uiSchema?.title || field.name;
+        const joiSchema = buildJoiSchema(
+          field.options.validation,
+          `${context.t('Field', { ns: 'client' })}: ${fieldLabel}`,
+        );
+        const { error } = joiSchema.validate(val, {
+          messages: getJoiErrorMessage(context.t),
+        });
         if (error) {
-          throw new Error(`Validation error for field "${field.name}", value: ${val}, details: ${error.message}`);
+          throw error;
         }
       }
     }
