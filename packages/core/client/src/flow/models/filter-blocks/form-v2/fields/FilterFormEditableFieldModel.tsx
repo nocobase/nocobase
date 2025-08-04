@@ -13,6 +13,8 @@ import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldM
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
+  enableRequired = false;
+  enableDisplayMode = false;
 
   private dispose: Function;
   private debouncedDoFilter: ReturnType<typeof debounce>;

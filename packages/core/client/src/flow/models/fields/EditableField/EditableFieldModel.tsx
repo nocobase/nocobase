@@ -30,6 +30,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
 
   enableDisplayMode = true;
   enableFormItem = true;
+  enableRequired = true;
 
   get form() {
     return this.context.form as Form;
@@ -260,15 +261,21 @@ EditableFieldModel.registerFlow({
     },
     required: {
       title: escapeT('Required'),
-      uiSchema: {
-        required: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+      uiSchema(ctx) {
+        if (!ctx.model.enableRequired) {
+          return;
+        }
+
+        return {
+          required: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              checkedChildren: escapeT('Yes'),
+              unCheckedChildren: escapeT('No'),
+            },
           },
-        },
+        };
       },
       handler(ctx, params) {
         ctx.model.setRequired(params.required || false);
