@@ -13,7 +13,6 @@ import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
 import { tval } from '@nocobase/utils/client';
-import { AvailableValidationOption, FIELDS_VALIDATION_OPTIONS } from '../../collection-manager/constants';
 export type CollectionFieldInterfaceFactory = new (
   collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
 ) => CollectionFieldInterface;
@@ -93,6 +92,9 @@ export abstract class CollectionFieldInterface {
   }
   getConfigureFormProperties() {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
+    if (this.availableValidationOptions.length) {
+      this.availableValidationOptions.push(...['required', 'optional']);
+    }
     const validationProps = this.validationType
       ? {
           validation: {
@@ -102,8 +104,8 @@ export abstract class CollectionFieldInterface {
             'x-component': 'FieldValidation',
             'x-component-props': {
               type: this.validationType,
-              availableValidationOptions: this.availableValidationOptions,
-              excludeValidationOptions: this.excludeValidationOptions,
+              availableValidationOptions: [...new Set(this.availableValidationOptions)],
+              excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
             },
           },
         }

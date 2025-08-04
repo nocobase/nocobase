@@ -43,6 +43,7 @@ export function buildJoiSchema(validation: ValidationOptions, label?: string): A
 export function getJoiErrorMessage(t: Function) {
   const tOptions = { ns: 'client' };
   const JoiErrorMessages = {
+    'string.required': t('{{#label}} is required', tOptions),
     'string.base': t('{{#label}} must be a string', tOptions),
     'string.empty': t('{{#label}} is not allowed to be empty', tOptions),
     'string.min': t('{{#label}} length must be at least {{#limit}} characters long', tOptions),

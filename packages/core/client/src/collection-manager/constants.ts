@@ -10,6 +10,18 @@
 export const FIELDS_VALIDATION_OPTIONS = {
   string: [
     {
+      key: 'required',
+      label: 'Required',
+      hasValue: false,
+      params: [],
+    },
+    {
+      key: 'optional',
+      label: 'Optional',
+      hasValue: false,
+      params: [],
+    },
+    {
       key: 'max',
       label: 'Max',
       hasValue: true,
@@ -209,6 +221,18 @@ export const FIELDS_VALIDATION_OPTIONS = {
   ],
   number: [
     {
+      key: 'required',
+      label: 'Required',
+      hasValue: false,
+      params: [],
+    },
+    {
+      key: 'optional',
+      label: 'Optional',
+      hasValue: false,
+      params: [],
+    },
+    {
       key: 'greater',
       label: 'Greater than',
       hasValue: true,
@@ -253,6 +277,18 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
   ],
   date: [
+    {
+      key: 'required',
+      label: 'Required',
+      hasValue: false,
+      params: [],
+    },
+    {
+      key: 'optional',
+      label: 'Optional',
+      hasValue: false,
+      params: [],
+    },
     {
       key: 'greater',
       label: 'Greater than',
