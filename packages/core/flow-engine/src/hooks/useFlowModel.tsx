@@ -8,6 +8,7 @@
  */
 
 import React, { createContext, useContext } from 'react';
+import { FlowModelContext } from '../flowContext';
 import { FlowModel } from '../models';
 
 // 创建 FlowModel 上下文
@@ -45,4 +46,9 @@ export function useFlowModel<T extends FlowModel = FlowModel>(): T {
   }
 
   return model as T;
+}
+
+export function useFlowModelContext<T extends FlowModelContext = FlowModelContext>(): T {
+  const model = useFlowModel();
+  return model.context as T;
 }

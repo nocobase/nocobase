@@ -64,6 +64,8 @@ interface ViewOpener {
   open: (props: OpenProps) => Promise<any>;
 }
 
+type Overlay = ViewOpener;
+
 export interface MetaTreeNode {
   name: string;
   title: string;
@@ -436,6 +438,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: any) => Promise<any>;
   declare api: APIClient;
   declare viewOpener: ViewOpener;
+  declare overlay: Overlay;
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
