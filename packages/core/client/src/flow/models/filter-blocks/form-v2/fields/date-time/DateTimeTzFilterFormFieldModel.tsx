@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DateTimeFilterFormFieldModel } from './DateTimeFilterFormFieldModel';
-import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
 export class DateTimeTzFilterFormFieldModel extends DateTimeFilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
@@ -16,8 +15,5 @@ export class DateTimeTzFilterFormFieldModel extends DateTimeFilterFormFieldModel
       ...componentProps,
       utc: true,
     });
-  }
-  get component() {
-    return [DateFilterDynamicComponent, {}];
   }
 }
