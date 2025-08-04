@@ -163,7 +163,7 @@ function ConnectFields(
   };
 
   // 获取已选择的区块UIDs
-  const selectedModelUids = (value?.targets || []).map((item) => item.targetModelUid);
+  const selectedModelUids = (value?.targets || []).map((item) => item.targetId);
 
   // 生成下拉菜单项
   const menuItems = allDataModels
@@ -231,8 +231,8 @@ function ConnectFields(
         })
         .sort((a, b) => {
           // 按照在 value.targets 中的顺序排序
-          const aIndex = (value?.targets || []).findIndex((item) => item.targetModelUid === a.uid);
-          const bIndex = (value?.targets || []).findIndex((item) => item.targetModelUid === b.uid);
+          const aIndex = (value?.targets || []).findIndex((item) => item.targetId === a.uid);
+          const bIndex = (value?.targets || []).findIndex((item) => item.targetId === b.uid);
           return aIndex - bIndex;
         })
         .map((model: CollectionBlockModel) => {
