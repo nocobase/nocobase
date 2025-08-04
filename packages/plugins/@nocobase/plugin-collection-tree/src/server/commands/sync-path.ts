@@ -11,7 +11,7 @@ import { Application } from '@nocobase/server';
 import { Database, Model, Transaction } from '@nocobase/database';
 import lodash from 'lodash';
 
-async function getTreePath(
+export async function getTreePath(
   db: Database,
   model: Model,
   path: string,
