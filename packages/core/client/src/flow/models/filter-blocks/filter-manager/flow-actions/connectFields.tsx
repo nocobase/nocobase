@@ -10,7 +10,7 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
 import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Button, Dropdown, Switch, TreeSelect } from 'antd';
+import { Button, Dropdown, Select, Segmented, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
@@ -88,6 +88,22 @@ function ConnectFields(
   const allDataModels = getAllDataModels(ctx.blockGridModel);
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
+  // 为每个目标区块维护输入模式状态
+  const [inputModes, setInputModes] = useState<Record<string, 'field-select' | 'text-input'>>({});
+
+  // 处理输入模式切换
+  const handleInputModeChange = (modelUid: string, mode: 'field-select' | 'text-input') => {
+    setInputModes((prev) => ({
+      ...prev,
+      [modelUid]: mode,
+    }));
+  };
+
+  // 获取指定区块的输入模式
+  const getInputMode = (modelUid: string): 'field-select' | 'text-input' => {
+    return inputModes[modelUid] || 'field-select';
+  };
+
   const handleSelectChange = (modelUid: string, values: string[]) => {
     const newValues: Record<string, { targetId: string; filterPaths: string[] }> = {};
     const selectedValues = value?.targets || [];
@@ -95,14 +111,10 @@ function ConnectFields(
       newValues[item.targetId] = item;
     });
 
-    if (values && values.length > 0) {
-      newValues[modelUid] = {
-        targetId: modelUid,
-        filterPaths: values, // 改为数组存储多个字段路径
-      };
-    } else {
-      delete newValues[modelUid]; // 如果值为空，则删除该模型的选择
-    }
+    newValues[modelUid] = {
+      targetId: modelUid,
+      filterPaths: values, // 改为数组存储多个字段路径
+    };
 
     // 汇总所有选择的值到数组中
     const allSelectedTargets = Object.values(newValues);
@@ -239,23 +251,50 @@ function ConnectFields(
           const fields = model.collection?.getFields?.() || [];
           const values = value?.targets?.find((item) => item.targetId === model.uid)?.filterPaths || [];
           const treeData = buildTreeData(ctx, fields, '', values.join(','), '');
+          const currentInputMode = getInputMode(model.uid);
 
           return (
             <FormItem key={model.uid} label={`${model.title} #${model.uid.substring(0, 4)}`}>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <TreeSelectWrapper
-                  treeData={treeData}
-                  value={values}
-                  onChange={(values) => handleSelectChange(model.uid, values)}
-                  multiple
-                  allowClear
-                  placeholder="请选择字段"
-                  treeDataSimpleMode={false}
-                  showSearch
-                  treeDefaultExpandAll={false}
-                  style={{ width: '100%' }}
-                  treeLine
-                  showCheckedStrategy="SHOW_CHILD"
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {/* 根据模式渲染不同的输入组件 */}
+                <div style={{ flex: 1 }}>
+                  {currentInputMode === 'field-select' ? (
+                    <TreeSelectWrapper
+                      treeData={treeData}
+                      value={values}
+                      onChange={(values) => handleSelectChange(model.uid, values)}
+                      multiple
+                      allowClear
+                      placeholder="请选择字段"
+                      treeDataSimpleMode={false}
+                      showSearch
+                      treeDefaultExpandAll={false}
+                      style={{ width: '100%' }}
+                      treeLine
+                      showCheckedStrategy="SHOW_CHILD"
+                    />
+                  ) : (
+                    <Select
+                      mode="tags"
+                      value={values}
+                      onChange={(values) => handleSelectChange(model.uid, values)}
+                      placeholder="请输入字段路径，支持多个值（用回车或逗号分隔）"
+                      style={{ width: '100%' }}
+                      allowClear
+                      tokenSeparators={[',']}
+                      open={false}
+                      suffixIcon={null}
+                    />
+                  )}
+                </div>
+                {/* 模式选择器和删除按钮 */}
+                <Segmented
+                  value={currentInputMode}
+                  onChange={(mode) => handleInputModeChange(model.uid, mode as 'field-select' | 'text-input')}
+                  options={[
+                    { label: '下拉选择', value: 'field-select' },
+                    { label: '文本输入', value: 'text-input' },
+                  ]}
                 />
                 <Button
                   type="text"
