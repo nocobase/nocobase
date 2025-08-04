@@ -10,3 +10,4 @@
 export { default } from './plugin';
 export { LLMProvider } from './llm-providers/provider';
 export { LLMProviderMeta } from './manager/ai-manager';
+export * from './features';

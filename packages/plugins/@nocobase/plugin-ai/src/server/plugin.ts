@@ -9,6 +9,9 @@
 
 import { Plugin } from '@nocobase/server';
 import { AIManager } from './manager/ai-manager';
+import { VectorDatabaseManager } from './manager/vector-database-manager';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { AIPluginFeatureManager } from './features';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import aiResource from './resource/ai';
@@ -36,8 +39,10 @@ import { dashscopeProviderOptions } from './llm-providers/dashscope';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
+  vectorDatabaseManager = new VectorDatabaseManager(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
