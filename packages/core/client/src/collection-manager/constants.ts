@@ -100,6 +100,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
           ],
         },
       ],
+      paramsType: 'object',
     },
     {
       key: 'uuid',
@@ -134,6 +135,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
           ],
         },
       ],
+      paramsType: 'object',
     },
     {
       key: 'hex',
@@ -164,8 +166,8 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
     {
-      key: 'url',
-      label: 'URL',
+      key: 'uri',
+      label: 'URI',
       hasValue: true,
       params: [
         {
@@ -202,54 +204,95 @@ export const FIELDS_VALIDATION_OPTIONS = {
           componentType: 'checkbox',
         },
       ],
+      paramsType: 'object',
     },
   ],
   number: [
     {
+      key: 'greater',
+      label: 'Greater than',
+      hasValue: true,
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+    },
+    {
+      key: 'less',
+      label: 'Less than',
+      hasValue: true,
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+    },
+    {
       key: 'max',
       label: 'Max',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Max Value', componentType: 'inputNumber' }],
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
     {
       key: 'min',
       label: 'Min',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Min Value', componentType: 'inputNumber' }],
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
+    {
+      key: 'multiple',
+      label: 'Multiple',
+      hasValue: true,
+      params: [{ key: 'base', label: 'Base', componentType: 'inputNumber' }],
+    },
     { key: 'integer', label: 'Integer', hasValue: false, params: [] },
-    { key: 'positive', label: 'Positive', hasValue: false, params: [] },
-    { key: 'negative', label: 'Negative', hasValue: false, params: [] },
+    {
+      key: 'precision',
+      label: 'Precision',
+      hasValue: true,
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+    },
+    {
+      key: 'unsafe',
+      label: 'Unsafe',
+      hasValue: false,
+      params: [],
+    },
   ],
-  email: [
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
+  date: [
+    {
+      key: 'greater',
+      label: 'Greater than',
+      hasValue: true,
+      params: [{ key: 'date', label: 'Date', componentType: 'datePicker' }],
+    },
+    {
+      key: 'less',
+      label: 'Less than',
+      hasValue: true,
+      params: [{ key: 'date', label: 'Date', componentType: 'datePicker' }],
+    },
     {
       key: 'max',
       label: 'Max',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Max Length', componentType: 'number' }],
+      params: [{ key: 'date', label: 'Date', componentType: 'datePicker' }],
     },
     {
       key: 'min',
       label: 'Min',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Min Length', componentType: 'number' }],
-    },
-  ],
-  url: [
-    { key: 'required', label: 'Required', hasValue: false, params: [] },
-    {
-      key: 'max',
-      label: 'Max',
-      hasValue: true,
-      params: [{ key: 'limit', label: 'Max Length', componentType: 'number' }],
+      params: [{ key: 'date', label: 'Date', componentType: 'datePicker' }],
     },
     {
-      key: 'min',
-      label: 'Min',
+      key: 'timestamp',
+      label: 'Timestamp',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Min Length', componentType: 'number' }],
+      params: [
+        {
+          key: 'type',
+          label: 'Type',
+          componentType: 'singleSelect',
+          options: [
+            { label: 'JavaScript', value: 'javascript' },
+            { label: 'Unix', value: 'unix' },
+          ],
+          defaultValue: 'javascript',
+        },
+      ],
     },
   ],
 } as const;

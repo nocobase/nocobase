@@ -9,12 +9,14 @@
 
 import { PlusOutlined, DeleteOutlined, DownOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox, Radio, Select } from 'antd';
+import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox, Radio, Select, DatePicker } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FIELDS_VALIDATION_OPTIONS } from '../../constants';
+import { css } from '@nocobase/client';
+import dayjs from 'dayjs';
 
 interface ValidationRule {
   key: string;
@@ -22,6 +24,7 @@ interface ValidationRule {
   args?: {
     [key: string]: any;
   };
+  paramsType?: string;
 }
 
 interface ValidationData {
@@ -34,28 +37,35 @@ interface FieldValidationProps {
   onChange?: (value: ValidationData) => void;
   type?: string;
   availableValidationOptions?: string[];
+  excludeValidationOptions?: string[];
 }
 
 export const FieldValidation = observer((props: FieldValidationProps) => {
-  const { value, onChange, type, availableValidationOptions } = props;
+  const { value, onChange, type, availableValidationOptions, excludeValidationOptions } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
 
-  const validationType = value?.type || type || 'string';
+  const validationType = value?.type || type;
   const rules = value?.rules || [];
 
   const validationOptions = useMemo(() => {
-    const allOptions = FIELDS_VALIDATION_OPTIONS[validationType] || FIELDS_VALIDATION_OPTIONS.string;
+    const allOptions = FIELDS_VALIDATION_OPTIONS[validationType] || [];
 
-    if (!availableValidationOptions || availableValidationOptions.length === 0) {
-      return allOptions;
+    let filteredOptions = allOptions;
+    if (excludeValidationOptions && excludeValidationOptions.length > 0) {
+      filteredOptions = allOptions.filter((option) => !excludeValidationOptions.includes(option.key));
     }
 
-    const intersection = availableValidationOptions.map((key) => allOptions.find((x) => x.key === key));
+    if (availableValidationOptions && availableValidationOptions.length > 0) {
+      const intersection = availableValidationOptions
+        .map((key) => filteredOptions.find((x) => x.key === key))
+        .filter(Boolean);
+      return intersection.length > 0 ? intersection : filteredOptions;
+    }
 
-    return intersection.length > 0 ? intersection : allOptions;
-  }, [validationType, availableValidationOptions]);
+    return filteredOptions;
+  }, [validationType, availableValidationOptions, excludeValidationOptions]);
 
   const handleAddRule = (ruleType: string) => {
     const option = validationOptions.find((opt) => opt.key === ruleType);
@@ -71,6 +81,10 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
           newRule.args![param.key] = param.defaultValue;
         }
       });
+    }
+
+    if (option?.paramsType) {
+      newRule.paramsType = option.paramsType;
     }
 
     const newRules = [...rules, newRule];
@@ -193,6 +207,19 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                             >
                               {t(option.label)}
                             </Checkbox>
+                          ) : option.componentType === 'datePicker' ? (
+                            <DatePicker
+                              value={
+                                rule.args?.[`${param.key}_${option.value}`]
+                                  ? dayjs(rule.args[`${param.key}_${option.value}`])
+                                  : null
+                              }
+                              onChange={(date) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, date?.toISOString())
+                              }
+                              placeholder={t('Select date')}
+                              style={{ width: '100%' }}
+                            />
                           ) : null}
                         </div>
                       );
@@ -242,6 +269,19 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                             >
                               {t(option.label)}
                             </Checkbox>
+                          ) : option.componentType === 'datePicker' ? (
+                            <DatePicker
+                              value={
+                                rule.args?.[`${param.key}_${option.value}`]
+                                  ? dayjs(rule.args[`${param.key}_${option.value}`])
+                                  : null
+                              }
+                              onChange={(date) =>
+                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, date?.toISOString())
+                              }
+                              placeholder={t('Select date')}
+                              style={{ width: '100%' }}
+                            />
                           ) : null}
                         </div>
                       );
@@ -269,6 +309,13 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                   value={currentValue !== undefined ? currentValue : ''}
                   onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
                   placeholder={t('Enter value')}
+                  style={{ width: '100%' }}
+                />
+              ) : param.componentType === 'datePicker' ? (
+                <DatePicker
+                  value={currentValue ? dayjs(currentValue) : null}
+                  onChange={(date) => handleRuleValueChange(rule.key, param.key, date?.toISOString())}
+                  placeholder={t('Select date')}
                   style={{ width: '100%' }}
                 />
               ) : (
@@ -391,12 +438,32 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
         />
       )}
 
-      {menuItems.length > 0 && (
-        <Dropdown menu={menu} placement="bottomLeft">
-          <Button type="dashed" icon={<PlusOutlined />} size="small">
-            {t('Add rule')} <DownOutlined />
-          </Button>
-        </Dropdown>
+      {menuItems.length > 0 && validationOptions.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Dropdown menu={menu} placement="bottomLeft">
+            <Button type="dashed" icon={<PlusOutlined />} size="small">
+              {t('Add rule')} <DownOutlined />
+            </Button>
+          </Dropdown>
+          <span>
+            <span
+              className={css`
+                color: ${token.colorTextSecondary};
+                &:after {
+                  content: ':';
+                }
+                & + a {
+                  margin-left: 0.25em;
+                }
+              `}
+            >
+              {t('References')}
+            </span>
+            <a href="https://joi.dev/api/" target="_blank" rel="noreferrer">
+              {t('Joi API')}
+            </a>
+          </span>
+        </div>
       )}
     </div>
   );

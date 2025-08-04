@@ -48,6 +48,7 @@ export abstract class CollectionFieldInterface {
   properties?: any;
   validationType?: string;
   availableValidationOptions?: string[];
+  excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
@@ -92,19 +93,25 @@ export abstract class CollectionFieldInterface {
   }
   getConfigureFormProperties() {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
+    const validationProps = this.validationType
+      ? {
+          validation: {
+            title: '{{ t("Validation") }}',
+            required: false,
+            'x-decorator': 'FormItem',
+            'x-component': 'FieldValidation',
+            'x-component-props': {
+              type: this.validationType,
+              availableValidationOptions: this.availableValidationOptions,
+              excludeValidationOptions: this.excludeValidationOptions,
+            },
+          },
+        }
+      : {};
     return {
       ...cloneDeep({ ...defaultProps, ...this?.properties }),
       ...defaultValueProps,
-      validation: {
-        title: '{{ t("Validation") }}',
-        required: false,
-        'x-decorator': 'FormItem',
-        'x-component': 'FieldValidation',
-        'x-component-props': {
-          type: this.validationType,
-          availableValidationOptions: this.availableValidationOptions,
-        },
-      },
+      ...validationProps,
     };
   }
   getDefaultValueProperty() {

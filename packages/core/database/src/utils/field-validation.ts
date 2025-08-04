@@ -23,7 +23,11 @@ export function buildJoiSchema(validation: ValidationOptions): AnySchema {
   if (rules) {
     rules.forEach((rule) => {
       if (!_.isEmpty(rule.args)) {
-        schema = schema[rule.name](...Object.values(rule.args));
+        if (rule.name === 'pattern') {
+          rule.args.regex = new RegExp(rule.args.regex);
+        }
+        schema =
+          rule.paramsType === 'object' ? schema[rule.name](rule.args) : schema[rule.name](...Object.values(rule.args));
       } else {
         schema = schema[rule.name]();
       }

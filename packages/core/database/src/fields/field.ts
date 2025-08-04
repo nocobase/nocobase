@@ -36,6 +36,7 @@ export interface FieldValidationRule<T extends BasicType> {
   args?: {
     [key: string]: any;
   };
+  paramsType?: 'object';
 }
 
 export interface ValidationOptions<T extends BasicType = BasicType> {

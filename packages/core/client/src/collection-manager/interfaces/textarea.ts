@@ -27,6 +27,7 @@ export class TextareaFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['text', 'json', 'string'];
+  validationType = 'string';
   hasDefaultValue = true;
   titleUsable = true;
   properties = {
