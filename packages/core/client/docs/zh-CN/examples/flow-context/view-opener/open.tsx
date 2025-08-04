@@ -1,6 +1,6 @@
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 
 class HelloBlockModel extends FlowModel {
@@ -8,8 +8,41 @@ class HelloBlockModel extends FlowModel {
     return (
       <Button
         type="primary"
-        onClick={() => {
-          this.dispatchEvent('click');
+        onClick={async () => {
+          await this.context.viewOpener.open({
+            mode: 'drawer',
+            width: 800,
+            content: (drawer) => {
+              return (
+                <div>
+                  <drawer.Header title="Hello Block" />
+                  This is a view opened from the flow context.
+                  <drawer.Footer>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Space>
+                        <Button
+                          onClick={() => {
+                            drawer.close();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="primary"
+                          onClick={() => {
+                            drawer.close();
+                          }}
+                        >
+                          Submit
+                        </Button>
+                      </Space>
+                    </div>
+                  </drawer.Footer>
+                </div>
+              );
+            },
+            closable: false,
+          });
         }}
       >
         Open
@@ -23,16 +56,7 @@ HelloBlockModel.registerFlow({
   on: 'click',
   steps: {
     refReady: {
-      handler: async (ctx) => {
-        await ctx.viewOpener.open({
-          mode: 'dialog',
-          title: 'Hello World',
-          // width: 1200,
-          content: () => 'This is a view opened from the flow context.',
-          // footer: 'OK',
-          closable: true,
-        });
-      },
+      handler: async (ctx) => {},
     },
   },
 });
