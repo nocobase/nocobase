@@ -708,7 +708,7 @@ const RenderButtonInner = observer(
         component={Component}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
-        title={actionTitle}
+        title={typeof actionTitle === 'string' ? actionTitle : null}
         onlyIcon={onlyIcon}
       >
         {!onlyIcon && actionTitle && (
