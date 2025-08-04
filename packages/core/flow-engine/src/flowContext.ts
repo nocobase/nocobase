@@ -624,16 +624,24 @@ export class FlowRuntimeContext<
     this.defineMethod(
       'useResource',
       (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
-        if (model['resource']) {
+        if (model.context.has('resource')) {
+          console.warn(`[FlowRuntimeContext] useResource - resource already defined in context: ${className}`);
           return;
         }
-        const R = ResourceMap[className];
-        if (!R) {
-          throw new Error(`Resource class ${className} not found in ResourceMap`);
+        model.context.defineProperty('resource', {
+          get: () => {
+            const R = ResourceMap[className];
+            if (!R) {
+              throw new Error(`Resource class ${className} not found in ResourceMap`);
+            }
+            const resource = new R() as APIResource;
+            resource.setAPIClient(model.context.api);
+            return resource;
+          },
+        });
+        if (!model['resource']) {
+          model['resource'] = model.context.resource;
         }
-        const resource = new R() as APIResource;
-        resource.setAPIClient(this.api);
-        model['resource'] = resource;
       },
     );
     this.defineProperty('resource', {
