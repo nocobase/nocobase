@@ -17,7 +17,6 @@ import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
-import { VariableEditableValue } from './components';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -37,7 +36,6 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
     });
-    this.flowEngine.flowSettings.registerComponents({ VariableEditableValue });
   }
 }
 
