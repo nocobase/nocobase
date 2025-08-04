@@ -9,45 +9,50 @@
 
 // components/drawer/useDrawer/DrawerComponent.tsx
 import { Drawer } from 'antd';
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import * as React from 'react';
 
-interface DrawerComponentProps extends React.ComponentProps<typeof Drawer> {
-  afterClose?: () => void;
-  content?: React.ReactNode;
-}
+const DrawerComponent = React.forwardRef((props: any, ref) => {
+  const { children, footer: initialFooter, title, extra, ...drawerProps } = props;
+  const [open, setOpen] = React.useState(true);
+  const [footer, setFooter] = React.useState(initialFooter);
+  const [header, setHeader] = React.useState({ title, extra });
 
-const DrawerComponent = forwardRef<unknown, DrawerComponentProps>(({ afterClose, ...props }, ref) => {
-  const [visible, setVisible] = useState(true);
-  const [config, setConfig] = useState(props);
-
-  useImperativeHandle(ref, () => ({
-    destroy: () => setVisible(false),
-    update: (newConfig) => setConfig((prev) => ({ ...prev, ...newConfig })),
-  }));
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      destroy: () => {
+        setOpen(false);
+      },
+      update: (newConfig) => {
+        // 更新 drawer 配置
+        Object.assign(drawerProps, newConfig);
+      },
+      setFooter: (newFooter) => {
+        setFooter(newFooter);
+      },
+      setHeader: (newHeader) => {
+        if (Object.values(newHeader).length === 0) {
+          setHeader(null);
+        } else {
+          setHeader(newHeader);
+        }
+      },
+    }),
+    [],
+  );
 
   return (
     <Drawer
-      closable={false}
-      {...config}
-      open={visible}
-      onClose={(e) => {
-        setVisible(false);
-        config.onClose?.(e);
-      }}
-      styles={{
-        ...config?.styles,
-        footer: {
-          textAlign: 'end',
-          ...config?.styles?.footer,
-        },
-      }}
-      afterOpenChange={(open) => {
-        if (!open) {
-          afterClose?.();
-        }
+      {...drawerProps}
+      open={open}
+      footer={footer}
+      {...header} // 使用 extra 属性作为自定义 header
+      onClose={() => {
+        setOpen(false);
+        drawerProps.afterClose?.();
       }}
     >
-      {config.children}
+      {children}
     </Drawer>
   );
 });

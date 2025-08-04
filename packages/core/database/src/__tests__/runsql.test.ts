@@ -37,6 +37,11 @@ describe('runSQL', function () {
         { num: 3, name: 'Charlie', age: 35 },
       ],
     });
+    if (db.isPostgresCompatibleDialect()) {
+      if (db.options.schema) {
+        await db.runSQL(`SET search_path TO ${db.options.schema}`);
+      }
+    }
   });
 
   afterEach(async () => {
@@ -45,13 +50,13 @@ describe('runSQL', function () {
 
   describe('basic queries', () => {
     test('should execute simple SELECT query', async () => {
-      const result = await db.runSQL('SELECT * FROM test ORDER BY num');
+      const result = await db.runSQL(`SELECT * FROM test ORDER BY num`);
       expect(result).toHaveLength(3);
       expect(result[0]).toMatchObject({ num: 1, name: 'Alice', age: 25 });
     });
 
     test('should execute COUNT query', async () => {
-      const result = await db.runSQL('SELECT COUNT(*) as total FROM test');
+      const result = await db.runSQL(`SELECT COUNT(*) as total FROM test`);
       expect(result).toHaveLength(1);
       expect(result[0].total).toBe(3);
     });
@@ -417,6 +422,12 @@ describe('runSQL + underscored=false', function () {
         { aNum: 3, aName: 'Charlie', aAge: 35 },
       ],
     });
+
+    if (db.isPostgresCompatibleDialect()) {
+      if (db.options.schema) {
+        await db.runSQL(`SET search_path TO ${db.options.schema}`);
+      }
+    }
   });
 
   afterEach(async () => {
@@ -439,7 +450,7 @@ describe('runSQL + underscored=false', function () {
         },
       });
       expect(result).toHaveLength(2);
-      expect(result.every((item) => item.name !== 'Charlie')).toBe(true);
+      expect(result.every((item) => item.aName !== 'Charlie')).toBe(true);
     });
   });
 });

@@ -1029,7 +1029,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   quoteTable(tableName: string): string {
-    return this.sequelize.getQueryInterface().queryGenerator['quoteTable'](tableName);
+    return this.sequelize.getQueryInterface().quoteIdentifiers(tableName);
   }
 
   async runSQL(sql: string, options: RunSQLOptions = {}) {
@@ -1095,16 +1095,26 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.logger.debug('runSQL', { finalSQL });
     const result = await this.sequelize.query(finalSQL, { bind, transaction });
+    let data: any = result[0];
     if (type === 'selectVar') {
-      return Object.values(result[0][0] || {}).shift();
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return Object.values(data || {}).shift();
     }
     if (type === 'selectRow') {
-      return result[0][0] || null;
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return data || null;
     }
     if (type === 'selectRows') {
-      return result[0] || [];
+      if (!Array.isArray(data)) {
+        return [data].filter(Boolean);
+      }
+      return data;
     }
-    return result[0];
+    return data;
   }
 }
 

@@ -55,16 +55,22 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   }
 
   async refresh(): Promise<void> {
+    this.clearError();
     // 如果没有设置 filterByTk，则不执行刷新操作
     // 这是为了避免在没有指定记录的情况下进行不必要的 API 调用
     if (this.isNewRecord) {
       return;
     }
-    const { data, meta } = await this.runAction<TData, any>('get', {
-      method: 'get',
-      ...this.getRefreshRequestOptions(),
-    });
-    this.setData(data).setMeta(meta);
-    this.emit('refresh');
+    try {
+      const { data, meta } = await this.runAction<TData, any>('get', {
+        method: 'get',
+        ...this.getRefreshRequestOptions(),
+      });
+      this.setData(data).setMeta(meta);
+      this.emit('refresh');
+    } catch (error) {
+      this.setError(error);
+      throw error;
+    }
   }
 }

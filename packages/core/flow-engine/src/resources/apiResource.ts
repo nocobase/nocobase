@@ -9,7 +9,7 @@
 
 import { APIClient } from '@nocobase/sdk';
 import { omit } from 'lodash';
-import { FlowResource } from './flowResource';
+import { FlowResource, ResourceError } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
@@ -113,12 +113,19 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     if (!this.api) {
       throw new Error('API client not set');
     }
-    const { data } = await this.api.request({
-      url: this.getURL(),
-      ...this.getRefreshRequestOptions(),
-    });
-    this.setData(data);
-    this.emit('refresh');
+    this.clearError();
+    try {
+      const { data } = await this.api.request({
+        url: this.getURL(),
+        ...this.getRefreshRequestOptions(),
+      });
+      this.setData(data);
+      this.emit('refresh');
+    } catch (err) {
+      const error = new ResourceError(err);
+      this.setError(error);
+      throw error;
+    }
   }
 
   protected getRefreshRequestOptions() {
