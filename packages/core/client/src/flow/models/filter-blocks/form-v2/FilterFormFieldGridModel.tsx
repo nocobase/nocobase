@@ -121,8 +121,8 @@ export class FilterFormFieldGridModel extends GridModel {
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
       const targets = matchingModels.map((model) => ({
-        targetModelUid: model.uid,
-        targetFieldPaths: [fieldPath],
+        targetId: model.uid,
+        filterPaths: [fieldPath],
       }));
 
       // 存到数据库中

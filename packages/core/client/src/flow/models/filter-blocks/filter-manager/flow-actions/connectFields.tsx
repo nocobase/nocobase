@@ -89,16 +89,16 @@ function ConnectFields(
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
 
   const handleSelectChange = (modelUid: string, values: string[]) => {
-    const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
+    const newValues: Record<string, { targetId: string; filterPaths: string[] }> = {};
     const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
-      newValues[item.targetModelUid] = item;
+      newValues[item.targetId] = item;
     });
 
     if (values && values.length > 0) {
       newValues[modelUid] = {
-        targetModelUid: modelUid,
-        targetFieldPaths: values, // 改为数组存储多个字段路径
+        targetId: modelUid,
+        filterPaths: values, // 改为数组存储多个字段路径
       };
     } else {
       delete newValues[modelUid]; // 如果值为空，则删除该模型的选择
@@ -117,17 +117,17 @@ function ConnectFields(
 
   // 处理添加/移除目标区块
   const handleToggleBlock = (modelUid: string, checked: boolean) => {
-    const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
+    const newValues: Record<string, { targetId: string; filterPaths: string[] }> = {};
     const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
-      newValues[item.targetModelUid] = item;
+      newValues[item.targetId] = item;
     });
 
     if (checked) {
       // 添加区块（设置为空字段路径数组）
       newValues[modelUid] = {
-        targetModelUid: modelUid,
-        targetFieldPaths: [], // 改为空数组
+        targetId: modelUid,
+        filterPaths: [], // 改为空数组
       };
     } else {
       // 移除区块
@@ -145,11 +145,11 @@ function ConnectFields(
 
   // 处理删除目标区块
   const handleRemoveBlock = (modelUid: string) => {
-    const newValues: Record<string, { targetModelUid: string; targetFieldPaths: string[] }> = {};
+    const newValues: Record<string, { targetId: string; filterPaths: string[] }> = {};
     const selectedValues = value?.targets || [];
     selectedValues.forEach((item) => {
-      if (item.targetModelUid !== modelUid) {
-        newValues[item.targetModelUid] = item;
+      if (item.targetId !== modelUid) {
+        newValues[item.targetId] = item;
       }
     });
 
@@ -237,7 +237,7 @@ function ConnectFields(
         })
         .map((model: CollectionBlockModel) => {
           const fields = model.collection?.getFields?.() || [];
-          const values = value?.targets?.find((item) => item.targetModelUid === model.uid)?.targetFieldPaths || [];
+          const values = value?.targets?.find((item) => item.targetId === model.uid)?.filterPaths || [];
           const treeData = buildTreeData(ctx, fields, '', values.join(','), '');
 
           return (
