@@ -232,6 +232,9 @@ export class Collection<
   }
 
   validate(values: Record<string, any>[], context: { t: Function }) {
+    if (!values) {
+      return;
+    }
     values = Array.isArray(values) ? values : [values];
     for (const value of values) {
       for (const [, field] of this.fields) {
