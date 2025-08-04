@@ -16,12 +16,6 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [],
     },
     {
-      key: 'optional',
-      label: 'Optional',
-      hasValue: false,
-      params: [],
-    },
-    {
       key: 'max',
       label: 'Max',
       hasValue: true,
@@ -227,12 +221,6 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [],
     },
     {
-      key: 'optional',
-      label: 'Optional',
-      hasValue: false,
-      params: [],
-    },
-    {
       key: 'greater',
       label: 'Greater than',
       hasValue: true,
@@ -271,7 +259,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
     {
       key: 'unsafe',
-      label: 'Unsafe',
+      label: 'Unsafe integer',
       hasValue: false,
       params: [],
     },
@@ -280,12 +268,6 @@ export const FIELDS_VALIDATION_OPTIONS = {
     {
       key: 'required',
       label: 'Required',
-      hasValue: false,
-      params: [],
-    },
-    {
-      key: 'optional',
-      label: 'Optional',
       hasValue: false,
       params: [],
     },

@@ -241,10 +241,10 @@ export class Collection<
         }
 
         const fieldLabel = field.options.uiSchema?.title || field.name;
-        const joiSchema = buildJoiSchema(
-          field.options.validation,
-          `${context.t('Field', { ns: 'client' })}: ${fieldLabel}`,
-        );
+        const joiSchema = buildJoiSchema(field.options.validation, {
+          label: `${context.t('Field', { ns: 'client' })}: ${fieldLabel}`,
+          value: val,
+        });
         const { error } = joiSchema.validate(val, {
           messages: getJoiErrorMessage(context.t),
         });

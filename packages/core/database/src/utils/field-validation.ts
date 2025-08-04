@@ -11,8 +11,9 @@ import Joi, { AnySchema, Root } from 'joi';
 import { ValidationOptions } from '../fields';
 import _ from 'lodash';
 
-export function buildJoiSchema(validation: ValidationOptions, label?: string): AnySchema {
+export function buildJoiSchema(validation: ValidationOptions, options: { label?: string; value: string }): AnySchema {
   const { type, rules } = validation;
+  const { label, value } = options;
 
   if (!type || typeof type !== 'string' || !(type in Joi)) {
     throw new Error(`Invalid validation type: "${type}". Type must be a valid Joi schema type.`);
@@ -22,6 +23,9 @@ export function buildJoiSchema(validation: ValidationOptions, label?: string): A
 
   if (rules) {
     rules.forEach((rule) => {
+      if (rule.name === 'required' && value === null) {
+        schema = schema.empty(null);
+      }
       if (!_.isEmpty(rule.args)) {
         if (rule.name === 'pattern') {
           rule.args.regex = new RegExp(rule.args.regex);

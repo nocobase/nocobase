@@ -92,8 +92,8 @@ export abstract class CollectionFieldInterface {
   }
   getConfigureFormProperties() {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
-    if (this.availableValidationOptions.length) {
-      this.availableValidationOptions.push(...['required', 'optional']);
+    if (this.availableValidationOptions?.length) {
+      this.availableValidationOptions.push('required');
     }
     const validationProps = this.validationType
       ? {
