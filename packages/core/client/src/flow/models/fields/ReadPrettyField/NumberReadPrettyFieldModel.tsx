@@ -16,7 +16,7 @@ import { InputNumberReadPretty } from '../../../components/InputNumberReadPretty
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class NumberReadPrettyFieldModel extends ReadPrettyFieldModel {
-  public static readonly supportedFieldInterfaces = ['number', 'integer'];
+  public static readonly supportedFieldInterfaces = ['number', 'integer', 'id'];
   // @reactive
   public render() {
     const value = this.getValue();
