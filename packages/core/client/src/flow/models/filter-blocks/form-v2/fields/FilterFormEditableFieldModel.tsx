@@ -16,6 +16,8 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableRequired = false;
   enableDisplayMode = false;
 
+  operator: string;
+
   private dispose: Function;
   private debouncedDoFilter: ReturnType<typeof debounce>;
 

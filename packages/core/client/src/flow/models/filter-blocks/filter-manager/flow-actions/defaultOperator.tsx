@@ -8,8 +8,9 @@
  */
 
 import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { FilterFormEditableFieldModel } from '../../form-v2/fields';
 
-export const defaultOperator = defineAction({
+export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
   name: 'defaultOperator',
   title: 'Default operator',
   uiSchema(ctx: FlowContext) {
@@ -34,7 +35,9 @@ export const defaultOperator = defineAction({
       value: operatorOptions.length > 0 ? operatorOptions[0].value : '',
     };
   },
-  handler(ctx, params) {},
+  handler(ctx, params) {
+    ctx.model.operator = params.value;
+  },
 });
 
 function getOperatorOptions(model: FlowModel) {

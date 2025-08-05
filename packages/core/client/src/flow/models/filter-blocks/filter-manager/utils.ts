@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FilterFormEditableFieldModel } from '../form-v2/fields';
 
-export function getDefaultOperator(model: FlowModel) {
-  return model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;
+export function getDefaultOperator(model: FilterFormEditableFieldModel) {
+  return model.operator || model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;
 }
 
 /**
