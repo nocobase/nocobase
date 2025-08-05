@@ -52,7 +52,7 @@
   "dependencies": {
     "@faker-js/faker": "8.1.0",
     "@nocobase/server": "1.8.14",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.54.2",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.0.0",
     "@testing-library/react-hooks": "^8.0.1",
