@@ -246,6 +246,10 @@ export class FilterManager {
     relatedConfigs.forEach((config) => {
       const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
 
+      if (!filterModel) {
+        throw new Error(`Filter model with uid "${config.filterId}" not found`);
+      }
+
       if (!filterModel.getFilterValue) {
         throw new Error(`Filter model with uid "${config.filterId}" does not have getFilterValue method`);
       }
