@@ -9,7 +9,7 @@
 
 import { FilterGroup, FilterItem, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { getDefaultOperator } from './utils';
+import { getDefaultOperator, isFilterValueEmpty } from './utils';
 
 type FilterConfig = {
   /** 筛选器的 model uid */
@@ -254,7 +254,7 @@ export class FilterManager {
       const filterValue = filterModel.getFilterValue();
 
       // 检查筛选值是否为空（null、undefined 或空字符串）
-      if (filterValue === null || filterValue === undefined || filterValue === '') {
+      if (isFilterValueEmpty(filterValue)) {
         // 移除现有的筛选组
         try {
           (targetModel as any).resource.removeFilterGroup(config.filterId);
