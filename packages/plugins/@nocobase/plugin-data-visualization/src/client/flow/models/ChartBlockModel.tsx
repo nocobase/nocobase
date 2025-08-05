@@ -8,10 +8,17 @@
  */
 
 import React from 'react';
-import { BlockModel } from '@nocobase/client';
+import { BlockModel, FlowPage, SubPageModel } from '@nocobase/client';
 import { SQLResource, escapeT } from '@nocobase/flow-engine';
 import { ConfigPanel } from './ConfigPanel';
 import { Chart, ChartOptions } from './Chart';
+import { EChartsType } from 'echarts';
+
+type ChartBlockModelStructure = {
+  subModels: {
+    page: SubPageModel;
+  };
+};
 
 type ChartProps = {
   query: {
@@ -20,7 +27,7 @@ type ChartProps = {
   chart: ChartOptions;
 };
 
-export class ChartBlockModel extends BlockModel {
+export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
   get resource() {
@@ -37,10 +44,24 @@ export class ChartBlockModel extends BlockModel {
         return resource;
       },
     });
+
+    this.context.defineMethod('openView', async (params) => {
+      const { mode, size } = params || {};
+      this.dispatchEvent('openView', {
+        mode: mode || 'dialog',
+        size: size || 'large',
+      });
+    });
+  }
+
+  protected onMount() {
+    if (this.context.ref.current) {
+      this.rerender();
+    }
   }
 
   renderComponent() {
-    return <Chart {...this.props.chart} dataSource={this.resource.getData()} />;
+    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
   }
 }
 
@@ -54,7 +75,15 @@ ChartBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
-        await ctx.model.resource.refresh();
+        const config = ctx.model.getStepParams('chartSettings', 'configure');
+        if (!config?.query.sql) {
+          return;
+        }
+        try {
+          await ctx.model.resource.refresh();
+        } catch (err) {
+          console.log(err);
+        }
       },
     },
   },
@@ -95,6 +124,7 @@ ChartBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         const rawOption = params.chart.option.raw;
+        const rawEvents = params.chart.events?.raw;
         const { value: option } = await ctx.runjs(`return ${rawOption}`);
         ctx.model.setProps({
           ...params,
@@ -103,6 +133,27 @@ ChartBlockModel.registerFlow({
             option,
           },
         });
+        if (rawEvents) {
+          ctx.onRefReady(ctx.ref, (chart: EChartsType) => {
+            ctx.runjs(rawEvents, { chart, log: console.log });
+          });
+        }
+      },
+    },
+  },
+});
+
+ChartBlockModel.registerFlow({
+  key: 'popupSettings',
+  on: {
+    eventName: 'openView',
+  },
+  steps: {
+    openView: {
+      use: 'openView',
+      hideInSettings: true,
+      defaultParams(ctx) {
+        return {};
       },
     },
   },

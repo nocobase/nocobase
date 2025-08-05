@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef, MutableRefObject } from 'react';
 import * as echarts from 'echarts';
 import type { EChartsType, EChartsOption } from 'echarts';
 
@@ -16,27 +16,21 @@ interface Props {
   style?: React.CSSProperties;
   className?: string;
   theme?: string;
-  onEvents?: {
-    [eventName: string]: (params: any, chart: EChartsType) => void;
-  };
+  onRefReady?: (chart: EChartsType) => void;
 }
 
-const ECharts: React.FC<Props> = ({ option, style, className, theme, onEvents }) => {
+const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, theme, onRefReady }, ref) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  const instanceRef = useRef<EChartsType | null>(null);
+  const instanceRef = ref as MutableRefObject<EChartsType | null>;
   const resizeObserverRef = useRef<ResizeObserver>();
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !instanceRef) {
+      return;
+    }
 
     instanceRef.current = echarts.init(chartRef.current, theme);
-
-    // 绑定事件
-    if (onEvents) {
-      Object.entries(onEvents).forEach(([eventName, handler]) => {
-        instanceRef.current.on(eventName, (params) => handler(params, instanceRef.current));
-      });
-    }
+    onRefReady?.(instanceRef.current);
 
     resizeObserverRef.current = new ResizeObserver(() => {
       instanceRef.current?.resize();
@@ -47,15 +41,15 @@ const ECharts: React.FC<Props> = ({ option, style, className, theme, onEvents })
       instanceRef.current?.dispose();
       resizeObserverRef.current?.disconnect();
     };
-  }, [theme, onEvents]);
+  }, [theme, instanceRef, onRefReady]);
 
   useEffect(() => {
     if (instanceRef.current) {
       instanceRef.current.setOption(option, true);
     }
-  }, [option]);
+  }, [option, instanceRef]);
 
   return <div ref={chartRef} style={{ width: '100%', height: 400, ...style }} className={className} />;
-};
+});
 
 export default ECharts;

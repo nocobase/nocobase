@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import ECharts from './ECharts';
 import { Empty, Result, Typography } from 'antd';
-import { EChartsOption } from 'echarts';
+import { EChartsOption, EChartsType } from 'echarts';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../locale';
 const { Paragraph, Text } = Typography;
@@ -18,6 +18,7 @@ const { Paragraph, Text } = Typography;
 export interface ChartOptions {
   option: EChartsOption;
   dataSource: any;
+  onRefReady?: (chart: EChartsType) => void;
 }
 
 const ErrorFallback = ({ error }) => {
@@ -36,7 +37,7 @@ const ErrorFallback = ({ error }) => {
   );
 };
 
-export const Chart: React.FC<ChartOptions> = ({ option, dataSource }) => {
+export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady }, ref) => {
   if (!option || (!option.dataset && !dataSource)) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={'Please configure chart'} />;
   }
@@ -44,6 +45,8 @@ export const Chart: React.FC<ChartOptions> = ({ option, dataSource }) => {
   return (
     <ErrorBoundary onError={console.error} FallbackComponent={ErrorFallback}>
       <ECharts
+        ref={ref}
+        onRefReady={onRefReady}
         option={{
           dataset: {
             source: dataSource,
@@ -53,4 +56,4 @@ export const Chart: React.FC<ChartOptions> = ({ option, dataSource }) => {
       />
     </ErrorBoundary>
   );
-};
+});

@@ -21,6 +21,7 @@ import { configStore } from './config-store';
 import { ChartBlockModel } from './ChartBlockModel';
 import { ResultPanel } from './ResultPanel';
 import { AxiosError } from 'axios';
+import { EventsPanel } from './EventsPanel';
 
 const RunButton: React.FC = memo(() => {
   const t = useT();
@@ -30,6 +31,9 @@ const RunButton: React.FC = memo(() => {
   const { loading, run } = useRequest(
     () => {
       const sql = form.values.query.sql;
+      if (!sql) {
+        return;
+      }
       return ctx.sql.run(sql);
     },
     {
@@ -60,7 +64,10 @@ export const ConfigPanel: React.FC = () => {
   const ctx = useFlowSettingsContext<ChartBlockModel>();
 
   useEffect(() => {
-    if (!configStore.result) {
+    const error = ctx.model.resource.error;
+    if (error && !configStore.error) {
+      configStore.setError(error.message);
+    } else if (!configStore.result) {
       configStore.setResult(ctx.model.resource.getData());
     }
     return () => {
@@ -125,6 +132,7 @@ export const ConfigPanel: React.FC = () => {
               {
                 label: t('Events'),
                 key: 'events',
+                children: <EventsPanel />,
               },
             ]}
           />

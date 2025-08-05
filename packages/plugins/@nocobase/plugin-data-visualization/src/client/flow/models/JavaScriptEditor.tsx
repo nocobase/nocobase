@@ -15,12 +15,12 @@ import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { useGlobalTheme } from '@nocobase/client';
 
-interface ChartOptionsEditorProps {
+interface JavaScriptEditorProps {
   value?: string;
   onChange?: (value: string) => void;
 }
 
-const ChartOptionsEditorComponent: React.FC<ChartOptionsEditorProps> = ({ value = '{}', onChange }) => {
+const JavaScriptEditorComponent: React.FC<JavaScriptEditorProps> = ({ value = '{}', onChange }) => {
   const { isDarkTheme } = useGlobalTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView>();
@@ -57,8 +57,8 @@ const ChartOptionsEditorComponent: React.FC<ChartOptionsEditorProps> = ({ value 
   return <div ref={editorRef} />;
 };
 
-export const ChartOptionsEditor = connect(
-  ChartOptionsEditorComponent,
+export const JavaScriptEditor = connect(
+  JavaScriptEditorComponent,
   mapProps((props) => {
     return {
       value: props.value,

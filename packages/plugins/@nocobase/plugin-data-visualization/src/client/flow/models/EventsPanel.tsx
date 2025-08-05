@@ -12,7 +12,7 @@ import { Radio } from 'antd';
 import { ObjectField, Field, connect } from '@formily/react';
 import { JavaScriptEditor } from './JavaScriptEditor';
 import { useT } from '../../locale';
-import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
+import { FunctionOutlined, InteractionOutlined } from '@ant-design/icons';
 
 const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   const t = useT();
@@ -24,7 +24,7 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
       }}
     >
       <Radio.Button disabled value="basic">
-        <LineChartOutlined /> {t('Basic')}
+        <InteractionOutlined /> {t('Basic')}
       </Radio.Button>
       <Radio.Button value="custom">
         <FunctionOutlined /> {t('Custom')}
@@ -33,17 +33,44 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   );
 });
 
-export const ChartOptionsPanel: React.FC = () => {
+export const EventsPanel: React.FC = () => {
   return (
-    <ObjectField name="chart.option">
+    <ObjectField name="chart.events">
       <div
         style={{
           marginBottom: '8px',
         }}
       >
-        <Field name="mode" component={[OptionsMode]} />
+        <Field
+          name="mode"
+          component={[OptionsMode]}
+          reactions={(field) => {
+            const basic = field.query('.basic').take();
+            if (basic) {
+              basic.setState({
+                visible: field.value === 'basic',
+              });
+            }
+            const raw = field.query('.raw').take();
+            if (raw) {
+              raw.setState({
+                visible: field.value === 'custom',
+              });
+            }
+          }}
+          initialValue="custom"
+        />
       </div>
-      <Field name="raw" component={[JavaScriptEditor]} initialValue="{}" />
+      <Field name="basic" />
+      <Field
+        name="raw"
+        component={[JavaScriptEditor]}
+        initialValue={`chart.off('click');
+chart.on('click', 'series', function() {
+  ctx.openView({ mode: 'dialog', size: 'large '});
+});
+      `}
+      />
     </ObjectField>
   );
 };

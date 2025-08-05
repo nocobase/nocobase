@@ -55,13 +55,14 @@ export const openView = defineAction({
     const pageModelClass = params.pageModelClass;
 
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+    const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
 
     await ctx.viewOpener.open({
       mode: openMode,
       closable: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
-      width: sizeToWidthMap[params.size || 'medium'],
+      width: sizeToWidthMap[size],
       content: (currentView) => {
         return (
           <FlowPage
