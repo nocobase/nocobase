@@ -27,6 +27,7 @@ import {
   useSchemaOptionsContext,
 } from '@nocobase/client';
 import PluginWorkflowClient, {
+  SimpleDesigner,
   useAvailableUpstreams,
   useFlowContext,
   useNodeContext,
@@ -168,6 +169,7 @@ function SchemaContent({ value, onChange }) {
           },
         }}
         components={{
+          SimpleDesigner,
           ...nodeComponents,
         }}
         schema={data as ISchema}
