@@ -44,9 +44,9 @@ export class FilterManager {
     this.filterConfigs = _.isPlainObject(stepValue) ? Object.values(stepValue) : stepValue || [];
   }
 
-  saveFilterConfigs() {
+  async saveFilterConfigs() {
     this.gridModel.setStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, this.filterConfigs);
-    this.gridModel.save();
+    await this.gridModel.save();
   }
 
   getConnectFieldsConfig(filterModelUid: string): ConnectFieldsConfig | undefined {
@@ -65,7 +65,7 @@ export class FilterManager {
     };
   }
 
-  saveConnectFieldsConfig(filterModelUid: string, config: ConnectFieldsConfig) {
+  async saveConnectFieldsConfig(filterModelUid: string, config: ConnectFieldsConfig) {
     // 1. 把参数 FilterModelUid 和 config 转换成一个 filterConfigs
     const newFilterConfigs: FilterConfig[] = config.targets.map((target) => ({
       filterId: filterModelUid,
@@ -79,7 +79,7 @@ export class FilterManager {
     this.filterConfigs.push(...filteredConfigs, ...newFilterConfigs);
 
     // 3. 保存 this.filterConfigs 的值
-    this.saveFilterConfigs();
+    await this.saveFilterConfigs();
   }
 
   /**
@@ -88,10 +88,11 @@ export class FilterManager {
    * 将新的筛选配置添加到管理器中。如果相同的筛选器和目标组合已存在，则会更新配置。
    *
    * @param filterConfig - 要添加的筛选配置
+   * @returns Promise<void>
    *
    * @example
    * ```typescript
-   * filterManager.addFilterConfig({
+   * await filterManager.addFilterConfig({
    *   filterId: 'filter-1',
    *   targetId: 'target-1',
    *   filterPaths: ['name'],
@@ -99,7 +100,7 @@ export class FilterManager {
    * });
    * ```
    */
-  addFilterConfig(filterConfig: FilterConfig) {
+  async addFilterConfig(filterConfig: FilterConfig) {
     // 1. 验证必填字段
     if (!filterConfig.filterId || !filterConfig.targetId) {
       throw new Error('FilterConfig must have filterId, targetId, and operator');
@@ -122,7 +123,7 @@ export class FilterManager {
     }
 
     // 4. 保存配置
-    this.saveFilterConfigs();
+    await this.saveFilterConfigs();
   }
 
   /**
@@ -136,25 +137,25 @@ export class FilterManager {
    * @param options - 删除选项
    * @param options.filterId - 筛选器模型 UID（可选）
    * @param options.targetId - 目标模型 UID（可选）
-   * @returns 返回被删除的配置数量
+   * @returns Promise<number> 返回被删除的配置数量
    * @throws 当两个参数都未提供时抛出错误
    *
    * @example
    * ```typescript
    * // 删除筛选器的所有配置
-   * const removedCount = filterManager.removeFilterConfig({ filterId: 'filter-1' });
+   * const removedCount = await filterManager.removeFilterConfig({ filterId: 'filter-1' });
    *
    * // 删除目标的所有配置
-   * const removedCount = filterManager.removeFilterConfig({ targetId: 'target-1' });
+   * const removedCount = await filterManager.removeFilterConfig({ targetId: 'target-1' });
    *
    * // 删除特定的筛选器-目标组合配置
-   * const removedCount = filterManager.removeFilterConfig({
+   * const removedCount = await filterManager.removeFilterConfig({
    *   filterId: 'filter-1',
    *   targetId: 'target-1'
    * });
    * ```
    */
-  removeFilterConfig({ filterId, targetId }: { filterId?: string; targetId?: string }): number {
+  async removeFilterConfig({ filterId, targetId }: { filterId?: string; targetId?: string }): Promise<number> {
     // 1. 验证参数：至少需要提供一个参数
     if (!filterId && !targetId) {
       throw new Error('At least one of filterId or targetId must be provided');
@@ -188,7 +189,7 @@ export class FilterManager {
 
     // 5. 如果有配置被删除，则保存更改
     if (removedCount > 0) {
-      this.saveFilterConfigs();
+      await this.saveFilterConfigs();
     }
 
     return removedCount;

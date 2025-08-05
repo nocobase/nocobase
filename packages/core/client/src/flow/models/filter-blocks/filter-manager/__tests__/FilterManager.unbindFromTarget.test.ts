@@ -122,7 +122,7 @@ describe('FilterManager.unbindFromTarget', () => {
       expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should not throw error when no configurations exist for the target', () => {
+    it('should not throw error when no configurations exist for the target', async () => {
       // Add a filter config for a different target
       const filterConfig = {
         filterId: 'filter-1',
@@ -130,7 +130,7 @@ describe('FilterManager.unbindFromTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       expect(() => {
         filterManager.unbindFromTarget('target-model-uid');
@@ -152,7 +152,7 @@ describe('FilterManager.unbindFromTarget', () => {
       mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
     });
 
-    it('should unbind single filter configuration correctly', () => {
+    it('should unbind single filter configuration correctly', async () => {
       // Add a filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -160,7 +160,7 @@ describe('FilterManager.unbindFromTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.unbindFromTarget('target-model-uid');
 
@@ -168,7 +168,7 @@ describe('FilterManager.unbindFromTarget', () => {
       expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
     });
 
-    it('should unbind multiple filter configurations for the same target', () => {
+    it('should unbind multiple filter configurations for the same target', async () => {
       // Add multiple filter configs for the same target
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -189,9 +189,9 @@ describe('FilterManager.unbindFromTarget', () => {
         operator: '$eq',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
-      filterManager.addFilterConfig(filterConfig3);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig3);
 
       filterManager.unbindFromTarget('target-model-uid');
 
@@ -203,7 +203,7 @@ describe('FilterManager.unbindFromTarget', () => {
       expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalledWith('filter-3');
     });
 
-    it('should only unbind configurations for the specified target', () => {
+    it('should only unbind configurations for the specified target', async () => {
       // Add filter configs for multiple targets
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -218,8 +218,8 @@ describe('FilterManager.unbindFromTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       filterManager.unbindFromTarget('target-model-uid');
 
@@ -243,7 +243,7 @@ describe('FilterManager.unbindFromTarget', () => {
       mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
     });
 
-    it('should throw error when removeFilterGroup method fails', () => {
+    it('should throw error when removeFilterGroup method fails', async () => {
       // Add a filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -251,7 +251,7 @@ describe('FilterManager.unbindFromTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Make removeFilterGroup throw an error
       const originalError = new Error('Resource error');
@@ -264,7 +264,7 @@ describe('FilterManager.unbindFromTarget', () => {
       }).toThrow('Failed to unbind filter configuration from target model: Resource error');
     });
 
-    it('should handle errors gracefully for multiple configurations', () => {
+    it('should handle errors gracefully for multiple configurations', async () => {
       // Add multiple filter configs
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -279,8 +279,8 @@ describe('FilterManager.unbindFromTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       // Make removeFilterGroup fail for the first call only
       let callCount = 0;
@@ -300,7 +300,7 @@ describe('FilterManager.unbindFromTarget', () => {
       expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
     });
 
-    it('should provide meaningful error messages for different failure scenarios', () => {
+    it('should provide meaningful error messages for different failure scenarios', async () => {
       // Add a filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -308,7 +308,7 @@ describe('FilterManager.unbindFromTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Test different types of errors
       const testCases = [
@@ -341,7 +341,7 @@ describe('FilterManager.unbindFromTarget', () => {
       mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
     });
 
-    it('should work correctly after adding and removing filter configurations', () => {
+    it('should work correctly after adding and removing filter configurations', async () => {
       // Add filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -349,7 +349,7 @@ describe('FilterManager.unbindFromTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Unbind from target
       filterManager.unbindFromTarget('target-model-uid');
@@ -359,14 +359,14 @@ describe('FilterManager.unbindFromTarget', () => {
       mockTargetModel.resource.removeFilterGroup.mockClear();
 
       // Remove the config and try unbind again
-      filterManager.removeFilterConfig({ filterId: 'filter-1' });
+      await filterManager.removeFilterConfig({ filterId: 'filter-1' });
       filterManager.unbindFromTarget('target-model-uid');
 
       // Should not call removeFilterGroup since no configs exist
       expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should handle complex configuration scenarios', () => {
+    it('should handle complex configuration scenarios', async () => {
       // Add multiple configs with same filter but different targets
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -381,8 +381,8 @@ describe('FilterManager.unbindFromTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       // Mock different target models
       const mockTargetModel2 = {

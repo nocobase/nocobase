@@ -136,7 +136,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should throw error when filter model does not have getFilterValue method', () => {
+    it('should throw error when filter model does not have getFilterValue method', async () => {
       // Add a filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -144,7 +144,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Mock filter model without getFilterValue method
       const mockFilterModel = {};
@@ -183,7 +183,7 @@ describe('FilterManager.bindToTarget', () => {
       });
     });
 
-    it('should bind single filter condition correctly', () => {
+    it('should bind single filter condition correctly', async () => {
       // Add a filter config with single target field
       const filterConfig = {
         filterId: 'filter-1',
@@ -191,7 +191,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -205,7 +205,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(filterItem).toBeInstanceOf(FilterItem);
     });
 
-    it('should bind multiple filter conditions correctly', () => {
+    it('should bind multiple filter conditions correctly', async () => {
       // Add a filter config with multiple target fields
       const filterConfig = {
         filterId: 'filter-1',
@@ -213,7 +213,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name', 'email'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -227,7 +227,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(filterGroup).toBeInstanceOf(FilterGroup);
     });
 
-    it('should use operator when available', () => {
+    it('should use operator when available', async () => {
       // Add a filter config with operator
       const filterConfig = {
         filterId: 'filter-1',
@@ -235,7 +235,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$ne',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -247,7 +247,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(filterItem.options.operator).toBe('$ne');
     });
 
-    it('should bind multiple filter configurations for the same target', () => {
+    it('should bind multiple filter configurations for the same target', async () => {
       // Add multiple filter configs for the same target
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -262,8 +262,8 @@ describe('FilterManager.bindToTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       // Mock the second filter model
       const mockFilterModel2 = {
@@ -308,7 +308,7 @@ describe('FilterManager.bindToTarget', () => {
       });
     });
 
-    it('should throw error when addFilterGroup method fails', () => {
+    it('should throw error when addFilterGroup method fails', async () => {
       // Add a filter config
       const filterConfig = {
         filterId: 'filter-1',
@@ -316,7 +316,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Make addFilterGroup throw an error
       const originalError = new Error('Resource error');
@@ -329,7 +329,7 @@ describe('FilterManager.bindToTarget', () => {
       }).toThrow('Failed to bind filter configuration to target model: Resource error');
     });
 
-    it('should handle errors gracefully for multiple configurations', () => {
+    it('should handle errors gracefully for multiple configurations', async () => {
       // Add multiple filter configs
       const filterConfig1 = {
         filterId: 'filter-1',
@@ -344,8 +344,8 @@ describe('FilterManager.bindToTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       // Mock the second filter model
       const mockFilterModel2 = {
@@ -397,7 +397,7 @@ describe('FilterManager.bindToTarget', () => {
       });
     });
 
-    it('should call removeFilterGroup when filter value is null', () => {
+    it('should call removeFilterGroup when filter value is null', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(null);
 
       const filterConfig = {
@@ -406,7 +406,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -415,7 +415,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should call removeFilterGroup when filter value is undefined', () => {
+    it('should call removeFilterGroup when filter value is undefined', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(undefined);
 
       const filterConfig = {
@@ -424,7 +424,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -433,7 +433,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should call removeFilterGroup when filter value is empty string', () => {
+    it('should call removeFilterGroup when filter value is empty string', async () => {
       mockFilterModel.getFilterValue.mockReturnValue('');
 
       const filterConfig = {
@@ -442,7 +442,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -451,7 +451,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should handle mixed empty and valid filter values correctly', () => {
+    it('should handle mixed empty and valid filter values correctly', async () => {
       // Setup multiple filter models
       const mockFilterModel2 = {
         getFilterValue: vi.fn().mockReturnValue('valid-value'),
@@ -480,8 +480,8 @@ describe('FilterManager.bindToTarget', () => {
         operator: '$contains',
       };
 
-      filterManager.addFilterConfig(filterConfig1);
-      filterManager.addFilterConfig(filterConfig2);
+      await filterManager.addFilterConfig(filterConfig1);
+      await filterManager.addFilterConfig(filterConfig2);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -490,7 +490,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-2', expect.any(FilterItem));
     });
 
-    it('should throw error when removeFilterGroup fails', () => {
+    it('should throw error when removeFilterGroup fails', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(null);
 
       const filterConfig = {
@@ -499,7 +499,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       // Make removeFilterGroup throw an error
       const originalError = new Error('Remove filter error');
@@ -512,7 +512,7 @@ describe('FilterManager.bindToTarget', () => {
       }).toThrow('Failed to remove filter configuration from target model: Remove filter error');
     });
 
-    it('should not call removeFilterGroup for valid non-empty values', () => {
+    it('should not call removeFilterGroup for valid non-empty values', async () => {
       mockFilterModel.getFilterValue.mockReturnValue('valid-value');
 
       const filterConfig = {
@@ -521,7 +521,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -530,7 +530,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
     });
 
-    it('should treat zero as a valid value and not call removeFilterGroup', () => {
+    it('should treat zero as a valid value and not call removeFilterGroup', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(0);
 
       const filterConfig = {
@@ -539,7 +539,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['count'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -548,7 +548,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
     });
 
-    it('should treat false as a valid value and not call removeFilterGroup', () => {
+    it('should treat false as a valid value and not call removeFilterGroup', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(false);
 
       const filterConfig = {
@@ -557,7 +557,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['active'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -566,7 +566,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
     });
 
-    it('should call removeFilterGroup when filter value is empty object', () => {
+    it('should call removeFilterGroup when filter value is empty object', async () => {
       mockFilterModel.getFilterValue.mockReturnValue({});
 
       const filterConfig = {
@@ -575,7 +575,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['metadata'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -584,7 +584,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should call removeFilterGroup when filter value is empty array', () => {
+    it('should call removeFilterGroup when filter value is empty array', async () => {
       mockFilterModel.getFilterValue.mockReturnValue([]);
 
       const filterConfig = {
@@ -593,7 +593,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['tags'],
         operator: '$in',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -602,7 +602,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
-    it('should not call removeFilterGroup for non-empty object', () => {
+    it('should not call removeFilterGroup for non-empty object', async () => {
       mockFilterModel.getFilterValue.mockReturnValue({ key: 'value' });
 
       const filterConfig = {
@@ -611,7 +611,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['metadata'],
         operator: '$eq',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
@@ -620,7 +620,7 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
     });
 
-    it('should not call removeFilterGroup for non-empty array', () => {
+    it('should not call removeFilterGroup for non-empty array', async () => {
       mockFilterModel.getFilterValue.mockReturnValue(['tag1', 'tag2']);
 
       const filterConfig = {
@@ -629,7 +629,7 @@ describe('FilterManager.bindToTarget', () => {
         filterPaths: ['tags'],
         operator: '$in',
       };
-      filterManager.addFilterConfig(filterConfig);
+      await filterManager.addFilterConfig(filterConfig);
 
       filterManager.bindToTarget('target-model-uid');
 
