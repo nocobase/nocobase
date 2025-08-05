@@ -174,6 +174,28 @@ export default defineConfig({
           ]
         },
         {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            {
+              title: 'FlowContextSelector',
+              link: '/examples/variables/flow-context-selector',
+            },
+            {
+              title: 'VariableInput 基础用法',
+              link: '/examples/variables',
+            },
+            {
+              title: '自定义 Converters',
+              link: '/examples/variables/custom-converters',
+            },
+            {
+              title: '函数式 Converters',
+              link: '/examples/variables/functional-converters',
+            },
+          ],
+        },
+        {
           title: 'FlowAction',
           type: 'group',
           children: [
