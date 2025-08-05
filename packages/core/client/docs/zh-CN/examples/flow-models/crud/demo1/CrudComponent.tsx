@@ -1,9 +1,9 @@
-import { FlowModelProvider, useFlowModelContext } from '@nocobase/flow-engine';
+import { FlowModelProvider, observer, useFlowModelContext } from '@nocobase/flow-engine';
 import { Button, Flex, Popconfirm, Space, Table } from 'antd';
 import React from 'react';
 import { FormComponent } from './FormComponent';
 
-export function CrudComponent() {
+export const CrudComponent = observer(() => {
   const ctx = useFlowModelContext();
 
   return (
@@ -34,7 +34,7 @@ export function CrudComponent() {
                 width: '50%',
                 content: (drawer) => (
                   <FlowModelProvider model={ctx.model}>
-                    <FormComponent context={ctx} drawer={drawer} />
+                    <FormComponent />
                   </FlowModelProvider>
                 ),
               });
@@ -78,7 +78,7 @@ export function CrudComponent() {
                       width: '50%',
                       content: (drawer) => (
                         <FlowModelProvider model={ctx.model}>
-                          <FormComponent context={ctx} drawer={drawer} record={record} />
+                          <FormComponent record={record} />
                         </FlowModelProvider>
                       ),
                     });
@@ -112,4 +112,4 @@ export function CrudComponent() {
       />
     </Space>
   );
-}
+});

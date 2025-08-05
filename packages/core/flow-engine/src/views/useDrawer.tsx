@@ -8,6 +8,7 @@
  */
 
 import * as React from 'react';
+import { FlowOverlayContext } from './context';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 
@@ -86,24 +87,32 @@ export function useDrawer() {
       },
     };
 
-    // 支持 content 为函数，传递 currentDrawer
-    const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+    // 内部组件，在 Provider 内部计算 content
+    const DrawerWithContext = () => {
+      const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+
+      return (
+        <DrawerComponent
+          key={`drawer-${uuid}`}
+          ref={drawerRef}
+          {...config}
+          footer={currentFooter}
+          header={currentHeader}
+          afterClose={() => {
+            closeFunc?.();
+            config.onClose?.();
+            resolvePromise?.(config.result);
+          }}
+        >
+          {content}
+        </DrawerComponent>
+      );
+    };
 
     const drawer = (
-      <DrawerComponent
-        key={`drawer-${uuid}`}
-        ref={drawerRef}
-        {...config}
-        footer={currentFooter}
-        header={currentHeader}
-        afterClose={() => {
-          closeFunc?.();
-          config.onClose?.();
-          resolvePromise?.(config.result);
-        }}
-      >
-        {content}
-      </DrawerComponent>
+      <FlowOverlayContext.Provider value={currentDrawer as any}>
+        <DrawerWithContext />
+      </FlowOverlayContext.Provider>
     );
 
     closeFunc = holderRef.current?.patchElement(drawer);
