@@ -10,6 +10,7 @@
 import { reaction } from '@formily/reactive';
 import { debounce } from 'lodash';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
+import { FilterManager } from '../../filter-manager/FilterManager';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
@@ -45,6 +46,15 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     this.dispose();
     // 取消防抖函数的执行
     this.debouncedDoFilter.cancel();
+  }
+
+  async destroy(): Promise<boolean> {
+    const result = await super.destroy();
+
+    const filterManager: FilterManager = this.context.filterManager;
+    await filterManager.removeFilterConfig({ filterId: this.uid });
+
+    return result;
   }
 
   createField() {
