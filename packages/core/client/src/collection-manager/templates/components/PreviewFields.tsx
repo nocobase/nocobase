@@ -9,7 +9,7 @@
 
 import { useField, useForm } from '@formily/react';
 import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
-import { last, omit } from 'lodash';
+import _, { last, omit } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
@@ -93,14 +93,17 @@ const PreviewCom = (props) => {
             setLoading(false);
             setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
+              const option = fields?.data.find((h) => h.name === v.name) || v;
+              if (!option?.uiSchema) {
+                const interfaceInstance = getInterface(v.interface);
+                option.uiSchema = interfaceInstance?.default.uiSchema || {};
+              }
               if (v.source) {
-                const option = fields?.data.find((h) => h.name === v.name) || v;
                 return {
                   ...v,
                   uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
                 };
               } else {
-                const option = fields?.data.find((h) => h.name === v.name) || v;
                 return {
                   ...option,
                   uiSchema: { ...omit(option.uiSchema, 'rawTitle'), title: option.uiSchema?.title || option.name },
@@ -120,9 +123,10 @@ const PreviewCom = (props) => {
   }, [databaseView]);
 
   const handleFieldChange = (record, index) => {
-    dataSource.splice(index, 1, record);
-    setDataSource(dataSource);
-    field.value = dataSource.map((v) => {
+    const newDataSource = _.cloneDeep(dataSource);
+    newDataSource[index] = record;
+    setDataSource(newDataSource);
+    field.value = newDataSource.map((v) => {
       const source = typeof v.source === 'string' ? v.source : v.source?.filter?.(Boolean)?.join('.');
       return {
         ...v,
@@ -198,8 +202,7 @@ const PreviewCom = (props) => {
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
             onChange={(value) => {
-              const interfaceConfig = getInterface(value);
-              handleFieldChange({ ...item, interface: value, uiSchema: interfaceConfig?.default?.uiSchema }, index);
+              handleFieldChange({ ...item, interface: value }, index);
             }}
           >
             {data.map((group) => (

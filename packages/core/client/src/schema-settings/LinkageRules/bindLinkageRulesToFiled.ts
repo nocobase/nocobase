@@ -294,7 +294,7 @@ function getSubscriber(
         } else if (fieldName === 'dataSource') {
           const lastValues = lastState?.value?.map((v) => v.value) || [];
           if (
-            (!Array.isArray(field.value) && !lastValues.includes(field.value)) ||
+            (field.value && !Array.isArray(field.value) && !lastValues.includes(field.value)) ||
             (Array.isArray(field.value) && _.difference(field.value, lastValues).length > 0)
           ) {
             field.value = field.initialValue;
@@ -528,7 +528,7 @@ export async function replaceVariables(
   const scope = {};
 
   if (value == null) {
-    return;
+    return {};
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {

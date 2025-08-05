@@ -80,7 +80,7 @@ function NodeComponent({ data }) {
                       shape="circle"
                       icon={<PlusOutlined />}
                       onClick={() => setBranchCount(branchCount - 1)}
-                      disabled={executed}
+                      disabled={executed > 0}
                       size="small"
                     />
                   </div>
@@ -92,7 +92,7 @@ function NodeComponent({ data }) {
         <Tooltip
           title={langAddBranch}
           className={css`
-            visibility: ${executed ? 'hidden' : 'visible'};
+            visibility: ${executed > 0 ? 'hidden' : 'visible'};
           `}
         >
           <Button
@@ -112,7 +112,7 @@ function NodeComponent({ data }) {
             `}
             size="small"
             onClick={() => setBranchCount(branchCount + 1)}
-            disabled={executed}
+            disabled={executed > 0}
           />
         </Tooltip>
       </div>
@@ -133,6 +133,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
+        direction: 'vertical',
         options: [
           {
             value: 'all',
@@ -148,6 +149,11 @@ export default class extends Instruction {
             value: 'race',
             label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed.', { ns: "${NAMESPACE}" })}}`,
+          },
+          {
+            value: 'allSettled',
+            label: `{{t('Run all branch (ignore failures)', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Always continue after all branches end, regardless of success or failure.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },

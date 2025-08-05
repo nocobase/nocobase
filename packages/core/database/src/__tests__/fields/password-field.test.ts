@@ -40,4 +40,25 @@ describe('password field', () => {
     user = await User.model.findOne();
     expect(await pwd.verify('654321', user.password)).toBeTruthy();
   });
+
+  it('should be encrypted when adding password fields in batches', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'password', name: 'password' },
+      ],
+    });
+    await db.sync();
+    const instances = await User.model.bulkCreate([
+      {
+        password: '123456',
+        name: 'zhangsan',
+      },
+    ]);
+    const pwd = User.getField<PasswordField>('password');
+    expect(await pwd.verify('123456', instances[0].password)).toBeTruthy();
+    const user = await User.model.findOne({ where: { name: 'zhangsan' } });
+    expect(await pwd.verify('123456', user.password)).toBeTruthy();
+  });
 });

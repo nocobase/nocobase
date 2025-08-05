@@ -38,6 +38,7 @@ import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionField } from '../../../data-source/collection-field/CollectionField';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -105,7 +106,7 @@ export const InternalPicker = observer(
         return opts;
       }
       return [];
-    }, [value, fieldNames?.label]);
+    }, [value?.length, fieldNames.label]);
     const pickerProps = {
       size: 'small',
       fieldNames,
@@ -129,6 +130,17 @@ export const InternalPicker = observer(
         ? value.filter(Boolean)?.map((v) => v?.[fieldNames.value])
         : value?.[fieldNames.value];
     };
+
+    const getDefaultOptions = () => {
+      if (multiple == null) return null;
+      return Array.isArray(value)
+        ? value.filter(Boolean)?.map((v) => ({
+            [fieldNames.label]: compile(v?.[fieldNames.label]),
+            [fieldNames.value]: v?.[fieldNames.value],
+          }))
+        : [{ [fieldNames.label]: compile(value?.[fieldNames.label]), [fieldNames.value]: value?.[fieldNames.value] }];
+    };
+
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
       const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -202,7 +214,7 @@ export const InternalPicker = observer(
                   setSelectedRows(values);
                 }
               }}
-              options={options}
+              options={getDefaultOptions()}
               value={getValue()}
               open={false}
             />
@@ -235,7 +247,7 @@ export const InternalPicker = observer(
             <CollectionProvider_deprecated name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions scope={scope}>
+                  <SchemaComponentOptions scope={scope} components={{ CollectionField: CollectionField }}>
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}

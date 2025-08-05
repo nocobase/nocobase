@@ -17,9 +17,12 @@ import {
   useRequest,
   useResourceActionContext,
   useResourceContext,
+  useFilterFieldProps,
+  useFilterFieldOptions,
 } from '@nocobase/client';
 import React from 'react';
 import { i18nText } from '../../utils';
+import { NAMESPACE } from '../../../locale';
 
 const collection = {
   name: 'applications',
@@ -146,6 +149,21 @@ export const formSchema: ISchema = {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
     },
+    'options.authManager': {
+      type: 'object',
+      'x-decorator': 'FormItem',
+      'x-component': 'Fieldset',
+      title: `{{t("Authentication options", { ns: "${NAMESPACE}" })}}`,
+      properties: {
+        'jwt.secret': {
+          type: 'string',
+          title: `{{t("JWT secret", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t("An independent JWT secret ensures data and session isolation from other applications.", { ns: "${NAMESPACE}" })}}`,
+          'x-decorator': 'FormItem',
+          'x-component': 'JwtSecretInput',
+        },
+      },
+    },
   },
 };
 
@@ -212,6 +230,16 @@ export const tableActionColumnSchema: ISchema = {
   },
 };
 
+export const useFilterActionProps = () => {
+  const { collection } = useResourceContext();
+  const options = useFilterFieldOptions(collection.fields);
+  const service = useResourceActionContext();
+  return useFilterFieldProps({
+    options: options,
+    params: service.state?.params?.[0] || service.params,
+    service,
+  });
+};
 export const schema: ISchema = {
   type: 'object',
   properties: {
@@ -245,6 +273,18 @@ export const schema: ISchema = {
             },
           },
           properties: {
+            filter: {
+              'x-component': 'Filter.Action',
+              'x-use-component-props': useFilterActionProps,
+              default: {
+                $and: [{ displayName: { $includes: '' } }, { name: { $includes: '' } }],
+              },
+              title: "{{t('Filter')}}",
+              'x-component-props': {
+                icon: 'FilterOutlined',
+              },
+              'x-align': 'left',
+            },
             delete: {
               type: 'void',
               title: '{{ t("Delete") }}',

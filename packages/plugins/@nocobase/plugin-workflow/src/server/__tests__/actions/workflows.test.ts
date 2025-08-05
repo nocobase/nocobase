@@ -251,6 +251,60 @@ describe('workflow > actions > workflows', () => {
       const versionStatsCount = await WorkflowVersionStatsRepo.count();
       expect(versionStatsCount).toBe(0);
     });
+
+    it('destroy current version should delete stats record too', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const s1 = await WorkflowStatsRepo.find();
+      expect(s1.length).toBe(1);
+      expect(s1[0].key).toBe(w1.key);
+
+      await agent.resource(`workflows`).destroy({
+        filterByTk: w1.id,
+      });
+
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(0);
+    });
+
+    it('destroy non-current version should not delete stats record', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const s1 = await WorkflowStatsRepo.find();
+      expect(s1.length).toBe(1);
+      expect(s1[0].key).toBe(w1.key);
+
+      const w2 = await WorkflowRepo.revision({
+        filterByTk: w1.id,
+        filter: {
+          key: w1.key,
+        },
+        context: {
+          app,
+        },
+      });
+
+      await agent.resource(`workflows`).destroy({
+        filterByTk: w2.id,
+      });
+
+      const statsCount = await WorkflowStatsRepo.count();
+      expect(statsCount).toBe(1);
+    });
   });
 
   describe('revision', () => {

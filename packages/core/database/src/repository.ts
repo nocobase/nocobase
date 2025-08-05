@@ -14,6 +14,7 @@ import {
   BulkCreateOptions,
   ModelStatic,
   Op,
+  QueryTypes,
   Sequelize,
   FindAndCountOptions as SequelizeAndCountOptions,
   CountOptions as SequelizeCountOptions,
@@ -26,7 +27,10 @@ import {
   WhereOperators,
 } from 'sequelize';
 
+import _ from 'lodash';
+import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { Collection } from './collection';
+import { SmartCursorBuilder } from './cursor-builder';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import injectTargetCollection from './decorators/target-collection-decorator';
@@ -38,7 +42,6 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
-import { BelongsToArrayRepository } from './belongs-to-array/belongs-to-array-repository';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -47,8 +50,6 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
-import _ from 'lodash';
-import { SmartCursorBuilder } from './cursor-builder';
 
 const debug = require('debug')('noco-database');
 
@@ -242,6 +243,7 @@ export interface FirstOrCreateOptions extends Transactionable {
   values?: Values;
   hooks?: boolean;
   context?: any;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
@@ -299,6 +301,89 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ...queryOptions,
       transaction,
     });
+  }
+
+  async getEstimatedRowCount() {
+    if (_.isFunction(this.collection['isSql']) && this.collection['isSql']()) {
+      return 0;
+    }
+    if (_.isFunction(this.collection['isView']) && this.collection['isView']()) {
+      return 0;
+    }
+    const tableName = this.collection.tableName();
+    try {
+      if (this.database.isMySQLCompatibleDialect()) {
+        await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
+        const results: any[] = await this.database.sequelize.query(
+          `
+        SELECT table_rows FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = ?
+      `,
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.table_rows ?? 0);
+      }
+      if (this.database.isPostgresCompatibleDialect()) {
+        await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
+        const results: any[] = await this.database.sequelize.query(
+          `
+        SELECT reltuples::BIGINT AS estimate
+        FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = ? AND n.nspname = current_schema();
+      `,
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
+
+      if (this.database.sequelize.getDialect() === 'mssql') {
+        const results: any[] = await this.database.sequelize.query(
+          `
+        SELECT SUM(row_count) AS estimate
+        FROM sys.dm_db_partition_stats
+        WHERE object_id = OBJECT_ID(?) AND (index_id = 0 OR index_id = 1)
+      `,
+          { replacements: [tableName], type: QueryTypes.SELECT },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
+
+      if (this.database.sequelize.getDialect() === 'oracle') {
+        const tableName = this.collection.name.toUpperCase();
+        const schemaName = (await this.getOracleSchema()).toUpperCase();
+
+        await this.database.sequelize.query(`BEGIN DBMS_STATS.GATHER_TABLE_STATS(:schema, :table); END;`, {
+          replacements: { schema: schemaName, table: tableName },
+          type: QueryTypes.RAW,
+        });
+
+        const results: any[] = await this.database.sequelize.query(
+          `
+      SELECT NUM_ROWS AS "estimate"
+      FROM ALL_TABLES
+      WHERE TABLE_NAME = :table AND OWNER = :schema
+      `,
+          {
+            replacements: { table: tableName, schema: schemaName },
+            type: QueryTypes.SELECT,
+          },
+        );
+        return Number(results?.[0]?.estimate ?? 0);
+      }
+    } catch (error) {
+      this.database.logger.error(`Failed to get estimated row count for ${this.collection.name}:`, error);
+      return 0;
+    }
+
+    return 0;
+  }
+
+  private async getOracleSchema(): Promise<string> {
+    const [result] = await this.database.sequelize.query(`SELECT USER FROM DUAL`, {
+      type: QueryTypes.SELECT,
+    });
+    return result?.['USER'] ?? '';
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
@@ -521,7 +606,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -530,11 +615,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       return instance;
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, hooks, context } = options;
+    const { filterKeys, values, transaction, context, ...rest } = options;
+
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -544,12 +630,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
         values,
         transaction,
-        hooks,
         context,
+        ...rest,
       });
     }
 
-    return this.create({ values, transaction, hooks, context });
+    return this.create({ values, transaction, context, ...rest });
   }
 
   /**

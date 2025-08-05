@@ -41,7 +41,7 @@ export async function cancel(context: Context, next) {
   await context.db.sequelize.transaction(async (transaction) => {
     await execution.update(
       {
-        status: EXECUTION_STATUS.CANCELED,
+        status: EXECUTION_STATUS.ABORTED,
       },
       { transaction },
     );
@@ -49,7 +49,7 @@ export async function cancel(context: Context, next) {
     const pendingJobs = execution.jobs.filter((job) => job.status === JOB_STATUS.PENDING);
     await JobRepo.update({
       values: {
-        status: JOB_STATUS.CANCELED,
+        status: JOB_STATUS.ABORTED,
       },
       filter: {
         id: pendingJobs.map((job) => job.id),

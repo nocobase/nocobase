@@ -39,6 +39,22 @@ export class CalculationInstruction extends Instruction {
       };
     }
   }
+
+  async test({ engine = 'math.js', expression = '' }) {
+    const evaluator = <Evaluator | undefined>evaluators.get(engine);
+    try {
+      const result = evaluator && expression ? evaluator(expression) : null;
+      return {
+        result,
+        status: JOB_STATUS.RESOLVED,
+      };
+    } catch (e) {
+      return {
+        result: e.toString(),
+        status: JOB_STATUS.ERROR,
+      };
+    }
+  }
 }
 
 export default CalculationInstruction;

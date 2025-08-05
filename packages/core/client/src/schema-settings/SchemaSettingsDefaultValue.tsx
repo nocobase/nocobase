@@ -37,7 +37,7 @@ import {
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
-
+import { SchemaComponentContext } from '../schema-component';
 const getActionContext = (context: { fieldSchema?: Schema }) => {
   const actionCtx = (context.fieldSchema?.['x-action-context'] || {}) as { collection?: string; dataSource?: string };
   return actionCtx;
@@ -64,7 +64,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const localVariables = useLocalVariables();
   const collection = useCollection_deprecated();
   const record = useRecord();
-  const { form } = useFormBlockContext();
+  const { form, type } = useFormBlockContext();
   const { getFields } = useCollectionFilterOptionsV2(collection);
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
@@ -110,11 +110,13 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       FormLayout,
       VariableInput: (inputProps) => {
         return (
-          <VariableInput
-            {...inputProps}
-            value={inputProps.value || undefined}
-            hideVariableButton={props?.hideVariableButton}
-          />
+          <SchemaComponentContext.Provider value={{ designable: false }}>
+            <VariableInput
+              {...inputProps}
+              value={inputProps.value || undefined}
+              hideVariableButton={props?.hideVariableButton}
+            />
+          </SchemaComponentContext.Provider>
         );
       },
     };
@@ -219,7 +221,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     targetField,
     variables,
   ]);
-
   const handleSubmit: (values: any) => void = useCallback(
     (v) => {
       const schema: ISchema = {
@@ -227,7 +228,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       };
       fieldSchema.default = v.default ?? null;
       if (!isVariable(v.default)) {
-        field.setInitialValue?.(v.default);
+        (record.__isNewRecord__ || type === 'create') && field.setInitialValue?.(v.default);
       }
       schema.default = v.default ?? null;
       dn.emit('patch', {
@@ -237,6 +238,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     },
     [currentSchema, dn, field, fieldSchema],
   );
+
   return (
     <SchemaSettingsModalItem
       title={t('Set default value')}

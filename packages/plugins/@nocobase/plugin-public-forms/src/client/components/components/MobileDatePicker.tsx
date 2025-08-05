@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback } from 'react';
-import { DatePicker } from 'antd-mobile';
-import { mapDatePicker, DatePicker as NBDatePicker } from '@nocobase/client';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { mapDatePicker, DatePicker as NBDatePicker } from '@nocobase/client';
+import { DatePicker } from 'antd-mobile';
+import dayjs from 'dayjs';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
@@ -40,14 +41,16 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
-    console.log(getPrecision(timeFormat));
-
     // 性能优化：使用 useCallback 缓存函数
     const handleConfirm = useCallback(
-      (value) => {
+      (val) => {
         setVisible(false);
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
+        const selectedDateTime = new Date(val);
+        if (props.dateOnly) {
+          onChange(dayjs(val));
+        } else {
+          onChange(selectedDateTime);
+        }
       },
       [showTime, onChange],
     );
@@ -90,8 +93,8 @@ const MobileDateTimePicker = connect(
           }}
           precision={showTime ? getPrecision(timeFormat) : picker === 'date' ? 'day' : picker}
           renderLabel={labelRenderer}
-          min={new Date(1000, 0, 1)}
-          max={new Date(9999, 11, 31)}
+          min={new Date(1950, 0, 1)}
+          max={new Date(2050, 11, 31)}
           onConfirm={(val) => {
             handleConfirm(val);
           }}

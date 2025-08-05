@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-kanban",
-  "version": "1.7.13",
+  "version": "1.8.14",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-kanban",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",

@@ -151,7 +151,7 @@ export class OptionsParser {
     if (defaultSortField && !this.options?.group) {
       defaultSortField = lodash.castArray(defaultSortField);
       for (const key of defaultSortField) {
-        if (!sort.includes(key)) {
+        if (!sort.includes(key) && !sort.includes(`-${key}`)) {
           sort.push(key);
         }
       }

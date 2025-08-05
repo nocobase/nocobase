@@ -363,6 +363,117 @@ class MyPlugin extends Plugin {
 }
 ```
 
+### app.registerVariable()
+
+注册自定义变量。
+
+- 类型
+
+```tsx | pure
+interface VariableOption {
+  /** 变量的唯一标识 */
+  value: string | number;
+  /** 在界面中显示的变量名称 */
+  label?: React.ReactNode;
+  disabled?: boolean;
+  children?: VariableOption[];
+}
+
+interface Variable {
+  /** 变量的唯一标识 */
+  name: string;
+  /** 变量配置选项 */
+  useOption: () => ({ option: VariableOption; visible?: boolean });
+  /** 变量上下文 */
+  useCtx: () => (any | ((param: { variableName: string }) => Promise<any>));
+}
+
+class Application {
+  registerVariable(variable: Variable): void;
+}
+```
+
+- 详细信息
+
+注册自定义变量供前端使用。注意：不建议在组件中注册变量，因为可能会导致渲染错误。变量注册后可以在变量选择器中使用，支持异步上下文处理和嵌套选项结构。
+
+- 示例
+
+```tsx | pure
+// 基础变量注册
+app.registerVariable({
+  name: 'currentUser',
+  useOption: () => ({
+    option: {
+      value: 'currentUser',
+      label: '当前用户',
+    },
+    visible: true
+  }),
+  useCtx: () => ({ id: 1, name: 'admin' })
+});
+
+// 支持异步上下文的变量
+app.registerVariable({
+  name: 'dynamicData',
+  useOption: () => ({
+    option: {
+      value: 'dynamicData',
+      label: '动态数据',
+    }
+  }),
+  useCtx: () => async ({ variableName }) => {
+    const data = await fetchSomeData(variableName);
+    return data;
+  }
+});
+
+// 支持嵌套选项的变量
+app.registerVariable({
+  name: 'userSettings',
+  useOption: () => ({
+    option: {
+      value: 'userSettings',
+      label: '用户设置',
+      children: [
+        {
+          value: 'theme',
+          label: '主题设置',
+        },
+        {
+          value: 'language',
+          label: '语言设置',
+        }
+      ]
+    }
+  }),
+  useCtx: () => ({ theme: 'dark', language: 'zh-CN' })
+});
+```
+
+### app.getVariables()
+
+获取所有已注册的变量。
+
+- 类型
+
+```tsx | pure
+class Application {
+  getVariables(): Variable[];
+}
+```
+
+- 详细信息
+
+返回应用中所有已注册的变量列表。通常用于调试或在变量选择器中展示所有可用变量。
+
+- 示例
+
+```tsx | pure
+const variables = app.getVariables();
+console.log('已注册的变量:', variables.map(v => v.name));
+```
+
 ## Hooks
 
 ### useApp()

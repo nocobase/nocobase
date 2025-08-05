@@ -127,6 +127,7 @@ jobs:
         id: get-info
         shell: bash
         run: |
+          echo "cnaVersion=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           if [[ "${{ github.ref_name }}" =~ "beta" ]]; then
             echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref_name }}" =~ "alpha" ]]; then
@@ -137,6 +138,8 @@ jobs:
           fi
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -160,7 +163,7 @@ jobs:
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
           TAGS=()
-          
+
           TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
           TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
 
@@ -180,7 +183,7 @@ jobs:
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
 
           TAGS=()
-          
+
           TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
           TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
 
@@ -208,7 +211,7 @@ jobs:
         with:
           context: ./docker/nocobase
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
+            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_TAGS }}
@@ -216,9 +219,9 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
-          file: ./docker/nocobase/Dockerfile-cn
+          file: ./docker/nocobase/Dockerfile-full
           build-args: |
-            CNA_VERSION=${{ steps.get-info.outputs.defaultTag }}
+            CNA_VERSION=${{ steps.get-info.outputs.cnaVersion }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.ALL_FULL_TAGS }}

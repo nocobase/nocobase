@@ -301,7 +301,13 @@ export class UiSchemaRepository extends Repository {
     if (!s?.schema) {
       return;
     }
-    const keys = ['title', 'description', 'x-component-props.title', 'x-decorator-props.title'];
+    const keys = [
+      'title',
+      'description',
+      'x-component-props.title',
+      'x-decorator-props.title',
+      'x-component-props.content',
+    ];
     let r = false;
     for (const key of keys) {
       if (_.get(s?.schema, key)) {

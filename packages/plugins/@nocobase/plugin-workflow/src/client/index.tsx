@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, useCompile } from '@nocobase/client';
+import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
+import MobileManager from '@nocobase/plugin-mobile/client';
 
 // import { ExecutionPage } from './ExecutionPage';
 // import { WorkflowPage } from './WorkflowPage';
 // import { WorkflowPane } from './WorkflowPane';
-import { lazy } from '@nocobase/client';
 const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage');
 const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
 const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
@@ -33,8 +33,16 @@ import CollectionTrigger from './triggers/collection';
 import ScheduleTrigger from './triggers/schedule';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
-import { TasksProvider, TaskTypeOptions, WorkflowTasks } from './WorkflowTasks';
+import {
+  MobileTabBarWorkflowTasksItem,
+  TasksProvider,
+  tasksSchemaInitializerItem,
+  TaskTypeOptions,
+  WorkflowTasks,
+  WorkflowTasksMobile,
+} from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
+import { observer } from '@formily/react';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -111,6 +119,22 @@ export default class PluginWorkflowClient extends Plugin {
 
   async load() {
     this.app.addProvider(WorkflowCollectionsProvider);
+    this.app.addProvider(TasksProvider);
+
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      icon: 'PartitionOutlined',
+      title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+      Component: WorkflowPane,
+      aclSnippet: 'pm.workflow.workflows',
+    });
+
+    this.app.schemaSettingsManager.addItem('actionSettings:submit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:createSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateSubmit', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:saveRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:updateRecord', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', workflowConfigSettings);
+    this.app.schemaSettingsManager.addItem('actionSettings:bulkEditSubmit', 'workflowConfig', workflowConfigSettings);
 
     this.router.add('admin.workflow.workflows.id', {
       path: getWorkflowDetailPath(':id'),
@@ -127,22 +151,18 @@ export default class PluginWorkflowClient extends Plugin {
       Component: WorkflowTasks,
     });
 
-    this.app.pluginSettingsManager.add(NAMESPACE, {
-      icon: 'PartitionOutlined',
-      title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
-      Component: WorkflowPane,
-      aclSnippet: 'pm.workflow.workflows',
-    });
-
-    this.app.use(TasksProvider);
-
-    this.app.schemaSettingsManager.addItem('actionSettings:submit', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:createSubmit', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:updateSubmit', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:saveRecord', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:updateRecord', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:delete', 'workflowConfig', workflowConfigSettings);
-    this.app.schemaSettingsManager.addItem('actionSettings:bulkEditSubmit', 'workflowConfig', workflowConfigSettings);
+    const mobileManager = this.pm.get(MobileManager);
+    this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
+    this.app.addComponents({ MobileTabBarWorkflowTasksItem });
+    if (mobileManager.mobileRouter) {
+      mobileManager.mobileRouter.add('mobile.page.workflow', {
+        path: '/page/workflow',
+      });
+      mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
+        path: '/page/workflow/tasks/:taskType/:status/:popupId?',
+        Component: observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' }),
+      });
+    }
 
     this.registerInstructionGroup('control', { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` });
     this.registerInstructionGroup('calculation', {
@@ -191,4 +211,4 @@ export { default as useStyles } from './style';
 export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
-export { TASK_STATUS, usePopupRecordContext } from './WorkflowTasks';
+export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';

@@ -12,7 +12,7 @@ import { useForm } from '@formily/react';
 import { Input as AntInput, Space, theme } from 'antd';
 import type { CascaderProps, DefaultOptionType } from 'antd/lib/cascader';
 import useInputStyle from 'antd/es/input/style';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, isValidElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import sanitizeHTML from 'sanitize-html';
 
@@ -129,7 +129,7 @@ function createVariableTagHTML(variable, keyLabelMap) {
 
   if (labels) {
     labels = labels.map((label) => {
-      if (isReactElement(label)) {
+      if (isReactElement(label) || isValidElement(label)) {
         return renderToString(label);
       }
       return label;
