@@ -438,33 +438,35 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
         />
       )}
 
-      {menuItems.length > 0 && validationOptions.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Dropdown menu={menu} placement="bottomLeft">
-            <Button type="dashed" icon={<PlusOutlined />} size="small">
-              {t('Add rule')} <DownOutlined />
-            </Button>
-          </Dropdown>
-          <span>
-            <span
-              className={css`
-                color: ${token.colorTextSecondary};
-                &:after {
-                  content: ':';
-                }
-                & + a {
-                  margin-left: 0.25em;
-                }
-              `}
-            >
-              {t('References')}
-            </span>
-            <a href="https://joi.dev/api/" target="_blank" rel="noreferrer">
-              {t('Joi API')}
-            </a>
-          </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          {menuItems.length > 0 && validationOptions.length > 0 && (
+            <Dropdown menu={menu} placement="bottomLeft">
+              <Button type="dashed" icon={<PlusOutlined />} size="small">
+                {t('Add rule')} <DownOutlined />
+              </Button>
+            </Dropdown>
+          )}
         </div>
-      )}
+        <span>
+          <span
+            className={css`
+              color: ${token.colorTextSecondary};
+              &:after {
+                content: ':';
+              }
+              & + a {
+                margin-left: 0.25em;
+              }
+            `}
+          >
+            {t('References')}
+          </span>
+          <a href="https://joi.dev/api/" target="_blank" rel="noreferrer">
+            {t('Joi API')}
+          </a>
+        </span>
+      </div>
     </div>
   );
 });

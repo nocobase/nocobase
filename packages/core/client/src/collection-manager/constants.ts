@@ -28,22 +28,6 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
     {
-      key: 'case',
-      label: 'Case',
-      hasValue: true,
-      params: [
-        {
-          key: 'direction',
-          label: 'Direction',
-          componentType: 'radio',
-          options: [
-            { label: 'Uppercase', value: 'upper' },
-            { label: 'Lowercase', value: 'lower' },
-          ],
-        },
-      ],
-    },
-    {
       key: 'pattern',
       label: 'Pattern',
       hasValue: true,

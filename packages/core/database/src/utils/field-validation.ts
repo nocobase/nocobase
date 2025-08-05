@@ -21,13 +21,24 @@ export function buildJoiSchema(validation: ValidationOptions, options: { label?:
 
   let schema = Joi[type]();
 
+  const isRequired = rules.some((rule) => rule.name === 'required');
+
+  if (isRequired) {
+    schema = schema.empty(null);
+  } else {
+    schema = schema.allow(null);
+    if (value === null) return;
+  }
+
   if (rules) {
     rules.forEach((rule) => {
-      if (rule.name === 'required' && value === null) {
-        schema = schema.empty(null);
-      }
       if (!_.isEmpty(rule.args)) {
         if (rule.name === 'pattern') {
+          const lastSlash = rule.args.regex.lastIndexOf('/');
+          const isRegExpStr = rule.args.regex.startsWith('/') && lastSlash > 0;
+          if (isRegExpStr) {
+            rule.args.regex = rule.args.regex.slice(1, lastSlash);
+          }
           rule.args.regex = new RegExp(rule.args.regex);
         }
         schema =
