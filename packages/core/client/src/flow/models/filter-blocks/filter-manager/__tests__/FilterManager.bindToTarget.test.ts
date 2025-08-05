@@ -565,5 +565,77 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalled();
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
     });
+
+    it('should call removeFilterGroup when filter value is empty object', () => {
+      mockFilterModel.getFilterValue.mockReturnValue({});
+
+      const filterConfig = {
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['metadata'],
+        operator: '$eq',
+      };
+      filterManager.addFilterConfig(filterConfig);
+
+      filterManager.bindToTarget('target-model-uid');
+
+      expect(mockFilterModel.getFilterValue).toHaveBeenCalled();
+      expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
+      expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
+    });
+
+    it('should call removeFilterGroup when filter value is empty array', () => {
+      mockFilterModel.getFilterValue.mockReturnValue([]);
+
+      const filterConfig = {
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['tags'],
+        operator: '$in',
+      };
+      filterManager.addFilterConfig(filterConfig);
+
+      filterManager.bindToTarget('target-model-uid');
+
+      expect(mockFilterModel.getFilterValue).toHaveBeenCalled();
+      expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
+      expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
+    });
+
+    it('should not call removeFilterGroup for non-empty object', () => {
+      mockFilterModel.getFilterValue.mockReturnValue({ key: 'value' });
+
+      const filterConfig = {
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['metadata'],
+        operator: '$eq',
+      };
+      filterManager.addFilterConfig(filterConfig);
+
+      filterManager.bindToTarget('target-model-uid');
+
+      expect(mockFilterModel.getFilterValue).toHaveBeenCalled();
+      expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalled();
+      expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
+    });
+
+    it('should not call removeFilterGroup for non-empty array', () => {
+      mockFilterModel.getFilterValue.mockReturnValue(['tag1', 'tag2']);
+
+      const filterConfig = {
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['tags'],
+        operator: '$in',
+      };
+      filterManager.addFilterConfig(filterConfig);
+
+      filterManager.bindToTarget('target-model-uid');
+
+      expect(mockFilterModel.getFilterValue).toHaveBeenCalled();
+      expect(mockTargetModel.resource.removeFilterGroup).not.toHaveBeenCalled();
+      expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-1', expect.any(FilterItem));
+    });
   });
 });
