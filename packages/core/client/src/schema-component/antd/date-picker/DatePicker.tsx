@@ -258,6 +258,15 @@ DatePicker.RangePicker = function RangePicker(props: any) {
   return <InternalRangePicker {...newProps} />;
 };
 
+function toLocalNaiveISOString(dateString: string, format): string {
+  if (dateString && dateString.endsWith('Z')) {
+    const date = dayjs(dateString);
+    return date.format(format);
+  }
+  return dateString;
+}
+
+//筛选区块的日期字段总是输出无时区
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const { picker = 'date', format, showTime, timeFormat } = props;
   const isMobileMedia = isMobile();
@@ -332,7 +341,10 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
           field.value = null;
         }}
       />
-      <InternalDatePicker {...stateProps} value={value} />
+      <InternalDatePicker
+        {...stateProps}
+        value={toLocalNaiveISOString(value, getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat))}
+      />
     </Space.Compact>
   );
 };
