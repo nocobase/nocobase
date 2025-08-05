@@ -26,297 +26,121 @@ type Structure = {
 
 export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {
   static supportedFieldInterfaces = '*' as any;
-  field: Field;
-
+  componentProps: any = {};
   enableDisplayMode = true;
   enableFormItem = true;
 
   get form() {
-    return this.context.form as Form;
+    return this.context.form;
   }
 
-  get decorator() {
-    return [FormItem, {}];
-  }
+  // get decorator() {
+  //   return [FormItem, {}];
+  // }
 
   get component(): FieldComponentTuple {
     return [JsonInput, {}];
   }
 
-  setTitle(title: string) {
-    this.field.title = title || this.collectionField.title;
-  }
+  // setTitle(title: string) {
+  //   this.field.title = title || this.collectionField.title;
+  // }
 
-  setRequired(required: boolean) {
-    this.field.required = required;
-  }
+  // setRequired(required: boolean) {
+  //   this.field.required = required;
+  // }
 
-  setInitialValue(initialValue: any) {
-    this.field.initialValue = initialValue;
-  }
+  // setInitialValue(initialValue: any) {
+  //   this.field.initialValue = initialValue;
+  // }
 
   setComponentProps(componentProps) {
-    this.field.setComponentProps(componentProps);
+    this.componentProps = {
+      ...this.componentProps,
+      ...componentProps,
+    };
   }
 
   getComponentProps() {
-    return this.field.componentProps;
+    return {
+      style: { width: '100%' },
+      ...this.collectionField.getComponentProps(),
+      ...this.componentProps,
+      value: this.form.getFieldValue(this.fieldPath),
+      onChange: (val) => {
+        this.form.setFieldValue(this.fieldPath, val);
+      },
+    };
   }
 
-  setDataSource(dataSource: any[]) {
-    this.field.dataSource = dataSource;
-  }
+  // setDataSource(dataSource: any[]) {
+  //   this.field.dataSource = dataSource;
+  // }
 
-  setValidator(validator: FieldValidator) {
-    this.field.validator = validator;
-  }
-  setDecoratorProps(decoratorProps) {
-    this.field.setDecoratorProps(decoratorProps);
-  }
+  // setValidator(validator: FieldValidator) {
+  //   this.field.validator = validator;
+  // }
+  // setDecoratorProps(decoratorProps) {
+  //   this.field.setDecoratorProps(decoratorProps);
+  // }
 
-  getDecoratorProps() {
-    return this.field.decoratorProps;
-  }
-  showTitle(showTitle: boolean) {
-    this.field.setDecoratorProps({
-      labelStyle: { display: showTitle ? 'flex' : 'none' },
-    });
-  }
-  setDescription(description: string) {
-    this.field.description = description;
-  }
-  setPattern(pattern: FieldPatternTypes) {
-    this.field.pattern = pattern;
-  }
-  setTooltip(tooltip: string) {
-    this.field.setDecoratorProps({
-      tooltip: tooltip,
-    });
-  }
-  createField() {
-    const basePath = this.parent.context.basePath || this.context.basePath;
-    const field = this.form.createField({
-      name: this.collectionField.name,
-      basePath: basePath,
-      ...this.props,
-      decorator: this.decorator,
-      component: this.component,
-    });
-    return field;
-  }
+  // getDecoratorProps() {
+  //   return this.field.decoratorProps;
+  // }
+  // showTitle(showTitle: boolean) {
+  //   this.field.setDecoratorProps({
+  //     labelStyle: { display: showTitle ? 'flex' : 'none' },
+  //   });
+  // }
+  // setDescription(description: string) {
+  //   this.field.description = description;
+  // }
+  // setPattern(pattern: FieldPatternTypes) {
+  //   this.field.pattern = pattern;
+  // }
+  // setTooltip(tooltip: string) {
+  //   this.field.setDecoratorProps({
+  //     tooltip: tooltip,
+  //   });
+  // }
+  // createField() {
+  //   const basePath = this.parent.context.basePath || this.context.basePath;
+  //   const field = this.form.createField({
+  //     name: this.collectionField.name,
+  //     basePath: basePath,
+  //     ...this.props,
+  //     decorator: this.decorator,
+  //     component: this.component,
+  //   });
+  //   return field;
+  // }
 
-  async destroy() {
-    // 在销毁模型前，先清理 Formily Field
-    if (this.field) {
-      this.field.destroy();
-      this.field = null;
-    }
-    // 调用父类的 destroy 方法
-    return super.destroy();
-  }
+  // async destroy() {
+  //   // 在销毁模型前，先清理 Formily Field
+  //   if (this.field) {
+  //     this.field.destroy();
+  //     this.field = null;
+  //   }
+  //   // 调用父类的 destroy 方法
+  //   return super.destroy();
+  // }
 
   render() {
-    return (
-      <FieldContext.Provider value={this.field}>
-        <ReactiveField key={this.uid} field={this.field}>
-          {this.props.children}
-        </ReactiveField>
-      </FieldContext.Provider>
-    );
+    const [Component, props = {}] = this.component;
+    return <Component {...props} {...this.getComponentProps()} />;
   }
 }
 
 EditableFieldModel.registerFlow({
-  key: 'formItemSettings',
-  title: escapeT('Form item settings'),
+  key: 'editableItemSettings',
+  title: escapeT('Form component settings'),
   sort: 150,
   steps: {
-    createField: {
-      handler(ctx, params) {
-        const { fieldProps = {} } = params;
-        const { collectionField } = ctx.model;
-
-        // 如果字段已存在但连接有问题，重新创建
-        if (ctx.model.field && (!ctx.model.field.form || ctx.model.field.destroyed)) {
-          ctx.model.field = null;
-        }
-
-        ctx.model.field = ctx.model.field || ctx.model.createField();
-        ctx.model.setComponentProps({ ...collectionField.getComponentProps(), ...fieldProps });
-        if (collectionField.enum.length) {
-          ctx.model.setDataSource(collectionField.enum);
-        }
-        const validator = collectionField.uiSchema?.['x-validator'];
-        if (validator) {
-          ctx.model.setValidator(validator);
-        }
-      },
-    },
-    label: {
-      title: escapeT('Label'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.enableFormItem) {
-          return null;
-        }
-        return {
-          label: {
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-            'x-reactions': (field) => {
-              const model = ctx.model;
-              const originTitle = model.collectionField?.title;
-              field.decoratorProps = {
-                ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-              };
-            },
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setTitle(params.label);
-      },
-      defaultParams: (ctx) => {
-        return {
-          title: ctx.model.collectionField?.title,
-        };
-      },
-    },
-    showLabel: {
-      title: escapeT('Show label'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.enableFormItem) {
-          return null;
-        }
-        return {
-          showLabel: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: escapeT('Yes'),
-              unCheckedChildren: escapeT('No'),
-            },
-          },
-        };
-      },
-      defaultParams: (ctx) => {
-        return {
-          showLabel: ctx.model.enableFormItem,
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.showTitle(params.showLabel);
-      },
-    },
-    tooltip: {
-      title: escapeT('Tooltip'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.enableFormItem) {
-          return null;
-        }
-        return {
-          tooltip: {
-            'x-component': 'Input.TextArea',
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setTooltip(params.tooltip);
-      },
-    },
-    description: {
-      title: escapeT('Description'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.enableFormItem) {
-          return null;
-        }
-        return {
-          description: {
-            'x-component': 'Input.TextArea',
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setDescription(params.description);
-      },
-    },
-    initialValue: {
-      title: escapeT('Default value'),
-      uiSchema: {
-        defaultValue: {
-          'x-component': 'VariableEditableValue',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: (ctx) => ({
-        defaultValue: ctx.model.collectionField.defaultValue,
-      }),
-      handler(ctx, params) {
-        ctx.model.setInitialValue(params.defaultValue);
-      },
-    },
-    required: {
-      title: escapeT('Required'),
-      uiSchema: {
-        required: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
-          },
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setRequired(params.required || false);
-      },
-    },
-    pattern: {
-      title: escapeT('Display mode'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.enableDisplayMode) {
-          return null;
-        }
-        return {
-          pattern: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
-              {
-                value: 'editable',
-                label: escapeT('Editable'),
-              },
-              {
-                value: 'disabled',
-                label: escapeT('Disabled'),
-              },
-              // {
-              //   value: 'readOnly',
-              //   label: escapeT('Read only'),
-              // },
-              {
-                value: 'readPretty',
-                label: escapeT('Display only'),
-              },
-            ],
-          },
-        };
-      },
-      defaultParams: (ctx) => ({
-        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
-      }),
-      handler(ctx, params) {
-        if (ctx.model.enableDisplayMode) {
-          ctx.model.setPattern(params.pattern);
-        }
-      },
-    },
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
         const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
+        console.log(8888);
         if (classes.length === 1) {
           return null;
         }

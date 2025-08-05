@@ -67,7 +67,7 @@ export class UploadEditableFieldModel extends FormFieldModel {
     return true;
   }
   set customRequest(fn) {
-    this.field.setComponentProps({ customRequest: fn });
+    this.setComponentProps({ customRequest: fn });
   }
   get component() {
     return [CardUpload, {}];
@@ -84,7 +84,6 @@ UploadEditableFieldModel.registerFlow({
         ctx.model.customRequest = (fileData) => {
           ctx.model.dispatchEvent('customRequest', {
             apiClient: ctx.app.apiClient,
-            field: ctx.model.field,
             fileData,
           });
         };

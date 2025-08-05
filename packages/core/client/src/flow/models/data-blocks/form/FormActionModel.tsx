@@ -44,7 +44,7 @@ FormSubmitActionModel.registerFlow({
         const blockModel = ctx.blockModel as FormModel;
         try {
           await blockModel.form.submit();
-          const values = blockModel.form.values;
+          const values = blockModel.form.getFieldsValue();
           if (resource instanceof SingleRecordResource) {
             if (blockModel instanceof EditFormModel) {
               const currentFilterByTk = resource.getMeta('currentFilterByTk');
@@ -59,7 +59,7 @@ FormSubmitActionModel.registerFlow({
               resource.isNewRecord = false;
               await resource.refresh();
             } else {
-              blockModel.form.reset();
+              blockModel.form.resetFields();
             }
           } else if (resource instanceof MultiRecordResource) {
             const currentFilterByTk = resource.getMeta('currentFilterByTk');

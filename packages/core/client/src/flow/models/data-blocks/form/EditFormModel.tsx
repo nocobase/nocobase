@@ -23,7 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Pagination } from 'antd';
 import React from 'react';
-import { FormModel } from './FormModel';
+import { FormModel, FormComponent } from './FormModel';
 
 export class EditFormModel extends FormModel {
   createResource(_ctx: any, params: any) {
@@ -65,39 +65,29 @@ export class EditFormModel extends FormModel {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
 
     return (
-      <>
-        <FormProvider form={this.form}>
-          <FormLayout
-            colon={colon}
-            labelAlign={labelAlign}
-            labelWidth={labelWidth}
-            labelWrap={labelWrap}
-            layout={layout}
-          >
-            <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-          </FormLayout>
-          <DndProvider>
-            <FormButtonGroup>
-              {this.mapSubModels('actions', (action) => (
-                <Droppable model={action} key={action.uid}>
-                  <FlowModelRenderer
-                    key={action.uid}
-                    model={action}
-                    showFlowSettings={{ showBackground: false, showBorder: false }}
-                    extraToolbarItems={[
-                      {
-                        key: 'drag-handler',
-                        component: DragHandler,
-                        sort: 1,
-                      },
-                    ]}
-                  />
-                </Droppable>
-              ))}
-              <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
-            </FormButtonGroup>
-          </DndProvider>
-        </FormProvider>
+      <FormComponent model={this}>
+        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
+        <DndProvider>
+          <FormButtonGroup>
+            {this.mapSubModels('actions', (action) => (
+              <Droppable model={action} key={action.uid}>
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ))}
+            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+          </FormButtonGroup>
+        </DndProvider>
         {this.isMultiRecordResource() && (
           <div
             style={{
@@ -116,7 +106,19 @@ export class EditFormModel extends FormModel {
             />
           </div>
         )}
-      </>
+
+        {/* <FormProvider form={this.form}>
+          <FormLayout
+            colon={colon}
+            labelAlign={labelAlign}
+            labelWidth={labelWidth}
+            labelWrap={labelWrap}
+            layout={layout}
+          >
+          </FormLayout>
+        
+        </FormProvider> */}
+      </FormComponent>
     );
   }
 }
@@ -132,7 +134,10 @@ EditFormModel.registerFlow({
         }
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.resource.on('refresh', async () => {
-          await ctx.form.reset();
+          if (!ctx.form) {
+            return;
+          }
+          await ctx.form.resetFields();
           ctx.form.values = {};
           const currentRecord = ctx.model.getCurrentRecord();
           const targetKey = ctx.association?.targetKey;
@@ -145,7 +150,8 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.model.form.setValues(currentRecord);
+          console.log(ctx.form.setFields);
+          ctx.form.setFields(currentRecord);
         });
       },
     },

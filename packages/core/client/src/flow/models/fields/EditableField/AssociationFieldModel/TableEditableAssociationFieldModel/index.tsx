@@ -27,7 +27,7 @@ export class TableEditableAssociationFieldModel extends EditableAssociationField
     return this.collectionField.targetCollection;
   }
   get component() {
-    return [AssociationTable, {}];
+    return [AssociationTable, { form: this.form, name: this.fieldPath }];
   }
 }
 

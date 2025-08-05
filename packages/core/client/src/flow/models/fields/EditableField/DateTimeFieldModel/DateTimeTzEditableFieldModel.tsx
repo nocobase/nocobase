@@ -50,7 +50,6 @@ const DatePickerCom = connect(
   DatePicker,
   mapProps((props: any, field: any) => {
     const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
-
     return {
       ...rest,
       value: parseInitialValue(value, format),
@@ -59,7 +58,7 @@ const DatePickerCom = connect(
       showTime,
       onChange: (val: any) => {
         const result = parseToDate(val, format);
-        field.setValue(result);
+        rest.onChange(result);
       },
     };
   }),

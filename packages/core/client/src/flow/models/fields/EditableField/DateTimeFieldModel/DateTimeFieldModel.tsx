@@ -15,10 +15,10 @@ export class DateTimeFieldModel extends FormFieldModel {
     let { dateFormat, timeFormat } = componentProps || {};
     if (!componentProps.format && (dateFormat || timeFormat)) {
       if (!dateFormat) {
-        dateFormat = this.field.componentProps?.dateFormat || 'YYYY-MM-DD';
+        dateFormat = this.componentProps?.dateFormat || 'YYYY-MM-DD';
       }
       if (!timeFormat) {
-        timeFormat = this.field.componentProps?.timeFormat || 'HH:mm:ss';
+        timeFormat = this.componentProps?.timeFormat || 'HH:mm:ss';
       }
       componentProps.format = componentProps?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     }
@@ -34,7 +34,7 @@ export class DateTimeFieldModel extends FormFieldModel {
 
 DateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
-  sort: 1000,
+  sort: 600,
   title: escapeT('Datetime settings'),
   steps: {
     dateFormat: {

@@ -86,11 +86,13 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export const SubTable = observer((props: any) => {
-  const field = useField<ArrayField>();
+  // const field = useField<ArrayField>();
+  const { allowAddNew, enableIndexColumn, form, name, editable } = props;
+
+  const value: any[] = form.getFieldValue(name) || [];
   const model: any = useFlowModel();
   const { t } = useTranslation();
-  const form = useForm();
-  const { allowAddNew, enableIndexColumn } = props;
+  // const form = useForm();
   const getColumns = () => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
@@ -112,7 +114,7 @@ export const SubTable = observer((props: any) => {
         width: 100,
         title: <AddFieldColumn model={model} />,
       },
-      field.editable && {
+      editable && {
         title: '',
         key: 'delete',
         width: 60,
@@ -122,19 +124,11 @@ export const SubTable = observer((props: any) => {
           return (
             <div
               onClick={() => {
-                return action(() => {
-                  const fieldIndex = index;
-                  if (!Array.isArray(field.value)) return;
-                  const nextValue = [...field.value];
-                  if (fieldIndex >= 0 && fieldIndex < nextValue.length) {
-                    nextValue.splice(fieldIndex, 1);
-                    spliceArrayState(field, {
-                      startIndex: fieldIndex,
-                      deleteCount: 1,
-                    });
-                    field.onInput(nextValue);
-                  }
-                });
+                const nextValue = [...value];
+                if (index >= 0 && index < nextValue.length) {
+                  nextValue.splice(index, 1);
+                  form.setFieldsValue({ [name]: nextValue });
+                }
               }}
             >
               <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
@@ -145,28 +139,25 @@ export const SubTable = observer((props: any) => {
     ].filter(Boolean) as any;
   };
   const handleAdd = () => {
-    const next = [...(field.value || []), {}];
-    field.onInput(next);
+    const next = [...value, {}];
+    form.setFieldsValue({ [name]: next });
   };
-  const dataSource = useMemo(
-    () => castArray(field.value || []).map((item, index) => ({ key: index, ...item })),
-    [field.value],
-  );
+  const dataSource = useMemo(() => castArray(value || []).map((item, index) => ({ key: index, ...item })), [value]);
 
-  useEffect(() => {
-    const disposer = form.subscribe(({ type }) => {
-      // 当子字段有默认值时，form.reset 无法清空值
-      if (type === 'onFieldReset') {
-        form.clearFormGraph(model.fieldPath);
-        requestAnimationFrame(() => {
-          model.createField();
-        });
-      }
-    });
-    return () => {
-      form.unsubscribe(disposer);
-    };
-  }, [form, field]);
+  // useEffect(() => {
+  //   const disposer = form.subscribe(({ type }) => {
+  //     // 当子字段有默认值时，form.reset 无法清空值
+  //     if (type === 'onFieldReset') {
+  //       form.clearFormGraph(model.fieldPath);
+  //       requestAnimationFrame(() => {
+  //         model.createField();
+  //       });
+  //     }
+  //   });
+  //   return () => {
+  //     form.unsubscribe(disposer);
+  //   };
+  // }, [form]);
   const HeaderWrapperComponent = React.memo((props) => {
     const engine = useFlowEngine();
 
@@ -191,7 +182,7 @@ export const SubTable = observer((props: any) => {
         dataSource={dataSource}
         pagination={false}
         locale={{
-          emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
+          emptyText: <span> {editable ? t('Please add or select record') : t('No data')}</span>,
         }}
         components={{
           header: {
@@ -204,7 +195,7 @@ export const SubTable = observer((props: any) => {
           gap: 15,
         }}
       >
-        {field.editable && allowAddNew !== false && (
+        {editable && allowAddNew !== false && (
           <a onClick={handleAdd}>
             <PlusOutlined /> {t('Add new')}
           </a>
