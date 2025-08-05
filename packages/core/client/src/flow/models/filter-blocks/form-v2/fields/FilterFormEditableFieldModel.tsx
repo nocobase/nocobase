@@ -80,7 +80,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
    * @returns
    */
   getFilterValue() {
-    return this.field.value;
+    return this.field?.value;
   }
 
   /**
