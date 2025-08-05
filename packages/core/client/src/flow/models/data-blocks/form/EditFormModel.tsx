@@ -150,8 +150,7 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          console.log(ctx.form.setFields);
-          ctx.form.setFields(currentRecord);
+          ctx.form.setFieldsValue(currentRecord);
         });
       },
     },

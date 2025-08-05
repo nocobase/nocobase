@@ -47,7 +47,8 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
       ...this.componentProps,
       value: this.form.getFieldValue(this.fieldPath),
       onChange: (val) => {
-        this.form.setFieldValue(this.fieldPath, val);
+        const value = val && typeof val === 'object' && 'target' in val ? val.target.value : val;
+        this.form.setFieldValue(this.fieldPath, value);
       },
     };
   }
