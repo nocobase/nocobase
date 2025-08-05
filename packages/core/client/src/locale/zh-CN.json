@@ -1222,5 +1222,8 @@
   "No allow `-` and `:`": "不允许使用 `-` 和 `:`",
   "Only use `-`": "仅使用 `-`",
   "Only use `_`": "仅使用 `_`",
-  "Only use `.`": "仅使用 `.`"
+  "Only use `.`": "仅使用 `.`",
+  "Select date": "选择日期",
+  "Enter value": "输入值",
+  "Please select": "请选择"
 }

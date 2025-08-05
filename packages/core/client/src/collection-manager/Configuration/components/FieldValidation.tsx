@@ -233,7 +233,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                     value={currentValue}
                     onChange={(value) => handleRuleValueChange(rule.key, param.key, value)}
                     placeholder={t('Please select')}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', height: '100%' }}
                     allowClear
                   >
                     {param.options?.map((option) => (
