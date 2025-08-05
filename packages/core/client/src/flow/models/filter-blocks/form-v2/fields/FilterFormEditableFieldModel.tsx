@@ -51,6 +51,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   async destroy(): Promise<boolean> {
     const result = await super.destroy();
 
+    // 清理筛选配置
     const filterManager: FilterManager = this.context.filterManager;
     await filterManager.removeFilterConfig({ filterId: this.uid });
 
