@@ -236,6 +236,7 @@ export class Collection<
       return;
     }
     values = Array.isArray(values) ? values : [values];
+    const { t } = context || { t: (key: string, options: any) => key };
     for (const value of values) {
       for (const [, field] of this.fields) {
         const val = value[field.name];
@@ -245,11 +246,11 @@ export class Collection<
 
         const fieldLabel = field.options.uiSchema?.title || field.name;
         const joiSchema = buildJoiSchema(field.options.validation, {
-          label: `${context.t('Field', { ns: 'client' })}: ${fieldLabel}`,
+          label: `${t('Field', { ns: 'client' })}: ${fieldLabel}`,
           value: val,
         });
         const { error } = joiSchema.validate(val, {
-          messages: getJoiErrorMessage(context.t),
+          messages: getJoiErrorMessage(t),
         });
         if (error) {
           throw error;
