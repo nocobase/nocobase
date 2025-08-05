@@ -13,17 +13,17 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import 'ses';
 import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions, useSchemaOptionsContext } from './SchemaComponentOptions';
-import 'ses';
 
-setTimeout(() => {
-  lockdown({
-    legacyRegeneratorRuntimeTaming: 'unsafe-ignore',
-    // ...其他配置项
-  });
-}, 0);
+// setTimeout(() => {
+//   lockdown({
+//     legacyRegeneratorRuntimeTaming: 'unsafe-ignore',
+//     // ...其他配置项
+//   });
+// }, 0);
 
 const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
@@ -37,7 +37,54 @@ export const Registry = {
   silent: true,
   compile(expression: string, scope = {}) {
     const fn = () => {
-      const compartment = new Compartment(scope);
+      // 预检查表达式，直接拒绝危险模式
+      const dangerousPatterns = [
+        /constructor\s*\.\s*constructor/,
+        /\.constructor\s*\(/,
+        /\[['"]constructor['"]\]/,
+        /new\s+Function\s*\(/,
+        /Function\s*\(/,
+        /eval\s*\(/,
+      ];
+
+      if (dangerousPatterns.some((pattern) => pattern.test(expression))) {
+        return `{{${expression}}}`;
+      }
+
+      const blockedConstructor = function () {
+        throw new Error('Constructor access is denied');
+      };
+
+      Object.defineProperty(blockedConstructor, 'constructor', {
+        value: blockedConstructor,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+
+      const compartment = new Compartment({
+        ...scope,
+        Function: undefined,
+        eval: undefined,
+        Object: {
+          ...Object,
+          constructor: blockedConstructor,
+        },
+        Array: {
+          ...Array,
+          constructor: blockedConstructor,
+        },
+        String: {
+          ...String,
+          constructor: blockedConstructor,
+        },
+        Number: {
+          ...Number,
+          constructor: blockedConstructor,
+        },
+        constructor: blockedConstructor,
+      });
+
       if (Registry.silent) {
         try {
           return compartment.evaluate(`(${expression})`);

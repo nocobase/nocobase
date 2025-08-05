@@ -16,7 +16,19 @@ describe('compile(expression)', () => {
   });
 
   it('should block constructor.constructor XSS attempts', () => {
+    const dangerous = `const c = constructor;c.constructor("console.log('XSS')")()`;
+    const result = Registry.compile(dangerous, {});
+    expect(result).toBe(`{{${dangerous}}}`);
+  });
+
+  it('should block constructor.constructor XSS attempts', () => {
     const dangerous = `constructor.constructor("console.log('XSS')")()`;
+    const result = Registry.compile(dangerous, {});
+    expect(result).toBe(`{{${dangerous}}}`);
+  });
+
+  it('should block new Function', () => {
+    const dangerous = `new Function('return 1+1')()`;
     const result = Registry.compile(dangerous, {});
     expect(result).toBe(`{{${dangerous}}}`);
   });
