@@ -7,14 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormItem } from '@formily/antd-v5';
-import type { FieldPatternTypes, FieldValidator } from '@formily/core';
-import { Field, Form } from '@formily/core';
-import { FieldContext } from '@formily/react';
 import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormFieldGridModel, FormModel } from '../..';
-import { ReactiveField } from '../../../formily/ReactiveField';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
 
@@ -34,25 +29,9 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     return this.context.form;
   }
 
-  // get decorator() {
-  //   return [FormItem, {}];
-  // }
-
   get component(): FieldComponentTuple {
     return [JsonInput, {}];
   }
-
-  // setTitle(title: string) {
-  //   this.field.title = title || this.collectionField.title;
-  // }
-
-  // setRequired(required: boolean) {
-  //   this.field.required = required;
-  // }
-
-  // setInitialValue(initialValue: any) {
-  //   this.field.initialValue = initialValue;
-  // }
 
   setComponentProps(componentProps) {
     this.componentProps = {
@@ -73,61 +52,9 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     };
   }
 
-  // setDataSource(dataSource: any[]) {
-  //   this.field.dataSource = dataSource;
-  // }
-
-  // setValidator(validator: FieldValidator) {
-  //   this.field.validator = validator;
-  // }
-  // setDecoratorProps(decoratorProps) {
-  //   this.field.setDecoratorProps(decoratorProps);
-  // }
-
-  // getDecoratorProps() {
-  //   return this.field.decoratorProps;
-  // }
-  // showTitle(showTitle: boolean) {
-  //   this.field.setDecoratorProps({
-  //     labelStyle: { display: showTitle ? 'flex' : 'none' },
-  //   });
-  // }
-  // setDescription(description: string) {
-  //   this.field.description = description;
-  // }
-  // setPattern(pattern: FieldPatternTypes) {
-  //   this.field.pattern = pattern;
-  // }
-  // setTooltip(tooltip: string) {
-  //   this.field.setDecoratorProps({
-  //     tooltip: tooltip,
-  //   });
-  // }
-  // createField() {
-  //   const basePath = this.parent.context.basePath || this.context.basePath;
-  //   const field = this.form.createField({
-  //     name: this.collectionField.name,
-  //     basePath: basePath,
-  //     ...this.props,
-  //     decorator: this.decorator,
-  //     component: this.component,
-  //   });
-  //   return field;
-  // }
-
-  // async destroy() {
-  //   // 在销毁模型前，先清理 Formily Field
-  //   if (this.field) {
-  //     this.field.destroy();
-  //     this.field = null;
-  //   }
-  //   // 调用父类的 destroy 方法
-  //   return super.destroy();
-  // }
-
   render() {
     const [Component, props = {}] = this.component;
-    return <Component {...props} {...this.getComponentProps()} />;
+    return <Component {...this.getComponentProps()} {...props} />;
   }
 }
 
@@ -140,7 +67,6 @@ EditableFieldModel.registerFlow({
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
         const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
-        console.log(8888);
         if (classes.length === 1) {
           return null;
         }
