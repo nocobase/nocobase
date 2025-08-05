@@ -15,9 +15,53 @@ interface TDataItem {
 }
 type TDataItemWithKey = TDataItem & { _rowKey: string };
 
+function toErrMessages(error) {
+  if (typeof error?.response?.data === 'string') {
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = error?.response?.data;
+    let message = tempElement.textContent || tempElement.innerText;
+    if (message.includes('Error occurred while trying')) {
+      message = 'The application may be starting up. Please try again later.';
+      return [{ code: 'APP_WARNING', message }];
+    }
+    if (message.includes('502 Bad Gateway')) {
+      message = 'The application may be starting up. Please try again later.';
+      return [{ code: 'APP_WARNING', message }];
+    }
+    return [{ message }];
+  }
+  if (error?.response?.data?.error) {
+    return [error?.response?.data?.error];
+  }
+  return (
+    error?.response?.data?.errors ||
+    error?.response?.data?.messages ||
+    error?.response?.error || [{ message: error.message || 'Server error' }]
+  );
+}
+
+export class ResourceError extends Error {
+  data: { message: string; code?: string };
+
+  constructor(error) {
+    const data = toErrMessages(error).shift();
+    super(data.message);
+    this.name = 'ResponseError';
+  }
+
+  get code() {
+    return this.data?.code || 'UNKNOWN_ERROR';
+  }
+
+  get message() {
+    return this.data?.message || 'An unknown error occurred';
+  }
+}
+
 export class FlowResource<TData = any> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
+  protected _error = observable.ref<ResourceError>(null);
 
   getData(): TData {
     return this._data.value;
@@ -44,6 +88,24 @@ export class FlowResource<TData = any> {
 
   setMeta(meta: Record<string, any>) {
     this._meta.value = { ...this._meta.value, ...meta };
+    return this;
+  }
+
+  get error(): ResourceError | null {
+    return this._error.value;
+  }
+
+  getError(): ResourceError | null {
+    return this._error.value;
+  }
+
+  setError(error: ResourceError | null): this {
+    this._error.value = error;
+    return this;
+  }
+
+  clearError(): this {
+    this._error.value = null;
     return this;
   }
 

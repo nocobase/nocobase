@@ -10,10 +10,10 @@
 import React from 'react';
 import { observer } from '@formily/react';
 import { Helmet } from 'react-helmet';
-import { useAISelectionStore } from './ai-selection';
+import { aiSelection } from './stores/ai-selection';
 
 export const AISelection: React.FC = observer(() => {
-  const selectable = useAISelectionStore((s) => s.selectable);
+  const selectable = aiSelection.selectable;
 
   return (
     selectable && (

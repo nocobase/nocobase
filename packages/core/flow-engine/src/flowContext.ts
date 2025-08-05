@@ -15,14 +15,22 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import { createRef } from 'react';
+import type { Location } from 'react-router-dom';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
-import { APIResource, BaseRecordResource, MultiRecordResource, SingleRecordResource } from './resources';
-import { FlowExitException } from './utils';
+import {
+  APIResource,
+  BaseRecordResource,
+  FlowSQLRepository,
+  MultiRecordResource,
+  SingleRecordResource,
+  SQLResource,
+} from './resources';
+import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -46,8 +54,9 @@ type OpenInlineProps = {
 type OpenPopoverProps = {
   mode: 'popover';
   target: any;
+  content?: React.ReactNode | ((popover: any) => React.ReactNode);
   [key: string]: any;
-} & PopoverProps;
+};
 
 type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
 
@@ -55,13 +64,15 @@ interface ViewOpener {
   open: (props: OpenProps) => Promise<any>;
 }
 
+type Overlay = ViewOpener;
+
 export interface MetaTreeNode {
   name: string;
   title: string;
   type: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -70,7 +81,7 @@ export interface PropertyMeta {
   title: string;
   interface?: string;
   uiSchema?: any;
-  hide?: boolean;
+  // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
 
@@ -80,8 +91,15 @@ export interface PropertyOptions {
   get?: Getter;
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
-  meta?: PropertyMeta;
+  meta?: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>); // 支持静态、函数和异步函数
 }
+
+type RouteOptions = {
+  name?: string; // 路由唯一标识
+  path?: string; // 路由模板
+  params?: Record<string, any>; // 路由参数
+  pathname?: string; // 路由的完整路径
+};
 
 export class FlowContext {
   _props: Record<string, PropertyOptions> = {};
@@ -221,47 +239,85 @@ export class FlowContext {
     return !!this._props[key];
   }
 
+  /**
+   * 获取属性元数据树
+   * 返回的 MetaTreeNode 中可能包含异步的延迟加载逻辑
+   * @returns MetaTreeNode[]
+   *
+   * @example
+   * // 同步调用，获取 meta tree（现有代码无需修改）
+   * const metaTree = flowContext.getPropertyMetaTree();
+   *
+   * // 某些节点可能包含异步的 children 加载逻辑
+   */
   getPropertyMetaTree(): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
 
-    const toTreeNode = (name: string, meta: PropertyMeta): MetaTreeNode => ({
-      name,
-      title: meta.title,
-      type: meta.type,
-      interface: meta.interface,
-      uiSchema: meta.uiSchema,
-      hide: meta.hide,
-      children: meta.properties
-        ? typeof meta.properties === 'function'
-          ? async () => {
-              const resolvedProperties = await (meta.properties as () => Promise<Record<string, PropertyMeta>>)();
-              return Object.entries(resolvedProperties).map(([childName, childMeta]) =>
-                toTreeNode(childName, childMeta),
-              );
-            }
-          : Object.entries(meta.properties as Record<string, PropertyMeta>).map(([childName, childMeta]) =>
-              toTreeNode(childName, childMeta),
-            )
-        : undefined,
-    });
+    const createChildNodes = (
+      properties: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>),
+    ) => {
+      return typeof properties === 'function'
+        ? async () => {
+            const resolved = await properties();
+            return Object.entries(resolved).map(([name, meta]) => toTreeNode(name, meta));
+          }
+        : Object.entries(properties).map(([name, meta]) => toTreeNode(name, meta));
+    };
 
-    return Object.entries(metaMap).map(([key, meta]) => toTreeNode(key, meta));
+    const toTreeNode = (name: string, metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>)): MetaTreeNode => {
+      if (typeof metaOrFactory === 'function') {
+        // 异步 meta：延迟加载节点
+        return {
+          name,
+          title: name,
+          type: 'object',
+          interface: undefined,
+          uiSchema: undefined,
+          // display: 'default',
+          children: async () => {
+            try {
+              const meta = await metaOrFactory();
+              if (!meta?.properties) return [];
+              const childNodes = createChildNodes(meta.properties);
+              return Array.isArray(childNodes) ? childNodes : await childNodes();
+            } catch (error) {
+              console.warn(`Failed to load meta for ${name}:`, error);
+              return [];
+            }
+          },
+        };
+      }
+
+      // 同步 meta：直接创建节点
+      return {
+        name,
+        title: metaOrFactory.title,
+        type: metaOrFactory.type,
+        interface: metaOrFactory.interface,
+        uiSchema: metaOrFactory.uiSchema,
+        children: metaOrFactory.properties ? createChildNodes(metaOrFactory.properties) : undefined,
+      };
+    };
+
+    return Object.entries(metaMap).map(([key, metaOrFactory]) => toTreeNode(key, metaOrFactory));
   }
 
-  _getPropertiesMeta() {
-    // 合并自身和委托链上的所有 meta 属性
-    const metaMap: Record<string, PropertyMeta> = {};
-    // 先加委托链（不覆盖自身）
+  _getPropertiesMeta(): Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> {
+    const metaMap: Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> = {};
+
+    // 先处理委托链（委托链的 meta 优先级较低）
     for (const delegate of this._delegates) {
-      const delegateMeta = delegate._getPropertiesMeta();
-      Object.assign(metaMap, delegateMeta); // 合并，后面的覆盖前面的
+      Object.assign(metaMap, delegate._getPropertiesMeta());
     }
-    // 先加自身
+
+    // 处理自身属性（自身属性优先级较高）
     for (const [key, options] of Object.entries(this._props)) {
       if (options.meta) {
-        metaMap[key] = options.meta;
+        metaMap[key] =
+          typeof options.meta === 'function' ? (options.meta as () => Promise<PropertyMeta>) : options.meta;
       }
     }
+
     return metaMap;
   }
 
@@ -374,15 +430,29 @@ export class FlowContext {
   }
 }
 
-export class FlowEngineContext extends FlowContext {
+class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare renderJson: (template: any) => Promise<any>;
   declare api: APIClient;
   declare viewOpener: ViewOpener;
+  declare overlay: Overlay;
   declare modal: HookAPI;
+  declare message: MessageInstance;
+  declare notification: NotificationInstance;
+  declare route: RouteOptions;
+  declare location: Location;
+  declare sql: FlowSQLRepository;
+}
 
+class BaseFlowModelContext extends BaseFlowEngineContext {
+  declare model: FlowModel;
+  declare ref: React.RefObject<HTMLDivElement>;
+}
+
+export class FlowEngineContext extends BaseFlowEngineContext {
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
     if (!(engine instanceof FlowEngine)) {
@@ -400,12 +470,18 @@ export class FlowEngineContext extends FlowContext {
     this.defineProperty('engine', {
       value: this.engine,
     });
+    this.defineProperty('sql', {
+      get: () => new FlowSQLRepository(this),
+    });
     this.defineProperty('dataSourceManager', {
       value: dataSourceManager,
     });
     const i18n = new FlowI18n(this);
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
+    });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveExpressions(template, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -462,19 +538,7 @@ export class FlowEngineContext extends FlowContext {
   }
 }
 
-export class FlowModelContext extends FlowContext {
-  declare router: Router;
-  declare dataSourceManager: DataSourceManager;
-  declare model: FlowModel;
-  declare engine: FlowEngine;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
-  declare viewOpener: ViewOpener;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
-
+export class FlowModelContext extends BaseFlowModelContext {
   constructor(model: FlowModel) {
     if (!(model instanceof FlowModel)) {
       throw new Error('Invalid FlowModel instance');
@@ -493,6 +557,9 @@ export class FlowModelContext extends FlowContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveExpressions(template, this);
+    });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
@@ -505,18 +572,7 @@ export class FlowModelContext extends FlowContext {
   }
 }
 
-export class FlowForkModelContext extends FlowContext {
-  declare router: Router;
-  declare dataSourceManager: DataSourceManager;
-  // declare model: FlowModel;
-  declare engine: FlowEngine;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
-
+export class FlowForkModelContext extends BaseFlowModelContext {
   constructor(
     public master: FlowModel,
     public fork: ForkFlowModel,
@@ -538,6 +594,9 @@ export class FlowForkModelContext extends FlowContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveExpressions(template, this);
+    });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
@@ -553,47 +612,50 @@ export class FlowForkModelContext extends FlowContext {
 export class FlowRuntimeContext<
   TModel extends FlowModel = FlowModel,
   TMode extends 'runtime' | 'settings' = any,
-> extends FlowContext {
+> extends BaseFlowModelContext {
   stepResults: Record<string, any> = {};
-  declare router: Router;
-  declare engine: FlowEngine;
-  declare onRefReady: <T extends HTMLElement>(ref: React.RefObject<T>, cb: (el: T) => void, timeout?: number) => void;
-  declare dataSourceManager: DataSourceManager;
-  declare ref: React.RefObject<HTMLDivElement>;
-  declare requireAsync: (url: string) => Promise<any>;
-  declare runjs: (code?: string, variables?: Record<string, any>) => Promise<any>;
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
-  declare viewOpener: ViewOpener;
-  declare modal: HookAPI;
-  declare message: MessageInstance;
-  declare notification: NotificationInstance;
 
   constructor(
     public model: TModel,
     public flowKey: string,
-    protected mode: TMode = 'runtime' as TMode,
+    protected _mode: TMode = 'runtime' as TMode,
   ) {
     super();
     this.addDelegate(this.model.context);
-    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource };
-    this.defineMethod('useResource', (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => {
-      if (model['resource']) {
-        return;
-      }
-      const R = ResourceMap[className];
-      if (!R) {
-        throw new Error(`Resource class ${className} not found in ResourceMap`);
-      }
-      const resource = new R() as APIResource;
-      resource.setAPIClient(this.api);
-      model['resource'] = resource;
-    });
+    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
+    this.defineMethod(
+      'useResource',
+      (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
+        if (model.context.has('resource')) {
+          console.warn(`[FlowRuntimeContext] useResource - resource already defined in context: ${className}`);
+          return;
+        }
+        model.context.defineProperty('resource', {
+          get: () => {
+            const R = ResourceMap[className];
+            if (!R) {
+              throw new Error(`Resource class ${className} not found in ResourceMap`);
+            }
+            const resource = new R() as APIResource;
+            resource.setAPIClient(model.context.api);
+            return resource;
+          },
+        });
+        if (!model['resource']) {
+          model['resource'] = model.context.resource;
+        }
+      },
+    );
     this.defineProperty('resource', {
       get: () => model['resource'] || model.context['resource'],
       cache: false,
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
+    this.defineMethod('renderJson', (template: any) => {
+      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -638,6 +700,10 @@ export class FlowRuntimeContext<
 
   exit() {
     throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+
+  get mode() {
+    return this._mode;
   }
 }
 

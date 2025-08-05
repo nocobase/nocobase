@@ -26,13 +26,17 @@ import {
   moveBlock,
   positionToDirection,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
+import {
+  FILTER_CONFIGS_STEP_KEY,
+  FILTER_MANAGER_FLOW_KEY,
+  FilterManager,
+} from '../filter-blocks/filter-manager/FilterManager';
 
 export const GRID_FLOW_KEY = 'gridSettings';
 export const GRID_STEP = 'grid';
@@ -53,6 +57,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   itemFlowSettings = {};
 
   onInit(options: any): void {
+    super.onInit(options);
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
       this.resetRows(true);
 
@@ -354,6 +359,13 @@ GridModel.registerFlow({
 export class BlockGridModel extends GridModel {
   subModelBaseClass = 'BlockModel';
 
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('blockGridModel', {
+      value: this,
+    });
+  }
+
   renderAddSubModelButton() {
     const t = this.translate;
     return (
@@ -378,6 +390,20 @@ export class BlockGridModel extends GridModel {
 }
 
 BlockGridModel.registerFlow({
+  key: FILTER_MANAGER_FLOW_KEY,
+  steps: {
+    [FILTER_CONFIGS_STEP_KEY]: {
+      handler(ctx) {
+        ctx.model.context.defineProperty('filterManager', {
+          once: true,
+          get: () => new FilterManager(ctx.model),
+        });
+      },
+    },
+  },
+});
+
+BlockGridModel.registerFlow({
   key: 'blockGridSettings',
   steps: {
     grid: {
@@ -386,6 +412,13 @@ BlockGridModel.registerFlow({
         ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
       },
     },
+    // [FILTER_CONFIGS_STEP_KEY]: {
+    //   handler(ctx) {
+    //     ctx.model.context.defineProperty('filterManager', {
+    //       value: new FilterManager(ctx.model),
+    //     });
+    //   },
+    // },
   },
 });
 

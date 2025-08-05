@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import _ from 'lodash';
 
 export class PluginFlowEngineClient extends Plugin {
   async afterAdd() {}

@@ -9,6 +9,7 @@
 
 import { App, ConfigProvider, theme } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
+import { FlowEngineContext } from './flowContext';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 
@@ -17,14 +18,14 @@ interface FlowEngineProviderProps {
   children: React.ReactNode;
 }
 
-const FlowEngineContext = createContext<FlowEngine | null>(null);
+const FlowEngineReactContext = createContext<FlowEngine | null>(null);
 
 export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
   const { engine, children } = props;
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
   }
-  return <FlowEngineContext.Provider value={engine}>{children}</FlowEngineContext.Provider>;
+  return <FlowEngineReactContext.Provider value={engine}>{children}</FlowEngineReactContext.Provider>;
 };
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,6 +50,17 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       dialog,
       page,
     };
+    engine.context.defineProperty('overlay', {
+      value: {
+        open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
+          if (context[mode]) {
+            return context[mode]['open'](others);
+          } else {
+            throw new Error(`Unknown viewOpener mode: ${mode}`);
+          }
+        },
+      },
+    });
     engine.context.defineProperty('viewOpener', {
       value: {
         open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
@@ -82,7 +94,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
 };
 
 export const useFlowEngine = (): FlowEngine => {
-  const context = useContext(FlowEngineContext);
+  const context = useContext(FlowEngineReactContext);
   if (!context) {
     // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
     // and always supplied with an engine.
@@ -91,4 +103,9 @@ export const useFlowEngine = (): FlowEngine => {
     );
   }
   return context;
+};
+
+export const useFlowEngineContext = (): FlowEngineContext => {
+  const engine = useFlowEngine();
+  return engine.context as FlowEngineContext;
 };

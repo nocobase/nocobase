@@ -18,7 +18,12 @@ export function useDrawer() {
 
   const open = (config) => {
     uuid += 1;
-    const drawerRef = React.createRef<{ destroy: () => void; update: (config: any) => void }>();
+    const drawerRef = React.createRef<{
+      destroy: () => void;
+      update: (config: any) => void;
+      setFooter: (footer: React.ReactNode) => void;
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => void;
+    }>();
 
     // eslint-disable-next-line prefer-const
     let closeFunc: (() => void) | undefined;
@@ -27,6 +32,40 @@ export function useDrawer() {
       resolvePromise = resolve;
     });
 
+    // 使用普通变量来存储状态
+    let currentFooter: React.ReactNode = null;
+    let currentHeader: any = null;
+
+    // Footer 组件实现
+    const FooterComponent = ({ children, ...props }) => {
+      React.useEffect(() => {
+        currentFooter = children;
+        drawerRef.current?.setFooter(children);
+
+        return () => {
+          currentFooter = null;
+          drawerRef.current?.setFooter(null);
+        };
+      }, [children]);
+
+      return null; // Footer 组件本身不渲染内容
+    };
+
+    // Header 组件实现
+    const HeaderComponent = ({ ...props }) => {
+      React.useEffect(() => {
+        currentHeader = props;
+        drawerRef.current?.setHeader(props as any);
+
+        return () => {
+          currentHeader = null;
+          drawerRef.current?.setHeader(null);
+        };
+      }, [props]);
+
+      return null; // Header 组件本身不渲染内容
+    };
+
     // 构造 currentDrawer 实例
     const currentDrawer = {
       destroy: () => drawerRef.current?.destroy(),
@@ -34,6 +73,16 @@ export function useDrawer() {
       close: (result?: any) => {
         resolvePromise?.(result);
         drawerRef.current?.destroy();
+      },
+      Footer: FooterComponent,
+      Header: HeaderComponent,
+      setFooter: (footer: React.ReactNode) => {
+        currentFooter = footer;
+        drawerRef.current?.setFooter(footer);
+      },
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => {
+        currentHeader = header;
+        drawerRef.current?.setHeader(header);
       },
     };
 
@@ -45,6 +94,8 @@ export function useDrawer() {
         key={`drawer-${uuid}`}
         ref={drawerRef}
         {...config}
+        footer={currentFooter}
+        header={currentHeader}
         afterClose={() => {
           closeFunc?.();
           config.onClose?.();
@@ -54,8 +105,8 @@ export function useDrawer() {
         {content}
       </DrawerComponent>
     );
-    closeFunc = holderRef.current?.patchElement(drawer);
 
+    closeFunc = holderRef.current?.patchElement(drawer);
     return Object.assign(promise, currentDrawer);
   };
 

@@ -45,7 +45,6 @@ export class DetailItemModel extends FieldModel<{
     fieldModel.context.defineProperty('value', {
       get: () => value,
     });
-
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}
@@ -76,7 +75,7 @@ DetailItemModel.registerFlow({
       title: escapeT('Label'),
       uiSchema: (ctx) => {
         return {
-          label: {
+          title: {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {

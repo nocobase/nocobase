@@ -11,7 +11,7 @@ import React, { useMemo } from 'react';
 import { Tag, Modal, Typography } from 'antd';
 import { ContextItem as ContextItemType } from '../types';
 import PluginAIClient from '../..';
-import { usePlugin } from '@nocobase/client';
+import { useApp, usePlugin } from '@nocobase/client';
 const { Paragraph } = Typography;
 
 export const ContextItem: React.FC<{
@@ -19,20 +19,23 @@ export const ContextItem: React.FC<{
   closable?: boolean;
   onRemove?: (type: string, uid: string) => void;
 }> = ({ item, closable, onRemove }) => {
+  const app = useApp();
   const [showContent, setShowContent] = React.useState(false);
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
-  const C = useMemo(() => {
+  const options = useMemo(() => {
     const [rootKey, childKey] = item.type.split('.');
     if (!childKey) {
-      return workContext.get(rootKey)?.tag?.Component;
+      return workContext.get(rootKey);
     }
     const root = workContext.get(rootKey);
     if (!root?.children) {
       return;
     }
-    return root.children[childKey]?.tag?.Component;
+    return root.children[childKey];
   }, [item.type, workContext]);
+  const C = options?.tag?.Component;
+  const getContent = options?.getContent;
   return (
     <>
       <Tag
@@ -43,6 +46,7 @@ export const ContextItem: React.FC<{
         }}
         style={{
           cursor: 'pointer',
+          whiteSpace: 'normal',
         }}
       >
         {C ? <C item={item} /> : item.title}
@@ -60,7 +64,7 @@ export const ContextItem: React.FC<{
               marginTop: '24px',
             }}
           >
-            {item.content}
+            {item.content || getContent?.(app, item)}
           </pre>
         </Paragraph>
       </Modal>

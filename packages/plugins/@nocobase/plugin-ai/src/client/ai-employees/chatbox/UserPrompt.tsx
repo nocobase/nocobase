@@ -15,7 +15,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../useAIEmployeesData';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 const useCancelActionProps = () => {
   const { setVisible } = useActionContext();

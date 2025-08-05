@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Collection } from '@nocobase/database';
-import { SQLCollection } from './sql-collection';
+import { Plugin } from '@nocobase/server';
 import sqlResourcer from './resources/sql';
+import { SQLCollection } from './sql-collection';
 import { checkSQL } from './utils';
 
 export class PluginCollectionSQLServer extends Plugin {

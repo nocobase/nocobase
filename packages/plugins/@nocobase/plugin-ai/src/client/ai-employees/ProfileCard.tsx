@@ -8,19 +8,21 @@
  */
 
 import React from 'react';
-import { Avatar, Divider, Typography } from 'antd';
+import { Avatar, Divider, Typography, Flex, Button } from 'antd';
 import { useToken } from '@nocobase/client';
-import { AIEmployee } from './types';
+import { AIEmployee, Task } from './types';
 import { avatars } from './avatars';
 import { useT } from '../locale';
+import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 
 export const ProfileCard: React.FC<{
   aiEmployee: AIEmployee;
-  taskDesc?: string;
-}> = (props) => {
-  const { aiEmployee, taskDesc } = props;
+  tasks?: Task[];
+}> = ({ aiEmployee, tasks }) => {
   const { token } = useToken();
   const t = useT();
+
+  const { triggerTask } = useChatBoxActions();
 
   return (
     <div
@@ -73,7 +75,7 @@ export const ProfileCard: React.FC<{
             {t('Bio')}
           </Divider>
           <Typography.Paragraph>{aiEmployee.bio}</Typography.Paragraph>
-          {taskDesc && (
+          {tasks?.length > 1 && (
             <>
               <Divider
                 orientation="left"
@@ -82,9 +84,29 @@ export const ProfileCard: React.FC<{
                   fontStyle: 'italic',
                 }}
               >
-                {t('Task description')}
+                {t('Tasks')}
               </Divider>
-              <Typography.Paragraph>{taskDesc}</Typography.Paragraph>
+              <Flex align="flex-start" gap="middle" wrap={true}>
+                {tasks.map((task, index) => (
+                  <Button
+                    key={index}
+                    style={{
+                      whiteSpace: 'normal',
+                      textAlign: 'left',
+                      height: 'auto',
+                    }}
+                    variant="outlined"
+                    onClick={() =>
+                      triggerTask({
+                        aiEmployee,
+                        tasks: [task],
+                      })
+                    }
+                  >
+                    <div>{task.title || `${t('Task')} ${index + 1}`}</div>
+                  </Button>
+                ))}
+              </Flex>
             </>
           )}
         </>

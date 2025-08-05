@@ -41,7 +41,7 @@ export default class extends Instruction {
   title = `{{t("CC", { ns: "${NAMESPACE}" })}}`;
   type = 'cc';
   group = 'manual';
-  description = `{{t("Information within the workflow can be freely configured into a view interface and made accessible to specific users. A CC task will be generated for them in the tasks center.", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.", { ns: "${NAMESPACE}" })}}`;
   icon = (<EyeOutlined />);
   fieldset = {
     users: {

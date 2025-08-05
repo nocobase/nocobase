@@ -244,6 +244,9 @@ export class UiSchemaRepository extends Repository {
     };
 
     const buildTree = (rootNode) => {
+      if (!rootNode) {
+        return null;
+      }
       const children = nodes.filter((node) => node.parent == rootNode['x-uid']);
 
       if (children.length > 0) {

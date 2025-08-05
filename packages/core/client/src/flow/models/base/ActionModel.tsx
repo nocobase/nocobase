@@ -21,6 +21,11 @@ export class ActionModel extends FlowModel {
     title: escapeT('Action'),
   };
 
+  enableEditTitle = true;
+  enableEditIcon = true;
+  enableEditType = true;
+  enableEditDanger = true;
+
   render() {
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
@@ -39,34 +44,44 @@ ActionModel.registerFlow({
   steps: {
     general: {
       title: escapeT('General'),
-      uiSchema: {
-        title: {
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-          title: escapeT('Button title'),
-        },
-        icon: {
-          'x-decorator': 'FormItem',
-          'x-component': 'IconPicker',
-          title: escapeT('Button icon'),
-        },
-        type: {
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-          title: escapeT('Button type'),
-          enum: [
-            { value: 'default', label: '{{t("Default")}}' },
-            { value: 'primary', label: '{{t("Primary")}}' },
-            { value: 'dashed', label: '{{t("Dashed")}}' },
-            { value: 'link', label: '{{t("Link")}}' },
-            { value: 'text', label: '{{t("Text")}}' },
-          ],
-        },
-        danger: {
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-          title: escapeT('Danger action'),
-        },
+      uiSchema(ctx) {
+        return {
+          title: ctx.model.enableEditTitle
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: escapeT('Button title'),
+              }
+            : undefined,
+          icon: ctx.model.enableEditIcon
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'IconPicker',
+                title: escapeT('Button icon'),
+              }
+            : undefined,
+          type: ctx.model.enableEditType
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Radio.Group',
+                title: escapeT('Button type'),
+                enum: [
+                  { value: 'default', label: '{{t("Default")}}' },
+                  { value: 'primary', label: '{{t("Primary")}}' },
+                  { value: 'dashed', label: '{{t("Dashed")}}' },
+                  { value: 'link', label: '{{t("Link")}}' },
+                  { value: 'text', label: '{{t("Text")}}' },
+                ],
+              }
+            : undefined,
+          danger: ctx.model.enableEditDanger
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': 'Switch',
+                title: escapeT('Danger action'),
+              }
+            : undefined,
+        };
       },
       defaultParams(ctx) {
         return {

@@ -9,6 +9,8 @@
 
 import _ from 'lodash';
 import { APIResource } from './apiResource';
+import { FilterItem } from './filterItem';
+import { ResourceError } from './flowResource';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
   protected resourceName: string;
@@ -33,6 +35,10 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   protected filterGroups = new Map<string, any>();
 
+  get supportsFilter() {
+    return true;
+  }
+
   protected splitValue(value: string | string[]): string[] {
     if (typeof value === 'string') {
       return value.split(',').map((item) => item.trim());
@@ -56,23 +62,27 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
-    const { data } = await this.api.request({
-      method: 'post',
-      headers: {
-        ...this.request.headers,
-        ...options.headers,
-      },
-      ..._.omit(this.request, ['method', 'params', 'data']),
-      url: this.buildURL(action),
-      ...options,
-    });
-    if (!data?.data) {
-      return data;
+    try {
+      const { data } = await this.api.request({
+        method: 'post',
+        headers: {
+          ...this.request.headers,
+          ...options.headers,
+        },
+        ..._.omit(this.request, ['method', 'params', 'data']),
+        url: this.buildURL(action),
+        ...options,
+      });
+      if (!data?.data) {
+        return data;
+      }
+      return { data: data.data, meta: data.meta } as {
+        data: TData;
+        meta?: TMeta;
+      };
+    } catch (err) {
+      throw new ResourceError(err);
     }
-    return { data: data.data, meta: data.meta } as {
-      data: TData;
-      meta?: TMeta;
-    };
   }
 
   setResourceName(resourceName: string) {
@@ -121,7 +131,10 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     this.setFilter(this.getFilter());
   }
 
-  addFilterGroup(key: string, filter) {
+  addFilterGroup(key: string, filter: FilterItem | Record<string, any>) {
+    if (filter instanceof FilterItem) {
+      filter = filter.toJSON();
+    }
     this.filterGroups.set(key, filter);
     this.resetFilter();
   }
@@ -158,6 +171,26 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     const currentAppends = this.getAppends();
     const removeAppends = this.splitValue(appends);
     this.request.params.appends = currentAppends.filter((append: string) => !removeAppends.includes(append));
+    return this;
+  }
+
+  setUpdateAssociationValues(updateAssociationValues: string[]) {
+    return this.addRequestParameter('updateAssociationValues', updateAssociationValues);
+  }
+
+  getUpdateAssociationValues(): string[] {
+    return this.request.params.updateAssociationValues || [];
+  }
+
+  addUpdateAssociationValues(updateAssociationValues: string | string[]) {
+    const currentUpdateAssociationValues = this.getUpdateAssociationValues();
+    const newUpdateAssociationValues = this.splitValue(updateAssociationValues);
+    newUpdateAssociationValues.forEach((append) => {
+      if (!currentUpdateAssociationValues.includes(append)) {
+        currentUpdateAssociationValues.push(append);
+      }
+    });
+    this.request.params.updateAssociationValues = currentUpdateAssociationValues;
     return this;
   }
 

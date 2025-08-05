@@ -11,6 +11,7 @@ import { FlowModel, useFlowEngine } from '@nocobase/flow-engine';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { AIEmployeeShortcutListModel } from '../flow/models';
+import { contextAware } from '../stores/context-aware';
 
 export const useShortcuts = () => {
   const flowEngine = useFlowEngine();
@@ -67,9 +68,11 @@ export const useShortcuts = () => {
         builtIn: true,
         model,
       });
+      contextAware.setAIEmployees([{ username: 'orin' }]);
       return;
     }
 
+    contextAware.setAIEmployees([]);
     if (name) {
       loadModel();
       return;
@@ -83,28 +86,3 @@ export const useShortcuts = () => {
 
   return result;
 };
-
-// [
-//         {
-//           uid: 'form_assistant',
-//           use: 'AIEmployeeShortcutModel',
-//           props: {
-//             aiEmployee: {
-//               username: 'form_assistant',
-//             },
-//             tasks: [
-//               {
-//                 message: {
-//                   workContext: [
-//                     {
-//                       type: 'flow-model',
-//                       uid: 'e3b85ce6e70',
-//                       title: 'Form(Add new): Users',
-//                     },
-//                   ],
-//                 },
-//               },
-//             ],
-//           },
-//         },
-//       ]

@@ -14,12 +14,12 @@ export const formFillerTool: [string, string, ToolOptions] = [
   'frontend',
   'formFiller',
   {
-    invoke: (flowEngine, params) => {
+    invoke: (app, params) => {
       const { form: uid, data } = params;
       if (!uid || !data) {
         return;
       }
-      const model = flowEngine.getModel(uid) as FormModel;
+      const model = app.flowEngine.getModel(uid) as FormModel;
       model?.form?.setValues(data);
     },
   },

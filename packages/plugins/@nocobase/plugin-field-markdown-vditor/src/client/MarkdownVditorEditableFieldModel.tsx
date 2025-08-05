@@ -8,8 +8,9 @@
  */
 import { ApplicationContext, FormFieldModel } from '@nocobase/client';
 import React from 'react';
+import { largeField } from '@nocobase/flow-engine';
 import { MarkdownVditor } from './components/index';
-
+@largeField()
 export class MarkdownVditorEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['vditor'];
 

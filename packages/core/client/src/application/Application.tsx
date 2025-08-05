@@ -297,6 +297,14 @@ export class Application {
     this.flowEngine.context.defineProperty('documentTitle', {
       get: () => document.title,
     });
+    this.flowEngine.context.defineProperty('route', {
+      get: () => {},
+      observable: true,
+    });
+    this.flowEngine.context.defineProperty('location', {
+      get: () => location,
+      observable: true,
+    });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);
   }

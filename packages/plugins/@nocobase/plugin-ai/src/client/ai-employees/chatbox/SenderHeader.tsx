@@ -21,7 +21,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { EditMessageHeader } from './EditMessageHeader';
-import { useAIEmployeesData } from '../useAIEmployeesData';
+import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const SenderHeader: React.FC = () => {
   const { aiEmployees } = useAIEmployeesData();
