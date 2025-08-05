@@ -50,6 +50,17 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       dialog,
       page,
     };
+    engine.context.defineProperty('overlay', {
+      value: {
+        open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
+          if (context[mode]) {
+            return context[mode]['open'](others);
+          } else {
+            throw new Error(`Unknown viewOpener mode: ${mode}`);
+          }
+        },
+      },
+    });
     engine.context.defineProperty('viewOpener', {
       value: {
         open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {

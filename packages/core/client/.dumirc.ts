@@ -377,6 +377,10 @@ export default defineConfig({
               title: 'Observable',
               link: '/learn/observable',
             },
+            {
+              title: 'Define Collection',
+              link: '/learn/define-collection',
+            },
           ],
         },
         {

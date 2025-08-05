@@ -34,7 +34,7 @@ export class PluginFlowEngineServer extends Plugin {
           filter: { uid },
         });
         const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
-        ctx.body = await db.runSQL({ type, sql: record.sql, filter, bind });
+        ctx.body = await db.runSQL(record.sql, { type, filter, bind });
         await next();
       },
       'flowSql:save': async (ctx, next) => {
@@ -50,7 +50,7 @@ export class PluginFlowEngineServer extends Plugin {
       'flowSql:run': async (ctx, next) => {
         const { sql, type, filter, bind, dataSourceKey } = ctx.action.params.values;
         const db = this.getDatabaseByDataSourceKey(dataSourceKey);
-        ctx.body = await db.runSQL({ type, sql, filter, bind });
+        ctx.body = await db.runSQL(sql, { type, filter, bind });
         await next();
       },
     });

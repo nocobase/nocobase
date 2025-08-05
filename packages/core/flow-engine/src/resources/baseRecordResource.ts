@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import { APIResource } from './apiResource';
 import { FilterItem } from './filterItem';
+import { ResourceError } from './flowResource';
 
 export abstract class BaseRecordResource<TData = any> extends APIResource<TData> {
   protected resourceName: string;
@@ -61,23 +62,27 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
-    const { data } = await this.api.request({
-      method: 'post',
-      headers: {
-        ...this.request.headers,
-        ...options.headers,
-      },
-      ..._.omit(this.request, ['method', 'params', 'data']),
-      url: this.buildURL(action),
-      ...options,
-    });
-    if (!data?.data) {
-      return data;
+    try {
+      const { data } = await this.api.request({
+        method: 'post',
+        headers: {
+          ...this.request.headers,
+          ...options.headers,
+        },
+        ..._.omit(this.request, ['method', 'params', 'data']),
+        url: this.buildURL(action),
+        ...options,
+      });
+      if (!data?.data) {
+        return data;
+      }
+      return { data: data.data, meta: data.meta } as {
+        data: TData;
+        meta?: TMeta;
+      };
+    } catch (err) {
+      throw new ResourceError(err);
     }
-    return { data: data.data, meta: data.meta } as {
-      data: TData;
-      meta?: TMeta;
-    };
   }
 
   setResourceName(resourceName: string) {
