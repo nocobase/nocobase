@@ -17,11 +17,13 @@ import {
   DefaultStructure,
   escapeT,
   FlowModel,
+  FlowRuntimeContext,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
+import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
 export interface ResourceSettingsInitParams {
   dataSourceKey: string;
@@ -147,6 +149,15 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
+
+  async destroy(): Promise<boolean> {
+    const result = await super.destroy();
+
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.removeFilterConfig({ targetId: this.uid });
+
+    return result;
+  }
 
   get dataSource(): DataSource {
     return this.context.dataSource;
@@ -296,6 +307,9 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
+        const filterManager: FilterManager = ctx.model.context.filterManager;
+        filterManager.bindToTarget(ctx.model.uid);
+
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {
