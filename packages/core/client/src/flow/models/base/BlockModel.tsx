@@ -154,7 +154,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const result = await super.destroy();
 
     const filterManager: FilterManager = this.context.filterManager;
-    filterManager.removeFilterConfig({ targetId: this.uid });
+    await filterManager.removeFilterConfig({ targetId: this.uid });
 
     return result;
   }
