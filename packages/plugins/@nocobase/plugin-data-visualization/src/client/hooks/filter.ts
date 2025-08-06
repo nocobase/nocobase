@@ -67,7 +67,7 @@ export const useChartData = () => {
   const chartCollections: {
     [dataSource: string]: string[];
   } = useMemo(() => {
-    return Object.values(charts)
+    return Object.values(charts || {})
       .filter((chart) => chart)
       .reduce((mp, chart) => {
         const { dataSource, collection } = chart;

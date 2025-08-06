@@ -7,13 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createContext, useContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import { FlowRuntimeContext } from '../flowContext';
+import { FlowContextProvider } from '../FlowContextProvider';
 import { FlowModel } from '../models';
 
 const FlowSettingsContext = createContext<FlowRuntimeContext<FlowModel<any>> | null>(null);
 
-export const FlowSettingsContextProvider = FlowSettingsContext.Provider;
+export const FlowSettingsContextProvider = ({ value, children }) => {
+  return (
+    <FlowContextProvider context={value}>
+      <FlowSettingsContext.Provider value={value}>{children}</FlowSettingsContext.Provider>
+    </FlowContextProvider>
+  );
+};
 
 /**
  * Hook to access the flow settings context

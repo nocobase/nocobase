@@ -9,21 +9,21 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { observer } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   DragHandler,
   Droppable,
   escapeT,
-  FlowsFloatContextMenu,
   FlowModelRenderer,
+  FlowsFloatContextMenu,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { observer } from '@formily/react';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
-import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { FieldModel } from '../../../../base/FieldModel';
+import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
-import { uid } from '@formily/shared';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue }: any) => {
   const flowEngine = useFlowEngine();
@@ -41,8 +41,8 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     e.preventDefault();
     e.stopPropagation();
     try {
-      await flowEngine.context.viewOpener.open({
-        mode: 'popover',
+      await flowEngine.context.viewer.open({
+        type: 'popover',
         target: e.target,
         placement: 'rightTop',
         styles: {

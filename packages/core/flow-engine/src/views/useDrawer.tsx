@@ -8,6 +8,8 @@
  */
 
 import * as React from 'react';
+import { FlowContext, FlowEngineContext } from '../flowContext';
+import { FlowContextProvider } from '../FlowContextProvider';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 
@@ -16,7 +18,7 @@ let uuid = 0;
 export function useDrawer() {
   const holderRef = React.useRef(null);
 
-  const open = (config) => {
+  const open = (config, flowContext: FlowEngineContext) => {
     uuid += 1;
     const drawerRef = React.createRef<{
       destroy: () => void;
@@ -86,24 +88,38 @@ export function useDrawer() {
       },
     };
 
-    // 支持 content 为函数，传递 currentDrawer
-    const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+    // 内部组件，在 Provider 内部计算 content
+    const DrawerWithContext = () => {
+      const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+
+      return (
+        <DrawerComponent
+          key={`drawer-${uuid}`}
+          ref={drawerRef}
+          {...config}
+          footer={currentFooter}
+          header={currentHeader}
+          afterClose={() => {
+            closeFunc?.();
+            config.onClose?.();
+            resolvePromise?.(config.result);
+          }}
+        >
+          {content}
+        </DrawerComponent>
+      );
+    };
+
+    const ctx = new FlowContext();
+    ctx.defineProperty('view', {
+      get: () => currentDrawer,
+    });
+    ctx.delegate(flowContext);
 
     const drawer = (
-      <DrawerComponent
-        key={`drawer-${uuid}`}
-        ref={drawerRef}
-        {...config}
-        footer={currentFooter}
-        header={currentHeader}
-        afterClose={() => {
-          closeFunc?.();
-          config.onClose?.();
-          resolvePromise?.(config.result);
-        }}
-      >
-        {content}
-      </DrawerComponent>
+      <FlowContextProvider context={ctx}>
+        <DrawerWithContext />
+      </FlowContextProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(drawer);

@@ -70,8 +70,8 @@ export class QuickEditForm extends FlowModel {
     console.log('QuickEditForm.open2', Date.now() - model.now);
     model.now = Date.now();
 
-    await flowEngine.context.viewOpener.open({
-      mode: 'popover',
+    await flowEngine.context.viewer.open({
+      type: 'popover',
       target,
       placement: 'rightTop',
       styles: {

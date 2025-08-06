@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DateTimeFilterFormFieldModel } from './DateTimeFilterFormFieldModel';
-import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
 export class DateTimeNoTzFilterFormFieldModel extends DateTimeFilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['datetimeNoTz'];
-  get component() {
-    return [DateFilterDynamicComponent, {}];
-  }
 }
