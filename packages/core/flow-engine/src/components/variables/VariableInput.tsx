@@ -47,28 +47,15 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   const ValueComponent = useMemo(() => {
     if (currentContextSelectorItem == null && isVariableValue(value)) {
-      console.log('[VariableInput] Choosing VariableTag - value:', value, 'isVariable:', true);
       return VariableTag;
     }
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
-    console.log('[VariableInput] CustomComponent:', CustomComponent, 'currentConverters:', currentConverters);
     const finalComponent = CustomComponent || (isVariableValue(value) ? VariableTag : Input);
-    console.log(
-      '[VariableInput] Choosing component:',
-      finalComponent === Input ? 'Input' : finalComponent === VariableTag ? 'VariableTag' : 'Custom',
-      'value:',
-      value,
-      'isVariable:',
-      isVariableValue(value),
-      'contextItem:',
-      currentContextSelectorItem,
-    );
     return finalComponent;
   }, [currentConverters, currentContextSelectorItem, value]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
-      console.log('[VariableInput] handleInputChange called:', e?.target?.value || e);
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
       onChange?.(newValue);
     },
@@ -145,12 +132,6 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       // ref: inputRef,
       // style: { flex: 1 },
     };
-    console.log('[VariableInput] inputProps:', {
-      value: props.value,
-      hasOnChange: !!props.onChange,
-      // hasRef: !!props.ref,
-      onChange: props.onChange,
-    });
     return props;
   }, [value, handleInputChange, handleFocus, handleBlur, restProps, inputRef, handleClear]);
 

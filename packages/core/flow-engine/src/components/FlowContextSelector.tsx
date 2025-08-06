@@ -102,7 +102,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
           loadedPathsRef.current.add(currentPathKey);
           currentOptions = childOptions;
         } catch (error) {
-          console.warn(`Failed to preload children for ${currentPathKey}:`, error);
           break;
         }
       }
@@ -126,7 +125,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
 
       // 验证 metaTree 数据
       if (!resolvedMetaTree || !Array.isArray(resolvedMetaTree)) {
-        console.warn('metaTree is not a valid array:', resolvedMetaTree);
         setOptions([]);
         return;
       }
@@ -140,7 +138,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
         await preloadPathOptions(cascaderOptions, currentPath);
       }
     } catch (error) {
-      console.error('Failed to load metaTree:', error);
       setOptions([]);
     } finally {
       setLoading(false);
@@ -188,7 +185,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
       loadedPathsRef.current.add(pathKey);
       setOptions((prev) => [...prev]);
     } catch (error) {
-      console.error(`Failed to load children for ${pathKey}:`, error);
       targetOption.loading = false;
       setOptions((prev) => [...prev]);
     }
