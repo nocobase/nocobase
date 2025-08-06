@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import ECharts from './ECharts';
 import { Empty, Result, Typography } from 'antd';
 import { EChartsOption, EChartsType } from 'echarts';
@@ -38,13 +38,22 @@ const ErrorFallback = ({ error }) => {
 };
 
 export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady }, ref) => {
+  const [errorKey, setErrorKey] = useState(0);
   if (!option || (!option.dataset && !dataSource)) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={'Please configure chart'} />;
   }
 
   return (
-    <ErrorBoundary onError={console.error} FallbackComponent={ErrorFallback}>
+    <ErrorBoundary
+      onError={console.error}
+      FallbackComponent={ErrorFallback}
+      onReset={() => {
+        setErrorKey((v) => v + 1);
+      }}
+      resetKeys={[option]}
+    >
       <ECharts
+        key={errorKey}
         ref={ref}
         onRefReady={onRefReady}
         option={{

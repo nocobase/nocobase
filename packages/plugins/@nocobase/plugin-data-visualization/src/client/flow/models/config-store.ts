@@ -10,21 +10,28 @@
 import { model } from '@formily/reactive';
 
 interface ConfigState {
-  result: any;
-  error?: string;
-  setResult: (result: any) => void;
-  setError?: (error: string) => void;
+  results: {
+    [uid: string]: {
+      result: any;
+      error?: string;
+    };
+  };
+  setResult: (uid: string, result: any) => void;
+  setError?: (uid: string, error: string) => void;
 }
 
 export const configStore = model<ConfigState>({
-  result: null,
-  error: '',
-  setResult(result: any) {
-    this.error = null;
-    this.result = result;
+  results: {},
+  setResult(uid: string, result: any) {
+    this.results[uid] = {
+      result,
+      error: null,
+    };
   },
-  setError(error: string) {
-    this.result = null;
-    this.error = error;
+  setError(uid: string, error: string) {
+    this.results[uid] = {
+      result: null,
+      error,
+    };
   },
 });

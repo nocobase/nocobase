@@ -13,6 +13,7 @@ import { TableOutlined, CodeOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { configStore } from './config-store';
 import { observer } from '@formily/react';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
 const { Paragraph } = Typography;
 
 const TableResult: React.FC<{
@@ -48,8 +49,10 @@ const JSONResult: React.FC<{
 
 export const ResultPanel: React.FC = observer(() => {
   const t = useT();
-  const data = configStore.result;
-  const error = configStore.error;
+  const ctx = useFlowSettingsContext();
+  const uid = ctx.model.uid;
+  const data = configStore.results[uid]?.result;
+  const error = configStore.results[uid]?.error;
 
   return !error ? (
     <Tabs

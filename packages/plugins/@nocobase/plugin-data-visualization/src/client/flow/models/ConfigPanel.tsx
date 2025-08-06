@@ -39,7 +39,7 @@ const RunButton: React.FC = memo(() => {
     {
       manual: true,
       onSuccess(result) {
-        configStore.setResult(result);
+        configStore.setResult(ctx.model.uid, result);
       },
       onError(
         error: AxiosError<{
@@ -47,7 +47,7 @@ const RunButton: React.FC = memo(() => {
         }>,
       ) {
         const message = error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n') || error.message;
-        configStore.setError(message);
+        configStore.setError(ctx.model.uid, message);
       },
     },
   );
@@ -65,15 +65,16 @@ export const ConfigPanel: React.FC = () => {
 
   useEffect(() => {
     const error = ctx.model.resource.error;
-    if (error && !configStore.error) {
-      configStore.setError(error.message);
-    } else if (!configStore.result) {
-      configStore.setResult(ctx.model.resource.getData());
+    const uid = ctx.model.uid;
+    if (error && !configStore[uid]?.error) {
+      configStore.setError(uid, error.message);
+    } else if (!configStore[uid]?.result) {
+      configStore.setResult(uid, ctx.model.resource.getData());
     }
     return () => {
-      configStore.setResult(null);
+      configStore.setResult(uid, null);
     };
-  }, [ctx.model.resource]);
+  }, [ctx.model.uid, ctx.model.resource]);
 
   return (
     <Row gutter={8}>

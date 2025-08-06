@@ -22,7 +22,7 @@ export const ChartPreviewer: React.FC = observer(() => {
   const form = useForm();
   const rawOption = form.values.chart.option.raw;
   const rawEvents = form.values.chart.events?.raw;
-  const queryResult = configStore.result;
+  const queryResult = configStore.results[ctx.model.uid]?.result;
 
   const [chart, setChart] = useState<EChartsType | null>(null);
   const [chartOption, setChartOption] = useState(null);

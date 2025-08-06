@@ -10,13 +10,14 @@
 // @ts-ignore
 import pkg from './../../package.json';
 import { useApp, i18n } from '@nocobase/client';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 
 export const namespace = pkg.name;
 
 export function useT(): any {
-  const app = useApp();
-  return (str: string, options?: any) => app.i18n.t(str, { ns: [pkg.name, 'client'], ...options });
+  const ctx = useFlowEngineContext();
+  return (str: string, options?: any) => ctx.i18n.t(str, { ns: [pkg.name, 'client'], ...options });
 }
 
 export function tStr(key: string) {
