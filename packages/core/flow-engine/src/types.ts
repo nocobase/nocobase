@@ -260,6 +260,10 @@ export type StepParams = {
   };
 };
 
+export type ParamObject = {
+  [key: string]: unknown;
+  [key: number]: never;
+};
 /**
  * 已注册模型的类名
  */
