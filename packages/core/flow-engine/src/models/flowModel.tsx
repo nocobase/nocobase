@@ -25,6 +25,7 @@ import type {
   FlowDefinition,
   FlowModelMeta,
   FlowModelOptions,
+  ParamObject,
   ParentFlowModel,
   StepDefinition,
   StepParams,
@@ -424,13 +425,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.props as ReadonlyModelProps;
   }
 
-  setStepParams(flowKey: string, stepKey: string, params: any): void;
-  setStepParams(flowKey: string, stepParams: Record<string, any>): void;
+  setStepParams(flowKey: string, stepKey: string, params: ParamObject): void;
+  setStepParams(flowKey: string, stepParams: Record<string, ParamObject>): void;
   setStepParams(allParams: StepParams): void;
   setStepParams(
     flowKeyOrAllParams: string | StepParams,
-    stepKeyOrStepsParams?: string | Record<string, any>,
-    params?: any,
+    stepKeyOrStepsParams?: string | Record<string, ParamObject>,
+    params?: ParamObject,
   ): void {
     if (typeof flowKeyOrAllParams === 'string') {
       const flowKey = flowKeyOrAllParams;
