@@ -102,6 +102,10 @@ export default defineConfig({
               link: '/examples/flow-models/liquidjs',
             },
             {
+              title: 'CRUD',
+              link: '/examples/flow-models/crud',
+            },
+            {
               title: '生命周期',
               link: '/examples/flow-models/lifecycle',
             },
