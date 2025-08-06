@@ -14,29 +14,31 @@ import type { MetaTreeNode } from '../../flowContext';
 export interface FlowContextSelectorProps
   extends Omit<CascaderProps<any>, 'value' | 'onChange' | 'options' | 'children' | 'multiple'> {
   value?: string;
-  onChange?: (value: string) => void;
+  onChange?: (value: string, contextSelectorItem?: ContextSelectorItem) => void;
   children?: React.ReactNode;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  parseValueToPath?: (value: string) => string[] | null;
+  formatPathToValue?: (path: string[]) => string;
 }
 
-export interface CascaderOption {
+export interface ContextSelectorItem {
   label: string;
   value: string;
   isLeaf?: boolean;
-  children?: CascaderOption[];
+  children?: ContextSelectorItem[];
   loading?: boolean;
   meta?: MetaTreeNode;
-  fullPath?: string[]; // 用于搜索结果显示完整路径
+  fullPath: string[];
 }
 
 export interface Converters {
   /**
-   * 根据选中的 meta 节点，返回一个用于渲染该值的 React 组件类型。
+   * 根据选中的上下文选择器项目，返回一个用于渲染该值的 React 组件类型。
    * 如果返回 null 或 undefined，则会使用默认的渲染组件。
-   * @param meta 选中的 MetaTreeNode 对象，或者在未选择任何变量时为 null。
+   * @param contextSelectorItem 选中的 ContextSelectorItem 对象，或者在未选择任何变量时为 null。
    * @returns React.ComponentType<{ value: any; onChange: (value: any) => void; }> | null
    */
-  renderInputComponent?: (meta: MetaTreeNode | null) => React.ComponentType<any> | null;
+  renderInputComponent?: (contextSelectorItem: ContextSelectorItem | null) => React.ComponentType<any> | null;
   /**
    * 将一个外部 value 转换成 FlowContextSelector 需要的路径数组。
    * @param value 外部传入的值。
@@ -44,18 +46,18 @@ export interface Converters {
    */
   resolvePathFromValue?: (value: any) => string[] | null;
   /**
-   * 当一个上下文节点被选中后，将其 meta 信息转换成最终的外部 value。
-   * @param meta 选中的 MetaTreeNode 对象。
+   * 当一个上下文节点被选中后，将其信息转换成最终的外部 value。
+   * @param contextSelectorItem 选中的 ContextSelectorItem 对象。
    * @param path 选中的路径数组。
    * @returns any
    */
-  resolveValueFromPath?: (meta: MetaTreeNode, path: string[]) => any;
+  resolveValueFromPath?: (contextSelectorItem: ContextSelectorItem, path: string[]) => any;
 }
 
 export interface VariableInputProps {
   value?: any;
   onChange?: (value: any) => void;
-  converters?: Converters | ((meta: MetaTreeNode | null) => Converters);
+  converters?: Converters | ((contextSelectorItem: ContextSelectorItem | null) => Converters);
   [key: string]: any;
 }
 

@@ -13,14 +13,13 @@ import {
   formatPathToValue,
   loadMetaTreeChildren,
   searchInLoadedNodes,
-  buildCascaderOptions,
+  buildContextSelectorItems,
   isVariableValue,
   createDefaultConverters,
-  detectComponentTypeFromMeta,
-  detectComponentTypeFromFieldName,
+  detectComponentType,
 } from '../utils';
 import type { MetaTreeNode } from '../../../flowContext';
-import type { CascaderOption } from '../types';
+import type { ContextSelectorItem } from '../types';
 
 describe('Variable Utils', () => {
   describe('parseValueToPath', () => {
@@ -107,19 +106,21 @@ describe('Variable Utils', () => {
   });
 
   describe('searchInLoadedNodes', () => {
-    const mockOptions: CascaderOption[] = [
+    const mockOptions: ContextSelectorItem[] = [
       {
         label: 'User',
         value: 'user',
+        fullPath: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true },
-          { label: 'Email', value: 'email', isLeaf: true },
+          { label: 'Name', value: 'name', isLeaf: true, fullPath: ['user', 'name'] },
+          { label: 'Email', value: 'email', isLeaf: true, fullPath: ['user', 'email'] },
         ],
       },
       {
         label: 'Data',
         value: 'data',
-        children: [{ label: 'Items', value: 'items', isLeaf: true }],
+        fullPath: ['data'],
+        children: [{ label: 'Items', value: 'items', isLeaf: true, fullPath: ['data', 'items'] }],
       },
     ];
 
@@ -147,8 +148,8 @@ describe('Variable Utils', () => {
     });
   });
 
-  describe('buildCascaderOptions', () => {
-    it('should convert MetaTreeNode[] to CascaderOption[]', () => {
+  describe('buildContextSelectorItems', () => {
+    it('should convert MetaTreeNode[] to ContextSelectorItem[]', () => {
       const metaTree: MetaTreeNode[] = [
         {
           name: 'user',
@@ -166,16 +167,23 @@ describe('Variable Utils', () => {
         },
       ];
 
-      const result = buildCascaderOptions(metaTree);
+      const result = buildContextSelectorItems(metaTree);
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         label: 'User',
         value: 'user',
         isLeaf: false,
         meta: metaTree[0],
+        fullPath: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0] },
-          { label: 'Email', value: 'email', isLeaf: true, meta: metaTree[0].children?.[1] },
+          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], fullPath: ['user', 'name'] },
+          {
+            label: 'Email',
+            value: 'email',
+            isLeaf: true,
+            meta: metaTree[0].children?.[1],
+            fullPath: ['user', 'email'],
+          },
         ],
       });
       expect(result[1]).toEqual({
@@ -183,6 +191,7 @@ describe('Variable Utils', () => {
         value: 'data',
         isLeaf: true,
         meta: metaTree[1],
+        fullPath: ['data'],
       });
     });
 
@@ -196,21 +205,22 @@ describe('Variable Utils', () => {
         },
       ];
 
-      const result = buildCascaderOptions(metaTree);
+      const result = buildContextSelectorItems(metaTree);
       expect(result[0]).toEqual({
         label: 'Async Node',
         value: 'async',
         isLeaf: false,
         meta: metaTree[0],
+        fullPath: ['async'],
       });
     });
 
     it('should handle invalid metaTree input', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      expect(buildCascaderOptions(null as any)).toEqual([]);
-      expect(buildCascaderOptions(undefined as any)).toEqual([]);
-      expect(buildCascaderOptions({} as any)).toEqual([]);
+      expect(buildContextSelectorItems(null as any)).toEqual([]);
+      expect(buildContextSelectorItems(undefined as any)).toEqual([]);
+      expect(buildContextSelectorItems({} as any)).toEqual([]);
 
       expect(consoleSpy).toHaveBeenCalledTimes(3);
       consoleSpy.mockRestore();
@@ -226,7 +236,7 @@ describe('Variable Utils', () => {
         undefined as any,
       ];
 
-      const result = buildCascaderOptions(metaTree);
+      const result = buildContextSelectorItems(metaTree);
 
       expect(result).toHaveLength(4);
       expect(result[0]).toEqual({
@@ -234,6 +244,7 @@ describe('Variable Utils', () => {
         value: 'valid',
         isLeaf: true,
         meta: { name: 'valid', title: 'Valid', type: 'object' },
+        fullPath: ['valid'],
       });
 
       // Invalid nodes should be converted to placeholder options
@@ -242,6 +253,7 @@ describe('Variable Utils', () => {
         value: 'invalid',
         isLeaf: true,
         meta: null,
+        fullPath: ['invalid'],
       });
 
       expect(consoleSpy).toHaveBeenCalledTimes(3); // null, empty name, undefined
@@ -250,10 +262,14 @@ describe('Variable Utils', () => {
 
     it('should use name as fallback when title is missing', () => {
       const metaTree: MetaTreeNode[] = [
-        { name: 'test', type: 'object' }, // missing title
+        {
+          name: 'test',
+          type: 'object',
+          title: '',
+        },
       ];
 
-      const result = buildCascaderOptions(metaTree);
+      const result = buildContextSelectorItems(metaTree);
 
       expect(result).toEqual([
         {
@@ -261,6 +277,7 @@ describe('Variable Utils', () => {
           value: 'test',
           isLeaf: true,
           meta: { name: 'test', type: 'object' },
+          fullPath: ['test'],
         },
       ]);
     });
@@ -320,187 +337,189 @@ describe('Variable Utils', () => {
   });
 
   // 新增：类型检测相关测试
-  describe('detectComponentTypeFromMeta', () => {
-    it('should detect component type from interface field', () => {
-      const rateMeta: MetaTreeNode = {
-        name: 'rating',
-        title: 'Rating',
-        type: 'number',
-        interface: 'rate',
-      };
-      expect(detectComponentTypeFromMeta(rateMeta)).toBe('rate');
+  describe('detectComponentType', () => {
+    describe('meta-based detection', () => {
+      it('should detect component type from interface field', () => {
+        const rateMeta: MetaTreeNode = {
+          name: 'rating',
+          title: 'Rating',
+          type: 'number',
+          interface: 'rate',
+        };
+        expect(detectComponentType(rateMeta)).toBe('rate');
 
-      const switchMeta: MetaTreeNode = {
-        name: 'enabled',
-        title: 'Enabled',
-        type: 'boolean',
-        interface: 'switch',
-      };
-      expect(detectComponentTypeFromMeta(switchMeta)).toBe('switch');
+        const switchMeta: MetaTreeNode = {
+          name: 'enabled',
+          title: 'Enabled',
+          type: 'boolean',
+          interface: 'switch',
+        };
+        expect(detectComponentType(switchMeta)).toBe('switch');
 
-      const selectMeta: MetaTreeNode = {
-        name: 'theme',
-        title: 'Theme',
-        type: 'string',
-        interface: 'select',
-      };
-      expect(detectComponentTypeFromMeta(selectMeta)).toBe('select');
+        const selectMeta: MetaTreeNode = {
+          name: 'theme',
+          title: 'Theme',
+          type: 'string',
+          interface: 'select',
+        };
+        expect(detectComponentType(selectMeta)).toBe('select');
 
-      const dateMeta: MetaTreeNode = {
-        name: 'createdAt',
-        title: 'Created At',
-        type: 'string',
-        interface: 'date',
-      };
-      expect(detectComponentTypeFromMeta(dateMeta)).toBe('date');
+        const dateMeta: MetaTreeNode = {
+          name: 'createdAt',
+          title: 'Created At',
+          type: 'string',
+          interface: 'date',
+        };
+        expect(detectComponentType(dateMeta)).toBe('date');
 
-      const numberMeta: MetaTreeNode = {
-        name: 'count',
-        title: 'Count',
-        type: 'number',
-        interface: 'number',
-      };
-      expect(detectComponentTypeFromMeta(numberMeta)).toBe('number');
-    });
+        const numberMeta: MetaTreeNode = {
+          name: 'count',
+          title: 'Count',
+          type: 'number',
+          interface: 'number',
+        };
+        expect(detectComponentType(numberMeta)).toBe('number');
+      });
 
-    it('should fallback to type-based detection when interface is not available', () => {
-      const booleanMeta: MetaTreeNode = {
-        name: 'flag',
-        title: 'Flag',
-        type: 'boolean',
-      };
-      expect(detectComponentTypeFromMeta(booleanMeta)).toBe('switch');
+      it('should fallback to type-based detection when interface is not available', () => {
+        const booleanMeta: MetaTreeNode = {
+          name: 'flag',
+          title: 'Flag',
+          type: 'boolean',
+        };
+        expect(detectComponentType(booleanMeta)).toBe('switch');
 
-      const numberMeta: MetaTreeNode = {
-        name: 'amount',
-        title: 'Amount',
-        type: 'number',
-      };
-      expect(detectComponentTypeFromMeta(numberMeta)).toBe('number');
+        const numberMeta: MetaTreeNode = {
+          name: 'amount',
+          title: 'Amount',
+          type: 'number',
+        };
+        expect(detectComponentType(numberMeta)).toBe('number');
 
-      const dateMeta: MetaTreeNode = {
-        name: 'timestamp',
-        title: 'Timestamp',
-        type: 'date',
-      };
-      expect(detectComponentTypeFromMeta(dateMeta)).toBe('date');
-    });
+        const dateMeta: MetaTreeNode = {
+          name: 'timestamp',
+          title: 'Timestamp',
+          type: 'date',
+        };
+        expect(detectComponentType(dateMeta)).toBe('date');
+      });
 
-    it('should return null for unsupported types and interfaces', () => {
-      const stringMeta: MetaTreeNode = {
-        name: 'text',
-        title: 'Text',
-        type: 'string',
-      };
-      expect(detectComponentTypeFromMeta(stringMeta)).toBe(null);
+      it('should return null for unsupported types and interfaces', () => {
+        const stringMeta: MetaTreeNode = {
+          name: 'text',
+          title: 'Text',
+          type: 'string',
+        };
+        expect(detectComponentType(stringMeta)).toBe(null);
 
-      const unknownMeta: MetaTreeNode = {
-        name: 'unknown',
-        title: 'Unknown',
-        type: 'unknown',
-        interface: 'unknown',
-      };
-      expect(detectComponentTypeFromMeta(unknownMeta)).toBe(null);
-    });
+        const unknownMeta: MetaTreeNode = {
+          name: 'unknown',
+          title: 'Unknown',
+          type: 'unknown',
+          interface: 'unknown',
+        };
+        expect(detectComponentType(unknownMeta)).toBe(null);
+      });
 
-    it('should return null for null or undefined meta', () => {
-      expect(detectComponentTypeFromMeta(null)).toBe(null);
-      expect(detectComponentTypeFromMeta(undefined as any)).toBe(null);
-    });
+      it('should return null for null or undefined meta', () => {
+        expect(detectComponentType(null)).toBe(null);
+        expect(detectComponentType(undefined as any)).toBe(null);
+      });
 
-    it('should handle rating interface variations', () => {
-      const rateMeta: MetaTreeNode = {
-        name: 'score',
-        title: 'Score',
-        type: 'number',
-        interface: 'rating',
-      };
-      expect(detectComponentTypeFromMeta(rateMeta)).toBe('rate');
-    });
+      it('should handle rating interface variations', () => {
+        const rateMeta: MetaTreeNode = {
+          name: 'score',
+          title: 'Score',
+          type: 'number',
+          interface: 'rating',
+        };
+        expect(detectComponentType(rateMeta)).toBe('rate');
+      });
 
-    it('should handle boolean interface variations', () => {
-      const booleanMeta: MetaTreeNode = {
-        name: 'active',
-        title: 'Active',
-        type: 'boolean',
-        interface: 'boolean',
-      };
-      expect(detectComponentTypeFromMeta(booleanMeta)).toBe('switch');
-    });
+      it('should handle boolean interface variations', () => {
+        const booleanMeta: MetaTreeNode = {
+          name: 'active',
+          title: 'Active',
+          type: 'boolean',
+          interface: 'boolean',
+        };
+        expect(detectComponentType(booleanMeta)).toBe('switch');
+      });
 
-    it('should prioritize interface over type', () => {
-      const meta: MetaTreeNode = {
-        name: 'special',
-        title: 'Special',
-        type: 'string', // type suggests string
-        interface: 'rate', // but interface suggests rate
-      };
-      expect(detectComponentTypeFromMeta(meta)).toBe('rate');
+      it('should prioritize interface over type', () => {
+        const meta: MetaTreeNode = {
+          name: 'special',
+          title: 'Special',
+          type: 'string', // type suggests string
+          interface: 'rate', // but interface suggests rate
+        };
+        expect(detectComponentType(meta)).toBe('rate');
+      });
     });
   });
 
-  describe('detectComponentTypeFromFieldName', () => {
+  describe('field name-based detection', () => {
     it('should detect rate type from field name containing rating keywords', () => {
-      expect(detectComponentTypeFromFieldName('userRating')).toBe('rate');
-      expect(detectComponentTypeFromFieldName('productRate')).toBe('rate');
-      expect(detectComponentTypeFromFieldName('reviewScore')).toBe('rate');
-      expect(detectComponentTypeFromFieldName('overallRating')).toBe('rate');
+      expect(detectComponentType(null, 'userRating')).toBe('rate');
+      expect(detectComponentType(null, 'productRate')).toBe('rate');
+      expect(detectComponentType(null, 'reviewScore')).toBe('rate');
+      expect(detectComponentType(null, 'overallRating')).toBe('rate');
     });
 
     it('should detect switch type from field name containing switch keywords', () => {
-      expect(detectComponentTypeFromFieldName('isEnabled')).toBe('switch');
-      expect(detectComponentTypeFromFieldName('toggleValue')).toBe('switch');
-      expect(detectComponentTypeFromFieldName('switchStatus')).toBe('switch');
-      expect(detectComponentTypeFromFieldName('enableNotifications')).toBe('switch');
+      expect(detectComponentType(null, 'isEnabled')).toBe('switch');
+      expect(detectComponentType(null, 'toggleValue')).toBe('switch');
+      expect(detectComponentType(null, 'switchStatus')).toBe('switch');
+      expect(detectComponentType(null, 'enableNotifications')).toBe('switch');
     });
 
     it('should detect number type from field name containing number keywords', () => {
-      expect(detectComponentTypeFromFieldName('itemCount')).toBe('number');
-      expect(detectComponentTypeFromFieldName('totalAmount')).toBe('number');
-      expect(detectComponentTypeFromFieldName('priceNumber')).toBe('number');
-      expect(detectComponentTypeFromFieldName('userCount')).toBe('number');
+      expect(detectComponentType(null, 'itemCount')).toBe('number');
+      expect(detectComponentType(null, 'totalAmount')).toBe('number');
+      expect(detectComponentType(null, 'priceNumber')).toBe('number');
+      expect(detectComponentType(null, 'userCount')).toBe('number');
     });
 
     it('should detect date type from field name containing date keywords', () => {
-      expect(detectComponentTypeFromFieldName('createdDate')).toBe('date');
-      expect(detectComponentTypeFromFieldName('updatedTime')).toBe('date');
-      expect(detectComponentTypeFromFieldName('birthDate')).toBe('date');
-      expect(detectComponentTypeFromFieldName('eventTime')).toBe('date');
+      expect(detectComponentType(null, 'createdDate')).toBe('date');
+      expect(detectComponentType(null, 'updatedTime')).toBe('date');
+      expect(detectComponentType(null, 'birthDate')).toBe('date');
+      expect(detectComponentType(null, 'eventTime')).toBe('date');
     });
 
     it('should detect select type from field name containing select keywords', () => {
-      expect(detectComponentTypeFromFieldName('colorTheme')).toBe('select');
-      expect(detectComponentTypeFromFieldName('selectedOption')).toBe('select');
-      expect(detectComponentTypeFromFieldName('themePreference')).toBe('select');
-      expect(detectComponentTypeFromFieldName('selectValue')).toBe('select');
+      expect(detectComponentType(null, 'colorTheme')).toBe('select');
+      expect(detectComponentType(null, 'selectedOption')).toBe('select');
+      expect(detectComponentType(null, 'themePreference')).toBe('select');
+      expect(detectComponentType(null, 'selectValue')).toBe('select');
     });
 
     it('should be case insensitive', () => {
-      expect(detectComponentTypeFromFieldName('USERRATING')).toBe('rate');
-      expect(detectComponentTypeFromFieldName('IsEnabled')).toBe('switch');
-      expect(detectComponentTypeFromFieldName('ItemCount')).toBe('number');
-      expect(detectComponentTypeFromFieldName('CreatedDate')).toBe('date');
-      expect(detectComponentTypeFromFieldName('ColorTheme')).toBe('select');
+      expect(detectComponentType(null, 'USERRATING')).toBe('rate');
+      expect(detectComponentType(null, 'IsEnabled')).toBe('switch');
+      expect(detectComponentType(null, 'ItemCount')).toBe('number');
+      expect(detectComponentType(null, 'CreatedDate')).toBe('date');
+      expect(detectComponentType(null, 'ColorTheme')).toBe('select');
     });
 
     it('should return null for unrecognized field names', () => {
-      expect(detectComponentTypeFromFieldName('userName')).toBe(null);
-      expect(detectComponentTypeFromFieldName('description')).toBe(null);
-      expect(detectComponentTypeFromFieldName('id')).toBe(null);
-      expect(detectComponentTypeFromFieldName('unknown')).toBe(null);
+      expect(detectComponentType(null, 'userName')).toBe(null);
+      expect(detectComponentType(null, 'description')).toBe(null);
+      expect(detectComponentType(null, 'id')).toBe(null);
+      expect(detectComponentType(null, 'unknown')).toBe(null);
     });
 
     it('should handle field names with multiple matching keywords prioritizing first match', () => {
       // The implementation checks for rating first, so it should return 'rate'
-      expect(detectComponentTypeFromFieldName('ratingCount')).toBe('rate');
-      expect(detectComponentTypeFromFieldName('switchNumber')).toBe('switch');
+      expect(detectComponentType(null, 'ratingCount')).toBe('rate');
+      expect(detectComponentType(null, 'switchNumber')).toBe('switch');
     });
 
     it('should handle edge cases', () => {
-      expect(detectComponentTypeFromFieldName('')).toBe(null);
-      expect(detectComponentTypeFromFieldName('a')).toBe(null);
-      expect(detectComponentTypeFromFieldName('rate')).toBe('rate'); // exact match
-      expect(detectComponentTypeFromFieldName('switch')).toBe('switch'); // exact match
+      expect(detectComponentType(null, '')).toBe(null);
+      expect(detectComponentType(null, 'a')).toBe(null);
+      expect(detectComponentType(null, 'rate')).toBe('rate'); // exact match
+      expect(detectComponentType(null, 'switch')).toBe('switch'); // exact match
     });
   });
 });

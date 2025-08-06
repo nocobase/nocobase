@@ -42,6 +42,18 @@
 
 <code src="./functional-converters.tsx"></code>
 
+### 5. Constant 单层上下文
+
+展示如何定义单层常量并为不同类型选择合适的输入组件：
+
+<code src="./constant-single-level.tsx"></code>
+
+### 6. Constant 二层上下文
+
+展示如何定义二层结构的常量，包括 Constant → number/string/date 等类型：
+
+<code src="./constant-multi-level.tsx"></code>
+
 ## 主要特性
 
 - **智能渲染**: 根据值类型自动选择 Input 或 VariableTag

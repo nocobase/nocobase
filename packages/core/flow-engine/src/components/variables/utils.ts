@@ -10,7 +10,7 @@
 import React from 'react';
 import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
-import type { CascaderOption, Converters } from './types';
+import type { ContextSelectorItem, Converters } from './types';
 import { VariableTag } from './VariableTag';
 
 export const parseValueToPath = (value: string): string[] | null => {
@@ -49,24 +49,28 @@ export const loadMetaTreeChildren = async (metaNode: MetaTreeNode): Promise<Meta
 };
 
 // 在已加载的级联选项中搜索，支持模糊匹配
-export const searchInLoadedNodes = (options: CascaderOption[], searchText: string): CascaderOption[] => {
+export const searchInLoadedNodes = (
+  options: ContextSelectorItem[],
+  searchText: string,
+  parentPaths: string[] = [],
+): ContextSelectorItem[] => {
   if (!searchText || !searchText.trim()) return [];
 
   const lowerSearchText = searchText.toLowerCase().trim();
-  const results: CascaderOption[] = [];
+  const results: ContextSelectorItem[] = [];
 
   // 递归搜索已加载的节点
-  const searchRecursive = (nodes: CascaderOption[], currentPath: string[] = []) => {
+  const searchRecursive = (nodes: ContextSelectorItem[], currentPath: string[] = []) => {
     for (const node of nodes) {
       const nodePath = [...currentPath, node.value];
 
       // 检查节点标签是否匹配搜索文本
       if (node.label.toLowerCase().includes(lowerSearchText)) {
         // 创建带路径信息的结果节点
-        const resultNode: CascaderOption = {
+        const resultNode: ContextSelectorItem = {
           ...node,
           // 添加完整路径信息用于显示
-          fullPath: nodePath,
+          fullPath: [...parentPaths, ...nodePath],
         };
         results.push(resultNode);
       }
@@ -78,44 +82,51 @@ export const searchInLoadedNodes = (options: CascaderOption[], searchText: strin
     }
   };
 
-  searchRecursive(options);
+  searchRecursive(options, []);
   return results;
 };
 
-export const buildCascaderOptions = (metaTree: MetaTreeNode[]): CascaderOption[] => {
+export const buildContextSelectorItems = (
+  metaTree: MetaTreeNode[],
+  parentPaths: string[] = [],
+): ContextSelectorItem[] => {
   if (!metaTree || !Array.isArray(metaTree)) {
-    console.warn('buildCascaderOptions received invalid metaTree:', metaTree);
+    console.warn('buildContextSelectorItems received invalid metaTree:', metaTree);
     return [];
   }
 
-  const convertNode = (node: MetaTreeNode): CascaderOption => {
-    if (!node || typeof node.name !== 'string' || node.name === '') {
-      console.warn('Invalid MetaTreeNode:', node);
+  const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
+    // 处理无效节点
+    if (!node || typeof node !== 'object' || !node.name) {
+      console.warn('buildContextSelectorItems received invalid node:', node);
+      const invalidPath = [...currentPath, 'invalid'];
       return {
         label: 'Invalid Node',
         value: 'invalid',
         isLeaf: true,
-        meta: node,
+        meta: null,
+        fullPath: invalidPath,
       };
     }
 
-    const hasChildren = node.children && (Array.isArray(node.children) ? node.children.length > 0 : true);
-
-    const option: CascaderOption = {
+    const hasChildren = node.children;
+    const fullPath = [...currentPath, node.name];
+    const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
       isLeaf: !hasChildren,
       meta: node,
+      fullPath: fullPath,
     };
 
     if (hasChildren && Array.isArray(node.children)) {
-      option.children = node.children.map(convertNode);
+      option.children = node.children.map((child) => convertNode(child, fullPath));
     }
 
     return option;
   };
 
-  return metaTree.map(convertNode);
+  return metaTree.map((node) => convertNode(node, parentPaths));
 };
 
 export const isVariableValue = (value: any): boolean => {
@@ -126,57 +137,58 @@ export const isVariableValue = (value: any): boolean => {
   return variableRegex.test(trimmed);
 };
 
-// 基于 meta 信息检测组件类型的工具函数
-export const detectComponentTypeFromMeta = (meta: MetaTreeNode | null): string | null => {
-  if (!meta) return null;
+// 通用组件类型检测函数
+export const detectComponentType = (meta?: MetaTreeNode | null, fieldName?: string, path?: string[]): string | null => {
+  // 1. 优先使用 meta 信息
+  if (meta) {
+    // 优先使用 interface 字段
+    if (meta.interface) {
+      switch (meta.interface) {
+        case 'rate':
+        case 'rating':
+          return 'rate';
+        case 'switch':
+        case 'boolean':
+          return 'switch';
+        case 'select':
+        case 'radioGroup':
+        case 'checkboxGroup':
+          return 'select';
+        case 'date':
+        case 'datetime':
+        case 'time':
+          return 'date';
+        case 'number':
+        case 'integer':
+        case 'float':
+          return 'number';
+        default:
+          return null;
+      }
+    }
 
-  // 优先使用 interface 字段
-  if (meta.interface) {
-    switch (meta.interface) {
-      case 'rate':
-      case 'rating':
-        return 'rate';
-      case 'switch':
-      case 'boolean':
-        return 'switch';
-      case 'select':
-      case 'radioGroup':
-      case 'checkboxGroup':
-        return 'select';
-      case 'date':
-      case 'datetime':
-      case 'time':
-        return 'date';
-      case 'number':
-      case 'integer':
-      case 'float':
-        return 'number';
-      default:
-        return null;
+    // 回退到基于类型的检测
+    if (meta.type) {
+      switch (meta.type) {
+        case 'boolean':
+          return 'switch';
+        case 'number':
+        case 'integer':
+          return 'number';
+        case 'date':
+          return 'date';
+        default:
+          return null;
+      }
     }
   }
 
-  // 回退到基于类型的检测
-  if (meta.type) {
-    switch (meta.type) {
-      case 'boolean':
-        return 'switch';
-      case 'number':
-      case 'integer':
-        return 'number';
-      case 'date':
-        return 'date';
-      default:
-        return null;
-    }
-  }
+  // 2. 从路径中提取字段名
+  const targetFieldName = fieldName || (path && path.length > 0 ? path[path.length - 1] : null);
+  if (!targetFieldName) return null;
 
-  return null;
-};
-
-// 基于字段名的回退检测（用于向后兼容）
-export const detectComponentTypeFromFieldName = (fieldName: string): string | null => {
-  const lowerFieldName = fieldName.toLowerCase();
+  // 3. 基于字段名的检测
+  const lowerFieldName = targetFieldName.toLowerCase();
 
   if (lowerFieldName.includes('rating') || lowerFieldName.includes('rate') || lowerFieldName.includes('score')) {
     return 'rate';
@@ -205,30 +217,9 @@ export const detectComponentTypeFromFieldName = (fieldName: string): string | nu
   return null;
 };
 
-// 从变量路径检测组件类型提示（用于VariableInput组件）
-export const detectComponentTypeFromVariablePath = (path: string[]): string | null => {
-  if (!path || path.length === 0) return null;
-
-  const fieldName = path[path.length - 1].toLowerCase();
-
-  if (fieldName.includes('rating') || fieldName.includes('rate') || fieldName.includes('score')) {
-    return 'rate';
-  } else if (fieldName.includes('enable') || fieldName.includes('switch') || fieldName.includes('toggle')) {
-    return 'switch';
-  } else if (fieldName.includes('count') || fieldName.includes('number') || fieldName.includes('amount')) {
-    return 'number';
-  } else if (fieldName.includes('date') || fieldName.includes('time')) {
-    return 'date';
-  } else if (fieldName.includes('theme') || fieldName.includes('select') || fieldName.includes('option')) {
-    return 'select';
-  }
-
-  return null;
-};
-
 export const createDefaultConverters = (): Converters => {
   return {
-    renderInputComponent: (meta: MetaTreeNode | null) => {
+    renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
       // 默认情况下，静态值始终使用 Input 组件
       // 变量值始终由 VariableInput 组件中的 VariableTag 处理
       return (props: any) => React.createElement(Input, props);
@@ -238,8 +229,80 @@ export const createDefaultConverters = (): Converters => {
       return parseValueToPath(value);
     },
 
-    resolveValueFromPath: (meta: MetaTreeNode, path: string[]) => {
+    resolveValueFromPath: (contextSelectorItem: ContextSelectorItem, path: string[]) => {
       return formatPathToValue(path);
     },
+  };
+};
+
+// 根据路径从metaTree中构建对应的ContextSelectorItem
+export const buildContextSelectorItemFromPath = (
+  path: string[],
+  metaTree: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>) | undefined,
+  parentPaths: string[] = [],
+): ContextSelectorItem | null => {
+  // 如果没有路径或metaTree，返回null
+  if (!path || path.length === 0 || !metaTree) return null;
+
+  const fullPath = [...parentPaths, ...path];
+
+  // 如果metaTree是函数，现在无法同步获取，返回基本信息
+  if (typeof metaTree === 'function') {
+    return {
+      label: path[path.length - 1], // 使用最后一个路径段作为label
+      value: path[path.length - 1],
+      isLeaf: true,
+      meta: {
+        name: path[path.length - 1],
+        title: path[path.length - 1],
+        type: 'string',
+      },
+      fullPath: fullPath,
+    };
+  }
+
+  // 递归查找路径对应的节点
+  let currentNodes: MetaTreeNode[] = metaTree;
+  let targetMeta: MetaTreeNode | null = null;
+
+  for (const segment of path) {
+    const node = currentNodes.find((n) => n.name === segment);
+    if (!node) {
+      // 如果找不到节点，返回基本信息
+      return {
+        label: segment,
+        value: segment,
+        isLeaf: true,
+        meta: {
+          name: segment,
+          title: segment,
+          type: 'string',
+        },
+        fullPath: [...parentPaths, ...path.slice(0, path.indexOf(segment) + 1)],
+      };
+    }
+
+    targetMeta = node;
+
+    // 如果还有下一级路径，且当前节点有子节点
+    if (path.indexOf(segment) < path.length - 1) {
+      if (Array.isArray(node.children)) {
+        currentNodes = node.children;
+      } else {
+        // 异步子节点，无法继续查找
+        break;
+      }
+    }
+  }
+
+  if (!targetMeta) return null;
+
+  // 构建ContextSelectorItem
+  return {
+    label: targetMeta.title || targetMeta.name,
+    value: targetMeta.name,
+    isLeaf: !targetMeta.children || (Array.isArray(targetMeta.children) && targetMeta.children.length === 0),
+    meta: targetMeta,
+    fullPath: fullPath,
   };
 };
