@@ -179,7 +179,7 @@ function ConnectFields(
 
   // 生成下拉菜单项
   const menuItems = allDataModels
-    .filter((model) => model instanceof CollectionBlockModel)
+    .filter((model: any) => model.resource?.supportsFilter)
     .map((model: CollectionBlockModel) => {
       const isSelected = selectedModelUids.includes(model.uid);
 
