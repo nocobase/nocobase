@@ -191,7 +191,7 @@ export class PluginClientServer extends Plugin {
         transaction,
       });
 
-      await (this.app.db.getRepository('desktopRoutes.roles', instance.id) as BelongsToManyRepository).add({
+      await this.app.db.getRepository<BelongsToManyRepository>('desktopRoutes.roles', instance.id).add({
         tk: addNewMenuRoles.map((role) => role.name),
         transaction,
       });
