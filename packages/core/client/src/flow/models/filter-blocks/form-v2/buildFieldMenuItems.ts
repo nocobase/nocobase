@@ -200,55 +200,6 @@ export function buildFieldMenuItems(
 }
 
 /**
- * 根据字段类型和接口获取对应的图标
- */
-function getFieldIcon(field: CollectionField): string | undefined {
-  // 根据字段接口返回对应图标
-  const iconMap: Record<string, string> = {
-    input: 'InputIcon',
-    textarea: 'TextareaIcon',
-    number: 'NumberIcon',
-    integer: 'NumberIcon',
-    percent: 'PercentIcon',
-    password: 'PasswordIcon',
-    email: 'EmailIcon',
-    phone: 'PhoneIcon',
-    url: 'UrlIcon',
-    color: 'ColorIcon',
-    icon: 'IconIcon',
-    datetime: 'DatetimeIcon',
-    date: 'DateIcon',
-    time: 'TimeIcon',
-    select: 'SelectIcon',
-    multipleSelect: 'MultipleSelectIcon',
-    radioGroup: 'RadioIcon',
-    checkboxGroup: 'CheckboxIcon',
-    checkbox: 'CheckboxIcon',
-    switch: 'SwitchIcon',
-    attachment: 'AttachmentIcon',
-    markdown: 'MarkdownIcon',
-    richText: 'RichTextIcon',
-    json: 'JsonIcon',
-    m2o: 'RelationIcon',
-    o2m: 'RelationIcon',
-    m2m: 'RelationIcon',
-    o2o: 'RelationIcon',
-    linkTo: 'LinkIcon',
-    formula: 'FormulaIcon',
-    sequence: 'SequenceIcon',
-    nanoid: 'NanoidIcon',
-    uuid: 'UuidIcon',
-    autoIncrement: 'AutoIncrementIcon',
-    createdAt: 'TimeIcon',
-    updatedAt: 'TimeIcon',
-    createdBy: 'UserIcon',
-    updatedBy: 'UserIcon',
-  };
-
-  return iconMap[field.interface];
-}
-
-/**
  * 扁平化字段菜单，返回所有字段的完整路径列表
  */
 export function flattenFieldMenuItems(menuItems: FieldMenuItem[]): string[] {

@@ -8,8 +8,8 @@
  */
 
 import { ButtonProps } from 'antd';
-import { FilterFormActionModel } from './FilterFormActionModel';
 import { FilterFormEditableFieldModel } from '../fields';
+import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class ResetFilterFormActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
@@ -30,8 +30,8 @@ ResetFilterFormActionModel.registerFlow({
         const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
 
         fieldModels.forEach((fieldModel) => {
-          fieldModel.doReset();
           fieldModel.field.reset();
+          fieldModel.doReset();
         });
       },
     },
