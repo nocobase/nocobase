@@ -25,12 +25,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   metaTree,
   ...restProps
 }) => {
-  // 使用自定义hooks
   const { inputRef, handleFocus, handleBlur } = useVariableInput(value);
-
-  // 管理当前的 ContextSelectorItem 状态
   const [currentContextSelectorItem, setCurrentContextSelectorItem] = useState<ContextSelectorItem | null>(null);
-
   const baseConverters = useVariableConverters(typeof propConverters === 'function' ? undefined : propConverters, null);
 
   const currentConverters = useMemo(() => {
@@ -41,7 +37,6 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     return baseConverters;
   }, [propConverters, currentContextSelectorItem, baseConverters]);
 
-  // 创建适配函数，将 resolveValueFromPath 适配成 FlowContextSelector 需要的签名
   const formatPathToValueFn = useMemo(() => {
     if (!currentConverters.resolveValueFromPath) return undefined;
 
@@ -90,14 +85,11 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [metaTree],
   );
 
-  // 创建输入组件
-  const isValueVariable = isVariableValue(value);
   const InputComponent = useMemo(() => {
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
     return CustomComponent || Input;
   }, [currentConverters, currentContextSelectorItem]);
 
-  // 事件处理器
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
       const newValue = e?.target?.value !== undefined ? e.target.value : e;

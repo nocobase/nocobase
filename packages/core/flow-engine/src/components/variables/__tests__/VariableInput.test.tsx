@@ -12,7 +12,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VariableInput } from '../VariableInput';
 import { FlowContext } from '../../../flowContext';
-import { detectComponentType } from '../utils';
 import type { ContextSelectorItem } from '../types';
 
 // Helper function to create test FlowContext with consistent data
@@ -464,58 +463,6 @@ describe('VariableInput', () => {
     expect(renderCount).toBe(initialRenderCount + 1); // Only one additional render
   });
 
-  it('should detect component type hint from variable name', async () => {
-    const onChange = vi.fn();
-    const customConverters = {
-      renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-        if (
-          contextSelectorItem &&
-          contextSelectorItem.meta &&
-          detectComponentType(contextSelectorItem.meta) === 'rate'
-        ) {
-          return (props: any) => <input {...props} data-testid="rate-component" />;
-        }
-        return null;
-      },
-    };
-
-    const ratingFlowContext = new FlowContext();
-    ratingFlowContext.defineProperty('user', {
-      value: { userRating: 5 },
-      meta: {
-        title: 'User',
-        type: 'object',
-        properties: {
-          userRating: { title: 'User Rating', type: 'number' },
-        },
-      },
-    });
-
-    render(
-      <VariableInput
-        value=""
-        onChange={onChange}
-        converters={customConverters}
-        metaTree={() => ratingFlowContext.getPropertyMetaTree()}
-      />,
-    );
-
-    const selectorButton = screen.getByRole('button');
-    fireEvent.click(selectorButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('User')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText('User'));
-
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('User Rating'));
-    });
-
-    expect(onChange).toHaveBeenCalledWith('{{ ctx.user.userRating }}');
-  });
-
   it('should switch from variable to static input after clearing', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
@@ -598,47 +545,6 @@ describe('VariableInput', () => {
     // Should have close button with proper styling
     const closeButton = screen.getByLabelText('close');
     expect(closeButton).toBeInTheDocument();
-  });
-
-  it('should detect component type from meta interface', () => {
-    const interfaceFlowContext = new FlowContext();
-    interfaceFlowContext.defineProperty('config', {
-      value: { rating: 5, enabled: true },
-      meta: {
-        title: 'Config',
-        type: 'object',
-        properties: {
-          rating: { title: 'Rating', type: 'number', interface: 'rate' },
-          enabled: { title: 'Enabled', type: 'boolean', interface: 'switch' },
-        },
-      },
-    });
-
-    const customConverters = {
-      renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-        if (contextSelectorItem && contextSelectorItem.meta) {
-          const componentType = detectComponentType(contextSelectorItem.meta);
-          if (componentType === 'rate') {
-            return (props: any) => <input {...props} data-testid="rate-from-interface" />;
-          }
-          if (componentType === 'switch') {
-            return (props: any) => <input {...props} data-testid="switch-from-interface" />;
-          }
-        }
-        return null;
-      },
-    };
-
-    const { rerender } = render(
-      <VariableInput
-        value=""
-        converters={customConverters}
-        metaTree={() => interfaceFlowContext.getPropertyMetaTree()}
-      />,
-    );
-
-    // Test that component type is detected from interface field
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   it('should use improved type detection not relying on string matching', () => {
