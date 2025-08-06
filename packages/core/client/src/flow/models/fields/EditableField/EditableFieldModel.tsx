@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
+import { observable } from '@formily/reactive';
 import { FormFieldGridModel, FormModel } from '../..';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
@@ -21,9 +22,7 @@ type Structure = {
 
 export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {
   static supportedFieldInterfaces = '*' as any;
-  componentProps: any = {};
-  enableDisplayMode = true;
-  enableFormItem = true;
+  componentProps: any = {} as any;
 
   get form() {
     return this.context.form;

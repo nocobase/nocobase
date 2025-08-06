@@ -19,6 +19,7 @@ export class FormFieldGridModel extends GridModel<{
   parent: FormModel;
   subModels: { items: FieldModel[] };
 }> {
+  itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,
     style: {

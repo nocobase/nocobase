@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseItem } from '@formily/antd-v5';
 import { observable } from '@formily/reactive';
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 import { Form } from 'antd';
 import { FieldModel } from '../../base/FieldModel';
@@ -44,10 +43,6 @@ export class FormItemModel extends FieldModel<{
     const basePath = this.context.basePath;
     const fieldPath = this.fieldPath;
     const fullPath = basePath ? `${basePath}.${fieldPath}` : fieldPath;
-    //  const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    //  fieldModel.context.defineProperty('value', {
-    //    get: () => value,
-    //  });
     return (
       <Form.Item
         {...this.decoratorProps}
@@ -55,7 +50,7 @@ export class FormItemModel extends FieldModel<{
         label={this.decoratorProps.title}
         name={fullPath}
       >
-        {fieldModel.render()}
+        <FlowModelRenderer model={fieldModel} />
       </Form.Item>
     );
   }

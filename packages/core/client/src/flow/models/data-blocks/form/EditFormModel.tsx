@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
-import { createForm, Form } from '@formily/core';
-import { FormProvider } from '@formily/react';
+import { FormButtonGroup } from '@formily/antd-v5';
 import {
   AddActionButton,
   buildActionItems,

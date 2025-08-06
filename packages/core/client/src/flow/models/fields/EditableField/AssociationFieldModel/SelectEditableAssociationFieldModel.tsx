@@ -39,7 +39,8 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
-  const field = (currentModel.subModels.field as FlowModel).subModels.field as FlowModel;
+  const field =
+    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
@@ -67,7 +68,6 @@ function LazySelect(props) {
       value={toValue(value, fieldNames, multiple)}
       mode={multiple ? 'multiple' : undefined}
       onChange={(value, option) => {
-        console.log(option);
         props.onChange(option);
       }}
       optionRender={({ data }) => {
