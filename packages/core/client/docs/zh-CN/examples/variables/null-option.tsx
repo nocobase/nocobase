@@ -38,8 +38,8 @@ class PluginNullOptionExample extends Plugin {
 
       // Null 选项的 converters
       const converters: Converters = {
-        renderInputComponent: (meta) => {
-          if (!meta) {
+        renderInputComponent: (item) => {
+          if (item?.fullPath && item?.fullPath[0] === 'null') {
             return (props) => <Input {...props} readOnly value="<Null>" />;
           }
           return null;
