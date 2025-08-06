@@ -10,6 +10,7 @@
 import { App, ConfigProvider, theme } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngineContext } from './flowContext';
+import { FlowContextProvider } from './FlowContextProvider';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 import { FlowViewer } from './views/FlowView';
@@ -26,7 +27,11 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
   }
-  return <FlowEngineReactContext.Provider value={engine}>{children}</FlowEngineReactContext.Provider>;
+  return (
+    <FlowEngineReactContext.Provider value={engine}>
+      <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
+    </FlowEngineReactContext.Provider>
+  );
 };
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
