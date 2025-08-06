@@ -162,7 +162,13 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
     const pathKey = selectedOptions.map((opt) => opt.value).join('.');
     // 如果已经加载过，直接返回
     if (loadedPathsRef.current.has(pathKey)) {
-      return;
+      // 即使缓存命中，也检查是否真的有children数据
+      if (!targetOption.children || targetOption.children.length === 0) {
+        // 缓存命中但没有实际数据，重新加载
+        loadedPathsRef.current.delete(pathKey);
+      } else {
+        return;
+      }
     }
 
     // 设置加载状态
