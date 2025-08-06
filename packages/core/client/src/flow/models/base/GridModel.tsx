@@ -397,7 +397,7 @@ BlockGridModel.registerFlow({
         ctx.model.context.defineProperty('filterManager', {
           once: true,
           get: () => {
-            return { value: new FilterManager(ctx.model) };
+            return new FilterManager(ctx.model);
           },
         });
       },
