@@ -11,7 +11,20 @@ import { Input } from '@formily/antd-v5';
 import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
 
 export class InputFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
-  static readonly supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence'];
+  static readonly supportedFieldInterfaces = [
+    'input',
+    'email',
+    'phone',
+    'uuid',
+    'url',
+    'sequence',
+    'nanoid',
+    'textarea',
+    'markdown',
+    'richText',
+    'password',
+    'color',
+  ];
 
   get component() {
     return [Input, {}];

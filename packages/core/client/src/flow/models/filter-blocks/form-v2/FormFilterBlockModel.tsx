@@ -21,6 +21,7 @@ import {
   FlowModelRenderer,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import { FilterManager } from '../filter-manager/FilterManager';
 
 export class FormFilterBlockModel extends FilterBlockModel<{
   subModels: {
@@ -50,6 +51,19 @@ export class FormFilterBlockModel extends FilterBlockModel<{
     this.context.defineProperty('filterFormFieldGridModel', {
       value: this.subModels.grid,
     });
+  }
+
+  async destroy(): Promise<boolean> {
+    const result = await super.destroy();
+
+    // 清理所有子模型的筛选配置
+    const filterManager: FilterManager = this.context.filterManager;
+    const promises = this.subModels.grid.subModels.items.map(async (item) => {
+      await filterManager.removeFilterConfig({ filterId: item.uid });
+    });
+
+    await Promise.all(promises);
+    return result;
   }
 
   renderComponent() {

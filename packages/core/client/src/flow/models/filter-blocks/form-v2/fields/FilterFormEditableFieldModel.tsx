@@ -9,13 +9,15 @@
 
 import { reaction } from '@formily/reactive';
 import { debounce } from 'lodash';
-import { CollectionBlockModel } from '../../../base/BlockModel';
 import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
 import { FilterManager } from '../../filter-manager/FilterManager';
-import _ from 'lodash';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
   enableOperator = true;
+  enableRequired = false;
+  enableDisplayMode = false;
+
+  operator: string;
 
   private dispose: Function;
   private debouncedDoFilter: ReturnType<typeof debounce>;
@@ -46,6 +48,16 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     this.debouncedDoFilter.cancel();
   }
 
+  async destroy(): Promise<boolean> {
+    const result = await super.destroy();
+
+    // 清理筛选配置
+    const filterManager: FilterManager = this.context.filterManager;
+    await filterManager.removeFilterConfig({ filterId: this.uid });
+
+    return result;
+  }
+
   createField() {
     return this.form.createField({
       name: `${this.collectionField.name}_${this.uid}`, // 确保每个字段的名称唯一
@@ -55,125 +67,12 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     });
   }
 
-  addFilterGroupToTargetModels() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const operator = connectFieldsConfig?.operator || '$eq';
-    const targets = connectFieldsConfig.targets || [];
-
-    if (!operator || !targets.length) {
-      return;
-    }
-
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        const value = this.getFilterValue();
-        if (value != null && value !== '' && !_.isEmpty(value) && target.targetFieldPaths?.length) {
-          const targetFieldPaths = target.targetFieldPaths;
-
-          if (targetFieldPaths.length === 1) {
-            const path = targetFieldPaths[0];
-            const targetField = model.collection.getField(path);
-
-            // 如果是关系字段，则需拼接上 filterTargetKey
-            if (targetField?.targetCollection) {
-              model.resource.addFilterGroup(this.uid, {
-                [`${path}.${targetField.targetCollection.filterTargetKey}`]: {
-                  [operator]: value,
-                },
-              });
-            } else {
-              model.resource.addFilterGroup(this.uid, {
-                [path]: {
-                  [operator]: value,
-                },
-              });
-            }
-          } else {
-            // 如果有多个目标字段，则使用 $or 连接
-            const orConditions = targetFieldPaths.map((path) => {
-              const targetField = model.collection.getField(path);
-
-              // 如果是关系字段，则需拼接上 filterTargetKey
-              if (targetField?.targetCollection) {
-                return {
-                  [`${path}.${targetField.targetCollection.filterTargetKey}`]: {
-                    [operator]: value,
-                  },
-                };
-              } else {
-                return {
-                  [path]: {
-                    [operator]: value,
-                  },
-                };
-              }
-            });
-
-            model.resource.addFilterGroup(this.uid, {
-              $or: orConditions,
-            });
-          }
-        } else {
-          model.resource.removeFilterGroup(this.uid);
-        }
-      }
-    });
-  }
-
-  removeFilterGroupFromTargetModels() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const operator = connectFieldsConfig.operator || '$eq';
-    const targets = connectFieldsConfig.targets || [];
-
-    if (!operator || !targets.length) {
-      return;
-    }
-
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.removeFilterGroup(this.uid);
-      }
-    });
-  }
-
   doFilter() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const targets = connectFieldsConfig?.targets || [];
-
-    if (!targets.length) {
-      return;
-    }
-
-    this.addFilterGroupToTargetModels();
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.refresh();
-      }
-    });
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
-    const filterManager: FilterManager = this.context.filterManager;
-    const connectFieldsConfig = filterManager.getConnectFieldsConfig(this.uid);
-    const targets = connectFieldsConfig?.targets || [];
-
-    if (!targets.length) {
-      return;
-    }
-
-    this.removeFilterGroupFromTargetModels();
-    targets.forEach((target) => {
-      const model: CollectionBlockModel = this.flowEngine.getModel(target.targetModelUid);
-      if (model) {
-        model.resource.refresh();
-      }
-    });
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
@@ -181,7 +80,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
    * @returns
    */
   getFilterValue() {
-    return this.field.value;
+    return this.field?.value;
   }
 
   /**
@@ -202,6 +101,9 @@ FilterFormEditableFieldModel.registerFlow({
   steps: {
     connectFields: {
       use: 'connectFields',
+    },
+    defaultOperator: {
+      use: 'defaultOperator',
     },
   },
 });
