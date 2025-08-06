@@ -76,7 +76,7 @@ export const useBulkDestroyAction = () => {
   const { t } = useTranslation();
   const form = useForm();
   const { cascade } = form?.values || {};
-  const selectedRowKeys = Object.values(state).flat();
+  const selectedRowKeys = Object.values(state.selectedRowKeys).flat();
   return {
     async run(flag?) {
       if (!selectedRowKeys?.length) {
