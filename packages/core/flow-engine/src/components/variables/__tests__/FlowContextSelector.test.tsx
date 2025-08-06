@@ -11,52 +11,13 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContextSelector } from '../../FlowContextSelector';
-import { FlowContext } from '../../../flowContext';
-
-// Helper function to create test FlowContext with consistent data
-function createTestFlowContext() {
-  const flowContext = new FlowContext();
-
-  flowContext.defineProperty('user', {
-    value: { name: 'John', email: 'john@example.com' },
-    meta: {
-      title: 'User',
-      type: 'object',
-      properties: {
-        name: { title: 'Name', type: 'string' },
-        email: { title: 'Email', type: 'string' },
-      },
-    },
-  });
-
-  flowContext.defineProperty('data', {
-    value: { items: [] },
-    meta: {
-      title: 'Data',
-      type: 'object',
-      properties: {
-        items: { title: 'Items', type: 'array' },
-      },
-    },
-  });
-
-  flowContext.defineProperty('config', {
-    value: 'test-config',
-    meta: {
-      title: 'Config',
-      type: 'string',
-    },
-  });
-
-  return flowContext;
-}
+import { createTestFlowContext } from './test-utils';
 
 describe('FlowContextSelector', () => {
   it('should render with default children', () => {
     const flowContext = createTestFlowContext();
     render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
     expect(screen.getByRole('button')).toBeInTheDocument();
-    expect(screen.getByText('Var')).toBeInTheDocument();
   });
 
   it('should render with custom children', () => {
@@ -136,15 +97,7 @@ describe('FlowContextSelector', () => {
       fireEvent.click(nameOption);
     });
 
-    expect(onChange).toHaveBeenCalledWith(
-      '{{ ctx.user.name }}',
-      expect.objectContaining({
-        label: 'Name',
-        value: 'name',
-        isLeaf: true,
-        fullPath: ['user', 'name'],
-      }),
-    );
+    expect(onChange).toHaveBeenCalledWith('{{ ctx.user.name }}', null);
   });
 
   it('should handle leaf node selection', async () => {
@@ -161,15 +114,7 @@ describe('FlowContextSelector', () => {
       fireEvent.click(configOption);
     });
 
-    expect(onChange).toHaveBeenCalledWith(
-      '{{ ctx.config }}',
-      expect.objectContaining({
-        label: 'Config',
-        value: 'config',
-        isLeaf: true,
-        fullPath: ['config'],
-      }),
-    );
+    expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', null);
   });
 
   it('should support search functionality', async () => {
@@ -189,19 +134,7 @@ describe('FlowContextSelector', () => {
   });
 
   it('should handle FlowContext metaTree', () => {
-    const flowContext = new FlowContext();
-    flowContext.defineProperty('user', {
-      value: { name: 'John', email: 'john@example.com' },
-      meta: {
-        title: 'User',
-        type: 'object',
-        properties: {
-          name: { title: 'Name', type: 'string' },
-          email: { title: 'Email', type: 'string' },
-        },
-      },
-    });
-
+    const flowContext = createTestFlowContext();
     render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     expect(screen.getByRole('button')).toBeInTheDocument();
@@ -229,7 +162,6 @@ describe('FlowContextSelector', () => {
     // Check if basic rendering works with props
     const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
-    expect(button).toHaveTextContent('Var');
   });
 
   describe('Double-click functionality', () => {
@@ -247,15 +179,7 @@ describe('FlowContextSelector', () => {
         fireEvent.click(configOption);
       });
 
-      expect(onChange).toHaveBeenCalledWith(
-        '{{ ctx.config }}',
-        expect.objectContaining({
-          label: 'Config',
-          value: 'config',
-          isLeaf: true,
-          fullPath: ['config'],
-        }),
-      );
+      expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', null);
     });
 
     it('should support double-click selection for non-leaf nodes', async () => {

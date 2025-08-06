@@ -275,7 +275,7 @@ describe('Variable Utils', () => {
           label: 'test',
           value: 'test',
           isLeaf: true,
-          meta: { name: 'test', type: 'object' },
+          meta: { name: 'test', type: 'object', title: '' },
           fullPath: ['test'],
         },
       ]);
