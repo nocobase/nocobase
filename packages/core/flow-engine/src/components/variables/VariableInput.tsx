@@ -53,33 +53,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       // 如果无法构建ContextSelectorItem，使用默认格式
       return `{{ ctx.${path.join('.')} }}`;
     };
-  }, [currentConverters.resolveValueFromPath, metaTree]);
-
-  // 初始计算或重新计算 currentContextSelectorItem（仅在必要时）
-  useEffect(() => {
-    if (!isVariableValue(value)) {
-      setCurrentContextSelectorItem((prevItem) => (prevItem ? null : prevItem));
-      return;
-    }
-
-    // 直接使用 parseValueToPath 避免依赖可能不稳定的函数引用
-    const path = parseValueToPath(value);
-    if (!path || path.length === 0) {
-      setCurrentContextSelectorItem((prevItem) => (prevItem ? null : prevItem));
-      return;
-    }
-
-    const contextSelectorItem = buildContextSelectorItemFromPath(path, metaTree, []);
-    setCurrentContextSelectorItem((prevItem) => {
-      // 只在真正改变时才更新状态
-      if (!prevItem && !contextSelectorItem) return prevItem;
-      if (!prevItem || !contextSelectorItem) return contextSelectorItem;
-      if (prevItem.value === contextSelectorItem.value && prevItem.label === contextSelectorItem.label) {
-        return prevItem;
-      }
-      return contextSelectorItem;
-    });
-  }, [value, metaTree]); // 移除 parseValueToPathFn 依赖
+  }, [currentConverters, metaTree]);
 
   // 根据路径和metaTree获取显示用的标题路径
   const getDisplayPath = useCallback(
@@ -121,7 +95,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   const InputComponent = useMemo(() => {
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
     return CustomComponent || Input;
-  }, [currentConverters, currentContextSelectorItem, isValueVariable]);
+  }, [currentConverters, currentContextSelectorItem]);
 
   // 事件处理器
   const handleInputChange = useCallback(
