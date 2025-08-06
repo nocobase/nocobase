@@ -1,0 +1,62 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { PopoverProps as AntdPopoverProps } from 'antd';
+import { FlowContext } from '../flowContext';
+
+export type FlowView = {
+  Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
+  Footer: React.FC<{ children?: React.ReactNode }> | null;
+  close: () => void;
+  update: (newConfig: any) => void;
+};
+
+type TargetProps = {
+  target?: HTMLElement | string | null;
+};
+type ViewType = 'drawer' | 'popover' | 'dialog' | 'embed';
+type ViewProps = {
+  content: React.ReactNode | ((view: FlowView) => React.ReactNode);
+  width?: number | string;
+  [key: string]: any;
+};
+
+type PopoverProps = AntdPopoverProps & {} & ViewProps & TargetProps;
+
+export class FlowViewer {
+  constructor(
+    protected ctx: FlowContext,
+    protected types: {
+      drawer: any;
+      popover: any;
+      dialog: any;
+      embed: any;
+    },
+  ) {}
+  open(props: ViewProps & { type: ViewType } & TargetProps) {
+    const { type, ...others } = props;
+    if (this.types[type]) {
+      return this.types[type].open(others, this.ctx);
+    } else {
+      throw new Error(`Unknown view type: ${type}`);
+    }
+  }
+  dialog(props: ViewProps) {
+    return this.open({ type: 'dialog', ...props });
+  }
+  drawer(props: ViewProps) {
+    return this.open({ type: 'drawer', ...props });
+  }
+  popover(props: PopoverProps) {
+    return this.open({ type: 'popover', ...props });
+  }
+  embed(props: ViewProps & TargetProps) {
+    return this.open({ type: 'embed', ...props });
+  }
+}

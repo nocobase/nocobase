@@ -1,21 +1,22 @@
-import { useFlowModelContext } from '@nocobase/flow-engine';
+import { FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Flex, Form, Input, Space } from 'antd';
 import React from 'react';
 
 export const FormComponent = (props) => {
-  const { Drawer, record } = props;
+  const { record } = props;
   const [form] = Form.useForm();
-  const ctx = useFlowModelContext();
+  const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+  const { Header, Footer } = ctx.view;
 
   return (
     <div>
-      <Drawer.Header title={record ? 'Edit record' : 'Add record'} />
+      <Header title={record ? 'Edit record' : 'Add record'} />
 
       <Form form={form} initialValues={record} layout="vertical" colon={true}>
-        <Form.Item label="Name" name="name" required>
+        <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Please enter name' }]}>
           <Input />
         </Form.Item>
-        <Form.Item label="Telephone" name="telephone" required>
+        <Form.Item label="Telephone" name="telephone" rules={[{ required: true, message: 'Please enter telephone' }]}>
           <Input />
         </Form.Item>
         <Form.Item label="Live" name="live">
@@ -29,12 +30,12 @@ export const FormComponent = (props) => {
         </Form.Item>
       </Form>
 
-      <Drawer.Footer>
+      <Footer>
         <Flex justify="flex-end" align="end">
           <Space>
             <Button
               onClick={() => {
-                Drawer.close();
+                ctx.view.close();
               }}
             >
               Cancel
@@ -51,7 +52,7 @@ export const FormComponent = (props) => {
                     await ctx.resource.create(values);
                   }
                   ctx.message.success('Record save successfully');
-                  Drawer.close();
+                  ctx.view.close();
                 } catch (error) {
                   console.error('Validation failed:', error);
                 }
@@ -61,7 +62,7 @@ export const FormComponent = (props) => {
             </Button>
           </Space>
         </Flex>
-      </Drawer.Footer>
+      </Footer>
     </div>
   );
 };

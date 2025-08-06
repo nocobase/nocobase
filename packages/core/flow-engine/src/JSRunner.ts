@@ -19,7 +19,7 @@ export class JSRunner {
   private timeoutMs: number;
 
   constructor(options: JSRunnerOptions = {}) {
-    this.globals = { setTimeout, clearTimeout, ...(options.globals || {}) };
+    this.globals = { console, setTimeout, clearTimeout, ...(options.globals || {}) };
     this.timeoutMs = options.timeoutMs ?? 5000; // 默认 5 秒超时
   }
 

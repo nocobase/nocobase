@@ -7,21 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
-import type { ButtonProps } from 'antd/es/button';
 import { ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
-import { CollectionActionModel, Cascader } from '@nocobase/client';
-import { createSchemaField, FormProvider } from '@formily/react';
-import React from 'react';
-import { observable } from '@formily/reactive';
-import { createForm } from '@formily/core';
-import { observer } from '@formily/reactive-react';
-import { FormButtonGroup, FormLayout, FormItem } from '@formily/antd-v5';
-import { Button, Upload, Spin, Space } from 'antd';
-import { saveAs } from 'file-saver';
-import { ImportWarning, DownloadTips } from './ImportActionInitializer';
-import { NAMESPACE } from './constants';
 import { css } from '@emotion/css';
+import { FormButtonGroup, FormItem, FormLayout } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider } from '@formily/react';
+import { observable } from '@formily/reactive';
+import { observer } from '@formily/reactive-react';
+import { Cascader, CollectionActionModel } from '@nocobase/client';
+import { escapeT } from '@nocobase/flow-engine';
+import { Button, Space, Spin, Upload } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
+import { saveAs } from 'file-saver';
+import React from 'react';
+import { DownloadTips, ImportWarning } from './ImportActionInitializer';
+import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
 
 const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
@@ -286,8 +286,8 @@ ImportActionModel.registerFlow({
           );
         });
 
-        await ctx.engine.context.viewOpener.open({
-          mode: 'dialog',
+        await ctx.viewer.open({
+          type: 'dialog',
           placement: 'center',
           width: 800,
           title: ctx.t('Import Data', { ns: `${NAMESPACE}` }),

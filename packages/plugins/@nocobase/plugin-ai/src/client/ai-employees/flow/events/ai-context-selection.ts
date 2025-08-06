@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionBlockModel } from '@nocobase/client';
+import { BlockModel, CollectionBlockModel } from '@nocobase/client';
 import { aiSelection } from '../../stores/ai-selection';
 import classNames from 'classnames';
 import { AIEmployeeShortcutListModel } from '../models';
@@ -37,7 +37,7 @@ const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutL
   });
 };
 
-CollectionBlockModel.registerFlow({
+BlockModel.registerFlow({
   key: 'aiOnSelectSettings',
   steps: {
     aiOnSelect: {

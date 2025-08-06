@@ -156,7 +156,7 @@ export const useChatMessageActions = () => {
       for (const tool of tools) {
         toolCallIds.push(tool.id);
         const t = plugin.aiManager.tools.get(tool.name);
-        if (t) {
+        if (t && t.invoke) {
           await t.invoke(app, tool.args);
         }
       }
