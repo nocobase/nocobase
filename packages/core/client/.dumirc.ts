@@ -260,6 +260,10 @@ export default defineConfig({
               link: '/examples/flow-context/view',
             },
             {
+              title: 'ctx.filterManager',
+              link: '/examples/flow-context/filter-manager',
+            },
+            {
               title: 'ctx.app',
               link: '/examples/flow-context/app',
             },
