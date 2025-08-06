@@ -60,9 +60,45 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
 
 EditableFieldModel.registerFlow({
   key: 'editableItemSettings',
-  title: escapeT('Form component settings'),
+  title: escapeT('Component settings'),
   sort: 150,
   steps: {
+    pattern: {
+      title: escapeT('Display mode'),
+      uiSchema: (ctx) => {
+        return {
+          pattern: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              {
+                value: 'editable',
+                label: escapeT('Editable'),
+              },
+              {
+                value: 'disabled',
+                label: escapeT('Disabled'),
+              },
+
+              {
+                value: 'readPretty',
+                label: escapeT('Display only'),
+              },
+            ],
+          },
+        };
+      },
+      defaultParams: (ctx) => ({
+        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
+      }),
+      handler(ctx, params) {
+        ctx.model.setComponentProps({
+          disabled: params.pattern === 'disabled',
+          readOnly: params.pattern === 'readPretty',
+          editable: params.pattern === 'editable',
+        });
+      },
+    },
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {

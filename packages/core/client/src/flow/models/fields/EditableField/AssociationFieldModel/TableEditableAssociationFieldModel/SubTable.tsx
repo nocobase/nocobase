@@ -7,18 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { buildFieldItems, useFlowModel, AddFieldButton, useFlowEngine, DndProvider } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { DragEndEvent } from '@dnd-kit/core';
-import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { action } from '@formily/reactive';
 import { CloseOutlined } from '@ant-design/icons';
-import { ArrayField } from '@formily/core';
-import { Table, Card, Space } from 'antd';
+import { Table, Card, Space, Form } from 'antd';
 import { castArray } from 'lodash';
 import { PlusOutlined } from '@ant-design/icons';
-import { useField, observer, useForm } from '@formily/react';
+import { observer } from '@formily/react';
 import React, { useMemo, useEffect } from 'react';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
@@ -86,14 +82,11 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export const SubTable = observer((props: any) => {
-  // const field = useField<ArrayField>();
   const { allowAddNew, enableIndexColumn, form, name, editable } = props;
-
   const value: any[] = form.getFieldValue(name) || [];
   const model: any = useFlowModel();
   const { t } = useTranslation();
-  // const form = useForm();
-  const getColumns = () => {
+  const getColumns = (remove) => {
     const baseColumns = model.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
     return [
       enableIndexColumn && {
@@ -124,11 +117,7 @@ export const SubTable = observer((props: any) => {
           return (
             <div
               onClick={() => {
-                const nextValue = [...value];
-                if (index >= 0 && index < nextValue.length) {
-                  nextValue.splice(index, 1);
-                  form.setFieldsValue({ [name]: nextValue });
-                }
+                remove(index);
               }}
             >
               <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
@@ -138,26 +127,18 @@ export const SubTable = observer((props: any) => {
       },
     ].filter(Boolean) as any;
   };
+
+  const watchedValue = Form.useWatch(name, form);
+  const dataSource = useMemo(() => {
+    return castArray(watchedValue || []).map((item, index) => ({
+      key: index,
+      ...item,
+    }));
+  }, [watchedValue]);
   const handleAdd = () => {
     const next = [...value, {}];
     form.setFieldsValue({ [name]: next });
   };
-  const dataSource = useMemo(() => castArray(value || []).map((item, index) => ({ key: index, ...item })), [value]);
-
-  // useEffect(() => {
-  //   const disposer = form.subscribe(({ type }) => {
-  //     // 当子字段有默认值时，form.reset 无法清空值
-  //     if (type === 'onFieldReset') {
-  //       form.clearFormGraph(model.fieldPath);
-  //       requestAnimationFrame(() => {
-  //         model.createField();
-  //       });
-  //     }
-  //   });
-  //   return () => {
-  //     form.unsubscribe(disposer);
-  //   };
-  // }, [form]);
   const HeaderWrapperComponent = React.memo((props) => {
     const engine = useFlowEngine();
 
@@ -174,33 +155,40 @@ export const SubTable = observer((props: any) => {
     );
   });
   return (
-    <Card>
-      <Table
-        columns={getColumns()}
-        tableLayout="fixed"
-        scroll={{ x: 'max-content' }}
-        dataSource={dataSource}
-        pagination={false}
-        locale={{
-          emptyText: <span> {editable ? t('Please add or select record') : t('No data')}</span>,
-        }}
-        components={{
-          header: {
-            wrapper: HeaderWrapperComponent,
-          },
-        }}
-      />
-      <Space
-        style={{
-          gap: 15,
-        }}
-      >
-        {editable && allowAddNew !== false && (
-          <a onClick={handleAdd}>
-            <PlusOutlined /> {t('Add new')}
-          </a>
-        )}
-      </Space>
-    </Card>
+    <Form.List name={name}>
+      {(fields, { add, remove }) => {
+        console.log(fields);
+        return (
+          <Card>
+            <Table
+              columns={getColumns(remove)}
+              tableLayout="fixed"
+              scroll={{ x: 'max-content' }}
+              dataSource={dataSource}
+              pagination={false}
+              locale={{
+                emptyText: <span> {editable ? t('Please add or select record') : t('No data')}</span>,
+              }}
+              components={{
+                header: {
+                  wrapper: HeaderWrapperComponent,
+                },
+              }}
+            />
+            <Space
+              style={{
+                gap: 15,
+              }}
+            >
+              {editable && allowAddNew !== false && (
+                <a onClick={add}>
+                  <PlusOutlined /> {t('Add new')}
+                </a>
+              )}
+            </Space>
+          </Card>
+        );
+      }}
+    </Form.List>
   );
 });

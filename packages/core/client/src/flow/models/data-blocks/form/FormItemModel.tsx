@@ -175,40 +175,5 @@ FormItemModel.registerFlow({
         ctx.model.setDecoratorProps({ required: params.required || false });
       },
     },
-    pattern: {
-      title: escapeT('Display mode'),
-      uiSchema: (ctx) => {
-        return {
-          pattern: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
-              {
-                value: 'editable',
-                label: escapeT('Editable'),
-              },
-              {
-                value: 'disabled',
-                label: escapeT('Disabled'),
-              },
-
-              {
-                value: 'readPretty',
-                label: escapeT('Display only'),
-              },
-            ],
-          },
-        };
-      },
-      defaultParams: (ctx) => ({
-        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
-      }),
-      handler(ctx, params) {
-        ctx.model.setDecoratorProps({
-          disabled: params.pattern === 'disabled',
-          readOnly: params.pattern === 'readPretty',
-        });
-      },
-    },
   },
 });

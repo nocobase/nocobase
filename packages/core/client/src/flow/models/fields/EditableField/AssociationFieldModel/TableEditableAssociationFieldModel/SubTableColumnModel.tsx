@@ -19,7 +19,7 @@ import {
   FlowsFloatContextMenu,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip } from 'antd';
+import { TableColumnProps, Tooltip, Form } from 'antd';
 import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
@@ -130,7 +130,6 @@ export class SubTableColumnModel extends FieldModel {
     };
   }
   render() {
-    (this.subModels.field as EditableFieldModel).enableFormItem = false;
     return (value, record, index) => (
       <div
         className={css`
@@ -142,28 +141,27 @@ export class SubTableColumnModel extends FieldModel {
         {this.mapSubModels('field', (action: EditableFieldModel) => {
           record.__key = record.__key || uid();
           const fork: any = action.createFork({}, `${record.__key}`);
-          fork.context.defineProperty('basePath', {
-            get: () => {
-              const basePath = (this.parent as FieldModel).fieldPath;
-              return `${basePath}.${index}`;
-            },
-            cache: false,
-          });
-          if (fork.constructor.isLargeField) {
-            fork.applyAutoFlows();
-            return (
-              <LargeFieldEdit
-                model={fork}
-                params={{
-                  fieldPath: action.fieldPath,
-                  index: record.__key,
-                }}
-                defaultValue={value}
-              />
-            );
-          } else {
-            return <FlowModelRenderer model={fork} key={record.__key} />;
-          }
+          return (
+            <Form.Item
+              key={`${index}-${action.fieldPath}`}
+              name={[index, action.fieldPath]}
+              style={{ marginBottom: 0 }}
+              initialValue={value}
+            >
+              {fork.constructor.isLargeField ? (
+                <LargeFieldEdit
+                  model={fork}
+                  params={{
+                    fieldPath: action.fieldPath,
+                    index: record.__key,
+                  }}
+                  defaultValue={value}
+                />
+              ) : (
+                <FlowModelRenderer model={fork} />
+              )}
+            </Form.Item>
+          );
         })}
       </div>
     );
