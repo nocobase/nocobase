@@ -1048,49 +1048,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (wSQL) {
         // 标准化 SQL，去除多余空格
-        const normalizedSQL = sql.replace(/\s+/g, ' ').trim();
-
-        // 检查是否已有 WHERE 子句
-        const hasWhere = /\bwhere\b/i.test(normalizedSQL);
-
-        // 在标准化的 SQL 上查找关键字位置
-        const orderByMatch = normalizedSQL.match(/\border\s+by\b/i);
-        const groupByMatch = normalizedSQL.match(/\bgroup\s+by\b/i);
-        const havingMatch = normalizedSQL.match(/\bhaving\b/i);
-        const limitMatch = normalizedSQL.match(/\blimit\b/i);
-        const offsetMatch = normalizedSQL.match(/\boffset\b/i);
-
-        // 找到最早出现的关键字位置
-        const matches = [orderByMatch, groupByMatch, havingMatch, limitMatch, offsetMatch]
-          .filter((match) => match !== null)
-          .map((match) => ({ index: match.index, keyword: match[0] }));
-
-        if (matches.length > 0) {
-          // 有后续子句，需要在它们之前插入 WHERE 条件
-          const earliestMatch = matches.reduce((prev, curr) => (prev.index < curr.index ? prev : curr));
-
-          // 使用标准化的 SQL 进行分割，确保索引位置正确
-          const beforeClause = normalizedSQL.substring(0, earliestMatch.index).trim();
-          const afterClause = normalizedSQL.substring(earliestMatch.index).trim();
-
-          if (hasWhere) {
-            finalSQL = `${beforeClause} AND (${wSQL}) ${afterClause}`;
-          } else {
-            finalSQL = `${beforeClause} WHERE (${wSQL}) ${afterClause}`;
-          }
-        } else {
-          // 没有后续子句，直接在末尾添加
-          if (hasWhere) {
-            finalSQL = `${normalizedSQL} AND (${wSQL})`;
-          } else {
-            // 处理末尾分号
-            if (normalizedSQL.endsWith(';')) {
-              finalSQL = `${normalizedSQL.slice(0, -1)} WHERE (${wSQL});`;
-            } else {
-              finalSQL = `${normalizedSQL} WHERE (${wSQL})`;
-            }
-          }
+        let normalizedSQL = sql.replace(/\s+/g, ' ').trim();
+        if (normalizedSQL.endsWith(';')) {
+          normalizedSQL = normalizedSQL.slice(0, -1).trim();
         }
+        finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
       }
     }
     this.logger.debug('runSQL', { finalSQL });
