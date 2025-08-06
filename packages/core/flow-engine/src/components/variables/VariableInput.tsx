@@ -134,8 +134,8 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   }, [value, handleInputChange, handleFocus, handleBlur, restProps, inputRef]);
 
   return (
-    <Space.Compact style={{ display: 'flex', alignItems: 'center', ...restProps.style }}>
-      {showValueComponent && <ValueComponent {...inputProps} />}
+    <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', ...restProps.style }}>
+      {showValueComponent && <ValueComponent {...inputProps} style={{ flexGrow: 1 }} />}
       <FlowContextSelector
         metaTree={metaTree}
         value={value}
