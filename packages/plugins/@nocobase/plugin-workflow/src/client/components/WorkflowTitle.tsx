@@ -7,17 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Tooltip } from 'antd';
-
-import { lang } from '../locale';
-
 export function WorkflowTitle(workflow) {
-  return workflow.enabled ? (
-    workflow.title
-  ) : (
-    <Tooltip title={lang('New version enabled')}>
-      <span style={{ textDecoration: 'line-through' }}>{workflow.title}</span>
-    </Tooltip>
-  );
+  return workflow.title;
 }
