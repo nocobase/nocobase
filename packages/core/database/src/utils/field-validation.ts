@@ -26,14 +26,14 @@ export function buildJoiSchema(validation: ValidationOptions, options: { label?:
   if (isRequired) {
     schema = schema.empty(null);
   } else {
-    schema = schema.allow(null);
-    if (value === null) return;
+    schema = schema.allow(null, '');
+    if ([null, ''].includes(value)) return schema;
   }
 
   if (rules) {
     rules.forEach((rule) => {
       if (!_.isEmpty(rule.args)) {
-        if (rule.name === 'pattern') {
+        if (rule.name === 'pattern' && !_.isRegExp(rule.args.regex)) {
           const lastSlash = rule.args.regex.lastIndexOf('/');
           const isRegExpStr = rule.args.regex.startsWith('/') && lastSlash > 0;
           if (isRegExpStr) {
