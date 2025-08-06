@@ -7,23 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { PluginFeatureManager } from './feature-manager';
-import type { VectorDatabaseFeature } from './vector-database';
+import { PluginFeatureManager } from './feature-manager';
 import type { VectorDatabaseProviderFeature } from './vector-database-provider';
 
 export type AIPluginFeatures = {
-  vectorDatabase: VectorDatabaseFeature;
   vectorDatabaseProvider: VectorDatabaseProviderFeature;
 };
 
 export interface AIPluginFeatureManager extends PluginFeatureManager<AIPluginFeatures> {
-  get vectorDatabase(): VectorDatabaseFeature;
   get vectorDatabaseProvider(): VectorDatabaseProviderFeature;
 }
 
-export type { VectorDatabaseFeature, VectorDatabaseInfo } from './vector-database';
-export type {
-  VectorDatabaseProviderFeature,
-  VectorDatabaseProviderInfo,
-  VectorDatabaseProvider,
-} from './vector-database-provider';
+export type { VectorDatabaseProviderFeature, VectorDatabaseProviderComponents } from './vector-database-provider';

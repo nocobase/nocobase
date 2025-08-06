@@ -11,6 +11,7 @@ export interface VectorDatabaseProviderFeature {
   register<T, R>(providerInfo: VectorDatabaseProviderInfo<T, R>): void;
   validateConnectParams<T>(providerName: string, connectParams: T): void;
   createConnection<T, R>(providerName: string, connectParams: T): Promise<R>;
+  listProviders(): VectorDatabaseProviderInfo<unknown, unknown>[];
 }
 
 export type VectorDatabaseProviderInfo<T, R> = {

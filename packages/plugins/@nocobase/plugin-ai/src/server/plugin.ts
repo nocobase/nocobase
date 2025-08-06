@@ -11,7 +11,6 @@ import { Plugin } from '@nocobase/server';
 import { AIManager } from './manager/ai-manager';
 import { VectorDatabaseManager } from './manager/vector-database-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-import { AIPluginFeatureManager } from './features';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import aiResource from './resource/ai';

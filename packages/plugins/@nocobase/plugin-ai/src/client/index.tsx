@@ -27,6 +27,7 @@ import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -41,6 +42,7 @@ const { AIResourceContextCollector } = lazy(
 );
 
 export class PluginAIClient extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager();
 
   async afterAdd() {
@@ -133,3 +135,4 @@ export class PluginAIClient extends Plugin {
 export default PluginAIClient;
 export { ModelSelect, Chat };
 export type { LLMProviderOptions } from './manager/ai-manager';
+export * from './features';
