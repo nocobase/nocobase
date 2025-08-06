@@ -43,9 +43,14 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
 
   return (
     <Drawer
+      closable={false}
       {...drawerProps}
       open={open}
       footer={footer}
+      styles={{
+        ...drawerProps.styles,
+        footer: { display: 'flex', justifyContent: 'flex-end', ...drawerProps.styles?.footer },
+      }}
       {...header} // 使用 extra 属性作为自定义 header
       onClose={() => {
         setOpen(false);

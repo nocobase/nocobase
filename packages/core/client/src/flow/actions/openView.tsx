@@ -57,8 +57,8 @@ export const openView = defineAction({
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     let pageModelUid: string | null = null;
 
-    await ctx.viewOpener.open({
-      mode: openMode,
+    await ctx.viewer.open({
+      type: openMode,
       closable: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[params.size || 'medium'],

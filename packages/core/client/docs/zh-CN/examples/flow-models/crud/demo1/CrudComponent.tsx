@@ -1,10 +1,10 @@
-import { FlowModelProvider, observer, useFlowModelContext } from '@nocobase/flow-engine';
+import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Flex, Popconfirm, Space, Table } from 'antd';
 import React from 'react';
 import { FormComponent } from './FormComponent';
 
 export const CrudComponent = observer(() => {
-  const ctx = useFlowModelContext();
+  const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource; selectedRowKeys: Array<string> }>();
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
@@ -29,14 +29,10 @@ export const CrudComponent = observer(() => {
           <Button
             type="primary"
             onClick={() => {
-              ctx.overlay.open({
-                mode: 'drawer',
+              ctx.viewer.open({
+                type: 'drawer',
                 width: '50%',
-                content: (drawer) => (
-                  <FlowModelProvider model={ctx.model}>
-                    <FormComponent />
-                  </FlowModelProvider>
-                ),
+                content: <FormComponent />,
               });
             }}
           >
@@ -73,14 +69,10 @@ export const CrudComponent = observer(() => {
                 <Button
                   type="link"
                   onClick={() => {
-                    ctx.overlay.open({
-                      mode: 'drawer',
+                    ctx.viewer.open({
+                      type: 'drawer',
                       width: '50%',
-                      content: (drawer) => (
-                        <FlowModelProvider model={ctx.model}>
-                          <FormComponent record={record} />
-                        </FlowModelProvider>
-                      ),
+                      content: <FormComponent record={record} />,
                     });
                   }}
                 >
@@ -101,7 +93,7 @@ export const CrudComponent = observer(() => {
         ]}
         pagination={{
           showSizeChanger: true,
-          total: ctx.resource.getMeta('count'),
+          total: ctx.resource.getCount(),
           pageSize: ctx.resource.getPageSize(),
           onChange: (page, pageSize) => {
             ctx.resource.setPage(page);

@@ -232,6 +232,14 @@ export default defineConfig({
               link: '/examples/flow-context/sql',
             },
             {
+              title: 'ctx.t',
+              link: '/examples/flow-context/t',
+            },
+            {
+              title: 'ctx.i18n',
+              link: '/examples/flow-context/i18n',
+            },
+            {
               title: 'ctx.api',
               link: '/examples/flow-context/api',
             },
@@ -240,8 +248,12 @@ export default defineConfig({
               link: '/examples/flow-context/use-resource',
             },
             {
-              title: 'ctx.viewOpener',
-              link: '/examples/flow-context/view-opener',
+              title: 'ctx.viewer',
+              link: '/examples/flow-context/viewer',
+            },
+            {
+              title: 'ctx.view',
+              link: '/examples/flow-context/view',
             },
             {
               title: 'ctx.app',

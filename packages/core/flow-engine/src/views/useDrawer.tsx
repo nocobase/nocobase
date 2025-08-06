@@ -8,7 +8,8 @@
  */
 
 import * as React from 'react';
-import { FlowOverlayContext } from './context';
+import { FlowContext, FlowEngineContext } from '../flowContext';
+import { FlowContextProvider } from '../FlowContextProvider';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 
@@ -17,7 +18,7 @@ let uuid = 0;
 export function useDrawer() {
   const holderRef = React.useRef(null);
 
-  const open = (config) => {
+  const open = (config, flowContext: FlowEngineContext) => {
     uuid += 1;
     const drawerRef = React.createRef<{
       destroy: () => void;
@@ -109,10 +110,16 @@ export function useDrawer() {
       );
     };
 
+    const ctx = new FlowContext();
+    ctx.defineProperty('view', {
+      get: () => currentDrawer,
+    });
+    ctx.delegate(flowContext);
+
     const drawer = (
-      <FlowOverlayContext.Provider value={currentDrawer as any}>
+      <FlowContextProvider context={ctx}>
         <DrawerWithContext />
-      </FlowOverlayContext.Provider>
+      </FlowContextProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(drawer);

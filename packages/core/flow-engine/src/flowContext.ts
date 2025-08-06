@@ -10,7 +10,6 @@
 import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
-import { DrawerProps, ModalProps, PopoverProps } from 'antd';
 import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
@@ -30,41 +29,10 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
+import { FlowExitException, resolveExpressions } from './utils';
+import { FlowView, FlowViewer } from './views/FlowView';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
-
-interface OpenDialogProps extends ModalProps {
-  mode: 'dialog';
-  content?: React.ReactNode | ((dialog: any) => React.ReactNode);
-  [key: string]: any;
-}
-
-type OpenDrawerProps = {
-  mode: 'drawer';
-  [key: string]: any;
-};
-
-type OpenInlineProps = {
-  mode: 'inline';
-  target: any;
-  [key: string]: any;
-};
-
-type OpenPopoverProps = {
-  mode: 'popover';
-  target: any;
-  content?: React.ReactNode | ((popover: any) => React.ReactNode);
-  [key: string]: any;
-};
-
-type OpenProps = OpenDialogProps | OpenDrawerProps | OpenPopoverProps | OpenInlineProps;
-
-interface ViewOpener {
-  open: (props: OpenProps) => Promise<any>;
-}
-
-type Overlay = ViewOpener;
 
 export interface MetaTreeNode {
   name: string;
@@ -109,9 +77,13 @@ export class FlowContext {
   protected _delegates: FlowContext[] = [];
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
+  #proxy: FlowContext | null = null;
 
-  constructor() {
-    return new Proxy(this, {
+  createProxy() {
+    if (this.#proxy) {
+      return this.#proxy;
+    }
+    this.#proxy = new Proxy(this, {
       get: (target, key, receiver) => {
         if (typeof key === 'string') {
           // 1. 检查是否为直接属性或方法，如果是则跳过委托链查找
@@ -123,12 +95,12 @@ export class FlowContext {
 
           // 2. 优先查找自身 _props
           if (Object.prototype.hasOwnProperty.call(target._props, key)) {
-            return target._getOwnProperty(key);
+            return target._getOwnProperty(key, this.createProxy());
           }
 
           // 3. 优先查找自身 _methods
           if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
-            return target._getOwnMethod(key);
+            return target._getOwnMethod(key, this.createProxy());
           }
 
           // 4. 只有在自身没有该属性时才查找委托链
@@ -154,6 +126,11 @@ export class FlowContext {
         return Reflect.has(target, key);
       },
     });
+    return this.#proxy;
+  }
+
+  constructor() {
+    return this.createProxy();
   }
 
   defineProperty(key: string, options: PropertyOptions) {
@@ -167,7 +144,7 @@ export class FlowContext {
     Object.defineProperty(this, key, {
       configurable: true,
       enumerable: true,
-      get: () => this._getOwnProperty(key),
+      get: () => this._getOwnProperty(key, this.createProxy()),
     });
   }
 
@@ -322,7 +299,7 @@ export class FlowContext {
   }
 
   // 只查找自身 _props
-  protected _getOwnProperty(key: string): any {
+  protected _getOwnProperty(key: string, currentContext): any {
     const options = this._props[key];
     if (!options) return undefined;
 
@@ -334,7 +311,7 @@ export class FlowContext {
     // get 方法
     if (options.get) {
       if (options.cache === false) {
-        return options.get(this);
+        return options.get(currentContext);
       }
 
       const cacheKey = options.observable ? '_observableCache' : '_cache';
@@ -346,7 +323,7 @@ export class FlowContext {
       if (this._pending[key]) return this._pending[key];
 
       // 支持 async getter 并发排队
-      const result = options.get(this);
+      const result = options.get(this.createProxy());
 
       // 判断是否为 Promise/thenable
       const isPromise =
@@ -377,10 +354,10 @@ export class FlowContext {
   }
 
   // 只查找自身 _methods
-  protected _getOwnMethod(key: string): any {
+  protected _getOwnMethod(key: string, flowContext?: FlowContext): any {
     const fn = this._methods[key];
     if (typeof fn === 'function') {
-      return fn.bind(this);
+      return fn.bind(flowContext);
     }
     return fn;
   }
@@ -403,13 +380,13 @@ export class FlowContext {
       // 1. 查找委托的 _props
       if (Object.prototype.hasOwnProperty.call(delegate._props, key)) {
         return {
-          result: delegate._getOwnProperty(key),
+          result: delegate._getOwnProperty(key, this.createProxy()),
         };
       }
       // 2. 查找委托的 _methods
       if (Object.prototype.hasOwnProperty.call(delegate._methods, key)) {
         return {
-          result: delegate._getOwnMethod(key),
+          result: delegate._getOwnMethod(key, this.createProxy()),
         };
       }
       // 3. 递归查找更深层的委托链
@@ -437,8 +414,8 @@ class BaseFlowEngineContext extends FlowContext {
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
   declare renderJson: (template: any) => Promise<any>;
   declare api: APIClient;
-  declare viewOpener: ViewOpener;
-  declare overlay: Overlay;
+  declare viewer: FlowViewer;
+  declare view: FlowView;
   declare modal: HookAPI;
   declare message: MessageInstance;
   declare notification: NotificationInstance;
@@ -563,7 +540,7 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: this.createProxy(),
           ...variables,
         },
       });
@@ -670,7 +647,7 @@ export class FlowRuntimeContext<
 
   protected _getOwnProperty(key: string): any {
     if (this.mode === 'runtime') {
-      return super._getOwnProperty(key);
+      return super._getOwnProperty(key, this.createProxy());
     }
 
     const options = this._props[key];
