@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "1.9.0-alpha.4",
+  "version": "1.9.0-alpha.6",
   "displayName": "Data visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.",
@@ -22,7 +22,14 @@
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-error-boundary": "^4.0.10",
-    "react-i18next": "^11.15.1"
+    "react-i18next": "^11.15.1",
+    "@codemirror/lang-sql": "^6.9.1",
+    "@codemirror/lang-javascript": "^6.0.1",
+    "@codemirror/lint": "^6.8.3",
+    "@codemirror/state": "^6.0.1",
+    "@codemirror/theme-one-dark": "^6.0.1",
+    "@codemirror/view": "^6.37.2",
+    "echarts": "^6.0.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "1.x",
@@ -32,7 +39,8 @@
     "@nocobase/plugin-data-source-main": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/utils": "1.x",
+    "@nocobase/plugin-ai": "1.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

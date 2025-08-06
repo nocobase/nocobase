@@ -46,6 +46,17 @@ describe('FlowContext properties and methods', () => {
     expect(ctx.b).toBe('ab');
   });
 
+  it('should pass correct context instance to getter function in delegate chain', () => {
+    class FlowContext1 extends FlowContext {}
+    class FlowContext2 extends FlowContext {}
+    const ctx1 = new FlowContext1();
+    ctx1.defineProperty('a', { cache: false, get: (ctx) => ctx });
+    const ctx2 = new FlowContext2();
+    ctx2.addDelegate(ctx1);
+    expect(ctx1.a).toBe(ctx1);
+    expect(ctx2.a).toBe(ctx2);
+  });
+
   it('should support async context reference in get', async () => {
     const ctx = new FlowContext();
     ctx.defineProperty('c', { get: async () => 'c' });
@@ -506,14 +517,16 @@ describe('FlowContext properties and methods', () => {
       // this 指向 delegate
       return a + b + (this.extra || 0);
     });
-    delegate.extra = 10;
+    delegate.extra = 1;
+    expect(delegate.add(1, 2)).toBe(4);
 
     const ctx = new FlowContext();
     ctx.addDelegate(delegate);
+    ctx.extra = 10;
 
-    expect(ctx.add(1, 2)).toBe(13); // 1 + 2 + 10
+    expect(ctx.add(1, 2)).toBe(13);
     // 确认 this 绑定到 delegate
-    delegate.extra = 100;
+    ctx.extra = 100;
     expect(ctx.add(1, 2)).toBe(103);
   });
 

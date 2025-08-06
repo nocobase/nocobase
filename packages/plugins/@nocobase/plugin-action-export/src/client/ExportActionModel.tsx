@@ -39,6 +39,7 @@ ExportActionModel.registerFlow({
   steps: {
     confirm: {
       use: 'confirm',
+      hideInSettings: true,
       defaultParams: {
         enable: true,
         title: escapeT('Export'),
@@ -50,7 +51,7 @@ ExportActionModel.registerFlow({
         const { exportSettings } = ctx.model.getProps();
         const currentBlock = ctx.model.context.blockModel;
         const { resource } = currentBlock;
-        const { name, title, fields } = currentBlock.collection;
+        const { title, fields } = currentBlock.collection;
         exportSettings.forEach((es) => {
           const { uiSchema, interface: fieldInterface } = fields.get(es.dataIndex[0]) ?? {};
           // @ts-ignore
@@ -85,7 +86,7 @@ ExportActionModel.registerFlow({
 
 ExportActionModel.registerFlow({
   key: 'exportActionSetting',
-  title: escapeT('Export action settings'),
+  title: escapeT('Export settings', { ns: NAMESPACE }),
   steps: {
     exportableFields: {
       title: escapeT('Exportable fields'),

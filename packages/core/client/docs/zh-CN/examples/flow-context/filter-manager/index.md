@@ -81,7 +81,7 @@ class CustomResource extends APIResource {
 filterManager.addFilterConfig({
   filterId, // 提供筛选条件的 FilterModel 的 UID
   targetId, // 被筛选的 TargetModel 的 UID
-  filterKeys, // 筛选键
+  filterPaths, // 筛选字段路径
   operator,
 });
 ```
@@ -122,3 +122,9 @@ filterManager.unbindFromTarget(targetId);
 filterManager.refreshTargetsByFilter(filterId);
 filterManager.refreshTargetsByFilter([filterId1, filterId2]);
 ```
+
+## 示例
+
+### 自定义 FilterModel 和 TargetModel
+
+<code src="./basic.tsx"></code>

@@ -102,6 +102,10 @@ export default defineConfig({
               link: '/examples/flow-models/liquidjs',
             },
             {
+              title: 'CRUD',
+              link: '/examples/flow-models/crud',
+            },
+            {
               title: '生命周期',
               link: '/examples/flow-models/lifecycle',
             },
@@ -242,6 +246,14 @@ export default defineConfig({
               link: '/examples/flow-context/sql',
             },
             {
+              title: 'ctx.t',
+              link: '/examples/flow-context/t',
+            },
+            {
+              title: 'ctx.i18n',
+              link: '/examples/flow-context/i18n',
+            },
+            {
               title: 'ctx.api',
               link: '/examples/flow-context/api',
             },
@@ -250,8 +262,16 @@ export default defineConfig({
               link: '/examples/flow-context/use-resource',
             },
             {
-              title: 'ctx.viewOpener',
-              link: '/examples/flow-context/view-opener',
+              title: 'ctx.viewer',
+              link: '/examples/flow-context/viewer',
+            },
+            {
+              title: 'ctx.view',
+              link: '/examples/flow-context/view',
+            },
+            {
+              title: 'ctx.filterManager',
+              link: '/examples/flow-context/filter-manager',
             },
             {
               title: 'ctx.app',
@@ -346,6 +366,28 @@ export default defineConfig({
           ],
         },
         {
+          title: 'React Hooks',
+          type: 'group',
+          children: [
+            {
+              title: 'useFlowEngine',
+              link: '/examples/hooks/use-flow-engine',
+            },
+            {
+              title: 'useFlowContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+            {
+              title: 'useFlowModelContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+            {
+              title: 'useFlowSettingsContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+          ],
+        },
+        {
           title: '单元测试',
           type: 'group',
           children: [
@@ -386,6 +428,10 @@ export default defineConfig({
             {
               title: 'Observable',
               link: '/learn/observable',
+            },
+            {
+              title: 'Define Collection',
+              link: '/learn/define-collection',
             },
           ],
         },

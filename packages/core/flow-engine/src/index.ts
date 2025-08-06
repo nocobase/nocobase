@@ -30,5 +30,6 @@ export * from './data-source';
 export * from './decorators';
 export * from './ElementProxy';
 export * from './flowContext';
+export * from './FlowContextProvider';
 export * from './JSRunner';
 //
