@@ -179,6 +179,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return this.context.association;
   }
 
+  /**
+   * 获取可用于筛选的字段列表
+   */
+  async getFilterFields() {
+    return this.collection.getFields();
+  }
+
   getResourceSettingsInitParams(): ResourceSettingsInitParams {
     return this.getStepParams('resourceSettings', 'init');
   }
