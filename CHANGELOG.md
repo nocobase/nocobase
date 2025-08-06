@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.8.14](https://github.com/nocobase/nocobase/compare/v1.8.13...v1.8.14) - 2025-08-05
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where variable raw strings are submitted with the form ([#7337](https://github.com/nocobase/nocobase/pull/7337)) by @zhangzhonghe
+
+- **[Workflow: Approval]** Add task title for added and delegated items by @mytharcher
+
+## [v1.8.13](https://github.com/nocobase/nocobase/compare/v1.8.12...v1.8.13) - 2025-08-04
+
+### 🎉 New Features
+
+- **[Auth: SAML 2.0]** Add signature-related configuration options by @2013xile
+
+### 🚀 Improvements
+
+- **[Workflow: JavaScript]** Change cache to app cache to avoid bugs in cluster mode by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix tooltip shows [object Object] on hover in action panel ([#7322](https://github.com/nocobase/nocobase/pull/7322)) by @katherinehhh
+
+  - When using variables to set field default values in filter forms, if the variable value is empty, the input box will display the original variable string ([#7335](https://github.com/nocobase/nocobase/pull/7335)) by @zhangzhonghe
+
+- **[Collection: Tree]** Fix the path synchronization logic of tree collections ([#7330](https://github.com/nocobase/nocobase/pull/7330)) by @ChimingLiu
+
+## [v1.8.12](https://github.com/nocobase/nocobase/compare/v1.8.11...v1.8.12) - 2025-08-01
+
+### 🎉 New Features
+
+- **[client]** Added "Auto focus" option for Input, TextArea, URL, and InputNumber components that automatically focuses the input field during initial page rendering when enabled ([#7320](https://github.com/nocobase/nocobase/pull/7320)) by @zhangzhonghe
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix file preview item on null url ([#7315](https://github.com/nocobase/nocobase/pull/7315)) by @mytharcher
+
+  - Add full URL to local file when previewing ([#7314](https://github.com/nocobase/nocobase/pull/7314)) by @mytharcher
+
+- **[utils]** incorrect timezone handling for parseDate ([#7318](https://github.com/nocobase/nocobase/pull/7318)) by @katherinehhh
+
+- **[undefined]** Add new plugin to preset ([#7319](https://github.com/nocobase/nocobase/pull/7319)) by @mytharcher
+
+- **[File manager]** Fix storage field permission ([#7316](https://github.com/nocobase/nocobase/pull/7316)) by @mytharcher
+
+- **[Workflow]** Fix `undefined` result when processor exit ([#7317](https://github.com/nocobase/nocobase/pull/7317)) by @mytharcher
+
+- **[Workflow: Dynamic calculation node]** Fix legacy API caused error ([#7321](https://github.com/nocobase/nocobase/pull/7321)) by @mytharcher
+
+- **[Workflow: Subflow]** Fix flow suspended by @mytharcher
+
 ## [v1.8.11](https://github.com/nocobase/nocobase/compare/v1.8.10...v1.8.11) - 2025-07-30
 
 ### 🎉 New Features

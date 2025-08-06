@@ -125,7 +125,8 @@ const useParseDefaultValue = () => {
         if (value == null || value === '') {
           // 如果 field.mounted 为 false，说明 field 已经被卸载了，不需要再设置默认值
           if (field.mounted) {
-            field.setInitialValue(null);
+            field.setInitialValue(undefined);
+            field.setValue(undefined);
           }
         } else if (isSpecialCase()) {
           // 只需要设置一次就可以了
