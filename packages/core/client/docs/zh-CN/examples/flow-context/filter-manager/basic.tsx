@@ -76,7 +76,7 @@ TargetModel.registerFlow({
 });
 
 class FilterModel extends FlowModel {
-  filterValue = observable.ref<string>('');
+  filterValue = observable.ref<string>('default');
 
   getFilterValue() {
     return this.filterValue.value;
@@ -89,18 +89,13 @@ class FilterModel extends FlowModel {
           onChange={(e) => {
             this.filterValue.value = e.target.value;
           }}
+          defaultValue={this.getFilterValue()}
           placeholder="Filter by name"
           style={{ width: 200, marginBottom: 16 }}
         />
         <Button
           type="primary"
           onClick={async () => {
-            await this.context.filterManager.addFilterConfig({
-              filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
-              targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
-              filterPaths: ['name'], // 筛选字段路径
-              operator: '$eq',
-            });
             await this.context.filterManager.refreshTargetsByFilter('my-filter1');
           }}
         >
@@ -169,7 +164,7 @@ class PluginHelloModel extends Plugin {
             0: {
               filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
               targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
-              filterPaths: ['id'], // 筛选字段路径
+              filterPaths: ['name'], // 筛选字段路径
               operator: '$eq',
             },
           },
