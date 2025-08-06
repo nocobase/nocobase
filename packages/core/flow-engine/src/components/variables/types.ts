@@ -58,6 +58,7 @@ export interface VariableInputProps {
   value?: any;
   onChange?: (value: any) => void;
   converters?: Converters | ((contextSelectorItem: ContextSelectorItem | null) => Converters);
+  showValueComponent?: boolean;
   [key: string]: any;
 }
 

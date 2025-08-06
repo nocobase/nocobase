@@ -11,7 +11,6 @@ import React from 'react';
 import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
-import { VariableTag } from './VariableTag';
 
 export const parseValueToPath = (value: string): string[] | null => {
   if (typeof value !== 'string') return null;
@@ -139,12 +138,6 @@ export const isVariableValue = (value: any): boolean => {
 
 export const createDefaultConverters = (): Converters => {
   return {
-    renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-      // 默认情况下，静态值始终使用 Input 组件
-      // 变量值始终由 VariableInput 组件中的 VariableTag 处理
-      return (props: any) => React.createElement(Input, props);
-    },
-
     resolvePathFromValue: (value: any) => {
       return parseValueToPath(value);
     },

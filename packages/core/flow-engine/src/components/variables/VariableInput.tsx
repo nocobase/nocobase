@@ -20,6 +20,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   onChange,
   converters: propConverters,
   metaTree,
+  showValueComponent = true,
   ...restProps
 }) => {
   const { inputRef, handleFocus, handleBlur } = useVariableInput(value);
@@ -47,7 +48,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     };
   }, [currentConverters, metaTree]);
 
-  const InputComponent = useMemo(() => {
+  const ValueComponent = useMemo(() => {
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
     return CustomComponent || (isVariableValue(value) ? VariableTag : Input);
   }, [currentConverters, currentContextSelectorItem]);
@@ -118,7 +119,6 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     onChange?.(null);
   }, [onChange, restProps.disabled]);
 
-  // 输入组件props
   const inputProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
     return {
@@ -135,13 +135,14 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   return (
     <Space.Compact style={{ display: 'flex', alignItems: 'center', ...restProps.style }}>
-      <InputComponent {...inputProps} />
+      {showValueComponent && <ValueComponent {...inputProps} />}
       <FlowContextSelector
         metaTree={metaTree}
         value={value}
         onChange={handleVariableSelect}
         parseValueToPath={baseConverters.resolvePathFromValue}
         formatPathToValue={formatPathToValueFn}
+        {...(!showValueComponent && { children: null })}
       />
     </Space.Compact>
   );
