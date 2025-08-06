@@ -9,6 +9,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { FlowModelContext } from '../flowContext';
+import { FlowContextProvider } from '../FlowContextProvider';
 import { FlowModel } from '../models';
 
 // 创建 FlowModel 上下文
@@ -28,7 +29,11 @@ export const FlowModelProvider: React.FC<FlowModelProviderProps> = ({ model, chi
   if (!model) {
     throw new Error('FlowModelProvider must be supplied with a model.');
   }
-  return <FlowModelReactContext.Provider value={model}>{children}</FlowModelReactContext.Provider>;
+  return (
+    <FlowModelReactContext.Provider value={model}>
+      <FlowContextProvider context={model.context}>{children}</FlowContextProvider>
+    </FlowModelReactContext.Provider>
+  );
 };
 
 /**

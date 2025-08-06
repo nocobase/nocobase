@@ -1,10 +1,10 @@
-import { FlowModelProvider, useFlowModelContext } from '@nocobase/flow-engine';
+import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Flex, Popconfirm, Space, Table } from 'antd';
 import React from 'react';
 import { FormComponent } from './FormComponent';
 
-export function CrudComponent() {
-  const ctx = useFlowModelContext();
+export const CrudComponent = observer(() => {
+  const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource; selectedRowKeys: Array<string> }>();
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
@@ -29,14 +29,10 @@ export function CrudComponent() {
           <Button
             type="primary"
             onClick={() => {
-              ctx.overlay.open({
-                mode: 'drawer',
+              ctx.viewer.open({
+                type: 'drawer',
                 width: '50%',
-                content: (drawer) => (
-                  <FlowModelProvider model={ctx.model}>
-                    <FormComponent context={ctx} drawer={drawer} />
-                  </FlowModelProvider>
-                ),
+                content: <FormComponent />,
               });
             }}
           >
@@ -73,14 +69,10 @@ export function CrudComponent() {
                 <Button
                   type="link"
                   onClick={() => {
-                    ctx.overlay.open({
-                      mode: 'drawer',
+                    ctx.viewer.open({
+                      type: 'drawer',
                       width: '50%',
-                      content: (drawer) => (
-                        <FlowModelProvider model={ctx.model}>
-                          <FormComponent context={ctx} drawer={drawer} record={record} />
-                        </FlowModelProvider>
-                      ),
+                      content: <FormComponent record={record} />,
                     });
                   }}
                 >
@@ -101,7 +93,7 @@ export function CrudComponent() {
         ]}
         pagination={{
           showSizeChanger: true,
-          total: ctx.resource.getMeta('count'),
+          total: ctx.resource.getCount(),
           pageSize: ctx.resource.getPageSize(),
           onChange: (page, pageSize) => {
             ctx.resource.setPage(page);
@@ -112,4 +104,4 @@ export function CrudComponent() {
       />
     </Space>
   );
-}
+});

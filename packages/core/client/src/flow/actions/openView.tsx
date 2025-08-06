@@ -58,8 +58,8 @@ export const openView = defineAction({
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
 
-    await ctx.viewOpener.open({
-      mode: openMode,
+    await ctx.viewer.open({
+      type: openMode,
       closable: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[size],

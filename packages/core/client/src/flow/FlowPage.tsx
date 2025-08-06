@@ -55,7 +55,7 @@ export const FlowRoute = () => {
       get: () => currentRoute,
     });
 
-    model.dispatchEvent('click', { mode: 'page', target: layoutContentRef.current, activeTab: params.tabUid });
+    model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
 };

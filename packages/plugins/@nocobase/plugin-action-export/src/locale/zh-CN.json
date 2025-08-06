@@ -3,5 +3,6 @@
   "Start export": "开始导出记录",
   "another export action is running, please try again later.": "另一导出记录任务正在运行，请稍后重试。",
   "True": "是",
-  "False": "否"
+  "False": "否",
+  "Export settings":"导出设置"
 }

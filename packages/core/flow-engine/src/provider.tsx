@@ -10,8 +10,10 @@
 import { App, ConfigProvider, theme } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { FlowEngineContext } from './flowContext';
+import { FlowContextProvider } from './FlowContextProvider';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
+import { FlowViewer } from './views/FlowView';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -25,13 +27,17 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
   }
-  return <FlowEngineReactContext.Provider value={engine}>{children}</FlowEngineReactContext.Provider>;
+  return (
+    <FlowEngineReactContext.Provider value={engine}>
+      <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
+    </FlowEngineReactContext.Provider>
+  );
 };
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
-  const [page, pageContextHolder] = usePage();
+  const [embed, pageContextHolder] = usePage();
   const [popover, popoverContextHolder] = usePopover();
   const [dialog, dialogContextHolder] = useDialog();
   const engine = useFlowEngine();
@@ -45,32 +51,10 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       modal,
       message,
       notification,
-      drawer,
-      popover,
-      dialog,
-      page,
     };
-    engine.context.defineProperty('overlay', {
-      value: {
-        open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
-          if (context[mode]) {
-            return context[mode]['open'](others);
-          } else {
-            throw new Error(`Unknown viewOpener mode: ${mode}`);
-          }
-        },
-      },
-    });
-    engine.context.defineProperty('viewOpener', {
-      value: {
-        open: ({ mode, ...others }: { mode: 'drawer' | 'popover' | 'dialog' | 'page'; [key: string]: any }) => {
-          if (context[mode]) {
-            return context[mode]['open'](others);
-          } else {
-            throw new Error(`Unknown viewOpener mode: ${mode}`);
-          }
-        },
-      },
+    engine.context.defineProperty('viewer', {
+      cache: false,
+      get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
     });
     for (const item of Object.entries(context)) {
       const [key, value] = item;
@@ -79,7 +63,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
       }
     }
     engine.reactView.refresh();
-  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, page]);
+  }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
 
   return (
     <>
