@@ -231,29 +231,47 @@ export class Collection<
     }
   }
 
-  validate(values: Record<string, any>[], context: { t: Function }) {
-    if (!values) {
+  validate(options: {
+    values: Record<string, any> | Record<string, any>[];
+    operation: 'create' | 'update';
+    context: { t: Function };
+  }) {
+    const { values: updateValues, context, operation } = options;
+    if (!updateValues) {
       return;
     }
-    values = Array.isArray(values) ? values : [values];
+    const values = Array.isArray(updateValues) ? updateValues : [updateValues];
     const { t } = context || { t: (key: string, options: any) => key };
-    for (const value of values) {
-      for (const [, field] of this.fields) {
-        const val = value[field.name];
-        if (!field.options.validation) {
-          continue;
-        }
+    const helper = (field: Field, value: Object) => {
+      const val = value[field.name];
+      if (!field.options.validation) {
+        return;
+      }
 
-        const fieldLabel = field.options.uiSchema?.title || field.name;
-        const joiSchema = buildJoiSchema(field.options.validation, {
-          label: `${t('Field', { ns: 'client' })}: ${fieldLabel}`,
-          value: val,
-        });
-        const { error } = joiSchema.validate(val, {
-          messages: getJoiErrorMessage(t),
-        });
-        if (error) {
-          throw error;
+      const fieldLabel = field.options.uiSchema?.title || field.name;
+      const joiSchema = buildJoiSchema(field.options.validation, {
+        label: `${t('Field', { ns: 'client' })}: ${fieldLabel}`,
+        value: val,
+      });
+      const { error } = joiSchema.validate(val, {
+        messages: getJoiErrorMessage(t),
+      });
+      if (error) {
+        throw error;
+      }
+    };
+    for (const value of values) {
+      if (operation === 'create') {
+        for (const [, field] of this.fields) {
+          helper(field, value);
+        }
+      }
+      if (operation === 'update') {
+        for (const key of Object.keys(value)) {
+          const field = this.getField(key);
+          if (field) {
+            helper(field, value);
+          }
         }
       }
     }

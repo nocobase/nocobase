@@ -83,7 +83,11 @@ export async function updateModelByValues(instance: Model, values: UpdateValue, 
     guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
     values = guard.sanitize(values);
   }
-  (instance.constructor as typeof Model).collection.validate(values as any, (options as any)?.context as any);
+  (instance.constructor as typeof Model).collection.validate({
+    values,
+    operation: 'update',
+    context: (options as any)?.context,
+  });
   await instance.update(values, options);
   await updateAssociations(instance, values, options);
 }
@@ -369,7 +373,11 @@ export async function updateSingleAssociation(
     }
   }
 
-  (association.target as typeof Model).collection.validate(value, options.context);
+  (association.target as typeof Model).collection.validate({
+    values: value,
+    context: options.context,
+    operation: 'create',
+  });
   const instance = await model[createAccessor](value, { context, transaction });
 
   await updateAssociations(instance, value, {
@@ -507,7 +515,11 @@ export async function updateMultipleAssociation(
 
     if (isUndefinedOrNull(item[targetKey])) {
       // create new record
-      (association.target as typeof Model).collection.validate(item, options.context);
+      (association.target as typeof Model).collection.validate({
+        values: item,
+        context: options.context,
+        operation: 'create',
+      });
       const instance = await model[createAccessor](item, accessorOptions);
 
       await updateAssociations(instance, item, {
@@ -528,7 +540,11 @@ export async function updateMultipleAssociation(
       });
       if (!instance) {
         // create new record
-        (association.target as typeof Model).collection.validate(item, options.context);
+        (association.target as typeof Model).collection.validate({
+          values: item,
+          context: options.context,
+          operation: 'create',
+        });
         instance = await model[createAccessor](item, accessorOptions);
         await updateAssociations(instance, item, {
           ...options,
@@ -550,7 +566,11 @@ export async function updateMultipleAssociation(
         if (association.associationType === 'HasMany') {
           delete item[association.foreignKey];
         }
-        (association.target as typeof Model).collection.validate(item, options.context);
+        (association.target as typeof Model).collection.validate({
+          values: item,
+          context: options.context,
+          operation: 'update',
+        });
         await instance.update(item, { ...options, transaction });
       }
       await updateAssociations(instance, item, {
