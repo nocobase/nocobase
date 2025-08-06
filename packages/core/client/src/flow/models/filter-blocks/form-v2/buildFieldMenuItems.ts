@@ -39,7 +39,6 @@ export function buildFieldMenuItems(
   collections: Collection[],
   gridModel: FilterFormFieldGridModel,
   subModelBaseClass: string | ModelConstructor,
-  subModelKey: string,
   buildCreateModelOptions: (options: any) => any,
   options?: {
     includeFieldTypes?: string[]; // 包含的字段类型

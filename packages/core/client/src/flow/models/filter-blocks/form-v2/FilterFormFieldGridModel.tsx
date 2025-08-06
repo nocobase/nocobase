@@ -85,7 +85,6 @@ export class FilterFormFieldGridModel extends GridModel {
       collections,
       this,
       'FilterFormEditableFieldModel',
-      'items',
       ({ defaultOptions, fieldPath, collection }) => ({
         use: defaultOptions.use,
         stepParams: {
