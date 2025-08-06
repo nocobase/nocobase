@@ -11,25 +11,33 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VariableInput } from '../VariableInput';
-import { FlowContext, MetaTreeNode } from '../../../flowContext';
+import { FlowContext } from '../../../flowContext';
 import { detectComponentType } from '../utils';
 import type { ContextSelectorItem } from '../types';
 
-const mockMetaTree: MetaTreeNode[] = [
-  {
-    name: 'user',
-    title: 'User',
-    type: 'object',
-    children: [
-      { name: 'name', title: 'Name', type: 'string' },
-      { name: 'email', title: 'Email', type: 'string' },
-    ],
-  },
-];
+// Helper function to create test FlowContext with consistent data
+function createTestFlowContext() {
+  const flowContext = new FlowContext();
+
+  flowContext.defineProperty('user', {
+    value: { name: 'John', email: 'john@example.com' },
+    meta: {
+      title: 'User',
+      type: 'object',
+      properties: {
+        name: { title: 'Name', type: 'string' },
+        email: { title: 'Email', type: 'string' },
+      },
+    },
+  });
+
+  return flowContext;
+}
 
 describe('VariableInput', () => {
   it('should render Input for static values', () => {
-    render(<VariableInput value="static text" metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const input = screen.getByDisplayValue('static text');
     expect(input).toBeInTheDocument();
@@ -37,16 +45,18 @@ describe('VariableInput', () => {
   });
 
   it('should render VariableTag for dynamic variables', () => {
-    render(<VariableInput value="{{ ctx.user.name }}" metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    // 应该显示格式化后的路径 "User/Name"
-    const variableTag = screen.getByText('User/Name');
+    // 应该显示格式化后的路径 "user/name"
+    const variableTag = screen.getByText('user/name');
     expect(variableTag).toBeInTheDocument();
     expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
   });
 
   it('should render FlowContextSelector button', () => {
-    render(<VariableInput value="test" metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const selectorButton = screen.getByRole('button');
     expect(selectorButton).toBeInTheDocument();
@@ -55,7 +65,8 @@ describe('VariableInput', () => {
 
   it('should handle onChange from Input', () => {
     const onChange = vi.fn();
-    render(<VariableInput value="initial" onChange={onChange} metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="initial" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const input = screen.getByDisplayValue('initial');
     fireEvent.change(input, { target: { value: 'new value' } });
@@ -65,7 +76,8 @@ describe('VariableInput', () => {
 
   it('should handle variable selection from FlowContextSelector', async () => {
     const onChange = vi.fn();
-    render(<VariableInput value="" onChange={onChange} metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const selectorButton = screen.getByRole('button');
     fireEvent.click(selectorButton);
@@ -85,7 +97,14 @@ describe('VariableInput', () => {
 
   it('should handle clear action from VariableTag', () => {
     const onChange = vi.fn();
-    render(<VariableInput value="{{ ctx.user.name }}" onChange={onChange} metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(
+      <VariableInput
+        value="{{ ctx.user.name }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
 
     const clearButton = screen.getByLabelText('close');
     fireEvent.click(clearButton);
@@ -95,6 +114,7 @@ describe('VariableInput', () => {
   });
 
   it('should use custom converters', () => {
+    const flowContext = createTestFlowContext();
     const customConverters = {
       renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
         // 对于静态值（contextSelectorItem为null），返回自定义组件
@@ -112,13 +132,16 @@ describe('VariableInput', () => {
       },
     };
 
-    render(<VariableInput value="custom" converters={customConverters} metaTree={mockMetaTree} />);
+    render(
+      <VariableInput value="custom" converters={customConverters} metaTree={() => flowContext.getPropertyMetaTree()} />,
+    );
 
     const customInput = screen.getByTestId('custom-input');
     expect(customInput).toBeInTheDocument();
   });
 
   it('should handle function-based converters', () => {
+    const flowContext = createTestFlowContext();
     const convertersFn = (contextSelectorItem: ContextSelectorItem | null) => ({
       renderInputComponent: () => {
         return (props: any) => <textarea {...props} data-testid="textarea-input" />;
@@ -127,25 +150,29 @@ describe('VariableInput', () => {
       resolveValueFromPath: () => '',
     });
 
-    render(<VariableInput value="test" converters={convertersFn} metaTree={mockMetaTree} />);
+    render(<VariableInput value="test" converters={convertersFn} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const textareaInput = screen.getByTestId('textarea-input');
     expect(textareaInput).toBeInTheDocument();
   });
 
   it('should handle external prop updates', () => {
-    const { rerender } = render(<VariableInput value="initial" metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    const { rerender } = render(<VariableInput value="initial" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     expect(screen.getByDisplayValue('initial')).toBeInTheDocument();
 
-    rerender(<VariableInput value="{{ ctx.user.name }}" metaTree={mockMetaTree} />);
+    rerender(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    expect(screen.getByText('User/Name')).toBeInTheDocument();
+    expect(screen.getByText('user/name')).toBeInTheDocument();
   });
 
   it('should handle state synchronization correctly', () => {
     const onChange = vi.fn();
-    const { rerender } = render(<VariableInput value="external" onChange={onChange} metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    const { rerender } = render(
+      <VariableInput value="external" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />,
+    );
 
     // User changes input
     const input = screen.getByDisplayValue('external');
@@ -154,7 +181,9 @@ describe('VariableInput', () => {
     expect(onChange).toHaveBeenCalledWith('user input');
 
     // External update should not conflict
-    rerender(<VariableInput value="new external" onChange={onChange} metaTree={mockMetaTree} />);
+    rerender(
+      <VariableInput value="new external" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />,
+    );
 
     expect(screen.getByDisplayValue('new external')).toBeInTheDocument();
   });
@@ -180,13 +209,14 @@ describe('VariableInput', () => {
   });
 
   it('should pass through other props to the input component', () => {
+    const flowContext = createTestFlowContext();
     render(
       <VariableInput
         value="test"
         placeholder="Enter value"
         disabled
         className="custom-class"
-        metaTree={mockMetaTree}
+        metaTree={() => flowContext.getPropertyMetaTree()}
       />,
     );
 
@@ -207,7 +237,8 @@ describe('VariableInput', () => {
   });
 
   it('should handle undefined value', () => {
-    render(<VariableInput metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     const input = screen.getByRole('textbox');
     expect(input).toBeInTheDocument();
@@ -215,6 +246,7 @@ describe('VariableInput', () => {
   });
 
   it('should always use VariableTag for variable values regardless of converters', () => {
+    const flowContext = createTestFlowContext();
     const customConverters = {
       renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
         // This converter should NOT be used for variable values
@@ -222,10 +254,16 @@ describe('VariableInput', () => {
       },
     };
 
-    render(<VariableInput value="{{ ctx.user.name }}" converters={customConverters} metaTree={mockMetaTree} />);
+    render(
+      <VariableInput
+        value="{{ ctx.user.name }}"
+        converters={customConverters}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
 
     // Should render VariableTag, not the custom input
-    const variableTag = screen.getByText('User/Name');
+    const variableTag = screen.getByText('user/name');
     expect(variableTag).toBeInTheDocument();
     expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
 
@@ -238,6 +276,7 @@ describe('VariableInput', () => {
   });
 
   it('should use custom converters for static values only', () => {
+    const flowContext = createTestFlowContext();
     const customConverters = {
       renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
         // 对于静态值（contextSelectorItem为null），返回number input
@@ -248,7 +287,9 @@ describe('VariableInput', () => {
       },
     };
 
-    render(<VariableInput value={42} converters={customConverters} metaTree={mockMetaTree} />);
+    render(
+      <VariableInput value={42} converters={customConverters} metaTree={() => flowContext.getPropertyMetaTree()} />,
+    );
 
     // Should use custom converter for static number value
     const numberInput = screen.getByTestId('number-input');
@@ -257,9 +298,10 @@ describe('VariableInput', () => {
   });
 
   it('should handle input changes without losing focus - critical test', async () => {
+    const flowContext = createTestFlowContext();
     const TestWrapper = () => {
       const [value, setValue] = React.useState('initial');
-      return <VariableInput value={value} onChange={setValue} metaTree={mockMetaTree} />;
+      return <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />;
     };
 
     render(<TestWrapper />);
@@ -315,10 +357,11 @@ describe('VariableInput', () => {
   it('should preserve focus during continuous typing - regression test for character loss', async () => {
     // This test specifically addresses the character loss issue found during Playwright testing
     // where typing characters rapidly would result in some characters being lost
+    const flowContext = createTestFlowContext();
 
     const TestWrapper = () => {
       const [value, setValue] = React.useState('');
-      return <VariableInput value={value} onChange={setValue} metaTree={mockMetaTree} />;
+      return <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />;
     };
 
     render(<TestWrapper />);
@@ -361,6 +404,7 @@ describe('VariableInput', () => {
 
   it('should maintain stable DOM element during value changes - no re-mounting', () => {
     // This test ensures the input component works correctly during external value changes
+    const flowContext = createTestFlowContext();
 
     const TestWrapper = () => {
       const [value, setValue] = React.useState('test1');
@@ -368,7 +412,7 @@ describe('VariableInput', () => {
 
       return (
         <div>
-          <VariableInput value={value} onChange={setValue} metaTree={mockMetaTree} />
+          <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />
           <button
             onClick={() => {
               setValue('test2');
@@ -399,12 +443,13 @@ describe('VariableInput', () => {
 
   it('should not recreate input component on every render', () => {
     let renderCount = 0;
+    const flowContext = createTestFlowContext();
 
     const TestWrapper = () => {
       const [value, setValue] = React.useState('test');
       renderCount++;
 
-      return <VariableInput value={value} onChange={setValue} metaTree={mockMetaTree} />;
+      return <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />;
     };
 
     const { rerender } = render(<TestWrapper />);
@@ -434,16 +479,26 @@ describe('VariableInput', () => {
       },
     };
 
-    const ratingMetaTree = [
-      {
-        name: 'user',
+    const ratingFlowContext = new FlowContext();
+    ratingFlowContext.defineProperty('user', {
+      value: { userRating: 5 },
+      meta: {
         title: 'User',
         type: 'object',
-        children: [{ name: 'userRating', title: 'User Rating', type: 'number' }],
+        properties: {
+          userRating: { title: 'User Rating', type: 'number' },
+        },
       },
-    ];
+    });
 
-    render(<VariableInput value="" onChange={onChange} converters={customConverters} metaTree={ratingMetaTree} />);
+    render(
+      <VariableInput
+        value=""
+        onChange={onChange}
+        converters={customConverters}
+        metaTree={() => ratingFlowContext.getPropertyMetaTree()}
+      />,
+    );
 
     const selectorButton = screen.getByRole('button');
     fireEvent.click(selectorButton);
@@ -463,14 +518,19 @@ describe('VariableInput', () => {
 
   it('should switch from variable to static input after clearing', async () => {
     const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
 
     // Test with a variable value
     const { rerender } = render(
-      <VariableInput value="{{ ctx.user.userRating }}" onChange={onChange} metaTree={mockMetaTree} />,
+      <VariableInput
+        value="{{ ctx.user.userRating }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
     );
 
-    // Should show VariableTag for variable value - display as "User/userRating" since userRating maps to User parent
-    const variableTag = screen.getByText('User/userRating');
+    // Should show VariableTag for variable value - display as "user/userRating" since userRating maps to User parent
+    const variableTag = screen.getByText('user/userRating');
     expect(variableTag).toBeInTheDocument();
 
     // Clear the variable
@@ -481,7 +541,7 @@ describe('VariableInput', () => {
     expect(onChange).toHaveBeenCalledWith(null);
 
     // Rerender with null value to see the component switch to static input
-    rerender(<VariableInput value={null} onChange={onChange} metaTree={mockMetaTree} />);
+    rerender(<VariableInput value={null} onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     // Should now show regular input (default behavior for static values)
     const input = screen.getByRole('textbox');
@@ -491,9 +551,16 @@ describe('VariableInput', () => {
 
   it('should provide appropriate default values when clearing based on component type hint', () => {
     const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
 
     // Test rate component default value
-    render(<VariableInput value="{{ ctx.user.userRating }}" onChange={onChange} metaTree={mockMetaTree} />);
+    render(
+      <VariableInput
+        value="{{ ctx.user.userRating }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
 
     const clearButton = screen.getByLabelText('close');
     fireEvent.click(clearButton);
@@ -503,8 +570,15 @@ describe('VariableInput', () => {
 
   it('should provide switch default value when clearing switch variable', () => {
     const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
 
-    render(<VariableInput value="{{ ctx.user.switchValue }}" onChange={onChange} metaTree={mockMetaTree} />);
+    render(
+      <VariableInput
+        value="{{ ctx.user.switchValue }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
 
     const clearButton = screen.getByLabelText('close');
     fireEvent.click(clearButton);
@@ -513,10 +587,11 @@ describe('VariableInput', () => {
   });
 
   it('should use VariableTag based on antd Tag implementation', () => {
-    render(<VariableInput value="{{ ctx.user.name }}" metaTree={mockMetaTree} />);
+    const flowContext = createTestFlowContext();
+    render(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     // VariableTag should render properly with Tag-based implementation
-    const variableTag = screen.getByText('User/Name');
+    const variableTag = screen.getByText('user/name');
     expect(variableTag).toBeInTheDocument();
     expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
 
@@ -526,27 +601,18 @@ describe('VariableInput', () => {
   });
 
   it('should detect component type from meta interface', () => {
-    const metaTreeWithInterface = [
-      {
-        name: 'config',
+    const interfaceFlowContext = new FlowContext();
+    interfaceFlowContext.defineProperty('config', {
+      value: { rating: 5, enabled: true },
+      meta: {
         title: 'Config',
         type: 'object',
-        children: [
-          {
-            name: 'rating',
-            title: 'Rating',
-            type: 'number',
-            interface: 'rate', // 使用 interface 字段
-          },
-          {
-            name: 'enabled',
-            title: 'Enabled',
-            type: 'boolean',
-            interface: 'switch',
-          },
-        ],
+        properties: {
+          rating: { title: 'Rating', type: 'number', interface: 'rate' },
+          enabled: { title: 'Enabled', type: 'boolean', interface: 'switch' },
+        },
       },
-    ];
+    });
 
     const customConverters = {
       renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
@@ -564,7 +630,11 @@ describe('VariableInput', () => {
     };
 
     const { rerender } = render(
-      <VariableInput value="" converters={customConverters} metaTree={metaTreeWithInterface} />,
+      <VariableInput
+        value=""
+        converters={customConverters}
+        metaTree={() => interfaceFlowContext.getPropertyMetaTree()}
+      />,
     );
 
     // Test that component type is detected from interface field
@@ -572,27 +642,20 @@ describe('VariableInput', () => {
   });
 
   it('should use improved type detection not relying on string matching', () => {
-    const metaTreeWithTypes = [
-      {
-        name: 'data',
+    const typesFlowContext = new FlowContext();
+    typesFlowContext.defineProperty('data', {
+      value: { count: 10, flag: true },
+      meta: {
         title: 'Data',
         type: 'object',
-        children: [
-          {
-            name: 'count',
-            title: 'Count',
-            type: 'number', // 基于类型而不是字段名检测
-          },
-          {
-            name: 'flag',
-            title: 'Flag',
-            type: 'boolean',
-          },
-        ],
+        properties: {
+          count: { title: 'Count', type: 'number' },
+          flag: { title: 'Flag', type: 'boolean' },
+        },
       },
-    ];
+    });
 
-    render(<VariableInput value="" metaTree={metaTreeWithTypes} />);
+    render(<VariableInput value="" metaTree={() => typesFlowContext.getPropertyMetaTree()} />);
 
     // Should work regardless of field name
     const input = screen.getByRole('textbox');
@@ -601,26 +664,28 @@ describe('VariableInput', () => {
 
   it('should handle TypeScript interface properly', () => {
     // Test that FlowContextSelectorProps extends CascaderProps<any> correctly
+    const flowContext = createTestFlowContext();
     const props: any = {
       value: '{{ ctx.test }}',
       onChange: vi.fn(),
-      metaTree: mockMetaTree,
+      metaTree: () => flowContext.getPropertyMetaTree(),
       placeholder: 'Test placeholder', // CascaderProps property
     };
 
     render(<VariableInput {...props} />);
 
-    // Should render without TypeScript errors - display as "test" since "test" isn't in mockMetaTree
+    // Should render without TypeScript errors - display as "test" since "test" isn't in flowContext
     expect(screen.getByText('test')).toBeInTheDocument();
   });
 
   it('should handle rapid character input without component re-rendering focus loss', async () => {
     // This test specifically addresses the issue found in Playwright testing
     // where rapid typing would result in incomplete character input due to component re-rendering
+    const flowContext = createTestFlowContext();
 
     const TestWrapper = () => {
       const [value, setValue] = React.useState('');
-      return <VariableInput value={value} onChange={setValue} metaTree={mockMetaTree} />;
+      return <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />;
     };
 
     render(<TestWrapper />);
