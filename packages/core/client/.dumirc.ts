@@ -352,6 +352,28 @@ export default defineConfig({
           ],
         },
         {
+          title: 'React Hooks',
+          type: 'group',
+          children: [
+            {
+              title: 'useFlowEngine',
+              link: '/examples/hooks/use-flow-engine',
+            },
+            {
+              title: 'useFlowContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+            {
+              title: 'useFlowModelContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+            {
+              title: 'useFlowSettingsContext',
+              link: '/examples/hooks/use-flow-context',
+            },
+          ],
+        },
+        {
           title: '单元测试',
           type: 'group',
           children: [
