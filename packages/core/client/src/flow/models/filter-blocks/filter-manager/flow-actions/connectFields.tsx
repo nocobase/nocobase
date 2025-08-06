@@ -43,7 +43,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
   const selectedPathsArray = selectedPaths ? selectedPaths.split(',').filter(Boolean) : [];
 
   return fields
-    .filter((field) => field.filterable && field.options.interface)
+    .filter((field) => field.filterable)
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
       const label = ctx.t(field.uiSchema?.title) || field.name;
@@ -55,7 +55,6 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
         key: currentPath,
         fullLabel: fullLabel,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
-        field,
       };
 
       // 如果任一选中的路径包含当前路径，且当前字段有关系目标，则预加载子节点
