@@ -17,7 +17,7 @@ type FilterConfig = {
   /** 数据区块或者图表区块的 model uid */
   targetId: string;
   /** 被筛选区块的数据表字段路径 */
-  filterPaths: string[];
+  filterPaths?: string[];
   /** 筛选操作符，每个条件的操作符可以不一样 */
   operator?: string;
 };
