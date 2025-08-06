@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
+import { Model, MultipleRelationRepository, BelongsToManyRepository, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -191,8 +191,7 @@ export class PluginClientServer extends Plugin {
         transaction,
       });
 
-      // @ts-ignore
-      await this.app.db.getRepository('desktopRoutes.roles', instance.id).add({
+      await (this.app.db.getRepository('desktopRoutes.roles', instance.id) as BelongsToManyRepository).add({
         tk: addNewMenuRoles.map((role) => role.name),
         transaction,
       });
