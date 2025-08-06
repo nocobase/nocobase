@@ -260,8 +260,8 @@ describe('runSQL', function () {
     test('should handle newlines in SQL', async () => {
       const result = await db.runSQL(
         `
-        SELECT * 
-        FROM test 
+        SELECT *
+        FROM test
         ORDER BY num
       `,
         {
@@ -295,12 +295,12 @@ describe('runSQL', function () {
     });
 
     test('should work with array parameters + filter', async () => {
-      const result = await db.runSQL('SELECT COUNT(*) as total FROM test WHERE age > $1', {
+      const result = await db.runSQL('SELECT name, COUNT(*) as total FROM test WHERE age > $1 GROUP BY name', {
         bind: [20],
         filter: { name: { $in: ['Alice', 'Bob'] } },
-        type: 'selectVar',
+        type: 'selectRows',
       });
-      expect(result).toBe(2);
+      expect(result).toMatchObject([{ name: 'Alice' }, { name: 'Bob' }]);
     });
   });
 
