@@ -9,33 +9,60 @@
 
 import React from 'react';
 import { Tag } from 'antd';
+import { CloseCircleFilled } from '@ant-design/icons';
+import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
+import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
+import { parseValueToPath } from './utils';
 
 export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, className, style }) => {
+  const displayedValue = React.useMemo(() => {
+    if (!value) return String(value);
+
+    const path = parseValueToPath(value);
+    return path ? path.join('/') : String(value);
+  }, [value]);
+
   return (
-    <Tag
-      color="blue"
-      closable={!!onClear}
-      onClose={onClear}
-      className={className}
-      style={{
-        display: 'inline-block',
-        lineHeight: '19px',
-        margin: 0,
-        padding: '2px 7px',
-        borderRadius: '10px', // 椭圆形状
-        width: 'fit-content', // 紧贴内容的宽度
-        minWidth: 'unset', // 重置最小宽度
-        maxWidth: 'none', // 无最大宽度限制
-        flex: 'none', // 不参与flex拉伸
-        overflow: 'visible', // 防止内容被截断
-        textOverflow: 'clip',
-        whiteSpace: 'nowrap',
-        boxSizing: 'content-box', // 确保padding不影响宽度计算
-        ...style,
-      }}
-    >
-      {value}
-    </Tag>
+    <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>
+      <div
+        role="button"
+        aria-label="variable-tag"
+        style={variableTagContainerStyle(!onClear)}
+        className={cx('variable-input-container', { 'ant-input-disabled': !onClear })}
+      >
+        <Tag
+          color="blue"
+          style={{
+            display: 'inline-block',
+            lineHeight: '19px',
+            margin: '4px 6px',
+            padding: '2px 7px',
+            borderRadius: '10px',
+            width: 'fit-content',
+            minWidth: 'unset',
+            maxWidth: 'none',
+            flex: 'none',
+            overflow: 'visible',
+            textOverflow: 'clip',
+            whiteSpace: 'nowrap',
+            boxSizing: 'content-box',
+          }}
+        >
+          {displayedValue}
+        </Tag>
+      </div>
+      {onClear && (
+        <span
+          role="button"
+          aria-label="close"
+          className="clear-button"
+          style={{ userSelect: 'none' }}
+          onClick={onClear}
+        >
+          <CloseCircleFilled />
+        </span>
+      )}
+    </div>
   );
 };

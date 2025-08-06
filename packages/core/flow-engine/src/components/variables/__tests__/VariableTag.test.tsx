@@ -13,8 +13,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { VariableTag } from '../VariableTag';
 
 describe('VariableTag', () => {
-  it('should render with value', () => {
-    render(<VariableTag value="User/Name" />);
+  it('should render with variable value and display parsed path', () => {
+    render(<VariableTag value="{{ ctx.User.Name }}" />);
 
     const tag = screen.getByText('User/Name');
     expect(tag).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('VariableTag', () => {
 
   it('should call onClear when clear button is clicked', () => {
     const onClear = vi.fn();
-    render(<VariableTag value="User/Email" onClear={onClear} />);
+    render(<VariableTag value="{{ ctx.User.Email }}" onClear={onClear} />);
 
     const closeButton = screen.getByLabelText('close');
     expect(closeButton).toBeInTheDocument();
@@ -33,14 +33,14 @@ describe('VariableTag', () => {
   });
 
   it('should not show close button when onClear is not provided', () => {
-    render(<VariableTag value="User/Name" />);
+    render(<VariableTag value="{{ ctx.User.Name }}" />);
 
     const closeButton = screen.queryByLabelText('close');
     expect(closeButton).not.toBeInTheDocument();
   });
 
   it('should be read-only', () => {
-    render(<VariableTag value="User/Name" />);
+    render(<VariableTag value="{{ ctx.User.Name }}" />);
 
     const tag = screen.getByText('User/Name');
     // Tag应该是只读的，不能编辑
@@ -51,38 +51,38 @@ describe('VariableTag', () => {
 
   it('should apply custom className and style', () => {
     const customStyle = { fontSize: '16px', color: 'red' };
-    render(<VariableTag value="Custom Tag" className="custom-class" style={customStyle} />);
+    render(<VariableTag value="{{ ctx.Custom.Tag }}" className="custom-class" style={customStyle} />);
 
-    const tag = screen.getByText('Custom Tag').closest('.ant-tag');
-    expect(tag).toHaveClass('custom-class');
-    expect(tag).toHaveStyle('font-size: 16px');
-    expect(tag).toHaveStyle('color: rgb(255, 0, 0)');
+    const container = screen.getByText('Custom/Tag').closest('.variable');
+    expect(container).toHaveClass('custom-class');
+    expect(container).toHaveStyle('font-size: 16px');
+    expect(container).toHaveStyle('color: rgb(255, 0, 0)');
   });
 
   it('should have blue color by default', () => {
-    render(<VariableTag value="Test" />);
+    render(<VariableTag value="{{ ctx.Test }}" />);
 
     const tag = screen.getByText('Test').closest('.ant-tag');
     expect(tag).toHaveClass('ant-tag-blue');
   });
 
   it('should handle long text with proper text styling', () => {
-    const longText = 'Very/Long/Path/That/Should/Be/Truncated/With/Ellipsis';
+    const longText = '{{ ctx.Very.Long.Path.That.Should.Be.Truncated.With.Ellipsis }}';
     render(<VariableTag value={longText} />);
 
-    const tag = screen.getByText(longText).closest('.ant-tag');
+    const tag = screen.getByText('Very/Long/Path/That/Should/Be/Truncated/With/Ellipsis').closest('.ant-tag');
     expect(tag).toHaveStyle('text-overflow: clip');
     expect(tag).toHaveStyle('white-space: nowrap');
     expect(tag).toHaveStyle('overflow: visible');
   });
 
   it('should have proper styling for tag appearance', () => {
-    render(<VariableTag value="Styled Tag" />);
+    render(<VariableTag value="{{ ctx.Styled.Tag }}" />);
 
-    const tag = screen.getByText('Styled Tag').closest('.ant-tag');
+    const tag = screen.getByText('Styled/Tag').closest('.ant-tag');
     expect(tag).toHaveStyle('border-radius: 10px');
     expect(tag).toHaveStyle('line-height: 19px');
-    expect(tag).toHaveStyle('margin: 0px');
+    expect(tag).toHaveStyle('margin: 4px 6px');
     expect(tag).toHaveStyle('padding: 2px 7px');
   });
 
@@ -100,5 +100,54 @@ describe('VariableTag', () => {
     // 应该仍然渲染tag，即使没有value
     const tag = document.querySelector('.ant-tag');
     expect(tag).toBeInTheDocument();
+  });
+
+  it('should render container with proper structure', () => {
+    render(<VariableTag value="{{ ctx.Test }}" />);
+
+    const container = screen.getByText('Test').closest('.variable');
+    expect(container).toBeInTheDocument();
+
+    const innerContainer = container?.querySelector('.variable-input-container');
+    expect(innerContainer).toBeInTheDocument();
+
+    const tag = innerContainer?.querySelector('.ant-tag');
+    expect(tag).toBeInTheDocument();
+  });
+
+  it('should show clear button when onClear is provided', () => {
+    const onClear = vi.fn();
+    render(<VariableTag value="{{ ctx.Test }}" onClear={onClear} />);
+
+    const container = screen.getByText('Test').closest('.variable');
+    const clearButton = container?.querySelector('.clear-button');
+    expect(clearButton).toBeInTheDocument();
+  });
+
+  it('should have correct container styling when disabled', () => {
+    render(<VariableTag value="{{ ctx.Test }}" onClear={undefined} />);
+
+    const container = screen.getByText('Test').closest('.variable');
+    const innerContainer = container?.querySelector('.variable-input-container');
+
+    expect(innerContainer).toHaveClass('ant-input-disabled');
+  });
+
+  it('should have correct container styling when enabled', () => {
+    const onClear = vi.fn();
+    render(<VariableTag value="{{ ctx.Test }}" onClear={onClear} />);
+
+    const container = screen.getByText('Test').closest('.variable');
+    const innerContainer = container?.querySelector('.variable-input-container');
+
+    expect(innerContainer).not.toHaveClass('ant-input-disabled');
+  });
+
+  it('should have proper container role and accessibility attributes', () => {
+    render(<VariableTag value="{{ ctx.Test }}" />);
+
+    const innerContainer = screen.getByText('Test').closest('.variable-input-container');
+    expect(innerContainer).toHaveAttribute('role', 'button');
+    expect(innerContainer).toHaveAttribute('aria-label', 'variable-tag');
   });
 });

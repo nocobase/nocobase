@@ -7,16 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { Input, Space } from 'antd';
-import { CloseCircleFilled } from '@ant-design/icons';
-import { cx } from '@emotion/css';
 import type { VariableInputProps, ContextSelectorItem } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
 import { VariableTag } from './VariableTag';
 import { isVariableValue, parseValueToPath, buildContextSelectorItemFromPath } from './utils';
 import { useVariableInput, useVariableConverters } from './hooks';
-import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
 
 export const VariableInput: React.FC<VariableInputProps> = ({
   value,
@@ -50,44 +47,9 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     };
   }, [currentConverters, metaTree]);
 
-  // 根据路径和metaTree获取显示用的标题路径
-  const getDisplayPath = useCallback(
-    (path: string[]): string => {
-      const buildPathTitles = (tree: any[], currentPath: string[], depth = 0): string[] => {
-        if (depth >= currentPath.length || !tree) return [];
-
-        const segment = currentPath[depth];
-        const node = tree.find((n) => n.name === segment);
-
-        if (!node) return [segment];
-
-        const currentTitle = node.title || node.name;
-
-        if (depth === currentPath.length - 1) {
-          return [currentTitle];
-        }
-
-        if (Array.isArray(node.children)) {
-          const childTitles = buildPathTitles(node.children, currentPath, depth + 1);
-          return [currentTitle, ...childTitles];
-        }
-
-        return [currentTitle, ...currentPath.slice(depth + 1)];
-      };
-
-      if (!metaTree || typeof metaTree === 'function') {
-        return path.join('/');
-      }
-
-      const titles = buildPathTitles(metaTree, path);
-      return titles.join('/');
-    },
-    [metaTree],
-  );
-
   const InputComponent = useMemo(() => {
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
-    return CustomComponent || Input;
+    return CustomComponent || (isVariableValue(value) ? VariableTag : Input);
   }, [currentConverters, currentContextSelectorItem]);
 
   const handleInputChange = useCallback(
@@ -149,16 +111,20 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   );
 
   const handleClear = useCallback(() => {
+    if (restProps.disabled) {
+      return;
+    }
     setCurrentContextSelectorItem(null);
     onChange?.(null);
-  }, [onChange]);
+  }, [onChange, restProps.disabled]);
 
   // 输入组件props
   const inputProps = useMemo(() => {
-    const { style, onFocus, onBlur, ...otherProps } = restProps;
+    const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
     return {
       ...otherProps,
       value: value || '',
+      onClear: handleClear,
       onChange: handleInputChange,
       onFocus: (e: React.FocusEvent<HTMLInputElement>) => handleFocus(e, onFocus),
       onBlur: (e: React.FocusEvent<HTMLInputElement>) => handleBlur(e, onBlur),
@@ -167,52 +133,12 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     };
   }, [value, handleInputChange, handleFocus, handleBlur, restProps, inputRef]);
 
-  // 渲染变量值
-  if (isVariableValue(value)) {
-    const path = parseValueToPath(value);
-    const displayValue = path ? getDisplayPath(path) : String(value);
-    const disabled = inputProps.disabled;
-
-    return (
-      <Space.Compact style={{ display: 'flex', alignItems: 'center', ...restProps.style }}>
-        <div className={cx('variable', variableContainerStyle(disabled))}>
-          <div
-            role="button"
-            aria-label="variable-tag"
-            style={variableTagContainerStyle(disabled)}
-            className={cx('variable-input-container', { 'ant-input-disabled': disabled })}
-          >
-            <VariableTag value={displayValue} onClear={undefined} className="" style={{ margin: '4px 6px' }} />
-          </div>
-          {!disabled && (
-            <span
-              role="button"
-              aria-label="close"
-              className="clear-button"
-              style={{ userSelect: 'none' }}
-              onClick={handleClear}
-            >
-              <CloseCircleFilled />
-            </span>
-          )}
-        </div>
-        <FlowContextSelector
-          metaTree={metaTree}
-          value={value}
-          onChange={handleVariableSelect}
-          parseValueToPath={baseConverters.resolvePathFromValue}
-          formatPathToValue={formatPathToValueFn}
-        />
-      </Space.Compact>
-    );
-  }
-
-  // 渲染静态值
   return (
     <Space.Compact style={{ display: 'flex', alignItems: 'center', ...restProps.style }}>
       <InputComponent {...inputProps} />
       <FlowContextSelector
         metaTree={metaTree}
+        value={value}
         onChange={handleVariableSelect}
         parseValueToPath={baseConverters.resolvePathFromValue}
         formatPathToValue={formatPathToValueFn}
