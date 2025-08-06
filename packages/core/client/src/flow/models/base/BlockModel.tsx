@@ -182,7 +182,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   /**
    * 获取可用于筛选的字段列表
    */
-  async getFilterFields() {
+  async getFilterFields(): Promise<{ name: string; title: string; target?: string; uiSchema?: { title: string } }[]> {
     return this.collection.getFields();
   }
 
