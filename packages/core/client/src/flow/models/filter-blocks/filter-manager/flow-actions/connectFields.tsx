@@ -235,9 +235,6 @@ function ConnectFields(
       </div>
       {allDataModels
         .filter((model: CollectionBlockModel) => {
-          if (!(model instanceof CollectionBlockModel)) {
-            return false;
-          }
           // 只显示已选择的区块
           return selectedModelUids.includes(model.uid);
         })
