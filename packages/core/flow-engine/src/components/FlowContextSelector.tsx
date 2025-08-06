@@ -22,7 +22,7 @@ import {
 export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
-  children = <Button>Var</Button>,
+  children = <Button>x</Button>,
   metaTree,
   showSearch = false,
   parseValueToPath: customParseValueToPath,
