@@ -37,7 +37,13 @@ VariableInput 是一个统一的变量输入组件，支持静态值输入和动
 
 ### 5. 根据 editableFieldModel 渲染不同的输入组件
 
-### 6. 根据 字段 来渲染不同的输入组件
+<code src="./editable-field-model.tsx"></code>
+
+### 6. 根据字段来渲染不同的输入组件
+
+根据 Collection 字段的 `interface` 属性自动选择合适的输入组件：
+
+<code src="./fields.tsx"></code>
 
 ### 7. 不同的变量选择组件形态
 

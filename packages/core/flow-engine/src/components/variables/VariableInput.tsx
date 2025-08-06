@@ -38,23 +38,37 @@ export const VariableInput: React.FC<VariableInputProps> = ({
   const formatPathToValueFn = useMemo(() => {
     if (!currentConverters.resolveValueFromPath) return undefined;
 
-    return (path: string[]) => {
-      const contextSelectorItem = buildContextSelectorItemFromPath(path, metaTree, []);
-      if (contextSelectorItem) {
-        return currentConverters.resolveValueFromPath(contextSelectorItem, path);
-      }
-      // 如果无法构建ContextSelectorItem，使用默认格式
-      return `{{ ctx.${path.join('.')} }}`;
+    return (selectorItem: ContextSelectorItem) => {
+      const path = selectorItem.fullPath;
+      const ret = currentConverters.resolveValueFromPath(selectorItem);
+      return ret === undefined ? `{{ ctx.${path.join('.')} }}` : ret;
     };
   }, [currentConverters, metaTree]);
 
   const ValueComponent = useMemo(() => {
+    if (currentContextSelectorItem == null && isVariableValue(value)) {
+      console.log('[VariableInput] Choosing VariableTag - value:', value, 'isVariable:', true);
+      return VariableTag;
+    }
     const CustomComponent = currentConverters.renderInputComponent?.(currentContextSelectorItem);
-    return CustomComponent || (isVariableValue(value) ? VariableTag : Input);
-  }, [currentConverters, currentContextSelectorItem]);
+    console.log('[VariableInput] CustomComponent:', CustomComponent, 'currentConverters:', currentConverters);
+    const finalComponent = CustomComponent || (isVariableValue(value) ? VariableTag : Input);
+    console.log(
+      '[VariableInput] Choosing component:',
+      finalComponent === Input ? 'Input' : finalComponent === VariableTag ? 'VariableTag' : 'Custom',
+      'value:',
+      value,
+      'isVariable:',
+      isVariableValue(value),
+      'contextItem:',
+      currentContextSelectorItem,
+    );
+    return finalComponent;
+  }, [currentConverters, currentContextSelectorItem, value]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
+      console.log('[VariableInput] handleInputChange called:', e?.target?.value || e);
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
       onChange?.(newValue);
     },
@@ -79,7 +93,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
             converters = { ...baseConverters, ...dynamicConverters };
           }
 
-          const finalValue = converters.resolveValueFromPath?.(contextSelectorItem, path) || variableValue;
+          const finalValue = converters.resolveValueFromPath?.(contextSelectorItem) || variableValue;
           onChange?.(finalValue);
           return;
         }
@@ -99,7 +113,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
             converters = { ...baseConverters, ...dynamicConverters };
           }
 
-          const finalValue = converters.resolveValueFromPath?.(fallbackContextSelectorItem, path) || variableValue;
+          const finalValue = converters.resolveValueFromPath?.(fallbackContextSelectorItem) || variableValue;
           onChange?.(finalValue);
           return;
         }
@@ -121,21 +135,28 @@ export const VariableInput: React.FC<VariableInputProps> = ({
 
   const inputProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
-    return {
+    const props = {
       ...otherProps,
       value: value || '',
       onClear: handleClear,
       onChange: handleInputChange,
       onFocus: (e: React.FocusEvent<HTMLInputElement>) => handleFocus(e, onFocus),
       onBlur: (e: React.FocusEvent<HTMLInputElement>) => handleBlur(e, onBlur),
-      ref: inputRef,
-      style: { flex: 1 },
+      // ref: inputRef,
+      // style: { flex: 1 },
     };
-  }, [value, handleInputChange, handleFocus, handleBlur, restProps, inputRef]);
+    console.log('[VariableInput] inputProps:', {
+      value: props.value,
+      hasOnChange: !!props.onChange,
+      // hasRef: !!props.ref,
+      onChange: props.onChange,
+    });
+    return props;
+  }, [value, handleInputChange, handleFocus, handleBlur, restProps, inputRef, handleClear]);
 
   return (
     <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', ...restProps.style }}>
-      {showValueComponent && <ValueComponent {...inputProps} style={{ flexGrow: 1 }} />}
+      {showValueComponent && <ValueComponent {...inputProps} />}
       <FlowContextSelector
         metaTree={metaTree}
         value={value}

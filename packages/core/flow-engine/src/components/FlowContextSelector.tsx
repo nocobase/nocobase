@@ -201,7 +201,7 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       const isLeaf = lastOption?.isLeaf;
       const now = Date.now();
-      let formattedValue = formatPathToValueFn(path);
+      let formattedValue = formatPathToValueFn(lastOption);
       formattedValue = formattedValue === undefined ? formatPathToValue(path) : formattedValue;
 
       // 叶子节点：直接选中

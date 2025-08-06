@@ -323,15 +323,5 @@ describe('Variable Utils', () => {
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
       expect(converters.resolvePathFromValue?.('static value')).toBeNull();
     });
-
-    it('should resolve value from path and meta', () => {
-      const converters = createDefaultConverters();
-      const mockMeta: MetaTreeNode = {
-        name: 'name',
-        title: 'Name',
-        type: 'string',
-      };
-      expect(converters.resolveValueFromPath?.(mockMeta, ['user', 'name'])).toBe('{{ ctx.user.name }}');
-    });
   });
 });

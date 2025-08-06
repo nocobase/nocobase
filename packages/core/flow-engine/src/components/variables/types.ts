@@ -18,7 +18,7 @@ export interface FlowContextSelectorProps
   children?: React.ReactNode;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   parseValueToPath?: (value: string) => string[] | null;
-  formatPathToValue?: (path: string[]) => string;
+  formatPathToValue?: (item: ContextSelectorItem) => string;
 }
 
 export interface ContextSelectorItem {
@@ -51,7 +51,7 @@ export interface Converters {
    * @param path 选中的路径数组。
    * @returns any
    */
-  resolveValueFromPath?: (contextSelectorItem: ContextSelectorItem, path: string[]) => any;
+  resolveValueFromPath?: (contextSelectorItem: ContextSelectorItem) => any;
 }
 
 export interface VariableInputProps {

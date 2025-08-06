@@ -13,6 +13,7 @@ import { FlowModelRenderer, MetaTreeNode, useFlowContext, VariableInput } from '
 import React, { useMemo } from 'react';
 import { ReactiveField } from '../formily/ReactiveField';
 import { EditableFieldModel } from '../models';
+import { Input } from 'antd';
 
 interface VariableFieldInputProps {
   value: any; // 任意类型，表示当前值
@@ -109,13 +110,34 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
     return newModel;
   }, [model]);
 
-  const metaTree = useMemo(() => ctx.getPropertyMetaTree(), [model]);
+  const metaTree = useMemo<MetaTreeNode[]>(() => {
+    const ctxMetaTree = ctx.getPropertyMetaTree();
+    return [
+      {
+        title: 'Constant',
+        name: 'constant',
+        type: 'string',
+      },
+      {
+        title: 'Null',
+        name: 'null',
+        type: 'object',
+      },
+      ...ctxMetaTree,
+    ];
+  }, [model]);
   React.useEffect(() => {
     const variableFieldModel = newModel.subModels.fields[0];
     if (variableFieldModel) {
       variableFieldModel.setProps({
-        value: value,
-        onChange,
+        onChange: (eventOrValue) => {
+          let actualValue = eventOrValue;
+          if (eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue) {
+            actualValue = eventOrValue.target.value;
+          }
+          onChange?.(actualValue);
+          variableFieldModel.field?.setValue(actualValue);
+        },
         metaTree: metaTree,
         originalModel: model,
       });
@@ -133,6 +155,7 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
     },
     [],
   );
+  const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
 
   return (
     <VariableInput
@@ -140,12 +163,15 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
       {...props}
       converters={{
         renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] === 'Constant' || !item) {
+          if (item?.fullPath?.[0] === 'constant' || !item) {
             return InputComponent;
           }
+          if (item?.fullPath?.[0] === 'null') {
+            return NullComponent;
+          }
         },
-        resolveValueFromPath: (item, path) => {
-          if (path[0] === 'Constant') return null;
+        resolveValueFromPath: (item) => {
+          if (item?.fullPath[0] === 'Constant') return null;
         },
       }}
     />

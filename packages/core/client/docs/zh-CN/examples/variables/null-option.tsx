@@ -34,7 +34,7 @@ class PluginNullOptionExample extends Plugin {
       const converters: Converters = {
         renderInputComponent: (item) =>
           item?.fullPath?.[0] === 'null' ? (props) => <Input {...props} readOnly value="<Null>" /> : null,
-        resolveValueFromPath: (meta, path) => (path[0] === 'null' ? null : undefined),
+        resolveValueFromPath: (item) => (item?.fullPath[0] === 'null' ? null : undefined),
       };
 
       return (

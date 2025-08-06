@@ -142,8 +142,8 @@ export const createDefaultConverters = (): Converters => {
       return parseValueToPath(value);
     },
 
-    resolveValueFromPath: (contextSelectorItem: ContextSelectorItem, path: string[]) => {
-      return formatPathToValue(path);
+    resolveValueFromPath: (item: ContextSelectorItem) => {
+      return formatPathToValue(item?.fullPath || []);
     },
   };
 };

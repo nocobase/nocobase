@@ -106,8 +106,8 @@ describe('VariableInput', () => {
         if (value === 'custom') return ['custom', 'path'];
         return null;
       },
-      resolveValueFromPath: (contextSelectorItem: ContextSelectorItem, path: string[]) => {
-        return `custom-${path.join('.')}`;
+      resolveValueFromPath: (item: ContextSelectorItem) => {
+        return `custom-${item?.fullPath.join('.')}`;
       },
     };
 

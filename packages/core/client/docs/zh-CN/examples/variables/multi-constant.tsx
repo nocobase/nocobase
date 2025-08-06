@@ -48,8 +48,9 @@ class PluginMultiConstantExample extends Plugin {
               return Input;
           }
         },
-        resolveValueFromPath: (item, path) => {
-          if (path[0] !== 'Constant') return undefined;
+        resolveValueFromPath: (item) => {
+          const path = item?.fullPath;
+          if (!path || path[0] !== 'Constant') return undefined;
           switch (path[1]) {
             case 'string':
               return '';
