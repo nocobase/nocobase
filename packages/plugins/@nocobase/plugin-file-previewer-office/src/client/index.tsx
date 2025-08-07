@@ -96,13 +96,26 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
     attachmentFileTypes.add({
       match(file) {
-        return (
+        if (
+          file.mimetype &&
           [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          ].includes(file.mimetype) || ['docx', 'xlsx', 'pptx'].includes(file.url?.split('.').pop())
-        );
+          ].includes(file.mimetype)
+        ) {
+          return true;
+        }
+        if (file.url) {
+          const url = new URL(file.url);
+          const parts = url.pathname.split('.');
+          if (parts.length > 1) {
+            const ext = parts[parts.length - 1].toLowerCase();
+            return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
+          }
+          return false;
+        }
+        return false;
       },
       Previewer: IframePreviewer,
     });

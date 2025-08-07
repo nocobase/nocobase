@@ -134,5 +134,6 @@ export class PluginAIClient extends Plugin {
 
 export default PluginAIClient;
 export { ModelSelect, Chat };
-export type { LLMProviderOptions } from './manager/ai-manager';
+export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
+export type { ToolCall } from './ai-employees/types';
 export * from './features';

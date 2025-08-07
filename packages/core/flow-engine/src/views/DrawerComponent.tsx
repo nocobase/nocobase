@@ -31,7 +31,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
         setFooter(newFooter);
       },
       setHeader: (newHeader) => {
-        if (Object.values(newHeader).length === 0) {
+        if (Object.values(newHeader || {}).length === 0) {
           setHeader(null);
         } else {
           setHeader(newHeader);

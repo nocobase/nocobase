@@ -17,7 +17,7 @@ type FilterConfig = {
   /** 数据区块或者图表区块的 model uid */
   targetId: string;
   /** 被筛选区块的数据表字段路径 */
-  filterPaths: string[];
+  filterPaths?: string[];
   /** 筛选操作符，每个条件的操作符可以不一样 */
   operator?: string;
 };
@@ -41,11 +41,11 @@ export class FilterManager {
   constructor(gridModel: FlowModel) {
     this.gridModel = gridModel;
     const stepValue = this.gridModel.getStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
-    this.filterConfigs = _.isPlainObject(stepValue) ? Object.values(stepValue) : stepValue || [];
+    this.filterConfigs = stepValue?.value || [];
   }
 
   async saveFilterConfigs() {
-    this.gridModel.setStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, this.filterConfigs);
+    this.gridModel.setStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, { value: this.filterConfigs });
     await this.gridModel.save();
   }
 

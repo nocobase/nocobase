@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Registry } from '@nocobase/utils';
 import { Context } from '@nocobase/actions';
 import { ZodObject } from 'zod';
@@ -41,6 +50,7 @@ export type ToolGroupRegisterOptions = {
   groupName: string;
   title?: string;
   description?: string;
+  sort?: number;
 };
 
 export type ToolRegisterDelegate = {
@@ -52,6 +62,7 @@ const DEFAULT_TOOL_GROUP: ToolGroupRegisterOptions = {
   groupName: 'others',
   title: '{{t("Others")}}',
   description: '{{t("Other tools")}}',
+  sort: 1000,
 };
 
 export class ToolManager implements AIToolRegister {
@@ -141,10 +152,12 @@ export class ToolManager implements AIToolRegister {
     });
 
     const groupedTools = _.groupBy(toolList, (item) => item.groupName);
-    return Array.from(groupRegisters).map((group) => ({
-      group,
-      tools: groupedTools[group.groupName]?.map((x) => x.tool) ?? [],
-    }));
+    return Array.from(groupRegisters)
+      .map((group) => ({
+        group,
+        tools: groupedTools[group.groupName]?.map((x) => x.tool) ?? [],
+      }))
+      .sort((a, b) => (a.group.sort || 0) - (b.group.sort || 0));
   }
 
   private async _getTool(register: Registry<ToolRegisterOptions>, name: string, raw = false): Promise<ToolOptions> {

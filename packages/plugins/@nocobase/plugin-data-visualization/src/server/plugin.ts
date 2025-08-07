@@ -10,6 +10,8 @@
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
+import PluginAIServer from '@nocobase/plugin-ai';
+import { buildChartBlock } from './ai/tools/build-chart-block';
 
 export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
@@ -33,6 +35,16 @@ export class PluginDataVisualizationServer extends Plugin {
       ttl: 30 * 1000, // millseconds
       max: 1000,
     });
+
+    const ai = this.app.pm.get('ai') as PluginAIServer;
+    if (ai) {
+      ai.aiManager.toolManager.registerTools([
+        {
+          groupName: 'frontend',
+          tool: buildChartBlock,
+        },
+      ]);
+    }
   }
 
   async install(options?: InstallOptions) {}

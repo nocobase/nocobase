@@ -17,7 +17,7 @@ import { FlowEngineRunner } from './FlowEngineRunner';
 import { FlowModelRepository, MockFlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
-import { VariableEditableValue } from './components';
+import { DefaultValue } from './components/DefaultValue';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -36,12 +36,13 @@ export class PluginFlowEngine extends Plugin {
     this.app.addProvider(FlowEngineRunner, {});
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
+      DefaultValue,
     });
-    this.flowEngine.flowSettings.registerComponents({ VariableEditableValue });
   }
 }
 
 // Export all models for external use
 export * from './FlowModelRepository';
+export * from './FlowPage';
 export * from './models';
 //

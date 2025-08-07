@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：JavaScript",
   "description": "A block for executing custom JavaScript code and dynamically updating HTML content.",
   "description.zh-CN": "一个用于执行自定义 JavaScript 代码并动态更新 HTML 内容的区块。",
-  "version": "1.9.0-alpha.5",
+  "version": "1.9.0-alpha.7",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",

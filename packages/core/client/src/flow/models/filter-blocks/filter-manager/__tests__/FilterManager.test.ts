@@ -25,7 +25,7 @@ describe('FilterManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFlowModel.getStepParams.mockReturnValue([]);
+    mockFlowModel.getStepParams.mockReturnValue({ value: [] });
     filterManager = new FilterManager(mockFlowModel as any);
   });
 
@@ -48,7 +48,7 @@ describe('FilterManager', () => {
           filterPaths: ['field1'],
         },
       ];
-      mockFlowModel.getStepParams.mockReturnValue(existingConfigs);
+      mockFlowModel.getStepParams.mockReturnValue({ value: existingConfigs });
 
       filterManager = new FilterManager(mockFlowModel as any);
 
@@ -70,11 +70,9 @@ describe('FilterManager', () => {
     it('should call setStepParams with correct parameters', async () => {
       await filterManager.saveFilterConfigs();
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
-        FILTER_MANAGER_FLOW_KEY,
-        FILTER_CONFIGS_STEP_KEY,
-        expect.any(Array),
-      );
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: expect.any(Array),
+      });
       expect(mockFlowModel.setStepParams).toHaveBeenCalledTimes(1);
       expect(mockFlowModel.save).toHaveBeenCalledTimes(1);
     });
@@ -102,7 +100,7 @@ describe('FilterManager', () => {
           operator: 'ne',
         },
       ];
-      mockFlowModel.getStepParams.mockReturnValue(mockConfigs);
+      mockFlowModel.getStepParams.mockReturnValue({ value: mockConfigs });
       filterManager = new FilterManager(mockFlowModel as any);
     });
 
@@ -160,18 +158,20 @@ describe('FilterManager', () => {
 
       await filterManager.saveConnectFieldsConfig('filter1', config);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        {
-          filterId: 'filter1',
-          targetId: 'target1',
-          filterPaths: ['name'],
-        },
-        {
-          filterId: 'filter1',
-          targetId: 'target2',
-          filterPaths: ['title'],
-        },
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [
+          {
+            filterId: 'filter1',
+            targetId: 'target1',
+            filterPaths: ['name'],
+          },
+          {
+            filterId: 'filter1',
+            targetId: 'target2',
+            filterPaths: ['title'],
+          },
+        ],
+      });
     });
 
     it('should replace existing config for same filterId', async () => {
@@ -190,7 +190,7 @@ describe('FilterManager', () => {
           operator: 'ne',
         },
       ];
-      mockFlowModel.getStepParams.mockReturnValue(initialConfigs);
+      mockFlowModel.getStepParams.mockReturnValue({ value: initialConfigs });
       filterManager = new FilterManager(mockFlowModel as any);
 
       const newConfig = {
@@ -204,19 +204,21 @@ describe('FilterManager', () => {
 
       await filterManager.saveConnectFieldsConfig('filter1', newConfig);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        {
-          filterId: 'filter2',
-          targetId: 'target2',
-          filterPaths: ['field2'],
-          operator: 'ne',
-        },
-        {
-          filterId: 'filter1',
-          targetId: 'newTarget',
-          filterPaths: ['newField'],
-        },
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [
+          {
+            filterId: 'filter2',
+            targetId: 'target2',
+            filterPaths: ['field2'],
+            operator: 'ne',
+          },
+          {
+            filterId: 'filter1',
+            targetId: 'newTarget',
+            filterPaths: ['newField'],
+          },
+        ],
+      });
     });
   });
 
@@ -228,7 +230,9 @@ describe('FilterManager', () => {
 
       await filterManager.saveConnectFieldsConfig('filter1', config);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, []);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [],
+      });
     });
   });
 
@@ -243,9 +247,9 @@ describe('FilterManager', () => {
 
       await filterManager.addFilterConfig(filterConfig);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        filterConfig,
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [filterConfig],
+      });
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
@@ -257,7 +261,7 @@ describe('FilterManager', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
+      mockFlowModel.getStepParams.mockReturnValue({ value: [initialConfig] });
       filterManager = new FilterManager(mockFlowModel as any);
 
       // Add updated config
@@ -270,9 +274,9 @@ describe('FilterManager', () => {
 
       await filterManager.addFilterConfig(updatedConfig);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        updatedConfig,
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [updatedConfig],
+      });
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
@@ -294,10 +298,9 @@ describe('FilterManager', () => {
       await filterManager.addFilterConfig(config1);
       await filterManager.addFilterConfig(config2);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        config1,
-        config2,
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [config1, config2],
+      });
     });
 
     it('should throw error when filterId is missing', async () => {
@@ -360,7 +363,7 @@ describe('FilterManager', () => {
         filterPaths: ['name'],
         operator: '$eq',
       };
-      mockFlowModel.getStepParams.mockReturnValue([initialConfig]);
+      mockFlowModel.getStepParams.mockReturnValue({ value: [initialConfig] });
       filterManager = new FilterManager(mockFlowModel as any);
 
       // Add config with same filter but different target
@@ -373,10 +376,9 @@ describe('FilterManager', () => {
 
       await filterManager.addFilterConfig(newConfig);
 
-      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, [
-        initialConfig,
-        newConfig,
-      ]);
+      expect(mockFlowModel.setStepParams).toHaveBeenLastCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: [initialConfig, newConfig],
+      });
     });
   });
 
@@ -409,7 +411,7 @@ describe('FilterManager', () => {
           operator: '$eq',
         },
       ];
-      mockFlowModel.getStepParams.mockReturnValue(initialConfigs);
+      mockFlowModel.getStepParams.mockReturnValue({ value: initialConfigs });
       filterManager = new FilterManager(mockFlowModel as any);
     });
 
@@ -423,14 +425,12 @@ describe('FilterManager', () => {
       const removedCount = await filterManager.removeFilterConfig({ filterId: 'filter-1' });
 
       expect(removedCount).toBe(2);
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
-        FILTER_MANAGER_FLOW_KEY,
-        FILTER_CONFIGS_STEP_KEY,
-        expect.arrayContaining([
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: expect.arrayContaining([
           expect.objectContaining({ filterId: 'filter-2', targetId: 'target-1' }),
           expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
-      );
+      });
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
@@ -438,14 +438,12 @@ describe('FilterManager', () => {
       const removedCount = await filterManager.removeFilterConfig({ targetId: 'target-1' });
 
       expect(removedCount).toBe(2);
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
-        FILTER_MANAGER_FLOW_KEY,
-        FILTER_CONFIGS_STEP_KEY,
-        expect.arrayContaining([
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: expect.arrayContaining([
           expect.objectContaining({ filterId: 'filter-1', targetId: 'target-2' }),
           expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
-      );
+      });
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
@@ -456,15 +454,13 @@ describe('FilterManager', () => {
       });
 
       expect(removedCount).toBe(1);
-      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(
-        FILTER_MANAGER_FLOW_KEY,
-        FILTER_CONFIGS_STEP_KEY,
-        expect.arrayContaining([
+      expect(mockFlowModel.setStepParams).toHaveBeenCalledWith(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, {
+        value: expect.arrayContaining([
           expect.objectContaining({ filterId: 'filter-1', targetId: 'target-1' }),
           expect.objectContaining({ filterId: 'filter-2', targetId: 'target-1' }),
           expect.objectContaining({ filterId: 'filter-2', targetId: 'target-3' }),
         ]),
-      );
+      });
       expect(mockFlowModel.save).toHaveBeenCalled();
     });
 
@@ -485,7 +481,7 @@ describe('FilterManager', () => {
     });
 
     it('should handle empty filterConfigs array', async () => {
-      mockFlowModel.getStepParams.mockReturnValue([]);
+      mockFlowModel.getStepParams.mockReturnValue({ value: [] });
       const emptyFilterManager = new FilterManager(mockFlowModel as any);
 
       const removedCount = await emptyFilterManager.removeFilterConfig({ filterId: 'filter-1' });
@@ -517,7 +513,7 @@ describe('FilterManager', () => {
 
       expect(removedCount).toBe(1);
 
-      const savedConfigs = mockFlowModel.setStepParams.mock.calls[0][2];
+      const savedConfigs = mockFlowModel.setStepParams.mock.calls[0][2].value;
       expect(savedConfigs).toHaveLength(3);
       expect(savedConfigs).toEqual(
         expect.arrayContaining([
