@@ -6,24 +6,24 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from '@formily/antd-v5';
+import { DatePicker } from 'antd';
 import { escapeT } from '@nocobase/flow-engine';
 import { FormFieldModel } from '../FormFieldModel';
 
 export class DateTimeFieldModel extends FormFieldModel {
-  setComponentProps(componentProps) {
-    let { dateFormat, timeFormat } = componentProps || {};
-    if (!componentProps.format && (dateFormat || timeFormat)) {
+  setProps(props) {
+    let { dateFormat, timeFormat } = props || {};
+    if (!props.format && (dateFormat || timeFormat)) {
       if (!dateFormat) {
-        dateFormat = this.componentProps?.dateFormat || 'YYYY-MM-DD';
+        dateFormat = this.props?.dateFormat || 'YYYY-MM-DD';
       }
       if (!timeFormat) {
-        timeFormat = this.componentProps?.timeFormat || 'HH:mm:ss';
+        timeFormat = this.props?.timeFormat || 'HH:mm:ss';
       }
-      componentProps.format = componentProps?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
+      props.format = props?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     }
-    super.setComponentProps({
-      ...componentProps,
+    super.setProps({
+      ...props,
     });
   }
 

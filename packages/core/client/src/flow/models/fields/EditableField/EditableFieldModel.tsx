@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, escapeT } from '@nocobase/flow-engine';
+import { DefaultStructure } from '@nocobase/flow-engine';
 import React from 'react';
-import { observable } from '@formily/reactive';
 import { FormFieldGridModel, FormModel } from '../..';
 import { FieldModel } from '../../base/FieldModel';
 import { JsonInput } from '../../common/JsonInput';
@@ -22,7 +21,6 @@ type Structure = {
 
 export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {
   static supportedFieldInterfaces = '*' as any;
-  componentProps: any = {} as any;
 
   get form() {
     return this.context.form;
@@ -32,121 +30,23 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     return [JsonInput, {}];
   }
 
-  setComponentProps(componentProps) {
-    this.componentProps = {
-      ...this.componentProps,
+  setProps(componentProps) {
+    this.props = {
+      ...this.props,
       ...componentProps,
     };
   }
 
-  getComponentProps() {
+  getProps() {
     return {
       style: { width: '100%' },
       ...this.collectionField.getComponentProps(),
-      ...this.componentProps,
-      value: this.form.getFieldValue(this.fieldPath),
-      onChange: (val) => {
-        const value = val && typeof val === 'object' && 'target' in val ? val.target.value : val;
-        this.form.setFieldValue(this.fieldPath, value);
-      },
+      ...this.props,
     };
   }
 
   render() {
     const [Component, props = {}] = this.component;
-    return <Component {...this.getComponentProps()} {...props} />;
+    return <Component {...this.getProps()} {...props} />;
   }
 }
-
-EditableFieldModel.registerFlow({
-  key: 'editableItemSettings',
-  title: escapeT('Component settings'),
-  sort: 150,
-  steps: {
-    pattern: {
-      title: escapeT('Display mode'),
-      uiSchema: (ctx) => {
-        return {
-          pattern: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
-              {
-                value: 'editable',
-                label: escapeT('Editable'),
-              },
-              {
-                value: 'disabled',
-                label: escapeT('Disabled'),
-              },
-
-              {
-                value: 'readPretty',
-                label: escapeT('Display only'),
-              },
-            ],
-          },
-        };
-      },
-      defaultParams: (ctx) => ({
-        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
-      }),
-      handler(ctx, params) {
-        ctx.model.setComponentProps({
-          disabled: params.pattern === 'disabled',
-          readOnly: params.pattern === 'readPretty',
-          editable: params.pattern === 'editable',
-        });
-      },
-    },
-    model: {
-      title: escapeT('Field component'),
-      uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
-        if (classes.length === 1) {
-          return null;
-        }
-        return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model,
-              value: model,
-            })),
-          },
-        };
-      },
-      beforeParamsSave: async (ctx, params, previousParams) => {
-        if (params.use !== previousParams.use) {
-          await ctx.engine.replaceModel(ctx.model.uid, {
-            use: params.use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-              formItemSettings: {
-                model: {
-                  use: params.use,
-                },
-              },
-            },
-          });
-          ctx.exit();
-        }
-      },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-      },
-    },
-  },
-});

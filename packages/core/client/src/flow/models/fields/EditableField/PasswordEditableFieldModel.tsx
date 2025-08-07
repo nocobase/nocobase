@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Password } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { tval } from '@nocobase/utils/client';
 import { FormFieldModel } from './FormFieldModel';
 
 export class PasswordEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['password'];
   get component() {
-    return [Password, {}];
+    return [Input.Password, {}];
   }
 }
 

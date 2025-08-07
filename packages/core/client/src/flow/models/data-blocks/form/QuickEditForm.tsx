@@ -19,9 +19,8 @@ import {
 import { Button, Skeleton, Form, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FormFieldModel } from '../../fields';
-import { FormModel, FormComponent } from './FormModel';
-
+import { FormFieldModel, FieldModelRenderer } from '../../fields';
+import { FormComponent } from './FormModel';
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
 
@@ -128,7 +127,7 @@ export class QuickEditForm extends FlowModel {
         {this.mapSubModels('fields', (field) => {
           return (
             <Form.Item name={this.fieldPath} key={field.uid} initialValue={this.context.record[this.fieldPath]}>
-              <FlowModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
+              <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
             </Form.Item>
           );
         })}

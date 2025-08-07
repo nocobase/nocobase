@@ -7,18 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NumberPicker } from '@formily/antd-v5';
-import { connect } from '@formily/react';
+import { InputNumber as NumberPicker } from 'antd';
 import { InputNumberProps as AntdInputNumberProps } from 'antd';
-
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
 import { FormFieldModel } from './FormFieldModel';
 
-type ComposedInputNumber = React.ForwardRefExoticComponent<
-  Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
-> & {};
 function toSafeNumber(value) {
   if (!value) {
     return value;
@@ -30,8 +25,9 @@ function toSafeNumber(value) {
   }
 }
 
-const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) => {
+const InputNumber = (props: AntdInputNumberProps) => {
   const { onChange, ...others } = props;
+  console.log(props);
   const handleChange = (v) => {
     if (Number.isNaN(v)) {
       onChange(null);
@@ -47,7 +43,7 @@ const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberProps) =
     inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
   }
   return <NumberPicker {...inputNumberProps} />;
-});
+};
 export class NumberEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['number', 'integer', 'id'];
 

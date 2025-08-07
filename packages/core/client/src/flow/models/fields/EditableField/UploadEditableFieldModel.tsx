@@ -67,7 +67,7 @@ export class UploadEditableFieldModel extends FormFieldModel {
     return true;
   }
   set customRequest(fn) {
-    this.setComponentProps({ customRequest: fn });
+    this.setProps({ customRequest: fn });
   }
   get component() {
     return [CardUpload, {}];
@@ -100,9 +100,9 @@ UploadEditableFieldModel.registerFlow({
       async handler(ctx) {
         const { type } = ctx.model.collectionField;
         if (['belongsToMany', 'hasMany'].includes(type)) {
-          ctx.model.setComponentProps({ multiple: true });
+          ctx.model.setProps({ multiple: true });
         } else {
-          ctx.model.setComponentProps({ maxCount: 1, multiple: false });
+          ctx.model.setProps({ maxCount: 1, multiple: false });
         }
       },
     },

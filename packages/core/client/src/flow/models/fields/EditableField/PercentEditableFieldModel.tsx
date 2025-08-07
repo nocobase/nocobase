@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps } from '@formily/react';
 import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
+import React from 'react';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
 import { FormFieldModel } from './FormFieldModel';
@@ -22,21 +22,20 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-const PercentInput = connect(
-  InputNumber,
-  mapProps((props, field: any) => {
-    const v = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
-    return {
-      ...props,
-      value: v,
-      addonAfter: '%',
-      onChange: (v) => {
-        field.setValue(toValue(v, (v) => v / 100));
-      },
-      style: { width: '100%' },
-    };
-  }),
-);
+const PercentInput = (props) => {
+  const v = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
+  const componentProps = {
+    ...props,
+    value: v,
+    addonAfter: '%',
+    onChange: (v) => {
+      props.onChange(toValue(v, (v) => v / 100));
+    },
+    style: { width: '100%' },
+  };
+  return <InputNumber {...componentProps} />;
+};
+
 export class PercentEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['percent'];
 
