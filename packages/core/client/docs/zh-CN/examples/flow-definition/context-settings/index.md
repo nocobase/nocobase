@@ -20,3 +20,25 @@ FlowSettingsContext 是 FlowRuntimeContext 的 settings 模式，在打开流步
 ### 打开某个流的某个步骤的配置表单
 
 <code src="./openStepSettingsDialog.tsx"></code>
+
+
+## TODO
+
+```ts
+type StepUIMode =
+  | 'dialog'
+  | 'drawer'
+  | { type: 'dialog'; props?: Record<string, any> }
+  | { type: 'drawer'; props?: Record<string, any> };
+
+interface FlowSettingsOpenOptions {
+  model: FlowModel;
+  flowKey: string; // 流标识
+  stepKey?: string; // 某一个 step 标识
+  preset?: boolean; // 预设置的配置，创建时需要配置的步骤
+  uiMode?: StepUIMode; // UI 模式，默认为 dialog
+};
+
+flowEngine.flowSettings.open(options: FlowSettingsOpenOptions);
+model.openFlowSettings(options: FlowSettingsOpenOptions);
+```
