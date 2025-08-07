@@ -10,7 +10,6 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { uid } from '@formily/shared';
 import {
   DragHandler,
   Droppable,

@@ -51,7 +51,7 @@ MapEditableFieldModel.registerFlow({
     zoom: {
       use: 'setDefaultZoomLevel',
       handler(ctx, params) {
-        ctx.model.setComponentProps({
+        ctx.model.setProps({
           zoom: params.zoom,
         });
       },
