@@ -13,7 +13,7 @@ import type { VariableInputProps, ContextSelectorItem } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
 import { VariableTag } from './VariableTag';
 import { isVariableValue } from './utils';
-import { createFinalConverters } from './utils';
+import { createFinalConverters, buildContextSelectorItemFromPath } from './utils';
 
 export const VariableInput: React.FC<VariableInputProps> = ({
   value,
@@ -28,14 +28,30 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     return createFinalConverters(propConverters);
   }, [propConverters]);
 
+  // 当value存在但contextSelectorItem为null时，尝试从value重建contextSelectorItem
+  const resolvedContextSelectorItem = useMemo(() => {
+    if (currentContextSelectorItem) {
+      return currentContextSelectorItem;
+    }
+
+    if (isVariableValue(value) && Array.isArray(metaTree)) {
+      const path = resolvePathFromValue?.(value);
+      if (path) {
+        return buildContextSelectorItemFromPath(path, metaTree);
+      }
+    }
+
+    return null;
+  }, [currentContextSelectorItem, value, metaTree, resolvePathFromValue]);
+
   const ValueComponent = useMemo(() => {
-    if (currentContextSelectorItem == null && isVariableValue(value)) {
+    if (resolvedContextSelectorItem == null && isVariableValue(value)) {
       return VariableTag;
     }
-    const CustomComponent = renderInputComponent?.(currentContextSelectorItem);
+    const CustomComponent = renderInputComponent?.(resolvedContextSelectorItem);
     const finalComponent = CustomComponent || (isVariableValue(value) ? VariableTag : Input);
     return finalComponent;
-  }, [renderInputComponent, currentContextSelectorItem, value]);
+  }, [renderInputComponent, resolvedContextSelectorItem, value]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
@@ -51,7 +67,7 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       const finalValue = resolveValueFromPath?.(contextSelectorItem) || variableValue;
       onChange?.(finalValue);
     },
-    [onChange, resolveValueFromPath, metaTree],
+    [onChange, resolveValueFromPath],
   );
 
   const handleClear = useCallback(() => {
@@ -69,9 +85,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       value: value || '',
       onClear: handleClear,
       onChange: handleInputChange,
+      contextSelectorItem: resolvedContextSelectorItem,
     };
     return props;
-  }, [value, handleInputChange, restProps, handleClear]);
+  }, [value, handleInputChange, restProps, handleClear, resolvedContextSelectorItem]);
 
   return (
     <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', ...restProps.style }}>

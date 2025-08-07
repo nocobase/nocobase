@@ -19,6 +19,7 @@ export interface FlowContextSelectorProps
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   parseValueToPath?: (value: string) => string[] | null;
   formatPathToValue?: (item: ContextSelectorItem) => string;
+  open?: boolean;
 }
 
 export interface ContextSelectorItem {
@@ -67,4 +68,5 @@ export interface VariableTagProps {
   onClear?: () => void;
   className?: string;
   style?: React.CSSProperties;
+  contextSelectorItem?: ContextSelectorItem | null;
 }

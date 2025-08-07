@@ -168,6 +168,25 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   return mergedConverters;
 };
 
+// 根据ContextSelectorItem的fullPath构建完整的标题路径
+export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem): string => {
+  if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
+    return contextSelectorItem?.label || '';
+  }
+
+  // 从fullPath构建路径，最后一个用title，前面的首字母大写作为title
+  const titlePath = contextSelectorItem.fullPath.map((segment, index) => {
+    // 最后一个元素使用meta.title或label
+    if (index === contextSelectorItem.fullPath.length - 1) {
+      return contextSelectorItem.meta?.title || contextSelectorItem.label || segment;
+    }
+    // 前面的元素首字母大写作为简单的title
+    return segment.charAt(0).toUpperCase() + segment.slice(1);
+  });
+
+  return titlePath.join('/');
+};
+
 // 根据路径从metaTree中构建对应的ContextSelectorItem
 export const buildContextSelectorItemFromPath = (
   path: string[],

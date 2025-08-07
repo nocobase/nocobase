@@ -13,15 +13,17 @@ import { CloseCircleFilled } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
 import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
-import { parseValueToPath } from './utils';
+import { parseValueToPath, buildFullTagTitle } from './utils';
 
-export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, className, style }) => {
+export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, className, style, contextSelectorItem }) => {
   const displayedValue = React.useMemo(() => {
+    if (contextSelectorItem) {
+      return buildFullTagTitle(contextSelectorItem);
+    }
     if (!value) return String(value);
-
     const path = parseValueToPath(value);
     return path ? path.join('/') : String(value);
-  }, [value]);
+  }, [value, contextSelectorItem]);
 
   return (
     <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>
