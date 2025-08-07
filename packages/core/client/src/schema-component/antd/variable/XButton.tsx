@@ -9,6 +9,7 @@
 
 import { Button, ButtonProps } from 'antd';
 import React, { forwardRef, useMemo } from 'react';
+import { FlagProvider } from '../../../flag-provider/FlagProvider';
 
 export const XButton = forwardRef((props: ButtonProps, ref: any) => {
   const style = useMemo(() => {
@@ -19,9 +20,11 @@ export const XButton = forwardRef((props: ButtonProps, ref: any) => {
   }, []);
 
   return (
-    <Button aria-label="variable-button" ref={ref} style={style} {...props}>
-      x{props.children}
-    </Button>
+    <FlagProvider isInXButton>
+      <Button aria-label="variable-button" ref={ref} style={style} {...props}>
+        x{props.children}
+      </Button>
+    </FlagProvider>
   );
 });
 XButton.displayName = 'XButton';

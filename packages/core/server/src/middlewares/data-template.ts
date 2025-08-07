@@ -30,13 +30,14 @@ type TraverseOptions = {
   include?: string[];
   through?: string;
   excludePk?: boolean;
+  isHasManyField?: boolean;
 };
 
 const traverseHasMany = (arr: any[], { collection, exclude = [], include = [] }: TraverseOptions) => {
   if (!arr) {
     return arr;
   }
-  return arr.map((item) => traverseJSON(item, { collection, exclude, include }));
+  return arr.map((item) => traverseJSON(item, { collection, exclude, include, isHasManyField: true }));
 };
 
 const traverseBelongsToMany = (arr: any[], { collection, exclude = [], through }: TraverseOptions) => {
@@ -103,9 +104,15 @@ const traverseJSON = (data, options: TraverseOptions) => {
     if (field.options.isForeignKey) {
       continue;
     }
-    if (['sort', 'password', 'sequence'].includes(field.type)) {
+
+    if (!options.isHasManyField && ['sort'].includes(field.type)) {
       continue;
     }
+
+    if (['password', 'sequence'].includes(field.type)) {
+      continue;
+    }
+
     if (field.type === 'hasOne') {
       result[key] = traverseJSON(data[key], {
         collection: collection.db.getCollection(field.target),

@@ -8,19 +8,20 @@
  */
 
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
-import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import filesize from 'filesize';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
+import { useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -196,6 +197,10 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
   useUploadStyleVal(prefixCls);
+  const { isInTableCell } = useFlag();
+
+  const resetStyle = useMemo(() => (isInTableCell ? { display: 'inline-block' } : {}), [isInTableCell]);
+
   return wrapSSR(
     <div
       className={cls(
@@ -211,8 +216,9 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
           }
         `,
       )}
+      style={resetStyle}
     >
-      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)} style={resetStyle}>
         <AttachmentList
           disabled={disabled}
           readPretty

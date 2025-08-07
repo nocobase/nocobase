@@ -84,29 +84,41 @@ NocoBase 支持三种安装方式：
 
 ## 我自己添加的 整理本地安装部署
 参考 https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone  
-> yarn install --frozen-lockfile  
+```bash
+  yarn install --frozen-lockfile  
+```
 
 
 
 升级 NocoBase
 
-> yarn nocobase upgrade
+```bash
+  yarn nocobase upgrade
+``` 
 
 
 安装 NocoBase   
 
-> yarn nocobase install --lang=zh-CN  
+```bash
+  yarn nocobase install --lang=zh-CN
+````
 
 启动 NocoBase
 
 开发环境
-> yarn dev  
+```bash
+  yarn dev  
+```
 
 生产环境
 > # 编译（请确保已执行 `yarn install --frozen-lockfile`）  
-> yarn build  
+```bash 
+  yarn build  
+```
 > # 启动  
-> yarn start
+```bash
+  yarn start
+```
 
 
 备份和还原 

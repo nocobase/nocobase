@@ -363,6 +363,117 @@ class MyPlugin extends Plugin {
 }
 ```
 
+### app.registerVariable()
+
+Register custom variables for frontend use.
+
+- Type
+
+```tsx | pure
+interface VariableOption {
+  /** Unique identifier of the variable */
+  value: string | number;
+  /** Variable name displayed in UI */
+  label?: React.ReactNode;
+  disabled?: boolean;
+  children?: VariableOption[];
+}
+
+interface Variable {
+  /** Unique identifier of the variable */
+  name: string;
+  /** Variable configuration options */
+  useOption: () => ({ option: VariableOption; visible?: boolean });
+  /** Variable context */
+  useCtx: () => (any | ((param: { variableName: string }) => Promise<any>));
+}
+
+class Application {
+  registerVariable(variable: Variable): void;
+}
+```
+
+- Details
+
+Register custom variables for use in the frontend. Note: It is not recommended to register variables in components as it may cause rendering errors. After registration, variables can be used in variable selectors and support asynchronous context handling and nested option structures.
+
+- Example
+
+```tsx | pure
+// Basic variable registration
+app.registerVariable({
+  name: 'currentUser',
+  useOption: () => ({
+    option: {
+      value: 'currentUser',
+      label: 'Current User',
+    },
+    visible: true
+  }),
+  useCtx: () => ({ id: 1, name: 'admin' })
+});
+
+// Variable with asynchronous context support
+app.registerVariable({
+  name: 'dynamicData',
+  useOption: () => ({
+    option: {
+      value: 'dynamicData',
+      label: 'Dynamic Data',
+    }
+  }),
+  useCtx: () => async ({ variableName }) => {
+    const data = await fetchSomeData(variableName);
+    return data;
+  }
+});
+
+// Variable with nested options support
+app.registerVariable({
+  name: 'userSettings',
+  useOption: () => ({
+    option: {
+      value: 'userSettings',
+      label: 'User Settings',
+      children: [
+        {
+          value: 'theme',
+          label: 'Theme Settings',
+        },
+        {
+          value: 'language',
+          label: 'Language Settings',
+        }
+      ]
+    }
+  }),
+  useCtx: () => ({ theme: 'dark', language: 'en-US' })
+});
+```
+
+### app.getVariables()
+
+Get all registered variables.
+
+- Type
+
+```tsx | pure
+class Application {
+  getVariables(): Variable[];
+}
+```
+
+- Details
+
+Returns a list of all registered variables in the application. Typically used for debugging or displaying all available variables in variable selectors.
+
+- Example
+
+```tsx | pure
+const variables = app.getVariables();
+console.log('Registered variables:', variables.map(v => v.name));
+```
+
 ## Hooks
 
 ### useApp()

@@ -39,6 +39,11 @@ export class NotificationManager implements NotificationManager {
   async findChannel(name: string) {
     const repository = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
     const instance = await repository.findOne({ filterByTk: name });
+
+    if (!instance) {
+      return null;
+    }
+
     return this.plugin.app.environment.renderJsonTemplate(instance.toJSON());
   }
 

@@ -11,7 +11,7 @@ import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
-import { getCollectionFieldOptions, useGetCollectionFields } from '../../variable';
+import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../../variable';
 import { Trigger } from '..';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
@@ -23,7 +23,7 @@ import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectio
 function useVariables(config, opts) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
   const compile = useCompile();
-  const getCollectionFields = useGetCollectionFields(dataSourceName);
+  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
   const options: any[] = [];
   if (!opts?.types || opts.types.includes('date')) {
     options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
@@ -50,7 +50,7 @@ function useVariables(config, opts) {
         },
       ],
       compile,
-      getCollectionFields,
+      collectionManager,
     });
     if (fieldOption) {
       options.push(fieldOption);

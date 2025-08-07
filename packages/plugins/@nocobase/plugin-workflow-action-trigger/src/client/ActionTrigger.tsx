@@ -23,7 +23,7 @@ import {
   useWorkflowAnyExecuted,
   CheckboxGroupWithTooltip,
   RadioWithTooltip,
-  useGetCollectionFields,
+  useGetDataSourceCollectionManager,
   TriggerCollectionRecordSelect,
   WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client';
@@ -40,8 +40,8 @@ const COLLECTION_TRIGGER_ACTION = {
 function useVariables(config, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
   const compile = useCompile();
-  const getCollectionFields = useGetCollectionFields(dataSourceName);
-  const getMainCollectionFields = useGetCollectionFields();
+  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
+  const mainCollectionManager = useGetDataSourceCollectionManager();
 
   const langTriggerData = useLang('Trigger data');
   const langUserSubmittedForm = useLang('User acted');
@@ -63,7 +63,7 @@ function useVariables(config, options) {
         },
       ],
       compile,
-      getCollectionFields,
+      collectionManager,
     }),
     ...getCollectionFieldOptions({
       // depth,
@@ -87,7 +87,7 @@ function useVariables(config, options) {
         },
       ],
       compile,
-      getCollectionFields: getMainCollectionFields,
+      collectionManager: mainCollectionManager,
     }),
   ];
   return result;

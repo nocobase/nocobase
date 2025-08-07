@@ -48,7 +48,7 @@ type Props = {
   children?: any;
   className?: string;
   style?: React.CSSProperties;
-  collectionField: CollectionFieldOptions_deprecated;
+  collectionField?: CollectionFieldOptions_deprecated;
   contextCollectionName?: string;
   /**
    * 根据 `onChange` 的第一个参数，判断是否需要触发 `onChange`

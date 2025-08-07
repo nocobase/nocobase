@@ -382,6 +382,8 @@ export const AsyncTasks = () => {
 
   const handleTaskCreated = useCallback(async () => {
     setPopoverVisible(true);
+    refresh();
+    console.log('handleTaskCreated');
   }, []);
   const handleTaskProgress = useCallback(() => {
     refresh();

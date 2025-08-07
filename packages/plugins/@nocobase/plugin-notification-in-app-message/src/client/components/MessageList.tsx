@@ -168,7 +168,9 @@ const MessageList = observer(() => {
                     {message.content?.slice(0, 100) + (message.content?.length > 100 ? '...' : '')}{' '}
                   </Tooltip>
                 </Descriptions.Item>
-                <Descriptions.Item label={t('Datetime')}>{dayjs(message.receiveTimestamp).fromNow()}</Descriptions.Item>
+                <Descriptions.Item label={t('Datetime')}>
+                  {dayjs(Number.parseInt(message.receiveTimestamp.toString(), 10)).fromNow()}
+                </Descriptions.Item>
                 <Descriptions.Item label={t('Status')}>
                   <div style={{ height: token.controlHeight }}>
                     {hoveredMessageId === message.id ? (

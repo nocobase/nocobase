@@ -300,6 +300,49 @@ describe('action', () => {
         expect(response.status).toBe(400);
       });
 
+      it('upload file with wrong extension but correct mime type should be ok', async () => {
+        const imageStorage = await StorageRepo.create({
+          values: {
+            name: 'imageStorage',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              mimetype: 'image/png',
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: imageStorage.name,
+            },
+          ],
+        });
+
+        const { body, status } = await agent.resource('attachments').create({
+          attachmentField: 'customers.avatar',
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/image.txt'),
+        });
+
+        expect(status).toBe(200);
+        expect(body.data.mimetype).toBe('image/png');
+        expect(body.data.size).toBe(255);
+
+        const attachment = await AttachmentRepo.findById(body.data.id);
+        const { documentRoot = 'storage/uploads' } = imageStorage.options || {};
+        const destPath = path.resolve(
+          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
+          imageStorage.path || '',
+        );
+        const stats = await fs.stat(path.join(destPath, attachment.filename));
+        expect(stats.size).toBe(255);
+      });
+
       it('upload to storage which is not default', async () => {
         const BASE_URL = `/storage/uploads/another`;
         const urlPath = 'test/path';

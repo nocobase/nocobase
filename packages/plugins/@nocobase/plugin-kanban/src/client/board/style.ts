@@ -9,7 +9,7 @@
 
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ css, token }) => {
+export const useStyles = createStyles(({ css, token }, { columnWidth = 300 }) => {
   return {
     nbBord: css`
       .react-kanban-board {
@@ -30,8 +30,8 @@ export const useStyles = createStyles(({ css, token }) => {
 
       .react-kanban-card-skeleton {
         box-sizing: border-box;
-        max-width: 300px;
-        min-width: 300px;
+        max-width: ${columnWidth}px;
+        min-width:${columnWidth}px;
         // height: 70vh;
         overflow-x: hidden;
         overflow-y: auto;
@@ -65,7 +65,7 @@ export const useStyles = createStyles(({ css, token }) => {
         background-color: ${token.colorFillQuaternary};
         margin-right: ${token.margin}
         padding-bottom: ${token.margin}
-        width: 300px;
+        width:${columnWidth}px
       }
 
       .react-kanban-column-header {

@@ -66,13 +66,12 @@ export class DataSourceManager {
       hook(dataSource);
     }
 
+    await dataSource.load(options);
     const oldDataSource = this.dataSources.get(dataSource.name);
 
     if (oldDataSource) {
       await oldDataSource.close();
     }
-
-    await dataSource.load(options);
     this.dataSources.set(dataSource.name, dataSource);
 
     for (const hook of this.onceHooks) {

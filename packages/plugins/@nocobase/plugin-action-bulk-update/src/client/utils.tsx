@@ -18,6 +18,7 @@ import {
   useLocalVariables,
   useNavigateNoUpdate,
   useTableBlockContext,
+  useTableSelectorContext,
   useVariables,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
@@ -30,6 +31,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
   const tableBlockContext = useTableBlockContext();
+  const tableSelectorContext = useTableSelectorContext();
   const { rowKey } = tableBlockContext;
 
   const navigate = useNavigateNoUpdate();
@@ -51,7 +53,10 @@ export const useCustomizeBulkUpdateActionProps = () => {
         actionField.data = field.data || {};
         actionField.data.loading = true;
         const selectedRecordKeys =
-          tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
+          tableBlockContext.field?.data?.selectedRowKeys ??
+          expressionScope?.selectedRecordKeys ??
+          tableSelectorContext.field?.data?.selectedRowKeys ??
+          {};
 
         const assignedValues = {};
         const waitList = Object.keys(originalAssignedValues).map(async (key) => {
@@ -148,7 +153,6 @@ export const useCustomizeBulkUpdateActionProps = () => {
           },
         });
       });
-
     },
   };
 };

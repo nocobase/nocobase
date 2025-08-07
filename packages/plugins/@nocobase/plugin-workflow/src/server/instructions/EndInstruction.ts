@@ -19,7 +19,7 @@ interface Config {
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { endStatus = JOB_STATUS.RESOLVED } = <Config>node.config;
-    await processor.saveJob({
+    processor.saveJob({
       status: endStatus,
       nodeId: node.id,
       nodeKey: node.key,

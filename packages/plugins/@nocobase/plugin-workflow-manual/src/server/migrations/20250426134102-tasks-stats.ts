@@ -9,7 +9,7 @@
 
 import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { Migration } from '@nocobase/server';
-import { MANUAL_TASK_TYPE, TASK_STATUS } from '../../common/constants';
+import { TASK_TYPE_MANUAL, TASK_STATUS } from '../../common/constants';
 
 export default class extends Migration {
   appVersion = '<1.7.0';
@@ -72,7 +72,7 @@ export default class extends Migration {
       for (const [userId, stats] of userStatsMap.entries()) {
         const existed = await UserTaskModel.findOne({
           where: {
-            type: MANUAL_TASK_TYPE,
+            type: TASK_TYPE_MANUAL,
             userId,
           },
           transaction,
@@ -89,7 +89,7 @@ export default class extends Migration {
         } else {
           await UserTaskModel.create(
             {
-              type: MANUAL_TASK_TYPE,
+              type: TASK_TYPE_MANUAL,
               userId,
               stats,
             },

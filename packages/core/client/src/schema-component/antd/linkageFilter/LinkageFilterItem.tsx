@@ -14,6 +14,7 @@ import { Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { DynamicComponent } from './DynamicComponent';
 import { RemoveConditionContext } from './context';
 import { useValues } from './useValues';
@@ -35,22 +36,26 @@ export const LinkageFilterItem = observer(
       [setOperator],
     );
     const removeStyle = useMemo(() => ({ color: '#bfbfbf' }), []);
+    const ctx = useFlag();
     return (
       // 添加 nc-filter-item 类名是为了帮助编写测试时更容易选中该元素
       <div style={style} className="nc-filter-item">
         <Space wrap>
-          <DynamicComponent
-            value={leftVar}
-            onChange={setLeftValue}
-            setScopes={(data) => {
-              setOptions(data);
-            }}
-            testid="left-filter-field"
-            nullable={false}
-            constantAbel={false}
-            changeOnSelect={false}
-            readOnly={true}
-          />
+          <FlagProvider isLeftVariable={true} {...ctx}>
+            <DynamicComponent
+              value={leftVar}
+              onChange={setLeftValue}
+              setScopes={(data) => {
+                setOptions(data);
+              }}
+              testid="left-filter-field"
+              nullable={false}
+              constantAbel={false}
+              changeOnSelect={false}
+              readOnly={true}
+            />
+          </FlagProvider>
+
           <Select
             // @ts-ignore
             role="button"
@@ -64,7 +69,6 @@ export const LinkageFilterItem = observer(
             onChange={onOperatorsChange}
             placeholder={t('Comparision')}
           />
-
           <div style={{ display: !operator?.noValue ? 'inline-flex' : 'none' }}>
             <DynamicComponent value={rightVar} schema={schema} onChange={setRightValue} testid="right-filter-field" />
           </div>

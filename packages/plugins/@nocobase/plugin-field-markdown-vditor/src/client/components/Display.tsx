@@ -44,6 +44,14 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
       mode: 'light',
       cdn,
     });
+    setTimeout(() => {
+      containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => {
+          openCustomPreview(img.src);
+        });
+      });
+    }, 0);
   }, [props.value]);
 
   return wrapSSR(
@@ -51,6 +59,42 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
       <div ref={containerRef} style={{ border: 'none', ...(props?.style ?? {}) }} />
     </div>,
   );
+}
+
+function openCustomPreview(src: string) {
+  if (document.getElementById('custom-image-preview')) return;
+
+  // 创建容器
+  const overlay = document.createElement('div');
+  overlay.id = 'custom-image-preview';
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: '9999',
+    cursor: 'zoom-out',
+  });
+
+  const img = document.createElement('img');
+  img.src = src;
+  Object.assign(img.style, {
+    maxWidth: '90%',
+    maxHeight: '90%',
+    borderRadius: '8px',
+    boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+    transition: 'transform 0.2s',
+    cursor: 'zoom-out',
+  });
+
+  overlay.addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+
+  overlay.appendChild(img);
+  document.body.appendChild(overlay);
 }
 
 export const Display = withDynamicSchemaProps((props) => {

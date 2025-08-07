@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { SchemaSettingsItem, useToken, useCurrentUserContext, SchemaSettings } from '@nocobase/client';
+import { SchemaSettingsItem, useToken, useCurrentUserContext } from '@nocobase/client';
 
 export const NickName = () => {
   const { data } = useCurrentUserContext();

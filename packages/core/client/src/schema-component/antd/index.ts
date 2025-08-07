@@ -28,6 +28,7 @@ export * from './divider';
 export * from './error-fallback';
 export * from './expand-action';
 export * from './expiresRadio';
+export * from './fieldset';
 export * from './filter';
 export * from './form';
 export * from './form-dialog';

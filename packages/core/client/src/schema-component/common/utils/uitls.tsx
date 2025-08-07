@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { dayjs, getPickerFormat, Handlebars, getFormatFromDateStr } from '@nocobase/utils/client';
+import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { inferPickerType } from '../../antd/date-picker/util';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -204,11 +205,23 @@ const getVariablesData = (localVariables) => {
   });
   return data;
 };
+function safeCompile(content: string) {
+  // 将非法 {{}} 替换为原文 '{{}}'
+  return content.replace(/{{\s*}}/g, '{{"{{}}"}}');
+}
 
-export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse) {
+export async function getRenderContent(templateEngine, content, variables, localVariables, defaultParse, t?) {
   if (content && templateEngine === 'handlebars') {
+    // 注册 Handlebars helper
+    Handlebars.registerHelper('t', function (key) {
+      if (typeof key === 'string') {
+        return t(key, { ns: NAMESPACE_UI_SCHEMA });
+      }
+      return;
+    });
     try {
-      const renderedContent = Handlebars.compile(content);
+      const safeContent = safeCompile(content);
+      const renderedContent = Handlebars.compile(safeContent);
       // 处理渲染后的内容
       const data = getVariablesData(localVariables);
       const { $nDate } = variables?.ctxRef?.current || {};
@@ -217,11 +230,13 @@ export async function getRenderContent(templateEngine, content, variables, local
         variableDate[v] = $nDate[v]();
       });
       const html = renderedContent({ ...variables?.ctxRef?.current, ...data, $nDate: variableDate });
+      console.log(html);
       return await defaultParse(html);
     } catch (error) {
       if (!/VariablesProvider: .* is not found/.test(error.message)) {
         console.log(error);
       }
+      console.log(content);
       return content;
     }
   } else {

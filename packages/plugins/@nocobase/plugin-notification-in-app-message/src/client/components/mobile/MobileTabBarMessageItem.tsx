@@ -9,9 +9,9 @@
 
 import { observer } from '@formily/reactive-react';
 import { MobileTabBarItem } from '@nocobase/plugin-mobile/client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { startMsgSSEStreamWithRetry, unreadMsgsCountObs, updateUnreadMsgsCount } from '../../observables';
+import { unreadMsgsCountObs } from '../../observables';
 
 const InnerMobileTabBarMessageItem = (props) => {
   const navigate = useNavigate();
@@ -19,31 +19,6 @@ const InnerMobileTabBarMessageItem = (props) => {
   const onClick = () => {
     navigate('/page/in-app-message');
   };
-
-  useEffect(() => {
-    const disposes: Array<() => void> = [];
-    disposes.push(startMsgSSEStreamWithRetry());
-    const disposeAll = () => {
-      while (disposes.length > 0) {
-        const dispose = disposes.pop();
-        dispose && dispose();
-      }
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        disposes.push(startMsgSSEStreamWithRetry());
-      } else {
-        disposeAll();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      disposeAll();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, []);
 
   const selected = props.url && location.pathname.startsWith(props.url);
 

@@ -67,6 +67,7 @@ export default {
   paranoid: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
-    'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
+    'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
   },
 };

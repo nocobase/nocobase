@@ -37,8 +37,11 @@ interface AssignedFieldProps {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField_deprecated();
-  const component = useComponent(uiSchema?.['x-component']);
+  const collectionField = useCollectionField_deprecated();
+  const { getInterface } = useCollectionManager_deprecated();
+  const { uiSchema } = collectionField;
+  const collectionFieldInterface = getInterface(collectionField.interface);
+  const component = useComponent(uiSchema?.['x-component'] || collectionFieldInterface.default.uiSchema['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];

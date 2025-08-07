@@ -85,12 +85,14 @@ function useRecordRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     return currentRecordData;
   };
 
-  const request = useRequest<T>(service, {
+  const request: UseRequestResult<T> & { _defaultParams?: Record<string, any> } = useRequest<T>(service, {
     ...requestOptions,
     manual: dataLoadingMode === 'manual',
     ready: !!action,
     refreshDeps: [action, JSONParams, JSONRecord, resource, association, parentRecord, sourceId, templateFinished],
   });
+
+  request._defaultParams = params;
 
   return request;
 }

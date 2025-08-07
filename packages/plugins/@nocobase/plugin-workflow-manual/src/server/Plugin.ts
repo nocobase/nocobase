@@ -16,7 +16,7 @@ import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-w
 import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
-import { MANUAL_TASK_TYPE, TASK_STATUS } from '../common/constants';
+import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 
 export default class extends Plugin {
   onTaskSave = async (task: Model, { transaction }) => {
@@ -51,7 +51,7 @@ export default class extends Plugin {
       col: 'id',
       transaction,
     });
-    await workflowPlugin.updateTasksStats(task.userId, MANUAL_TASK_TYPE, { pending, all }, { transaction });
+    await workflowPlugin.updateTasksStats(task.userId, TASK_TYPE_MANUAL, { pending, all }, { transaction });
   };
 
   onExecutionStatusChange = async (execution, { transaction }) => {
@@ -132,7 +132,7 @@ export default class extends Plugin {
       userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
     }
     for (const [userId, stats] of userStatsMap.entries()) {
-      await workflowPlugin.updateTasksStats(userId, MANUAL_TASK_TYPE, stats, { transaction });
+      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
     }
   };
 
@@ -238,7 +238,7 @@ export default class extends Plugin {
       userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
     }
     for (const [userId, stats] of userStatsMap.entries()) {
-      await workflowPlugin.updateTasksStats(userId, MANUAL_TASK_TYPE, stats, { transaction });
+      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
     }
   };
 

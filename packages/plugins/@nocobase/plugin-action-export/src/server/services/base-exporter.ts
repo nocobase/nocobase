@@ -22,6 +22,7 @@ import path from 'path';
 import os from 'os';
 import { Logger } from '@nocobase/logger';
 import _ from 'lodash';
+import { Field, RelationField } from '@nocobase/database';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
@@ -198,22 +199,19 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
 
   protected findFieldByDataIndex(dataIndex: Array<string>): IField {
     const { collection } = this.options;
-    const currentField = collection.getField(dataIndex[0]);
-
-    if (dataIndex.length > 1) {
-      let targetCollection: ICollection;
-
-      for (let i = 0; i < dataIndex.length; i++) {
-        const isLast = i === dataIndex.length - 1;
-
-        if (isLast) {
-          return targetCollection.getField(dataIndex[i]);
-        }
-
-        targetCollection = (currentField as IRelationField).targetCollection();
-      }
+    let currentField = collection.getField(dataIndex[0]);
+    if (dataIndex.length === 1) {
+      return currentField;
     }
 
+    let targetCollection = (currentField as RelationField).targetCollection();
+    for (let i = 1; i < dataIndex.length; i++) {
+      currentField = targetCollection.getField(dataIndex[i]);
+      const isLast = i === dataIndex.length - 1;
+      if (!isLast && currentField instanceof RelationField) {
+        targetCollection = currentField.targetCollection();
+      }
+    }
     return currentField;
   }
 

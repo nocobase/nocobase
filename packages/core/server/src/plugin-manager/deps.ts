@@ -56,6 +56,7 @@ const deps: Record<string, string> = {
   lodash: '4.x',
   'china-division': '2.x',
   cronstrue: '2.x',
+  '@nocobase/license-kit': '0.2.x',
 };
 
 export default deps;

@@ -14,6 +14,8 @@ import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
 import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { pick } from 'lodash';
+import { toJSON } from '../../utils';
+import { EventOptions } from '../../Plugin';
 
 export type ScheduleOnField = {
   field: string;
@@ -347,16 +349,26 @@ export default class DateFieldScheduleTrigger {
     });
     const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
     this.cache.delete(eventKey);
-    this.workflow.trigger(
+    // NOTE: data.toJSON() will cause erorr
+
+    const json = toJSON(data);
+    const args: [WorkflowModel, object, EventOptions] = [
       workflow,
       {
-        data: data.toJSON(),
+        data: json,
         date: new Date(nextTime),
       },
       {
         eventKey,
       },
-    );
+    ];
+    if (transaction) {
+      transaction.afterCommit(() => {
+        this.workflow.trigger(...args);
+      });
+    } else {
+      this.workflow.trigger(...args);
+    }
 
     if (!workflow.config.repeat || (workflow.config.limit && workflow.stats.executed >= workflow.config.limit - 1)) {
       return;

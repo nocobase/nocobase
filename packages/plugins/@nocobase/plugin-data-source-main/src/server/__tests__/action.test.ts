@@ -61,4 +61,55 @@ describe('action test', () => {
       'x-uid': 'test',
     });
   });
+
+  test('enable auto simple pagination for large datasets', async () => {
+    const collectionRepository = app.db.getCollection('collections').repository;
+    await collectionRepository.create({
+      values: {
+        name: 'posts',
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    const repository = app.db.getRepository('posts');
+    vi.spyOn(repository, 'getEstimatedRowCount').mockResolvedValue(1000000);
+    await app
+      .agent()
+      .resource('posts')
+      .list({
+        fields: ['id'],
+        pageSize: 1,
+        page: 2,
+        sort: ['id'],
+      });
+
+    const posts = await collectionRepository.findOne({ where: { name: 'posts' } });
+    expect(posts.options.simplePaginate).toBeTruthy();
+
+    await collectionRepository.update({
+      filter: { name: 'posts' },
+      values: {
+        options: {
+          ...posts.options,
+          simplePaginate: false,
+        },
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+
+    await app
+      .agent()
+      .resource('posts')
+      .list({
+        fields: ['id'],
+        pageSize: 1,
+        page: 2,
+        sort: ['id'],
+      });
+    const updatedPosts = await collectionRepository.findOne({ where: { name: 'posts' } });
+    expect(updatedPosts.options.simplePaginate).toBeFalsy();
+    vi.restoreAllMocks();
+  });
 });

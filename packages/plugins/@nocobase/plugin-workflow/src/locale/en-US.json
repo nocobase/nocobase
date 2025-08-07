@@ -209,5 +209,8 @@
   "Inside of branch": "Inside of branch",
   "Workflow todos": "Workflow todos",
   "New version enabled": "New version enabled",
-  "Workflow is not exists": "Workflow is not exists"
+  "Workflow is not exists": "Workflow is not exists",
+  "Select users": "Select users",
+  "Query users": "Query users",
+  "Add": "Add"
 }
