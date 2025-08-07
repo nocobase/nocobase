@@ -148,12 +148,26 @@ CollectionFieldFormItemModel.registerFlow({
       defaultParams: (ctx) => ({
         pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
-      handler(ctx, params) {
-        ctx.model.setProps({
-          disabled: params.pattern === 'disabled',
-          readOnly: params.pattern === 'readPretty',
-          editable: params.pattern === 'editable',
-        });
+      async handler(ctx, params) {
+        if (params.pattern === 'readPretty') {
+          const use =
+            ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+
+          const model = ctx.model.setSubModel('field', {
+            use: use,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+            },
+          });
+          await model.applyAutoFlows();
+        } else {
+          ctx.model.subModels.field.setProps({
+            disabled: params.pattern === 'disabled',
+            editable: params.pattern === 'editable',
+          });
+        }
       },
     },
     model: {

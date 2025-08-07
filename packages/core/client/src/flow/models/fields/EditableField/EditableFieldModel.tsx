@@ -50,3 +50,20 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     return <Component {...this.getProps()} {...props} />;
   }
 }
+
+EditableFieldModel.registerFlow({
+  key: 'editableFieldSetting',
+  sort: 400,
+  steps: {
+    initProps: {
+      handler(ctx) {
+        const collectionField = ctx.model.collectionField;
+        if (collectionField.enum) {
+          ctx.model.setProps({
+            options: collectionField.enum,
+          });
+        }
+      },
+    },
+  },
+});
