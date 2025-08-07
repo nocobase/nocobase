@@ -1015,9 +1015,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel<T>({ ...options, parentId: this.uid, subKey, subType: 'array' });
+      model = this.flowEngine.createModel<T>({ ...options, subKey, subType: 'array' });
     }
-    // model.setParent(this);
+    model.setParent(this);
     const subModels = this.subModels as {
       [subKey: string]: FlowModel[];
     };
@@ -1041,7 +1041,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } else {
       model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
     }
-    // model.setParent(this);
+    model.setParent(this);
     (this.subModels as any)[subKey] = model;
     this.emitter.emit('onSubModelAdded', model);
     return model;

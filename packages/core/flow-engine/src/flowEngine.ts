@@ -300,11 +300,11 @@ export class FlowEngine {
       modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
     }
 
+    modelInstance.onInit(options);
+
     if (parentId && this.#modelInstances.has(parentId)) {
       modelInstance.setParent(this.#modelInstances.get(parentId));
     }
-
-    modelInstance.onInit(options);
 
     this.#modelInstances.set(modelInstance.uid, modelInstance);
 
