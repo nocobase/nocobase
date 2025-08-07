@@ -6,28 +6,160 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { connect, mapReadPretty } from '@formily/react';
+import { DragEndEvent } from '@dnd-kit/core';
 import React from 'react';
-import { escapeT, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  buildFieldItems,
+  SingleRecordResource,
+  escapeT,
+  AddFieldButton,
+  useFlowEngine,
+  DndProvider,
+} from '@nocobase/flow-engine';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
-import { SubTable } from './SubTable';
+import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
-const AssociationTable = connect(
-  (props: any) => {
-    return <SubTable {...props} />;
-  },
-  mapReadPretty((props) => {
-    return <SubTable {...props} />;
-  }),
-);
+import { FieldModel } from '../../../../base/FieldModel';
+import { FieldModelRenderer } from '../../../FieldModelRenderer';
+import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
+// const AssociationTable = connect(
+//   (props: any) => {
+//     return <SubTable {...props} />;
+//   },
+//   mapReadPretty((props) => {
+//     return <SubTable {...props} />;
+//   }),
+// );
+
+// export class TableEditableAssociationFieldModel extends EditableAssociationFieldModel {
+//   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+//   get collection() {
+//     return this.collectionField.targetCollection;
+//   }
+//   get component() {
+//     return [AssociationTable, { form: this.form, name: this.fieldPath }];
+//   }
+// }
+
+const transformItem = (use: string) => {
+  const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
+  if (selectGroup.includes(use)) {
+    return 'SelectEditableFieldModel';
+  }
+  return use;
+};
+
+const AddFieldColumn = ({ model }) => {
+  const items = buildFieldItems(
+    model.collection.getFields(),
+    model,
+    'FormFieldModel',
+    'columns',
+    ({ defaultOptions, fieldPath }) => {
+      return {
+        use: 'SubTableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: model.collection.dataSourceKey,
+              collectionName: model.collection.name,
+              fieldPath,
+            },
+          },
+        },
+        subModels: {
+          field: {
+            use: transformItem(defaultOptions.use),
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: model.collection.dataSourceKey,
+                  collectionName: model.collection.name,
+                  fieldPath,
+                },
+              },
+            },
+          },
+        },
+      };
+    },
+  );
+  return (
+    <AddFieldButton
+      model={model}
+      subModelKey={'columns'}
+      subModelBaseClass="TableCustomColumnModel"
+      items={items}
+      onModelCreated={async (column: SubTableColumnModel) => {
+        await column.applyAutoFlows();
+      }}
+      onSubModelAdded={async (column: SubTableColumnModel) => {
+        const currentBlockModel = model.context.blockModel;
+        if (currentBlockModel instanceof EditFormModel) {
+          currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
+        }
+      }}
+    />
+  );
+};
+
+const HeaderWrapperComponent = React.memo((props) => {
+  const engine = useFlowEngine();
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.id && over?.id && active.id !== over.id) {
+      engine.moveModel(active.id as string, over.id as string);
+    }
+  };
+
+  return (
+    <DndProvider onDragEnd={onDragEnd}>
+      <thead {...props} />
+    </DndProvider>
+  );
+});
 
 export class TableEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
   get collection() {
     return this.collectionField.targetCollection;
   }
+  getColumns() {
+    const { enableIndexColumn } = this.props;
+    const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
+    return [
+      enableIndexColumn && {
+        key: '__index__',
+        width: 48,
+        align: 'center',
+        fixed: 'left',
+        render: (props) => {
+          return props.rowIdx + 1;
+        },
+      },
+      ...baseColumns,
+      {
+        key: 'addColumn',
+        fixed: 'right',
+        width: 100,
+        title: <AddFieldColumn model={this} />,
+      },
+    ].filter(Boolean) as any;
+  }
+
   get component() {
-    return [AssociationTable, { form: this.form, name: this.fieldPath }];
+    const columns = this.getColumns();
+    return [
+      SubTableField,
+      {
+        columns,
+        components: {
+          header: {
+            wrapper: HeaderWrapperComponent,
+          },
+        },
+      },
+    ];
   }
 }
 
@@ -60,7 +192,7 @@ TableEditableAssociationFieldModel.registerFlow({
         allowAddNew: true,
       },
       handler(ctx, params) {
-        ctx.model.setComponentProps({
+        ctx.model.setProps({
           allowAddNew: params.allowAddNew,
         });
       },
@@ -81,7 +213,7 @@ TableEditableAssociationFieldModel.registerFlow({
         enableIndexColumn: true,
       },
       handler(ctx, params) {
-        ctx.model.setComponentProps({
+        ctx.model.setProps({
           enableIndexColumn: params.enableIndexColumn,
         });
       },

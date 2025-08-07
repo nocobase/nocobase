@@ -6,7 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
@@ -77,62 +76,6 @@ function LazySelect(props) {
   );
 }
 
-const AssociationSelect = connect(
-  (props: any) => {
-    return <LazySelect {...props} />;
-  },
-  mapProps((props, field) => {
-    return {
-      ...props,
-    };
-  }),
-  mapReadPretty((props) => {
-    const currentModel: any = useFlowModel();
-
-    const { fieldNames, value } = props;
-    if (!value) {
-      return;
-    }
-    const field = currentModel.subModels.field as FlowModel;
-    const key = value?.[fieldNames.value];
-    const fieldModel = field.createFork({}, key);
-    fieldModel.context.defineProperty('record', {
-      get: () => value,
-    });
-    fieldModel.context.defineProperty('fieldValue', {
-      get: () => value?.[fieldNames.label],
-    });
-
-    const arrayValue = castArray(value);
-
-    return (
-      <>
-        {arrayValue.map((v, index) => {
-          const key = `${index}`;
-          const fieldModel = field.createFork({}, key);
-          fieldModel.context.defineProperty('record', {
-            get: () => v,
-          });
-          fieldModel.context.defineProperty('fieldValue', {
-            get: () => v?.[fieldNames.label],
-          });
-          fieldModel.context.defineProperty('recordIndex', {
-            get: () => index,
-          });
-
-          const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
-          return (
-            <React.Fragment key={index}>
-              {index > 0 && ', '}
-              {content}
-            </React.Fragment>
-          );
-        })}
-      </>
-    );
-  }),
-);
-
 export class SelectEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
@@ -155,7 +98,7 @@ export class SelectEditableAssociationFieldModel extends EditableAssociationFiel
     return this.selectProps.dataSource;
   }
   get component() {
-    return [AssociationSelect, { options: this.selectProps.dataSource }];
+    return [LazySelect, { options: this.selectProps.dataSource }];
   }
 }
 

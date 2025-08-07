@@ -24,16 +24,16 @@ import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
+import { FieldModelRenderer } from '../../../FieldModelRenderer';
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue }: any) => {
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
-  const currentValue = model?.field?.value;
   fieldModel.context.defineProperty('fieldValue', {
     get: () => {
-      return model?.field?.value || currentValue;
+      return others.value;
     },
     cache: false,
   });
@@ -52,9 +52,9 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         },
         content: (popover) => {
           return (
-            <>
-              <FlowModelRenderer model={model} uid={model.uid} />
-            </>
+            <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
+              <FieldModelRenderer model={model} uid={model.uid} {...others} />
+            </Form.Item>
           );
         },
       });
@@ -124,47 +124,48 @@ export class SubTableColumnModel extends FieldModel {
         dataIndex: this.props.dataIndex,
         title: this.props.title,
         model: this,
-        // handleSave,
       }),
       render: this.render(),
     };
   }
   render() {
-    return (value, record, index) => (
-      <div
-        className={css`
-          .ant-formily-item {
-            margin-bottom: 0;
-          }
-        `}
-      >
-        {this.mapSubModels('field', (action: EditableFieldModel) => {
-          record.__key = record.__key || uid();
-          const fork: any = action.createFork({}, `${record.__key}`);
-          return (
-            <Form.Item
-              key={`${index}-${action.fieldPath}`}
-              name={[index, action.fieldPath]}
-              style={{ marginBottom: 0 }}
-              initialValue={value}
-            >
-              {fork.constructor.isLargeField ? (
-                <LargeFieldEdit
-                  model={fork}
-                  params={{
-                    fieldPath: action.fieldPath,
-                    index: record.__key,
-                  }}
-                  defaultValue={value}
-                />
-              ) : (
-                <FlowModelRenderer model={fork} />
-              )}
-            </Form.Item>
-          );
-        })}
-      </div>
-    );
+    return (props) => {
+      const { value, id, rowIdx } = props;
+      return (
+        <div
+          className={css`
+            .ant-formily-item {
+              margin-bottom: 0;
+            }
+          `}
+        >
+          {this.mapSubModels('field', (action: EditableFieldModel) => {
+            const fork: any = action.createFork({}, `${id}`);
+            return (
+              <Form.Item
+                key={id}
+                name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
+                style={{ marginBottom: 0 }}
+                initialValue={value}
+              >
+                {fork.constructor.isLargeField ? (
+                  <LargeFieldEdit
+                    model={fork}
+                    params={{
+                      fieldPath: [(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath],
+                      index: id,
+                    }}
+                    defaultValue={value}
+                  />
+                ) : (
+                  <FieldModelRenderer model={fork} {...props} />
+                )}
+              </Form.Item>
+            );
+          })}
+        </div>
+      );
+    };
   }
 }
 
@@ -190,7 +191,7 @@ SubTableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-
+        await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);

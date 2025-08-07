@@ -195,25 +195,20 @@ CollectionFieldFormItemModel.registerFlow({
       },
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.use !== previousParams.use) {
-          await ctx.engine.replaceModel(ctx.model.uid, {
+          const model = ctx.model.setSubModel('field', {
             use: params.use,
             stepParams: {
               fieldSettings: {
                 init: ctx.model.getFieldSettingsInitParams(),
               },
-              formItemSettings: {
-                model: {
-                  use: params.use,
-                },
-              },
             },
           });
-          ctx.exit();
+          await model.applyAutoFlows();
         }
       },
       defaultParams: (ctx) => {
         return {
-          use: ctx.model.use,
+          use: ctx.model.subModels.field.use,
         };
       },
       async handler(ctx, params) {
