@@ -20,6 +20,7 @@ export class O2OFieldInterface extends CollectionFieldInterface {
   title = '{{t("One to one")}}';
   description = '{{t("One to one description")}}';
   isAssociation = true;
+  validationType = 'object';
   default = {
     type: 'hasOne',
     // name,

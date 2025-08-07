@@ -46,7 +46,7 @@ export abstract class CollectionFieldInterface {
   operators?: any[];
   properties?: any;
   validationType?: string;
-  availableValidationOptions?: string[];
+  availableValidationOptions: string[] = [];
   excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
@@ -92,9 +92,7 @@ export abstract class CollectionFieldInterface {
   }
   getConfigureFormProperties() {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
-    if (this.availableValidationOptions?.length) {
-      this.availableValidationOptions.push('required');
-    }
+    this.availableValidationOptions.push('required');
     const validationProps = this.validationType
       ? {
           validation: {

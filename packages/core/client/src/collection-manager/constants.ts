@@ -297,6 +297,14 @@ export const FIELDS_VALIDATION_OPTIONS = {
       ],
     },
   ],
+  object: [
+    {
+      key: 'required',
+      label: 'Required',
+      hasValue: false,
+      params: [],
+    },
+  ],
 } as const;
 
 export type ValidationKeysByType = {

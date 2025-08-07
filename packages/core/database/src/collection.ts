@@ -248,6 +248,18 @@ export class Collection<
         return;
       }
 
+      if (field instanceof RelationField) {
+        if (field.options?.validation.rules) {
+          const isRequired = field.options?.validation.rules.some((rule) => rule.name === 'required');
+          if (isRequired && !val) {
+            throw new Error(
+              t('{{#label}} is required', { ns: 'client', label: field.options.uiSchema?.title || field.name }),
+            );
+          }
+        }
+        return;
+      }
+
       const fieldLabel = field.options.uiSchema?.title || field.name;
       const joiSchema = buildJoiSchema(field.options.validation, {
         label: `${t('Field', { ns: 'client' })}: ${fieldLabel}`,
