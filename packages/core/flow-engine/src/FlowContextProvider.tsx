@@ -12,13 +12,26 @@ import { FlowContext, FlowEngineContext } from './flowContext';
 import { FlowView } from './views/FlowView';
 
 export const FlowReactContext = createContext<FlowContext>(null);
+export const FlowViewContext = createContext<FlowContext>(null);
 
 export function FlowContextProvider(props: { children: React.ReactNode; context: FlowContext }) {
   return <FlowReactContext.Provider value={props.context}>{props.children}</FlowReactContext.Provider>;
 }
 
+export function FlowViewContextProvider(props: { children: React.ReactNode; context: FlowContext }) {
+  return (
+    <FlowViewContext.Provider value={props.context}>
+      <FlowReactContext.Provider value={props.context}>{props.children}</FlowReactContext.Provider>
+    </FlowViewContext.Provider>
+  );
+}
+
 export function useFlowContext<T = FlowEngineContext>() {
   return useContext(FlowReactContext) as T;
+}
+
+export function useFlowViewContext<T = FlowEngineContext>() {
+  return useContext(FlowViewContext) as T;
 }
 
 export function useFlowView() {
