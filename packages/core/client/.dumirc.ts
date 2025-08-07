@@ -382,12 +382,16 @@ export default defineConfig({
               link: '/examples/hooks/use-flow-context',
             },
             {
+              title: 'useFlowEngineContext',
+              link: '/examples/hooks/use-flow-engine-context',
+            },
+            {
               title: 'useFlowModelContext',
-              link: '/examples/hooks/use-flow-context',
+              link: '/examples/hooks/use-flow-model-context',
             },
             {
               title: 'useFlowSettingsContext',
-              link: '/examples/hooks/use-flow-context',
+              link: '/examples/hooks/use-flow-settings-context',
             },
           ],
         },
