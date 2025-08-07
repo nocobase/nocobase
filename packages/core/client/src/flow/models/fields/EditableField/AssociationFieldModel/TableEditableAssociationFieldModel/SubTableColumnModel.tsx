@@ -143,6 +143,7 @@ export class SubTableColumnModel extends FieldModel {
             const fork: any = action.createFork({}, `${id}`);
             return (
               <Form.Item
+                {...this.props}
                 key={id}
                 name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
                 style={{ marginBottom: 0 }}
@@ -299,6 +300,79 @@ SubTableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
+      },
+    },
+    initialValue: {
+      title: escapeT('Default value'),
+      uiSchema: {
+        defaultValue: {
+          'x-component': 'DefaultValue',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: (ctx) => ({
+        defaultValue: ctx.model.collectionField.defaultValue,
+      }),
+      handler(ctx, params) {
+        ctx.model.setProps({ initialValue: params.defaultValue });
+      },
+    },
+    required: {
+      title: escapeT('Required'),
+      uiSchema: {
+        required: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      handler(ctx, params) {
+        const rules = ctx.model.getProps().rules || [];
+        if (params.required) {
+          rules.push({
+            required: true,
+          });
+        }
+        ctx.model.setProps({ rules });
+      },
+    },
+    pattern: {
+      title: escapeT('Display mode'),
+      uiSchema: (ctx) => {
+        return {
+          pattern: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              {
+                value: 'editable',
+                label: escapeT('Editable'),
+              },
+              {
+                value: 'disabled',
+                label: escapeT('Disabled'),
+              },
+
+              {
+                value: 'readPretty',
+                label: escapeT('Display only'),
+              },
+            ],
+          },
+        };
+      },
+      defaultParams: (ctx) => ({
+        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
+      }),
+      handler(ctx, params) {
+        ctx.model.setProps({
+          disabled: params.pattern === 'disabled',
+          readOnly: params.pattern === 'readPretty',
+          editable: params.pattern === 'editable',
+        });
       },
     },
   },
