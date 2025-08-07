@@ -47,4 +47,10 @@ export class AIManager {
       supportedModel: supportedModel ?? [SupportedModel.LLM],
     }));
   }
+
+  getSupportedProvider(model: SupportedModel): string[] {
+    return Array.from(this.llmProviders.entries())
+      .filter(([_, { supportedModel }]) => supportedModel && supportedModel.includes(model))
+      .map(([name]) => name);
+  }
 }
