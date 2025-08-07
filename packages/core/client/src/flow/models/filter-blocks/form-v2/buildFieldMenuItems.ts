@@ -9,7 +9,7 @@
 
 // ==================== 字段菜单构建器 ====================
 
-import { Collection, CollectionField, ModelConstructor } from '@nocobase/flow-engine';
+import { CollectionField, ModelConstructor, FlowModel } from '@nocobase/flow-engine';
 import { FilterFormFieldGridModel } from './FilterFormFieldGridModel';
 
 interface FieldMenuItem {
@@ -31,12 +31,12 @@ interface FieldMenuItem {
 
 /**
  * 构建字段菜单列表
- * @param collections Collection数组
+ * @param dataModels FlowModel数组
  * @param options 可选配置
  * @returns 字段菜单项数组
  */
-export function buildFieldMenuItems(
-  collections: Collection[],
+export async function buildFieldMenuItems(
+  dataModels: FlowModel[],
   gridModel: FilterFormFieldGridModel,
   subModelBaseClass: string | ModelConstructor,
   buildCreateModelOptions: (options: any) => any,
@@ -47,8 +47,8 @@ export function buildFieldMenuItems(
     excludeInterfaces?: string[]; // 排除的字段接口
     filterFields?: (field: CollectionField) => boolean; // 自定义字段过滤器
   },
-): FieldMenuItem[] {
-  if (!collections || collections.length === 0) {
+): Promise<FieldMenuItem[]> {
+  if (!dataModels || dataModels.length === 0) {
     return [];
   }
 
@@ -68,46 +68,22 @@ export function buildFieldMenuItems(
 
   const defaultFieldClass = fieldClasses.find((fieldClass) => fieldClass['supportedFieldInterfaces'] === '*');
 
-  // 按数据源分组
-  const dataSourceMap = new Map<string, Collection[]>();
+  const menuItems: FieldMenuItem[] = [
+    {
+      key: 'blocks',
+      label: 'Block list',
+      type: 'group' as const,
+      searchPlaceholder: 'Search blocks',
+      children: [],
+    },
+  ];
 
-  collections.forEach((collection) => {
-    const dataSourceKey = collection.dataSourceKey;
-    if (!dataSourceMap.has(dataSourceKey)) {
-      dataSourceMap.set(dataSourceKey, []);
-    }
-    const sourceCollections = dataSourceMap.get(dataSourceKey);
-    if (sourceCollections) {
-      sourceCollections.push(collection);
-    }
-  });
-
-  const menuItems: FieldMenuItem[] = [];
-
-  // 为每个数据源创建菜单项
-  for (const [dataSourceKey, dataSourceCollections] of dataSourceMap) {
-    const dataSource = dataSourceCollections[0].dataSource;
-
-    const dataSourceMenuItem: FieldMenuItem = {
-      key: dataSourceKey,
-      label: dataSource.displayName,
-      children: [
-        {
-          key: 'collections',
-          label: 'Collections',
-          type: 'group' as const,
-          searchable: true,
-          searchPlaceholder: 'Search collections',
-          children: [],
-        },
-      ],
-    };
-
-    // 为每个集合创建菜单项
-    dataSourceCollections.forEach((collection) => {
-      const collectionMenuItem: FieldMenuItem = {
-        key: `${dataSourceKey}.${collection.name}`,
-        label: collection.title,
+  // 为每个数据模型创建菜单项
+  await Promise.all(
+    dataModels.map(async (model) => {
+      const modelMenuItem: FieldMenuItem = {
+        key: model.uid,
+        label: `${model.title} #${model.uid.substring(0, 4)}`,
         children: [
           {
             key: 'fields',
@@ -120,8 +96,8 @@ export function buildFieldMenuItems(
         ],
       };
 
-      // 获取集合的所有字段
-      const fields = collection.getFields();
+      // 获取模型的所有字段
+      const fields = (await (model as any).getFilterFields?.()) || [];
 
       // 过滤字段
       const filteredFields = fields.filter((field) => {
@@ -162,38 +138,28 @@ export function buildFieldMenuItems(
         };
 
         const fieldMenuItem: FieldMenuItem = {
-          key: `${dataSourceKey}.${collection.name}.${field.name}`,
+          key: `${model.uid}.${field.name}`,
           label: field.title,
-          value: `${dataSourceKey}.${collection.name}.${field.name}`,
+          value: `${model.uid}.${field.name}`,
           icon: fieldClass.meta?.icon,
           createModelOptions: buildCreateModelOptions({
             defaultOptions,
             collectionField: field,
             fieldPath: field.name,
             fieldModelClass: fieldClass,
-            collection,
+            model,
           }),
         };
 
-        collectionMenuItem.children[0].children.push(fieldMenuItem);
+        modelMenuItem.children[0].children.push(fieldMenuItem);
       });
 
-      // 只有当集合有字段时才添加到数据源菜单
-      if (collectionMenuItem.children && collectionMenuItem.children.length > 0) {
-        dataSourceMenuItem.children[0].children.push(collectionMenuItem);
+      // 只有当模型有字段时才添加到区块列表菜单
+      if (modelMenuItem.children[0].children.length > 0) {
+        menuItems[0].children.push(modelMenuItem);
       }
-    });
-
-    // 只有当数据源有集合时才添加到最终菜单
-    if (dataSourceMenuItem.children && dataSourceMenuItem.children.length > 0) {
-      menuItems.push({
-        key: 'dataSources',
-        label: 'Data sources',
-        type: 'group' as const,
-        children: [dataSourceMenuItem],
-      });
-    }
-  }
+    }),
+  );
 
   return menuItems;
 }
@@ -222,16 +188,17 @@ export function flattenFieldMenuItems(menuItems: FieldMenuItem[]): string[] {
 /**
  * 根据字段路径查找对应的字段对象
  */
-export function findFieldByPath(collections: Collection[], fieldPath: string): CollectionField | undefined {
-  const [dataSourceKey, collectionName, fieldName] = fieldPath.split('.');
+export function findFieldByPath(dataModels: FlowModel[], fieldPath: string): CollectionField | undefined {
+  const [modelUid, fieldName] = fieldPath.split('.');
 
-  const collection = collections.find((c) => c.dataSourceKey === dataSourceKey && c.name === collectionName);
+  const model = dataModels.find((m) => m.uid === modelUid);
 
-  if (!collection) {
+  if (!model) {
     return undefined;
   }
 
-  return collection.getField(fieldName);
+  const fields = (model as any).getFilterFields?.() || [];
+  return fields.find((field) => field.name === fieldName);
 }
 
 function getFieldModelClass(fieldInterface: string, fieldClasses: any[], defaultFieldClass: any) {
