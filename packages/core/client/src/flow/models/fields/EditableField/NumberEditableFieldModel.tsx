@@ -27,7 +27,6 @@ function toSafeNumber(value) {
 
 const InputNumber = (props: AntdInputNumberProps) => {
   const { onChange, ...others } = props;
-  console.log(props);
   const handleChange = (v) => {
     if (Number.isNaN(v)) {
       onChange(null);

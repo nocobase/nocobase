@@ -30,8 +30,13 @@ SelectEditableFieldModel.registerFlow({
     initProps: {
       handler(ctx) {
         const collectionField = ctx.model.collectionField;
+        if (collectionField.enum) {
+          ctx.model.setProps({
+            options: collectionField.enum,
+          });
+        }
         if (collectionField.type === 'array') {
-          ctx.model.setComponentProps({
+          ctx.model.setProps({
             mode: 'multiple',
           });
         }

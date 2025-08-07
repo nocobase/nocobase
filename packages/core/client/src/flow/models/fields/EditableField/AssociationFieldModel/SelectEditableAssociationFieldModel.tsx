@@ -139,13 +139,13 @@ export class SelectEditableAssociationFieldModel extends EditableAssociationFiel
   selectProps = observable({} as any);
 
   set onPopupScroll(fn) {
-    this.setComponentProps({ onPopupScroll: fn });
+    this.setProps({ onPopupScroll: fn });
   }
   set onDropdownVisibleChange(fn) {
-    this.setComponentProps({ onDropdownVisibleChange: fn });
+    this.setProps({ onDropdownVisibleChange: fn });
   }
   set onSearch(fn) {
-    this.setComponentProps({ onSearch: fn });
+    this.setProps({ onSearch: fn });
   }
 
   setDataSource(dataSource) {
@@ -173,7 +173,7 @@ SelectEditableAssociationFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        const labelFieldName = ctx.model.componentProps.fieldNames.label;
+        const labelFieldName = ctx.model.props.fieldNames.label;
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
@@ -210,7 +210,7 @@ SelectEditableAssociationFieldModel.registerFlow({
   steps: {
     setScope: {
       async handler(ctx, params) {
-        const labelFieldValue = ctx.model.componentProps.fieldNames.value;
+        const labelFieldValue = ctx.model.props.fieldNames.value;
         const resource = ctx.model.resource;
         const dataSource = ctx.model.getDataSource();
         resource.setPage(1);
@@ -282,7 +282,7 @@ SelectEditableAssociationFieldModel.registerFlow({
       async handler(ctx, params) {
         try {
           const targetCollection = ctx.model.collectionField.targetCollection;
-          const labelFieldName = ctx.model.componentProps.fieldNames.label;
+          const labelFieldName = ctx.model.props.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
 
           const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
