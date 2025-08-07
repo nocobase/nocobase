@@ -98,7 +98,7 @@ export class SubTableColumnModel extends FieldModel {
               width: calc(${this.props.width}px - 16px);
             `}
           >
-            {this.props.title || this.collectionField.title}
+            {this.props.title}
           </div>
         </FlowsFloatContextMenu>
       </Droppable>
@@ -319,26 +319,7 @@ SubTableColumnModel.registerFlow({
     },
     required: {
       title: escapeT('Required'),
-      uiSchema: {
-        required: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
-          },
-        },
-      },
-      handler(ctx, params) {
-        const rules = ctx.model.getProps().rules || [];
-        if (params.required) {
-          rules.push({
-            required: true,
-            message: ctx.t('The field value is required'),
-          });
-        }
-        ctx.model.setProps({ rules });
-      },
+      use: 'required',
     },
     pattern: {
       title: escapeT('Display mode'),

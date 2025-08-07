@@ -9,7 +9,6 @@
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
-import { castArray } from 'lodash';
 import { observable } from '@formily/reactive';
 import React from 'react';
 import { EditableAssociationFieldModel } from './EditableAssociationFieldModel';
@@ -51,7 +50,7 @@ function LabelByField(props) {
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
-function LazySelect(props) {
+export function LazySelect(props) {
   const { fieldNames, value, multiple, options, ...others } = props;
   const realOptions =
     options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];

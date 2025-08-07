@@ -118,25 +118,7 @@ CollectionFieldFormItemModel.registerFlow({
     },
     required: {
       title: escapeT('Required'),
-      uiSchema: {
-        required: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
-          },
-        },
-      },
-      handler(ctx, params) {
-        const rules = ctx.model.getProps().rules || [];
-        if (params.required) {
-          rules.push({
-            required: true,
-          });
-        }
-        ctx.model.setProps({ rules });
-      },
+      use: 'required',
     },
     pattern: {
       title: escapeT('Display mode'),
