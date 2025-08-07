@@ -48,22 +48,13 @@ export class TaskType implements ITask {
   /**
    * Cancel the task
    */
-  async cancel({ silent = false } = {}) {
+  async cancel() {
     if (this.record.status === TASK_STATUS.RUNNING) {
       this.abortController.abort();
     }
     if (this.isCanceled) {
       return this;
     }
-    await this.record.update(
-      {
-        status: TASK_STATUS.CANCELED,
-        doneAt: new Date(),
-      },
-      {
-        hooks: !silent,
-      },
-    );
     this.logger?.debug(`Task ${this.record.id} cancelled`);
     return this;
   }
@@ -85,7 +76,7 @@ export class TaskType implements ITask {
       progressTotal: progress.total,
       progressCurrent: progress.current,
     });
-    this.logger?.debug(
+    this.logger?.trace(
       `Task ${this.record.id} progress update - current: ${progress.current}, total: ${progress.total}`,
     );
     this.onProgress?.(this.record);
@@ -127,7 +118,7 @@ export class TaskType implements ITask {
       });
     } catch (error) {
       if (error instanceof CancelError) {
-        this.cancel();
+        // this.cancel();
         this.logger?.info(`Task ${this.record.id} was cancelled during execution`);
         return;
       } else {

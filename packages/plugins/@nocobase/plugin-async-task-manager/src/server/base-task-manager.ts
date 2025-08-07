@@ -48,7 +48,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     : 3;
 
   private idle = () => {
-    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS);
+    return this.app.serving(WORKER_JOB_ASYNC_TASK_PROCESS) && this.tasks.size < this.concurrency;
   };
 
   private onQueueTask = async ({ id }: QueueMessage) => {
@@ -58,7 +58,7 @@ export class BaseTaskManager implements AsyncTasksManager {
 
   private onTaskProgress = (item: TaskModel) => {
     const userId = item.createdById;
-    this.logger.debug(`Task ${item.id} of user(${userId}) progress: ${item.progressCurrent} / ${item.progressTotal}`);
+    this.logger.trace(`Task ${item.id} of user(${userId}) progress: ${item.progressCurrent} / ${item.progressTotal}`);
     if (userId) {
       const throttledEmit = this.getThrottledProgressEmitter(item.id, userId);
       throttledEmit(item);
@@ -81,12 +81,6 @@ export class BaseTaskManager implements AsyncTasksManager {
   private onTaskStatusChanged = (task) => {
     if (!task.changed('status')) return;
 
-    if (task.status === TASK_STATUS.CANCELED) {
-      // Remove task immediately when cancelled
-      this.progressThrottles.delete(task.id);
-      this.tasks.delete(task.id);
-    }
-
     const userId = task.createdById;
     if (!userId) return;
 
@@ -107,6 +101,11 @@ export class BaseTaskManager implements AsyncTasksManager {
         throttled.cancel();
         this.progressThrottles.delete(task.id);
       }
+    }
+
+    if (task.doneAt) {
+      this.progressThrottles.delete(task.id);
+      this.tasks.delete(task.id);
     }
 
     if (task.status === TASK_STATUS.SUCCEEDED) {
@@ -240,7 +239,9 @@ export class BaseTaskManager implements AsyncTasksManager {
       return;
     }
     this.logger.info(`Cancelling task ${taskId}, type: ${task.constructor.name}`);
-    return task.cancel();
+    this.progressThrottles.delete(taskId);
+    task.cancel();
+    this.tasks.delete(taskId);
   }
 
   async createTask(data: TaskModel, { useQueue, ...options }: CreateTaskOptions = {}): Promise<ITask> {

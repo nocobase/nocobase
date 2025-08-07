@@ -21,6 +21,7 @@ export default {
         filter: {
           createdById: ctx.auth.user.id,
         },
+        blacklist: ['params'],
       });
       await actions.list(ctx, next);
     },
@@ -52,7 +53,12 @@ export default {
       }
 
       const taskManager = ctx.app.container.get('AsyncTaskManager');
-      taskManager.cancelTask(task.id);
+      await taskManager.cancelTask(task.id);
+
+      await task.update({
+        status: TASK_STATUS.CANCELED,
+        doneAt: new Date(),
+      });
 
       ctx.status = 202;
       await next();

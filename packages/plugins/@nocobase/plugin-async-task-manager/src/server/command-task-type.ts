@@ -41,10 +41,10 @@ export class CommandTaskType extends TaskType {
           execArgv: isDev ? ['--require', 'tsx/cjs'] : [],
           workerData: {
             argv,
-            env: {
-              ...process.env,
-              WORKER_MODE: '-',
-            },
+          },
+          env: {
+            ...process.env,
+            WORKER_MODE: '-',
           },
         });
 
@@ -61,7 +61,7 @@ export class CommandTaskType extends TaskType {
         });
 
         worker.on('message', (message) => {
-          this.logger?.debug(`Worker message received for task ${this.record.id} - type: ${message.type}`);
+          this.logger?.trace(`Worker message received for task ${this.record.id} - type: ${message.type}`);
           if (message.type === 'progress') {
             this.reportProgress(message.payload);
           }

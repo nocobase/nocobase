@@ -20,12 +20,14 @@ import {
 
 export const createPubSubManager = (app: Application, options: PubSubManagerOptions) => {
   const pubSubManager = new PubSubManager(app, options);
-  app.on('afterStart', async () => {
-    await pubSubManager.connect();
-  });
-  app.on('afterStop', async () => {
-    await pubSubManager.close();
-  });
+  if (app.serving()) {
+    app.on('afterStart', async () => {
+      await pubSubManager.connect();
+    });
+    app.on('afterStop', async () => {
+      await pubSubManager.close();
+    });
+  }
   return pubSubManager;
 };
 
@@ -59,6 +61,10 @@ export class PubSubManager {
 
   async connect() {
     if (!this.adapter) {
+      return;
+    }
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not connect to event queue');
       return;
     }
     await this.adapter.connect();
@@ -114,6 +120,6 @@ export class PubSubManager {
 
     await this.adapter.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
 
-    this.app.logger.debug(`[PubSubManager] published message to channel ${channel}`);
+    this.app.logger.trace(`[PubSubManager] published message to channel ${channel}`);
   }
 }

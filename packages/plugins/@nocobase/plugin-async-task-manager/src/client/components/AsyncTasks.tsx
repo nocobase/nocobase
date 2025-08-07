@@ -283,7 +283,12 @@ const AsyncTasksButton = (props) => {
       >
         <Button
           className={['sync-task-button', styles.button].join(' ')}
-          onClick={() => setPopoverVisible(!popoverVisible)}
+          onClick={() => {
+            setPopoverVisible(!popoverVisible);
+            if (!popoverVisible) {
+              refresh();
+            }
+          }}
           icon={<Icon type={'SyncOutlined'} spin={tasks.some((task) => TASK_STATUS.RUNNING === task.status)} />}
         />
       </Popover>
