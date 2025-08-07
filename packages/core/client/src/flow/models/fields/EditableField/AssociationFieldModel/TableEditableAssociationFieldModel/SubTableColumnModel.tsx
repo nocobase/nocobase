@@ -334,6 +334,7 @@ SubTableColumnModel.registerFlow({
         if (params.required) {
           rules.push({
             required: true,
+            message: ctx.t('The field value is required'),
           });
         }
         ctx.model.setProps({ rules });
