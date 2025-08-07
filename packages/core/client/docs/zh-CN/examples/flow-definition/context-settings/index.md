@@ -40,5 +40,5 @@ interface FlowSettingsOpenOptions {
 };
 
 flowEngine.flowSettings.open(options: FlowSettingsOpenOptions);
-model.openFlowSettings(options: FlowSettingsOpenOptions);
+model.openFlowSettings(options: Omit<FlowSettingsOpenOptions, 'model'>);
 ```
