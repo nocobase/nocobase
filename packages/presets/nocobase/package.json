@@ -44,6 +44,7 @@
     "@nocobase/plugin-field-sort": "1.9.0-alpha.7",
     "@nocobase/plugin-file-manager": "1.9.0-alpha.7",
     "@nocobase/plugin-file-previewer-office": "1.9.0-alpha.7",
+    "@nocobase/plugin-flow-engine": "1.9.0-alpha.7",
     "@nocobase/plugin-gantt": "1.9.0-alpha.7",
     "@nocobase/plugin-graph-collection-manager": "1.9.0-alpha.7",
     "@nocobase/plugin-kanban": "1.9.0-alpha.7",
