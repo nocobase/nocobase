@@ -41,6 +41,10 @@ class TargetModel extends FlowModel {
     return this.context.resource;
   }
 
+  // async getFilterFields() {
+  //   return [];
+  // }
+
   onInit() {
     this.context.defineProperty('resource', {
       get: () => {
@@ -161,12 +165,14 @@ class PluginHelloModel extends Plugin {
       stepParams: {
         filterManagerSettings: {
           filterConfigs: {
-            0: {
-              filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
-              targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
-              filterPaths: ['name'], // 筛选字段路径
-              operator: '$eq',
-            },
+            value: [
+              {
+                filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
+                targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
+                filterPaths: ['name'], // 筛选字段路径
+                operator: '$eq',
+              },
+            ],
           },
         },
       },

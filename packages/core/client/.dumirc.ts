@@ -393,6 +393,10 @@ export default defineConfig({
               title: 'useFlowSettingsContext',
               link: '/examples/hooks/use-flow-settings-context',
             },
+            {
+              title: 'useFlowViewContext',
+              link: '/examples/hooks/use-flow-view-context',
+            },
           ],
         },
         {

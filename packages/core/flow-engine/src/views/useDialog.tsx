@@ -9,7 +9,7 @@
 
 import * as React from 'react';
 import { FlowContext } from '../flowContext';
-import { FlowContextProvider } from '../FlowContextProvider';
+import { FlowViewContextProvider } from '../FlowContextProvider';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
 
@@ -117,9 +117,9 @@ export function useDialog() {
     ctx.delegate(flowContext);
 
     const dialog = (
-      <FlowContextProvider context={ctx}>
+      <FlowViewContextProvider context={ctx}>
         <DialogWithContext />
-      </FlowContextProvider>
+      </FlowViewContextProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(dialog);
