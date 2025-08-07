@@ -178,6 +178,16 @@ export default defineConfig({
           ]
         },
         {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            {
+              title: 'VariableInput 示例',
+              link: '/examples/variables',
+            },
+          ],
+        },
+        {
           title: 'FlowAction',
           type: 'group',
           children: [

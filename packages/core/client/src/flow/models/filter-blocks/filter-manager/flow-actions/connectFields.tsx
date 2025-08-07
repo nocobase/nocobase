@@ -12,7 +12,7 @@ import { FormItem } from '@formily/antd-v5';
 import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Dropdown, Select, Segmented, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
 import { FilterFormEditableFieldModel } from '../../form-v2/fields';
 import { getAllDataModels } from '../../utils';
@@ -43,10 +43,10 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
   const selectedPathsArray = selectedPaths ? selectedPaths.split(',').filter(Boolean) : [];
 
   return fields
-    .filter((field) => field.filterable && field.options.interface)
+    .filter((field) => field.filterable)
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
-      const label = ctx.t(field.uiSchema?.title) || field.name;
+      const label = ctx.t(field.title || field.uiSchema?.title) || field.name;
       const fullLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
 
       const treeNode: any = {
@@ -55,7 +55,6 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
         key: currentPath,
         fullLabel: fullLabel,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
-        field,
       };
 
       // 如果任一选中的路径包含当前路径，且当前字段有关系目标，则预加载子节点
@@ -85,11 +84,31 @@ function ConnectFields(
   props: Readonly<{ value: ConnectFieldsConfig; onChange?: (value: ConnectFieldsConfig) => void }>,
 ) {
   const ctx = useFlowSettingsContext<FilterFormEditableFieldModel>();
-  const allDataModels = getAllDataModels(ctx.blockGridModel);
+  const allDataModels = useMemo(() => getAllDataModels(ctx.blockGridModel), [ctx.blockGridModel]);
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
+  const [modelFields, setModelFields] = useState<Record<string, any[]>>({});
 
   // 为每个目标区块维护输入模式状态
   const [inputModes, setInputModes] = useState<Record<string, 'field-select' | 'text-input'>>({});
+
+  // 异步加载字段数据
+  React.useEffect(() => {
+    const loadFields = async () => {
+      const fieldsMap: Record<string, any[]> = {};
+      const selectedModelUids = (value?.targets || []).map((item) => item.targetId);
+
+      for (const model of allDataModels.filter((model: CollectionBlockModel) =>
+        selectedModelUids.includes(model.uid),
+      )) {
+        const fields = (await (model as any).getFilterFields?.()) || [];
+        fieldsMap[model.uid] = fields;
+      }
+
+      setModelFields(fieldsMap);
+    };
+
+    loadFields();
+  }, [value?.targets, allDataModels]);
 
   // 处理输入模式切换
   const handleInputModeChange = (modelUid: string, mode: 'field-select' | 'text-input') => {
@@ -236,7 +255,7 @@ function ConnectFields(
       {allDataModels
         .filter((model: CollectionBlockModel) => {
           // 只显示已选择的区块
-          return selectedModelUids.includes(model.uid);
+          return selectedModelUids.includes(model.uid) && modelFields[model.uid];
         })
         .sort((a, b) => {
           // 按照在 value.targets 中的顺序排序
@@ -245,7 +264,7 @@ function ConnectFields(
           return aIndex - bIndex;
         })
         .map((model: CollectionBlockModel) => {
-          const fields = model.collection?.getFields?.() || [];
+          const fields = modelFields[model.uid] || [];
           const values = value?.targets?.find((item) => item.targetId === model.uid)?.filterPaths || [];
           const treeData = buildTreeData(ctx, fields, '', values.join(','), '');
           const currentInputMode = getInputMode(model.uid);

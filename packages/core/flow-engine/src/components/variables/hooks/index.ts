@@ -7,7 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './VariableFieldInput';
-export * from './VariableTag';
-export * from './VariableSelector';
-export * from './VariableEditableValue';
+export { useVariableConverters } from './useVariableConverters';
+export { useVariableInput } from './useVariableInput';
