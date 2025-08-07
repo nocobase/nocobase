@@ -63,6 +63,24 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
   renderComponent() {
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
   }
+
+  async getFilterFields(): Promise<{ name: string; title: string; target?: string }[]> {
+    const data = this.resource.getData();
+    if (!data) {
+      return [];
+    }
+    const fields = Object.keys(data[0] || {}).map((field) => {
+      const fieldType = typeof data[0][field] === 'number' ? 'number' : 'string';
+      return {
+        name: field,
+        title: field,
+        type: fieldType,
+        interface: fieldType === 'number' ? 'number' : 'input',
+      };
+    });
+    console.log(fields);
+    return fields;
+  }
 }
 
 ChartBlockModel.define({
