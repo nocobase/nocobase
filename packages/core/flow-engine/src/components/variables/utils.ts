@@ -27,7 +27,8 @@ export const parseValueToPath = (value: string): string[] | null => {
   return pathString.split('.');
 };
 
-export const formatPathToValue = (path: string[]): string => {
+export const formatPathToValue = (item: ContextSelectorItem): string => {
+  const path = item.fullPath || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
@@ -143,9 +144,47 @@ export const createDefaultConverters = (): Converters => {
     },
 
     resolveValueFromPath: (item: ContextSelectorItem) => {
-      return formatPathToValue(item?.fullPath || []);
+      return formatPathToValue(item);
     },
   };
+};
+
+export const createFinalConverters = (propConverters?: Converters): Converters => {
+  const defaultConverters = createDefaultConverters();
+  const mergedConverters = propConverters ? { ...defaultConverters, ...propConverters } : defaultConverters;
+
+  // 如果用户自定义了 resolveValueFromPath，需要包装一下以保持后备逻辑
+  if (propConverters?.resolveValueFromPath) {
+    const customResolveValueFromPath = propConverters.resolveValueFromPath;
+    return {
+      ...mergedConverters,
+      resolveValueFromPath: (item: ContextSelectorItem) => {
+        const ret = customResolveValueFromPath(item);
+        return ret === undefined ? formatPathToValue(item) : ret;
+      },
+    };
+  }
+
+  return mergedConverters;
+};
+
+// 根据ContextSelectorItem的fullPath构建完整的标题路径
+export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem): string => {
+  if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
+    return contextSelectorItem?.label || '';
+  }
+
+  // 从fullPath构建路径，最后一个用title，前面的首字母大写作为title
+  const titlePath = contextSelectorItem.fullPath.map((segment, index) => {
+    // 最后一个元素使用meta.title或label
+    if (index === contextSelectorItem.fullPath.length - 1) {
+      return contextSelectorItem.meta?.title || contextSelectorItem.label || segment;
+    }
+    // 前面的元素首字母大写作为简单的title
+    return segment.charAt(0).toUpperCase() + segment.slice(1);
+  });
+
+  return titlePath.join('/');
 };
 
 // 根据路径从metaTree中构建对应的ContextSelectorItem

@@ -9,7 +9,7 @@
 
 import * as React from 'react';
 import { FlowContext, FlowEngineContext } from '../flowContext';
-import { FlowContextProvider } from '../FlowContextProvider';
+import { FlowViewContextProvider } from '../FlowContextProvider';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 
@@ -117,9 +117,9 @@ export function useDrawer() {
     ctx.delegate(flowContext);
 
     const drawer = (
-      <FlowContextProvider context={ctx}>
+      <FlowViewContextProvider context={ctx}>
         <DrawerWithContext />
-      </FlowContextProvider>
+      </FlowViewContextProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(drawer);

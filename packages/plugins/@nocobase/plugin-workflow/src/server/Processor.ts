@@ -433,7 +433,7 @@ export default class Processor {
     for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
       branchJobs.push(...allJobs.filter((item) => item.nodeId === n.id));
     }
-    branchJobs.sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
+    branchJobs.sort((a, b) => a.id - b.id);
     return branchJobs[branchJobs.length - 1] || null;
   }
 

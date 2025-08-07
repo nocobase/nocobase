@@ -43,6 +43,10 @@ export default defineConfig({
         link: '/learn',
       },
       {
+        title: 'Models',
+        link: '/models',
+      },
+      {
         title: 'Examples',
         link: '/examples/flow-models/hello-world',
       },
@@ -378,12 +382,20 @@ export default defineConfig({
               link: '/examples/hooks/use-flow-context',
             },
             {
+              title: 'useFlowEngineContext',
+              link: '/examples/hooks/use-flow-engine-context',
+            },
+            {
               title: 'useFlowModelContext',
-              link: '/examples/hooks/use-flow-context',
+              link: '/examples/hooks/use-flow-model-context',
             },
             {
               title: 'useFlowSettingsContext',
-              link: '/examples/hooks/use-flow-context',
+              link: '/examples/hooks/use-flow-settings-context',
+            },
+            {
+              title: 'useFlowViewContext',
+              link: '/examples/hooks/use-flow-view-context',
             },
           ],
         },
@@ -449,6 +461,77 @@ export default defineConfig({
             }
           ]
         }
+      ],
+      '/models': [
+        {
+          title: '区块',
+          type: 'group',
+          children: [
+            {
+              title: 'FormBlockModel',
+              link: '/models/blocks/form-block-model',
+            },
+            {
+              title: 'DetailsBlockModel',
+              link: '/models/blocks/details-block-model',
+            },
+            {
+              title: 'TableBlockModel',
+              link: '/models/blocks/table-block-model',
+            },
+          ],
+        },
+        {
+          title: '过滤器',
+          type: 'group',
+          children: [
+            {
+              title: 'FormFilterModel',
+              link: '/models/filters/form-filter-model',
+            },
+          ],
+        },
+        {
+          title: '字段',
+          type: 'group',
+          children: [
+            {
+              title: 'DisplayFieldModel',
+              link: '/models/fields/display-field-model',
+            },
+            {
+              title: 'DisplayDateFieldModel',
+              link: '/models/fields/display-date-field-model',
+            },
+            {
+              title: 'DisplayNumberFieldModel',
+              link: '/models/fields/display-number-field-model',
+            },
+            {
+              title: 'InputFieldModel',
+              link: '/models/fields/input-field-model',
+            },
+            {
+              title: 'InputNumberFieldModel',
+              link: '/models/fields/input-number-field-model',
+            },
+            {
+              title: 'PreviewFieldModel',
+              link: '/models/fields/preview-field-model',
+            },
+            {
+              title: 'UploadFieldModel',
+              link: '/models/fields/upload-field-model',
+            },
+          ],
+        },
+        {
+          title: '操作',
+          type: 'group',
+          children: [
+            // 暂无 actions 子项
+          ],
+        },
       ],
       '/api': [
         {
