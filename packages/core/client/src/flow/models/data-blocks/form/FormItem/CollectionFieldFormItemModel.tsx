@@ -129,7 +129,13 @@ CollectionFieldFormItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps({ required: params.required || false });
+        const rules = ctx.model.getProps().rules || [];
+        if (params.required) {
+          rules.push({
+            required: true,
+          });
+        }
+        ctx.model.setProps({ rules });
       },
     },
     pattern: {

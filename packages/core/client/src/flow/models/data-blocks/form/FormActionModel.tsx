@@ -43,7 +43,7 @@ FormSubmitActionModel.registerFlow({
         const resource = ctx.resource;
         const blockModel = ctx.blockModel as FormModel;
         try {
-          await blockModel.form.submit();
+          await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue();
           if (resource instanceof SingleRecordResource) {
             if (blockModel instanceof EditFormModel) {

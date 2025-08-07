@@ -27,7 +27,7 @@ export class FormItemModel extends FieldModel<{
 
   showTitle(showTitle: boolean) {
     this.setProps({
-      labelStyle: { display: showTitle ? 'flex' : 'none' },
+      labelCol: { style: { display: showTitle ? 'flex' : 'none' } },
     });
   }
 
