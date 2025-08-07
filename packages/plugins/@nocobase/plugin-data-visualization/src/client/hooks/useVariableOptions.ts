@@ -15,6 +15,7 @@ import {
   useDatetimeVariable,
   usePopupVariable,
   useURLSearchParamsVariable,
+  useExactDateVariable,
 } from '@nocobase/client';
 import { useMemo } from 'react';
 import { useFilterVariable } from './filter';
@@ -36,6 +37,11 @@ export const useGeneralVariableOptions = (
   const { settings: popupRecordSettings, shouldDisplayPopupRecord } = usePopupVariable({
     schema,
   });
+  const { exactDateTimeSettings, shouldDisplayExactDate } = useExactDateVariable({
+    operator,
+    schema,
+    noDisabled: true,
+  });
 
   const result = useMemo(
     () =>
@@ -46,6 +52,7 @@ export const useGeneralVariableOptions = (
         datetimeSettings,
         urlSearchParamsSettings,
         shouldDisplayPopupRecord && popupRecordSettings,
+        shouldDisplayExactDate && exactDateTimeSettings,
       ].filter(Boolean),
     [
       datetimeSettings,
@@ -55,6 +62,8 @@ export const useGeneralVariableOptions = (
       apiTokenSettings,
       shouldDisplayPopupRecord,
       popupRecordSettings,
+      shouldDisplayExactDate,
+      exactDateTimeSettings,
     ],
   );
 

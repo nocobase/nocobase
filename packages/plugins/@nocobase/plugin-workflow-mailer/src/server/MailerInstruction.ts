@@ -73,7 +73,7 @@ export default class extends Instruction {
       }
     }
 
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,

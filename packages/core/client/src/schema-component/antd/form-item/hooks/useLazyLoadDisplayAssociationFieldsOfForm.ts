@@ -96,8 +96,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .then(({ value }) => {
         nextTick(() => {
           const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
-          // fix https://nocobase.height.app/T-2608
-          if (_.isEmpty(result) && !_.isNumber(result)) {
+          if (result == null) {
             field.value = null;
           } else {
             field.value = result;

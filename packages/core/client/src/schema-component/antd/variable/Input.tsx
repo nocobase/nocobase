@@ -19,9 +19,10 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../hooks';
+import { Json } from '../input';
 import { XButton } from './XButton';
 import { useStyles } from './style';
-import { Json } from '../input';
+import { FlagProvider } from '../../../flag-provider/FlagProvider';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -204,6 +205,7 @@ export function Input(props: VariableInputProps) {
     parseOptions,
     hideVariableButton,
     constantAbel = true,
+    ...otherProps
   } = props;
   const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles({ hideVariableButton });
@@ -479,29 +481,31 @@ export function Input(props: VariableInputProps) {
           </div>
         )}
         {hideVariableButton ? null : (
-          <Cascader
-            options={options}
-            value={variable ?? cValue}
-            onChange={onSwitch}
-            loadData={loadData as any}
-            changeOnSelect={changeOnSelect ?? true}
-            fieldNames={fieldNames}
-            disabled={disabled}
-          >
-            {button ?? (
-              <XButton
-                className={css(`
+          <FlagProvider isInXButton>
+            <Cascader
+              options={options}
+              value={variable ?? cValue}
+              onChange={onSwitch}
+              loadData={loadData as any}
+              changeOnSelect={changeOnSelect ?? true}
+              fieldNames={fieldNames}
+              disabled={disabled}
+            >
+              {button ?? (
+                <XButton
+                  className={css(`
               margin-left: -1px;
             `)}
-                type={variable ? 'primary' : 'default'}
-                disabled={disabled}
-              />
-            )}
-          </Cascader>
+                  type={variable ? 'primary' : 'default'}
+                  disabled={disabled}
+                />
+              )}
+            </Cascader>
+          </FlagProvider>
         )}
       </Space.Compact>
       {/* 确保所有ant input样式都已加载, 放到Compact中会导致Compact中的Input样式不对 */}
-      <AntInput style={{ display: 'none' }} />
+      <AntInput style={{ display: 'none' }} {...otherProps} />
     </>,
   );
 }

@@ -125,8 +125,8 @@ const useParseDefaultValue = () => {
         if (value == null || value === '') {
           // 如果 field.mounted 为 false，说明 field 已经被卸载了，不需要再设置默认值
           if (field.mounted) {
-            field.setInitialValue(null);
-            await field.reset({ forceClear: true });
+            field.setInitialValue(undefined);
+            field.setValue(undefined);
           }
         } else if (isSpecialCase()) {
           // 只需要设置一次就可以了
@@ -157,7 +157,7 @@ const useParseDefaultValue = () => {
         return console.error(`useParseDefaultValue: can not find variable ${variableName}`);
       }
 
-      _run();
+      _run({ forceUpdate: true });
 
       // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
       const dispose = reaction(

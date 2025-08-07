@@ -7,36 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { List, Badge, InfiniteScroll, NavBar, DotLoading } from 'antd-mobile';
 import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext, css, useApp } from '@nocobase/client';
-import { useSearchParams } from 'react-router-dom';
+import { css, useApp, useCurrentUserContext } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
+import { Badge, InfiniteScroll, List, NavBar } from 'antd-mobile';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { Schema } from '@formily/react';
+import { MobilePageContentContainer, MobilePageHeader, MobilePageProvider } from '@nocobase/plugin-mobile/client';
+import { useLocalTranslation } from '../../../locale';
 import {
-  MobilePageHeader,
-  MobilePageProvider,
-  MobilePageContentContainer,
-  useMobileTitle,
-} from '@nocobase/plugin-mobile/client';
-import {
-  userIdObs,
+  fetchChannels,
+  fetchMessages,
+  inboxVisible,
   selectedChannelNameObs,
   selectedChannelObs,
   selectedMessageListObs,
-  fetchChannels,
-  updateMessage,
-  fetchMessages,
   showMsgLoadingMoreObs,
+  updateMessage,
+  userIdObs,
 } from '../../observables';
-import { useLocalTranslation } from '../../../locale';
 import InfiniteScrollContent from './InfiniteScrollContent';
-import { Schema } from '@formily/react';
 
-const MobileMessagePageInner = () => {
+function removeStringIfStartsWith(text: string, prefix: string): string {
+  if (text.startsWith(prefix)) {
+    return text.slice(prefix.length);
+  }
+  return text;
+}
+
+const MobileMessagePageInner = (props: { displayPageHeader?: boolean }) => {
   const app = useApp();
+  const basename = app.router.basename.replace(/\/+$/, '');
   const { t } = useLocalTranslation();
   const navigate = useNavigate();
   const ctx = useCurrentUserContext();
@@ -58,11 +61,13 @@ const MobileMessagePageInner = () => {
   }, [currUserId]);
   const messages = selectedMessageListObs.value;
   const viewMessageDetail = (message) => {
-    const url = message.options?.mobileUrl;
+    const url = message.options?.mobileUrl || message.options?.url;
     if (url) {
       if (url.startsWith('/m/')) navigate(url.substring(2));
-      else if (url.startsWith('/')) navigate(url);
-      else {
+      else if (url.startsWith('/')) {
+        navigate(removeStringIfStartsWith(url, basename));
+        inboxVisible.value = false;
+      } else {
         window.location.href = url;
       }
     }
@@ -101,13 +106,13 @@ const MobileMessagePageInner = () => {
   const title = Schema.compile(selectedChannelObs.value?.title, { t: app.i18n.t }) || t('Message');
 
   return (
-    <MobilePageProvider>
+    <MobilePageProvider displayPageHeader={props.displayPageHeader}>
       <MobilePageHeader>
         <NavBar className="nb-message-back-action" onBack={() => navigate('/page/in-app-message')}>
           {title}
         </NavBar>
       </MobilePageHeader>
-      <MobilePageContentContainer>
+      <MobilePageContentContainer displayPageHeader={props.displayPageHeader}>
         <div
           style={{ height: '100%', overflowY: 'auto' }}
           className={css({
@@ -120,6 +125,9 @@ const MobileMessagePageInner = () => {
           <List
             style={{
               '--border-top': 'none',
+              '--font-size': 'var(--adm-font-size-6)',
+              // @ts-ignore
+              '--adm-font-size-main': 'var(--adm-font-size-4)',
             }}
           >
             {messages.map((item) => {
@@ -132,7 +140,11 @@ const MobileMessagePageInner = () => {
                     </div>
                   }
                   description={item.content}
-                  extra={dayjs(item.receiveTimestamp).fromNow(true)}
+                  extra={
+                    <span style={{ fontSize: 'var(--adm-font-size-main)' }}>
+                      {dayjs(item.receiveTimestamp).fromNow(true)}
+                    </span>
+                  }
                   onClick={() => {
                     onMessageClick(item);
                   }}

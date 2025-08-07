@@ -12,6 +12,7 @@ import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
 import longJson from './fixtures/long-json';
+import { getBodyLimit } from '../helper';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -140,5 +141,48 @@ describe('application', () => {
     expect(runningJest).toBeCalledTimes(1);
 
     expect(jestFn).toBeCalledTimes(1);
+  });
+});
+
+describe('body limit test', () => {
+  it('should return the default body limit', () => {
+    const bodyLimit = getBodyLimit();
+    expect(bodyLimit).toBe('10mb');
+  });
+
+  it('should return the custom body limit from environment variable', async () => {
+    const sourceEnv = process.env.REQUEST_BODY_LIMIT;
+    process.env.REQUEST_BODY_LIMIT = '1kb';
+    const bodyLimit = getBodyLimit();
+    expect(bodyLimit).toBe('1kb');
+
+    const app = new Application({
+      database: {
+        dialect: 'sqlite',
+        storage: ':memory:',
+        logging: false,
+      },
+      resourcer: {
+        prefix: '/api',
+      },
+      acl: false,
+      dataWrapping: false,
+      registerActions: false,
+    });
+
+    const agent = supertest.agent(app.callback());
+    app.resourcer.define({
+      name: 'test',
+      actions: {
+        test: async (ctx, next) => {
+          ctx.body = ctx.request.body;
+          await next();
+        },
+      },
+    });
+
+    const response = await agent.post('/api/test:test').send(longJson).set('Content-Type', 'application/json');
+    expect(response.statusCode).toBe(413); // Expecting 413 Payload Too Large
+    process.env.REQUEST_BODY_LIMIT = sourceEnv;
   });
 });

@@ -53,6 +53,7 @@ export async function getApp({
     ...options,
     plugins: [
       'field-sort',
+      'file-manager',
       'system-settings',
       [
         'workflow',

@@ -69,7 +69,7 @@ export class SmartCursorBuilder {
         AND a.attnum = ANY(ix.indkey)
         AND t.relkind = 'r'
         AND n.nspname = current_schema()
-        AND t.relname = $1
+        AND t.relname = ?
       ORDER BY 
         i.relname, 
         array_position(ix.indkey, a.attnum)
@@ -129,8 +129,9 @@ export class SmartCursorBuilder {
           isUnique: indexType < 3,
         });
       }
-      const index = indexes.get(row.INDEX_NAME);
-      index.columns[row.SEQ_IN_INDEX - 1] = row.COLUMN_NAME;
+      const seqInIndex = dialect === 'postgres' ? row.seq_in_index : row.SEQ_IN_INDEX;
+      const index = indexes.get(indexName);
+      index.columns[seqInIndex - 1] = columnName;
     }
 
     for (const index of indexes.values()) {

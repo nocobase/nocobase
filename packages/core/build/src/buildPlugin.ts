@@ -14,9 +14,8 @@ import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
-import { EsbuildSupportExts, globExcludeFiles } from './constant';
+import * as bundleRequire from 'bundle-require';
+import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
 import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
@@ -27,6 +26,9 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { obfuscate } from './utils/obfuscationResult';
+import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -55,6 +57,7 @@ const external = [
   '@nocobase/server',
   '@nocobase/test',
   '@nocobase/utils',
+  '@nocobase/license-kit',
 
   // @nocobase/auth
   'jsonwebtoken',
@@ -308,10 +311,112 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export async function buildPluginClient(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+export async function buildProPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+  log('build pro plugin server source');
+  const packageJson = getPackageJson(cwd);
+  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
+  const otherExts = Array.from(
+    new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
+  );
+  if (otherExts.length) {
+    log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
+  }
+
+  deleteServerFiles(cwd, log);
+
+  // remove compilerOptions.paths in tsconfig.json
+  let tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
+  fs.writeFileSync(path.join(cwd, 'tsconfig.json'), JSON.stringify({
+    ...tsconfig.data,
+    compilerOptions: { ...tsconfig.data.compilerOptions, paths: [] }
+  }, null, 2));
+  tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
+
+  // convert all ts to js, some files may not be referenced by the entry file
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: serverFiles,
+      splitting: false,
+      clean: false,
+      bundle: false,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+    }),
+  );
+
+  const entryFile = path.join(cwd, 'src/server/index.ts');
+  if (!fs.existsSync(entryFile)) {
+    log('server entry file not found', entryFile);
+    return;
+  }
+
+  // plugin-commercial build to a bundle
+  const externalOptions = {
+    external: [],
+    noExternal: [],
+    onSuccess: async () => {},
+    esbuildPlugins: [],
+  };
+  // other plugins build to a bundle just include plugin-commercial
+  if (!cwd.includes(PLUGIN_COMMERCIAL)) {
+    externalOptions.external = [/^[./]/];
+    externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
+    externalOptions.onSuccess = async () => {
+      const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
+      serverFiles.forEach((file) => {
+        obfuscate(file);
+      });
+    };
+    externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
+  }
+
+  // bundle all files、inject commercial code and obfuscate
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: [entryFile],
+      // minify: true,
+      splitting: false,
+      clean: false,
+      bundle: true,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir, 'server'),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      tsconfig: tsconfig.path,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+
+      ...externalOptions,
+    }),
+  );
+  fs.removeSync(tsconfig.path);
+
+  await buildServerDeps(cwd, serverFiles, log);
+}
+
+export async function buildPluginClient(cwd: string, userConfig: any, sourcemap: boolean, log: PkgLog, isCommercial = false) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
+  if (isCommercial) {
+    const commercialFiles = fg.globSync(clientGlobalFiles, { cwd: path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL), absolute: true });
+    clientFiles.push(...commercialFiles);
+  }
   const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getPackagesFromFiles(clientFileSource);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
@@ -437,37 +542,58 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         {
           test: /\.tsx$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
-                tsx: true,
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                  },
+                  target: 'es5',
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial
+              }
+            }
+          ]
         },
         {
           test: /\.ts$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                  },
+                  target: 'es5',
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial
+              }
+            }
+          ]
         },
       ],
     },
     plugins: [
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
+        'process.env.NODE_DEBUG': false,
       }),
       {
         apply(compiler) {
@@ -568,7 +694,12 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  await buildPluginClient(cwd, userConfig, sourcemap, log);
-  await buildPluginServer(cwd, userConfig, sourcemap, log);
+  if (cwd.includes('/pro-plugins/') && fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))) {
+    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
+    await buildProPluginServer(cwd, userConfig, sourcemap, log);
+  } else {
+    await buildPluginClient(cwd, userConfig, sourcemap, log);
+    await buildPluginServer(cwd, userConfig, sourcemap, log);
+  }
   writeExternalPackageVersion(cwd, log);
 }

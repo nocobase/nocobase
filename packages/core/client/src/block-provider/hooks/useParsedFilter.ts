@@ -22,7 +22,13 @@ import { isVariable } from '../../variables/utils/isVariable';
  * @param param0
  * @returns
  */
-export function useParsedFilter({ filterOption }: { filterOption: any }) {
+export function useParsedFilter({
+  filterOption,
+  onFilterChange,
+}: {
+  filterOption: any;
+  onFilterChange?: (filter: any) => void;
+}) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [filter, setFilter] = useState({});
   const [parseVariableLoading, setParseVariableLoading] = useState(!!filterOption);
@@ -35,6 +41,7 @@ export function useParsedFilter({ filterOption }: { filterOption: any }) {
       const result = await parseFilter(filterOption);
       setParseVariableLoading(false);
       setFilter(result);
+      onFilterChange?.(result);
     };
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);

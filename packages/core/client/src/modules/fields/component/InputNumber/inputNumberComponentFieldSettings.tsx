@@ -9,10 +9,10 @@
 
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
-import { SchemaSettingsNumberFormat } from '../../../../schema-settings/SchemaSettingsNumberFormat';
-import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { SchemaSettingsNumberFormat } from '../../../../schema-settings/SchemaSettingsNumberFormat';
+import { autoFocusSettingsItem, enableLinkSettingsItem, openModeSettingsItem } from '../Input/inputComponentSettings';
 
 export const inputNumberComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:InputNumber',
@@ -35,5 +35,6 @@ export const inputNumberComponentFieldSettings = new SchemaSettings({
     },
     enableLinkSettingsItem,
     openModeSettingsItem,
+    autoFocusSettingsItem,
   ],
 });

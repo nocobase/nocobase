@@ -7,24 +7,128 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PassThrough } from 'stream';
+import match from 'mime-match';
+import mime from 'mime-types';
+
 import { Context, Next } from '@nocobase/actions';
 import { koaMulter as multer } from '@nocobase/utils';
-import Path from 'path';
 
 import Plugin from '..';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FILES } from '../../constants';
-import * as Rules from '../rules';
-import { StorageClassType } from '../storages';
+import { StorageClassType, StorageType } from '../storages';
 
-// TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
-function getFileFilter(storage) {
-  return (req, file, cb) => {
-    // size 交给 limits 处理
-    const { size, ...rules } = storage.rules;
-    const ruleKeys = Object.keys(rules);
-    const result =
-      !ruleKeys.length || !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key]));
-    cb(null, result);
+function makeMulterStorage(storage: StorageType) {
+  const innerStorage = storage.make();
+
+  return {
+    _handleFile(req, file, cb) {
+      const pattern = storage.storage.rules.mimetype;
+      const peekSize = 4100;
+      const originalStream = file.stream;
+      const passThrough = new PassThrough();
+      const proxyFile = { ...file, stream: passThrough };
+      let detectedMime = null;
+
+      const finalCallback = (err, result) => {
+        if (err) {
+          return cb(err);
+        }
+        if (detectedMime && result) {
+          result.mimetype = detectedMime;
+        }
+        cb(null, result);
+      };
+
+      innerStorage._handleFile(req, proxyFile, finalCallback);
+
+      const chunks = [];
+      let bytesRead = 0;
+      let validationTriggered = false;
+
+      const cleanup = () => {
+        originalStream.removeListener('data', onData);
+        originalStream.removeListener('end', onEnd);
+        originalStream.removeListener('error', onError);
+      };
+
+      const onData = (chunk) => {
+        if (validationTriggered) return;
+        chunks.push(chunk);
+        bytesRead += chunk.length;
+        if (bytesRead >= peekSize) {
+          validationTriggered = true;
+          cleanup();
+          originalStream.pause(); // Pause before async validation
+          validate(Buffer.concat(chunks));
+        }
+      };
+
+      const onEnd = () => {
+        if (!validationTriggered) {
+          validationTriggered = true;
+          cleanup();
+          validate(Buffer.concat(chunks));
+        }
+      };
+
+      const onError = (err) => {
+        cleanup();
+        passThrough.destroy(err);
+      };
+
+      const validate = async (header) => {
+        try {
+          const { fileTypeFromBuffer } = await import('file-type');
+          const type = await fileTypeFromBuffer(new Uint8Array(header));
+
+          if (type) {
+            detectedMime = type.mime;
+          } else {
+            const fromFilename = mime.lookup(file.originalname);
+            if (fromFilename) {
+              detectedMime = fromFilename;
+            }
+          }
+
+          if (!detectedMime || (pattern !== '*' && !pattern.toString().split(',').some(match(detectedMime)))) {
+            const err = new Error('Mime type not allowed by storage rule');
+            err.name = 'MulterError';
+            originalStream.destroy();
+            passThrough.destroy();
+            return cb(err);
+          }
+
+          // Validation passed. Now, write the header and pipe the rest.
+          passThrough.write(header, (writeErr) => {
+            if (writeErr) {
+              originalStream.destroy();
+              passThrough.destroy();
+              return cb(writeErr);
+            }
+
+            if (originalStream.readableEnded) {
+              passThrough.end();
+            } else {
+              originalStream.pipe(passThrough);
+              originalStream.resume();
+            }
+          });
+        } catch (err) {
+          originalStream.destroy();
+          passThrough.destroy();
+          return cb(err);
+        }
+      };
+
+      originalStream.on('data', onData);
+      originalStream.on('end', onEnd);
+      originalStream.on('error', onError);
+    },
+
+    _removeFile(req, file, cb) {
+      innerStorage._removeFile(req, file, cb);
+    },
   };
 }
 
@@ -35,20 +139,20 @@ async function multipart(ctx: Context, next: Next) {
     return ctx.throw(500);
   }
 
-  const StorageType = ctx.app.pm.get(Plugin).storageTypes.get(storage.type) as StorageClassType;
-  if (!StorageType) {
+  const StorageClass = ctx.app.pm.get(Plugin).storageTypes.get(storage.type) as StorageClassType;
+  if (!StorageClass) {
     ctx.logger.error(`[file-manager] storage type "${storage.type}" is not defined`);
     return ctx.throw(500);
   }
-  const storageInstance = new StorageType(storage);
+  const storageInstance = new StorageClass(storage);
 
   const multerOptions = {
-    fileFilter: getFileFilter(storage),
+    // fileFilter: getFileFilter(storageInstance),
     limits: {
       // 每次只允许提交一个文件
       files: LIMIT_FILES,
     },
-    storage: storageInstance.make(),
+    storage: storage.rules?.mimetype ? makeMulterStorage(storageInstance) : storageInstance.make(),
   };
   multerOptions.limits['fileSize'] = Math.max(FILE_SIZE_LIMIT_MIN, storage.rules.size ?? FILE_SIZE_LIMIT_DEFAULT);
 
@@ -72,7 +176,10 @@ async function multipart(ctx: Context, next: Next) {
   const values = storageInstance.getFileData(file, ctx.request.body);
 
   ctx.action.mergeParams({
-    values,
+    values: {
+      ...values,
+      storage: { id: storage.id },
+    },
   });
 
   await next();

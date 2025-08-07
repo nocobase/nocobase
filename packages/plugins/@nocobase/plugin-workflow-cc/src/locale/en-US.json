@@ -1,0 +1,15 @@
+{
+  "CC": "CC",
+  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.",
+  "Recipients": "Recipients",
+  "User interface": "User interface",
+  "View user interface": "View user interface",
+  "Configure user interface": "Configure user interface",
+  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "Title of each CC item in tasks center. Could use variables in string template. Default to node title.",
+  "Read": "Read",
+  "Unread": "Unread",
+  "Mark as read": "Mark as read",
+  "Mark as unread": "Mark as unread",
+  "Mark all as read": "Mark all as read",
+  "CC to me": "CC to me"
+}

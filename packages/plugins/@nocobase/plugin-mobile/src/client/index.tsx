@@ -55,6 +55,7 @@ import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-bloc
 import pkg from './../../package.json';
 import { MobileComponentsProvider } from './MobileComponentsProvider';
 
+export { MobilePopup } from './adaptor-of-desktop/ActionDrawer';
 export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';

@@ -70,8 +70,10 @@ export const AssociationFilterItem = withDynamicSchemaProps(
     useEffect(() => {
       // by default, if the default is not empty, we will auto run the filter one time
       if (fieldSchema.default) {
-        onSelected(fieldSchema.default);
-        setSelectedKeys(fieldSchema.default);
+        setTimeout(() => {
+          onSelected(fieldSchema.default);
+          setSelectedKeys(fieldSchema.default);
+        }, 100);
       }
     }, [fieldSchema.default, onSelected]);
 

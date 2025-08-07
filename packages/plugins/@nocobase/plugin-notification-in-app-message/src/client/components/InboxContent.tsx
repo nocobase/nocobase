@@ -129,7 +129,7 @@ const InnerInboxContent = () => {
                       color: textColor,
                     }}
                   >
-                    {dayjs(item.latestMsgReceiveTimestamp).fromNow()}
+                    {dayjs(Number.parseInt(item.latestMsgReceiveTimestamp.toString(), 10)).fromNow()}
                   </div>
                 </Flex>
                 <Flex justify="space-between" style={{ width: '100%', marginTop: token.margin }}>

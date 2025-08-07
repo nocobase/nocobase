@@ -922,5 +922,6 @@
   "Full permissions": "모든 권한",
   "Refresh data blocks": "데이터 블록 새로 고침",
   "Select data blocks to refresh": "데이터 블록을 선택하여 새로 고침",
-  "After successful submission, the selected data blocks will be automatically refreshed.": "전송 후, 선택한 데이터 블록이 자동으로 새로 고쳐집니다."
+  "After successful submission, the selected data blocks will be automatically refreshed.": "전송 후, 선택한 데이터 블록이 자동으로 새로 고쳐집니다.",
+  "Reset link expiration": "링크 만료 재설정"
 }

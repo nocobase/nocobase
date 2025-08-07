@@ -55,9 +55,10 @@ export interface PopupContextStorage extends PopupContext {
 }
 
 const popupsContextStorage: Record<string, PopupContextStorage> = {};
+const defaultPopupsContextStorage: Record<string, PopupContextStorage> = {};
 
 export const getStoredPopupContext = (popupUid: string) => {
-  return popupsContextStorage[popupUid];
+  return popupsContextStorage[popupUid] || defaultPopupsContextStorage[popupUid];
 };
 
 /**
@@ -67,8 +68,13 @@ export const getStoredPopupContext = (popupUid: string) => {
  * will directly retrieve the context information from the cache instead of making an API request.
  * @param popupUid
  * @param params
+ * @param isDefault - Determines whether to store the context as a default value in `defaultPopupsContextStorage`
  */
-export const storePopupContext = (popupUid: string, params: PopupContextStorage) => {
+export const storePopupContext = (popupUid: string, params: PopupContextStorage, isDefault = false) => {
+  if (isDefault) {
+    defaultPopupsContextStorage[popupUid] = params;
+    return;
+  }
   popupsContextStorage[popupUid] = params;
 };
 
@@ -265,6 +271,7 @@ export const usePopupUtils = (
       if (schema.properties) {
         const nextLevel = currentLevel + 1;
 
+        // Prevent route confusion caused by repeated clicks
         if (getPopupLayerState(nextLevel)) {
           return;
         }
@@ -302,7 +309,13 @@ export const usePopupUtils = (
       return setVisibleFromAction?.(false);
     }
 
-    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+    // 1. If there is a previous route in the route stack, navigate back to the previous route.
+    // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
+    if (getPopupLayerState(currentLevel)) {
+      navigate(-1);
+    } else {
+      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
+    }
     removePopupLayerState(currentLevel);
     popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
   }, [

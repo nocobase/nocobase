@@ -15,26 +15,62 @@ export const calculators = new Registry<Comparer>();
 
 // built-in functions
 function equal(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() === new Date(b).getTime();
+  }
   return a == b;
 }
 
 function notEqual(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return true;
+    }
+    return new Date(a).getTime() !== new Date(b).getTime();
+  }
   return a != b;
 }
 
 function gt(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() > new Date(b).getTime();
+  }
   return a > b;
 }
 
 function gte(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() >= new Date(b).getTime();
+  }
   return a >= b;
 }
 
 function lt(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() < new Date(b).getTime();
+  }
   return a < b;
 }
 
 function lte(a, b) {
+  if (a instanceof Date || b instanceof Date) {
+    if (typeof a === 'boolean' || typeof b === 'boolean' || a == null || b == null) {
+      return false;
+    }
+    return new Date(a).getTime() <= new Date(b).getTime();
+  }
   return a <= b;
 }
 
@@ -61,19 +97,19 @@ function notIncludes(a, b) {
 }
 
 function startsWith(a: string, b: string) {
-  return a.startsWith(b);
+  return a.toString().startsWith(b.toString());
 }
 
 function notStartsWith(a: string, b: string) {
-  return !a.startsWith(b);
+  return !a.toString().startsWith(b.toString());
 }
 
 function endsWith(a: string, b: string) {
-  return a.endsWith(b);
+  return a.toString().endsWith(b.toString());
 }
 
 function notEndsWith(a: string, b: string) {
-  return !a.endsWith(b);
+  return !a.toString().endsWith(b.toString());
 }
 
 calculators.register('includes', includes);
@@ -95,7 +131,7 @@ type CalculationGroup = {
   };
 };
 
-type Calculation = CalculationItem | CalculationGroup;
+export type Calculation = CalculationItem | CalculationGroup;
 
 function calculate(calculation: CalculationItem = {}): boolean {
   let fn: Comparer;

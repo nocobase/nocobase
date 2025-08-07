@@ -134,10 +134,12 @@ export const useKanbanBlockProps = () => {
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
   const primaryKey = useCollection()?.getPrimaryKey();
+  const fieldSchema = useFieldSchema();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
   const targetGroupField = plugin.getGroupFieldInterface(ctx.groupField.interface);
   const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
+  const { columnWidth } = fieldSchema?.parent?.['x-component-props'] || {};
   useEffect(() => {
     const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
     if (isEqual(field.value, data) && dataSource === field.value) {
@@ -177,5 +179,6 @@ export const useKanbanBlockProps = () => {
     groupField: ctx.groupField,
     disableCardDrag,
     onCardDragEnd,
+    columnWidth,
   };
 };

@@ -51,9 +51,24 @@ export default {
       name: 'mimetype',
     },
     {
-      comment: '存储引擎',
       type: 'belongsTo',
       name: 'storage',
+      target: 'storages',
+      foreignKey: 'storageId',
+      deletable: false,
+      interface: 'm2o',
+      uiSchema: {
+        type: 'object',
+        title: 'Storage',
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            value: 'id',
+            label: 'title',
+          },
+        },
+        'x-read-pretty': true,
+      },
     },
     {
       comment: '相对路径（含“/”前缀）',

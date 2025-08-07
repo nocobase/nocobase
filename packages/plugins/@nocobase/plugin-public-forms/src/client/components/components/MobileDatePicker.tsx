@@ -10,6 +10,7 @@
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { mapDatePicker, DatePicker as NBDatePicker } from '@nocobase/client';
 import { DatePicker } from 'antd-mobile';
+import dayjs from 'dayjs';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -40,14 +41,16 @@ const MobileDateTimePicker = connect(
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
-    console.log(getPrecision(timeFormat));
-
     // 性能优化：使用 useCallback 缓存函数
     const handleConfirm = useCallback(
-      (value) => {
+      (val) => {
         setVisible(false);
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
+        const selectedDateTime = new Date(val);
+        if (props.dateOnly) {
+          onChange(dayjs(val));
+        } else {
+          onChange(selectedDateTime);
+        }
       },
       [showTime, onChange],
     );

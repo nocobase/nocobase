@@ -23,7 +23,7 @@ interface DelayConfig {
 }
 
 export default class extends Instruction {
-  timers: Map<number, NodeJS.Timeout> = new Map();
+  timers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(public workflow: WorkflowPlugin) {
     super(workflow);
@@ -72,42 +72,48 @@ export default class extends Instruction {
   };
 
   schedule(job) {
-    const now = new Date();
-    const createdAt = Date.parse(job.createdAt);
-    const delay = createdAt + job.result - now.getTime();
+    const createdAt = new Date(job.createdAt).getTime();
+    const delay = createdAt + job.result - Date.now();
     if (delay > 0) {
-      const trigger = this.trigger.bind(this, job);
-      this.timers.set(job.id, setTimeout(trigger, delay));
+      const trigger = this.trigger.bind(this, job.id);
+      this.timers.set(job.id.toString(), setTimeout(trigger, delay));
     } else {
       this.trigger(job);
     }
   }
 
-  async trigger(job) {
+  async trigger(jobOrId: JobModel | string) {
+    const { model } = this.workflow.app.db.getCollection('jobs');
+    const job =
+      jobOrId instanceof model
+        ? jobOrId
+        : await this.workflow.app.db.getRepository('jobs').findOne({ filterByTk: jobOrId });
     if (!job.execution) {
       job.execution = await job.getExecution();
     }
     if (job.execution.status === EXECUTION_STATUS.STARTED) {
       this.workflow.resume(job);
     }
-    if (this.timers.get(job.id)) {
-      this.timers.delete(job.id);
+    const idStr = job.id.toString();
+    if (this.timers.get(idStr)) {
+      clearTimeout(this.timers.get(idStr));
+      this.timers.delete(idStr);
     }
   }
 
   async run(node, prevJob, processor: Processor) {
     const duration = processor.getParsedValue(node.config.duration || 1, node.id) * (node.config.unit || 1_000);
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: duration,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
-    job.node = node;
 
     // add to schedule
     this.schedule(job);
+    processor.logger.debug(`delay node (${node.id}) will resume after ${duration}ms`);
 
     return null;
   }

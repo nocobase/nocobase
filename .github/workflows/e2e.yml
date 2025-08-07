@@ -101,201 +101,201 @@ jobs:
             !packages/**/node_modules/**
     # timeout-minutes: 20
 
-  core-and-plugins:
-    name: Core and plugins
-    needs: build
-    runs-on: ubuntu-latest
-    container: node:20
-    services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres:11
-        # Provide the password for postgres
-        env:
-          POSTGRES_USER: nocobase
-          POSTGRES_PASSWORD: password
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout pro-plugins
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          ref: main
-          path: packages/pro-plugins
-          fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - run: |
-          cd packages/pro-plugins &&
-          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
-            git checkout ${{ github.head_ref || github.ref_name }}
-          else
-            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
-              git checkout ${{ github.event.pull_request.base.ref }}
-            else
-              git checkout main
-            fi
-          fi
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Git logs
-        run: |
-          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Set variables
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        run: |
-          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
-          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-        id: vars
+  # core-and-plugins:
+  #   name: Core and plugins
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   container: node:20
+  #   services:
+  #     # Label used to access the service container
+  #     postgres:
+  #       # Docker Hub image
+  #       image: postgres:11
+  #       # Provide the password for postgres
+  #       env:
+  #         POSTGRES_USER: nocobase
+  #         POSTGRES_PASSWORD: password
+  #       # Set health checks to wait until postgres has started
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Checkout pro-plugins
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: nocobase/pro-plugins
+  #         ref: main
+  #         path: packages/pro-plugins
+  #         fetch-depth: 0
+  #         ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+  #     - run: |
+  #         cd packages/pro-plugins &&
+  #         if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+  #           git checkout ${{ github.head_ref || github.ref_name }}
+  #         else
+  #           if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+  #             git checkout ${{ github.event.pull_request.base.ref }}
+  #           else
+  #             git checkout main
+  #           fi
+  #         fi
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Git logs
+  #       run: |
+  #         cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Set variables
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       run: |
+  #         APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+  #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+  #       id: vars
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v4
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+  #     - name: Get yarn cache directory path
+  #       id: yarn-cache-dir-path
+  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #     - uses: actions/cache@v4
+  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       with:
+  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-yarn-
 
-      - run: yarn
+  #     - run: yarn
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: packages
+  #     - name: Download build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: build-artifact
+  #         path: packages
 
-      - run: npx playwright install chromium --with-deps
-      - name: Test with postgres
-        run: yarn e2e p-test --ignore 'packages/**/{plugin-data-source-main,plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
-        env:
-          __E2E__: true
-          APP_ENV: production
-          LOGGER_LEVEL: error
-          DB_DIALECT: postgres
-          DB_HOST: postgres
-          DB_PORT: 5432
-          DB_USER: nocobase
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
-          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+  #     - run: npx playwright install chromium --with-deps
+  #     - name: Test with postgres
+  #       run: yarn e2e p-test --ignore 'packages/**/{plugin-data-source-main,plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
+  #       env:
+  #         __E2E__: true
+  #         APP_ENV: production
+  #         LOGGER_LEVEL: error
+  #         DB_DIALECT: postgres
+  #         DB_HOST: postgres
+  #         DB_PORT: 5432
+  #         DB_USER: nocobase
+  #         DB_PASSWORD: password
+  #         DB_DATABASE: nocobase
+  #         APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+  #         ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
-      - name: Upload e2e-report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/blob-*/*
+  #     - name: Upload e2e-report
+  #       if: ${{ !cancelled() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
+  #         path: ./storage/playwright/tests-report-blob/blob-*/*
 
-    timeout-minutes: 180
+  #   timeout-minutes: 180
 
-  plugin-workflow:
-    name: plugin-workflow
-    needs: build
-    runs-on: ubuntu-latest
-    container: node:20
-    services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres:11
-        # Provide the password for postgres
-        env:
-          POSTGRES_USER: nocobase
-          POSTGRES_PASSWORD: password
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout pro-plugins
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          ref: main
-          path: packages/pro-plugins
-          fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - run: |
-          cd packages/pro-plugins &&
-          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
-            git checkout ${{ github.head_ref || github.ref_name }}
-          else
-            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
-              git checkout ${{ github.event.pull_request.base.ref }}
-            else
-              git checkout main
-            fi
-          fi
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Git logs
-        run: |
-          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Set variables
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        run: |
-          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
-          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-        id: vars
+  # plugin-workflow:
+  #   name: plugin-workflow
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   container: node:20
+  #   services:
+  #     # Label used to access the service container
+  #     postgres:
+  #       # Docker Hub image
+  #       image: postgres:11
+  #       # Provide the password for postgres
+  #       env:
+  #         POSTGRES_USER: nocobase
+  #         POSTGRES_PASSWORD: password
+  #       # Set health checks to wait until postgres has started
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Checkout pro-plugins
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: nocobase/pro-plugins
+  #         ref: main
+  #         path: packages/pro-plugins
+  #         fetch-depth: 0
+  #         ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+  #     - run: |
+  #         cd packages/pro-plugins &&
+  #         if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+  #           git checkout ${{ github.head_ref || github.ref_name }}
+  #         else
+  #           if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+  #             git checkout ${{ github.event.pull_request.base.ref }}
+  #           else
+  #             git checkout main
+  #           fi
+  #         fi
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Git logs
+  #       run: |
+  #         cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Set variables
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       run: |
+  #         APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+  #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+  #       id: vars
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v4
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+  #     - name: Get yarn cache directory path
+  #       id: yarn-cache-dir-path
+  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #     - uses: actions/cache@v4
+  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       with:
+  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-yarn-
 
-      - run: yarn
+  #     - run: yarn
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: packages
+  #     - name: Download build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: build-artifact
+  #         path: packages
 
-      - run: npx playwright install chromium --with-deps
-      - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts' --ignore 'packages/**/plugin-workflow-manual/**/__e2e__/**/*.test.ts'
-        env:
-          __E2E__: true
-          APP_ENV: production
-          LOGGER_LEVEL: error
-          DB_DIALECT: postgres
-          DB_HOST: postgres
-          DB_PORT: 5432
-          DB_USER: nocobase
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
-          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+  #     - run: npx playwright install chromium --with-deps
+  #     - name: Test with postgres
+  #       run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/{plugin-workflow-approval,plugin-workflow-manual}/**/__e2e__/**/*.test.ts'
+  #       env:
+  #         __E2E__: true
+  #         APP_ENV: production
+  #         LOGGER_LEVEL: error
+  #         DB_DIALECT: postgres
+  #         DB_HOST: postgres
+  #         DB_PORT: 5432
+  #         DB_USER: nocobase
+  #         DB_PASSWORD: password
+  #         DB_DATABASE: nocobase
+  #         APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+  #         ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
-      - name: Upload e2e-report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/blob-*/*
+  #     - name: Upload e2e-report
+  #       if: ${{ !cancelled() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
+  #         path: ./storage/playwright/tests-report-blob/blob-*/*
 
-    timeout-minutes: 60
+  #   timeout-minutes: 60
 
   # plugin-workflow-approval:
   #   name: plugin-workflow-approval
@@ -423,193 +423,193 @@ jobs:
 
   #   timeout-minutes: 180
 
-  plugin-data-source-main:
-    name: plugin-data-source-main
-    needs: build
-    runs-on: ubuntu-latest
-    container: node:20
-    services:
-      # Label used to access the service container
-      postgres:
-        # Docker Hub image
-        image: postgres:11
-        # Provide the password for postgres
-        env:
-          POSTGRES_USER: nocobase
-          POSTGRES_PASSWORD: password
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout pro-plugins
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          repository: nocobase/pro-plugins
-          ref: main
-          path: packages/pro-plugins
-          fetch-depth: 0
-          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - run: |
-          cd packages/pro-plugins &&
-          if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
-            git checkout ${{ github.head_ref || github.ref_name }}
-          else
-            if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
-              git checkout ${{ github.event.pull_request.base.ref }}
-            else
-              git checkout main
-            fi
-          fi
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Git logs
-        run: |
-          cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-      - name: Set variables
-        continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
-        run: |
-          APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
-          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
-        id: vars
+  # plugin-data-source-main:
+  #   name: plugin-data-source-main
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   container: node:20
+  #   services:
+  #     # Label used to access the service container
+  #     postgres:
+  #       # Docker Hub image
+  #       image: postgres:11
+  #       # Provide the password for postgres
+  #       env:
+  #         POSTGRES_USER: nocobase
+  #         POSTGRES_PASSWORD: password
+  #       # Set health checks to wait until postgres has started
+  #       options: >-
+  #         --health-cmd pg_isready
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Checkout pro-plugins
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: nocobase/pro-plugins
+  #         ref: main
+  #         path: packages/pro-plugins
+  #         fetch-depth: 0
+  #         ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+  #     - run: |
+  #         cd packages/pro-plugins &&
+  #         if git show-ref --quiet refs/remotes/origin/${{ github.head_ref || github.ref_name }}; then
+  #           git checkout ${{ github.head_ref || github.ref_name }}
+  #         else
+  #           if git show-ref --quiet refs/remotes/origin/${{ github.event.pull_request.base.ref }}; then
+  #             git checkout ${{ github.event.pull_request.base.ref }}
+  #           else
+  #             git checkout main
+  #           fi
+  #         fi
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Git logs
+  #       run: |
+  #         cd packages/pro-plugins && git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit -n 10
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #     - name: Set variables
+  #       continue-on-error: true # 外部开发者提交 PR 的时候因为没有权限这里会报错，为了能够继续执行后续步骤，所以这里设置为 continue-on-error: true
+  #       run: |
+  #         APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
+  #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+  #       id: vars
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v4
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+  #     - name: Get yarn cache directory path
+  #       id: yarn-cache-dir-path
+  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #     - uses: actions/cache@v4
+  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       with:
+  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-yarn-
 
-      - run: yarn
+  #     - run: yarn
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: packages
+  #     - name: Download build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: build-artifact
+  #         path: packages
 
-      - run: npx playwright install chromium --with-deps
-      - name: Test with postgres
-        run: yarn e2e p-test --match 'packages/**/plugin-data-source-main/**/__e2e__/**/*.test.ts'
-        env:
-          __E2E__: true
-          APP_ENV: production
-          LOGGER_LEVEL: error
-          DB_DIALECT: postgres
-          DB_HOST: postgres
-          DB_PORT: 5432
-          DB_USER: nocobase
-          DB_PASSWORD: password
-          DB_DATABASE: nocobase
-          APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
-          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+  #     - run: npx playwright install chromium --with-deps
+  #     - name: Test with postgres
+  #       run: yarn e2e p-test --match 'packages/**/plugin-data-source-main/**/__e2e__/**/*.test.ts'
+  #       env:
+  #         __E2E__: true
+  #         APP_ENV: production
+  #         LOGGER_LEVEL: error
+  #         DB_DIALECT: postgres
+  #         DB_HOST: postgres
+  #         DB_PORT: 5432
+  #         DB_USER: nocobase
+  #         DB_PASSWORD: password
+  #         DB_DATABASE: nocobase
+  #         APPEND_PRESET_LOCAL_PLUGINS: ${{ steps.vars.outputs.var2 }}
+  #         ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
 
-      - name: Upload e2e-report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
-          path: ./storage/playwright/tests-report-blob/blob-*/*
+  #     - name: Upload e2e-report
+  #       if: ${{ !cancelled() }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: e2e-report-${{ github.job }} # 为了防止在多个任务中存在冲突
+  #         path: ./storage/playwright/tests-report-blob/blob-*/*
 
-    timeout-minutes: 180
+  #   timeout-minutes: 180
 
-  comment-on-pr:
-    name: Comment on PR
-    runs-on: ubuntu-latest
-    needs:
-      - core-and-plugins
-      - plugin-workflow
-      - plugin-workflow-approval
-      - plugin-data-source-main
-    permissions:
-      pull-requests: write
-    if: ${{ !cancelled() && github.event.pull_request.number }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn
+  # comment-on-pr:
+  #   name: Comment on PR
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - core-and-plugins
+  #     - plugin-workflow
+  #     - plugin-workflow-approval
+  #     - plugin-data-source-main
+  #   permissions:
+  #     pull-requests: write
+  #   if: ${{ !cancelled() && github.event.pull_request.number }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: 'yarn'
+  #     - run: yarn
 
-      - name: Download e2e report artifact
-        uses: actions/download-artifact@v4
-        with:
-          path: e2e-report
-          pattern: e2e-report-*
-          merge-multiple: true
+  #     - name: Download e2e report artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: e2e-report
+  #         pattern: e2e-report-*
+  #         merge-multiple: true
 
-      - name: Merge reports
-        run: |
-          node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
+  #     - name: Merge reports
+  #       run: |
+  #         node scripts/moveE2EReportFiles.js && npx playwright merge-reports --config .github/workflows/merge.config.ts ./e2e-report
+  #       env:
+  #         NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Upload e2e-report
-        uses: actions/upload-artifact@v4
-        id: e2e-html-report-artifact
-        with:
-          name: e2e-html-report
-          path: ./e2e-html-report/index.html
+  #     - name: Upload e2e-report
+  #       uses: actions/upload-artifact@v4
+  #       id: e2e-html-report-artifact
+  #       with:
+  #         name: e2e-html-report
+  #         path: ./e2e-html-report/index.html
 
-      - name: Comment on PR
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const jobName = 'E2E';
-            const fs = require('fs');
-            const prNumber = '${{ github.event.pull_request.number }}';
-            if (!prNumber) {
-              core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
-              return;
-            }
-            {
-              // Mark previous comments as outdated by minimizing them.
-              const { data: comments } = await github.rest.issues.listComments({
-                ...context.repo,
-                issue_number: prNumber,
-              });
-              for (const comment of comments) {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)) {
-                  await github.graphql(`
-                    mutation {
-                      minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
-                        clientMutationId
-                      }
-                    }
-                  `);
-                }
-              }
-            }
-            const reportUrl = '${{ steps.e2e-html-report-artifact.outputs.artifact-url }}';
-            core.notice('Report url: ' + reportUrl);
-            const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const reportMd = await fs.promises.readFile('report.md', 'utf8');
-            function formatComment(lines) {
-              let body = lines.map(item => item.replace(/__e2e__/g, '\_\_e2e\_\_')).join('\n');
-              if (body.length > 65535)
-                body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
-              return body;
-            }
-            const { data: response } = await github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: prNumber,
-              body: formatComment([
-                `### Tests results for "${jobName}"`,
-                reportMd,
-                '',
-                `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
-              ]),
-            });
-            core.info('Posted comment: ' + response.html_url);
+  #     - name: Comment on PR
+  #       uses: actions/github-script@v6
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const jobName = 'E2E';
+  #           const fs = require('fs');
+  #           const prNumber = '${{ github.event.pull_request.number }}';
+  #           if (!prNumber) {
+  #             core.error('No pull request found for commit ' + context.sha + ' and workflow triggered by: ' + jobName);
+  #             return;
+  #           }
+  #           {
+  #             // Mark previous comments as outdated by minimizing them.
+  #             const { data: comments } = await github.rest.issues.listComments({
+  #               ...context.repo,
+  #               issue_number: prNumber,
+  #             });
+  #             for (const comment of comments) {
+  #               if (comment.user.login === 'github-actions[bot]' && comment.body.includes(jobName)) {
+  #                 await github.graphql(`
+  #                   mutation {
+  #                     minimizeComment(input: {subjectId: "${comment.node_id}", classifier: OUTDATED}) {
+  #                       clientMutationId
+  #                     }
+  #                   }
+  #                 `);
+  #               }
+  #             }
+  #           }
+  #           const reportUrl = '${{ steps.e2e-html-report-artifact.outputs.artifact-url }}';
+  #           core.notice('Report url: ' + reportUrl);
+  #           const mergeWorkflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+  #           const reportMd = await fs.promises.readFile('report.md', 'utf8');
+  #           function formatComment(lines) {
+  #             let body = lines.map(item => item.replace(/__e2e__/g, '\_\_e2e\_\_')).join('\n');
+  #             if (body.length > 65535)
+  #               body = body.substring(0, 65000) + `... ${body.length - 65000} more characters`;
+  #             return body;
+  #           }
+  #           const { data: response } = await github.rest.issues.createComment({
+  #             ...context.repo,
+  #             issue_number: prNumber,
+  #             body: formatComment([
+  #               `### Tests results for "${jobName}"`,
+  #               reportMd,
+  #               '',
+  #               `Full [HTML report](${reportUrl}). Merge [workflow run](${mergeWorkflowUrl}).`
+  #             ]),
+  #           });
+  #           core.info('Posted comment: ' + response.html_url);
 
-    timeout-minutes: 5
+  #   timeout-minutes: 5

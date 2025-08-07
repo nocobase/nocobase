@@ -90,8 +90,6 @@ export default class extends Instruction {
     }
 
     await processor.run(branch, job);
-
-    return null;
   }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
@@ -137,7 +135,7 @@ export default class extends Instruction {
           }
         }
         await processor.run(branch, job);
-        return null;
+        return;
       } else {
         job.set({
           status: JOB_STATUS.RESOLVED,

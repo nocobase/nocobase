@@ -139,7 +139,7 @@ export const SourceKey = observer(
         };
       });
     useEffect(() => {
-      field.initialValue = options?.[0]?.value || sourceKey;
+      field.initialValue = sourceKey || options?.[0]?.value;
     }, []);
     return (
       <div>

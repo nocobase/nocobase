@@ -105,6 +105,7 @@ export interface IDatabaseOptions extends Options {
   logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
+  addAllCollections?: boolean;
 }
 
 export type DatabaseOptions = IDatabaseOptions;

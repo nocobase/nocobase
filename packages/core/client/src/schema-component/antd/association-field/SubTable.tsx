@@ -74,6 +74,7 @@ const subTableContainer = css`
     position: absolute;
     right: 0px;
     bottom: 0px;
+    max-height: 23px;
   }
   .ant-table-footer {
     margin-top: 10px;

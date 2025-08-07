@@ -50,7 +50,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-1rquknz"
+            class="nb-block-item nb-form-item css-1qomz6v ant-nb-block-item css-dev-only-do-not-override-1rquknz"
             role="button"
           >
             <div
@@ -191,7 +191,7 @@ describe('CollectionSelect', () => {
         >
           <div
             aria-label="block-item-demo title"
-            class="nb-block-item nb-form-item css-1elzyjx ant-nb-block-item css-dev-only-do-not-override-1rquknz"
+            class="nb-block-item nb-form-item css-1qomz6v ant-nb-block-item css-dev-only-do-not-override-1rquknz"
             role="button"
           >
             <div
