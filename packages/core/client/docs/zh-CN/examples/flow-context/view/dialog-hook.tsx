@@ -1,15 +1,23 @@
 import { Application, Plugin } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer, useFlowContext, useFlowView } from '@nocobase/flow-engine';
-import { Button, Space } from 'antd';
+import { Button, Input, Space } from 'antd';
 import React from 'react';
 
 function DialogContent() {
   const ctx = useFlowContext();
+  const [value, setValue] = React.useState('');
   const { Header, Footer } = ctx.view;
   return (
     <div>
       <Header title={`Dialog Header - #${ctx.model.uid}`} />
       <div>This is a view opened from the flow context.</div>
+      <div>{value}</div>
+      <Input
+        defaultValue={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+        }}
+      />
       <Footer>
         <Button onClick={() => ctx.view.close()}>Close</Button>
       </Footer>
@@ -25,7 +33,7 @@ class HelloBlockModel extends FlowModel {
           onClick={() => {
             this.context.viewer.dialog({
               // width: 800,
-              content: () => <DialogContent />,
+              content: <DialogContent />,
               closeOnEsc: true,
             });
           }}

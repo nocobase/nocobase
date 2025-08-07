@@ -27,7 +27,8 @@ export const parseValueToPath = (value: string): string[] | null => {
   return pathString.split('.');
 };
 
-export const formatPathToValue = (path: string[]): string => {
+export const formatPathToValue = (item: ContextSelectorItem): string => {
+  const path = item.fullPath || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
@@ -143,7 +144,7 @@ export const createDefaultConverters = (): Converters => {
     },
 
     resolveValueFromPath: (item: ContextSelectorItem) => {
-      return formatPathToValue(item?.fullPath || []);
+      return formatPathToValue(item);
     },
   };
 };
@@ -159,7 +160,7 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
       ...mergedConverters,
       resolveValueFromPath: (item: ContextSelectorItem) => {
         const ret = customResolveValueFromPath(item);
-        return ret === undefined ? formatPathToValue(item?.fullPath || []) : ret;
+        return ret === undefined ? formatPathToValue(item) : ret;
       },
     };
   }
