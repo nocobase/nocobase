@@ -193,20 +193,19 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
   // 处理选择变化事件
   const handleChange = useCallback(
     (selectedValues: (string | number)[], selectedOptions?: any[]) => {
+      const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('');
+        onChange?.('', lastOption);
         return;
       }
 
       const path = selectedValues.map(String);
       const pathString = path.join('.');
-      const lastOption = selectedOptions?.[selectedOptions.length - 1];
       const isLeaf = lastOption?.isLeaf;
       const now = Date.now();
       let formattedValue = formatPathToValueFn(lastOption);
       formattedValue = formattedValue === undefined ? formatPathToValue(path) : formattedValue;
 
-      // 叶子节点：直接选中
       if (isLeaf) {
         const contextSelectorItem = buildContextSelectorItemFromSelectedOptions(selectedOptions);
         onChange?.(formattedValue, contextSelectorItem);

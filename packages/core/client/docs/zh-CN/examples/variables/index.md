@@ -22,8 +22,6 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 
 **返回值**: React.ComponentType<{ value: any; onChange: (value: any) => void; }> | null
 
-**示例**: 在单层 Constant 示例中，当选中 Constant 节点时，该函数返回一个普通的 Input 组件
-
 ### 2. `resolvePathFromValue` - 值转路径解析器
 
 **作用**: 将外部传入的 value 转换成 FlowContextSelector 需要的路径数组
@@ -33,15 +31,12 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 
 **返回值**: string[] | null
 
-**示例**: 当值为 `{{ ctx.constant.name }}` 时，解析为 `['constant', 'name']`
-
 ### 3. `resolveValueFromPath` - 路径转值解析器
 
 **作用**: 当一个上下文节点被选中后，将其信息转换成最终的外部 value
 
 **参数**: 
 - `contextSelectorItem`: 选中的 ContextSelectorItem 对象
-- `path`: 选中的路径数组
 
 **返回值**: any
 

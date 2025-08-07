@@ -148,6 +148,25 @@ export const createDefaultConverters = (): Converters => {
   };
 };
 
+export const createFinalConverters = (propConverters?: Converters): Converters => {
+  const defaultConverters = createDefaultConverters();
+  const mergedConverters = propConverters ? { ...defaultConverters, ...propConverters } : defaultConverters;
+
+  // 如果用户自定义了 resolveValueFromPath，需要包装一下以保持后备逻辑
+  if (propConverters?.resolveValueFromPath) {
+    const customResolveValueFromPath = propConverters.resolveValueFromPath;
+    return {
+      ...mergedConverters,
+      resolveValueFromPath: (item: ContextSelectorItem) => {
+        const ret = customResolveValueFromPath(item);
+        return ret === undefined ? formatPathToValue(item?.fullPath || []) : ret;
+      },
+    };
+  }
+
+  return mergedConverters;
+};
+
 // 根据路径从metaTree中构建对应的ContextSelectorItem
 export const buildContextSelectorItemFromPath = (
   path: string[],

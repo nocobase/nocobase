@@ -48,7 +48,6 @@ export interface Converters {
   /**
    * 当一个上下文节点被选中后，将其信息转换成最终的外部 value。
    * @param contextSelectorItem 选中的 ContextSelectorItem 对象。
-   * @param path 选中的路径数组。
    * @returns any
    */
   resolveValueFromPath?: (contextSelectorItem: ContextSelectorItem) => any;
@@ -57,8 +56,9 @@ export interface Converters {
 export interface VariableInputProps {
   value?: any;
   onChange?: (value: any) => void;
-  converters?: Converters | ((contextSelectorItem: ContextSelectorItem | null) => Converters);
+  converters?: Converters;
   showValueComponent?: boolean;
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   [key: string]: any;
 }
 
@@ -67,9 +67,4 @@ export interface VariableTagProps {
   onClear?: () => void;
   className?: string;
   style?: React.CSSProperties;
-}
-
-export interface InternalState {
-  value: any;
-  source: 'external' | 'internal';
 }
