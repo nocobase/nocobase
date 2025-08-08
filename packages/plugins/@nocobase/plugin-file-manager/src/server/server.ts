@@ -245,6 +245,18 @@ export class PluginFileManagerServer extends Plugin {
       this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
     });
 
+    this.db.on('afterDefineCollection', (collection: Collection) => {
+      const { template } = collection.options;
+      if (template === 'file') {
+        collection.setField('storageId', {
+          type: 'bigInt',
+          createOnly: true,
+          visible: true,
+          index: true,
+        });
+      }
+    });
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.storages`,
       actions: ['storages:*'],
