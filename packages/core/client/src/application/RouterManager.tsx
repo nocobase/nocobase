@@ -203,7 +203,12 @@ export class RouterManager {
       return (
         <BaseLayoutContext.Provider value={BaseLayout}>
           <RouterContextCleaner>
-            <RouterProvider router={this.router} />
+            <RouterProvider
+              future={{
+                v7_startTransition: true,
+              }}
+              router={this.router}
+            />
           </RouterContextCleaner>
         </BaseLayoutContext.Provider>
       );

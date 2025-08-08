@@ -131,7 +131,7 @@ PageModel.registerFlow({
 
         if (ctx.model.context.closable) {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgLayout,
+            backgroundColor: ctx.themeToken.colorBgContainer,
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,

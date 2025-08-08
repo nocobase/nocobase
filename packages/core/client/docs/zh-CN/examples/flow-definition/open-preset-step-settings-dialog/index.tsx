@@ -44,7 +44,7 @@ class HelloSubModel extends FlowModel {
 }
 
 HelloSubModel.registerFlow({
-  key: 'helloSubModelSettings',
+  key: 'helloSubModelSettings1',
   steps: {
     name: {
       title: '名称',
@@ -53,6 +53,60 @@ HelloSubModel.registerFlow({
         name: {
           type: 'string',
           title: '名称',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ name: params.name });
+      },
+    },
+    name2: {
+      title: '名称2',
+      preset: true, // 创建子模型时必须填写该步骤参数
+      uiSchema: {
+        name: {
+          type: 'string',
+          title: '名称2',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ name: params.name });
+      },
+    },
+  },
+});
+
+HelloSubModel.registerFlow({
+  key: 'helloSubModelSettings2',
+  steps: {
+    name: {
+      title: '名称',
+      preset: true, // 创建子模型时必须填写该步骤参数
+      uiSchema: {
+        name: {
+          type: 'string',
+          title: '名称',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ name: params.name });
+      },
+    },
+    name2: {
+      title: '名称2',
+      preset: true, // 创建子模型时必须填写该步骤参数
+      uiSchema: {
+        name: {
+          type: 'string',
+          title: '名称2',
           required: true,
           'x-decorator': 'FormItem',
           'x-component': 'Input',
