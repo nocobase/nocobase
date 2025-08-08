@@ -28,12 +28,11 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
   // 使用 useVariableTreeData Hook 管理数据状态
-  const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions, filterOption } =
+  const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
     useVariableTreeData({
       metaTree,
       value,
       parseValueToPath: customParseValueToPath,
-      formatPathToValue: customFormatPathToValue,
     });
 
   // 处理选择变化事件
@@ -94,7 +93,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
       value={cascaderValue}
       onChange={handleChange}
       loadData={handleLoadData}
-      showSearch={showSearch ? { filter: filterOption } : false}
       loading={loading}
       changeOnSelect={true}
       expandTrigger="click"

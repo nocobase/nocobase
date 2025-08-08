@@ -86,7 +86,7 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
       }
       open={open}
       trigger="click"
-      placement={['bottomLeft', 'bottomRight', 'topLeft', 'topRight']}
+      placement="bottomLeft"
       onOpenChange={handleOpenChange}
       overlayClassName="variable-trigger-popover"
       destroyTooltipOnHide

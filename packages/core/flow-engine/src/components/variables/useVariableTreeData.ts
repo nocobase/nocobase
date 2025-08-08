@@ -10,19 +10,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { ContextSelectorItem } from './types';
 import type { MetaTreeNode } from '../../flowContext';
-import {
-  parseValueToPath,
-  formatPathToValue,
-  buildContextSelectorItems,
-  loadMetaTreeChildren,
-  searchInLoadedNodes,
-} from './utils';
+import { parseValueToPath, buildContextSelectorItems, loadMetaTreeChildren, searchInLoadedNodes } from './utils';
 
 export interface UseVariableTreeDataOptions {
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   value?: string;
   parseValueToPath?: (value: string) => string[] | undefined;
-  formatPathToValue?: (option: any) => string | undefined;
 }
 
 export interface UseVariableTreeDataResult {
@@ -30,27 +23,14 @@ export interface UseVariableTreeDataResult {
   loading: boolean;
   currentPath?: string[];
   loadInitialOptions: () => Promise<void>;
-  handleLoadData: (selectedOptions: any[]) => Promise<void>;
+  handleLoadData: (selectedOptions: ContextSelectorItem[]) => Promise<void>;
   preloadPathOptions: (item: ContextSelectorItem[], path: string[]) => Promise<void>;
-  buildContextSelectorItemFromSelectedOptions: (selectedOptions: any[]) => ContextSelectorItem | null;
-  filterOption: (inputValue: string, path: any[]) => boolean;
-  getOptionPath: (option: ContextSelectorItem, allOptions: ContextSelectorItem[]) => string[];
+  buildContextSelectorItemFromSelectedOptions: (selectedOptions: ContextSelectorItem[]) => ContextSelectorItem | null;
   loadedPathsRef: React.MutableRefObject<Set<string>>;
 }
 
-/**
- * 变量树数据管理 Hook
- *
- * 从 FlowContextSelector 中提取的核心逻辑，用于管理变量树的数据加载、缓存和状态。
- * 可以被 FlowContextSelector 和 VariableTreeSelector 复用。
- */
 export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVariableTreeDataResult => {
-  const {
-    metaTree,
-    value,
-    parseValueToPath: customParseValueToPath,
-    formatPathToValue: customFormatPathToValue,
-  } = options;
+  const { metaTree, value, parseValueToPath: customParseValueToPath } = options;
 
   // 级联选择器的选项数据
   const [treeOptions, setTreeOptions] = useState<ContextSelectorItem[]>([]);
@@ -61,7 +41,6 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
 
   // 使用自定义函数或默认函数
   const parseValueToPathFn = customParseValueToPath || parseValueToPath;
-  const formatPathToValueFn = customFormatPathToValue || formatPathToValue;
 
   // 解析当前值对应的路径
   const currentPath = useMemo(() => {
@@ -70,7 +49,7 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
 
   // 从选中的选项构建 ContextSelectorItem
   const buildContextSelectorItemFromSelectedOptions = useCallback(
-    (selectedOptions: any[]): ContextSelectorItem | null => {
+    (selectedOptions: ContextSelectorItem[]): ContextSelectorItem | null => {
       if (!selectedOptions || selectedOptions.length === 0) return null;
 
       const lastOption = selectedOptions[selectedOptions.length - 1];
@@ -159,7 +138,6 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
         await preloadPathOptions(cascaderOptions, currentPath);
       }
     } catch (error) {
-      console.error('加载 metaTree 失败:', error);
       setTreeOptions([]);
     } finally {
       setLoading(false);
@@ -167,7 +145,7 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
   }, [metaTree, currentPath, preloadPathOptions]);
 
   // 动态加载子选项数据
-  const handleLoadData = useCallback(async (selectedOptions: any[]) => {
+  const handleLoadData = useCallback(async (selectedOptions: ContextSelectorItem[]) => {
     const targetOption = selectedOptions[selectedOptions.length - 1];
     // 如果是叶子节点或已有子选项，直接返回
     if (!targetOption || targetOption.isLeaf || targetOption.children) {
@@ -203,54 +181,10 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
       loadedPathsRef.current.add(pathKey);
       setTreeOptions((prev) => [...prev]);
     } catch (error) {
-      console.error('加载子选项失败:', error);
       targetOption.loading = false;
       setTreeOptions((prev) => [...prev]);
     }
   }, []);
-
-  // 获取选项在树中的完整路径
-  const getOptionPath = useCallback((option: ContextSelectorItem, allOptions: ContextSelectorItem[]): string[] => {
-    const path: string[] = [];
-    const findPath = (opts: ContextSelectorItem[], target: ContextSelectorItem, currentPath: string[]): boolean => {
-      for (const opt of opts) {
-        const newPath = [...currentPath, opt.value];
-        if (opt === target) {
-          path.push(...newPath);
-          return true;
-        }
-        if (opt.children && findPath(opt.children, target, newPath)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    findPath(allOptions, option, []);
-    return path;
-  }, []);
-
-  // 搜索过滤选项 - 只搜索已加载的节点
-  const filterOption = useCallback(
-    (inputValue: string, path: any[]) => {
-      if (!inputValue.trim()) return true;
-
-      // 搜索已加载的节点
-      const searchResults = searchInLoadedNodes(treeOptions, inputValue, []);
-
-      // 检查当前路径是否匹配搜索结果
-      return searchResults.some((result) => {
-        const resultPath = getOptionPath(result, treeOptions);
-        // 检查路径是否匹配
-        if (path.length > resultPath.length) return false;
-
-        return path.every(
-          (segment: any, index: number) => index < resultPath.length && resultPath[index] === segment.value,
-        );
-      });
-    },
-    [treeOptions, getOptionPath],
-  );
 
   useEffect(() => {
     loadInitialOptions();
@@ -264,8 +198,6 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
     handleLoadData,
     preloadPathOptions,
     buildContextSelectorItemFromSelectedOptions,
-    filterOption,
-    getOptionPath,
     loadedPathsRef,
   };
 };

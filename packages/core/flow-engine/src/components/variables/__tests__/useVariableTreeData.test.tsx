@@ -72,8 +72,8 @@ describe('useVariableTreeData', () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
 
       const selectedOptions = [
-        { label: 'User', value: 'user', isLeaf: false },
-        { label: 'Name', value: 'name', isLeaf: true },
+        { label: 'User', value: 'user', isLeaf: false, fullPath: ['user'] },
+        { label: 'Name', value: 'name', isLeaf: true, fullPath: ['name'] },
       ];
 
       const contextItem = result.current.buildContextSelectorItemFromSelectedOptions(selectedOptions);
@@ -108,22 +108,6 @@ describe('useVariableTreeData', () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
 
       expect(typeof result.current.handleLoadData).toBe('function');
-    });
-
-    it('should provide filterOption function', () => {
-      const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
-
-      // Test empty search (should match all)
-      const matchesEmpty = result.current.filterOption('', [{ value: 'user' }]);
-      expect(matchesEmpty).toBe(true);
-    });
-
-    it('should provide getOptionPath function', () => {
-      const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
-
-      const mockOption = { label: 'Test', value: 'test', fullPath: ['test'] };
-      const path = result.current.getOptionPath(mockOption as any, []);
-      expect(path).toEqual([]);
     });
   });
 

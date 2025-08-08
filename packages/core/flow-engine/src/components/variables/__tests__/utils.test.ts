@@ -157,6 +157,20 @@ describe('Variable Utils', () => {
       expect(result).toHaveLength(1);
       expect(result[0].label).toBe('User');
     });
+
+    it('should return the same object instances without creating new ones', () => {
+      const result = searchInLoadedNodes(mockOptions, 'User');
+      expect(result).toHaveLength(1);
+      // Verify that the returned object is the exact same instance as the original
+      expect(result[0]).toBe(mockOptions[0]);
+      expect(result[0].fullPath).toBe(mockOptions[0].fullPath);
+
+      const nestedResult = searchInLoadedNodes(mockOptions, 'Name');
+      expect(nestedResult).toHaveLength(1);
+      // Verify that nested search also returns the same instance
+      expect(nestedResult[0]).toBe(mockOptions[0].children![0]);
+      expect(nestedResult[0].fullPath).toBe(mockOptions[0].children![0].fullPath);
+    });
   });
 
   describe('buildContextSelectorItems', () => {
