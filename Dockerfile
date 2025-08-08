@@ -25,11 +25,6 @@ RUN CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   &&  git checkout -b release-$(date +'%Y%m%d%H%M%S') \
   && yarn lerna version ${NEWVERSION} -y --no-git-tag-version
 
-RUN git config user.email "test@mail.com"  \
-    && git config user.name "test" && git add .  \
-    && git commit -m "chore(versions): test publish packages"
-RUN yarn release:force --registry https://registry.npmmirror.com/
-
 RUN yarn config set registry https://registry.npmmirror.com/
 WORKDIR /app
 RUN cd /app \
