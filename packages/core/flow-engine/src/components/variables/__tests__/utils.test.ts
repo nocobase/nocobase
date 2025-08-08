@@ -44,18 +44,30 @@ describe('Variable Utils', () => {
   });
 
   describe('formatPathToValue', () => {
-    it('should format path array to {{ ctx.aaa.bbb }}', () => {
-      expect(formatPathToValue(['aaa', 'bbb'])).toBe('{{ ctx.aaa.bbb }}');
-      expect(formatPathToValue(['user', 'name'])).toBe('{{ ctx.user.name }}');
-      expect(formatPathToValue(['data', 'items', '0', 'title'])).toBe('{{ ctx.data.items.0.title }}');
+    it('should format ContextSelectorItem to {{ ctx.aaa.bbb }}', () => {
+      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', fullPath: ['aaa', 'bbb'], isLeaf: true };
+      expect(formatPathToValue(item1)).toBe('{{ ctx.aaa.bbb }}');
+
+      const item2: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      expect(formatPathToValue(item2)).toBe('{{ ctx.user.name }}');
+
+      const item3: ContextSelectorItem = {
+        label: 'Title',
+        value: 'title',
+        fullPath: ['data', 'items', '0', 'title'],
+        isLeaf: true,
+      };
+      expect(formatPathToValue(item3)).toBe('{{ ctx.data.items.0.title }}');
     });
 
     it('should handle empty path', () => {
-      expect(formatPathToValue([])).toBe('{{ ctx }}');
+      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', fullPath: [], isLeaf: true };
+      expect(formatPathToValue(item)).toBe('{{ ctx }}');
     });
 
     it('should handle single path element', () => {
-      expect(formatPathToValue(['user'])).toBe('{{ ctx.user }}');
+      const item: ContextSelectorItem = { label: 'User', value: 'user', fullPath: ['user'], isLeaf: true };
+      expect(formatPathToValue(item)).toBe('{{ ctx.user }}');
     });
   });
 
@@ -310,10 +322,9 @@ describe('Variable Utils', () => {
   describe('createDefaultConverters', () => {
     it('should create default converters', () => {
       const converters = createDefaultConverters();
-      expect(converters).toHaveProperty('renderInputComponent');
       expect(converters).toHaveProperty('resolvePathFromValue');
       expect(converters).toHaveProperty('resolveValueFromPath');
-      expect(typeof converters.renderInputComponent).toBe('function');
+      expect(converters).not.toHaveProperty('renderInputComponent');
       expect(typeof converters.resolvePathFromValue).toBe('function');
       expect(typeof converters.resolveValueFromPath).toBe('function');
     });
@@ -322,6 +333,12 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
       expect(converters.resolvePathFromValue?.('static value')).toBeNull();
+    });
+
+    it('should resolve value from ContextSelectorItem', () => {
+      const converters = createDefaultConverters();
+      const item: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      expect(converters.resolveValueFromPath?.(item)).toBe('{{ ctx.user.name }}');
     });
   });
 });

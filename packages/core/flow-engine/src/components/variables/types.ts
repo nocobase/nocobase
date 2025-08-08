@@ -70,3 +70,21 @@ export interface VariableTagProps {
   style?: React.CSSProperties;
   contextSelectorItem?: ContextSelectorItem | null;
 }
+
+export interface VariableTriggerElement {
+  type: 'variable-trigger';
+  triggerId: string;
+  children: [{ text: '' }];
+}
+
+export interface VariableElement {
+  type: 'variable';
+  value: string;
+  meta?: ContextSelectorItem;
+  children: [{ text: '' }];
+}
+
+export interface ParagraphElement {
+  type: 'paragraph';
+  children: any[];
+}
