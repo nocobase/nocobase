@@ -88,6 +88,7 @@ export class PluginAIClient extends Plugin {
       Component: LLMServices,
     });
     this.app.pluginSettingsManager.add('ai.settings', {
+      sort: 100,
       icon: 'SettingOutlined',
       title: tval('Settings'),
       aclSnippet: 'pm.ai.settings',
