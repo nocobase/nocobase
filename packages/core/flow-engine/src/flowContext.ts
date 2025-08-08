@@ -155,7 +155,7 @@ export class FlowContext {
       configurable: true,
       enumerable: false,
       writable: false,
-      value: fn.bind(this),
+      value: fn.bind(this.createProxy()),
     });
   }
 
@@ -463,11 +463,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
-    this.defineMethod('renderJson', (template: any) => {
-      return resolveExpressions(template, this.createProxy());
+    this.defineMethod('renderJson', function (template: any) {
+      return resolveExpressions(template, this);
     });
-    this.defineMethod('resolveJsonTemplate', (template: any) => {
-      return resolveExpressions(template, this.createProxy());
+    this.defineMethod('resolveJsonTemplate', function (template: any) {
+      return resolveExpressions(template, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -521,6 +521,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         },
       });
     });
+    this.defineMethod('runjs', function (code, variables) {
+      const runner = new JSRunner({
+        globals: {
+          ctx: this,
+          ...variables,
+        },
+      });
+      return runner.run(code);
+    });
   }
 }
 
@@ -542,15 +551,6 @@ export class FlowModelContext extends BaseFlowModelContext {
         this.model['_refCreated'] = true;
         return createRef<HTMLDivElement>();
       },
-    });
-    this.defineMethod('runjs', async (code, variables) => {
-      const runner = new JSRunner({
-        globals: {
-          ctx: this.createProxy(),
-          ...variables,
-        },
-      });
-      return runner.run(code);
     });
   }
 }

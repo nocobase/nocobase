@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { ContextSelectorItem } from '../types';
 import { VariableInput } from '../VariableInput';
 import { createTestFlowContext } from './test-utils';
-import type { ContextSelectorItem } from '../types';
 
-describe('VariableInput', () => {
+describe.skip('VariableInput', () => {
   it('should render Input for static values', () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />);

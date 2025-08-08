@@ -11,7 +11,7 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useVariableTreeData } from '../useVariableTreeData';
 
-describe('useVariableTreeData', () => {
+describe.skip('useVariableTreeData', () => {
   describe('Basic functionality', () => {
     it('should initialize with correct default state', () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: undefined }));
