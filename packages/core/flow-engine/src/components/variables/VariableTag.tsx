@@ -12,18 +12,43 @@ import { Tag } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
+import type { MetaTreeNode } from '../../flowContext';
 import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
 import { parseValueToPath, buildFullTagTitle } from './utils';
 
-export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, className, style, contextSelectorItem }) => {
+export const VariableTag: React.FC<VariableTagProps> = ({
+  value,
+  onClear,
+  className,
+  style,
+  contextSelectorItem,
+  metaTree,
+}) => {
   const displayedValue = React.useMemo(() => {
     if (contextSelectorItem) {
-      return buildFullTagTitle(contextSelectorItem);
+      // 处理 metaTree，支持数组和函数类型
+      let resolvedMetaTree: MetaTreeNode[] | undefined;
+      if (Array.isArray(metaTree)) {
+        resolvedMetaTree = metaTree;
+      } else if (typeof metaTree === 'function') {
+        try {
+          const result = metaTree();
+          // 如果是同步函数返回数组，使用它
+          if (Array.isArray(result)) {
+            resolvedMetaTree = result;
+          }
+        } catch (error) {
+          // 异步函数或出错时使用后备方案
+          console.warn('Failed to resolve metaTree function:', error);
+        }
+      }
+
+      return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
     }
     if (!value) return String(value);
     const path = parseValueToPath(value);
     return path ? path.join('/') : String(value);
-  }, [value, contextSelectorItem]);
+  }, [value, contextSelectorItem, metaTree]);
 
   return (
     <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>

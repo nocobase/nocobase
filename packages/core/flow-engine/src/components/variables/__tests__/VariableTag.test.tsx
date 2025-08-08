@@ -150,4 +150,94 @@ describe('VariableTag', () => {
     expect(innerContainer).toHaveAttribute('role', 'button');
     expect(innerContainer).toHaveAttribute('aria-label', 'variable-tag');
   });
+
+  it('should display title when contextSelectorItem and metaTree are provided', () => {
+    const mockMetaTree = [
+      {
+        name: 'user',
+        title: 'User Information',
+        type: 'object',
+        children: [
+          {
+            name: 'profile',
+            title: 'User Profile',
+            type: 'object',
+            children: [
+              {
+                name: 'firstName',
+                title: 'First Name',
+                type: 'string',
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const mockContextSelectorItem = {
+      label: 'First Name',
+      value: 'firstName',
+      isLeaf: true,
+      fullPath: ['user', 'profile', 'firstName'],
+      meta: mockMetaTree[0].children[0].children[0],
+    };
+
+    render(
+      <VariableTag
+        value="{{ ctx.user.profile.firstName }}"
+        contextSelectorItem={mockContextSelectorItem}
+        metaTree={mockMetaTree}
+      />,
+    );
+
+    // 应该显示 title 而不是 name
+    const tag = screen.getByText('User Information/User Profile/First Name');
+    expect(tag).toBeInTheDocument();
+  });
+
+  it('should fallback to path display when metaTree is not provided', () => {
+    const mockContextSelectorItem = {
+      label: 'First Name',
+      value: 'firstName',
+      isLeaf: true,
+      fullPath: ['user', 'profile', 'firstName'],
+      meta: null,
+    };
+
+    render(<VariableTag value="{{ ctx.user.profile.firstName }}" contextSelectorItem={mockContextSelectorItem} />);
+
+    // 没有 metaTree 时应该显示 path
+    const tag = screen.getByText('user/profile/firstName');
+    expect(tag).toBeInTheDocument();
+  });
+
+  it('should handle function type metaTree gracefully', () => {
+    const mockMetaTreeFunction = () => [
+      {
+        name: 'user',
+        title: 'User Information',
+        type: 'object',
+      },
+    ];
+
+    const mockContextSelectorItem = {
+      label: 'User',
+      value: 'user',
+      isLeaf: true,
+      fullPath: ['user'],
+      meta: null,
+    };
+
+    render(
+      <VariableTag
+        value="{{ ctx.user }}"
+        contextSelectorItem={mockContextSelectorItem}
+        metaTree={mockMetaTreeFunction}
+      />,
+    );
+
+    // 函数类型的 metaTree 现在应该正常工作，显示 title
+    const tag = screen.getByText('User Information');
+    expect(tag).toBeInTheDocument();
+  });
 });

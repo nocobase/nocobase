@@ -10,7 +10,9 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import { parseValueToPath } from './utils';
+import { parseValueToPath, buildFullTagTitle } from './utils';
+import type { ContextSelectorItem } from './types';
+import type { MetaTreeNode } from '../../flowContext';
 
 export interface InlineVariableTagProps {
   value?: string;
@@ -18,6 +20,9 @@ export interface InlineVariableTagProps {
   className?: string;
   style?: React.CSSProperties;
   allowEdit?: boolean;
+  contextSelectorItem?: ContextSelectorItem;
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  maxWidth?: string | number;
 }
 
 export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
@@ -26,18 +31,38 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
   className,
   style,
   allowEdit = true,
+  contextSelectorItem,
+  metaTree,
+  maxWidth = '400px',
 }) => {
-  console.log('InlineVariableTag rendering with value:', value);
-
   const displayedValue = React.useMemo(() => {
+    // 优先使用 contextSelectorItem 和 metaTree 来构建完整的 title 路径
+    if (contextSelectorItem) {
+      // 处理 metaTree，支持数组和函数类型
+      let resolvedMetaTree: MetaTreeNode[] | undefined;
+      if (Array.isArray(metaTree)) {
+        resolvedMetaTree = metaTree;
+      } else if (typeof metaTree === 'function') {
+        try {
+          const result = metaTree();
+          // 如果是同步函数返回数组，使用它
+          if (Array.isArray(result)) {
+            resolvedMetaTree = result;
+          }
+        } catch (error) {
+          // 异步函数或出错时使用后备方案
+          console.warn('Failed to resolve metaTree function:', error);
+        }
+      }
+
+      return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
+    }
+
+    // 后备方案：从 value 解析路径
     if (!value) return String(value);
-
     const path = parseValueToPath(value);
-    console.log('InlineVariableTag parseValueToPath result:', path);
     return path ? path.join('/') : String(value);
-  }, [value]);
-
-  console.log('InlineVariableTag displayedValue:', displayedValue);
+  }, [value, contextSelectorItem, metaTree]);
 
   return (
     <Tag
@@ -59,7 +84,7 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
         lineHeight: '16px', // 与22px行高匹配
         height: '20px', // 与行高相匹配
         borderRadius: '4px',
-        maxWidth: '200px',
+        maxWidth: maxWidth, // 可配置的最大宽度
         cursor: 'default',
         userSelect: 'none',
         verticalAlign: 'middle', // 使用middle对齐而不是translateY

@@ -28,7 +28,7 @@ export const parseValueToPath = (value: string): string[] | null => {
 };
 
 export const formatPathToValue = (item: ContextSelectorItem): string => {
-  const path = item.fullPath || [];
+  const path = item?.fullPath || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
@@ -168,21 +168,40 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   return mergedConverters;
 };
 
-// 根据ContextSelectorItem的fullPath构建完整的标题路径
-export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem): string => {
+// 根据ContextSelectorItem的fullPath和metaTree构建完整的标题路径
+export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem, metaTree?: MetaTreeNode[]): string => {
   if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
     return contextSelectorItem?.label || '';
   }
 
-  // 从fullPath构建路径，最后一个用title，前面的首字母大写作为title
-  const titlePath = contextSelectorItem.fullPath.map((segment, index) => {
-    // 最后一个元素使用meta.title或label
-    if (index === contextSelectorItem.fullPath.length - 1) {
-      return contextSelectorItem.meta?.title || contextSelectorItem.label || segment;
+  if (!metaTree) {
+    // 没有 metaTree 时的后备方案
+    return contextSelectorItem.fullPath.join('/');
+  }
+
+  // 递归查找路径中每个节点的 title
+  const titlePath: string[] = [];
+  let currentNodes: MetaTreeNode[] = metaTree;
+
+  for (const segment of contextSelectorItem.fullPath) {
+    const node = currentNodes.find((n) => n.name === segment);
+    if (!node) {
+      // 如果找不到节点，使用原始名称
+      titlePath.push(segment);
+      break;
     }
-    // 前面的元素首字母大写作为简单的title
-    return segment.charAt(0).toUpperCase() + segment.slice(1);
-  });
+
+    // 使用 title 或 name
+    titlePath.push(node.title || node.name);
+
+    // 准备下一级节点
+    if (Array.isArray(node.children)) {
+      currentNodes = node.children;
+    } else {
+      // 异步子节点，无法继续查找
+      break;
+    }
+  }
 
   return titlePath.join('/');
 };

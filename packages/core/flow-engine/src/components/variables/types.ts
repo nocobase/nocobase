@@ -69,6 +69,7 @@ export interface VariableTagProps {
   className?: string;
   style?: React.CSSProperties;
   contextSelectorItem?: ContextSelectorItem | null;
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
 }
 
 export interface VariableTriggerElement {

@@ -21,7 +21,7 @@ import type {
   ParagraphElement,
 } from './types';
 import type { MetaTreeNode } from '../../flowContext';
-import { parseValueToPath } from './utils';
+import { parseValueToPath, buildContextSelectorItemFromPath } from './utils';
 import { uid } from '@formily/shared';
 
 type CustomElement = VariableElement | VariableTriggerElement | ParagraphElement;
@@ -84,58 +84,95 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
     return e;
   }, []);
 
+  // 获取实际的 metaTree 数据
+  const [resolvedMetaTree, setResolvedMetaTree] = React.useState<MetaTreeNode[] | null>(null);
+
+  React.useEffect(() => {
+    const resolveMetaTree = async () => {
+      if (!metaTree) {
+        setResolvedMetaTree(null);
+        return;
+      }
+
+      try {
+        if (typeof metaTree === 'function') {
+          const resolved = await metaTree();
+          setResolvedMetaTree(resolved);
+        } else {
+          setResolvedMetaTree(metaTree);
+        }
+      } catch (error) {
+        console.warn('Failed to resolve metaTree:', error);
+        setResolvedMetaTree(null);
+      }
+    };
+
+    resolveMetaTree();
+  }, [metaTree]);
+
   // 解析外部 value 为 Slate 文档结构
-  const parseValueToSlate = useCallback((text = ''): Descendant[] => {
-    if (!text) {
+  const parseValueToSlate = useCallback(
+    (text = ''): Descendant[] => {
+      if (!text) {
+        return [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ];
+      }
+
+      const variableRegex = /\{\{[^}]+\}\}/g;
+      let lastIndex = 0;
+      let match;
+
+      const children: Descendant[] = [];
+
+      while ((match = variableRegex.exec(text)) !== null) {
+        // 添加前面的文本
+        if (match.index > lastIndex) {
+          children.push({ text: text.slice(lastIndex, match.index) });
+        }
+
+        // 添加变量元素
+        const variableValue = match[0];
+        const path = parseValueToPath(variableValue);
+
+        // 尝试构建元数据信息
+        let contextSelectorItem: ContextSelectorItem | undefined = undefined;
+        if (path && resolvedMetaTree) {
+          contextSelectorItem = buildContextSelectorItemFromPath(path, resolvedMetaTree) || undefined;
+        }
+
+        children.push({
+          type: 'variable',
+          value: variableValue,
+          meta: contextSelectorItem,
+          children: [{ text: '' }], // Slate 要求 void 元素有空文本子节点
+        } as VariableElement);
+
+        lastIndex = match.index + match[0].length;
+      }
+
+      // 添加剩余文本
+      if (lastIndex < text.length) {
+        children.push({ text: text.slice(lastIndex) });
+      }
+
+      // 如果没有内容，添加空文本
+      if (children.length === 0) {
+        children.push({ text: '' });
+      }
+
       return [
         {
           type: 'paragraph',
-          children: [{ text: '' }],
+          children,
         },
       ];
-    }
-
-    const segments: Descendant[] = [];
-    const variableRegex = /\{\{[^}]+\}\}/g;
-    let lastIndex = 0;
-    let match;
-
-    const children: Descendant[] = [];
-
-    while ((match = variableRegex.exec(text)) !== null) {
-      // 添加前面的文本
-      if (match.index > lastIndex) {
-        children.push({ text: text.slice(lastIndex, match.index) });
-      }
-
-      // 添加变量元素
-      const variableValue = match[0];
-      children.push({
-        type: 'variable',
-        value: variableValue,
-        children: [{ text: '' }], // Slate 要求 void 元素有空文本子节点
-      } as VariableElement);
-
-      lastIndex = match.index + match[0].length;
-    }
-
-    // 添加剩余文本
-    if (lastIndex < text.length) {
-      children.push({ text: text.slice(lastIndex) });
-    }
-
-    // 如果没有内容，添加空文本
-    if (children.length === 0) {
-      children.push({ text: '' });
-    }
-
-    return [
-      {
-        type: 'paragraph',
-        children,
-      },
-    ];
-  }, []);
+    },
+    [resolvedMetaTree],
+  );
 
   const initialValue = useMemo(() => parseValueToSlate(value || ''), [value, parseValueToSlate]);
 
@@ -206,8 +243,12 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
       if (triggerMatch) {
         const [, triggerPath] = triggerMatch;
 
+        // 先选择触发器位置
+        Transforms.select(editor, triggerPath);
+        // 移除节点
         Transforms.removeNodes(editor, { at: triggerPath });
-        Transforms.insertText(editor, '{{', { at: triggerPath });
+        // 在当前选择位置插入文本
+        Transforms.insertText(editor, '{{');
 
         ReactEditor.focus(editor);
       }
@@ -219,7 +260,7 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
     (props: RenderElementProps) => {
       switch (props.element.type) {
         case 'variable':
-          return <VariableElementComponent {...props} />;
+          return <VariableElementComponent {...props} metaTree={resolvedMetaTree} />;
         case 'variable-trigger':
           return (
             <VariableTrigger
@@ -234,7 +275,7 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
           return <p {...props.attributes}>{props.children}</p>;
       }
     },
-    [metaTree, handleVariableSelectFromTrigger, handleTriggerClose],
+    [metaTree, resolvedMetaTree, handleVariableSelectFromTrigger, handleTriggerClose],
   );
 
   // 渲染叶子节点
@@ -302,13 +343,35 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
 };
 
 // 变量元素组件
-const VariableElementComponent: React.FC<RenderElementProps> = ({ attributes, children, element }) => {
+const VariableElementComponent: React.FC<RenderElementProps & { metaTree?: MetaTreeNode[] }> = ({
+  attributes,
+  children,
+  element,
+  metaTree,
+}) => {
   const variableElement = element as VariableElement;
+
+  // 动态构建 contextSelectorItem，优先使用存储的 meta，否则从 metaTree 构建
+  const contextSelectorItem = React.useMemo(() => {
+    if (variableElement.meta) {
+      return variableElement.meta;
+    }
+
+    // 如果没有存储的 meta，尝试从 metaTree 动态构建
+    if (metaTree && variableElement.value) {
+      const path = parseValueToPath(variableElement.value);
+      return path ? buildContextSelectorItemFromPath(path, metaTree) : null;
+    }
+
+    return null;
+  }, [variableElement.meta, variableElement.value, metaTree]);
 
   return (
     <span {...attributes} contentEditable={false}>
       <InlineVariableTag
         value={variableElement.value}
+        contextSelectorItem={contextSelectorItem || undefined}
+        metaTree={metaTree}
         style={{
           marginLeft: 2,
           marginRight: 2,

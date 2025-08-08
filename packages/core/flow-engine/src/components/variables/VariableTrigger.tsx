@@ -48,15 +48,47 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
   return (
     <Popover
       content={
-        <div style={{ width: 300, maxHeight: 400, overflow: 'auto' }}>
-          <FlowContextSelector metaTree={metaTree} onChange={handleVariableSelect} open={true} showSearch={true} />
+        <div style={{ width: 'fit-content' }}>
+          <style>
+            {`
+              .variable-trigger-popover {
+                width: fit-content !important;
+              }
+              .variable-trigger-popover .ant-popover-content,
+              .variable-trigger-popover .ant-popover-inner {
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                width: fit-content !important;
+              }
+              .variable-trigger-popover .ant-popover-arrow { display: none !important; }
+              .variable-trigger-popover .ant-cascader-menu { 
+                max-height: 50vh !important; 
+                overflow-y: auto !important; 
+                width: auto !important; 
+                min-width: auto !important; 
+              }
+              .variable-trigger-popover .ant-cascader-menus { width: fit-content !important; }
+            `}
+          </style>
+          <FlowContextSelector
+            metaTree={metaTree}
+            onChange={handleVariableSelect}
+            open={true}
+            showSearch={false}
+            dropdownStyle={{ boxShadow: 'none', border: 'none' }}
+            style={{ display: 'none' }}
+          >
+            <div />
+          </FlowContextSelector>
         </div>
       }
       open={open}
       trigger="click"
-      placement="bottomLeft"
+      placement={['bottomLeft', 'bottomRight', 'topLeft', 'topRight']}
       onOpenChange={handleOpenChange}
-      overlayStyle={{ zIndex: 1050 }}
+      overlayClassName="variable-trigger-popover"
       destroyTooltipOnHide
     >
       <span
@@ -76,8 +108,8 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
         }}
         data-slate-void={true}
       >
-        {'{{'}
-        {children}
+        {'{{}}'}
+        <span style={{ display: 'none' }}>{children}</span>
       </span>
     </Popover>
   );
