@@ -2376,6 +2376,450 @@ describe('FlowModel', () => {
     });
   });
 
+  // ==================== USE RAW PARAMS ====================
+  describe('useRawParams Functionality', () => {
+    let model: FlowModel;
+    let TestFlowModel: typeof FlowModel;
+
+    beforeEach(() => {
+      TestFlowModel = class extends FlowModel<any> {
+        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
+      };
+      model = new TestFlowModel({
+        ...modelOptions,
+        uid: 'test-raw-params-model-uid',
+      });
+    });
+
+    describe('useRawParams: true (skip expression resolution)', () => {
+      test('should skip expression resolution when useRawParams is true on action', async () => {
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          // Parameters should contain raw expressions, not resolved values
+          expect(params.message).toBe('Hello {{ctx.user.name}}');
+          expect(params.id).toBe('{{ctx.user.id}}');
+          return 'action-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: true,
+          defaultParams: {
+            message: 'Hello {{ctx.user.name}}',
+            id: '{{ctx.user.id}}',
+          },
+        });
+
+        model.flowEngine.registerActions({
+          testAction: {
+            name: 'testAction',
+            handler: actionHandler,
+            useRawParams: true,
+            defaultParams: {
+              message: 'Hello {{ctx.user.name}}',
+              id: '{{ctx.user.id}}',
+            },
+          },
+        });
+
+        const actionFlow: FlowDefinition = {
+          key: 'rawParamsActionFlow',
+          steps: {
+            rawParamsStep: {
+              use: 'testAction',
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(actionFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({
+            name: 'Test User',
+            id: 'user123',
+          }),
+        });
+
+        await model.applyFlow('rawParamsActionFlow');
+
+        expect(model.flowEngine.getAction).toHaveBeenCalledWith('testAction');
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Hello {{ctx.user.name}}',
+            id: '{{ctx.user.id}}',
+          }),
+        );
+      });
+
+      test('should skip expression resolution when useRawParams is true on step', async () => {
+        const stepHandler = vi.fn().mockImplementation((ctx, params) => {
+          // Parameters should contain raw expressions, not resolved values
+          expect(params.title).toBe('Article: {{ctx.record.title}}');
+          expect(params.userId).toBe('{{ctx.user.id}}');
+          return 'step-result';
+        });
+
+        const stepFlow: FlowDefinition = {
+          key: 'rawParamsStepFlow',
+          steps: {
+            rawParamsStep: {
+              handler: stepHandler,
+              useRawParams: true,
+              defaultParams: {
+                title: 'Article: {{ctx.record.title}}',
+                userId: '{{ctx.user.id}}',
+              },
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(stepFlow);
+
+        model.context.defineProperty('record', {
+          get: () => ({ title: 'Test Article' }),
+        });
+        model.context.defineProperty('user', {
+          get: () => ({ id: 123 }),
+        });
+
+        await model.applyFlow('rawParamsStepFlow');
+
+        expect(stepHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            title: 'Article: {{ctx.record.title}}',
+            userId: '{{ctx.user.id}}',
+          }),
+        );
+      });
+
+      test('should prioritize step useRawParams over action useRawParams', async () => {
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          // Step useRawParams: true should override action useRawParams: false
+          expect(params.message).toBe('Hello {{ctx.user.name}}');
+          return 'priority-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: false, // Action says resolve expressions
+          defaultParams: {
+            message: 'Hello {{ctx.user.name}}',
+          },
+        });
+
+        const priorityFlow: FlowDefinition = {
+          key: 'priorityFlow',
+          steps: {
+            priorityStep: {
+              use: 'testAction',
+              useRawParams: true, // Step overrides action
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(priorityFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({ name: 'Test User' }),
+        });
+
+        await model.applyFlow('priorityFlow');
+
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Hello {{ctx.user.name}}',
+          }),
+        );
+      });
+    });
+
+    describe('useRawParams: false (normal expression resolution)', () => {
+      test('should resolve expressions when useRawParams is false', async () => {
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          // Parameters should be resolved
+          expect(params.message).toBe('Hello Test User');
+          expect(params.id).toBe('user123');
+          return 'resolved-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: false,
+          defaultParams: {
+            message: 'Hello {{ctx.user.name}}',
+            id: '{{ctx.user.id}}',
+          },
+        });
+
+        const resolvedFlow: FlowDefinition = {
+          key: 'resolvedFlow',
+          steps: {
+            resolvedStep: {
+              use: 'testAction',
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(resolvedFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({
+            name: 'Test User',
+            id: 'user123',
+          }),
+        });
+
+        await model.applyFlow('resolvedFlow');
+
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Hello Test User',
+            id: 'user123',
+          }),
+        );
+      });
+    });
+
+    describe('useRawParams as function', () => {
+      test('should evaluate useRawParams function and skip resolution when returns true', async () => {
+        const useRawParamsFunction = vi.fn().mockReturnValue(true);
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          expect(params.message).toBe('Dynamic {{ctx.user.name}}');
+          return 'dynamic-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: useRawParamsFunction,
+          defaultParams: {
+            message: 'Dynamic {{ctx.user.name}}',
+          },
+        });
+
+        const dynamicFlow: FlowDefinition = {
+          key: 'dynamicFlow',
+          steps: {
+            dynamicStep: {
+              use: 'testAction',
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(dynamicFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({ name: 'Test User' }),
+        });
+
+        await model.applyFlow('dynamicFlow');
+
+        expect(useRawParamsFunction).toHaveBeenCalledWith(expect.any(Object));
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Dynamic {{ctx.user.name}}',
+          }),
+        );
+      });
+
+      test('should evaluate useRawParams function and resolve expressions when returns false', async () => {
+        const useRawParamsFunction = vi.fn().mockReturnValue(false);
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          expect(params.message).toBe('Dynamic Test User');
+          return 'dynamic-resolved-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: useRawParamsFunction,
+          defaultParams: {
+            message: 'Dynamic {{ctx.user.name}}',
+          },
+        });
+
+        const dynamicResolvedFlow: FlowDefinition = {
+          key: 'dynamicResolvedFlow',
+          steps: {
+            dynamicResolvedStep: {
+              use: 'testAction',
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(dynamicResolvedFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({ name: 'Test User' }),
+        });
+
+        await model.applyFlow('dynamicResolvedFlow');
+
+        expect(useRawParamsFunction).toHaveBeenCalledWith(expect.any(Object));
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Dynamic Test User',
+          }),
+        );
+      });
+
+      test('should handle async useRawParams function', async () => {
+        const asyncUseRawParamsFunction = vi.fn().mockResolvedValue(true);
+        const actionHandler = vi.fn().mockImplementation((ctx, params) => {
+          expect(params.message).toBe('Async {{ctx.user.name}}');
+          return 'async-result';
+        });
+
+        model.flowEngine.getAction = vi.fn().mockReturnValue({
+          handler: actionHandler,
+          useRawParams: asyncUseRawParamsFunction,
+          defaultParams: {
+            message: 'Async {{ctx.user.name}}',
+          },
+        });
+
+        const asyncFlow: FlowDefinition = {
+          key: 'asyncFlow',
+          steps: {
+            asyncStep: {
+              use: 'testAction',
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(asyncFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({ name: 'Test User' }),
+        });
+
+        await model.applyFlow('asyncFlow');
+
+        expect(asyncUseRawParamsFunction).toHaveBeenCalledWith(expect.any(Object));
+        expect(actionHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Async {{ctx.user.name}}',
+          }),
+        );
+      });
+    });
+
+    describe('complex useRawParams scenarios', () => {
+      test('should handle mixed steps with different useRawParams settings', async () => {
+        const stepHandler1 = vi.fn().mockImplementation((ctx, params) => {
+          // This step should have raw expressions
+          expect(params.message).toBe('Raw: {{ctx.user.name}}');
+          return 'raw-result';
+        });
+
+        const stepHandler2 = vi.fn().mockImplementation((ctx, params) => {
+          // This step should have resolved expressions
+          expect(params.message).toBe('Resolved: Test User');
+          return 'resolved-result';
+        });
+
+        const mixedFlow: FlowDefinition = {
+          key: 'mixedFlow',
+          steps: {
+            rawStep: {
+              handler: stepHandler1,
+              useRawParams: true,
+              defaultParams: {
+                message: 'Raw: {{ctx.user.name}}',
+              },
+            },
+            resolvedStep: {
+              handler: stepHandler2,
+              useRawParams: false,
+              defaultParams: {
+                message: 'Resolved: {{ctx.user.name}}',
+              },
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(mixedFlow);
+
+        model.context.defineProperty('user', {
+          get: () => ({ name: 'Test User' }),
+        });
+
+        const result = await model.applyFlow('mixedFlow');
+
+        expect(result).toEqual({
+          rawStep: 'raw-result',
+          resolvedStep: 'resolved-result',
+        });
+        expect(stepHandler1).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Raw: {{ctx.user.name}}',
+          }),
+        );
+        expect(stepHandler2).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            message: 'Resolved: Test User',
+          }),
+        );
+      });
+
+      test('should work with model step parameters', async () => {
+        const stepHandler = vi.fn().mockImplementation((ctx, params) => {
+          // Should get raw expressions since useRawParams is true
+          expect(params.defaultMessage).toBe('Default: {{ctx.user.name}}');
+          expect(params.modelMessage).toBe('Model: {{ctx.user.email}}');
+          return 'model-params-result';
+        });
+
+        const modelParamsFlow: FlowDefinition = {
+          key: 'modelParamsFlow',
+          steps: {
+            modelStep: {
+              handler: stepHandler,
+              useRawParams: true,
+              defaultParams: {
+                defaultMessage: 'Default: {{ctx.user.name}}',
+              },
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(modelParamsFlow);
+
+        // Set model step parameters
+        model.setStepParams({
+          modelParamsFlow: {
+            modelStep: {
+              modelMessage: 'Model: {{ctx.user.email}}',
+            },
+          },
+        });
+
+        model.context.defineProperty('user', {
+          get: () => ({
+            name: 'Test User',
+            email: 'test@example.com',
+          }),
+        });
+
+        await model.applyFlow('modelParamsFlow');
+
+        expect(stepHandler).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.objectContaining({
+            defaultMessage: 'Default: {{ctx.user.name}}',
+            modelMessage: 'Model: {{ctx.user.email}}',
+          }),
+        );
+      });
+    });
+  });
+
   // ==================== EDGE CASES ====================
   describe('Edge Cases & Error Handling', () => {
     test('should handle model destruction gracefully', () => {
