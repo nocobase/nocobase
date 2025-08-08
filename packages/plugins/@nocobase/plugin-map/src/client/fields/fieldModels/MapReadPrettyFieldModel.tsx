@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
-import { reactive, escapeT } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import { MapComponent } from '../../components/MapComponent';
 
 export const PointReadPretty = (props) => {
@@ -27,7 +27,7 @@ export class MapReadPrettyFieldModel extends ReadPrettyFieldModel {
 
   // @reactive
   public render() {
-    const value = this.getValue();
+    const { value } = this.props;
     return (
       <PointReadPretty
         {...this.props}

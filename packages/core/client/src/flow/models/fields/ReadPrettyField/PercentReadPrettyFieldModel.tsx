@@ -25,8 +25,7 @@ export class PercentReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
   // @reactive
   public render() {
-    const value = this.getValue();
-    const { prefix = '', suffix = '' } = this.props;
+    const { prefix = '', suffix = '', value } = this.props;
 
     const content = toValue(value, (v) => v * 100);
     return (

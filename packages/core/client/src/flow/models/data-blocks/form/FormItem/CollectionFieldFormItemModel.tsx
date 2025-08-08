@@ -152,7 +152,6 @@ CollectionFieldFormItemModel.registerFlow({
         if (params.pattern === 'readPretty') {
           const use =
             ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-
           const model = ctx.model.setSubModel('field', {
             use: use,
             stepParams: {
@@ -163,6 +162,18 @@ CollectionFieldFormItemModel.registerFlow({
           });
           await model.applyAutoFlows();
         } else {
+          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          if (use !== ctx.model.subModels.field.use) {
+            const model = ctx.model.setSubModel('field', {
+              use: use,
+              stepParams: {
+                fieldSettings: {
+                  init: ctx.model.getFieldSettingsInitParams(),
+                },
+              },
+            });
+            await model.applyAutoFlows();
+          }
           ctx.model.subModels.field.setProps({
             disabled: params.pattern === 'disabled',
             editable: params.pattern === 'editable',

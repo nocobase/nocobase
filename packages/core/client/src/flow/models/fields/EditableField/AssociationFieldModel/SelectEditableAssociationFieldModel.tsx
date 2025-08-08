@@ -37,16 +37,17 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
-  const field =
+  const field: any =
     (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.context.defineProperty('fieldValue', {
-    get: () => option?.[fieldNames.label],
-  });
+  fieldModel.setProps({ value: option?.[fieldNames.label] });
+  // fieldModel.context.defineProperty('fieldValue', {
+  //   get: () => option?.[fieldNames.label],
+  // });
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
