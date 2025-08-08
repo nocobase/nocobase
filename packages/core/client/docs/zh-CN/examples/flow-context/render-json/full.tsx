@@ -1,5 +1,5 @@
 import { Application, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer, resolveDefaultParams } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import React from 'react';
 
 class HelloBlockModel extends FlowModel {
@@ -33,7 +33,7 @@ HelloBlockModel.registerFlow({
           },
         });
         ctx.onRefReady(ctx.ref, async (el) => {
-          const json = await ctx.renderJson({
+          const json = await ctx.resolveJsonTemplate({
             key1: '{{ctx.current.key1}}',
             key2: '{{ctx.current.key2}}',
             key3: '{{ctx.current.key3}}',
@@ -44,7 +44,7 @@ HelloBlockModel.registerFlow({
               key1: '{{ctx.current.key1}}',
               key2: '{{ctx.current.key2}}',
             },
-            key8: ['{{ctx.current.key1}}', '{{ctx.current.key3}}'],
+            key8: ['{{ctx.current.key1}}', '{{ctx.current.key3}}', '{{ctx.current.key6}}'],
             key9: '{{ctx.current.key1}} - "{{ctx.current.key3}}" - {{ctx.current.key3}} - val9',
           });
           el.innerHTML = `<pre>${JSON.stringify(json, null, 2)}</pre>`;

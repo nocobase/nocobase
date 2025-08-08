@@ -30,6 +30,7 @@ import {
   SQLResource,
 } from './resources';
 import { FlowExitException, resolveExpressions } from './utils';
+import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -412,7 +413,12 @@ class BaseFlowEngineContext extends FlowContext {
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
-  declare renderJson: (template: any) => Promise<any>;
+  /**
+   * @deprecated use `resolveJsonTemplate` instead
+   */
+  declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
+  declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
   declare api: APIClient;
   declare viewer: FlowViewer;
   declare view: FlowView;
