@@ -63,6 +63,7 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   const NotFoundComponent = useComponent(NotFoundPage);
   const collectionManagerLoading = useRemoteCollectionManagerLoading();
   const parentSchema = useFieldSchema();
+  const transformedSchema = useMemo(() => schemaTransform(schema || {}), [schema, schemaTransform]);
 
   if (collectionManagerLoading || loading || hidden) {
     return <Spin style={{ width: '100%', marginTop: 20 }} delay={LOADING_DELAY} />;
@@ -74,20 +75,10 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   }
 
   return noForm ? (
-    <SchemaComponent
-      components={components}
-      scope={scope}
-      schema={schemaTransform(schema || {})}
-      parentSchema={parentSchema}
-    />
+    <SchemaComponent components={components} scope={scope} schema={transformedSchema} parentSchema={parentSchema} />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent
-        components={components}
-        scope={scope}
-        schema={schemaTransform(schema || {})}
-        parentSchema={parentSchema}
-      />
+      <SchemaComponent components={components} scope={scope} schema={transformedSchema} parentSchema={parentSchema} />
     </FormProvider>
   );
 };
