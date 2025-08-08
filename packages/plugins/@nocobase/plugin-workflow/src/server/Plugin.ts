@@ -682,7 +682,9 @@ export default class PluginWorkflowServer extends Plugin {
           this.pending.push([execution]);
         } else {
           logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
-          this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+          if (this.ready) {
+            this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+          }
         }
       }
     } catch (error) {
