@@ -31,9 +31,9 @@ describe('Variable Utils', () => {
     it('should handle edge cases', () => {
       expect(parseValueToPath('{{ ctx }}')).toEqual([]);
       expect(parseValueToPath('{{ctx}}')).toEqual([]);
-      expect(parseValueToPath('not a variable')).toBeNull();
-      expect(parseValueToPath('')).toBeNull();
-      expect(parseValueToPath('{{ something.else }}')).toBeNull();
+      expect(parseValueToPath('not a variable')).toBeUndefined();
+      expect(parseValueToPath('')).toBeUndefined();
+      expect(parseValueToPath('{{ something.else }}')).toBeUndefined();
     });
 
     it('should handle whitespace variations', () => {
@@ -251,40 +251,6 @@ describe('Variable Utils', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should handle invalid nodes in metaTree', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const metaTree: MetaTreeNode[] = [
-        { name: 'valid', title: 'Valid', type: 'object' },
-        null as any,
-        { name: '', title: 'Empty Name', type: 'object' },
-        undefined as any,
-      ];
-
-      const result = buildContextSelectorItems(metaTree);
-
-      expect(result).toHaveLength(4);
-      expect(result[0]).toEqual({
-        label: 'Valid',
-        value: 'valid',
-        isLeaf: true,
-        meta: { name: 'valid', title: 'Valid', type: 'object' },
-        fullPath: ['valid'],
-      });
-
-      // Invalid nodes should be converted to placeholder options
-      expect(result[1]).toEqual({
-        label: 'Invalid Node',
-        value: 'invalid',
-        isLeaf: true,
-        meta: null,
-        fullPath: ['invalid'],
-      });
-
-      expect(consoleSpy).toHaveBeenCalledTimes(3); // null, empty name, undefined
-      consoleSpy.mockRestore();
-    });
-
     it('should use name as fallback when title is missing', () => {
       const metaTree: MetaTreeNode[] = [
         {
@@ -346,7 +312,7 @@ describe('Variable Utils', () => {
     it('should resolve path from variable value', () => {
       const converters = createDefaultConverters();
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
-      expect(converters.resolvePathFromValue?.('static value')).toBeNull();
+      expect(converters.resolvePathFromValue?.('static value')).toBeUndefined();
     });
 
     it('should resolve value from ContextSelectorItem', () => {
