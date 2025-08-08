@@ -12,14 +12,14 @@ import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
 
-export const parseValueToPath = (value: string): string[] | null => {
-  if (typeof value !== 'string') return null;
+export const parseValueToPath = (value: string): string[] | undefined => {
+  if (typeof value !== 'string') return undefined;
 
   const trimmed = value.trim();
   const variableRegex = /^\{\{\s*ctx(?:\.(.+?))?\s*\}\}$/;
   const match = trimmed.match(variableRegex);
 
-  if (!match) return null;
+  if (!match) return undefined;
 
   const pathString = match[1];
   if (!pathString) return [];
@@ -90,19 +90,6 @@ export const buildContextSelectorItems = (
   }
 
   const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
-    // 处理无效节点
-    if (!node || typeof node !== 'object' || !node.name) {
-      console.warn('buildContextSelectorItems received invalid node:', node);
-      const invalidPath = [...currentPath, 'invalid'];
-      return {
-        label: 'Invalid Node',
-        value: 'invalid',
-        isLeaf: true,
-        meta: null,
-        fullPath: invalidPath,
-      };
-    }
-
     const hasChildren = node.children;
     const fullPath = [...currentPath, node.name];
     const option: ContextSelectorItem = {

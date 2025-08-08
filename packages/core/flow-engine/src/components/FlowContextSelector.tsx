@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { Button, Cascader } from 'antd';
 import type { FlowContextSelectorProps, ContextSelectorItem } from './variables/types';
 import { useVariableTreeData } from './variables/useVariableTreeData';
@@ -16,7 +16,7 @@ import { formatPathToValue } from './variables/utils';
 export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
-  children = <Button>x</Button>,
+  children,
   metaTree,
   showSearch = false,
   parseValueToPath: customParseValueToPath,
@@ -26,6 +26,21 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
 }) => {
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
+
+  // 默认按钮组件
+  const defaultChildren = useMemo(
+    () => (
+      <Button
+        style={{
+          fontStyle: 'italic' as const,
+          fontFamily: 'New York, Times New Roman, Times, serif',
+        }}
+      >
+        x
+      </Button>
+    ),
+    [],
+  );
 
   // 使用 useVariableTreeData Hook 管理数据状态
   const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
@@ -98,7 +113,7 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
       expandTrigger="click"
       open={open}
     >
-      {children}
+      {children || defaultChildren}
     </Cascader>
   );
 };

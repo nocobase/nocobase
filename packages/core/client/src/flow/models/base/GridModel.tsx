@@ -265,6 +265,21 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     throw new Error('renderAddSubModelButton method must be implemented in subclasses of GridModel');
   }
 
+  getRows() {
+    if (this.context.isMobileLayout) {
+      return transformRowsToSingleColumn(this.props.rows || {});
+    }
+    return this.props.rows || {};
+  }
+
+  getSizes() {
+    if (this.context.isMobileLayout) {
+      return {};
+    }
+
+    return this.props.sizes || {};
+  }
+
   render() {
     return (
       <>
@@ -279,8 +294,8 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
               <Grid
                 rowGap={this.props.rowGap}
                 colGap={this.props.colGap}
-                rows={this.props.rows || {}}
-                sizes={this.props.sizes || {}}
+                rows={this.getRows()}
+                sizes={this.getSizes()}
                 renderItem={(uid) => {
                   const item = this.flowEngine.getModel(uid);
                   return (
@@ -423,6 +438,31 @@ BlockGridModel.registerFlow({
     // },
   },
 });
+
+/**
+ * 将多列栅格 rows 转换为移动端单列 rows。
+ * 遍历原 rows 的行与列顺序，把每个原列（过滤空白列后）变成一个新行（仅一列）。
+ * 行 key 使用 uid() 生成，保持插入顺序即可。
+ * @param rows 原始多列 rows
+ * @returns 单列 rows
+ */
+export function transformRowsToSingleColumn(
+  rows: Record<string, string[][]>,
+  options?: { emptyColumnUid?: string },
+): Record<string, string[][]> {
+  const emptyColumnUid = options?.emptyColumnUid ?? EMPTY_COLUMN_UID;
+  const singleColumnRows: Record<string, string[][]> = {};
+  Object.keys(rows).forEach((rowId) => {
+    const columns = rows[rowId];
+    columns.forEach((column) => {
+      const filtered = column.filter((id) => id !== emptyColumnUid);
+      if (filtered.length > 0) {
+        singleColumnRows[uid()] = [filtered];
+      }
+    });
+  });
+  return singleColumnRows;
+}
 
 function recalculateGridSizes({
   position,

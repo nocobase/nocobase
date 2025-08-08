@@ -13,6 +13,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { parseValueToPath, buildFullTagTitle } from './utils';
 import type { ContextSelectorItem } from './types';
 import type { MetaTreeNode } from '../../flowContext';
+import { useResolvedMetaTree } from './useResolvedMetaTree';
 
 export interface InlineVariableTagProps {
   value?: string;
@@ -35,26 +36,11 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
   metaTree,
   maxWidth = '400px',
 }) => {
+  const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+
   const displayedValue = React.useMemo(() => {
     // 优先使用 contextSelectorItem 和 metaTree 来构建完整的 title 路径
     if (contextSelectorItem) {
-      // 处理 metaTree，支持数组和函数类型
-      let resolvedMetaTree: MetaTreeNode[] | undefined;
-      if (Array.isArray(metaTree)) {
-        resolvedMetaTree = metaTree;
-      } else if (typeof metaTree === 'function') {
-        try {
-          const result = metaTree();
-          // 如果是同步函数返回数组，使用它
-          if (Array.isArray(result)) {
-            resolvedMetaTree = result;
-          }
-        } catch (error) {
-          // 异步函数或出错时使用后备方案
-          console.warn('Failed to resolve metaTree function:', error);
-        }
-      }
-
       return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
     }
 
@@ -62,7 +48,7 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
     if (!value) return String(value);
     const path = parseValueToPath(value);
     return path ? path.join('/') : String(value);
-  }, [value, contextSelectorItem, metaTree]);
+  }, [value, contextSelectorItem, resolvedMetaTree]);
 
   return (
     <Tag
