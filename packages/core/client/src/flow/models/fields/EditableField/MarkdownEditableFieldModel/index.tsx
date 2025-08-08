@@ -8,27 +8,15 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import React from 'react';
 import { largeField } from '@nocobase/flow-engine';
-import { MarkdownReadPretty } from '../../../../internal/components/MarkdownReadPretty';
 import { FormFieldModel } from '../FormFieldModel';
 
-const Markdown: any = connect(
-  Input.TextArea,
-  mapProps((props: any, field) => {
-    return {
-      ...props,
-    };
-  }),
-  mapReadPretty((props) => <MarkdownReadPretty {...props} />),
-);
 @largeField()
 export class MarkdownEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['markdown'];
 
-  setComponentProps(componentProps) {
-    super.setComponentProps({
+  setProps(componentProps) {
+    super.setProps({
       ...componentProps,
       autoSize: {
         maxRows: 10,
@@ -37,6 +25,6 @@ export class MarkdownEditableFieldModel extends FormFieldModel {
     });
   }
   get component() {
-    return [Markdown, {}];
+    return [Input.TextArea, {}];
   }
 }

@@ -10,7 +10,6 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { uid } from '@formily/shared';
 import {
   DragHandler,
   Droppable,
@@ -19,21 +18,21 @@ import {
   FlowsFloatContextMenu,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip } from 'antd';
+import { TableColumnProps, Tooltip, Form } from 'antd';
 import React, { useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
+import { FieldModelRenderer } from '../../../FieldModelRenderer';
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue }: any) => {
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
-  const currentValue = model?.field?.value;
   fieldModel.context.defineProperty('fieldValue', {
     get: () => {
-      return model?.field?.value || currentValue;
+      return others.value;
     },
     cache: false,
   });
@@ -52,9 +51,9 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         },
         content: (popover) => {
           return (
-            <>
-              <FlowModelRenderer model={model} uid={model.uid} />
-            </>
+            <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
+              <FieldModelRenderer model={model} uid={model.uid} {...others} />
+            </Form.Item>
           );
         },
       });
@@ -98,7 +97,7 @@ export class SubTableColumnModel extends FieldModel {
               width: calc(${this.props.width}px - 16px);
             `}
           >
-            {this.props.title || this.collectionField.title}
+            {this.props.title}
           </div>
         </FlowsFloatContextMenu>
       </Droppable>
@@ -124,49 +123,49 @@ export class SubTableColumnModel extends FieldModel {
         dataIndex: this.props.dataIndex,
         title: this.props.title,
         model: this,
-        // handleSave,
       }),
       render: this.render(),
     };
   }
   render() {
-    (this.subModels.field as EditableFieldModel).enableFormItem = false;
-    return (value, record, index) => (
-      <div
-        className={css`
-          .ant-formily-item {
-            margin-bottom: 0;
-          }
-        `}
-      >
-        {this.mapSubModels('field', (action: EditableFieldModel) => {
-          record.__key = record.__key || uid();
-          const fork: any = action.createFork({}, `${record.__key}`);
-          fork.context.defineProperty('basePath', {
-            get: () => {
-              const basePath = (this.parent as FieldModel).fieldPath;
-              return `${basePath}.${index}`;
-            },
-            cache: false,
-          });
-          if (fork.constructor.isLargeField) {
-            fork.applyAutoFlows();
+    return (props) => {
+      const { value, id, rowIdx } = props;
+      return (
+        <div
+          className={css`
+            .ant-formily-item {
+              margin-bottom: 0;
+            }
+          `}
+        >
+          {this.mapSubModels('field', (action: EditableFieldModel) => {
+            const fork: any = action.createFork({}, `${id}`);
             return (
-              <LargeFieldEdit
-                model={fork}
-                params={{
-                  fieldPath: action.fieldPath,
-                  index: record.__key,
-                }}
-                defaultValue={value}
-              />
+              <Form.Item
+                {...this.props}
+                key={id}
+                name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
+                style={{ marginBottom: 0 }}
+                initialValue={value}
+              >
+                {fork.constructor.isLargeField ? (
+                  <LargeFieldEdit
+                    model={fork}
+                    params={{
+                      fieldPath: [(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath],
+                      index: id,
+                    }}
+                    defaultValue={value}
+                  />
+                ) : (
+                  <FieldModelRenderer model={fork} {...props} />
+                )}
+              </Form.Item>
             );
-          } else {
-            return <FlowModelRenderer model={fork} key={record.__key} />;
-          }
-        })}
-      </div>
-    );
+          })}
+        </div>
+      );
+    };
   }
 }
 
@@ -192,7 +191,7 @@ SubTableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', field.title);
         ctx.model.setProps('dataIndex', field.name);
-
+        await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);
@@ -300,6 +299,61 @@ SubTableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
+      },
+    },
+    initialValue: {
+      title: escapeT('Default value'),
+      uiSchema: {
+        defaultValue: {
+          'x-component': 'DefaultValue',
+          'x-decorator': 'FormItem',
+        },
+      },
+      defaultParams: (ctx) => ({
+        defaultValue: ctx.model.collectionField.defaultValue,
+      }),
+      handler(ctx, params) {
+        ctx.model.setProps({ initialValue: params.defaultValue });
+      },
+    },
+    required: {
+      title: escapeT('Required'),
+      use: 'required',
+    },
+    pattern: {
+      title: escapeT('Display mode'),
+      uiSchema: (ctx) => {
+        return {
+          pattern: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              {
+                value: 'editable',
+                label: escapeT('Editable'),
+              },
+              {
+                value: 'disabled',
+                label: escapeT('Disabled'),
+              },
+
+              {
+                value: 'readPretty',
+                label: escapeT('Display only'),
+              },
+            ],
+          },
+        };
+      },
+      defaultParams: (ctx) => ({
+        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
+      }),
+      handler(ctx, params) {
+        ctx.model.setProps({
+          disabled: params.pattern === 'disabled',
+          readOnly: params.pattern === 'readPretty',
+          editable: params.pattern === 'editable',
+        });
       },
     },
   },

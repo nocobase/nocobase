@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm, Form } from '@formily/core';
+// import { createForm, Form } from '@formily/core';
+import { Form } from 'antd';
+import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
@@ -19,14 +21,12 @@ export class FormModel extends CollectionBlockModel<{
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
 }> {
   get form() {
-    return this.context.form as Form;
+    return this.context.form;
   }
 
   onInit(options) {
     super.onInit(options);
-    this.context.defineProperty('form', {
-      get: () => createForm(),
-    });
+
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
@@ -40,6 +40,20 @@ export class FormModel extends CollectionBlockModel<{
   renderComponent() {
     throw new Error('renderComponent method must be implemented in subclasses of FormModel');
   }
+}
+
+export function FormComponent({ model, children }) {
+  const [form] = Form.useForm();
+
+  React.useEffect(() => {
+    model.context.defineProperty('form', { get: () => form });
+  }, [form, model]);
+
+  return (
+    <Form form={form} initialValues={model.context.record} layout="vertical">
+      {children}
+    </Form>
+  );
 }
 
 FormModel.define({

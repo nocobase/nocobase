@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { TimePicker } from '@formily/antd-v5';
+import { TimePicker } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class TimeEditableFieldModel extends FormFieldModel {

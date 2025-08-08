@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps } from '@formily/react';
 import React from 'react';
 import { largeField } from '@nocobase/flow-engine';
 import { lazy } from '../../../../../lazy-helper';
@@ -53,19 +52,11 @@ const RichText = (props) => {
   );
 };
 
-const RichTextField = connect(
-  RichText,
-  mapProps((props: any, field: any) => {
-    return {
-      ...props,
-    };
-  }),
-);
 @largeField()
 export class RichTextEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['richText'];
 
   get component() {
-    return [RichTextField, {}];
+    return [RichText, {}];
   }
 }

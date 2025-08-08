@@ -16,4 +16,4 @@ export * from './sortingRules';
 export * from './dataLoadingMode';
 export * from './displayMode';
 export * from './layout';
-//
+export * from './required';

@@ -50,7 +50,7 @@ export const titleField = defineAction({
     const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
       label:
-        ctx.model.field?.componentProps?.fieldNames?.label ||
+        ctx.model.field?.props?.fieldNames?.label ||
         ctx.model.props.fieldNames?.label ||
         targetCollection.options.titleField ||
         filterKey,
@@ -65,7 +65,7 @@ export const titleField = defineAction({
       value: filterKey,
       label,
     };
-    ctx.model.setComponentProps({ fieldNames: newFieldNames });
+    ctx.model.setProps({ fieldNames: newFieldNames });
     const targetCollectionField = targetCollection.getField(label);
     const use = targetCollectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
     const model = ctx.model.setSubModel('field', {

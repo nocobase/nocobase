@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Checkbox } from '@formily/antd-v5';
+import { Checkbox } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class CheckboxEditableFieldModel extends FormFieldModel {

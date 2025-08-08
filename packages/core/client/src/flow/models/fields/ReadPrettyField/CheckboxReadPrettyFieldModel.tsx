@@ -8,17 +8,14 @@
  */
 
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { Checkbox } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 export class CheckboxReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['checkbox'];
-  // @reactive
   public render() {
-    const value = this.getValue();
-    const { prefix = '', suffix = '', showUnchecked } = this.props;
+    const { prefix = '', suffix = '', showUnchecked, value } = this.props;
     const content = value ? (
       <CheckOutlined style={{ color: '#52c41a' }} />
     ) : showUnchecked ? (

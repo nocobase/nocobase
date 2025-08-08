@@ -8,7 +8,7 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
+import { escapeT, FlowModel } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -89,8 +89,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
   private fieldModelCache: Record<string, FlowModel> = {};
   // @reactive
   public render() {
-    const { fieldNames, clickToOpen = true } = this.props;
-    const value = this.getValue();
+    const { fieldNames, clickToOpen = true, value } = this.props;
     const parentRecord = this.context.record;
     if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);
@@ -107,9 +106,10 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
             fieldModel.context.defineProperty('record', {
               get: () => v,
             });
-            fieldModel.context.defineProperty('fieldValue', {
-              get: () => v?.[fieldNames.label],
-            });
+            // fieldModel.context.defineProperty('fieldValue', {
+            //   get: () => v?.[fieldNames.label],
+            // });
+            fieldModel.setProps({ value: v?.[fieldNames.label] });
             this.fieldModelCache[v?.[fieldNames.label] + key] = fieldModel;
           }
 
@@ -187,7 +187,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
         displayStyle: 'text',
       },
       handler(ctx, params) {
-        ctx.model.setProps('displayStyle', params.displayStyle);
+        ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
     clickToOpen: {
@@ -218,7 +218,7 @@ TagReadPrettyAssociationFieldModel.registerFlow({
             sourceId: parentRecord[sourceKey],
           });
         };
-        ctx.model.setProps('clickToOpen', params.clickToOpen);
+        ctx.model.setProps({ clickToOpen: params.clickToOpen });
       },
     },
   },

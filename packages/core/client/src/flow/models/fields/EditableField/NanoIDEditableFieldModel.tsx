@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -26,6 +26,9 @@ NanoIDEditableFieldModel.registerFlow({
     initialValue: {
       handler(ctx, params) {
         const { size, customAlphabet } = ctx.model.collectionField.options || { size: 21 };
+        const form = ctx.model.form;
+        const fieldPath = ctx.model.fieldPath;
+        const value = form.getFieldValue(fieldPath);
         function isValidNanoid(value) {
           if (value?.length !== size) {
             return ctx.t('Field value size is') + ` ${size || 21}`;
@@ -36,10 +39,10 @@ NanoIDEditableFieldModel.registerFlow({
             }
           }
         }
-        if (!ctx.model.field.value && customAlphabet) {
-          ctx.model.field.setInitialValue(Alphabet(customAlphabet, size)());
+        if (!value && customAlphabet) {
+          form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
         }
-        ctx.model.field.validator = isValidNanoid;
+        // ctx.model.field.validator = isValidNanoid;
       },
     },
   },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class InputEditableFieldModel extends FormFieldModel {
