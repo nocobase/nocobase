@@ -467,7 +467,7 @@ const usePaginationProps = (pagination1, pagination2, tableProps) => {
                   }
                 `}
               >
-                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+                {originalElement} <div>{current}</div>
               </div>
             );
           } else {
