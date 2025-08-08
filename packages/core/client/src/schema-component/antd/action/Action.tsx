@@ -114,9 +114,7 @@ export const Action: ComposedAction = withDynamicSchemaProps(
     const { getAllDataBlocks } = useAllDataBlocks();
     const form = useForm();
     useEffect(() => {
-      if (field.stateOfLinkageRules) {
-        setInitialActionState(field);
-      }
+      setInitialActionState(field);
       const id = uid();
       const disposes = [];
       // 如果不延迟执行，那么一开始获取到的 form.values 的值是旧的，会导致详情区块的联动规则出现一些问题
@@ -306,7 +304,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const refreshDataBlockRequest = fieldSchema?.['x-component-props']?.['refreshDataBlockRequest'];
   const { modal } = App.useApp();
-  const form = useForm();
   const aclCtx = useACLActionParamsContext();
   const {
     run,
@@ -314,7 +311,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     disabled: disableAction,
     loading: loadingOfUseAction,
   } = useAction?.(actionCallback) || ({} as any);
-  const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled || disableAction;
+  const disabled = field.disabled || field.data?.disabled || propsDisabled || disableAction;
   const buttonStyle = useMemo(() => {
     return {
       ...style,
@@ -352,7 +349,6 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     confirmTitle,
     title,
   };
-
   const handleVisibleChange = useCallback(
     (value: boolean): void => {
       setVisible?.(value);
