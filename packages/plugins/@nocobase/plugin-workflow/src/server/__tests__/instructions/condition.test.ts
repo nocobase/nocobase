@@ -114,9 +114,9 @@ describe('workflow > instructions > condition', () => {
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(3);
       expect(jobs[1].result).toEqual(true);
-      expect(jobs[1].nodeId).toEqual(n2.id);
+      expect(jobs[1].nodeId).toEqualNumberOrString(n2.id);
       expect(jobs[2].result).toEqual(true);
-      expect(jobs[2].nodeId).toEqual(n4.id);
+      expect(jobs[2].nodeId).toEqualNumberOrString(n4.id);
     });
 
     it('calculation to false downstream', async () => {

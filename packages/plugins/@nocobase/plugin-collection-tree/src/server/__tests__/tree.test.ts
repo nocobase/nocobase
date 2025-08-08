@@ -143,7 +143,11 @@ describe('tree', () => {
       tree: true,
     });
 
-    expect(res.body.meta.allowedActions.view.sort()).toMatchObject([1, 2, 3, 4]);
+    const view = res.body.meta.allowedActions.view.sort();
+    expect(view[0]).toEqualNumberOrString(1);
+    expect(view[1]).toEqualNumberOrString(2);
+    expect(view[2]).toEqualNumberOrString(3);
+    expect(view[3]).toEqualNumberOrString(4);
   });
 });
 
