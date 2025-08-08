@@ -464,7 +464,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return i18n.translate(keyOrTemplate, options);
     });
     this.defineMethod('renderJson', (template: any) => {
-      return resolveExpressions(template, this);
+      return resolveExpressions(template, this.createProxy());
+    });
+    this.defineMethod('resolveJsonTemplate', (template: any) => {
+      return resolveExpressions(template, this.createProxy());
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -540,9 +543,6 @@ export class FlowModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
-    this.defineMethod('renderJson', (template: any) => {
-      return resolveExpressions(template, this);
-    });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
@@ -576,9 +576,6 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         this.fork['_refCreated'] = true;
         return createRef<HTMLDivElement>();
       },
-    });
-    this.defineMethod('renderJson', (template: any) => {
-      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
@@ -636,9 +633,6 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
-    });
-    this.defineMethod('renderJson', (template: any) => {
-      return resolveExpressions(template, this);
     });
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
