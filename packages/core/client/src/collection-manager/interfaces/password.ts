@@ -27,6 +27,8 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['password', 'string'];
   hasDefaultValue = true;
+  validationType = 'string';
+  availableValidationOptions = ['pattern'];
   properties = {
     ...defaultProps,
     unique,

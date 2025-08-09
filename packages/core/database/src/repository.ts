@@ -638,6 +638,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
+  private validate(options: {
+    values: Record<string, any>[];
+    context: { t: Function };
+    operation: 'create' | 'update';
+  }) {
+    this.collection.validate(options);
+  }
+
   /**
    * Save instance to database
    *
@@ -646,13 +654,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   @transaction()
   async create(options: CreateOptions) {
+    this.validate({ values: options.values, context: options.context, operation: 'create' });
     if (Array.isArray(options.values)) {
       return this.createMany({
         ...options,
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, {
@@ -722,13 +730,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   @mustHaveFilter()
   @injectTargetCollection
   async update(options: UpdateOptions & { forceUpdate?: boolean }) {
+    this.validate({ values: options.values, context: options.context, operation: 'update' });
     if (Array.isArray(options.values)) {
       return this.updateMany({
         ...options,
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });

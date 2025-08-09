@@ -40,7 +40,7 @@ export class StringField extends Field {
   }
 }
 
-export interface StringFieldOptions extends BaseColumnFieldOptions {
+export interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   type: 'string';
   length?: number;
   trim?: boolean;
