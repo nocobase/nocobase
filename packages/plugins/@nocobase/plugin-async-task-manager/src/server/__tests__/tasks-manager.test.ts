@@ -219,7 +219,7 @@ describe('task manager', () => {
     expect(executionCompleted).toBe(false);
 
     // 验证无法取消不存在的任务
-    expect(await taskManager.cancelTask('non-existent-id')).toBeUndefined();
+    expect(await taskManager.cancelTask('c7296efb-8cc8-415d-a153-0ae8a79dd0d5')).toBeUndefined();
   });
 
   it('should have forth task waiting when concurrency is 3', async () => {
