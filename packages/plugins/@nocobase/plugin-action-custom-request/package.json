@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-custom-request",
-  "version": "1.9.0-alpha.9",
+  "version": "1.9.0-alpha.10",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-custom-request",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-custom-request",
