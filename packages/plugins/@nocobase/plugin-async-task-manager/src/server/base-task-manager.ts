@@ -195,7 +195,7 @@ export class BaseTaskManager implements AsyncTasksManager {
     this.app = app;
     const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
 
-    this.app.on('afterLoad', () => {
+    this.app.on('afterStart', () => {
       this.app.eventQueue.subscribe(`${plugin.name}.task`, {
         idle: this.idle,
         process: this.onQueueTask,
