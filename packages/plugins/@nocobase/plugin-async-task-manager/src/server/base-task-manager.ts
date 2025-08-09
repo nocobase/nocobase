@@ -228,7 +228,15 @@ export class BaseTaskManager implements AsyncTasksManager {
   async cancelTask(taskId: TaskId, externally = false): Promise<void> {
     const task = this.tasks.get(taskId);
 
-    if (!task) {
+    if (task) {
+      this.logger.info(`Cancelling task ${taskId}, type: ${task.constructor.name}`);
+      this.progressThrottles.delete(taskId);
+      task.cancel();
+      await task.record.update({
+        status: TASK_STATUS.CANCELED,
+        doneAt: new Date(),
+      });
+    } else {
       if (externally) {
         this.logger.info(`Task ${taskId} not found on this instance, skip`);
         return;
@@ -236,12 +244,15 @@ export class BaseTaskManager implements AsyncTasksManager {
       this.logger.warn(`Task ${taskId} not found on this instance, broadcasting to other instances...`);
       const plugin = this.app.pm.get(PluginAsyncTaskManagerServer) as PluginAsyncTaskManagerServer;
       this.app.pubSubManager.publish(`${plugin.name}.task.cancel`, { id: taskId }, { skipSelf: true });
-      return;
+      const TaskRepo = this.app.db.getRepository('asyncTasks');
+      await TaskRepo.update({
+        filterByTk: taskId,
+        values: {
+          status: TASK_STATUS.CANCELED,
+          doneAt: new Date(),
+        },
+      });
     }
-    this.logger.info(`Cancelling task ${taskId}, type: ${task.constructor.name}`);
-    this.progressThrottles.delete(taskId);
-    task.cancel();
-    this.tasks.delete(taskId);
   }
 
   async createTask(data: TaskModel, { useQueue, ...options }: CreateTaskOptions = {}): Promise<ITask> {
@@ -254,6 +265,7 @@ export class BaseTaskManager implements AsyncTasksManager {
 
     const values = taskType.defaults({
       id: randomUUID(),
+      status: TASK_STATUS.PENDING,
       ...data,
     });
 
@@ -325,6 +337,8 @@ export class BaseTaskManager implements AsyncTasksManager {
         await task.run();
       } catch (error) {
         this.logger.error(`Error executing task ${task.record.id} from queue: ${error.message}`);
+      } finally {
+        this.tasks.delete(task.record.id);
       }
     }
   }

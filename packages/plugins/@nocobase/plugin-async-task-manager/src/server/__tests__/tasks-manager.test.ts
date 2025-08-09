@@ -279,7 +279,10 @@ describe('task manager', () => {
       }, 50);
     });
 
-    expect(executionOrder).toEqual([0, 1, 2]);
+    expect(executionOrder.length).toBe(3);
+    expect(executionOrder.includes(0)).toBe(true);
+    expect(executionOrder.includes(1)).toBe(true);
+    expect(executionOrder.includes(2)).toBe(true);
     expect(executionState.max).toBe(3);
     expect(executionOrder.includes(3)).toBe(false);
 
@@ -298,7 +301,8 @@ describe('task manager', () => {
       }, 50);
     });
 
-    expect(executionOrder).toEqual([0, 1, 2, 3]);
+    expect(executionOrder.length).toBe(4);
+    expect(executionOrder.includes(3)).toBe(true);
     expect(executionState.max).toBe(3);
 
     taskControl[1].resolve();

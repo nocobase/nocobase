@@ -102,7 +102,7 @@ export class TaskType implements ITask {
       }
       return;
     }
-    this.record = await this.record.update({
+    await this.record.update({
       startedAt: new Date(),
       status: TASK_STATUS.RUNNING,
     });
