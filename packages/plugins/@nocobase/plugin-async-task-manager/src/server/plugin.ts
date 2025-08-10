@@ -20,13 +20,14 @@ export class PluginAsyncTaskManagerServer extends Plugin {
       return;
     }
     const manager = new BaseTaskManager();
+    this.app.container.register('AsyncTaskManager', manager);
+  }
+  async load() {
+    const manager = this.app.container.get('AsyncTaskManager') as BaseTaskManager;
     // @ts-ignore
     manager.setLogger(this.app.logger);
     manager.setApp(this.app);
     manager.registerTaskType(CommandTaskType);
-    this.app.container.register('AsyncTaskManager', manager);
-  }
-  async load() {
     this.app.resourceManager.define(asyncTasksResource);
     this.app.acl.allow('asyncTasks', ['list', 'get', 'fetchFile', 'stop'], 'loggedIn');
   }
