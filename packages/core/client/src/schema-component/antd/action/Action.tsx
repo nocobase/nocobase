@@ -503,74 +503,82 @@ const RenderButton = ({
     localVariables,
   };
 
-  const handleButtonClick = useCallback(
-    async (e: React.MouseEvent, checkPortal = true) => {
-      if (checkPortal && isPortalInBody(e.target as Element)) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
+  // useCallback 依赖改为通过 ref 读取，避免重建闭包
+  const cbDepsRef = useRef<any>({});
+  cbDepsRef.current = {
+    aclCtx,
+    confirmContent: confirm?.content,
+    confirmEnable: confirm?.enable,
+    confirmTitleField: confirm?.title,
+    confirmTitleProp: confirmTitle,
+    disabled,
+    field,
+    fieldSchema,
+    isPopupVisibleControlledByURL,
+    modal,
+    onClick,
+    refreshDataBlockRequest,
+    run,
+    setSubmitted,
+    setVisible,
+    t,
+    title,
+    getDataBlockRequest,
+  };
 
-      const resultTitle = await getVariableValue(t(confirm?.title, { title: compile(fieldSchema.title) }), scopes);
-      const resultContent = await getVariableValue(t(confirm?.content, { title: compile(fieldSchema.title) }), scopes);
-      if (!disabled && aclCtx) {
-        const onOk = () => {
-          if (onClick) {
-            onClick(e, () => {
-              if (refreshDataBlockRequest !== false) {
-                setSubmitted?.(true);
-                getDataBlockRequest()?.refresh?.();
-              }
-            });
-          } else if (isBulkEditAction(fieldSchema) || !isPopupVisibleControlledByURL()) {
-            setVisible(true);
-            run?.();
-          } else {
-            // Currently, only buttons of these types can control the visibility of popups through URLs.
-            if (
-              ['view', 'update', 'create', 'customize:popup'].includes(fieldSchema['x-action']) &&
-              fieldSchema['x-uid']
-            ) {
-              openPopupRef.current();
-            } else {
-              setVisible(true);
-              run?.();
+  const handleButtonClick = useCallback(async (e: React.MouseEvent, checkPortal = true) => {
+    if (checkPortal && isPortalInBody(e.target as Element)) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+
+    const d = cbDepsRef.current;
+    const resultTitle = await getVariableValue(
+      d.t(d.confirmTitleField, { title: compile(d.fieldSchema.title) }),
+      scopes,
+    );
+    const resultContent = await getVariableValue(
+      d.t(d.confirmContent, { title: compile(d.fieldSchema.title) }),
+      scopes,
+    );
+    if (!d.disabled && d.aclCtx) {
+      const onOk = () => {
+        if (d.onClick) {
+          d.onClick(e, () => {
+            if (d.refreshDataBlockRequest !== false) {
+              d.setSubmitted?.(true);
+              d.getDataBlockRequest()?.refresh?.();
             }
-          }
-        };
-        if (confirm?.enable !== false && confirm?.content) {
-          await form?.submit?.();
-          modal.confirm({
-            title: t(resultTitle, { title: confirmTitle || title || field?.title }),
-            content: t(resultContent, { title: confirmTitle || title || field?.title }),
-            onOk,
           });
+        } else if (isBulkEditAction(d.fieldSchema) || !d.isPopupVisibleControlledByURL()) {
+          d.setVisible(true);
+          d.run?.();
         } else {
-          onOk();
+          // Currently, only buttons of these types can control the visibility of popups through URLs.
+          if (
+            ['view', 'update', 'create', 'customize:popup'].includes(d.fieldSchema['x-action']) &&
+            d.fieldSchema['x-uid']
+          ) {
+            openPopupRef.current();
+          } else {
+            d.setVisible(true);
+            d.run?.();
+          }
         }
+      };
+      if (d.confirmEnable !== false && d.confirmContent) {
+        await form?.submit?.();
+        d.modal.confirm({
+          title: d.t(resultTitle, { title: d.confirmTitleProp || d.title || d.field?.title }),
+          content: d.t(resultContent, { title: d.confirmTitleProp || d.title || d.field?.title }),
+          onOk,
+        });
+      } else {
+        onOk();
       }
-    },
-    [
-      aclCtx,
-      confirm?.content,
-      confirm?.enable,
-      confirm?.title,
-      confirmTitle,
-      disabled,
-      field,
-      fieldSchema,
-      isPopupVisibleControlledByURL,
-      modal,
-      onClick,
-      refreshDataBlockRequest,
-      run,
-      setSubmitted,
-      setVisible,
-      t,
-      title,
-      getDataBlockRequest,
-    ],
-  );
+    }
+  }, []);
 
   return (
     <RenderButtonInner
