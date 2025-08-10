@@ -15,7 +15,12 @@ import { VariableTag } from './VariableTag';
 import { isVariableValue } from './utils';
 import { createFinalConverters, buildContextSelectorItemFromPath } from './utils';
 
-export const VariableInput: React.FC<VariableInputProps> = ({
+const compactStyle = {
+  display: 'flex' as const,
+  alignItems: 'flex-start' as const,
+};
+
+const VariableInputComponent: React.FC<VariableInputProps> = ({
   value,
   onChange,
   converters: propConverters,
@@ -70,29 +75,64 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     [onChange, resolveValueFromPath],
   );
 
+  const { disabled } = restProps;
+
   const handleClear = useCallback(() => {
-    if (restProps.disabled) {
+    if (disabled) {
       return;
     }
     setCurrentContextSelectorItem(null);
     onChange?.(null);
-  }, [onChange, restProps.disabled]);
+  }, [onChange, disabled]);
+
+  const stableProps = useMemo(() => {
+    const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
+    return { style, onFocus, onBlur, otherProps };
+  }, [restProps.style, restProps.onFocus, restProps.onBlur, restProps.disabled]);
 
   const inputProps = useMemo(() => {
-    const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
-    const props = {
-      ...otherProps,
+    const baseProps = {
       value: value || '',
-      onClear: handleClear,
       onChange: handleInputChange,
-      contextSelectorItem: resolvedContextSelectorItem,
-      metaTree,
+      disabled,
     };
-    return props;
-  }, [value, handleInputChange, restProps, handleClear, resolvedContextSelectorItem, metaTree]);
+
+    // 只有 VariableTag 才接收特殊的自定义属性
+    if (ValueComponent === VariableTag) {
+      return {
+        ...baseProps,
+        onClear: handleClear,
+        contextSelectorItem: resolvedContextSelectorItem,
+        metaTree,
+        style: stableProps.style,
+      };
+    }
+
+    return {
+      ...baseProps,
+      ...stableProps.otherProps,
+    };
+  }, [
+    value,
+    handleInputChange,
+    disabled,
+    handleClear,
+    resolvedContextSelectorItem,
+    metaTree,
+    ValueComponent,
+    stableProps,
+  ]);
+
+  const finalStyle = useMemo(
+    () => ({
+      ...compactStyle,
+      ...restProps.style,
+    }),
+    [restProps.style],
+  );
 
   return (
-    <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', ...restProps.style }}>
+    <Space.Compact style={finalStyle}>
       {showValueComponent && <ValueComponent {...inputProps} />}
       <FlowContextSelector
         metaTree={metaTree}
@@ -105,3 +145,5 @@ export const VariableInput: React.FC<VariableInputProps> = ({
     </Space.Compact>
   );
 };
+
+export const VariableInput = React.memo(VariableInputComponent);

@@ -150,13 +150,15 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
 };
 
 // 根据ContextSelectorItem的fullPath和metaTree构建完整的标题路径
-export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem, metaTree?: MetaTreeNode[]): string => {
+export const buildFullTagTitle = async (
+  contextSelectorItem: ContextSelectorItem,
+  metaTree?: MetaTreeNode[],
+): Promise<string> => {
   if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
     return contextSelectorItem?.label || '';
   }
 
   if (!metaTree) {
-    // 没有 metaTree 时的后备方案
     return contextSelectorItem.fullPath.join('/');
   }
 
@@ -175,11 +177,14 @@ export const buildFullTagTitle = (contextSelectorItem: ContextSelectorItem, meta
     // 使用 title 或 name
     titlePath.push(node.title || node.name);
 
+    if (typeof node.children === 'function') {
+      node.children = await node.children();
+    }
+
     // 准备下一级节点
     if (Array.isArray(node.children)) {
       currentNodes = node.children;
     } else {
-      // 异步子节点，无法继续查找
       break;
     }
   }

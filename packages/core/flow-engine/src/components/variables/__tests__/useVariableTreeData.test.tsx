@@ -7,24 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useVariableTreeData } from '../useVariableTreeData';
 
-describe.skip('useVariableTreeData', () => {
+describe('useVariableTreeData', () => {
   describe('Basic functionality', () => {
-    it('should initialize with correct default state', () => {
+    it('should initialize with empty options when metaTree is undefined', async () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: undefined }));
+
+      await waitFor(() => {
+        expect(result.current.options).toEqual([]);
+      });
 
       expect(result.current.options).toEqual([]);
       expect(result.current.loading).toBe(false);
       expect(result.current.currentPath).toBeUndefined();
     });
 
-    it('should handle empty metaTree array', () => {
+    it('should handle empty metaTree array', async () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
 
+      await waitFor(() => {
+        expect(result.current.options).toEqual([]);
+      });
+
       expect(result.current.options).toEqual([]);
+      expect(result.current.loading).toBe(false);
     });
   });
 

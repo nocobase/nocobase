@@ -16,8 +16,37 @@ import type { MetaTreeNode } from '../../flowContext';
 import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
 import { parseValueToPath, buildFullTagTitle } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
+import { useRequest } from 'ahooks';
 
-export const VariableTag: React.FC<VariableTagProps> = ({
+// 提取常量样式避免重新创建
+const tagStyle = {
+  display: 'inline-block' as const,
+  lineHeight: '19px',
+  margin: '4px 6px',
+  padding: '2px 7px',
+  borderRadius: '10px',
+  width: 'fit-content',
+  minWidth: 'unset',
+  maxWidth: 'none',
+  flex: 'none',
+  overflow: 'visible' as const,
+  textOverflow: 'clip' as const,
+  whiteSpace: 'nowrap' as const,
+  boxSizing: 'content-box' as const,
+};
+
+const clearButtonStyle = {
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 0,
+  display: 'inline-flex' as const,
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+  userSelect: 'none' as const,
+};
+
+const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
   onClear,
   className,
@@ -27,14 +56,17 @@ export const VariableTag: React.FC<VariableTagProps> = ({
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
 
-  const displayedValue = React.useMemo(() => {
-    if (contextSelectorItem) {
-      return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
-    }
-    if (!value) return String(value);
-    const path = parseValueToPath(value);
-    return path ? path.join('/') : String(value);
-  }, [value, contextSelectorItem, resolvedMetaTree]);
+  const { data: displayedValue } = useRequest(
+    async () => {
+      if (contextSelectorItem) {
+        return await buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
+      }
+      if (!value) return String(value);
+      const path = parseValueToPath(value);
+      return path ? path.join('/') : String(value);
+    },
+    { refreshDeps: [resolvedMetaTree] },
+  );
 
   return (
     <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>
@@ -44,25 +76,8 @@ export const VariableTag: React.FC<VariableTagProps> = ({
         style={variableTagContainerStyle(!onClear)}
         className={cx('variable-input-container', { 'ant-input-disabled': !onClear })}
       >
-        <Tag
-          color="blue"
-          style={{
-            display: 'inline-block',
-            lineHeight: '19px',
-            margin: '4px 6px',
-            padding: '2px 7px',
-            borderRadius: '10px',
-            width: 'fit-content',
-            minWidth: 'unset',
-            maxWidth: 'none',
-            flex: 'none',
-            overflow: 'visible',
-            textOverflow: 'clip',
-            whiteSpace: 'nowrap',
-            boxSizing: 'content-box',
-          }}
-        >
-          {displayedValue}
+        <Tag color="blue" style={tagStyle}>
+          {displayedValue ?? ''}
         </Tag>
       </div>
       {onClear && (
@@ -70,16 +85,7 @@ export const VariableTag: React.FC<VariableTagProps> = ({
           type="button"
           aria-label="clear"
           className="clear-button"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            userSelect: 'none',
-          }}
+          style={clearButtonStyle}
           onClick={onClear}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -94,3 +100,5 @@ export const VariableTag: React.FC<VariableTagProps> = ({
     </div>
   );
 };
+
+export const VariableTag = React.memo(VariableTagComponent);
