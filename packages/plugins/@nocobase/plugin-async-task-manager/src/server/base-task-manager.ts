@@ -213,6 +213,8 @@ export class BaseTaskManager implements AsyncTasksManager {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = null;
       }
+      this.app.eventQueue.unsubscribe(`${plugin.name}.task`);
+      this.app.pubSubManager.unsubscribe(`${plugin.name}.task.cancel`, this.onTaskCancelSignal);
     });
 
     this.app.db.on('asyncTasks.afterCreate', this.onTaskAfterCreate);

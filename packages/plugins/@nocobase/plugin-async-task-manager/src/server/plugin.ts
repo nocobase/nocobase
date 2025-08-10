@@ -14,6 +14,11 @@ import asyncTasksResource from './resourcers/async-tasks';
 
 export class PluginAsyncTaskManagerServer extends Plugin {
   async beforeLoad() {
+    const existed = this.app.container.get('AsyncTaskManager') as BaseTaskManager;
+    if (existed) {
+      this.app.logger.warn('AsyncTaskManager already exists, skipping initialization.');
+      return;
+    }
     const manager = new BaseTaskManager();
     // @ts-ignore
     manager.setLogger(this.app.logger);
