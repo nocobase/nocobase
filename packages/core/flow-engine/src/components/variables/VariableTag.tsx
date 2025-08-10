@@ -65,7 +65,7 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
       const path = parseValueToPath(value);
       return path ? path.join('/') : String(value);
     },
-    { refreshDeps: [resolvedMetaTree] },
+    { refreshDeps: [resolvedMetaTree, value, contextSelectorItem] },
   );
 
   return (

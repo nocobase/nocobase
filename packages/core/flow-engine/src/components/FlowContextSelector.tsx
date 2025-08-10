@@ -33,9 +33,6 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  // 默认按钮组件
-  const defaultChildren = useMemo(() => <Button style={defaultButtonStyle}>x</Button>, []);
-
   // 使用 useVariableTreeData Hook 管理数据状态
   const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
     useVariableTreeData({
@@ -43,6 +40,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       value,
       parseValueToPath: customParseValueToPath,
     });
+
+  // 默认按钮组件
+  const defaultChildren = useMemo(() => {
+    const hasSelected = currentPath && currentPath.length > 0;
+    return (
+      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle}>
+        x
+      </Button>
+    );
+  }, [currentPath]);
 
   // 处理选择变化事件
   const handleChange = useCallback(

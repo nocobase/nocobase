@@ -51,7 +51,7 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
       const path = parseValueToPath(value);
       return path ? path.join('/') : String(value);
     },
-    { refreshDeps: [resolvedMetaTree] },
+    { refreshDeps: [resolvedMetaTree, value, contextSelectorItem] },
   );
 
   return (
