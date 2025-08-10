@@ -150,21 +150,18 @@ export const useImportStartAction = () => {
       formData.append('explain', explain);
 
       const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
+      const timeout = importSchema?.['x-action-settings']?.timeout || 10 * 60 * 1000;
 
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
 
       try {
-        const { data } = await (newResource as any).importXlsx(
-          {
-            values: formData,
-            mode: importMode,
-          },
-          {
-            timeout: 10 * 60 * 1000,
-          },
-        );
+        const { data } = await (newResource as any).importXlsx({
+          values: formData,
+          mode: importMode,
+          timeout,
+        });
 
         form.reset();
 
