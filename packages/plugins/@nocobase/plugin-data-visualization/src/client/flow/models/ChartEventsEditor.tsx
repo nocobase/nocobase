@@ -10,11 +10,11 @@
 import { connect, mapProps } from '@formily/react';
 import { CodeEditor } from '../components/CodeEditor';
 
-export const SQLEditor = connect(
+export const ChartEventsEditor = connect(
   CodeEditor,
   mapProps((props) => {
     return {
-      language: 'sql',
+      language: 'javascript',
       value: props.value,
       onChange: props.onChange,
     };

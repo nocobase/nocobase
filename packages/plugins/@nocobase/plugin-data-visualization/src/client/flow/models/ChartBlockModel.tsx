@@ -13,6 +13,7 @@ import { SQLResource, escapeT } from '@nocobase/flow-engine';
 import { ConfigPanel } from './ConfigPanel';
 import { Chart, ChartOptions } from './Chart';
 import { EChartsType } from 'echarts';
+import { convertDatasetFormats } from '../utils';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -45,6 +46,11 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
       },
     });
 
+    this.context.defineProperty('data', {
+      get: () => convertDatasetFormats(this.resource.getData()),
+      cache: false,
+    });
+
     this.context.defineMethod('openView', async (params) => {
       const { mode, size } = params || {};
       this.dispatchEvent('openView', {
@@ -54,11 +60,11 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
     });
   }
 
-  protected onMount() {
-    if (this.context.ref.current) {
-      this.rerender();
-    }
-  }
+  // protected onMount() {
+  //   if (this.context.ref.current) {
+  //     this.rerender();
+  //   }
+  // }
 
   renderComponent() {
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
@@ -88,26 +94,6 @@ ChartBlockModel.define({
 });
 
 ChartBlockModel.registerFlow({
-  key: 'refreshSettings',
-  sort: 10000,
-  steps: {
-    refresh: {
-      async handler(ctx) {
-        const config = ctx.model.getStepParams('chartSettings', 'configure');
-        if (!config?.query.sql) {
-          return;
-        }
-        try {
-          await ctx.model.resource.refresh();
-        } catch (err) {
-          console.log(err);
-        }
-      },
-    },
-  },
-});
-
-ChartBlockModel.registerFlow({
   key: 'chartSettings',
   title: escapeT('Chart settings'),
   steps: {
@@ -133,17 +119,22 @@ ChartBlockModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          chart: {
-            option: {
-              raw: '{}',
-            },
-          },
+          chart: {},
         };
       },
       async handler(ctx, params) {
-        const rawOption = params.chart.option.raw;
+        if (params.query?.sql) {
+          try {
+            await ctx.model.resource.refresh();
+          } catch (err) {
+            console.log(err);
+          }
+        } else {
+          ctx.model.resource.setData(null);
+        }
+        const rawOption = params.chart.option?.raw;
         const rawEvents = params.chart.events?.raw;
-        const { value: option } = await ctx.runjs(`return ${rawOption}`);
+        const { value: option } = await ctx.runjs(rawOption);
         ctx.model.setProps({
           ...params,
           chart: {
