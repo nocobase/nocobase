@@ -12,18 +12,29 @@ import { Tag } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
+import type { MetaTreeNode } from '../../flowContext';
 import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
 import { parseValueToPath, buildFullTagTitle } from './utils';
+import { useResolvedMetaTree } from './useResolvedMetaTree';
 
-export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, className, style, contextSelectorItem }) => {
+export const VariableTag: React.FC<VariableTagProps> = ({
+  value,
+  onClear,
+  className,
+  style,
+  contextSelectorItem,
+  metaTree,
+}) => {
+  const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+
   const displayedValue = React.useMemo(() => {
     if (contextSelectorItem) {
-      return buildFullTagTitle(contextSelectorItem);
+      return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
     }
     if (!value) return String(value);
     const path = parseValueToPath(value);
     return path ? path.join('/') : String(value);
-  }, [value, contextSelectorItem]);
+  }, [value, contextSelectorItem, resolvedMetaTree]);
 
   return (
     <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>
@@ -55,15 +66,30 @@ export const VariableTag: React.FC<VariableTagProps> = ({ value, onClear, classN
         </Tag>
       </div>
       {onClear && (
-        <span
-          role="button"
-          aria-label="close"
+        <button
+          type="button"
+          aria-label="clear"
           className="clear-button"
-          style={{ userSelect: 'none' }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            userSelect: 'none',
+          }}
           onClick={onClear}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClear();
+            }
+          }}
         >
           <CloseCircleFilled />
-        </span>
+        </button>
       )}
     </div>
   );

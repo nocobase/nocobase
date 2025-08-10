@@ -15,6 +15,7 @@ import { configStore } from './config-store';
 import { ChartBlockModel } from './ChartBlockModel';
 import { EChartsType } from 'echarts';
 import { debounce } from 'lodash';
+import { convertDatasetFormats } from '../utils';
 
 export const ChartPreviewer: React.FC = observer(() => {
   const ref = useRef<EChartsType | null>(null);
@@ -27,18 +28,31 @@ export const ChartPreviewer: React.FC = observer(() => {
   const [chart, setChart] = useState<EChartsType | null>(null);
   const [chartOption, setChartOption] = useState(null);
 
-  useEffect(() => {
-    ctx
-      .runjs(`return ${rawOption}`)
-      .then((result) => setChartOption(result.value))
-      .catch((error) => {
-        console.log(error);
-      });
-  }, [ctx, rawOption]);
-
   const handleRefReady = useCallback((chart: EChartsType) => {
     setChart(chart);
   }, []);
+
+  useEffect(() => {
+    const debouncedRunjs = debounce(() => {
+      ctx
+        .runjs(rawOption, {
+          ctx: {
+            ...ctx,
+            data: convertDatasetFormats(queryResult),
+          },
+        })
+        .then((result) => setChartOption(result.value))
+        .catch((error) => {
+          console.log(error);
+        });
+    }, 300);
+
+    debouncedRunjs();
+
+    return () => {
+      debouncedRunjs.cancel();
+    };
+  }, [ctx, rawOption, queryResult]);
 
   useEffect(() => {
     if (!chart) {
@@ -46,7 +60,7 @@ export const ChartPreviewer: React.FC = observer(() => {
     }
 
     const debouncedRunjs = debounce(() => {
-      ctx.runjs(rawEvents, { chart, log: console.log });
+      ctx.runjs(rawEvents, { chart });
     }, 300);
 
     debouncedRunjs();

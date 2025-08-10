@@ -618,6 +618,23 @@ describe('FlowContext properties and methods', () => {
     expect(ctx.getNum()).toBe(5);
   });
 
+  it('should support multi-level delegate method and property lookup', () => {
+    const root = new FlowContext();
+    root.defineMethod('getSelf', function () {
+      return this;
+    });
+
+    const mid = new FlowContext();
+    mid.addDelegate(root);
+
+    const ctx = new FlowContext();
+    ctx.addDelegate(mid);
+
+    expect(root.getSelf()).toBe(root);
+    expect(mid.getSelf()).toBe(mid);
+    expect(ctx.getSelf()).toBe(ctx);
+  });
+
   it('should support addDelegate and removeDelegate for multiple delegates', () => {
     const d1 = new FlowContext();
     d1.defineProperty('foo', { value: 'from d1' });

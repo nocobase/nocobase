@@ -39,7 +39,7 @@ const ErrorFallback = ({ error }) => {
 
 export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady }, ref) => {
   const [errorKey, setErrorKey] = useState(0);
-  if (!option || (!option.dataset && !dataSource)) {
+  if (!option || !dataSource) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={'Please configure chart'} />;
   }
 
@@ -52,17 +52,7 @@ export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource
       }}
       resetKeys={[option]}
     >
-      <ECharts
-        key={errorKey}
-        ref={ref}
-        onRefReady={onRefReady}
-        option={{
-          dataset: {
-            source: dataSource,
-          },
-          ...option,
-        }}
-      />
+      <ECharts key={errorKey} ref={ref} onRefReady={onRefReady} option={option} />
     </ErrorBoundary>
   );
 });

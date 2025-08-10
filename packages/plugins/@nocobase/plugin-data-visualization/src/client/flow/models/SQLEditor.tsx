@@ -7,60 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useRef } from 'react';
 import { connect, mapProps } from '@formily/react';
-import { EditorView, basicSetup } from 'codemirror';
-import { EditorState } from '@codemirror/state';
-import { sql } from '@codemirror/lang-sql';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { useGlobalTheme } from '@nocobase/client';
-
-interface SQLEditorProps {
-  value?: string;
-  onChange?: (value: string) => void;
-}
-
-const SQLEditorComponent: React.FC<SQLEditorProps> = ({ value = '', onChange }) => {
-  const { isDarkTheme } = useGlobalTheme();
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView>();
-  const themeExtension = isDarkTheme ? oneDark : [];
-
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    const startState = EditorState.create({
-      doc: value,
-      extensions: [
-        basicSetup,
-        themeExtension,
-        sql(),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged && onChange) {
-            const doc = update.state.doc;
-            onChange(doc.toString());
-          }
-        }),
-      ],
-    });
-
-    viewRef.current = new EditorView({
-      state: startState,
-      parent: editorRef.current,
-    });
-
-    return () => {
-      viewRef.current?.destroy();
-    };
-  }, []);
-
-  return <div ref={editorRef} />;
-};
+import { CodeEditor } from '../components/CodeEditor';
 
 export const SQLEditor = connect(
-  SQLEditorComponent,
+  CodeEditor,
   mapProps((props) => {
     return {
+      language: 'sql',
       value: props.value,
       onChange: props.onChange,
     };

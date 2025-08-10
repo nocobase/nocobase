@@ -91,9 +91,9 @@ export const openView = defineAction({
           background: 'var(--nb-box-bg)',
           padding: 0,
         },
-      },
-      bodyStyle: {
-        padding: 0,
+        body: {
+          padding: 0,
+        },
       },
       onClose: () => {
         if (pageModelUid) {

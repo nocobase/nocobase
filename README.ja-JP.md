@@ -30,12 +30,6 @@ https://www.nocobase.com/ja/tutorials
 顧客のストーリー：  
 https://www.nocobase.com/ja/blog/tags/customer-stories
 
-## クイックスタート
-
-Gitpodを使用すると、すぐに使える開発環境を構築できます。
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
-
 ## リリースノート
 
 リリースノートは[ブログ](https://www.nocobase.com/ja/blog/timeline)で随時更新され、週ごとにまとめて公開しています。

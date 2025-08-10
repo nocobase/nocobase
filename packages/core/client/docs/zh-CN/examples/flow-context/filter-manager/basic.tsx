@@ -79,8 +79,8 @@ TargetModel.registerFlow({
   },
 });
 
-class FilterModel extends FlowModel {
-  filterValue = observable.ref<string>('default');
+class Filter1Model extends FlowModel {
+  filterValue = observable.ref<string>('name1');
 
   getFilterValue() {
     return this.filterValue.value;
@@ -88,7 +88,38 @@ class FilterModel extends FlowModel {
 
   render() {
     return (
-      <Space.Compact>
+      <Space.Compact block>
+        <Input
+          onChange={(e) => {
+            this.filterValue.value = e.target.value;
+          }}
+          defaultValue={this.getFilterValue()}
+          placeholder="Filter by name"
+          style={{ width: 200, marginBottom: 16 }}
+        />
+        <Button
+          type="primary"
+          onClick={async () => {
+            await this.context.filterManager.refreshTargetsByFilter('my-filter1');
+          }}
+        >
+          Apply Filter
+        </Button>
+      </Space.Compact>
+    );
+  }
+}
+
+class Filter2Model extends FlowModel {
+  filterValue = observable.ref<string>('email1');
+
+  getFilterValue() {
+    return this.filterValue.value;
+  }
+
+  render() {
+    return (
+      <Space.Compact block>
         <Input
           onChange={(e) => {
             this.filterValue.value = e.target.value;
@@ -158,7 +189,7 @@ class PluginHelloModel extends Plugin {
     });
 
     this.flowEngine.flowSettings.forceEnable();
-    this.flowEngine.registerModels({ GridModel, TargetModel, FilterModel });
+    this.flowEngine.registerModels({ GridModel, TargetModel, Filter1Model, Filter2Model });
 
     const model = this.flowEngine.createModel({
       use: 'GridModel',
@@ -170,7 +201,13 @@ class PluginHelloModel extends Plugin {
                 filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
                 targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
                 filterPaths: ['name'], // 筛选字段路径
-                operator: '$eq',
+                operator: '$includes',
+              },
+              {
+                filterId: 'my-filter2', // 提供筛选条件的 FilterModel 的 UID
+                targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
+                filterPaths: ['telephone'], // 筛选字段路径
+                operator: '$includes',
               },
             ],
           },
@@ -178,7 +215,8 @@ class PluginHelloModel extends Plugin {
       },
       subModels: {
         items: [
-          { uid: 'my-filter1', use: 'FilterModel', key: 'FilterModel' },
+          { uid: 'my-filter1', use: 'Filter1Model', key: 'Filter1Model' },
+          { uid: 'my-filter2', use: 'Filter2Model', key: 'Filter2Model' },
           { uid: 'my-target1', use: 'TargetModel', key: 'TargetModel' },
         ],
       },

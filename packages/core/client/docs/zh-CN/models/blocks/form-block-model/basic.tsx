@@ -39,7 +39,7 @@ export function SubTableField(props) {
       return col.render({
         id: `field-${col.dataIndex}-${rowIdx}`,
         value: text,
-        onChange: (value) => handleCellChange(rowIdx, col.dataIndex, value),
+        onChange: (e) => handleCellChange(rowIdx, col.dataIndex, e.target.value),
         ['aria-describedby']: `field-${col.dataIndex}-${rowIdx}`,
       });
     },

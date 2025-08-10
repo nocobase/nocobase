@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { resolveExpressions, preprocessExpression } from '../params-resolvers';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { Collection } from '../../data-source';
+import { FlowRuntimeContext } from '../../flowContext';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel } from '../../models';
-import { FlowRuntimeContext } from '../../flowContext';
 import { RecordProxy } from '../../RecordProxy';
-import { Collection } from '../../data-source';
+import { preprocessExpression, resolveExpressions } from '../params-resolvers';
 
 /**
  * preprocessExpression 测试套件
@@ -491,6 +491,15 @@ describe('resolveExpressions', () => {
   // 测试核心功能：单表达式解析
   // 验证 {{ }} 表达式的解析能力，包括简单属性访问和嵌套路径访问
   describe('Single expression resolution', () => {
+    // 简单表达式 - 输入: {{ctx.user.name}}, 输出: 'John Doe'
+    test('should resolve simple context property access', async () => {
+      const params = '{{ctx.user.name}}';
+
+      const result = await resolveExpressions(params, ctx);
+
+      expect(result).toEqual('John Doe');
+    });
+
     // 简单表达式 - 输入: {{ctx.user.name}}, 输出: 'John Doe'
     test('should resolve simple context property access', async () => {
       const params = {

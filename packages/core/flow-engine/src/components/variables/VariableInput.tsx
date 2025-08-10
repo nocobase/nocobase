@@ -86,9 +86,10 @@ export const VariableInput: React.FC<VariableInputProps> = ({
       onClear: handleClear,
       onChange: handleInputChange,
       contextSelectorItem: resolvedContextSelectorItem,
+      metaTree,
     };
     return props;
-  }, [value, handleInputChange, restProps, handleClear, resolvedContextSelectorItem]);
+  }, [value, handleInputChange, restProps, handleClear, resolvedContextSelectorItem, metaTree]);
 
   return (
     <Space.Compact style={{ display: 'flex', alignItems: 'flex-start', ...restProps.style }}>

@@ -31,6 +31,8 @@ import { useToken } from '../../../style';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
 import { useFormBlockHeight } from './hook';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export interface FormProps extends IFormLayoutProps {
   form?: FormilyForm;
@@ -54,6 +56,12 @@ const FormComponent: React.FC<FormProps> = (props) => {
     colon = true,
   } = cardItemSchema?.['x-component-props'] || {};
   const { isInFilterFormBlock } = useFlag();
+
+  const { isMobileLayout } = useMobileLayout();
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
 
   useEffect(() => {
     if (!isInFilterFormBlock) {
@@ -96,7 +104,7 @@ const FormComponent: React.FC<FormProps> = (props) => {
               }
             `}
           >
-            <NocoBaseRecursionField basePath={f.address} schema={fieldSchema} onlyRenderProperties isUseFormilyField />
+            <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
           </div>
         </FormLayout>
       </FormContext.Provider>
@@ -113,18 +121,20 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   // TODO: component 里 useField 会与当前 field 存在偏差
   const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
   const Component = useComponent(fieldSchema['x-component'], Def);
+
+  const { isMobileLayout } = useMobileLayout();
+  const newSchema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+    [fieldSchema, isMobileLayout],
+  );
+
   return (
     <FieldContext.Provider value={undefined}>
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <NocoBaseRecursionField
-                basePath={f.address}
-                schema={fieldSchema}
-                onlyRenderProperties
-                isUseFormilyField
-              />
+              <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}

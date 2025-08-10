@@ -108,3 +108,11 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 通过 `showValueComponent` 属性控制组件的显示形态：
 
 <code src="./variants.tsx"></code>
+
+### 8. SlateVariableEditor - 智能变量编辑器
+
+SlateVariableEditor 基于 Slate.js 富文本编辑器框架构建，完美结合了 Slate 的强大编辑能力与 NocoBase 的组件生态：
+
+<code src="./slate-variable-editor/index.tsx"></code>
+
+**适用场景**: 适合需要在长文本中插入变量的场景，如邮件模板、通知模板、表达式编辑等。这是目前最推荐的解决方案，特别适合需要在 NocoBase 中实现复杂变量编辑的场景。

@@ -12,12 +12,12 @@ import { CascaderProps } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 
 export interface FlowContextSelectorProps
-  extends Omit<CascaderProps<any>, 'value' | 'onChange' | 'options' | 'children' | 'multiple'> {
+  extends Omit<CascaderProps<ContextSelectorItem>, 'value' | 'onChange' | 'options' | 'children' | 'multiple'> {
   value?: string;
   onChange?: (value: string, contextSelectorItem?: ContextSelectorItem) => void;
-  children?: React.ReactNode;
+  children?: CascaderProps<ContextSelectorItem>['children'];
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
-  parseValueToPath?: (value: string) => string[] | null;
+  parseValueToPath?: (value: string) => string[] | undefined;
   formatPathToValue?: (item: ContextSelectorItem) => string;
   open?: boolean;
 }
@@ -43,9 +43,9 @@ export interface Converters {
   /**
    * 将一个外部 value 转换成 FlowContextSelector 需要的路径数组。
    * @param value 外部传入的值。
-   * @returns string[] | null
+   * @returns string[] | undefined
    */
-  resolvePathFromValue?: (value: any) => string[] | null;
+  resolvePathFromValue?: (value: any) => string[] | undefined;
   /**
    * 当一个上下文节点被选中后，将其信息转换成最终的外部 value。
    * @param contextSelectorItem 选中的 ContextSelectorItem 对象。
@@ -69,4 +69,23 @@ export interface VariableTagProps {
   className?: string;
   style?: React.CSSProperties;
   contextSelectorItem?: ContextSelectorItem | null;
+  metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+}
+
+export interface VariableTriggerElement {
+  type: 'variable-trigger';
+  triggerId: string;
+  children: [{ text: '' }];
+}
+
+export interface VariableElement {
+  type: 'variable';
+  value: string;
+  meta?: ContextSelectorItem;
+  children: [{ text: '' }];
+}
+
+export interface ParagraphElement {
+  type: 'paragraph';
+  children: any[];
 }

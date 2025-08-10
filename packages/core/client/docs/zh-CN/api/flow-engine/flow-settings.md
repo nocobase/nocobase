@@ -1,6 +1,8 @@
 # FlowSettings
 
-### FlowSettings 管理
+`FlowSettings` 用于管理流配置，包括流配置表单时所需的各种组件，打开流及流步骤的配置表单等。
+
+## FlowSettings 管理
 
 - **flowSettings.registerComponents(components): void**  
   添加组件到 flowSettings 的组件注册表中, 这些组件可以在 flow step 的 uiSchema 中使用。
@@ -17,7 +19,7 @@
 - **flowSettings.openRequiredParamsStepFormDialog(props: StepFormDialogProps)**  
   显示多个需要配置参数的步骤的分步表单界面。
 
-#### 工具栏扩展 (Toolbar Extensions)
+## 工具栏扩展 (Toolbar Extensions)
 
 FlowSettings 支持在右上角悬浮工具栏中添加自定义项目组件：
 
