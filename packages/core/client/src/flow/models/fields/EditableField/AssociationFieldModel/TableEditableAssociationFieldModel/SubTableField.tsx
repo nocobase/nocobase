@@ -54,6 +54,9 @@ export function SubTableField(props) {
         });
       },
     }))
+    .concat({
+      key: 'empty',
+    })
     .concat([
       !disabled && {
         title: '',

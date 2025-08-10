@@ -13,7 +13,6 @@ import { FlowModelRenderer } from '@nocobase/flow-engine';
 export function FieldModelRenderer(props) {
   const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, ...rest } = props;
   useEffect(() => {
-    console.log(value, model);
     model.setProps({ id, value, onChange, ['aria-describedby']: ariaDescribedby });
   }, [model, id, value, ariaDescribedby, onChange]);
 

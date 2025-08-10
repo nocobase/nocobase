@@ -120,6 +120,52 @@ CollectionFieldFormItemModel.registerFlow({
       title: escapeT('Required'),
       use: 'required',
     },
+
+    model: {
+      title: escapeT('Field component'),
+      uiSchema: (ctx) => {
+        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
+        if (classes.length === 1) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => ({
+              label: model,
+              value: model,
+            })),
+          },
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (params.use !== previousParams.use) {
+          const model = ctx.model.setSubModel('field', {
+            use: params.use,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+            },
+          });
+          await model.applyAutoFlows();
+        }
+      },
+      defaultParams: (ctx) => {
+        return {
+          use: ctx.model.subModels.field.use,
+        };
+      },
+      async handler(ctx, params) {
+        console.log('Sub model step1 handler');
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
+        }
+        ctx.model.setProps({ subModel: params.use });
+      },
+    },
     pattern: {
       title: escapeT('Display mode'),
       uiSchema: (ctx) => {
@@ -162,10 +208,10 @@ CollectionFieldFormItemModel.registerFlow({
           });
           await model.applyAutoFlows();
         } else {
-          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-          if (use !== ctx.model.subModels.field.use) {
+          const { subModel } = ctx.model.getProps();
+          if (subModel !== ctx.model.subModels.field.use) {
             const model = ctx.model.setSubModel('field', {
-              use: use,
+              use: subModel,
               stepParams: {
                 fieldSettings: {
                   init: ctx.model.getFieldSettingsInitParams(),
@@ -178,50 +224,6 @@ CollectionFieldFormItemModel.registerFlow({
             disabled: params.pattern === 'disabled',
             editable: params.pattern === 'editable',
           });
-        }
-      },
-    },
-    model: {
-      title: escapeT('Field component'),
-      uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
-        if (classes.length === 1) {
-          return null;
-        }
-        return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model,
-              value: model,
-            })),
-          },
-        };
-      },
-      beforeParamsSave: async (ctx, params, previousParams) => {
-        if (params.use !== previousParams.use) {
-          const model = ctx.model.setSubModel('field', {
-            use: params.use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-            },
-          });
-          await model.applyAutoFlows();
-        }
-      },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.subModels.field.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
         }
       },
     },
