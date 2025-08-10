@@ -10,7 +10,7 @@
 import React from 'react';
 import { Radio } from 'antd';
 import { ObjectField, Field, connect } from '@formily/react';
-import { JavaScriptEditor } from './JavaScriptEditor';
+import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 
@@ -43,7 +43,12 @@ export const ChartOptionsPanel: React.FC = () => {
       >
         <Field name="mode" component={[OptionsMode]} />
       </div>
-      <Field name="raw" component={[JavaScriptEditor]} initialValue="{}" />
+      <Field
+        name="raw"
+        component={[ChartOptionsEditor]}
+        initialValue={`return {
+}`}
+      />
     </ObjectField>
   );
 };

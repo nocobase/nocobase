@@ -10,7 +10,7 @@
 import React from 'react';
 import { Radio } from 'antd';
 import { ObjectField, Field, connect } from '@formily/react';
-import { JavaScriptEditor } from './JavaScriptEditor';
+import { ChartEventsEditor } from './ChartEventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, InteractionOutlined } from '@ant-design/icons';
 
@@ -64,11 +64,11 @@ export const EventsPanel: React.FC = () => {
       <Field name="basic" />
       <Field
         name="raw"
-        component={[JavaScriptEditor]}
-        initialValue={`chart.off('click');
-chart.on('click', 'series', function() {
-  ctx.openView({ mode: 'dialog', size: 'large '});
-});
+        component={[ChartEventsEditor]}
+        initialValue={`// chart.off('click');
+// chart.on('click', 'series', function() {
+//  ctx.openView({ mode: 'dialog', size: 'large '});
+// });
       `}
       />
     </ObjectField>

@@ -29,7 +29,7 @@ export const ChartPreviewer: React.FC = observer(() => {
 
   useEffect(() => {
     ctx
-      .runjs(`return ${rawOption}`)
+      .runjs(rawOption)
       .then((result) => setChartOption(result.value))
       .catch((error) => {
         console.log(error);
@@ -47,7 +47,7 @@ export const ChartPreviewer: React.FC = observer(() => {
 
     const debouncedRunjs = debounce(() => {
       ctx.runjs(rawEvents, { chart, log: console.log });
-    }, 300);
+    }, 1000);
 
     debouncedRunjs();
 
