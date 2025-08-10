@@ -19,11 +19,12 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Form } from 'antd';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { FieldModelRenderer } from '../../../FieldModelRenderer';
+import { FormComponent } from '../../../../data-blocks/form/FormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -36,6 +37,24 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     },
     cache: false,
   });
+
+  fieldModel.setProps({
+    value: others.value,
+  });
+  const FieldModelRendererCom = (props) => {
+    const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, ...rest } = props;
+
+    useEffect(() => {
+      const handelChange = (val) => {
+        others.onChange(val);
+        onChange(val);
+      };
+      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby });
+    }, [model, id, value, ariaDescribedby, onChange]);
+
+    return <FlowModelRenderer model={model} {...rest} />;
+  };
+
   const handleClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -50,10 +69,13 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
+          model.setProps({ name: others.id });
           return (
-            <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
-              <FieldModelRenderer model={model} uid={model.uid} {...others} />
-            </Form.Item>
+            <FormComponent model={model}>
+              <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
+                <FieldModelRendererCom model={model} />
+              </Form.Item>
+            </FormComponent>
           );
         },
       });

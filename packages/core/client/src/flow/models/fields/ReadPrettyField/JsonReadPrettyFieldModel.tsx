@@ -23,7 +23,6 @@ export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
   // @reactive
   public render() {
     const { space, style, className, value } = this.props;
-
     let content = '';
     if (value !== undefined && value !== null) {
       try {

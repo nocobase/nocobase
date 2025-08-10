@@ -45,9 +45,6 @@ function LabelByField(props) {
     get: () => option,
   });
   fieldModel.setProps({ value: option?.[fieldNames.label] });
-  // fieldModel.context.defineProperty('fieldValue', {
-  //   get: () => option?.[fieldNames.label],
-  // });
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 

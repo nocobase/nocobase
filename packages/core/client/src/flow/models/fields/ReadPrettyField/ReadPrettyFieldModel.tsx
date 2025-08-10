@@ -29,9 +29,7 @@ export class ReadPrettyFieldModel extends FieldModel {
   public render() {
     const { prefix, suffix, value } = this.props;
     const dataType = this.collectionField?.dataType;
-
     let content = '';
-
     if (value === null || value === undefined) {
       content = ''; // null/undefined 显示为空
     } else {
@@ -100,7 +98,6 @@ ReadPrettyFieldModel.registerFlow({
         if (collectionField.enum.length) {
           ctx.model.setProps({ dataSource: collectionField.enum });
         }
-        console.log();
         ctx.model.setProps({ value: ctx.model.getValue() });
       },
     },
