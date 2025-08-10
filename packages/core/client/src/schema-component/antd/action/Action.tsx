@@ -661,7 +661,8 @@ const RenderButtonInner = observer(
       return () => {
         debouncedClick.cancel();
       };
-    }, []);
+    }, [debouncedClick]);
+
     const WrapperComponent = useMemo(
       () =>
         React.forwardRef(
