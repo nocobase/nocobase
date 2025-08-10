@@ -60,12 +60,6 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
     });
   }
 
-  // protected onMount() {
-  //   if (this.context.ref.current) {
-  //     this.rerender();
-  //   }
-  // }
-
   renderComponent() {
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
   }
@@ -84,7 +78,6 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
         interface: fieldType === 'number' ? 'number' : 'input',
       };
     });
-    console.log(fields);
     return fields;
   }
 }
@@ -143,8 +136,8 @@ ChartBlockModel.registerFlow({
           },
         });
         if (rawEvents) {
-          ctx.onRefReady(ctx.ref, (chart: EChartsType) => {
-            ctx.runjs(rawEvents, { chart, log: console.log });
+          ctx.onRefReady(ctx.ref, () => {
+            ctx.runjs(rawEvents, { chart: ctx.ref.current });
           });
         }
       },
