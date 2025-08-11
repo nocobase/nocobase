@@ -37,6 +37,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     },
     cache: false,
   });
+
   fieldModel.setProps({
     value: others.value,
   });
@@ -161,28 +162,35 @@ export class SubTableColumnModel extends FieldModel {
         >
           {this.mapSubModels('field', (action: EditableFieldModel) => {
             const fork: any = action.createFork({}, `${id}`);
-            return (
-              <Form.Item
-                {...this.props}
-                key={id}
-                name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
-                style={{ marginBottom: 0 }}
-                initialValue={value}
-              >
-                {fork.constructor.isLargeField ? (
-                  <LargeFieldEdit
-                    model={fork}
-                    params={{
-                      fieldPath: [(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath],
-                      index: id,
-                    }}
-                    defaultValue={value}
-                  />
-                ) : (
-                  <FieldModelRenderer model={fork} {...props} />
-                )}
-              </Form.Item>
-            );
+            if (this.props.readPretty) {
+              fork.setProps({
+                value: value,
+              });
+              return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
+            } else {
+              return (
+                <Form.Item
+                  {...this.props}
+                  key={id}
+                  name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
+                  style={{ marginBottom: 0 }}
+                  initialValue={value}
+                >
+                  {fork.constructor.isLargeField ? (
+                    <LargeFieldEdit
+                      model={fork}
+                      params={{
+                        fieldPath: [(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath],
+                        index: id,
+                      }}
+                      defaultValue={value}
+                    />
+                  ) : (
+                    <FieldModelRenderer model={fork} {...props} />
+                  )}
+                </Form.Item>
+              );
+            }
           })}
         </div>
       );
@@ -369,12 +377,41 @@ SubTableColumnModel.registerFlow({
       defaultParams: (ctx) => ({
         pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
-      handler(ctx, params) {
-        ctx.model.setProps({
-          disabled: params.pattern === 'disabled',
-          readOnly: params.pattern === 'readPretty',
-          editable: params.pattern === 'editable',
-        });
+      async handler(ctx, params) {
+        if (params.pattern === 'readPretty') {
+          const use =
+            ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+          const model = ctx.model.setSubModel('field', {
+            use: use,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+            },
+          });
+          await model.applyAutoFlows();
+          ctx.model.setProps({
+            readPretty: true,
+          });
+        } else {
+          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          const subModel = ctx.model.subModels.field as FieldModel;
+          if (use !== subModel.use) {
+            const model = ctx.model.setSubModel('field', {
+              use: use,
+              stepParams: {
+                fieldSettings: {
+                  init: ctx.model.getFieldSettingsInitParams(),
+                },
+              },
+            });
+            await model.applyAutoFlows();
+          }
+          subModel.setProps({
+            disabled: params.pattern === 'disabled',
+            editable: params.pattern === 'editable',
+          });
+        }
       },
     },
   },

@@ -19,27 +19,7 @@ import {
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
-import { FieldModel } from '../../../../base/FieldModel';
-import { FieldModelRenderer } from '../../../FieldModelRenderer';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
-// const AssociationTable = connect(
-//   (props: any) => {
-//     return <SubTable {...props} />;
-//   },
-//   mapReadPretty((props) => {
-//     return <SubTable {...props} />;
-//   }),
-// );
-
-// export class TableEditableAssociationFieldModel extends EditableAssociationFieldModel {
-//   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
-//   get collection() {
-//     return this.collectionField.targetCollection;
-//   }
-//   get component() {
-//     return [AssociationTable, { form: this.form, name: this.fieldPath }];
-//   }
-// }
 
 const transformItem = (use: string) => {
   const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
