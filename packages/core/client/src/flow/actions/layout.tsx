@@ -98,7 +98,11 @@ export const layout = defineAction({
   handler(ctx, params) {
     ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
     (ctx.model.subModels.grid as FlowModel).findSubModel('items', (m) => {
-      m.setProps({ ...params, labelWidth: params.layout === 'vertical' ? '100%' : params.labelWidth });
+      m.setProps({
+        ...params,
+        labelWidth: params.layout === 'vertical' ? '100%' : params.labelWidth,
+        labelWrap: params.layout === 'vertical' ? true : params.labelWrap,
+      });
     });
   },
 });

@@ -31,34 +31,58 @@ export class FormItemModel extends FieldModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const { showLabel, label, labelWrap, colon, labelWidth, ...restProps } = this.getProps();
+    const { showLabel, label, labelWrap, colon, labelWidth, layout, ...restProps } = this.getProps();
+    const effectiveLabelWrap = layout === 'vertical' ? true : labelWrap;
+
     const renderLabel = () => {
       if (!showLabel) return null;
-      if (labelWrap) {
-        return label;
+      if (effectiveLabelWrap) {
+        // 垂直布局或者 labelWrap = true，宽度100%，自动换行
+        return (
+          <div
+            style={{
+              width: '100%',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+            }}
+          >
+            <span style={{ flex: 1 }}>{label}</span>
+            {colon && <span style={{ marginLeft: 4, flexShrink: 0 }}>:</span>}
+          </div>
+        );
       }
       // labelWrap = false → 省略 + tooltip
       return (
         <Tooltip title={label}>
-          <span
+          <div
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              maxWidth: (typeof labelWidth === 'number' ? labelWidth : 120) - 20,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              display: 'inline-block',
-              maxWidth: (labelWidth || 120) - 20,
               verticalAlign: 'middle',
             }}
           >
-            {label}
-          </span>
-          {colon && <span style={{ marginLeft: 4 }}>:</span>}
+            <span style={{ flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+            {colon && <span style={{ marginLeft: 4, flexShrink: 0 }}>:</span>}
+          </div>
         </Tooltip>
       );
     };
 
     return (
-      <Form.Item {...restProps} labelCol={{ style: { width: labelWidth || 120 } }} label={renderLabel()} colon={false}>
+      <Form.Item
+        {...restProps}
+        labelCol={{ style: { width: labelWidth || 120 } }}
+        layout={layout}
+        label={renderLabel()}
+        colon={false}
+      >
         <FieldModelRenderer model={fieldModel} />
       </Form.Item>
     );
