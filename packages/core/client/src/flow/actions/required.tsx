@@ -29,13 +29,16 @@ export const required = defineAction({
     };
   },
   handler(ctx, params) {
-    const rules = ctx.model.getProps().rules || [];
+    let rules = ctx.model.getProps().rules || [];
+
+    rules = rules.filter((rule) => !rule.required);
+    // 根据params.required决定是否加required校验
     if (params.required) {
       rules.push({
         required: true,
         message: ctx.t('The field value is required'),
       });
     }
-    ctx.model.setProps({ rules });
+    ctx.model.setProps({ rules, required: params.required });
   },
 });
