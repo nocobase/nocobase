@@ -1,0 +1,148 @@
+name: PR Changelog Review
+
+on:
+  pull_request:
+    types: [edited]
+
+permissions:
+  pull-requests: write
+  contents: read
+  models: read
+
+jobs:
+  changelog-review:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.changes.body }}
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }}
+          skip-token-revoke: true
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Detect Changelog changes
+        id: changelog-changed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oldBody = context.payload.changes?.body?.from || "";
+            const newBody = context.payload.pull_request.body || "";
+
+            function extractChangelog(text) {
+              const regex = /### Changelog([\s\S]*?)(###|$)/i;
+              const match = text.match(regex);
+              return match ? match[1].trim() : "";
+            }
+
+            const oldChangelog = extractChangelog(oldBody);
+            const newChangelog = extractChangelog(newBody);
+
+            return oldChangelog !== newChangelog;
+
+      - name: Skip if no changelog changes
+        if: steps.changelog-changed.outputs.result != 'true'
+        run: |
+          echo "No Changelog changes detected, skipping review."
+          exit 0
+
+      - name: Extract changelog from PR body
+        id: extract
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const body = context.payload.pull_request.body || "";
+
+            function extract(lang) {
+              const regex = new RegExp(`\\|\\s*${lang}\\s*\\|\\s*(.*?)\\s*\\|`, "i");
+              const match = body.match(regex);
+              return match ? match[1].trim() : "";
+            }
+
+            const en = extract("🇺🇸 English");
+            const zh = extract("🇨🇳 Chinese");
+
+            return JSON.stringify({ en, zh });
+
+      - name: Check if changelog exists
+        id: check
+        run: |
+          EN=$(echo '${{ steps.extract.outputs.result }}' | jq -r .en)
+          ZH=$(echo '${{ steps.extract.outputs.result }}' | jq -r .zh)
+
+          if [ -z "$EN" ] && [ -z "$ZH" ]; then
+            echo "missing=both" >> $GITHUB_OUTPUT
+          elif [ -z "$EN" ]; then
+            echo "missing=en" >> $GITHUB_OUTPUT
+          elif [ -z "$ZH" ]; then
+            echo "missing=zh" >> $GITHUB_OUTPUT
+          else
+            echo "missing=none" >> $GITHUB_OUTPUT
+
+      - name: Comment if changelog is missing
+        if: steps.check.outputs.missing != 'none'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            let msg;
+            if ("${{ steps.check.outputs.missing }}" === "both") {
+              msg = "⚠️ Please provide a changelog in both English and Chinese before merging.";
+            } else if ("${{ steps.check.outputs.missing }}" === "en") {
+              msg = "⚠️ Please provide the changelog in **English**.";
+            } else {
+              msg = "⚠️ Please provide the changelog in **Chinese**.";
+            }
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: msg
+            });
+
+      - name: Call GitHub Models API for review
+        if: steps.check.outputs.missing == 'none'
+        id: review
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          CHANGELOG: ${{ steps.extract.outputs.result }}
+        run: |
+          EN=$(echo "$CHANGELOG" | jq -r .en)
+          ZH=$(echo "$CHANGELOG" | jq -r .zh)
+
+          REVIEW=$(curl -s "https://models.github.ai/inference/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -d "{
+              \"model\": \"openai/gpt-4o\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"You are a changelog reviewer. Review if the English and Chinese changelogs are accurate, consistent, and clear.\"},
+                {\"role\": \"user\", \"content\": \"English: $EN\\nChinese: $ZH\"}
+              ]
+            }" | jq -r '.choices[0].message.content')
+
+          echo "review<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post review as PR comment
+        if: steps.check.outputs.missing == 'none'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### 🤖 AI Changelog Review\n${{ steps.review.outputs.review }}`
+            });
