@@ -37,7 +37,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     },
     cache: false,
   });
-
   fieldModel.setProps({
     value: others.value,
   });
