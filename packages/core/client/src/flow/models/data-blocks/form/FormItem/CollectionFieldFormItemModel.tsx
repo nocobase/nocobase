@@ -74,7 +74,7 @@ CollectionFieldFormItemModel.registerFlow({
         showLabel: true,
       },
       handler(ctx, params) {
-        ctx.model.showTitle(params.showLabel);
+        ctx.model.setProps({ showLabel: params.showLabel });
       },
     },
     tooltip: {

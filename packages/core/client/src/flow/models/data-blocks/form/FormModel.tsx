@@ -42,7 +42,7 @@ export class FormModel extends CollectionBlockModel<{
   }
 }
 
-export function FormComponent({ model, children }) {
+export function FormComponent({ model, children, layoutProps = { layout: 'vertical' } as any }) {
   const [form] = Form.useForm();
 
   React.useEffect(() => {
@@ -50,7 +50,12 @@ export function FormComponent({ model, children }) {
   }, [form, model]);
 
   return (
-    <Form form={form} initialValues={model.context.record} layout="vertical">
+    <Form
+      form={form}
+      initialValues={model.context.record}
+      {...layoutProps}
+      labelCol={{ style: { width: layoutProps?.labelWidth } }}
+    >
       {children}
     </Form>
   );

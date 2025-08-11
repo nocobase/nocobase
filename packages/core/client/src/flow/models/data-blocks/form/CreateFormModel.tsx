@@ -32,7 +32,7 @@ export class CreateFormModel extends FormModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
-      <FormComponent model={this}>
+      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <FormButtonGroup>

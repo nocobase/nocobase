@@ -25,20 +25,16 @@ export class FormItemModel extends FieldModel<{
     Object.assign(this.props, props);
   }
 
-  showTitle(showTitle: boolean) {
-    this.setProps({
-      labelCol: { style: { display: showTitle ? 'flex' : 'none' } },
-    });
-  }
-
   onInit(options: any): void {
     super.onInit(options);
   }
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
+    const { showLabel, label } = this.getProps();
+    console.log(this);
     return (
-      <FormItem {...this.props}>
+      <FormItem {...this.props} label={showLabel ? label : ''}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
