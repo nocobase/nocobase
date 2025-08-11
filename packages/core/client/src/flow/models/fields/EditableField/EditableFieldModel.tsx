@@ -58,7 +58,7 @@ EditableFieldModel.registerFlow({
     initProps: {
       handler(ctx) {
         const collectionField = ctx.model.collectionField;
-        if (collectionField.enum) {
+        if (collectionField.enum.length) {
           ctx.model.setProps({
             options: collectionField.enum,
           });

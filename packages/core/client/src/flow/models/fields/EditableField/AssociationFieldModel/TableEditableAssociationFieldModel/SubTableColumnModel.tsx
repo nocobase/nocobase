@@ -41,14 +41,14 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     value: others.value,
   });
   const FieldModelRendererCom = (props) => {
-    const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, ...rest } = props;
+    const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, path, ...rest } = props;
 
     useEffect(() => {
       const handelChange = (val) => {
         others.onChange(val);
         onChange(val);
       };
-      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby });
+      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path });
     }, [model, id, value, ariaDescribedby, onChange]);
 
     return <FlowModelRenderer model={model} {...rest} />;
@@ -192,7 +192,11 @@ export class SubTableColumnModel extends FieldModel {
                       defaultValue={value}
                     />
                   ) : (
-                    <FieldModelRenderer model={fork} {...props} />
+                    <FieldModelRenderer
+                      model={fork}
+                      {...props}
+                      id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]}
+                    />
                   )}
                 </Form.Item>
               );

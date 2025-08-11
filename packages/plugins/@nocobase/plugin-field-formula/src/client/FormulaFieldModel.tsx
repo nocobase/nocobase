@@ -73,18 +73,19 @@ function areValuesEqual(value1, value2) {
 }
 
 function Result(props) {
-  const { value, collectionField, fieldPath, form, ...others } = props;
+  const { value, collectionField, form, id, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField.options;
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
-  const watchedValues = Form.useWatch([], form); // 监听整个表单
+  const watchedValues = Form.useWatch([], form);
+  const fieldPath = Array.isArray(id) ? id?.join('.') : id;
 
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
 
   useEffect(() => {
-    if ((fieldPath as string).indexOf('.') >= 0 || form?.readPretty) {
+    if (form?.readPretty) {
       return;
     }
     const scope = toJS(getValuesByFullPath(form.getFieldsValue(), fieldPath));
@@ -124,7 +125,6 @@ export class FormulaFieldModel extends FormFieldModel {
       Result,
       {
         collectionField: this.collectionField,
-        fieldPath: this.fieldPath,
         form: this.form,
       },
     ];
