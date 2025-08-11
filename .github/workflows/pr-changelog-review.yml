@@ -90,6 +90,7 @@ jobs:
             echo "missing=zh" >> $GITHUB_OUTPUT
           else
             echo "missing=none" >> $GITHUB_OUTPUT
+          fi
 
       - name: Comment if changelog is missing
         if: steps.check.outputs.missing != 'none'
