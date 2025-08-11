@@ -28,7 +28,7 @@ export const parseValueToPath = (value: string): string[] | undefined => {
 };
 
 export const formatPathToValue = (item: ContextSelectorItem): string => {
-  const path = item?.fullPath || [];
+  const path = item?.paths || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
@@ -91,17 +91,17 @@ export const buildContextSelectorItems = (
 
   const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
     const hasChildren = node.children;
-    const fullPath = [...currentPath, node.name];
+    const paths = [...currentPath, node.name];
     const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
       isLeaf: !hasChildren,
       meta: node,
-      fullPath: fullPath,
+      paths: paths,
     };
 
     if (hasChildren && Array.isArray(node.children)) {
-      option.children = node.children.map((child) => convertNode(child, fullPath));
+      option.children = node.children.map((child) => convertNode(child, paths));
     }
 
     return option;
@@ -149,24 +149,24 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   return mergedConverters;
 };
 
-// 根据ContextSelectorItem的fullPath和metaTree构建完整的标题路径
+// 根据ContextSelectorItem的paths和metaTree构建完整的标题路径
 export const buildFullTagTitle = async (
   contextSelectorItem: ContextSelectorItem,
   metaTree?: MetaTreeNode[],
 ): Promise<string> => {
-  if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
+  if (!contextSelectorItem?.paths || contextSelectorItem.paths.length === 0) {
     return contextSelectorItem?.label || '';
   }
 
   if (!metaTree) {
-    return contextSelectorItem.fullPath.join('/');
+    return contextSelectorItem.paths.join('/');
   }
 
   // 递归查找路径中每个节点的 title
   const titlePath: string[] = [];
   let currentNodes: MetaTreeNode[] = metaTree;
 
-  for (const segment of contextSelectorItem.fullPath) {
+  for (const segment of contextSelectorItem.paths) {
     const node = currentNodes.find((n) => n.name === segment);
     if (!node) {
       // 如果找不到节点，使用原始名称
@@ -201,7 +201,7 @@ export const buildContextSelectorItemFromPath = (
   // 如果没有路径或metaTree，返回null
   if (!path || path.length === 0 || !metaTree) return null;
 
-  const fullPath = [...parentPaths, ...path];
+  const paths = [...parentPaths, ...path];
 
   // 如果metaTree是函数，现在无法同步获取，返回基本信息
   if (typeof metaTree === 'function') {
@@ -214,7 +214,7 @@ export const buildContextSelectorItemFromPath = (
         title: path[path.length - 1],
         type: 'string',
       },
-      fullPath: fullPath,
+      paths: paths,
     };
   }
 
@@ -236,7 +236,7 @@ export const buildContextSelectorItemFromPath = (
           title: segment,
           type: 'string',
         },
-        fullPath: [...parentPaths, ...path.slice(0, i + 1)],
+        paths: [...parentPaths, ...path.slice(0, i + 1)],
       };
     }
 
@@ -261,6 +261,6 @@ export const buildContextSelectorItemFromPath = (
     value: targetMeta.name,
     isLeaf: !targetMeta.children || (Array.isArray(targetMeta.children) && targetMeta.children.length === 0),
     meta: targetMeta,
-    fullPath: fullPath,
+    paths: paths,
   };
 };

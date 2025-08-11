@@ -163,15 +163,15 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
       {...props}
       converters={{
         renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] === 'constant' || !item) {
+          if (item?.paths?.[0] === 'constant' || !item) {
             return InputComponent;
           }
-          if (item?.fullPath?.[0] === 'null') {
+          if (item?.paths?.[0] === 'null') {
             return NullComponent;
           }
         },
         resolveValueFromPath: (item) => {
-          if (item?.fullPath[0] === 'Constant') return null;
+          if (item?.paths[0] === 'Constant') return null;
         },
       }}
     />

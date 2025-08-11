@@ -60,7 +60,7 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
         meta: lastOption.meta,
         children: lastOption.children,
         loading: lastOption.loading,
-        fullPath: selectedOptions.map((option) => option.value),
+        paths: selectedOptions.map((option) => option.value),
       };
     },
     [],

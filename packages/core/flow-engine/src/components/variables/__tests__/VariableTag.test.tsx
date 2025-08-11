@@ -198,7 +198,7 @@ describe('VariableTag', () => {
       label: 'First Name',
       value: 'firstName',
       isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
+      paths: ['user', 'profile', 'firstName'],
       meta: mockMetaTree[0].children[0].children[0],
     };
 
@@ -222,7 +222,7 @@ describe('VariableTag', () => {
       label: 'First Name',
       value: 'firstName',
       isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
+      paths: ['user', 'profile', 'firstName'],
       meta: null,
     };
 
@@ -248,7 +248,7 @@ describe('VariableTag', () => {
       label: 'User',
       value: 'user',
       isLeaf: true,
-      fullPath: ['user'],
+      paths: ['user'],
       meta: null,
     };
 

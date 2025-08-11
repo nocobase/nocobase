@@ -29,7 +29,7 @@ export interface ContextSelectorItem {
   children?: ContextSelectorItem[];
   loading?: boolean;
   meta?: MetaTreeNode;
-  fullPath: string[];
+  paths: string[];
 }
 
 export interface Converters {

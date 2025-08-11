@@ -151,13 +151,13 @@ class PluginEditableFieldModelExample extends Plugin {
 
       const converters: Converters = {
         renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] === 'NumberField' || !item) {
+          if (item?.paths?.[0] === 'NumberField' || !item) {
             return InputComponent;
           }
           return null; // 使用默认的，即变量显示为VariableTag
         },
         resolveValueFromPath: (item) => {
-          if (item?.fullPath[0] === 'NumberField' || !item) {
+          if (item?.paths[0] === 'NumberField' || !item) {
             return 0;
           }
           return undefined;

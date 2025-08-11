@@ -38,8 +38,8 @@ class PluginMultiConstantExample extends Plugin {
 
       const converters: Converters = {
         renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] !== 'Constant') return null;
-          switch (item.fullPath[1]) {
+          if (item?.paths?.[0] !== 'Constant') return null;
+          switch (item.paths[1]) {
             case 'number':
               return InputNumber;
             case 'date':
@@ -49,7 +49,7 @@ class PluginMultiConstantExample extends Plugin {
           }
         },
         resolveValueFromPath: (item) => {
-          const path = item?.fullPath;
+          const path = item?.paths;
           if (!path || path[0] !== 'Constant') return undefined;
           switch (path[1]) {
             case 'string':

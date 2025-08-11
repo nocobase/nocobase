@@ -32,8 +32,8 @@ class PluginSingleConstantExample extends Plugin {
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) => (item?.fullPath?.[0] === 'Constant' ? Input : null),
-        resolveValueFromPath: (item) => (item?.fullPath[0] === 'Constant' ? '' : undefined),
+        renderInputComponent: (item) => (item?.paths?.[0] === 'Constant' ? Input : null),
+        resolveValueFromPath: (item) => (item?.paths[0] === 'Constant' ? '' : undefined),
       };
 
       return (
