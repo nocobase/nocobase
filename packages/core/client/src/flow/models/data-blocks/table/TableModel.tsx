@@ -243,6 +243,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
                     fork.context.defineProperty('fieldValue', {
                       get: () => values[dataIndex],
                     });
+                    fork.setProps({ value: values[dataIndex] });
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
                     });
