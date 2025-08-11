@@ -2,7 +2,7 @@ name: PR Changelog Review
 
 on:
   pull_request:
-    types: [edited]
+    types: [opened, edited]
 
 permissions:
   pull-requests: write
@@ -19,7 +19,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }}
+          repositories: nocobase
           skip-token-revoke: true
 
       - name: Get GitHub App User ID
@@ -35,6 +35,10 @@ jobs:
           script: |
             const oldBody = context.payload.changes?.body?.from || "";
             const newBody = context.payload.pull_request.body || "";
+
+            if (context.payload.action === "opened") {
+              return true;
+            }
 
             function extractChangelog(text) {
               const regex = /### Changelog([\s\S]*?)(###|$)/i;
