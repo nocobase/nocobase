@@ -19,7 +19,11 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
   const file = list[index];
   const url = useMemo(() => {
     const u = new URL('https://view.officeapps.live.com/op/embed.aspx');
-    u.searchParams.set('src', file.url);
+    const src =
+      file.url.startsWith('https://') || file.url.startsWith('http://')
+        ? file.url
+        : `${location.origin}/${file.url.replace(/^\//, '')}`;
+    u.searchParams.set('src', src);
     return u.href;
   }, [file.url]);
   const onOpen = useCallback(
@@ -92,11 +96,26 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
   async load() {
     attachmentFileTypes.add({
       match(file) {
-        return [
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        ].includes(file.mimetype);
+        if (
+          file.mimetype &&
+          [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          ].includes(file.mimetype)
+        ) {
+          return true;
+        }
+        if (file.url) {
+          const url = new URL(file.url);
+          const parts = url.pathname.split('.');
+          if (parts.length > 1) {
+            const ext = parts[parts.length - 1].toLowerCase();
+            return ['docx', 'xlsx', 'pptx', 'odt'].includes(ext);
+          }
+          return false;
+        }
+        return false;
       },
       Previewer: IframePreviewer,
     });

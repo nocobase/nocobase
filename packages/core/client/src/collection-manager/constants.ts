@@ -6,15 +6,19 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+export const REQUIRED_RULE_KEY = 'required';
+export const DEFAULT_VALIDATION_RULES = [
+  {
+    key: REQUIRED_RULE_KEY,
+    label: 'Required',
+    hasValue: false,
+    params: [],
+  },
+];
 
 export const FIELDS_VALIDATION_OPTIONS = {
   string: [
-    {
-      key: 'required',
-      label: 'Required',
-      hasValue: false,
-      params: [],
-    },
+    ...DEFAULT_VALIDATION_RULES,
     {
       key: 'max',
       label: 'Max',
@@ -198,12 +202,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
   ],
   number: [
-    {
-      key: 'required',
-      label: 'Required',
-      hasValue: false,
-      params: [],
-    },
+    ...DEFAULT_VALIDATION_RULES,
     {
       key: 'greater',
       label: 'Greater than',
@@ -249,12 +248,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
   ],
   date: [
-    {
-      key: 'required',
-      label: 'Required',
-      hasValue: false,
-      params: [],
-    },
+    ...DEFAULT_VALIDATION_RULES,
     {
       key: 'greater',
       label: 'Greater than',
@@ -297,14 +291,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
       ],
     },
   ],
-  object: [
-    {
-      key: 'required',
-      label: 'Required',
-      hasValue: false,
-      params: [],
-    },
-  ],
+  object: [...DEFAULT_VALIDATION_RULES],
 } as const;
 
 export type ValidationKeysByType = {

@@ -14,7 +14,7 @@ import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FIELDS_VALIDATION_OPTIONS } from '../../constants';
+import { FIELDS_VALIDATION_OPTIONS, REQUIRED_RULE_KEY } from '../../constants';
 import { css } from '@nocobase/client';
 import dayjs from 'dayjs';
 
@@ -57,7 +57,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       filteredOptions = allOptions.filter((option) => !excludeValidationOptions.includes(option.key));
     }
 
-    if (availableValidationOptions && availableValidationOptions.length > 0) {
+    if (availableValidationOptions && availableValidationOptions.filter((x) => x !== REQUIRED_RULE_KEY).length > 0) {
       const intersection = availableValidationOptions
         .map((key) => filteredOptions.find((x) => x.key === key))
         .filter(Boolean);
