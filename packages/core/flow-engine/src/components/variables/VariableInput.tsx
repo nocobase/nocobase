@@ -29,7 +29,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   ...restProps
 }) => {
   const [currentContextSelectorItem, setCurrentContextSelectorItem] = useState<ContextSelectorItem | null>(null);
-  const { renderInputComponent, resolveValueFromPath, resolvePathFromValue } = useMemo(() => {
+  const { resolveValueFromPath, resolvePathFromValue } = useMemo(() => {
     return createFinalConverters(propConverters);
   }, [propConverters]);
 
@@ -53,10 +53,10 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (resolvedContextSelectorItem == null && isVariableValue(value)) {
       return VariableTag;
     }
-    const CustomComponent = renderInputComponent?.(resolvedContextSelectorItem);
+    const CustomComponent = resolvedContextSelectorItem?.meta?.render;
     const finalComponent = CustomComponent || (isVariableValue(value) ? VariableTag : Input);
     return finalComponent;
-  }, [renderInputComponent, resolvedContextSelectorItem, value]);
+  }, [resolvedContextSelectorItem, value]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {

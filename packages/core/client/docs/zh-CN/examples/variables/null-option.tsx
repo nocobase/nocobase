@@ -27,14 +27,13 @@ class PluginNullOptionExample extends Plugin {
           name: 'null',
           title: 'Null',
           type: 'null',
+          render: () => <Input {...props} readOnly value="<Null>" />,
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) =>
-          item?.fullPath?.[0] === 'null' ? (props) => <Input {...props} readOnly value="<Null>" /> : null,
-        resolveValueFromPath: (item) => (item?.fullPath[0] === 'null' ? null : undefined),
+        resolveValueFromPath: (item) => (item?.paths[0] === 'null' ? null : undefined),
       };
 
       return (

@@ -34,13 +34,6 @@ export interface ContextSelectorItem {
 
 export interface Converters {
   /**
-   * 根据选中的上下文选择器项目，返回一个用于渲染该值的 React 组件类型。
-   * 如果返回 null 或 undefined，则会使用默认的渲染组件。
-   * @param contextSelectorItem 选中的 ContextSelectorItem 对象，或者在未选择任何变量时为 null。
-   * @returns React.ComponentType<{ value: any; onChange: (value: any) => void; }> | null
-   */
-  renderInputComponent?: (contextSelectorItem: ContextSelectorItem | null) => React.ComponentType<any> | null;
-  /**
    * 将一个外部 value 转换成 FlowContextSelector 需要的路径数组。
    * @param value 外部传入的值。
    * @returns string[] | undefined

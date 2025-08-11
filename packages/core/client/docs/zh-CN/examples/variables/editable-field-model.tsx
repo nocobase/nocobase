@@ -111,16 +111,6 @@ class PluginEditableFieldModelExample extends Plugin {
         return fieldModel;
       }, [flowContext]);
 
-      const getMetaTree = () => {
-        const baseMetaTree = flowContext.getPropertyMetaTree();
-        baseMetaTree.splice(0, 0, {
-          name: 'NumberField',
-          title: 'Number Field',
-          type: 'number',
-        });
-        return baseMetaTree;
-      };
-
       const InputComponent = useMemo(() => {
         const Component = (props) => {
           const { value, onChange, ...otherProps } = props;
@@ -149,13 +139,18 @@ class PluginEditableFieldModelExample extends Plugin {
         return Component;
       }, [fieldModel]);
 
+      const getMetaTree = () => {
+        const baseMetaTree = flowContext.getPropertyMetaTree();
+        baseMetaTree.splice(0, 0, {
+          name: 'NumberField',
+          title: 'Number Field',
+          type: 'number',
+          render: InputComponent,
+        });
+        return baseMetaTree;
+      };
+
       const converters: Converters = {
-        renderInputComponent: (item) => {
-          if (item?.paths?.[0] === 'NumberField' || !item) {
-            return InputComponent;
-          }
-          return null; // 使用默认的，即变量显示为VariableTag
-        },
         resolveValueFromPath: (item) => {
           if (item?.paths[0] === 'NumberField' || !item) {
             return 0;

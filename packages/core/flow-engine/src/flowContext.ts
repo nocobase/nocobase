@@ -32,6 +32,7 @@ import {
 import { FlowExitException, resolveExpressions } from './utils';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { ISchema } from '@nocobase/client';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -40,7 +41,8 @@ export interface MetaTreeNode {
   title: string;
   type: string;
   interface?: string;
-  uiSchema?: any;
+  uiSchema?: ISchema;
+  render?: (props: any) => JSX.Element;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
@@ -49,7 +51,8 @@ export interface PropertyMeta {
   type: string;
   title: string;
   interface?: string;
-  uiSchema?: any;
+  uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
+  render?: (props: any) => JSX.Element; // 自定义渲染函数
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }

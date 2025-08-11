@@ -304,7 +304,6 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters).toHaveProperty('resolvePathFromValue');
       expect(converters).toHaveProperty('resolveValueFromPath');
-      expect(converters).not.toHaveProperty('renderInputComponent');
       expect(typeof converters.resolvePathFromValue).toBe('function');
       expect(typeof converters.resolveValueFromPath).toBe('function');
     });
