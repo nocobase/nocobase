@@ -37,7 +37,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     },
     cache: false,
   });
-
   fieldModel.setProps({
     value: others.value,
   });
@@ -119,6 +118,11 @@ export class SubTableColumnModel extends FieldModel {
               width: calc(${this.props.width}px - 16px);
             `}
           >
+            {this.props.required && (
+              <span style={{ color: '#ff4d4f', marginRight: 4, userSelect: 'none', fontFamily: 'SimSun, sans-serif' }}>
+                *
+              </span>
+            )}
             {this.props.title}
           </div>
         </FlowsFloatContextMenu>
