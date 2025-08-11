@@ -16,3 +16,26 @@ export class InputEditableFieldModel extends FormFieldModel {
     return [Input, {}];
   }
 }
+
+InputEditableFieldModel.registerFlow({
+  key: 'inputFieldSettings',
+  sort: 400,
+  steps: {
+    init: {
+      handler(ctx) {
+        if (ctx.model.collectionField.interface === 'email') {
+          const props = ctx.model.parent.getProps();
+          const rules = [...(props.rules || [])];
+          if (!rules.some((rule) => rule.type === 'email')) {
+            rules.push({
+              type: 'email',
+              message: ctx.t('The field value is not a email format'),
+            });
+          }
+
+          ctx.model.parent.setProps({ rules });
+        }
+      },
+    },
+  },
+});
