@@ -42,7 +42,15 @@ export class FormModel extends CollectionBlockModel<{
   }
 }
 
-export function FormComponent({ model, children, layoutProps = {} as any }) {
+export function FormComponent({
+  model,
+  children,
+  layoutProps = {} as any,
+}: {
+  model: any;
+  children: React.ReactNode;
+  layoutProps?: any;
+}) {
   const [form] = Form.useForm();
 
   React.useEffect(() => {
@@ -51,6 +59,7 @@ export function FormComponent({ model, children, layoutProps = {} as any }) {
 
   return (
     <Form
+      key={model.uid}
       form={form}
       initialValues={model.context.record}
       {...layoutProps}

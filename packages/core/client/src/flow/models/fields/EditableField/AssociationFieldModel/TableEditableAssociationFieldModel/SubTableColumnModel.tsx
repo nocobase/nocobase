@@ -24,10 +24,10 @@ import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { FieldModelRenderer } from '../../../FieldModelRenderer';
-import { FormComponent } from '../../../../data-blocks/form/FormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
+  const [form] = Form.useForm();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
@@ -70,11 +70,11 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         content: (popover) => {
           model.setProps({ name: others.id });
           return (
-            <FormComponent model={model}>
+            <Form form={form}>
               <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
                 <FieldModelRendererCom model={model} />
               </Form.Item>
-            </FormComponent>
+            </Form>
           );
         },
       });
@@ -158,11 +158,13 @@ export class SubTableColumnModel extends FieldModel {
       const { value, id, rowIdx } = props;
       return (
         <div
-          className={css`
-            .ant-formily-item {
-              margin-bottom: 0;
-            }
-          `}
+          style={{
+            width: this.props.width,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+          title={value}
         >
           {this.mapSubModels('field', (action: EditableFieldModel) => {
             const fork: any = action.createFork({}, `${id}`);
