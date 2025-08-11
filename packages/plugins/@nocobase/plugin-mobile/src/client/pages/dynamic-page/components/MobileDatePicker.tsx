@@ -120,7 +120,6 @@ const MobileDateTimePicker = connect(
           return data;
       }
     }, []);
-    console.log(minDate, rest.min);
     return (
       <>
         <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
