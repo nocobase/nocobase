@@ -30,12 +30,6 @@ https://www.nocobase.com/en/tutorials
 Use Cases:  
 https://www.nocobase.com/en/blog/tags/customer-stories
 
-## Quickstart
-
-To get a quick working development environment you could use Gitpod.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/nocobase/nocobase)
-
 ## Release Notes
 
 Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with release notes and provides a weekly summary.

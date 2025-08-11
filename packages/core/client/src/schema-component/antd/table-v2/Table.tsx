@@ -348,8 +348,8 @@ const SortableRow = (props: BodyRowComponentProps) => {
   const { setNodeRef, active, over } = useSortable({
     id,
   });
-  const isOver = over?.id == id;
   const { rowIndex, ...others } = props;
+  const isOver = over?.id == id;
 
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
@@ -368,9 +368,7 @@ const SortableRow = (props: BodyRowComponentProps) => {
   }, [token.colorSettings]);
 
   const className =
-    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
-      ? classObj.topActiveClass
-      : classObj.bottomActiveClass;
+    (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
 
   const row = (
     <tr
@@ -469,7 +467,7 @@ const usePaginationProps = (pagination1, pagination2, tableProps) => {
                   }
                 `}
               >
-                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+                {originalElement} <div>{current}</div>
               </div>
             );
           } else {
@@ -884,6 +882,8 @@ export const Table: any = withDynamicSchemaProps(
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+      const valueRef = useRef(value);
+      valueRef.current = value;
 
       useEffect(() => {
         if (tableBlockContextBasicValue?.field) {
@@ -994,8 +994,8 @@ export const Table: any = withDynamicSchemaProps(
             }
             const fromIndex = e.active?.data.current?.sortable?.index;
             const toIndex = e.over?.data.current?.sortable?.index;
-            const from = value?.[fromIndex] || e.active;
-            const to = value?.[toIndex] || e.over;
+            const from = valueRef.current?.[fromIndex] || e.active;
+            const to = valueRef.current?.[toIndex] || e.over;
             void field.move(fromIndex, toIndex);
             onRowDragEnd({ from, to });
           }, []);
@@ -1122,7 +1122,7 @@ export const Table: any = withDynamicSchemaProps(
             ? React.createElement<Omit<SortableContextProps, 'children'>>(
                 SortableContext,
                 {
-                  items: value?.map?.(getRowKey) || [],
+                  items: valueRef.current?.map?.(getRowKey) || [],
                 },
                 children,
               )

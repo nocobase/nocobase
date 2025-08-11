@@ -11,12 +11,14 @@ import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { List as AntdList, PaginationProps, theme } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { getCardItemSchema } from '../../../block-provider';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner } from '../../hooks';
@@ -25,8 +27,6 @@ import { ListDesigner } from './List.Designer';
 import { ListItem } from './List.Item';
 import useStyles from './List.style';
 import { useListActionBarProps, useListBlockHeight } from './hooks';
-import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
-import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 const InternalList = withSkeletonComponent(
   (props) => {
@@ -163,17 +163,7 @@ const InternalList = withSkeletonComponent(
               >
                 {field.value?.length
                   ? field.value.map((item, index) => {
-                      return (
-                        <NocoBaseRecursionField
-                          basePath={field.address}
-                          key={index}
-                          name={index}
-                          onlyRenderProperties
-                          schema={
-                            isMobileLayout ? transformMultiColumnToSingleColumn(getSchema(index)) : getSchema(index)
-                          }
-                        ></NocoBaseRecursionField>
-                      );
+                      return <ListItemField key={index} field={field} index={index} schema={getSchema(index)} />;
                     })
                   : null}
               </AntdList>
@@ -188,6 +178,18 @@ const InternalList = withSkeletonComponent(
     displayName: 'InternalList',
   },
 );
+
+function ListItemField(props: Readonly<{ field: any; index: number; schema: any }>) {
+  const { isMobileLayout } = useMobileLayout();
+  const schema = useMemo(
+    () => (isMobileLayout ? transformMultiColumnToSingleColumn(props.schema) : props.schema),
+    [isMobileLayout, props.schema],
+  );
+
+  return (
+    <NocoBaseRecursionField basePath={props.field.address} name={props.index} onlyRenderProperties schema={schema} />
+  );
+}
 
 export const List = withDynamicSchemaProps(InternalList) as typeof InternalList & {
   Item: typeof ListItem;
