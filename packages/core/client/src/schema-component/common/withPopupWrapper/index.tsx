@@ -81,7 +81,7 @@ const FieldLink = (props: any) => {
 
   // Add debounce for handleClick
   const debouncedHandleClick = useMemo(
-    () => debounce(handleClick, 300, { leading: true, trailing: false }),
+    () => debounce(handleClick, 600, { leading: true, trailing: false }),
     [handleClick],
   );
 

@@ -60,6 +60,29 @@ import { useApp } from '../../../application';
 import { useAllDataBlocks } from '../page/AllDataBlocksProvider';
 import { VariableScope } from '../../../variables/VariableScope';
 
+interface CallbackDependencies {
+  aclCtx: any;
+  confirmContent: string | undefined;
+  confirmEnable: boolean | undefined;
+  confirmTitleField: string | undefined;
+  confirmTitleProp: string;
+  disabled: boolean;
+  field: Field;
+  fieldSchema: Schema;
+  isPopupVisibleControlledByURL: () => boolean;
+  modal: {
+    confirm: (options: { title: string; content: string; onOk: () => void }) => void;
+  };
+  onClick?: (e: React.MouseEvent, callback?: (...args: any[]) => any) => void;
+  refreshDataBlockRequest: boolean | undefined;
+  run?: () => void;
+  setSubmitted?: (v: boolean) => void;
+  setVisible: (visible: boolean) => void;
+  t: (key: string, options?: { title?: string }) => string;
+  title: string;
+  getDataBlockRequest: () => { refresh?: () => void } | undefined;
+}
+
 const useA = () => {
   return {
     async run() {},
@@ -504,7 +527,7 @@ const RenderButton = ({
   };
 
   // useCallback 依赖改为通过 ref 读取，避免重建闭包
-  const cbDepsRef = useRef<any>({});
+  const cbDepsRef = useRef<CallbackDependencies>({} as CallbackDependencies);
   cbDepsRef.current = {
     aclCtx,
     confirmContent: confirm?.content,
@@ -659,7 +682,7 @@ const RenderButtonInner = observer(
         (e: React.MouseEvent, checkPortal = true) => {
           handleButtonClick(e, checkPortal);
         },
-        300,
+        600,
         { leading: true, trailing: false },
       ),
       [handleButtonClick],
