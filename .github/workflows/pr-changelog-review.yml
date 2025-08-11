@@ -133,7 +133,7 @@ jobs:
                 {\"role\": \"system\", \"content\": \"You are a changelog reviewer. Review if the English and Chinese changelogs are accurate, consistent, and clear.\"},
                 {\"role\": \"user\", \"content\": \"English: $EN\\nChinese: $ZH\"}
               ]
-            }" | jq -r '.choices[0].message.content')
+            }")
 
           echo "API RESPONSE: $RESPONSE"
           REVIEW=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
