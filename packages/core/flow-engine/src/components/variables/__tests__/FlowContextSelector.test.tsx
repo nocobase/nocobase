@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FlowContextSelector } from '../../FlowContextSelector';
 import { createTestFlowContext } from './test-utils';
 
-describe.skip('FlowContextSelector', () => {
+describe('FlowContextSelector', () => {
   it('should render with default children', () => {
     const flowContext = createTestFlowContext();
     render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
@@ -167,7 +167,7 @@ describe.skip('FlowContextSelector', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('should pass through cascader props', () => {
+  it('should pass through cascader props', async () => {
     const flowContext = createTestFlowContext();
     render(
       <FlowContextSelector
@@ -209,7 +209,7 @@ describe.skip('FlowContextSelector', () => {
       );
     });
 
-    it('should support double-click selection for non-leaf nodes', async () => {
+    it('should support double-click selection for non-leaf nodes', () => {
       // This test verifies that the double-click logic is implemented
       // In actual usage, users would double-click to select non-leaf nodes
       const onChange = vi.fn();
@@ -224,7 +224,7 @@ describe.skip('FlowContextSelector', () => {
   });
 
   describe('Custom parsing and formatting functions', () => {
-    it('should use custom parseValueToPath function', async () => {
+    it('should use custom parseValueToPath function', () => {
       const onChange = vi.fn();
       const flowContext = createTestFlowContext();
       const customParseValueToPath = vi.fn().mockReturnValue(['user', 'name']);

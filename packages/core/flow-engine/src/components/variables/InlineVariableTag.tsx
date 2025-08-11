@@ -14,6 +14,7 @@ import { parseValueToPath, buildFullTagTitle } from './utils';
 import type { ContextSelectorItem } from './types';
 import type { MetaTreeNode } from '../../flowContext';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
+import { useRequest } from 'ahooks';
 
 export interface InlineVariableTagProps {
   value?: string;
@@ -38,17 +39,20 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
 
-  const displayedValue = React.useMemo(() => {
-    // 优先使用 contextSelectorItem 和 metaTree 来构建完整的 title 路径
-    if (contextSelectorItem) {
-      return buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
-    }
+  const { data: displayedValue } = useRequest(
+    async () => {
+      // 优先使用 contextSelectorItem 和 metaTree 来构建完整的 title 路径
+      if (contextSelectorItem) {
+        return await buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
+      }
 
-    // 后备方案：从 value 解析路径
-    if (!value) return String(value);
-    const path = parseValueToPath(value);
-    return path ? path.join('/') : String(value);
-  }, [value, contextSelectorItem, resolvedMetaTree]);
+      // 后备方案：从 value 解析路径
+      if (!value) return String(value);
+      const path = parseValueToPath(value);
+      return path ? path.join('/') : String(value);
+    },
+    { refreshDeps: [resolvedMetaTree, value, contextSelectorItem] },
+  );
 
   return (
     <Tag
@@ -85,7 +89,7 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
         }}
         title={displayedValue}
       >
-        {displayedValue}
+        {displayedValue ?? ''}
       </span>
     </Tag>
   );

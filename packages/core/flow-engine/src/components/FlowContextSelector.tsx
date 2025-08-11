@@ -13,7 +13,13 @@ import type { FlowContextSelectorProps, ContextSelectorItem } from './variables/
 import { useVariableTreeData } from './variables/useVariableTreeData';
 import { formatPathToValue } from './variables/utils';
 
-export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
+// 提取默认按钮样式避免每次重新创建
+const defaultButtonStyle = {
+  fontStyle: 'italic' as const,
+  fontFamily: 'New York, Times New Roman, Times, serif',
+};
+
+const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   value,
   onChange,
   children,
@@ -27,21 +33,6 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  // 默认按钮组件
-  const defaultChildren = useMemo(
-    () => (
-      <Button
-        style={{
-          fontStyle: 'italic' as const,
-          fontFamily: 'New York, Times New Roman, Times, serif',
-        }}
-      >
-        x
-      </Button>
-    ),
-    [],
-  );
-
   // 使用 useVariableTreeData Hook 管理数据状态
   const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
     useVariableTreeData({
@@ -49,6 +40,16 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
       value,
       parseValueToPath: customParseValueToPath,
     });
+
+  // 默认按钮组件
+  const defaultChildren = useMemo(() => {
+    const hasSelected = currentPath && currentPath.length > 0;
+    return (
+      <Button type={hasSelected ? 'primary' : 'default'} style={defaultButtonStyle}>
+        x
+      </Button>
+    );
+  }, [currentPath]);
 
   // 处理选择变化事件
   const handleChange = useCallback(
@@ -117,3 +118,5 @@ export const FlowContextSelector: React.FC<FlowContextSelectorProps> = ({
     </Cascader>
   );
 };
+
+export const FlowContextSelector = React.memo(FlowContextSelectorComponent);
