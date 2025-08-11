@@ -42,7 +42,7 @@ export class FormModel extends CollectionBlockModel<{
   }
 }
 
-export function FormComponent({ model, children, layoutProps = { layout: 'vertical' } as any }) {
+export function FormComponent({ model, children, layoutProps = {} as any }) {
   const [form] = Form.useForm();
 
   React.useEffect(() => {

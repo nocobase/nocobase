@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Form } from 'antd';
+import { Tooltip, Form } from 'antd';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormFieldGridModel } from '../FormFieldGridModel';
 import { FieldModelRenderer } from '../../../fields';
@@ -31,12 +31,36 @@ export class FormItemModel extends FieldModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const { showLabel, label } = this.getProps();
-    console.log(this);
+    const { showLabel, label, labelWrap, colon, labelWidth, ...restProps } = this.getProps();
+    const renderLabel = () => {
+      if (!showLabel) return null;
+      if (labelWrap) {
+        return label;
+      }
+      // labelWrap = false → 省略 + tooltip
+      return (
+        <Tooltip title={label}>
+          <span
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'inline-block',
+              maxWidth: (labelWidth || 120) - 20,
+              verticalAlign: 'middle',
+            }}
+          >
+            {label}
+          </span>
+          {colon && <span style={{ marginLeft: 4 }}>:</span>}
+        </Tooltip>
+      );
+    };
+
     return (
-      <FormItem {...this.props} label={showLabel ? label : ''}>
+      <Form.Item {...restProps} labelCol={{ style: { width: labelWidth || 120 } }} label={renderLabel()} colon={false}>
         <FieldModelRenderer model={fieldModel} />
-      </FormItem>
+      </Form.Item>
     );
   }
 }
