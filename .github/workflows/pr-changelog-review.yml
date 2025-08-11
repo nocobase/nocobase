@@ -124,7 +124,7 @@ jobs:
           EN=$(echo "$CHANGELOG" | jq -r .en)
           ZH=$(echo "$CHANGELOG" | jq -r .zh)
 
-          REVIEW=$(curl -s "https://models.github.ai/inference/chat/completions" \
+          RESPONSE=$(curl -s "https://models.github.ai/inference/chat/completions" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -d "{
@@ -135,6 +135,8 @@ jobs:
               ]
             }" | jq -r '.choices[0].message.content')
 
+          echo "API RESPONSE: $RESPONSE"
+          REVIEW=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
           echo "review<<EOF" >> $GITHUB_OUTPUT
           echo "$REVIEW" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
