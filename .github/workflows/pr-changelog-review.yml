@@ -118,7 +118,7 @@ jobs:
         if: steps.check.outputs.missing == 'none'
         id: review
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           CHANGELOG: ${{ steps.extract.outputs.result }}
         run: |
           EN=$(echo "$CHANGELOG" | jq -r .en)
