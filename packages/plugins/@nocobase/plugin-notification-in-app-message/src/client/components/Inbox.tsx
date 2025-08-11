@@ -19,7 +19,7 @@
 import { observer } from '@formily/reactive-react';
 import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
 import { MobilePopup } from '@nocobase/plugin-mobile/client';
-import { Badge, Button, ConfigProvider, Drawer, theme, Tooltip } from 'antd';
+import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { FC, useCallback, useEffect, useState } from 'react';
 import { useLocalTranslation } from '../../locale';
@@ -28,6 +28,7 @@ import {
   fetchChannels,
   inboxVisible,
   messageMapObs,
+  selectedChannelNameObs,
   unreadMsgsCountObs,
   updateUnreadMsgsCount,
   userIdObs,
@@ -91,6 +92,28 @@ const InnerInbox = (props) => {
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
 
+  const onMessageCreated = useCallback(({ detail }: CustomEvent) => {
+    notification.info({
+      message: (
+        <div
+          style={{
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {detail.title}
+        </div>
+      ),
+      description: detail.content.slice(0, 100) + (detail.content.length > 100 ? '...' : ''),
+      onClick: () => {
+        inboxVisible.value = true;
+        selectedChannelNameObs.value = detail.channelName;
+        notification.destroy();
+      },
+    });
+  }, []);
+
   const onMessageUpdated = useCallback(({ detail }: CustomEvent) => {
     messageMapObs.value[detail.id] = detail;
     fetchChannels({ filter: { name: detail.channelName } });
@@ -110,9 +133,11 @@ const InnerInbox = (props) => {
   }, []);
 
   useEffect(() => {
+    app.eventBus.addEventListener('ws:message:in-app-message:created', onMessageCreated);
     app.eventBus.addEventListener('ws:message:in-app-message:updated', onMessageUpdated);
 
     return () => {
+      app.eventBus.removeEventListener('ws:message:in-app-message:created', onMessageCreated);
       app.eventBus.removeEventListener('ws:message:in-app-message:updated', onMessageUpdated);
     };
   }, [app.eventBus, onMessageUpdated]);
