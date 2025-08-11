@@ -289,7 +289,7 @@ function TaskPageContent() {
         load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
       } else {
         load = apiClient.resource(collection).get({
-          ...params,
+          // ...params,
           filterByTk: popupId,
         });
       }
