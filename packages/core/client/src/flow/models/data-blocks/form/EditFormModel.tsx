@@ -132,13 +132,13 @@ EditFormModel.registerFlow({
         }
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.resource.on('refresh', async () => {
-          if (!ctx.form) {
-            return;
+          if (ctx.form) {
+            await ctx.form.resetFields();
           }
-          await ctx.form.resetFields();
-          ctx.form.values = {};
+
           const currentRecord = ctx.model.getCurrentRecord();
           const targetKey = ctx.association?.targetKey;
+
           if (targetKey) {
             ctx.resource.setMeta({
               currentFilterByTk: currentRecord?.[targetKey],
@@ -148,7 +148,7 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.form.setFieldsValue(currentRecord);
+          ctx.form && ctx.form.setFieldsValue(currentRecord);
         });
       },
     },

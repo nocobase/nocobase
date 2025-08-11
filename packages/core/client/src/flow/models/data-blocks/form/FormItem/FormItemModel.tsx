@@ -33,8 +33,6 @@ export class FormItemModel extends FieldModel<{
     const fieldModel = this.subModels.field as FieldModel;
     const { showLabel, label, labelWrap, colon, labelWidth, layout, ...restProps } = this.getProps();
     const effectiveLabelWrap = layout === 'vertical' ? true : labelWrap;
-    console.log(this.getProps());
-
     const renderLabel = () => {
       if (!showLabel) return null;
       if (effectiveLabelWrap) {
