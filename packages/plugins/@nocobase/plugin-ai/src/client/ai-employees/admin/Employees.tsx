@@ -27,6 +27,7 @@ import {
   useCreateActionProps,
   useEditActionProps,
 } from './hooks';
+import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
@@ -62,6 +63,11 @@ const AIEmployeeForm: React.FC<{
         //   label: t('Data sources'),
         //   children: <DataSourceSettings />,
         // },
+        {
+          key: 'knowledgeBase',
+          label: t('KnowledgeBase'),
+          children: <KnowledgeBaseSettings />,
+        },
       ]}
     />
   );

@@ -61,5 +61,27 @@ export default {
       name: 'dataSourceSettings',
       type: 'jsonb',
     },
+    {
+      name: 'enableKnowledgeBase',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
+    },
+    {
+      name: 'knowledgeBasePrompt',
+      type: 'text',
+    },
+
+    /**
+     * knowledgeBase: {
+     *  topK: number;
+     *  score: string;
+     *  knowledgeBaseIds: bigint[];
+     * }
+     */
+    {
+      name: 'knowledgeBase',
+      type: 'jsonb',
+    },
   ],
 };
