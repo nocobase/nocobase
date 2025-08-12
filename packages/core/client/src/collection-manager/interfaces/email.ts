@@ -29,7 +29,7 @@ export class EmailFieldInterface extends CollectionFieldInterface {
   availableTypes = ['string'];
   hasDefaultValue = true;
   validationType = 'string';
-  availableValidationOptions = ['email', 'pattern'];
+  availableValidationOptions = ['min', 'max', 'length', 'email', 'pattern'];
   properties = {
     ...defaultProps,
     unique,

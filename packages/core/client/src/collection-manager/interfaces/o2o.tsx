@@ -206,6 +206,7 @@ export class OHOFieldInterface extends CollectionFieldInterface {
   title = '{{t("One to one (has one)")}}';
   description = '{{t("One to one description")}}';
   isAssociation = true;
+  validationType = 'object';
   default = {
     type: 'hasOne',
     // name,
@@ -386,6 +387,7 @@ export class OBOFieldInterface extends CollectionFieldInterface {
   title = '{{t("One to one (belongs to)")}}';
   description = '{{t("One to one description")}}';
   isAssociation = true;
+  validationType = 'object';
   default = {
     type: 'belongsTo',
     // name,

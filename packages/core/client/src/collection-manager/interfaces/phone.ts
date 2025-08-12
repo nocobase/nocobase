@@ -30,7 +30,7 @@ export class PhoneFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string'];
   validationType = 'string';
-  availableValidationOptions = ['pattern'];
+  availableValidationOptions = ['min', 'max', 'length', 'pattern'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

@@ -21,13 +21,13 @@ export const FIELDS_VALIDATION_OPTIONS = {
     ...DEFAULT_VALIDATION_RULES,
     {
       key: 'max',
-      label: 'Max',
+      label: 'Max value',
       hasValue: true,
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
     {
       key: 'min',
-      label: 'Min',
+      label: 'Min value',
       hasValue: true,
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
     },
