@@ -30,10 +30,10 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     return [JsonInput, {}];
   }
 
-  setProps(componentProps) {
+  setProps(props) {
     this.props = {
       ...this.props,
-      ...componentProps,
+      ...props,
     };
   }
 
@@ -47,7 +47,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
 
   render() {
     const [Component, props = {}] = this.component;
-    return <Component {...this.getProps()} {...props} />;
+    return <Component {...props} {...this.getProps()} />;
   }
 }
 
