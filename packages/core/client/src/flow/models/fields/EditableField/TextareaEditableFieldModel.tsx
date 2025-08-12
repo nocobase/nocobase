@@ -14,8 +14,8 @@ import { largeField } from '@nocobase/flow-engine';
 export class TextareaEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea'];
 
-  setComponentProps(componentProps) {
-    super.setComponentProps({
+  setProps(componentProps) {
+    super.setProps({
       ...componentProps,
       autoSize: {
         maxRows: 10,
