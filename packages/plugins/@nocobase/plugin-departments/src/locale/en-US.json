@@ -31,5 +31,7 @@
   "The department has members, please remove them first": "The department has members, please remove them first",
   "Main": "Main",
   "Set as main department": "Set as main department",
-  "This field is currently not supported for use in form blocks.": "This field is currently not supported for use in form blocks."
+  "This field is currently not supported for use in form blocks.": "This field is currently not supported for use in form blocks.",
+  "Show main department set": "Show main department set",
+  "Click to set main department": "Click to set main department"
 }

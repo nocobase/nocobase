@@ -183,3 +183,34 @@ export const fieldComponent: any = {
     };
   },
 };
+
+export const showMainDepartmentSet = {
+  name: 'showMainDepartmentSet',
+  type: 'switch',
+  useComponentProps() {
+    const { t } = useDepartmentTranslation();
+    const field = useField<Field>();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const { dn } = useDesignable();
+    return {
+      title: t('Show main department set'),
+      checked: fieldSchema['x-component-props']?.showMainDepartmentSet,
+      onChange(checked) {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['showMainDepartmentSet'] = checked;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = field.componentProps || {};
+        field.componentProps.showMainDepartmentSet = checked;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      },
+    };
+  },
+};

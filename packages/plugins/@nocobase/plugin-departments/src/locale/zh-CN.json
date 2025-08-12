@@ -31,5 +31,7 @@
   "The department has members, please remove them first": "部门下有成员，请先移除",
   "Main": "主属部门",
   "Set as main department": "设置为主属部门",
-  "This field is currently not supported for use in form blocks.": "该字段目前不支持在表单区块中使用。"
+  "This field is currently not supported for use in form blocks.": "该字段目前不支持在表单区块中使用。",
+  "Show main department set": "显示主部门设置",
+  "Click to set main department": "点击设置主部门"
 }

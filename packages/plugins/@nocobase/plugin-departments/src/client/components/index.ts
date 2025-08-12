@@ -20,3 +20,4 @@ export * from './ReadOnlyAssociationField';
 export * from './UserDepartmentsField';
 export * from './UserMainDepartmentField';
 export * from './DepartmentOwnersField';
+export * from './DepartmentField';
