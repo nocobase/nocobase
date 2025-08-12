@@ -10,7 +10,7 @@ import { escapeT, largeField } from '@nocobase/flow-engine';
 import { connect, mapReadPretty } from '@formily/react';
 import { css, FormFieldModel } from '@nocobase/client';
 import React from 'react';
-import { MapComponent } from '../../components/MapComponent';
+import { MapComponent } from './MapComponent';
 import { PointReadPretty } from './MapReadPrettyFieldModel';
 
 const className = css`
