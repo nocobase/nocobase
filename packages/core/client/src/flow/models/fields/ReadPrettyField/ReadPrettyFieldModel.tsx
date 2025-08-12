@@ -19,10 +19,7 @@ export class ReadPrettyFieldModel extends FieldModel {
   }
 
   setProps(props) {
-    this.props = {
-      ...this.props,
-      ...props,
-    };
+    Object.assign(this.props, props);
   }
 
   // @reactive
@@ -98,7 +95,7 @@ ReadPrettyFieldModel.registerFlow({
         if (collectionField.enum.length) {
           ctx.model.setProps({ dataSource: collectionField.enum });
         }
-        ctx.model.setProps({ value: ctx.model.getValue() });
+        ctx.model.setProps({ value: ctx.model.getValue() || ctx.model.getProps().value });
       },
     },
     model: {
