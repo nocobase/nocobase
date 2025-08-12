@@ -24,9 +24,8 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
   ];
   // @reactive
   public render() {
-    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc } = this.props;
+    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc, value } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
-    const value = this.getValue();
     let formattedValue = '';
     if (value) {
       const day = dayjs(value);

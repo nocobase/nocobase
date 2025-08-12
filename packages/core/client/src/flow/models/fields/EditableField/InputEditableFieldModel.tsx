@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class InputEditableFieldModel extends FormFieldModel {
@@ -16,3 +16,26 @@ export class InputEditableFieldModel extends FormFieldModel {
     return [Input, {}];
   }
 }
+
+InputEditableFieldModel.registerFlow({
+  key: 'inputFieldSettings',
+  sort: 400,
+  steps: {
+    init: {
+      handler(ctx) {
+        if (ctx.model.collectionField.interface === 'email') {
+          const props = ctx.model.parent.getProps();
+          const rules = [...(props.rules || [])];
+          if (!rules.some((rule) => rule.type === 'email')) {
+            rules.push({
+              type: 'email',
+              message: ctx.t('The field value is not a email format'),
+            });
+          }
+
+          ctx.model.parent.setProps({ rules });
+        }
+      },
+    },
+  },
+});

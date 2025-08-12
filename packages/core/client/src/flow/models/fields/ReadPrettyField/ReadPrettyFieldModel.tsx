@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, reactive } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 
@@ -18,14 +18,15 @@ export class ReadPrettyFieldModel extends FieldModel {
     return this.context.fieldValue;
   }
 
+  setProps(props) {
+    Object.assign(this.props, props);
+  }
+
   // @reactive
   public render() {
-    const value = this.getValue();
-    const { prefix, suffix } = this.props;
+    const { prefix, suffix, value } = this.props;
     const dataType = this.collectionField?.dataType;
-
     let content = '';
-
     if (value === null || value === undefined) {
       content = ''; // null/undefined 显示为空
     } else {
@@ -94,6 +95,7 @@ ReadPrettyFieldModel.registerFlow({
         if (collectionField.enum.length) {
           ctx.model.setProps({ dataSource: collectionField.enum });
         }
+        ctx.model.setProps({ value: ctx.model.getValue() || ctx.model.getProps().value });
       },
     },
     model: {

@@ -6,11 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
-import { castArray } from 'lodash';
+import { observable } from '@formily/reactive';
 import React from 'react';
 import { EditableAssociationFieldModel } from './EditableAssociationFieldModel';
 
@@ -38,19 +37,18 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
-  const field = currentModel.subModels.field as FlowModel;
+  const field: any =
+    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.context.defineProperty('fieldValue', {
-    get: () => option?.[fieldNames.label],
-  });
+  fieldModel.setProps({ value: option?.[fieldNames.label] });
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
-function LazySelect(props) {
+export function LazySelect(props) {
   const { fieldNames, value, multiple, options, ...others } = props;
   const realOptions =
     options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
@@ -75,89 +73,29 @@ function LazySelect(props) {
   );
 }
 
-const AssociationSelect = connect(
-  (props: any) => {
-    return <LazySelect {...props} />;
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-      };
-    },
-  ),
-  mapReadPretty((props) => {
-    const currentModel: any = useFlowModel();
-
-    const { fieldNames, value } = props;
-    if (!value) {
-      return;
-    }
-    const field = currentModel.subModels.field as FlowModel;
-    const key = value?.[fieldNames.value];
-    const fieldModel = field.createFork({}, key);
-    fieldModel.context.defineProperty('record', {
-      get: () => value,
-    });
-    fieldModel.context.defineProperty('fieldValue', {
-      get: () => value?.[fieldNames.label],
-    });
-
-    const arrayValue = castArray(value);
-
-    return (
-      <>
-        {arrayValue.map((v, index) => {
-          const key = `${index}`;
-          const fieldModel = field.createFork({}, key);
-          fieldModel.context.defineProperty('record', {
-            get: () => v,
-          });
-          fieldModel.context.defineProperty('fieldValue', {
-            get: () => v?.[fieldNames.label],
-          });
-          fieldModel.context.defineProperty('recordIndex', {
-            get: () => index,
-          });
-
-          const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
-          return (
-            <React.Fragment key={index}>
-              {index > 0 && ', '}
-              {content}
-            </React.Fragment>
-          );
-        })}
-      </>
-    );
-  }),
-);
-
 export class SelectEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
-  dataSource;
   declare resource: MultiRecordResource;
+  selectProps = observable({} as any);
 
   set onPopupScroll(fn) {
-    this.field.setComponentProps({ onPopupScroll: fn });
+    this.setProps({ onPopupScroll: fn });
   }
   set onDropdownVisibleChange(fn) {
-    this.field.setComponentProps({ onDropdownVisibleChange: fn });
+    this.setProps({ onDropdownVisibleChange: fn });
   }
   set onSearch(fn) {
-    this.field.setComponentProps({ onSearch: fn });
+    this.setProps({ onSearch: fn });
   }
+
   setDataSource(dataSource) {
-    this.field.dataSource = dataSource;
+    this.selectProps.dataSource = dataSource;
   }
   getDataSource() {
-    return this.field.dataSource;
+    return this.selectProps.dataSource;
   }
   get component() {
-    return [AssociationSelect, {}];
+    return [LazySelect, { options: this.selectProps.dataSource }];
   }
 }
 
@@ -175,13 +113,12 @@ SelectEditableAssociationFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
+        const labelFieldName = ctx.model.props.fieldNames.label;
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
             ctx.model.dispatchEvent('dropdownOpen', {
               apiClient: ctx.app.apiClient,
-              field: ctx.model.field,
               form: ctx.model.form,
             });
           } else {
@@ -193,14 +130,12 @@ SelectEditableAssociationFieldModel.registerFlow({
           ctx.model.dispatchEvent('popupScroll', {
             event: e,
             apiClient: ctx.app.apiClient,
-            field: ctx.model.field,
           });
         };
         ctx.model.onSearch = (searchText) => {
           ctx.model.dispatchEvent('search', {
             searchText,
             apiClient: ctx.app.apiClient,
-            field: ctx.model.field,
           });
         };
       },
@@ -215,9 +150,9 @@ SelectEditableAssociationFieldModel.registerFlow({
   steps: {
     setScope: {
       async handler(ctx, params) {
-        const labelFieldValue = ctx.model.field.componentProps.fieldNames.value;
+        const labelFieldValue = ctx.model.props.fieldNames.value;
         const resource = ctx.model.resource;
-        const dataSource = ctx.model.field.dataSource;
+        const dataSource = ctx.model.getDataSource();
         resource.setPage(1);
         await resource.refresh();
         const { count } = resource.getMeta();
@@ -287,7 +222,7 @@ SelectEditableAssociationFieldModel.registerFlow({
       async handler(ctx, params) {
         try {
           const targetCollection = ctx.model.collectionField.targetCollection;
-          const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
+          const labelFieldName = ctx.model.props.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
 
           const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(

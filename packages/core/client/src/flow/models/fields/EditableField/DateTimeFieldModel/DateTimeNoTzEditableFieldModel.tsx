@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DatePicker } from '@formily/antd-v5';
+import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
-const DatePickerCom = (props) => {
+export const DateTimeNoTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', onChange, ...rest } = props;
   const parsedValue = value ? dayjs(value) : null;
   return (
@@ -36,6 +36,6 @@ const DatePickerCom = (props) => {
 export class DateTimeNoTzEditableFieldModel extends DateTimeFieldModel {
   static supportedFieldInterfaces = ['datetimeNoTz'];
   get component() {
-    return [DatePickerCom, {}];
+    return [DateTimeNoTzPicker, {}];
   }
 }

@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
 
 export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {

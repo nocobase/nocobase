@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction, FlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 
 export const layout = defineAction({
@@ -97,5 +97,12 @@ export const layout = defineAction({
   },
   handler(ctx, params) {
     ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
+    (ctx.model.subModels.grid as FlowModel).findSubModel('items', (m) => {
+      m.setProps({
+        ...params,
+        labelWidth: params.layout === 'vertical' ? '100%' : params.labelWidth,
+        labelWrap: params.layout === 'vertical' ? true : params.labelWrap,
+      });
+    });
   },
 });

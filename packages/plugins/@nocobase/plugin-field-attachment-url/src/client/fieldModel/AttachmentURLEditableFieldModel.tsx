@@ -10,7 +10,7 @@
 import { UploadEditableFieldModel } from '@nocobase/client';
 import { Upload } from '@formily/antd-v5';
 import { UploadOutlined } from '@ant-design/icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { castArray } from 'lodash';
 import { useField } from '@formily/react';
@@ -22,6 +22,14 @@ const CardUpload = (props) => {
       return { url: v };
     }),
   );
+  useEffect(() => {
+    setFileList(
+      castArray(props.value || []).map((v) => {
+        return { url: v };
+      }),
+    );
+  }, [props.value]);
+
   const handleChange = (newFileList) => {
     setFileList(newFileList);
     const file = newFileList[0];

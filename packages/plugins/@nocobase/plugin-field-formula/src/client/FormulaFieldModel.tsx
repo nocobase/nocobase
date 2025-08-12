@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { onFormValuesChange } from '@formily/core';
-import { useField, useForm, useFormEffects } from '@formily/react';
+// import { onFormValuesChange } from '@formily/core';
+// import { useField, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
+import { Form } from 'antd';
 import { Checkbox, DatePicker, FormFieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
@@ -72,41 +73,39 @@ function areValuesEqual(value1, value2) {
 }
 
 function Result(props) {
-  const { value, collectionField, fieldPath, ...others } = props;
+  const { value, collectionField, form, id, ...others } = props;
   const { dataType, expression, engine = 'math.js' } = collectionField.options;
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
-  const currentForm = useForm();
-  const field: any = useField();
+  const watchedValues = Form.useWatch([], form);
+  const fieldPath = Array.isArray(id) ? id?.join('.') : id;
 
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
 
-  useFormEffects(() => {
-    onFormValuesChange((form) => {
-      if ((fieldPath as string).indexOf('.') >= 0 || currentForm?.readPretty) {
-        return;
-      }
-      const scope = toJS(getValuesByFullPath(form.values, field.address.entire));
-      let v;
-      try {
-        v = evaluate(expression, scope);
-        v = v && toDbType(v, dataType);
-      } catch (error) {
-        v = null;
-      }
-      if (v == null && editingValue == null) {
-        setEditingValue(v);
-      }
+  useEffect(() => {
+    if (form?.readPretty) {
+      return;
+    }
+    const scope = toJS(getValuesByFullPath(form.getFieldsValue(), fieldPath));
+    let v;
+    try {
+      v = evaluate(expression, scope);
+      v = v && toDbType(v, dataType);
+    } catch (error) {
+      v = null;
+    }
+    if (v == null && editingValue == null) {
       setEditingValue(v);
-    });
-  });
+    }
+    setEditingValue(v);
+  }, [watchedValues]);
 
   useEffect(() => {
-    if (!areValuesEqual(field.value, editingValue)) {
+    if (!areValuesEqual(value, editingValue)) {
       setTimeout(() => {
-        field.value = editingValue;
+        form.setFieldValue(fieldPath, editingValue);
       });
     }
   }, [editingValue]);
@@ -126,7 +125,7 @@ export class FormulaFieldModel extends FormFieldModel {
       Result,
       {
         collectionField: this.collectionField,
-        fieldPath: this.fieldPath,
+        form: this.form,
       },
     ];
   }

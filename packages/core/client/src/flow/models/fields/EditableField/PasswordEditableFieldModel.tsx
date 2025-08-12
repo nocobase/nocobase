@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Password } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { tval } from '@nocobase/utils/client';
 import { FormFieldModel } from './FormFieldModel';
 
 export class PasswordEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['password'];
   get component() {
-    return [Password, {}];
+    return [Input.Password, {}];
   }
 }
 
@@ -35,7 +35,7 @@ PasswordEditableFieldModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setComponentProps({ placeholder: params.placeholder });
+        ctx.model.setProps({ placeholder: params.placeholder });
       },
     },
     checkStrength: {
@@ -51,7 +51,7 @@ PasswordEditableFieldModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setComponentProps({ checkStrength: params.checkStrength || false });
+        ctx.model.setProps({ checkStrength: params.checkStrength || false });
       },
     },
   },

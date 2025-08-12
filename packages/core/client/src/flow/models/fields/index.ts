@@ -9,3 +9,4 @@
 
 export * from './EditableField';
 export * from './ReadPrettyField';
+export * from './FieldModelRenderer';

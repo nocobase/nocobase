@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { Tag } from 'antd';
-import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 interface FieldNames {
@@ -46,8 +45,7 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
 
   // @reactive
   public render() {
-    const value = this.getValue();
-    const { dataSource = [] } = this.props;
+    const { dataSource = [], value } = this.props;
     const currentOptions = getCurrentOptions(value, dataSource, fieldNames);
     const content: any =
       value &&
