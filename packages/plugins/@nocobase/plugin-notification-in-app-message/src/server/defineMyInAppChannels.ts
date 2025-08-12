@@ -86,7 +86,6 @@ export default function defineMyInAppChannels(app: Application) {
           const channelsRepo = app.db.getRepository(ChannelsDefinition.name);
           try {
             const channelsRes = channelsRepo.find({
-              logging: console.log,
               limit,
               attributes: {
                 include: [
