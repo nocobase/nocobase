@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const NAMESPACE = 'file-manager';
+import { TASK_STATUS } from './constants';
 
-export const INVALID_FILENAME_CHARS = '<>?*~\\/';
+export type TaskId = string;
+
+export type TaskStatus = (typeof TASK_STATUS)[keyof typeof TASK_STATUS];
