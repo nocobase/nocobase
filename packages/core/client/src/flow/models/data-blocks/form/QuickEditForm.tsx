@@ -72,7 +72,7 @@ export class QuickEditForm extends FlowModel {
       placement: 'rightTop',
       styles: {
         body: {
-          maxWidth: 400,
+          width: 400,
         },
       },
       content: (popover) => {
@@ -131,7 +131,7 @@ export class QuickEditForm extends FlowModel {
             </Form.Item>
           );
         })}
-        <Space>
+        <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             onClick={() => {
               this.viewContainer.close();
