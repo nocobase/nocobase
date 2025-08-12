@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const NAMESPACE = 'file-manager';
+import { CollectionOptions } from '@nocobase/database';
 
-export const INVALID_FILENAME_CHARS = '<>?*~\\/';
+import options from '../../common/collections/asyncTasks';
+
+export default options as CollectionOptions;
