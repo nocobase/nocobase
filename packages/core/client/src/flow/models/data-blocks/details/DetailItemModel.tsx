@@ -9,7 +9,7 @@
 
 import { BaseItem } from '@formily/antd-v5';
 import { observable } from '@formily/reactive';
-import { escapeT, reactive } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
@@ -42,9 +42,10 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.context.defineProperty('value', {
-      get: () => value,
-    });
+    // fieldModel.context.defineProperty('value', {
+    //   get: () => value,
+    // });
+    fieldModel.setProps({ value: value });
     return (
       <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
         {fieldModel.render()}
