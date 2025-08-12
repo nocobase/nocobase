@@ -76,36 +76,6 @@ describe('useVariableTreeData', () => {
     });
   });
 
-  describe('Context selector item building', () => {
-    it('should build context selector item from selected options', () => {
-      const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
-
-      const selectedOptions = [
-        { label: 'User', value: 'user', isLeaf: false, fullPath: ['user'] },
-        { label: 'Name', value: 'name', isLeaf: true, fullPath: ['name'] },
-      ];
-
-      const contextItem = result.current.buildContextSelectorItemFromSelectedOptions(selectedOptions);
-
-      expect(contextItem).toEqual({
-        label: 'Name',
-        value: 'name',
-        isLeaf: true,
-        meta: undefined,
-        children: undefined,
-        loading: undefined,
-        fullPath: ['user', 'name'],
-      });
-    });
-
-    it('should return null for empty selected options', () => {
-      const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));
-
-      const contextItem = result.current.buildContextSelectorItemFromSelectedOptions([]);
-      expect(contextItem).toBeNull();
-    });
-  });
-
   describe('Utility functions', () => {
     it('should provide loadInitialOptions function', () => {
       const { result } = renderHook(() => useVariableTreeData({ metaTree: [] }));

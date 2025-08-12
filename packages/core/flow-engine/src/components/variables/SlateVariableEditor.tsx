@@ -21,7 +21,7 @@ import type {
   ParagraphElement,
 } from './types';
 import type { MetaTreeNode } from '../../flowContext';
-import { parseValueToPath, buildContextSelectorItemFromPath } from './utils';
+import { parseValueToPath } from './utils';
 import { uid } from '@formily/shared';
 
 type CustomElement = VariableElement | VariableTriggerElement | ParagraphElement;
@@ -139,9 +139,9 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
         const path = parseValueToPath(variableValue);
 
         // 尝试构建元数据信息
-        let contextSelectorItem: ContextSelectorItem | undefined = undefined;
+        const contextSelectorItem: ContextSelectorItem | undefined = undefined;
         if (path && resolvedMetaTree) {
-          contextSelectorItem = buildContextSelectorItemFromPath(path, resolvedMetaTree) || undefined;
+          //TODO: get current selectorItem
         }
 
         children.push({
@@ -360,7 +360,7 @@ const VariableElementComponent: React.FC<RenderElementProps & { metaTree?: MetaT
     // 如果没有存储的 meta，尝试从 metaTree 动态构建
     if (metaTree && variableElement.value) {
       const path = parseValueToPath(variableElement.value);
-      return path ? buildContextSelectorItemFromPath(path, metaTree) : null;
+      // TODO: build current selected
     }
 
     return null;

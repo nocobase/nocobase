@@ -13,7 +13,7 @@ import type { VariableInputProps, ContextSelectorItem } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
 import { VariableTag } from './VariableTag';
 import { isVariableValue } from './utils';
-import { createFinalConverters, buildContextSelectorItemFromPath } from './utils';
+import { createFinalConverters } from './utils';
 
 const compactStyle = {
   display: 'flex' as const,
@@ -29,7 +29,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   ...restProps
 }) => {
   const [currentContextSelectorItem, setCurrentContextSelectorItem] = useState<ContextSelectorItem | null>(null);
-  const { resolveValueFromPath, resolvePathFromValue } = useMemo(() => {
+  const { resolveValueFromPath, resolvePathFromValue, renderInputComponent } = useMemo(() => {
     return createFinalConverters(propConverters);
   }, [propConverters]);
 
@@ -42,7 +42,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (isVariableValue(value) && Array.isArray(metaTree)) {
       const path = resolvePathFromValue?.(value);
       if (path) {
-        return buildContextSelectorItemFromPath(path, metaTree);
+        //TODO: current select item
       }
     }
 
@@ -50,11 +50,9 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   }, [currentContextSelectorItem, value, metaTree, resolvePathFromValue]);
 
   const ValueComponent = useMemo(() => {
-    if (resolvedContextSelectorItem == null && isVariableValue(value)) {
-      return VariableTag;
-    }
+    const Component = renderInputComponent(resolvedContextSelectorItem);
     const CustomComponent = resolvedContextSelectorItem?.meta?.render;
-    const finalComponent = CustomComponent || (isVariableValue(value) ? VariableTag : Input);
+    const finalComponent = Component || CustomComponent || (isVariableValue(value) ? VariableTag : Input);
     return finalComponent;
   }, [resolvedContextSelectorItem, value]);
 
