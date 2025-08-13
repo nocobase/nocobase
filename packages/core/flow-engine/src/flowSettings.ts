@@ -29,7 +29,7 @@ export interface FlowSettingsOpenOptions {
   /** 指定打开的步骤 key（配合 flowKey 使用） */
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
-  openAs?: 'dialog' | 'drawer';
+  uiMode?: 'dialog' | 'drawer';
 }
 
 export class FlowSettings {
@@ -374,7 +374,7 @@ export class FlowSettings {
    * @returns {Promise<unknown>} 返回一个 Promise，实际实现后将解析为相应结果
    */
   public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
-    const { model, flowKey, stepKey, openAs = 'dialog' } = options;
+    const { model, flowKey, stepKey, uiMode = 'dialog' } = options;
     return await openStepSettings({
       model,
       flowKey,
