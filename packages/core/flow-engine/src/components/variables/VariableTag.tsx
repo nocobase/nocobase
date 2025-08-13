@@ -51,21 +51,21 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   onClear,
   className,
   style,
-  contextSelectorItem,
+  metaTreeNode,
   metaTree,
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
 
   const { data: displayedValue } = useRequest(
     async () => {
-      if (contextSelectorItem) {
-        return await buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
+      if (metaTreeNode) {
+        return await buildFullTagTitle(metaTreeNode, resolvedMetaTree);
       }
       if (!value) return String(value);
       const path = parseValueToPath(value);
       return path ? path.join('/') : String(value);
     },
-    { refreshDeps: [resolvedMetaTree, value, contextSelectorItem] },
+    { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );
 
   return (

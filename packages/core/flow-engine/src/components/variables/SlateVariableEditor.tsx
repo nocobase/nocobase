@@ -149,7 +149,7 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
           value: variableValue,
           meta: contextSelectorItem,
           children: [{ text: '' }], // Slate 要求 void 元素有空文本子节点
-        } as VariableElement);
+        } as unknown as VariableElement);
 
         lastIndex = match.index + match[0].length;
       }
@@ -200,7 +200,7 @@ export const SlateVariableEditor: React.FC<SlateVariableEditorProps> = ({
   );
 
   const handleVariableSelectFromTrigger = useCallback(
-    (triggerId: string, value: string, item: ContextSelectorItem) => {
+    (triggerId: string, value: string, item: MetaTreeNode) => {
       const [triggerMatch] = Editor.nodes(editor, {
         match: (n) =>
           SlateElement.isElement(n) &&
@@ -351,7 +351,6 @@ const VariableElementComponent: React.FC<RenderElementProps & { metaTree?: MetaT
 }) => {
   const variableElement = element as VariableElement;
 
-  // 动态构建 contextSelectorItem，优先使用存储的 meta，否则从 metaTree 构建
   const contextSelectorItem = React.useMemo(() => {
     if (variableElement.meta) {
       return variableElement.meta;
@@ -370,7 +369,7 @@ const VariableElementComponent: React.FC<RenderElementProps & { metaTree?: MetaT
     <span {...attributes} contentEditable={false}>
       <InlineVariableTag
         value={variableElement.value}
-        contextSelectorItem={contextSelectorItem || undefined}
+        metaTreeNode={contextSelectorItem}
         metaTree={metaTree}
         style={{
           marginLeft: 2,

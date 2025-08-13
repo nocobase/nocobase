@@ -9,15 +9,70 @@
 
 import React, { useMemo, useCallback, useState } from 'react';
 import { Input, Space } from 'antd';
-import type { VariableInputProps, ContextSelectorItem } from './types';
+import type { VariableInputProps } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
 import { VariableTag } from './VariableTag';
 import { isVariableValue } from './utils';
 import { createFinalConverters } from './utils';
+import { MetaTreeNode } from '../../flowContext';
+import { useRequest } from 'ahooks';
 
 const compactStyle = {
   display: 'flex' as const,
   alignItems: 'flex-start' as const,
+};
+
+/**
+ * 根据路径数组在metaTree中查找对应的MetaTreeNode
+ * @param metaTree MetaTreeNode数组
+ * @param targetPath 目标路径数组，例如 ["user", "profile"]
+ * @returns 找到的MetaTreeNode或null
+ */
+const findMetaTreeNodeByPath = (metaTree: MetaTreeNode[], targetPath: string[]): MetaTreeNode | null => {
+  if (!targetPath || targetPath.length === 0) {
+    return null;
+  }
+
+  // 递归搜索函数
+  const searchInNodes = (nodes: MetaTreeNode[], path: string[]): MetaTreeNode | null => {
+    for (const node of nodes) {
+      // 检查当前节点的paths是否匹配目标路径
+      if (node.paths && arraysEqual(node.paths, path)) {
+        return node;
+      }
+
+      // 如果当前节点的路径是目标路径的前缀，则继续在子节点中搜索
+      if (node.paths && isPathPrefix(node.paths, path) && node.children) {
+        // 同步子节点：直接搜索
+        if (Array.isArray(node.children)) {
+          const found = searchInNodes(node.children, path);
+          if (found) return found;
+        }
+        // 异步子节点：暂时跳过，因为这是一个同步函数
+        // 在实际使用中，如果遇到异步子节点，可能需要在组件层面处理
+      }
+    }
+    return null;
+  };
+
+  return searchInNodes(metaTree, targetPath);
+};
+
+/**
+ * 检查两个数组是否相等
+ */
+const arraysEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  return a.every((val, index) => val === b[index]);
+};
+
+/**
+ * 检查pathA是否是pathB的前缀
+ * 例如 ["user"] 是 ["user", "profile"] 的前缀
+ */
+const isPathPrefix = (pathA: string[], pathB: string[]): boolean => {
+  if (pathA.length >= pathB.length) return false;
+  return pathA.every((val, index) => val === pathB[index]);
 };
 
 const VariableInputComponent: React.FC<VariableInputProps> = ({
@@ -28,33 +83,41 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   showValueComponent = true,
   ...restProps
 }) => {
-  const [currentContextSelectorItem, setCurrentContextSelectorItem] = useState<ContextSelectorItem | null>(null);
+  const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
   const { resolveValueFromPath, resolvePathFromValue, renderInputComponent } = useMemo(() => {
     return createFinalConverters(propConverters);
   }, [propConverters]);
+  const { data: resolvedMetaTree, loading } = useRequest(
+    async () => {
+      if (typeof metaTree === 'function') {
+        return await metaTree();
+      }
+      return metaTree;
+    },
+    { refreshDeps: [metaTree] },
+  );
 
-  // 当value存在但contextSelectorItem为null时，尝试从value重建contextSelectorItem
-  const resolvedContextSelectorItem = useMemo(() => {
-    if (currentContextSelectorItem) {
-      return currentContextSelectorItem;
+  const resolvedMetaTreeNode = useMemo(() => {
+    if (currentMetaTreeNode) {
+      return currentMetaTreeNode;
     }
 
-    if (isVariableValue(value) && Array.isArray(metaTree)) {
+    if (isVariableValue(value) && Array.isArray(resolvedMetaTree)) {
       const path = resolvePathFromValue?.(value);
       if (path) {
-        //TODO: current select item
+        return findMetaTreeNodeByPath(resolvedMetaTree, path);
       }
     }
 
     return null;
-  }, [currentContextSelectorItem, value, metaTree, resolvePathFromValue]);
+  }, [currentMetaTreeNode, value, resolvedMetaTree, resolvePathFromValue]);
 
   const ValueComponent = useMemo(() => {
-    const Component = renderInputComponent(resolvedContextSelectorItem);
-    const CustomComponent = resolvedContextSelectorItem?.meta?.render;
+    const Component = renderInputComponent?.(resolvedMetaTreeNode);
+    const CustomComponent = resolvedMetaTreeNode?.render;
     const finalComponent = Component || CustomComponent || (isVariableValue(value) ? VariableTag : Input);
     return finalComponent;
-  }, [resolvedContextSelectorItem, value]);
+  }, [renderInputComponent, resolvedMetaTreeNode, value]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
@@ -65,9 +128,9 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   );
 
   const handleVariableSelect = useCallback(
-    (variableValue: string, contextSelectorItem?: ContextSelectorItem) => {
-      setCurrentContextSelectorItem(contextSelectorItem);
-      const finalValue = resolveValueFromPath?.(contextSelectorItem) || variableValue;
+    (variableValue: string, metaTreeNode?: MetaTreeNode) => {
+      setCurrentMetaTreeNode(metaTreeNode);
+      const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
       onChange?.(finalValue);
     },
     [onChange, resolveValueFromPath],
@@ -79,7 +142,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (disabled) {
       return;
     }
-    setCurrentContextSelectorItem(null);
+    setCurrentMetaTreeNode(null);
     onChange?.(null);
   }, [onChange, disabled]);
 
@@ -95,12 +158,11 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       disabled,
     };
 
-    // 只有 VariableTag 才接收特殊的自定义属性
     if (ValueComponent === VariableTag) {
       return {
         ...baseProps,
         onClear: handleClear,
-        contextSelectorItem: resolvedContextSelectorItem,
+        metaTreeNode: resolvedMetaTreeNode,
         metaTree,
         style: stableProps.style,
       };
@@ -110,16 +172,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       ...baseProps,
       ...stableProps.otherProps,
     };
-  }, [
-    value,
-    handleInputChange,
-    disabled,
-    handleClear,
-    resolvedContextSelectorItem,
-    metaTree,
-    ValueComponent,
-    stableProps,
-  ]);
+  }, [value, handleInputChange, disabled, handleClear, resolvedMetaTreeNode, metaTree, ValueComponent, stableProps]);
 
   const finalStyle = useMemo(
     () => ({
@@ -129,11 +182,15 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     [restProps.style],
   );
 
+  if (loading) {
+    return null;
+  }
+
   return (
     <Space.Compact style={finalStyle}>
       {showValueComponent && <ValueComponent {...inputProps} />}
       <FlowContextSelector
-        metaTree={metaTree}
+        metaTree={resolvedMetaTree}
         value={value}
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}

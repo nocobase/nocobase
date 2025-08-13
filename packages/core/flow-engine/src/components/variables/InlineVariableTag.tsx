@@ -11,7 +11,6 @@ import React from 'react';
 import { Tag } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { parseValueToPath, buildFullTagTitle } from './utils';
-import type { ContextSelectorItem } from './types';
 import type { MetaTreeNode } from '../../flowContext';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
@@ -22,7 +21,7 @@ export interface InlineVariableTagProps {
   className?: string;
   style?: React.CSSProperties;
   allowEdit?: boolean;
-  contextSelectorItem?: ContextSelectorItem;
+  metaTreeNode: MetaTreeNode;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   maxWidth?: string | number;
 }
@@ -33,7 +32,7 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
   className,
   style,
   allowEdit = true,
-  contextSelectorItem,
+  metaTreeNode,
   metaTree,
   maxWidth = '400px',
 }) => {
@@ -41,17 +40,15 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
 
   const { data: displayedValue } = useRequest(
     async () => {
-      // 优先使用 contextSelectorItem 和 metaTree 来构建完整的 title 路径
-      if (contextSelectorItem) {
-        return await buildFullTagTitle(contextSelectorItem, resolvedMetaTree);
+      if (metaTreeNode) {
+        return await buildFullTagTitle(metaTreeNode, resolvedMetaTree);
       }
 
-      // 后备方案：从 value 解析路径
       if (!value) return String(value);
       const path = parseValueToPath(value);
       return path ? path.join('/') : String(value);
     },
-    { refreshDeps: [resolvedMetaTree, value, contextSelectorItem] },
+    { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );
 
   return (

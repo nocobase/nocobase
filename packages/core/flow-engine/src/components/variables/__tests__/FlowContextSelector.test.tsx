@@ -289,7 +289,6 @@ describe('FlowContextSelector', () => {
 
       expect(customFormatPathToValue).toHaveBeenCalled();
       // Should fallback to default formatPathToValue
-      // Fixed: Now correctly passes ContextSelectorItem to formatPathToValue
       expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', expect.any(Object));
     });
   });

@@ -27,7 +27,7 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 **作用**: 当一个上下文节点被选中后，将其信息转换成最终的外部 value
 
 **参数**: 
-- `contextSelectorItem`: 选中的 ContextSelectorItem 对象
+- `metaTreeNode`: 选中的 MetaTreeNode 对象
 
 **返回值**: any
 

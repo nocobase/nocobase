@@ -74,7 +74,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       if (isLeaf) {
-        onChange?.(formattedValue);
+        onChange?.(formattedValue, lastOption);
         return;
       }
 
@@ -84,7 +84,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        onChange?.(formattedValue);
+        onChange?.(formattedValue, lastOption);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开

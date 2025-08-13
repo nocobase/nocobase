@@ -28,7 +28,7 @@ export const parseValueToPath = (value: string): string[] | undefined => {
   return pathString.split('.');
 };
 
-export const formatPathToValue = (item: ContextSelectorItem): string => {
+export const formatPathToValue = (item: MetaTreeNode): string => {
   const path = item?.paths || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
@@ -121,7 +121,7 @@ export const createDefaultConverters = (): Converters => {
       return parseValueToPath(value);
     },
 
-    resolveValueFromPath: (item: ContextSelectorItem) => {
+    resolveValueFromPath: (item: MetaTreeNode) => {
       return formatPathToValue(item);
     },
   };
@@ -136,7 +136,7 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
     const customResolveValueFromPath = propConverters.resolveValueFromPath;
     return {
       ...mergedConverters,
-      resolveValueFromPath: (item: ContextSelectorItem) => {
+      resolveValueFromPath: (item: MetaTreeNode) => {
         const ret = customResolveValueFromPath(item);
         return ret === undefined ? formatPathToValue(item) : ret;
       },
@@ -146,24 +146,21 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   return mergedConverters;
 };
 
-// 根据ContextSelectorItem的paths和metaTree构建完整的标题路径
-export const buildFullTagTitle = async (
-  contextSelectorItem: ContextSelectorItem,
-  metaTree?: MetaTreeNode[],
-): Promise<string> => {
-  if (!contextSelectorItem?.paths || contextSelectorItem.paths.length === 0) {
-    return contextSelectorItem?.label || '';
+// 根据MetaTreeNode的paths和metaTree构建完整的标题路径
+export const buildFullTagTitle = async (metaTreeNode: MetaTreeNode, metaTree?: MetaTreeNode[]): Promise<string> => {
+  if (!metaTreeNode?.paths || metaTreeNode.paths.length === 0) {
+    return metaTreeNode?.title || '';
   }
 
   if (!metaTree) {
-    return contextSelectorItem.paths.join('/');
+    return metaTreeNode.paths.join('/');
   }
 
   // 递归查找路径中每个节点的 title
   const titlePath: string[] = [];
   let currentNodes: MetaTreeNode[] = metaTree;
 
-  for (const segment of contextSelectorItem.paths) {
+  for (const segment of metaTreeNode.paths) {
     const node = currentNodes.find((n) => n.name === segment);
     if (!node) {
       // 如果找不到节点，使用原始名称
