@@ -270,14 +270,14 @@ export class FlowContext {
           const [finalKey, metaOrFactory, fullPath] = targetMeta;
           // 对于异步 meta factory，返回包装节点
           if (typeof metaOrFactory === 'function') {
-            // 构建 parentTitles，这里暂时使用 paths 的前面部分，待加载后会更新为正确的 parentTitles
-            const parentTitles = fullPath.slice(0, -1);
+            // 构建 parentTitles，通过 meta 树逐层读取真实的 title
+            const parentTitles = this.#buildParentTitles(fullPath);
             return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
           }
           // 对于同步 meta 且有 properties，返回子节点
           if (metaOrFactory.properties) {
-            // 构建 parentTitles，包含当前 meta 的 title
-            const parentTitles = [...fullPath.slice(0, -1), metaOrFactory.title];
+            // 构建 parentTitles，通过 meta 树逐层读取真实的 title，包含当前 meta 的 title
+            const parentTitles = [...this.#buildParentTitles(fullPath), metaOrFactory.title];
             const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, parentTitles, metaOrFactory);
             return Array.isArray(childNodes) ? childNodes : [];
           }
@@ -438,6 +438,49 @@ export class FlowContext {
     }
 
     return current;
+  }
+
+  /**
+   * 构建 parentTitles 数组，通过递归查找每个路径层级对应的 meta title
+   * @param propertyPath 属性路径数组，例如 ['aaa', 'bbb', 'ccc']
+   * @param excludeLastLevel 是否排除最后一层，默认为 true（parentTitles 不包含当前节点）
+   * @returns string[] 父级标题数组
+   */
+  #buildParentTitles(propertyPath: string[], excludeLastLevel = true): string[] {
+    if (propertyPath.length === 0) return [];
+
+    const pathToProcess = excludeLastLevel ? propertyPath.slice(0, -1) : propertyPath;
+    if (pathToProcess.length === 0) return [];
+
+    const parentTitles: string[] = [];
+
+    // 从根级开始逐层查找 meta title
+    let currentMetas = this._getPropertiesMeta();
+
+    for (let i = 0; i < pathToProcess.length; i++) {
+      const currentKey = pathToProcess[i];
+      const currentMeta = currentMetas[currentKey];
+
+      if (!currentMeta || typeof currentMeta === 'function') {
+        parentTitles.push(currentKey);
+        break;
+      }
+      // 同步 meta，使用 title
+      parentTitles.push(currentMeta.title || currentKey);
+
+      // 为下一层级准备 meta 映射
+      if (i < pathToProcess.length - 1 && currentMeta.properties && typeof currentMeta.properties !== 'function') {
+        currentMetas = currentMeta.properties as Record<string, PropertyMeta>;
+      } else if (i < pathToProcess.length - 1) {
+        // 如果下一层是异步的或者不存在，无法继续，使用路径名填充剩余部分
+        for (let j = i + 1; j < pathToProcess.length; j++) {
+          parentTitles.push(pathToProcess[j]);
+        }
+        break;
+      }
+    }
+
+    return parentTitles;
   }
 
   #toTreeNode(

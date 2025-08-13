@@ -78,6 +78,16 @@ export default defineConfig({
             { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
           ],
         },
+        {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            {
+              title: 'VariableInput 示例',
+              link: '/examples/variables',
+            },
+          ],
+        },
       ],
       '/examples': [
         {
@@ -195,16 +205,6 @@ export default defineConfig({
               link: '/examples/flow-definition/open-step-settings-dialog',
             },
           ]
-        },
-        {
-          title: 'Variables',
-          type: 'group',
-          children: [
-            {
-              title: 'VariableInput 示例',
-              link: '/examples/variables',
-            },
-          ],
         },
         {
           title: 'FlowAction',

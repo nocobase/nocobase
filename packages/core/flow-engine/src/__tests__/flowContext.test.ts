@@ -1200,7 +1200,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'profile', 'bio'],
-      parentTitles: ['user', 'User Profile'],
+      parentTitles: ['User', 'User Profile'],
       children: undefined,
     });
     expect(profileSubTree[1]).toEqual({
@@ -1210,7 +1210,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'profile', 'avatar'],
-      parentTitles: ['user', 'User Profile'],
+      parentTitles: ['User', 'User Profile'],
       children: undefined,
     });
   });

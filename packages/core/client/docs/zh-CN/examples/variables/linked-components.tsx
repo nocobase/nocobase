@@ -45,6 +45,7 @@ class PluginInteractiveMetaExample extends Plugin {
             <VariableInput
               value={collectionValue}
               onChange={(value) => {
+                setFieldValue(null);
                 setCollectionValue(value);
               }}
               metaTree={() => {
