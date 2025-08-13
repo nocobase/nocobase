@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import { uid } from '@formily/shared';
 import { Application, CreateFormModel, FormFieldGridModel, NumberEditableFieldModel, Plugin } from '@nocobase/client';
 import {
-  FlowContext,
-  VariableInput,
   Converters,
+  CreateModelOptions,
+  FlowContext,
   FlowModelRenderer,
   useFlowContext,
-  CreateModelOptions,
+  VariableInput,
 } from '@nocobase/flow-engine';
 import { Card, Space } from 'antd';
-import { uid } from '@formily/shared';
+import React, { useMemo, useState } from 'react';
 
 class PluginEditableFieldModelExample extends Plugin {
   async load() {
@@ -104,9 +104,9 @@ class PluginEditableFieldModelExample extends Plugin {
         const fieldModel = createFormModel.subModels.grid['subModels'].fields[0];
 
         // 确保字段已创建, 仅这个demo需要，实际场景中field会以及自动在form渲染时创建了
-        if (!fieldModel.field) {
-          fieldModel.field = fieldModel.createField();
-        }
+        // if (!fieldModel.field) {
+        //   fieldModel.field = fieldModel.createField();
+        // }
 
         return fieldModel;
       }, [flowContext]);
