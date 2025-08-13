@@ -11,6 +11,25 @@ import { define, observable } from '@formily/reactive';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import type { FlowModel } from './models';
+
+/**
+ * 打开流程设置的参数接口
+ */
+export interface FlowSettingsOpenOptions {
+  /** 目标模型实例（必填） */
+  model: FlowModel;
+  /** 是否打开预设（preset）步骤的配置 */
+  preset?: boolean;
+  /** 指定打开的单个流程 key（优先级高于 flowKeys） */
+  flowKey?: string;
+  /** 指定同时打开的多个流程 key（当 flowKey 存在时忽略） */
+  flowKeys?: string[];
+  /** 指定打开的步骤 key（配合 flowKey 使用） */
+  stepKey?: string;
+  /** 弹窗展现形式（drawer 或 dialog） */
+  openAs?: 'dialog' | 'drawer';
+}
 
 export class FlowSettings {
   public components: Record<string, any> = {};
@@ -339,5 +358,21 @@ export class FlowSettings {
    */
   public async openStepSettingsDialog(props: StepSettingsDialogProps): Promise<any> {
     return await openStepSettingsDialog(props);
+  }
+
+  /**
+   * 打开流程设置入口（方法签名声明，暂不实现）
+   *
+   * 约定：
+   * - 必须提供 model 实例
+   * - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准
+   * - 当提供 stepKey 时应与某个 flowKey 组合使用
+   * - openAs 控制以对话框或抽屉方式打开
+   *
+   * @param {FlowSettingsOpenOptions} options 打开选项
+   * @returns {Promise<unknown>} 返回一个 Promise，实际实现后将解析为相应结果
+   */
+  public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
+    throw new Error('FlowSettings.open is not implemented yet.');
   }
 }
