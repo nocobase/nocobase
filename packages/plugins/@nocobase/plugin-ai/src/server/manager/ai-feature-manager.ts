@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
+import type {
   AIPluginFeatureManager,
   AIPluginFeatures,
+  KnowledgeBaseFeature,
   VectorDatabaseFeature,
   VectorDatabaseProviderFeature,
+  VectorStoreProviderFeature,
+  PluginFeatureKeys,
 } from '../features';
-import { BasePluginFeatureManager } from '../features/feature-manager';
+import { BasePluginFeatureManager } from '../features';
 
 export class AIPluginFeatureManagerImpl
   extends BasePluginFeatureManager<AIPluginFeatures>
@@ -33,7 +36,28 @@ export class AIPluginFeatureManagerImpl
     return this.features.vectorDatabaseProvider;
   }
 
+  get vectorStoreProvider(): VectorStoreProviderFeature {
+    if (!this.features.vectorStoreProvider) {
+      throw this.featureNotSupportedError('vectorStoreProvider');
+    }
+    return this.features.vectorStoreProvider;
+  }
+
+  get knowledgeBase(): KnowledgeBaseFeature {
+    if (!this.features.vectorStoreProvider) {
+      throw this.featureNotSupportedError('knowledgeBase');
+    }
+    return this.features.vectorStoreProvider;
+  }
+
   private featureNotSupportedError(featureName: string) {
     return new Error(`${featureName} is not supported`);
   }
 }
+
+export const EEFeatures: PluginFeatureKeys<AIPluginFeatures> = {
+  vectorDatabase: 'vectorDatabase',
+  vectorDatabaseProvider: 'vectorDatabaseProvider',
+  vectorStoreProvider: 'vectorStoreProvider',
+  knowledgeBase: 'knowledgeBase',
+};

@@ -18,6 +18,9 @@ import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
 import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types/ai-chat-conversation.type';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
+import { DocumentSegmentedWithScore } from '../features';
+import { KnowledgeBase, KnowledgeBaseGroup, KnowledgeBaseType, VectorStoreConfig } from '../types';
+import { EEFeatures } from '../manager/ai-feature-manager';
 
 type ToolMessage = {
   id: string;
@@ -309,6 +312,104 @@ export class AIEmployee {
         locale: this.ctx.getCurrentLocale() || 'en-US',
       },
     });
+  }
+
+  async retrieveKnowledgeBase(userMessages?: AIMessageInput[]): Promise<DocumentSegmentedWithScore[]> {
+    let queryResult: DocumentSegmentedWithScore[] = [];
+
+    const queryString = this.toQueryString(userMessages);
+    if (!_.isEmpty(queryString) && this.isEnabledKnowledgeBase()) {
+      const { topK, score } = this.getAIEmployeeKnowledgeBaseConfig();
+      const knowledgeBaseGroup = await this.getKnowledgeBaseGroup();
+      for (const entry of knowledgeBaseGroup) {
+        const { vectorStoreConfig, knowledgeBaseType, knowledgeBaseList } = entry;
+        if (!knowledgeBaseList || _.isEmpty(knowledgeBaseList)) {
+          continue;
+        }
+        const vectorStoreProvider = this.plugin.features.vectorStoreProvider;
+        if (knowledgeBaseType === 'LOCAL') {
+          const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+            vectorStoreConfig.vectorStoreProvider,
+            [
+              {
+                key: 'vectorStoreConfigId',
+                value: vectorStoreConfig.vectorStoreConfigId,
+              },
+            ],
+          );
+          const knowledgeBaseOuterIds = knowledgeBaseList.map((x) => x.knowledgeBaseOuterId);
+          const result = await vectorStoreService.search(queryString, {
+            topK,
+            score,
+            filter: {
+              knowledgeBaseOuterId: knowledgeBaseOuterIds,
+            },
+          });
+          queryResult = [...queryResult, ...result];
+        } else if (knowledgeBaseType === 'READONLY') {
+          for (const knowledgeBase of knowledgeBaseList) {
+            const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+              vectorStoreConfig.vectorStoreProvider,
+              [
+                ...knowledgeBase.vectorStoreProps,
+                {
+                  key: 'vectorStoreConfigId',
+                  value: vectorStoreConfig.vectorStoreConfigId,
+                },
+              ],
+            );
+            const result = await vectorStoreService.search(queryString, {
+              topK,
+              score,
+            });
+            queryResult = [...queryResult, ...result];
+          }
+        } else if (knowledgeBaseType === 'EXTERNAL') {
+          for (const knowledgeBase of knowledgeBaseList) {
+            const vectorStoreService = await vectorStoreProvider.createVectorStoreService(
+              vectorStoreConfig.vectorStoreProvider,
+              knowledgeBase.vectorStoreProps,
+            );
+            const result = await vectorStoreService.search(queryString, {
+              topK,
+              score,
+            });
+            queryResult = [...queryResult, ...result];
+          }
+        }
+      }
+    }
+    return queryResult;
+  }
+
+  toQueryString(userMessages?: AIMessageInput[]): string {
+    const [last, ...rest] = userMessages.filter((message) => message.role === 'user').reverse();
+    return last.content.content as string;
+  }
+
+  isEnabledKnowledgeBase(): boolean {
+    const featureEnabled = this.plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
+    const knowledgeBaseEnabled = this.employee.enableKnowledgeBase;
+    return featureEnabled && knowledgeBaseEnabled;
+  }
+
+  getAIEmployeeKnowledgeBaseConfig(): {
+    topK: number;
+    score: string;
+  } {
+    const { topK, score } = this.employee.knowledgeBase ?? {};
+    return {
+      topK,
+      score,
+    };
+  }
+
+  async getKnowledgeBaseGroup(): Promise<KnowledgeBaseGroup[]> {
+    const { knowledgeBaseIds } = this.employee.knowledgeBase ?? {};
+    if (!knowledgeBaseIds || _.isEmpty(knowledgeBaseIds)) {
+      return [];
+    }
+    return await this.plugin.features.knowledgeBase.getKnowledgeBaseGroup(knowledgeBaseIds);
   }
 
   async initToolCall(

@@ -10,6 +10,7 @@
 export interface PluginFeatureManager<T> {
   enableFeatures(features: Partial<T>): void;
   disableFeatures(features: (keyof T)[]): void;
+  isFeaturesEnabled(features: (keyof T)[]): boolean;
 }
 
 export abstract class BasePluginFeatureManager<T> implements PluginFeatureManager<T> {
@@ -29,4 +30,10 @@ export abstract class BasePluginFeatureManager<T> implements PluginFeatureManage
       }
     }
   }
+
+  isFeaturesEnabled(features: (keyof T)[]): boolean {
+    return Array.from(features).every((f) => this.features[f]);
+  }
 }
+
+export type PluginFeatureKeys<T> = Partial<{ [key in keyof T]: key }>;

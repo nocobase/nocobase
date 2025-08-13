@@ -9,6 +9,8 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import PluginAIServer from '../plugin';
+import { EEFeatures } from '../manager/ai-feature-manager';
 
 export const aiSettings: ResourceOptions = {
   name: 'aiSettings',
@@ -45,6 +47,14 @@ export const aiSettings: ResourceOptions = {
         label: storage.title,
         value: storage.name,
       }));
+      await next();
+    },
+    isKnowledgeBaseEnabled: async (ctx, next) => {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const enabled = plugin.features.isFeaturesEnabled(Object.values(EEFeatures));
+      ctx.body = {
+        enabled,
+      };
       await next();
     },
   },

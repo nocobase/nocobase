@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EmbeddingsInterface } from '@langchain/core/embeddings';
+
 export interface VectorDatabaseProviderFeature {
   register<T, R>(providerInfo: VectorDatabaseProviderInfo<T, R>): void;
   validateConnectParams<T>(providerName: string, connectParams: T): void;
-  createConnection<T, R>(providerName: string, connectParams: T): Promise<R>;
+  createVectorStore<T, R>(providerName: string, embeddings: EmbeddingsInterface, connectParams: T): Promise<R>;
   listProviders(): VectorDatabaseProviderInfo<unknown, unknown>[];
 }
 
@@ -22,5 +24,5 @@ export type VectorDatabaseProviderInfo<T, R> = {
 
 export type VectorDatabaseProvider<T, R> = {
   validateConnectParams(connectParams: T): void;
-  createConnection(connectParams: T): Promise<R>;
+  createVectorStore(embeddings: EmbeddingsInterface, connectParams: T): Promise<R>;
 };

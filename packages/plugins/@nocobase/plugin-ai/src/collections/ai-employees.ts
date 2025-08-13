@@ -76,7 +76,7 @@ export default {
      * knowledgeBase: {
      *  topK: number;
      *  score: string;
-     *  knowledgeBaseIds: bigint[];
+     *  knowledgeBaseIds: string[];
      * }
      */
     {
