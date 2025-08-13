@@ -57,7 +57,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     (selectedValues: (string | number)[], selectedOptions?: ContextSelectorItem[]) => {
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('', lastOption.meta);
+        onChange?.('', lastOption?.meta);
         return;
       }
 
@@ -69,16 +69,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 使用自定义格式化函数或默认函数
       let formattedValue: string;
       if (customFormatPathToValue) {
-        formattedValue = customFormatPathToValue(lastOption.meta);
+        formattedValue = customFormatPathToValue(lastOption?.meta);
         if (formattedValue === undefined) {
-          formattedValue = formatPathToValue(lastOption.meta);
+          formattedValue = formatPathToValue(lastOption?.meta);
         }
       } else {
-        formattedValue = formatPathToValue(lastOption.meta);
+        formattedValue = formatPathToValue(lastOption?.meta);
       }
 
       if (isLeaf) {
-        onChange?.(formattedValue, lastOption.meta);
+        onChange?.(formattedValue, lastOption?.meta);
         return;
       }
 
@@ -88,7 +88,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        onChange?.(formattedValue, lastOption.meta);
+        onChange?.(formattedValue, lastOption?.meta);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开
@@ -111,8 +111,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       changeOnSelect={true}
       expandTrigger="click"
       open={open}
+      showSearch={children === null}
     >
-      {children || defaultChildren}
+      {children === null ? null : children || defaultChildren}
     </Cascader>
   );
 };
