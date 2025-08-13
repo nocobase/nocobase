@@ -10,7 +10,7 @@
   "dependencies": {
     "dropbox": "^10.34.0",
     "googleapis": "^100.0.0",
-    "onedrive-api": "^9.0.0",
+    "@microsoft/microsoft-graph-client": "^3.0.2",
     "box-node-sdk": "^2.0.0"
   },
   "peerDependencies": {
