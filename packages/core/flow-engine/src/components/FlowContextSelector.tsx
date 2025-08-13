@@ -10,8 +10,8 @@
 import React, { useCallback, useRef, useMemo } from 'react';
 import { Button, Cascader } from 'antd';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
-import { useVariableTreeData } from './variables/useVariableTreeData';
-import { formatPathToValue } from './variables/utils';
+import { buildContextSelectorItems, formatPathToValue, parseValueToPath } from './variables/utils';
+import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
 
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
@@ -24,7 +24,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   children,
   metaTree,
   showSearch = false,
-  parseValueToPath: customParseValueToPath,
+  parseValueToPath: customParseValueToPath = parseValueToPath,
   formatPathToValue: customFormatPathToValue,
   open,
   ...cascaderProps
@@ -32,11 +32,15 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  const { options, loading, currentPath, handleLoadData } = useVariableTreeData({
-    metaTree,
-    value,
-    parseValueToPath: customParseValueToPath,
-  });
+  const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
+
+  const options = useMemo(() => {
+    return buildContextSelectorItems(resolvedMetaTree);
+  }, [resolvedMetaTree]);
+
+  const currentPath = useMemo(() => {
+    return customParseValueToPath(value);
+  }, [value]);
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
@@ -103,7 +107,6 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       options={options}
       value={cascaderValue}
       onChange={handleChange}
-      loadData={handleLoadData}
       loading={loading}
       changeOnSelect={true}
       expandTrigger="click"

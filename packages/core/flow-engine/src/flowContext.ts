@@ -46,6 +46,7 @@ export interface MetaTreeNode {
   render?: (props: any) => JSX.Element;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   paths: string[];
+  parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -269,11 +270,15 @@ export class FlowContext {
           const [finalKey, metaOrFactory, fullPath] = targetMeta;
           // 对于异步 meta factory，返回包装节点
           if (typeof metaOrFactory === 'function') {
-            return [this.#toTreeNode(finalKey, metaOrFactory, fullPath)];
+            // 构建 parentTitles，这里暂时使用 paths 的前面部分，待加载后会更新为正确的 parentTitles
+            const parentTitles = fullPath.slice(0, -1);
+            return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
           }
           // 对于同步 meta 且有 properties，返回子节点
           if (metaOrFactory.properties) {
-            const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, metaOrFactory);
+            // 构建 parentTitles，包含当前 meta 的 title
+            const parentTitles = [...fullPath.slice(0, -1), metaOrFactory.title];
+            const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, parentTitles, metaOrFactory);
             return Array.isArray(childNodes) ? childNodes : [];
           }
           // 如果没有子节点，返回空数组
@@ -283,17 +288,19 @@ export class FlowContext {
         return [];
       } else if (propertyPath === null) {
         console.warn(
-          `[FlowContext] getPropertyMetaTree - unsupported value format: "${value}". Only "{{ ctx.propertyName }}" format is supported. Returning full meta tree.`,
+          `[FlowContext] getPropertyMetaTree - unsupported value format: "${value}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
         );
+        return [];
       }
     }
 
-    return Object.entries(metaMap).map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key]));
+    return Object.entries(metaMap).map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
   }
 
   #createChildNodes(
     properties: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>),
     parentPaths: string[] = [],
+    parentTitles: string[] = [],
     parentMeta?: PropertyMeta, // 传入父级 meta 以便缓存结果
   ): MetaTreeNode[] | (() => Promise<MetaTreeNode[]>) {
     return typeof properties === 'function'
@@ -303,9 +310,13 @@ export class FlowContext {
           if (parentMeta) {
             parentMeta.properties = resolved;
           }
-          return Object.entries(resolved).map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name]));
+          return Object.entries(resolved).map(([name, meta]) =>
+            this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
+          );
         }
-      : Object.entries(properties).map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name]));
+      : Object.entries(properties).map(([name, meta]) =>
+          this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
+        );
   }
 
   /**
@@ -433,36 +444,42 @@ export class FlowContext {
     name: string,
     metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>),
     paths: string[] = [name],
+    parentTitles: string[] = [],
   ): MetaTreeNode {
     // 检查缓存
     const cached = this._metaNodeCache.get(metaOrFactory);
     if (cached) {
       // 更新路径信息（因为同一个 meta 可能在不同路径下使用）
       cached.paths = paths;
+      cached.parentTitles = parentTitles.length > 0 ? parentTitles : undefined;
       return cached;
     }
 
     let node: MetaTreeNode;
 
     if (typeof metaOrFactory === 'function') {
+      const initialTitle = name;
       node = {
         name,
-        title: name, // 初始使用 name 作为 title
+        title: initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
         uiSchema: undefined,
         paths,
+        parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
         children: async () => {
           try {
             const meta = await metaOrFactory();
-            node.title = meta?.title || name;
+            const finalTitle = meta?.title || name;
+            node.title = finalTitle;
             node.type = meta?.type;
             node.interface = meta?.interface;
             node.uiSchema = meta?.uiSchema;
+            // parentTitles 保持不变，因为它不包含自身 title
 
             if (!meta?.properties) return [];
 
-            const childNodes = this.#createChildNodes(meta.properties, paths, meta);
+            const childNodes = this.#createChildNodes(meta.properties, paths, [...parentTitles, finalTitle], meta);
             const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
 
             // 更新 children 为解析后的结果
@@ -477,15 +494,17 @@ export class FlowContext {
       };
     } else {
       // 同步 meta：直接创建节点
+      const nodeTitle = metaOrFactory.title;
       node = {
         name,
-        title: metaOrFactory.title,
+        title: nodeTitle,
         type: metaOrFactory.type,
         interface: metaOrFactory.interface,
         uiSchema: metaOrFactory.uiSchema,
         paths,
+        parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
         children: metaOrFactory.properties
-          ? this.#createChildNodes(metaOrFactory.properties, paths, metaOrFactory)
+          ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
           : undefined,
       };
     }

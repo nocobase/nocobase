@@ -155,6 +155,8 @@ describe('createRecordProxyContext', () => {
         interface: 'number',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'id'],
       });
 
       const titleField = fields.find((field) => field.name === 'title');
@@ -165,6 +167,8 @@ describe('createRecordProxyContext', () => {
         interface: 'input',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'title'],
       });
 
       const contentField = fields.find((field) => field.name === 'content');
@@ -175,6 +179,8 @@ describe('createRecordProxyContext', () => {
         interface: 'textarea',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'content'],
       });
     });
 
