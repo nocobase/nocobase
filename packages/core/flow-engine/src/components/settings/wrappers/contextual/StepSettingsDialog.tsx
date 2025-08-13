@@ -130,7 +130,7 @@ const openStepSettingsDialog = async ({
     initialValues: compileUiSchema(scopes, initialValues),
   });
 
-  const currentDialog = openView({
+  openView({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
@@ -141,7 +141,7 @@ const openStepSettingsDialog = async ({
       }
     },
     content: (currentDialog) => {
-      const DialogContent = observer(() => {
+      const FlowStepUI = observer(() => {
         useEffect(() => {
           return autorun(() => {
             const dynamicProps = toJS(uiModeProps);
@@ -209,7 +209,7 @@ const openStepSettingsDialog = async ({
         );
       });
 
-      return <DialogContent />;
+      return <FlowStepUI />;
     },
   });
 };
