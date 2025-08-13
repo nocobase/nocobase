@@ -84,7 +84,7 @@ export default defineConfig({
           children: [
             {
               title: 'VariableInput 示例',
-              link: '/examples/variables',
+              link: '/components/variables',
             },
           ],
         },
