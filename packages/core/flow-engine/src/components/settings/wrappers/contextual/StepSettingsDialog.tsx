@@ -141,7 +141,7 @@ const openStepSettingsDialog = async ({
       }
     },
     content: (currentDialog) => {
-      const FlowStepUI = observer(() => {
+      const FlowStepSettings = observer(() => {
         useEffect(() => {
           return autorun(() => {
             const dynamicProps = toJS(uiModeProps);
@@ -209,7 +209,7 @@ const openStepSettingsDialog = async ({
         );
       });
 
-      return <FlowStepUI />;
+      return <FlowStepSettings />;
     },
   });
 };
