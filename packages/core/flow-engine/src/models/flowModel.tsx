@@ -41,6 +41,7 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
+import { FlowSettingsOpenOptions } from '../flowSettings';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -1306,6 +1307,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
     }
     return data;
+  }
+
+  /**
+   * Opens the flow settings dialog for this flow model.
+   * @param options - Configuration options for opening flow settings, excluding the model property
+   * @returns A promise that resolves when the flow settings dialog is opened
+   */
+  async openFlowSettings(options: Omit<FlowSettingsOpenOptions, 'model'>) {
+    return this.flowEngine.flowSettings.open({
+      model: this,
+      ...options,
+    });
   }
 }
 
