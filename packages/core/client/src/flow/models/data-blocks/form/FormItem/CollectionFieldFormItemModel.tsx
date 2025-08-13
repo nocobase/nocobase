@@ -29,17 +29,20 @@ CollectionFieldFormItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
-
-        if (collectionField) {
-          ctx.model.subModels.field.setProps({
-            options: collectionField.enum.length ? collectionField.enum : undefined,
-            ...this?.collectionField?.getComponentProps?.(),
-            mode: collectionField.type === 'array' ? 'multiple' : undefined,
-          });
-        }
         const props = ctx.model.getProps();
         const rules = [...(props.rules || [])];
         const fieldInterface = collectionField.interface;
+        if (collectionField) {
+          const { type, target } = collectionField;
+          ctx.model.subModels.field.setProps({
+            options: collectionField.enum.length ? collectionField.enum : props.options,
+            ...this?.collectionField?.getComponentProps?.(),
+            mode: collectionField.type === 'array' ? 'multiple' : undefined,
+            multiple: ['belongsToMany', 'hasMany'].includes(type),
+            maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+          });
+        }
+
         if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({

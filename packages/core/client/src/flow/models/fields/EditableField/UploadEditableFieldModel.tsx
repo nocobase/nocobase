@@ -84,23 +84,6 @@ UploadEditableFieldModel.registerFlow({
 });
 
 UploadEditableFieldModel.registerFlow({
-  key: 'uploadSetting',
-  sort: 500,
-  steps: {
-    default: {
-      async handler(ctx) {
-        const { type } = ctx.model.collectionField;
-        if (['belongsToMany', 'hasMany'].includes(type)) {
-          ctx.model.setProps({ multiple: true });
-        } else {
-          ctx.model.setProps({ maxCount: 1, multiple: false });
-        }
-      },
-    },
-  },
-});
-
-UploadEditableFieldModel.registerFlow({
   key: 'customRequestSettings',
   on: 'customRequest',
   steps: {

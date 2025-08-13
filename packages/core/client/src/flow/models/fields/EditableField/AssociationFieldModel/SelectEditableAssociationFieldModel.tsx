@@ -76,7 +76,6 @@ export function LazySelect(props) {
 export class SelectEditableAssociationFieldModel extends EditableAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
-  selectProps = observable({} as any);
 
   set onPopupScroll(fn) {
     this.setProps({ onPopupScroll: fn });
@@ -89,13 +88,13 @@ export class SelectEditableAssociationFieldModel extends EditableAssociationFiel
   }
 
   setDataSource(dataSource) {
-    this.selectProps.dataSource = dataSource;
+    this.setProps({ options: dataSource });
   }
   getDataSource() {
-    return this.selectProps.dataSource;
+    return this.props.options;
   }
   get component() {
-    return [LazySelect, { options: this.selectProps.dataSource }];
+    return [LazySelect, {}];
   }
 }
 
@@ -152,13 +151,13 @@ SelectEditableAssociationFieldModel.registerFlow({
       async handler(ctx, params) {
         const labelFieldValue = ctx.model.props.fieldNames.value;
         const resource = ctx.model.resource;
-        const dataSource = ctx.model.getDataSource();
+        const options = ctx.model.getDataSource();
         resource.setPage(1);
         await resource.refresh();
         const { count } = resource.getMeta();
         const data = resource.getData();
         //已经全部加载
-        if (dataSource && count === dataSource.length && data[0][labelFieldValue] === dataSource[0][labelFieldValue]) {
+        if (options && count === options.length && data[0][labelFieldValue] === options[0][labelFieldValue]) {
           return;
         }
         ctx.model.setDataSource(data);
