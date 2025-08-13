@@ -70,9 +70,14 @@ export default defineConfig({
     sidebarEnhance: {
       '/components': [
         {
-          title: '组件1',
-          link: '/components',
-        }
+          title: 'Filter',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/filter' },
+            { title: 'FilterGroup', link: '/components/filter/filter-group' },
+            { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+          ],
+        },
       ],
       '/examples': [
         {
