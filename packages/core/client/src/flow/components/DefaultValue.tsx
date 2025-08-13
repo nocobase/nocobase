@@ -110,6 +110,18 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
     return newModel;
   }, [model]);
 
+  const InputComponent = useMemo(
+    () => (props) => {
+      newModel.setProps({ ...props });
+      return (
+        <div style={{ flexGrow: 1 }}>
+          <FlowModelRenderer model={newModel} showFlowSettings={false} />
+        </div>
+      );
+    },
+    [],
+  );
+  const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
   const metaTree = useMemo<MetaTreeNode[]>(() => {
     const ctxMetaTree = ctx.getPropertyMetaTree();
     return [
@@ -117,11 +129,13 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
         title: 'Constant',
         name: 'constant',
         type: 'string',
+        render: InputComponent,
       },
       {
         title: 'Null',
         name: 'null',
         type: 'object',
+        render: NullComponent,
       },
       ...ctxMetaTree,
     ];
@@ -144,34 +158,13 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
     }
   }, [metaTree, newModel, model, onChange]);
 
-  const InputComponent = useMemo(
-    () => (props) => {
-      newModel.setProps({ ...props });
-      return (
-        <div style={{ flexGrow: 1 }}>
-          <FlowModelRenderer model={newModel} showFlowSettings={false} />
-        </div>
-      );
-    },
-    [],
-  );
-  const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
-
   return (
     <VariableInput
       metaTree={metaTree}
       {...props}
       converters={{
-        renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] === 'constant' || !item) {
-            return InputComponent;
-          }
-          if (item?.fullPath?.[0] === 'null') {
-            return NullComponent;
-          }
-        },
         resolveValueFromPath: (item) => {
-          if (item?.fullPath[0] === 'Constant') return null;
+          if (item?.paths[0] === 'Constant') return null;
         },
       }}
     />

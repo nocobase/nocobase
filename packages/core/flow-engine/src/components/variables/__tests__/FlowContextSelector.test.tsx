@@ -100,11 +100,10 @@ describe('FlowContextSelector', () => {
     expect(onChange).toHaveBeenCalledWith(
       '{{ ctx.user.name }}',
       expect.objectContaining({
-        fullPath: ['user', 'name'],
-        isLeaf: true,
-        label: 'Name',
-        value: 'name',
-        meta: expect.any(Object),
+        name: 'name',
+        title: 'Name',
+        type: 'string',
+        paths: ['user', 'name'],
       }),
     );
   });
@@ -126,11 +125,10 @@ describe('FlowContextSelector', () => {
     expect(onChange).toHaveBeenCalledWith(
       '{{ ctx.config }}',
       expect.objectContaining({
-        fullPath: ['config'],
-        isLeaf: true,
-        label: 'Config',
-        value: 'config',
-        meta: expect.any(Object),
+        name: 'config',
+        title: 'Config',
+        type: 'string',
+        paths: ['config'],
       }),
     );
   });
@@ -200,11 +198,10 @@ describe('FlowContextSelector', () => {
       expect(onChange).toHaveBeenCalledWith(
         '{{ ctx.config }}',
         expect.objectContaining({
-          fullPath: ['config'],
-          isLeaf: true,
-          label: 'Config',
-          value: 'config',
-          meta: expect.any(Object),
+          name: 'config',
+          title: 'Config',
+          type: 'string',
+          paths: ['config'],
         }),
       );
     });
@@ -289,7 +286,6 @@ describe('FlowContextSelector', () => {
 
       expect(customFormatPathToValue).toHaveBeenCalled();
       // Should fallback to default formatPathToValue
-      // Fixed: Now correctly passes ContextSelectorItem to formatPathToValue
       expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', expect.any(Object));
     });
   });

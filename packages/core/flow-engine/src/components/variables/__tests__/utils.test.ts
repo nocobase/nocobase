@@ -45,28 +45,28 @@ describe('Variable Utils', () => {
 
   describe('formatPathToValue', () => {
     it('should format ContextSelectorItem to {{ ctx.aaa.bbb }}', () => {
-      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', fullPath: ['aaa', 'bbb'], isLeaf: true };
+      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', paths: ['aaa', 'bbb'], isLeaf: true };
       expect(formatPathToValue(item1)).toBe('{{ ctx.aaa.bbb }}');
 
-      const item2: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      const item2: ContextSelectorItem = { label: 'Name', value: 'name', paths: ['user', 'name'], isLeaf: true };
       expect(formatPathToValue(item2)).toBe('{{ ctx.user.name }}');
 
       const item3: ContextSelectorItem = {
         label: 'Title',
         value: 'title',
-        fullPath: ['data', 'items', '0', 'title'],
+        paths: ['data', 'items', '0', 'title'],
         isLeaf: true,
       };
       expect(formatPathToValue(item3)).toBe('{{ ctx.data.items.0.title }}');
     });
 
     it('should handle empty path', () => {
-      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', fullPath: [], isLeaf: true };
+      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', paths: [], isLeaf: true };
       expect(formatPathToValue(item)).toBe('{{ ctx }}');
     });
 
     it('should handle single path element', () => {
-      const item: ContextSelectorItem = { label: 'User', value: 'user', fullPath: ['user'], isLeaf: true };
+      const item: ContextSelectorItem = { label: 'User', value: 'user', paths: ['user'], isLeaf: true };
       expect(formatPathToValue(item)).toBe('{{ ctx.user }}');
     });
   });
@@ -121,17 +121,17 @@ describe('Variable Utils', () => {
       {
         label: 'User',
         value: 'user',
-        fullPath: ['user'],
+        paths: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, fullPath: ['user', 'name'] },
-          { label: 'Email', value: 'email', isLeaf: true, fullPath: ['user', 'email'] },
+          { label: 'Name', value: 'name', isLeaf: true, paths: ['user', 'name'] },
+          { label: 'Email', value: 'email', isLeaf: true, paths: ['user', 'email'] },
         ],
       },
       {
         label: 'Data',
         value: 'data',
-        fullPath: ['data'],
-        children: [{ label: 'Items', value: 'items', isLeaf: true, fullPath: ['data', 'items'] }],
+        paths: ['data'],
+        children: [{ label: 'Items', value: 'items', isLeaf: true, paths: ['data', 'items'] }],
       },
     ];
 
@@ -163,13 +163,13 @@ describe('Variable Utils', () => {
       expect(result).toHaveLength(1);
       // Verify that the returned object is the exact same instance as the original
       expect(result[0]).toBe(mockOptions[0]);
-      expect(result[0].fullPath).toBe(mockOptions[0].fullPath);
+      expect(result[0].paths).toBe(mockOptions[0].paths);
 
       const nestedResult = searchInLoadedNodes(mockOptions, 'Name');
       expect(nestedResult).toHaveLength(1);
       // Verify that nested search also returns the same instance
       expect(nestedResult[0]).toBe(mockOptions[0].children![0]);
-      expect(nestedResult[0].fullPath).toBe(mockOptions[0].children![0].fullPath);
+      expect(nestedResult[0].paths).toBe(mockOptions[0].children![0].paths);
     });
   });
 
@@ -199,15 +199,15 @@ describe('Variable Utils', () => {
         value: 'user',
         isLeaf: false,
         meta: metaTree[0],
-        fullPath: ['user'],
+        paths: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], fullPath: ['user', 'name'] },
+          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], paths: ['user', 'name'] },
           {
             label: 'Email',
             value: 'email',
             isLeaf: true,
             meta: metaTree[0].children?.[1],
-            fullPath: ['user', 'email'],
+            paths: ['user', 'email'],
           },
         ],
       });
@@ -216,7 +216,7 @@ describe('Variable Utils', () => {
         value: 'data',
         isLeaf: true,
         meta: metaTree[1],
-        fullPath: ['data'],
+        paths: ['data'],
       });
     });
 
@@ -236,7 +236,7 @@ describe('Variable Utils', () => {
         value: 'async',
         isLeaf: false,
         meta: metaTree[0],
-        fullPath: ['async'],
+        paths: ['async'],
       });
     });
 
@@ -268,7 +268,7 @@ describe('Variable Utils', () => {
           value: 'test',
           isLeaf: true,
           meta: { name: 'test', type: 'object', title: '' },
-          fullPath: ['test'],
+          paths: ['test'],
         },
       ]);
     });
@@ -304,7 +304,6 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters).toHaveProperty('resolvePathFromValue');
       expect(converters).toHaveProperty('resolveValueFromPath');
-      expect(converters).not.toHaveProperty('renderInputComponent');
       expect(typeof converters.resolvePathFromValue).toBe('function');
       expect(typeof converters.resolveValueFromPath).toBe('function');
     });
@@ -317,7 +316,7 @@ describe('Variable Utils', () => {
 
     it('should resolve value from ContextSelectorItem', () => {
       const converters = createDefaultConverters();
-      const item: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      const item: ContextSelectorItem = { label: 'Name', value: 'name', paths: ['user', 'name'], isLeaf: true };
       expect(converters.resolveValueFromPath?.(item)).toBe('{{ ctx.user.name }}');
     });
   });

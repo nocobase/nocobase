@@ -9,11 +9,10 @@
 
 import React, { useCallback, useRef, useMemo } from 'react';
 import { Button, Cascader } from 'antd';
-import type { FlowContextSelectorProps, ContextSelectorItem } from './variables/types';
+import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import { useVariableTreeData } from './variables/useVariableTreeData';
 import { formatPathToValue } from './variables/utils';
 
-// 提取默认按钮样式避免每次重新创建
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
   fontFamily: 'New York, Times New Roman, Times, serif',
@@ -33,13 +32,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  // 使用 useVariableTreeData Hook 管理数据状态
-  const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
-    useVariableTreeData({
-      metaTree,
-      value,
-      parseValueToPath: customParseValueToPath,
-    });
+  const { options, loading, currentPath, handleLoadData } = useVariableTreeData({
+    metaTree,
+    value,
+    parseValueToPath: customParseValueToPath,
+  });
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
@@ -53,10 +50,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 处理选择变化事件
   const handleChange = useCallback(
-    (selectedValues: (string | number)[], selectedOptions?: any[]) => {
+    (selectedValues: (string | number)[], selectedOptions?: ContextSelectorItem[]) => {
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('', lastOption);
+        onChange?.('', lastOption.meta);
         return;
       }
 
@@ -68,17 +65,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 使用自定义格式化函数或默认函数
       let formattedValue: string;
       if (customFormatPathToValue) {
-        formattedValue = customFormatPathToValue(lastOption);
+        formattedValue = customFormatPathToValue(lastOption.meta);
         if (formattedValue === undefined) {
-          formattedValue = formatPathToValue(lastOption);
+          formattedValue = formatPathToValue(lastOption.meta);
         }
       } else {
-        formattedValue = formatPathToValue(lastOption);
+        formattedValue = formatPathToValue(lastOption.meta);
       }
 
       if (isLeaf) {
-        const contextSelectorItem = buildContextSelectorItemFromSelectedOptions(selectedOptions);
-        onChange?.(formattedValue, contextSelectorItem);
+        onChange?.(formattedValue, lastOption.meta);
         return;
       }
 
@@ -88,15 +84,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        const contextSelectorItem = buildContextSelectorItemFromSelectedOptions(selectedOptions);
-        onChange?.(formattedValue, contextSelectorItem);
+        onChange?.(formattedValue, lastOption.meta);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开
         lastSelectedRef.current = { path: pathString, time: now };
       }
     },
-    [onChange, customFormatPathToValue, buildContextSelectorItemFromSelectedOptions],
+    [onChange, customFormatPathToValue],
   );
 
   // 当前选中的路径值

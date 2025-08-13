@@ -27,13 +27,14 @@ class PluginSingleConstantExample extends Plugin {
           name: 'Constant',
           title: 'Constant',
           type: 'string',
+          paths: ['Constant'],
+          render: () => <Input />,
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) => (item?.fullPath?.[0] === 'Constant' ? Input : null),
-        resolveValueFromPath: (item) => (item?.fullPath[0] === 'Constant' ? '' : undefined),
+        resolveValueFromPath: (item) => (item?.paths[0] === 'Constant' ? '' : undefined),
       };
 
       return (

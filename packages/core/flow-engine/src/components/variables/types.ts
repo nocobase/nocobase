@@ -14,11 +14,11 @@ import type { MetaTreeNode } from '../../flowContext';
 export interface FlowContextSelectorProps
   extends Omit<CascaderProps<ContextSelectorItem>, 'value' | 'onChange' | 'options' | 'children' | 'multiple'> {
   value?: string;
-  onChange?: (value: string, contextSelectorItem?: ContextSelectorItem) => void;
+  onChange?: (value: string, metaTreeNode?: MetaTreeNode) => void;
   children?: CascaderProps<ContextSelectorItem>['children'];
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   parseValueToPath?: (value: string) => string[] | undefined;
-  formatPathToValue?: (item: ContextSelectorItem) => string;
+  formatPathToValue?: (item: MetaTreeNode) => string;
   open?: boolean;
 }
 
@@ -29,17 +29,18 @@ export interface ContextSelectorItem {
   children?: ContextSelectorItem[];
   loading?: boolean;
   meta?: MetaTreeNode;
-  fullPath: string[];
+  paths: string[];
 }
 
 export interface Converters {
   /**
    * 根据选中的上下文选择器项目，返回一个用于渲染该值的 React 组件类型。
    * 如果返回 null 或 undefined，则会使用默认的渲染组件。
-   * @param contextSelectorItem 选中的 ContextSelectorItem 对象，或者在未选择任何变量时为 null。
+   * @param metaTreeNode 选中的 MetaTreeNode 对象，或者在未选择任何变量时为 null。
    * @returns React.ComponentType<{ value: any; onChange: (value: any) => void; }> | null
    */
-  renderInputComponent?: (contextSelectorItem: ContextSelectorItem | null) => React.ComponentType<any> | null;
+  renderInputComponent?: (metaTreeNode: MetaTreeNode | null) => React.ComponentType<any> | null;
+
   /**
    * 将一个外部 value 转换成 FlowContextSelector 需要的路径数组。
    * @param value 外部传入的值。
@@ -48,10 +49,10 @@ export interface Converters {
   resolvePathFromValue?: (value: any) => string[] | undefined;
   /**
    * 当一个上下文节点被选中后，将其信息转换成最终的外部 value。
-   * @param contextSelectorItem 选中的 ContextSelectorItem 对象。
+   * @param metaTreeNode 选中的 MetaTreeNode 对象。
    * @returns any
    */
-  resolveValueFromPath?: (contextSelectorItem: ContextSelectorItem) => any;
+  resolveValueFromPath?: (metaTreeNode: MetaTreeNode) => any;
 }
 
 export interface VariableInputProps {
@@ -68,7 +69,7 @@ export interface VariableTagProps {
   onClear?: () => void;
   className?: string;
   style?: React.CSSProperties;
-  contextSelectorItem?: ContextSelectorItem | null;
+  metaTreeNode?: MetaTreeNode | null;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
 }
 
@@ -81,7 +82,7 @@ export interface VariableTriggerElement {
 export interface VariableElement {
   type: 'variable';
   value: string;
-  meta?: ContextSelectorItem;
+  meta?: MetaTreeNode;
   children: [{ text: '' }];
 }
 

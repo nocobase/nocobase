@@ -177,16 +177,19 @@ describe('VariableTag', () => {
         name: 'user',
         title: 'User Information',
         type: 'object',
+        paths: ['user'],
         children: [
           {
             name: 'profile',
             title: 'User Profile',
             type: 'object',
+            paths: ['user', 'profile'],
             children: [
               {
                 name: 'firstName',
                 title: 'First Name',
                 type: 'string',
+                paths: ['user', 'profile', 'firstName'],
               },
             ],
           },
@@ -194,20 +197,15 @@ describe('VariableTag', () => {
       },
     ];
 
-    const mockContextSelectorItem = {
-      label: 'First Name',
-      value: 'firstName',
-      isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
-      meta: mockMetaTree[0].children[0].children[0],
+    const mockMetaTreeNode = {
+      name: 'firstName',
+      title: 'First Name',
+      type: 'string',
+      paths: ['user', 'profile', 'firstName'],
     };
 
     render(
-      <VariableTag
-        value="{{ ctx.user.profile.firstName }}"
-        contextSelectorItem={mockContextSelectorItem}
-        metaTree={mockMetaTree}
-      />,
+      <VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTree} />,
     );
 
     // 应该显示 title 而不是 name
@@ -218,15 +216,14 @@ describe('VariableTag', () => {
   });
 
   it('should fallback to path display when metaTree is not provided', async () => {
-    const mockContextSelectorItem = {
-      label: 'First Name',
-      value: 'firstName',
-      isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
-      meta: null,
+    const mockMetaTreeNode = {
+      name: 'firstName',
+      title: 'First Name',
+      type: 'string',
+      paths: ['user', 'profile', 'firstName'],
     };
 
-    render(<VariableTag value="{{ ctx.user.profile.firstName }}" contextSelectorItem={mockContextSelectorItem} />);
+    render(<VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} />);
 
     // 没有 metaTree 时应该显示 path
     await waitFor(() => {
@@ -241,24 +238,18 @@ describe('VariableTag', () => {
         name: 'user',
         title: 'User Information',
         type: 'object',
+        paths: ['user'],
       },
     ];
 
-    const mockContextSelectorItem = {
-      label: 'User',
-      value: 'user',
-      isLeaf: true,
-      fullPath: ['user'],
-      meta: null,
+    const mockMetaTreeNode = {
+      name: 'user',
+      title: 'User Information',
+      type: 'object',
+      paths: ['user'],
     };
 
-    render(
-      <VariableTag
-        value="{{ ctx.user }}"
-        contextSelectorItem={mockContextSelectorItem}
-        metaTree={mockMetaTreeFunction}
-      />,
-    );
+    render(<VariableTag value="{{ ctx.user }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTreeFunction} />);
 
     await waitFor(() => {
       const tag = screen.getByText('User Information');

@@ -26,30 +26,20 @@ class PluginMultiConstantExample extends Plugin {
         baseMetaTree.splice(0, 0, {
           name: 'Constant',
           title: 'Constant',
+          paths: ['Constant'],
           type: 'object',
           children: [
-            { name: 'string', title: 'String', type: 'string' },
-            { name: 'number', title: 'Number', type: 'number' },
-            { name: 'date', title: 'Date', type: 'string' },
+            { name: 'string', title: 'String', type: 'string', paths: ['Constant', 'string'], render: () => <Input /> },
+            { name: 'number', title: 'Number', type: 'number', paths: ['Constant', 'number'], render: InputNumber },
+            { name: 'date', title: 'Date', type: 'string', paths: ['Constant', 'date'], render: DatePicker },
           ],
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] !== 'Constant') return null;
-          switch (item.fullPath[1]) {
-            case 'number':
-              return InputNumber;
-            case 'date':
-              return DatePicker;
-            default:
-              return Input;
-          }
-        },
         resolveValueFromPath: (item) => {
-          const path = item?.fullPath;
+          const path = item?.paths;
           if (!path || path[0] !== 'Constant') return undefined;
           switch (path[1]) {
             case 'string':

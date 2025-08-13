@@ -25,7 +25,6 @@ export interface UseVariableTreeDataResult {
   loadInitialOptions: () => Promise<void>;
   handleLoadData: (selectedOptions: ContextSelectorItem[]) => Promise<void>;
   preloadPathOptions: (item: ContextSelectorItem[], path: string[]) => Promise<void>;
-  buildContextSelectorItemFromSelectedOptions: (selectedOptions: ContextSelectorItem[]) => ContextSelectorItem | null;
   loadedPathsRef: React.MutableRefObject<Set<string>>;
 }
 
@@ -45,26 +44,6 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
   const currentPath = useMemo(() => {
     return value ? parseValueToPathFn(value) : undefined;
   }, [value, parseValueToPathFn]);
-
-  const buildContextSelectorItemFromSelectedOptions = useCallback(
-    (selectedOptions: ContextSelectorItem[]): ContextSelectorItem | null => {
-      if (!selectedOptions || selectedOptions.length === 0) return null;
-
-      const lastOption = selectedOptions[selectedOptions.length - 1];
-      if (!lastOption) return null;
-
-      return {
-        label: lastOption.label || lastOption.value,
-        value: lastOption.value,
-        isLeaf: lastOption.isLeaf,
-        meta: lastOption.meta,
-        children: lastOption.children,
-        loading: lastOption.loading,
-        fullPath: selectedOptions.map((option) => option.value),
-      };
-    },
-    [],
-  );
 
   const loadInitialOptions = useCallback(async () => {
     const currentMetaTree = metaTreeRef.current;
@@ -179,7 +158,6 @@ export const useVariableTreeData = (options: UseVariableTreeDataOptions): UseVar
     loadInitialOptions,
     handleLoadData,
     preloadPathOptions,
-    buildContextSelectorItemFromSelectedOptions,
     loadedPathsRef,
   };
 };
