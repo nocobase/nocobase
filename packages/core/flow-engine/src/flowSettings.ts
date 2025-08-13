@@ -12,6 +12,7 @@ import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/D
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import type { FlowModel } from './models';
+import { openStepSettings } from './components';
 
 /**
  * 打开流程设置的参数接口
@@ -373,6 +374,11 @@ export class FlowSettings {
    * @returns {Promise<unknown>} 返回一个 Promise，实际实现后将解析为相应结果
    */
   public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
-    throw new Error('FlowSettings.open is not implemented yet.');
+    const { model, flowKey, stepKey, openAs = 'dialog' } = options;
+    return await openStepSettings({
+      model,
+      flowKey,
+      stepKey,
+    });
   }
 }
