@@ -1,5 +1,5 @@
 /**
- * defaultShowCode: true
+ * defaultShowCode: false
  * title: 基础用法
  */
 

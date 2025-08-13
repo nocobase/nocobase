@@ -1,5 +1,5 @@
 /**
- * defaultShowCode: true
+ * defaultShowCode: false
  * title: 自定义 FilterItem
  */
 
