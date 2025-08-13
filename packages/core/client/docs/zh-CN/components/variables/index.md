@@ -1,92 +1,63 @@
-# VariableInput 组件示例
+# Variables 变量组件
 
-VariableInput 是一个统一的变量输入组件，支持静态值输入和动态变量选择，通过 converters 机制提供高度的可定制性。
+NocoBase 提供了一套完整的变量处理组件，用于在各种场景中处理动态变量的输入、选择和编辑。
 
-## Props
+## 组件概览
 
-- **value**: 组件的受控值
-- **onChange**: 值变化时的回调函数
-- **metaTree**: 上下文变量的元数据树，可以是对象或返回对象的函数
-- **converters**: 可选的自定义转换器配置
+### VariableInput - 统一变量输入组件
 
-## Converters 函数说明
+VariableInput 是一个统一的变量输入组件，支持静态值输入和动态变量选择。
 
-VariableInput 组件的核心功能通过 converters 机制实现，该机制包含两个主要函数：
+**主要特性**:
+- 支持静态值输入和动态变量选择
+- 通过 converters 机制提供高度可定制性
+- 支持多种显示形态（显示/隐藏值输入组件）
+- 支持 Null 值和 Constant 常量处理
+- 组件间交互支持
 
-### 2. `resolvePathFromValue` - 值转路径解析器
+**适用场景**:
+- 表单字段的动态值配置
+- 过滤条件中的变量输入
+- 简单的变量选择需求
 
-**作用**: 将外部传入的 value 转换成 FlowContextSelector 需要的路径数组
+[查看 VariableInput 详细文档 →](./variable-input)
 
-**参数**: 
-- `value`: 外部传入的值
+### SlateVariableEditor - 智能变量编辑器 ⭐️
 
-**返回值**: string[] | null
+基于 Slate.js 构建的专业变量编辑器，是**目前最推荐的变量编辑解决方案**。
 
-### 3. `resolveValueFromPath` - 路径转值解析器
+**主要特性**:
+- 基于 Slate.js 富文本编辑器框架
+- 变量作为原子单位，不可拆分编辑
+- 完善的键盘导航和编辑功能
+- 支持单行和多行编辑模式
+- 完整的撤销/重做支持
 
-**作用**: 当一个上下文节点被选中后，将其信息转换成最终的外部 value
+**适用场景**:
+- 邮件模板编辑
+- 通知模板配置
+- 表达式编辑
+- 任何需要在长文本中插入变量的复杂场景
 
-**参数**: 
-- `metaTreeNode`: 选中的 MetaTreeNode 对象
+[查看 SlateVariableEditor 详细文档 →](./slate-variable-editor)
 
-**返回值**: any
+## 选择指南
 
-**示例**: 在多层 Constant 示例中，当选中 Constant → string 节点时，返回一个字符串值
+| 需求场景 | 推荐组件 | 理由 |
+|---------|---------|------|
+| 简单的变量选择 | VariableInput | 轻量级，配置简单 |
+| 需要输入静态值 | VariableInput | 支持静态值和变量的混合输入 |
+| 文本模板编辑 | SlateVariableEditor | 专业的文本编辑体验 |
+| 复杂的变量编辑 | SlateVariableEditor | 强大的编辑能力，推荐方案 |
+| 邮件/通知模板 | SlateVariableEditor | 最适合的解决方案 |
 
-## 示例演示
+## 核心概念
 
-### 1. 基础示例
+### MetaTree
+所有变量组件都依赖于 `metaTree`，这是一个描述可选变量结构的元数据树。
 
-最简单的用法，只需要 `value`、`onChange` 和 `metaTree` 三个参数：
+### FlowContext
+通过 `FlowContext` 定义和管理上下文变量，为组件提供变量数据源。
 
-<code src="./basic.tsx"></code>
-
-### 2. Null 选项示例
-
-通过 converters 为 metaTree 添加 Null 选项，渲染为只读 Input 显示 `<Null>`：
-
-<code src="./null-option.tsx"></code>
-
-**实现原理**: 
-- `resolveValueFromPath` 返回 `null` 值
-- `resolvePathFromValue` 解析 null 相关的路径
-
-### 3. 单层 Constant 示例
-
-在 metaTree 中添加单层 Constant 选项，通过 converters 渲染为普通 Input：
-
-<code src="./single-constant.tsx"></code>
-
-**实现原理**: 
-- `resolveValueFromPath` 返回空字符串供用户输入
-- `resolvePathFromValue` 解析 Constant 相关的路径
-
-### 4. 多层 Constant 示例
-
-多层 Constant 结构（Constant → string/number/date），根据类型渲染不同的输入组件：
-
-<code src="./multi-constant.tsx"></code>
-
-**实现原理**: 
-- `resolveValueFromPath` 根据类型返回不同格式的初始值
-- `resolvePathFromValue` 解析多层路径结构
-
-### 5. 不同的变量选择组件形态
-
-通过 `showValueComponent` 属性控制组件的显示形态：
-
-<code src="./variants.tsx"></code>
-
-### 6. VariableInput 组件交互示例
-
-演示两个 VariableInput 组件之间通过 `getPropertyMetaTree` 进行交互，第一个组件选择数据集合，第二个组件显示该集合的字段：
-
-<code src="./linked-components.tsx"></code>
-
-### 7. SlateVariableEditor - 智能变量编辑器
-
-SlateVariableEditor 基于 Slate.js 富文本编辑器框架构建，完美结合了 Slate 的强大编辑能力与 NocoBase 的组件生态：
-
-<code src="./slate-variable-editor/index.tsx"></code>
-
-**适用场景**: 适合需要在长文本中插入变量的场景，如邮件模板、通知模板、表达式编辑等。这是目前最推荐的解决方案，特别适合需要在 NocoBase 中实现复杂变量编辑的场景。
+### Converters
+VariableInput 通过 converters 机制实现值与路径的双向转换，支持高度定制化。
