@@ -14,20 +14,26 @@ import { FlowContextSelector } from '../../FlowContextSelector';
 import { createTestFlowContext } from './test-utils';
 
 describe('FlowContextSelector', () => {
-  it('should render with default children', () => {
+  it('should render with default children', async () => {
     const flowContext = createTestFlowContext();
     render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
-    expect(screen.getByRole('button')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
   });
 
-  it('should render with custom children', () => {
+  it('should render with custom children', async () => {
     const flowContext = createTestFlowContext();
     render(
       <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()}>
         <button>Custom Button</button>
       </FlowContextSelector>,
     );
-    expect(screen.getByText('Custom Button')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText('Custom Button')).toBeInTheDocument();
+    });
   });
 
   it('should handle value parsing and display selected path', async () => {
@@ -149,20 +155,23 @@ describe('FlowContextSelector', () => {
     // This test verifies that showSearch prop is accepted
   });
 
-  it('should handle FlowContext metaTree', () => {
+  it('should handle FlowContext metaTree', async () => {
     const flowContext = createTestFlowContext();
     render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
   });
 
-  it('should handle empty metaTree', () => {
+  it('should handle empty metaTree', async () => {
     render(<FlowContextSelector metaTree={[]} />);
 
-    const cascader = screen.getByRole('button');
-    fireEvent.click(cascader);
-
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    await waitFor(() => {
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
   });
 
   it('should pass through cascader props', async () => {
@@ -176,8 +185,10 @@ describe('FlowContextSelector', () => {
     );
 
     // Check if basic rendering works with props
-    const button = screen.getByRole('button');
-    expect(button).toBeInTheDocument();
+    await waitFor(() => {
+      const button = screen.getByRole('button');
+      expect(button).toBeInTheDocument();
+    });
   });
 
   describe('Double-click functionality', () => {
@@ -206,7 +217,7 @@ describe('FlowContextSelector', () => {
       );
     });
 
-    it('should support double-click selection for non-leaf nodes', () => {
+    it('should support double-click selection for non-leaf nodes', async () => {
       // This test verifies that the double-click logic is implemented
       // In actual usage, users would double-click to select non-leaf nodes
       const onChange = vi.fn();
@@ -216,12 +227,14 @@ describe('FlowContextSelector', () => {
 
       // The implementation supports double-click detection with 300ms window
       // For testing purposes, we verify the component renders correctly
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('button')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Custom parsing and formatting functions', () => {
-    it('should use custom parseValueToPath function', () => {
+    it('should use custom parseValueToPath function', async () => {
       const onChange = vi.fn();
       const flowContext = createTestFlowContext();
       const customParseValueToPath = vi.fn().mockReturnValue(['user', 'name']);
@@ -235,7 +248,9 @@ describe('FlowContextSelector', () => {
         />,
       );
 
-      expect(customParseValueToPath).toHaveBeenCalledWith('custom.user.name');
+      await waitFor(() => {
+        expect(customParseValueToPath).toHaveBeenCalledWith('custom.user.name');
+      });
     });
 
     it('should use custom formatPathToValue function', async () => {
@@ -352,12 +367,14 @@ describe('FlowContextSelector', () => {
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
 
-    it('should handle invalid value format', () => {
+    it('should handle invalid value format', async () => {
       const flowContext = createTestFlowContext();
 
       render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} value="invalid.format" />);
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('button')).toBeInTheDocument();
+      });
     });
 
     it('should handle metaTree function returning non-array', async () => {
@@ -377,7 +394,7 @@ describe('FlowContextSelector', () => {
   });
 
   describe('Cascader props validation', () => {
-    it('should accept and render with cascader props', () => {
+    it('should accept and render with cascader props', async () => {
       const flowContext = createTestFlowContext();
 
       // Test that component accepts various Cascader props without crashing
@@ -393,10 +410,12 @@ describe('FlowContextSelector', () => {
       );
 
       // Should render without errors
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('button')).toBeInTheDocument();
+      });
     });
 
-    it('should pass through Cascader-specific props', () => {
+    it('should pass through Cascader-specific props', async () => {
       const flowContext = createTestFlowContext();
 
       // Test expandTrigger and other Cascader-specific props
@@ -409,7 +428,9 @@ describe('FlowContextSelector', () => {
         />,
       );
 
-      expect(screen.getByRole('button')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole('button')).toBeInTheDocument();
+      });
     });
   });
 });
