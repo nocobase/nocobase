@@ -8,11 +8,11 @@
  */
 
 import { PlusOutlined, DeleteOutlined, DownOutlined, RightOutlined, UpOutlined } from '@ant-design/icons';
-import { observer } from '@formily/react';
+import { observer, useField } from '@formily/react';
 import { List, Input, Switch, InputNumber, Form, Button, Dropdown, Checkbox, Radio, Select, DatePicker } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAntdToken } from 'antd-style';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FIELDS_VALIDATION_OPTIONS, REQUIRED_RULE_KEY } from '../../constants';
 import { css } from '@nocobase/client';
@@ -44,10 +44,36 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const { value, onChange, type, availableValidationOptions, excludeValidationOptions } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
+  const noCascadeCls = css`
+    .ant-form-item:not(.ant-form-item-has-error) .ant-input,
+    .ant-form-item:not(.ant-form-item-has-error) .ant-input-number,
+    .ant-form-item:not(.ant-form-item-has-error) .ant-input-number .ant-input-number-input,
+    .ant-form-item:not(.ant-form-item-has-error) .ant-select .ant-select-selector,
+    .ant-form-item:not(.ant-form-item-has-error) .ant-picker {
+      border-color: ${token.colorBorder} !important;
+      box-shadow: none !important;
+    }
+  `;
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const formilyField: any = useField?.() as any;
 
   const validationType = value?.type || type;
   const rules = value?.rules || [];
+
+  const isValueEmpty = useCallback((componentType: string | undefined, val: any) => {
+    switch (componentType) {
+      case 'checkbox':
+        return val !== true;
+      case 'multipleSelect':
+        return !Array.isArray(val) || val.length === 0;
+      case 'inputNumber':
+        return val === undefined || val === null || val === '' || Number.isNaN(val as number);
+      case 'datePicker':
+        return !val;
+      default:
+        return val === undefined || val === null || val === '';
+    }
+  }, []);
 
   const validationOptions = useMemo(() => {
     const allOptions = FIELDS_VALIDATION_OPTIONS[validationType] || [];
@@ -67,6 +93,45 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     return filteredOptions;
   }, [validationType, availableValidationOptions, excludeValidationOptions]);
 
+  useEffect(() => {
+    if (!formilyField) return;
+    let hasError = false;
+    const invalidRuleKeys: string[] = [];
+    try {
+      rules.forEach((rule) => {
+        const opt = validationOptions.find((o) => o.key === rule.name);
+        if (!opt || !opt.params) return;
+        let ruleInvalid = false;
+        opt.params.forEach((param) => {
+          if (!param.required) return;
+          const currentValue = (rule.args?.[param.key] ?? param.defaultValue) as any;
+          if (isValueEmpty(param.componentType as any, currentValue)) {
+            hasError = true;
+            ruleInvalid = true;
+          }
+        });
+        if (ruleInvalid) invalidRuleKeys.push(rule.key);
+      });
+    } catch (err) {
+      // Mark as error on unexpected exceptions to avoid empty catch block and surface validation issues
+      hasError = true;
+    }
+
+    if (invalidRuleKeys.length) {
+      setExpandedKeys((prev) => Array.from(new Set([...(prev || []), ...invalidRuleKeys])));
+    }
+
+    if (hasError) {
+      formilyField.setFeedback?.({
+        type: 'error',
+        code: 'ValidateError',
+        messages: [' '],
+      });
+    } else {
+      formilyField.setFeedback?.({});
+    }
+  }, [formilyField, rules, validationOptions, isValueEmpty, t]);
+
   const handleAddRule = (ruleType: string) => {
     const option = validationOptions.find((opt) => opt.key === ruleType);
     const newRule: ValidationRule = {
@@ -83,19 +148,12 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       });
     }
 
-    if (option?.paramsType) {
-      newRule.paramsType = option.paramsType;
-    }
-
-    const newRules = [...rules, newRule];
     const newValue: ValidationData = {
       type: validationType,
-      rules: newRules,
+      rules: [...rules, newRule],
     };
 
-    if (option?.hasValue && option.params.length > 0) {
-      setExpandedKeys([...expandedKeys, newRule.key]);
-    }
+    setExpandedKeys(expandedKeys.filter((key) => key !== ruleType));
 
     onChange?.(newValue);
   };
@@ -106,8 +164,6 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       type: validationType,
       rules: newRules,
     };
-
-    setExpandedKeys(expandedKeys.filter((key) => key !== ruleKey));
 
     onChange?.(newValue);
   };
@@ -153,6 +209,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       <Form size="small">
         {option.params.map((param) => {
           const currentValue = rule.args?.[param.key] ?? param.defaultValue;
+          const isInvalid = !!param.required && isValueEmpty(param.componentType as any, currentValue);
 
           return (
             <Form.Item
@@ -160,6 +217,9 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
               label={param.componentType === 'checkbox' ? null : t(param.label)}
               valuePropName={param.componentType === 'checkbox' ? 'checked' : 'value'}
               style={{ marginBottom: token.marginSM, paddingLeft: 8, paddingRight: 8 }}
+              required={!!param.required}
+              validateStatus={isInvalid ? 'error' : undefined}
+              help={isInvalid ? t('This field is required') : undefined}
             >
               {param.componentType === 'checkbox' ? (
                 <Checkbox
@@ -244,47 +304,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                   </Select>
                   {param.options?.map((option) => {
                     if (option.value === currentValue && option.componentType) {
-                      return (
-                        <div key={`${option.value}-component`} style={{ marginTop: token.marginXS }}>
-                          {option.componentType === 'text' ? (
-                            <Input
-                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
-                              onChange={(e) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.value)
-                              }
-                              style={{ width: '100%' }}
-                            />
-                          ) : option.componentType === 'inputNumber' ? (
-                            <InputNumber
-                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
-                              onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${option.value}`, val)}
-                              style={{ width: '100%' }}
-                            />
-                          ) : option.componentType === 'checkbox' ? (
-                            <Checkbox
-                              checked={rule.args?.[`${param.key}_${option.value}`] || false}
-                              onChange={(e) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.checked)
-                              }
-                            >
-                              {t(option.label)}
-                            </Checkbox>
-                          ) : option.componentType === 'datePicker' ? (
-                            <DatePicker
-                              value={
-                                rule.args?.[`${param.key}_${option.value}`]
-                                  ? dayjs(rule.args[`${param.key}_${option.value}`])
-                                  : null
-                              }
-                              onChange={(date) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, date?.toISOString())
-                              }
-                              placeholder={t('Select date')}
-                              style={{ width: '100%' }}
-                            />
-                          ) : null}
-                        </div>
-                      );
+                      return <></>;
                     }
                     return null;
                   })}
@@ -350,7 +370,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   };
 
   return (
-    <div style={{ marginBottom: token.marginLG }}>
+    <div className={noCascadeCls} style={{ marginBottom: token.marginLG }}>
       {rules.length > 0 && (
         <List
           size="small"

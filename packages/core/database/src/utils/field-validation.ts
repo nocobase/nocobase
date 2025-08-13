@@ -74,7 +74,7 @@ export function getJoiErrorMessage(t: Function) {
       tOptions,
     ),
     'string.isoDate': t('{{#label}} must be a valid ISO 8601 date', tOptions),
-    'string.guid': t('{{#label}} must be a valid GUID', tOptions),
+    'string.guid': t('{{#label}} must be a valid UUID', tOptions),
     'string.hex': t('{{#label}} must only contain hexadecimal characters', tOptions),
     'string.hostname': t('{{#label}} must be a valid hostname', tOptions),
     'string.lowercase': t('{{#label}} must only contain lowercase characters', tOptions),

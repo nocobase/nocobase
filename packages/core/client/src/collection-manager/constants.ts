@@ -23,19 +23,19 @@ export const FIELDS_VALIDATION_OPTIONS = {
       key: 'max',
       label: 'Max value',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
     },
     {
       key: 'min',
       label: 'Min value',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
     },
     {
       key: 'pattern',
       label: 'Pattern',
       hasValue: true,
-      params: [{ key: 'regex', label: 'Regular Expression', componentType: 'text' }],
+      params: [{ key: 'regex', label: 'Regular Expression', componentType: 'text', required: true }],
     },
     {
       key: 'email',
@@ -44,17 +44,17 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [
         {
           key: 'allowFullyQualified',
-          label: 'Allow Fully Qualified',
+          label: 'domains ending with a . character are permitted',
           componentType: 'checkbox',
         },
         {
           key: 'allowUnicode',
-          label: 'Allow Unicode',
+          label: 'Unicode characters are permitted',
           componentType: 'checkbox',
         },
         {
           key: 'ignoreLength',
-          label: 'Ignore Length',
+          label: 'Ignore invalid email length errors',
           componentType: 'checkbox',
         },
         {
@@ -70,19 +70,19 @@ export const FIELDS_VALIDATION_OPTIONS = {
         },
         {
           key: 'tlds',
-          label: 'TLDs',
+          label: 'tlds',
           componentType: 'singleSelect',
           options: [
             {
-              label: 'Allow true',
-              value: 'AllowTrue',
+              label: 'IANA registry',
+              value: 'true',
             },
             {
-              label: 'Allow false',
-              value: 'AllowFalse',
+              label: 'Disable validation',
+              value: 'false',
             },
             {
-              label: 'Allow custom',
+              label: 'Allow list',
               value: 'AllowCustom',
               componentType: 'text',
             },
@@ -157,7 +157,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
       key: 'length',
       label: 'Length',
       hasValue: true,
-      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber' }],
+      params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
     },
     {
       key: 'uri',
@@ -179,12 +179,12 @@ export const FIELDS_VALIDATION_OPTIONS = {
         },
         {
           key: 'allowRelative',
-          label: 'Allow Relative',
+          label: 'Allow relative URIs',
           componentType: 'checkbox',
         },
         {
           key: 'relativeOnly',
-          label: 'Relative Only',
+          label: 'Restrict only relative URIs',
           componentType: 'checkbox',
         },
         {
