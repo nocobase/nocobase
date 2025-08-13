@@ -60,6 +60,66 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const validationType = value?.type || type;
   const rules = value?.rules || [];
 
+  const normalizeArgsForDomainLike = useCallback((ruleName: string, args: Record<string, any> | undefined) => {
+    if (!args) return args;
+    if (ruleName !== 'email' && ruleName !== 'domain') return args;
+
+    const next: Record<string, any> = { ...args };
+
+    const toList = (raw: any): string[] => {
+      if (Array.isArray(raw)) return raw.filter(Boolean);
+      const str = String(raw ?? '').trim();
+      if (!str) return [];
+      return str
+        .split(/[\s,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    };
+
+    const raw = next.tlds;
+    let mode: 'iana' | 'disable' | 'allow' | 'deny' = 'iana';
+    if (raw === 'iana' || raw === true || raw === 'true') mode = 'iana';
+    else if (raw === 'disable' || raw === false || raw === 'false') mode = 'disable';
+    else if (raw === 'allow') mode = 'allow';
+    else if (raw === 'deny') mode = 'deny';
+    else if (raw && typeof raw === 'object') {
+      if (raw.allow === true) mode = 'iana';
+      else if (Array.isArray(raw.allow)) mode = 'allow';
+      else if (Array.isArray(raw.deny)) mode = 'deny';
+      else mode = 'iana';
+    }
+
+    if (mode === 'iana') {
+      next.tlds = { allow: true };
+    } else if (mode === 'disable') {
+      next.tlds = false;
+    } else if (mode === 'allow') {
+      const prevArr = Array.isArray(typeof raw === 'object' && raw?.allow) ? raw.allow : [];
+      next.tlds = { allow: toList(prevArr) };
+    } else if (mode === 'deny') {
+      const prevArr = Array.isArray(typeof raw === 'object' && raw?.deny) ? raw.deny : [];
+      next.tlds = { deny: toList(prevArr) };
+    }
+
+    delete (next as any).tlds_allow;
+    delete (next as any).tlds_deny;
+
+    return next;
+  }, []);
+
+  const deriveTldsModeFromArgs = useCallback((args: Record<string, any> | undefined) => {
+    const tlds = args?.tlds;
+    if (tlds === false) return 'disable';
+    if (tlds && typeof tlds === 'object') {
+      if (tlds.allow === true) return 'iana';
+      if (Array.isArray(tlds.allow)) return 'allow';
+      if (Array.isArray(tlds.deny)) return 'deny';
+    }
+    const mode = args?.tlds;
+    if (mode === 'iana' || mode === 'disable' || mode === 'allow' || mode === 'deny') return mode;
+    return 'iana';
+  }, []);
+
   const isValueEmpty = useCallback((componentType: string | undefined, val: any) => {
     switch (componentType) {
       case 'checkbox':
@@ -87,7 +147,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       const intersection = availableValidationOptions
         .map((key) => filteredOptions.find((x) => x.key === key))
         .filter(Boolean);
-      return intersection.length > 0 ? intersection : filteredOptions;
+      return intersection.length > 0 ? (intersection as any) : filteredOptions;
     }
 
     return filteredOptions;
@@ -113,7 +173,6 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
         if (ruleInvalid) invalidRuleKeys.push(rule.key);
       });
     } catch (err) {
-      // Mark as error on unexpected exceptions to avoid empty catch block and surface validation issues
       hasError = true;
     }
 
@@ -138,6 +197,7 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
       key: `r_${Date.now()}`,
       name: ruleType,
       args: {},
+      paramsType: option?.paramsType,
     };
 
     if (option?.params) {
@@ -147,6 +207,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
         }
       });
     }
+
+    newRule.args = normalizeArgsForDomainLike(ruleType, newRule.args);
 
     const newValue: ValidationData = {
       type: validationType,
@@ -171,9 +233,13 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
   const handleRuleValueChange = (ruleKey: string, argKey: string, newValue: any) => {
     const newRules = rules.map((rule) => {
       if (rule.key === ruleKey) {
+        let nextArgs = { ...rule.args, [argKey]: newValue } as Record<string, any>;
+        nextArgs = normalizeArgsForDomainLike(rule.name, nextArgs);
+        const opt = validationOptions.find((o) => o.key === rule.name);
         return {
           ...rule,
-          args: { ...rule.args, [argKey]: newValue },
+          args: nextArgs,
+          paramsType: opt?.paramsType ?? rule.paramsType,
         };
       }
       return rule;
@@ -208,7 +274,15 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     return (
       <Form size="small">
         {option.params.map((param) => {
-          const currentValue = rule.args?.[param.key] ?? param.defaultValue;
+          let currentValue = rule.args?.[param.key] ?? param.defaultValue;
+          // 针对 tlds 单选，基于结构化 args 推导展示值
+          if (
+            param.componentType === 'radio' &&
+            param.key === 'tlds' &&
+            (option.key === 'email' || option.key === 'domain')
+          ) {
+            currentValue = deriveTldsModeFromArgs(rule.args);
+          }
           const isInvalid = !!param.required && isValueEmpty(param.componentType as any, currentValue);
 
           return (
@@ -232,7 +306,26 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 <div>
                   <Radio.Group
                     value={currentValue}
-                    onChange={(e) => handleRuleValueChange(rule.key, param.key, e.target.value)}
+                    onChange={(e) => {
+                      if (param.key === 'tlds' && (option.key === 'email' || option.key === 'domain')) {
+                        const val = e.target.value as 'iana' | 'disable' | 'allow' | 'deny';
+                        if (val === 'iana') {
+                          handleRuleValueChange(rule.key, 'tlds', { allow: true });
+                        } else if (val === 'disable') {
+                          handleRuleValueChange(rule.key, 'tlds', false);
+                        } else if (val === 'allow') {
+                          const prev = rule.args?.tlds;
+                          const arr = Array.isArray(prev?.allow) ? prev.allow : [];
+                          handleRuleValueChange(rule.key, 'tlds', { allow: arr });
+                        } else if (val === 'deny') {
+                          const prev = rule.args?.tlds;
+                          const arr = Array.isArray(prev?.deny) ? prev.deny : [];
+                          handleRuleValueChange(rule.key, 'tlds', { deny: arr });
+                        }
+                      } else {
+                        handleRuleValueChange(rule.key, param.key, e.target.value);
+                      }
+                    }}
                   >
                     {param.options?.map((option) => (
                       <Radio key={option.value} value={option.value}>
@@ -245,13 +338,48 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                       return (
                         <div key={`${option.value}-component`} style={{ marginTop: token.marginXS }}>
                           {option.componentType === 'text' ? (
-                            <Input
-                              value={rule.args?.[`${param.key}_${option.value}`] || ''}
-                              onChange={(e) =>
-                                handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.value)
+                            (() => {
+                              if (param.key === 'tlds' && (option.value === 'allow' || option.value === 'deny')) {
+                                const tlds = rule.args?.tlds;
+                                const arrValue: string[] = Array.isArray(
+                                  option.value === 'allow' ? tlds?.allow : tlds?.deny,
+                                )
+                                  ? option.value === 'allow'
+                                    ? tlds.allow
+                                    : tlds.deny
+                                  : [];
+                                return (
+                                  <Select
+                                    mode="tags"
+                                    value={arrValue}
+                                    onChange={(vals) => {
+                                      const cleaned = Array.from(
+                                        new Set((vals as string[]).map((s) => String(s).trim()).filter(Boolean)),
+                                      );
+                                      if (option.value === 'allow') {
+                                        handleRuleValueChange(rule.key, 'tlds', { allow: cleaned });
+                                      } else {
+                                        handleRuleValueChange(rule.key, 'tlds', { deny: cleaned });
+                                      }
+                                    }}
+                                    tokenSeparators={[',', ' ', '\n', '\t']}
+                                    placeholder={t('Enter values, press Enter or comma to confirm')}
+                                    style={{ width: '100%' }}
+                                  />
+                                );
                               }
-                              style={{ width: '100%' }}
-                            />
+
+                              const subValue = '';
+                              return (
+                                <Input
+                                  value={subValue}
+                                  onChange={(e) =>
+                                    handleRuleValueChange(rule.key, `${param.key}_${option.value}`, e.target.value)
+                                  }
+                                  style={{ width: '100%' }}
+                                />
+                              );
+                            })()
                           ) : option.componentType === 'inputNumber' ? (
                             <InputNumber
                               value={rule.args?.[`${param.key}_${option.value}`] || ''}

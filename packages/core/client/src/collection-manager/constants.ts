@@ -71,24 +71,25 @@ export const FIELDS_VALIDATION_OPTIONS = {
         {
           key: 'tlds',
           label: 'tlds',
-          componentType: 'singleSelect',
+          componentType: 'radio',
+          defaultValue: 'iana',
           options: [
             {
               label: 'IANA registry',
-              value: 'true',
+              value: 'iana',
             },
             {
               label: 'Disable validation',
-              value: 'false',
+              value: 'disable',
             },
             {
               label: 'Allow list',
-              value: 'AllowCustom',
+              value: 'allow',
               componentType: 'text',
             },
             {
-              label: 'Deny custom',
-              value: 'DenyCustom',
+              label: 'Deny list',
+              value: 'deny',
               componentType: 'text',
             },
           ],

@@ -67,7 +67,7 @@ export function getJoiErrorMessage(t: Function) {
     'string.alphanum': t('{{#label}} must only contain alpha-numeric characters', tOptions),
     'string.token': t('{{#label}} must only contain alpha-numeric and underscore characters', tOptions),
     'string.regex': t('{{#label}} with value {{#value}} fails to match the required pattern', tOptions),
-    'string.email': t('{{#label}} must be a valid email', tOptions),
+    'string.email': t('{{#label}} email address doesn’t meet the required format', tOptions),
     'string.uri': t('{{#label}} must be a valid uri', tOptions),
     'string.uriCustomScheme': t(
       '{{#label}} must be a valid uri with a scheme matching the {{#scheme}} pattern',
