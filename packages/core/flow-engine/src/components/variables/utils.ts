@@ -11,6 +11,7 @@ import React from 'react';
 import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
+import { isVariableExpression } from '../../utils';
 
 export const parseValueToPath = (value: string): string[] | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -111,11 +112,7 @@ export const buildContextSelectorItems = (
 };
 
 export const isVariableValue = (value: any): boolean => {
-  if (typeof value !== 'string') return false;
-
-  const trimmed = value.trim();
-  const variableRegex = /^\{\{\s*ctx(?:\..+?)?\s*\}\}$/;
-  return variableRegex.test(trimmed);
+  return isVariableExpression(value);
 };
 
 export const createDefaultConverters = (): Converters => {

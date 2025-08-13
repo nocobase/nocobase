@@ -44,3 +44,6 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
 export { createRecordProxyContext } from './createRecordProxyContext';
+
+// Context 工具
+export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
