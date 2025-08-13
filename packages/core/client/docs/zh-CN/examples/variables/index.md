@@ -77,7 +77,13 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 
 <code src="./variants.tsx"></code>
 
-### 6. SlateVariableEditor - 智能变量编辑器
+### 6. VariableInput 组件交互示例
+
+演示两个 VariableInput 组件之间通过 `getPropertyMetaTree` 进行交互，第一个组件选择数据集合，第二个组件显示该集合的字段：
+
+<code src="./linked-components.tsx"></code>
+
+### 7. SlateVariableEditor - 智能变量编辑器
 
 SlateVariableEditor 基于 Slate.js 富文本编辑器框架构建，完美结合了 Slate 的强大编辑能力与 NocoBase 的组件生态：
 
