@@ -29,6 +29,17 @@ CollectionFieldFormItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         ctx.model.setProps({ name: ctx.model.fieldPath });
+        if (ctx.model.collectionField.interface === 'email') {
+          const props = ctx.model.parent.getProps();
+          const rules = [...(props.rules || [])];
+          if (!rules.some((rule) => rule.type === 'email')) {
+            rules.push({
+              type: 'email',
+              message: ctx.t('The field value is not a email format'),
+            });
+          }
+          ctx.model.setProps({ rules });
+        }
       },
     },
     label: {
