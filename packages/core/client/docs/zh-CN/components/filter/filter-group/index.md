@@ -18,7 +18,7 @@ FilterGroup 的值为一个对象：
 
 ## 基本示例
 
-<code src="./demos/filter-group-basic.tsx"></code>
+<code src="./demos/filter-group-basic.tsx" defaultShowCode={false}></code>
 
 ## Props
 

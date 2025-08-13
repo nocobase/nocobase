@@ -4,7 +4,7 @@
 
 ## 基本示例
 
-<code src="./demos/custom-filter-item-basic.tsx"></code>
+<code src="./demos/custom-filter-item-basic.tsx" defaultShowCode={false}></code>
 
 ## 约定
 
