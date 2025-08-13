@@ -19,31 +19,31 @@ export class NanoIDEditableFieldModel extends FormFieldModel {
   }
 }
 
-NanoIDEditableFieldModel.registerFlow({
-  key: 'nanoidSettings',
-  sort: 1000,
-  steps: {
-    initialValue: {
-      handler(ctx, params) {
-        const { size, customAlphabet } = ctx.model.collectionField.options || { size: 21 };
-        const form = ctx.model.form;
-        const fieldPath = ctx.model.fieldPath;
-        const value = form.getFieldValue(fieldPath);
-        function isValidNanoid(value) {
-          if (value?.length !== size) {
-            return ctx.t('Field value size is') + ` ${size || 21}`;
-          }
-          for (let i = 0; i < value.length; i++) {
-            if (customAlphabet?.indexOf(value[i]) === -1) {
-              return ctx.t('Field value do not meet the requirements');
-            }
-          }
-        }
-        if (!value && customAlphabet) {
-          form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
-        }
-        // ctx.model.field.validator = isValidNanoid;
-      },
-    },
-  },
-});
+// NanoIDEditableFieldModel.registerFlow({
+//   key: 'nanoidSettings',
+//   sort: 1000,
+//   steps: {
+//     initialValue: {
+//       handler(ctx, params) {
+//       //   const { size, customAlphabet } = ctx.model.collectionField.options || { size: 21 };
+//       //   const form = ctx.model.form;
+//       //   const fieldPath = ctx.model.fieldPath;
+//       //   const value = form.getFieldValue(fieldPath);
+//       //   function isValidNanoid(value) {
+//       //     if (value?.length !== size) {
+//       //       return ctx.t('Field value size is') + ` ${size || 21}`;
+//       //     }
+//       //     for (let i = 0; i < value.length; i++) {
+//       //       if (customAlphabet?.indexOf(value[i]) === -1) {
+//       //         return ctx.t('Field value do not meet the requirements');
+//       //       }
+//       //     }
+//       //   }
+//       //   if (!value && customAlphabet) {
+//       //     form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
+//       //   }
+//       //   // ctx.model.field.validator = isValidNanoid;
+//       // },
+//     },
+//   },
+// });

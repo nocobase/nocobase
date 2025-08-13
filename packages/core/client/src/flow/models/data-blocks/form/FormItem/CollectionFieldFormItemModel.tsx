@@ -36,14 +36,15 @@ CollectionFieldFormItemModel.registerFlow({
         }
         const props = ctx.model.getProps();
         const rules = [...(props.rules || [])];
-        if (ctx.model.collectionField.interface === 'email') {
+        const fieldInterface = ctx.model.collectionField.interface;
+        if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
               type: 'email',
               message: ctx.t('The field value is not a email format'),
             });
           }
-        } else if (ctx.model.collectionField.interface === 'json') {
+        } else if (fieldInterface === 'json') {
           // 检查是否已经有 JSON 校验规则
           if (!rules.some((rule) => rule.validator && rule.name === 'jsonValidator')) {
             rules.push({
@@ -61,7 +62,37 @@ CollectionFieldFormItemModel.registerFlow({
               },
             });
           }
+        } else if (fieldInterface === 'nanoid') {
+          const { size = 21, customAlphabet } = ctx.model.collectionField.options || {};
+
+          // 绑定校验器
+          if (!rules.some((rule) => rule.validator && rule.name === 'nanoidValidator')) {
+            rules.push({
+              name: 'nanoidValidator',
+              validator: (_, value) => {
+                if (!value) return Promise.resolve(); // 空值不校验
+                if (value.length !== size) {
+                  return Promise.reject(new Error(ctx.t('Field value size is') + ` ${size}`));
+                }
+                if (customAlphabet) {
+                  for (let i = 0; i < value.length; i++) {
+                    if (!customAlphabet.includes(value[i])) {
+                      return Promise.reject(new Error(ctx.t('Field value does not meet the requirements')));
+                    }
+                  }
+                }
+                return Promise.resolve();
+              },
+            });
+          }
+
+          // 如果字段值为空且有自定义字母表，生成默认值
+          // const value = ctx.model.form.getFieldValue(fieldPath);
+          // if (!value && customAlphabet) {
+          //   form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
+          // }
         }
+
         ctx.model.setProps({ rules, name: ctx.model.fieldPath });
       },
     },
