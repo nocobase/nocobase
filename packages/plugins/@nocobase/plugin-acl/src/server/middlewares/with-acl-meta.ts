@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
-import { snakeCase } from '@nocobase/database';
 import { NoPermissionError } from '@nocobase/acl';
+import { snakeCase } from '@nocobase/database';
+import lodash from 'lodash';
 
 function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
     await next();
+
+    if (process.env.DISABLE_ACL_META === 'true' || process.env.DISABLE_ACL_META === '1') {
+      return;
+    }
 
     const dataSourceKey = ctx.get('x-data-source');
     const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
