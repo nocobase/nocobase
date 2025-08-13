@@ -27,6 +27,7 @@ class PluginNullOptionExample extends Plugin {
           name: 'null',
           title: 'Null',
           type: 'null',
+          paths: ['null'],
           render: () => <Input readOnly value="<Null>" />,
         });
         return baseMetaTree;

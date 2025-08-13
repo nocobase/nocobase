@@ -71,21 +71,13 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 - `resolveValueFromPath` 根据类型返回不同格式的初始值
 - `resolvePathFromValue` 解析多层路径结构
 
-### 5. 根据 editableFieldModel 渲染不同的输入组件
-
-<code src="./editable-field-model.tsx"></code>
-
-**实现原理**: 
-- `resolveValueFromPath` 根据 field type 返回对应的初始值
-- `resolvePathFromValue` 解析包含 field 信息的路径
-
-### 6. 不同的变量选择组件形态
+### 5. 不同的变量选择组件形态
 
 通过 `showValueComponent` 属性控制组件的显示形态：
 
 <code src="./variants.tsx"></code>
 
-### 8. SlateVariableEditor - 智能变量编辑器
+### 6. SlateVariableEditor - 智能变量编辑器
 
 SlateVariableEditor 基于 Slate.js 富文本编辑器框架构建，完美结合了 Slate 的强大编辑能力与 NocoBase 的组件生态：
 

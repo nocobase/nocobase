@@ -27,6 +27,7 @@ class PluginSingleConstantExample extends Plugin {
           name: 'Constant',
           title: 'Constant',
           type: 'string',
+          paths: ['Constant'],
           render: () => <Input />,
         });
         return baseMetaTree;

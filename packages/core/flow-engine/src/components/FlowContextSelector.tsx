@@ -9,7 +9,7 @@
 
 import React, { useCallback, useRef, useMemo } from 'react';
 import { Button, Cascader } from 'antd';
-import type { FlowContextSelectorProps } from './variables/types';
+import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import { useVariableTreeData } from './variables/useVariableTreeData';
 import { formatPathToValue } from './variables/utils';
 
@@ -50,10 +50,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 处理选择变化事件
   const handleChange = useCallback(
-    (selectedValues: (string | number)[], selectedOptions?: any[]) => {
+    (selectedValues: (string | number)[], selectedOptions?: ContextSelectorItem[]) => {
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('', lastOption);
+        onChange?.('', lastOption.meta);
         return;
       }
 
@@ -65,16 +65,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 使用自定义格式化函数或默认函数
       let formattedValue: string;
       if (customFormatPathToValue) {
-        formattedValue = customFormatPathToValue(lastOption);
+        formattedValue = customFormatPathToValue(lastOption.meta);
         if (formattedValue === undefined) {
-          formattedValue = formatPathToValue(lastOption);
+          formattedValue = formatPathToValue(lastOption.meta);
         }
       } else {
-        formattedValue = formatPathToValue(lastOption);
+        formattedValue = formatPathToValue(lastOption.meta);
       }
 
       if (isLeaf) {
-        onChange?.(formattedValue, lastOption);
+        onChange?.(formattedValue, lastOption.meta);
         return;
       }
 
@@ -84,7 +84,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        onChange?.(formattedValue, lastOption);
+        onChange?.(formattedValue, lastOption.meta);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开

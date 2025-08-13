@@ -26,11 +26,12 @@ class PluginMultiConstantExample extends Plugin {
         baseMetaTree.splice(0, 0, {
           name: 'Constant',
           title: 'Constant',
+          paths: ['Constant'],
           type: 'object',
           children: [
-            { name: 'string', title: 'String', type: 'string', render: () => <Input /> },
-            { name: 'number', title: 'Number', type: 'number', render: InputNumber },
-            { name: 'date', title: 'Date', type: 'string', render: DatePicker },
+            { name: 'string', title: 'String', type: 'string', paths: ['Constant', 'string'], render: () => <Input /> },
+            { name: 'number', title: 'Number', type: 'number', paths: ['Constant', 'number'], render: InputNumber },
+            { name: 'date', title: 'Date', type: 'string', paths: ['Constant', 'date'], render: DatePicker },
           ],
         });
         return baseMetaTree;
