@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-cloud-storage",
+  "version": "1.0.0",
+  "displayName": "Cloud Storage",
+  "displayName.zh-CN": "云存储",
+  "description": "Adds support for various cloud storage providers.",
+  "description.zh-CN": "添加对各种云存储提供商的支持。",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "dependencies": {
+    "dropbox": "^10.34.0",
+    "googleapis": "^100.0.0",
+    "@microsoft/microsoft-graph-client": "^3.0.2",
+    "box-node-sdk": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x",
+    "@nocobase/plugin-file-manager": "1.x"
+  }
+}
