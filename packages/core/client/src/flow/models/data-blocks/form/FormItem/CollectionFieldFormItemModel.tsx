@@ -28,15 +28,18 @@ CollectionFieldFormItemModel.registerFlow({
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
-        if (ctx.model.collectionField) {
+        const collectionField = ctx.model.collectionField;
+
+        if (collectionField) {
           ctx.model.subModels.field.setProps({
-            options: ctx.model.collectionField.enum.length ? ctx.model.collectionField.enum : undefined,
+            options: collectionField.enum.length ? collectionField.enum : undefined,
             ...this?.collectionField?.getComponentProps?.(),
+            mode: collectionField.type === 'array' ? 'multiple' : undefined,
           });
         }
         const props = ctx.model.getProps();
         const rules = [...(props.rules || [])];
-        const fieldInterface = ctx.model.collectionField.interface;
+        const fieldInterface = collectionField.interface;
         if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
@@ -63,8 +66,7 @@ CollectionFieldFormItemModel.registerFlow({
             });
           }
         } else if (fieldInterface === 'nanoid') {
-          const { size = 21, customAlphabet } = ctx.model.collectionField.options || {};
-
+          const { size = 21, customAlphabet } = collectionField.options || {};
           // 绑定校验器
           if (!rules.some((rule) => rule.validator && rule.name === 'nanoidValidator')) {
             rules.push({
