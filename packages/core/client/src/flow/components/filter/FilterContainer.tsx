@@ -30,7 +30,7 @@ interface FilterContentProps {
   /** 响应式的过滤条件对象 */
   value: Record<string, any>;
   /** 自定义筛选项组件 */
-  FormItem?: React.FC<FilterItemProps>;
+  FilterItem?: React.FC<FilterItemProps>;
   /** 上下文对象，用于获取字段列表等元信息 */
   ctx: any;
 }
@@ -66,13 +66,13 @@ interface FilterContentProps {
  * <FilterContent
  *   value={filterValue}
  *   ctx={contextObject}
- *   FormItem={CustomFormItem}
+ *   FilterItem={CustomFilterItem}
  * />
  * ```
  */
 export const FilterContainer: FC<FilterContentProps> = observer(
   (props) => {
-    const { value, FormItem, ctx } = props;
+    const { value, FilterItem, ctx } = props;
 
     // 确保 value 有正确的默认结构
     if (!value.logic) {
@@ -100,7 +100,7 @@ export const FilterContainer: FC<FilterContentProps> = observer(
 
     return (
       <>
-        <FilterGroup value={value} FilterItem={FormItem} />
+        <FilterGroup value={value} FilterItem={FilterItem} />
         <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
           <Button onClick={handleReset}>{translate('Reset')}</Button>
           <Button type="primary" onClick={handleSubmit}>
