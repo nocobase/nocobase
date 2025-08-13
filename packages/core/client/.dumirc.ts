@@ -47,6 +47,10 @@ export default defineConfig({
         link: '/models',
       },
       {
+        title: 'Components',
+        link: '/components',
+      },
+      {
         title: 'Examples',
         link: '/examples/flow-models/hello-world',
       },
@@ -64,6 +68,12 @@ export default defineConfig({
       // },
     ],
     sidebarEnhance: {
+      '/components': [
+        {
+          title: '组件1',
+          link: '/components',
+        }
+      ],
       '/examples': [
         {
           title: 'FlowModel',
@@ -495,6 +505,14 @@ export default defineConfig({
           title: '字段',
           type: 'group',
           children: [
+            {
+              title: 'SubFormFieldModel',
+              link: '/models/fields/sub-form-field-model',
+            },
+            {
+              title: 'SubTableFieldModel',
+              link: '/models/fields/sub-table-field-model',
+            },
             {
               title: 'DisplayFieldModel',
               link: '/models/fields/display-field-model',
