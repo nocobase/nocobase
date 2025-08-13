@@ -28,7 +28,12 @@ CollectionFieldFormItemModel.registerFlow({
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
-        ctx.model.setProps({ name: ctx.model.fieldPath });
+        if (ctx.model.collectionField) {
+          ctx.model.subModels.field.setProps({
+            options: ctx.model.collectionField.enum.length ? ctx.model.collectionField.enum : undefined,
+            ...this?.collectionField?.getComponentProps?.(),
+          });
+        }
         const props = ctx.model.getProps();
         const rules = [...(props.rules || [])];
         if (ctx.model.collectionField.interface === 'email') {
@@ -57,7 +62,7 @@ CollectionFieldFormItemModel.registerFlow({
             });
           }
         }
-        ctx.model.setProps({ rules });
+        ctx.model.setProps({ rules, name: ctx.model.fieldPath });
       },
     },
     label: {
