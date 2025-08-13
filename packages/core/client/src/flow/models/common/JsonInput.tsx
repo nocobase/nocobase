@@ -18,7 +18,7 @@ const jsonCss = css`
 `;
 
 export const JsonInput = (props) => {
-  const { json5, className, value, onChange, form } = props || {};
+  const { json5, className, value } = props || {};
   const _JSON = json5 ? JSON5 : JSON;
   const stringifiedValue = typeof value === 'string' ? value : value ? _JSON.stringify(value, null, 2) : '';
   const componentProps = {
@@ -29,31 +29,6 @@ export const JsonInput = (props) => {
       minRows: 3,
     },
     className: cx(jsonCss, className),
-    onChange: (ev: any) => {
-      const val = ev.target.value;
-      onChange(val);
-      try {
-        const v = val.trim() !== '' ? _JSON.parse(val) : null;
-        if (val.trim() !== '') {
-          _JSON.parse(val);
-        }
-        form.setFields([
-          {
-            name: props.id,
-            errors: [],
-          },
-        ]);
-      } catch (err) {
-        console.log(props);
-
-        form.setFields([
-          {
-            name: props.id,
-            errors: [err.message],
-          },
-        ]);
-      }
-    },
   };
   return <Input.TextArea {...componentProps} />;
 };

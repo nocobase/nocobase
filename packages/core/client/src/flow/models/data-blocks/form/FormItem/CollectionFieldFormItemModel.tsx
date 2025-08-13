@@ -29,17 +29,35 @@ CollectionFieldFormItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         ctx.model.setProps({ name: ctx.model.fieldPath });
+        const props = ctx.model.getProps();
+        const rules = [...(props.rules || [])];
         if (ctx.model.collectionField.interface === 'email') {
-          const props = ctx.model.parent.getProps();
-          const rules = [...(props.rules || [])];
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
               type: 'email',
               message: ctx.t('The field value is not a email format'),
             });
           }
-          ctx.model.setProps({ rules });
+        } else if (ctx.model.collectionField.interface === 'json') {
+          // 检查是否已经有 JSON 校验规则
+          if (!rules.some((rule) => rule.validator && rule.name === 'jsonValidator')) {
+            rules.push({
+              name: 'jsonValidator',
+              validator: (_, value) => {
+                if (!value || value.trim() === '') {
+                  return Promise.resolve();
+                }
+                try {
+                  JSON.parse(value);
+                  return Promise.resolve();
+                } catch (err: any) {
+                  return Promise.reject(new Error(err.message));
+                }
+              },
+            });
+          }
         }
+        ctx.model.setProps({ rules });
       },
     },
     label: {

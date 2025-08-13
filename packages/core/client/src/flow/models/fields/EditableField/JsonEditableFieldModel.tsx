@@ -14,11 +14,6 @@ export class JsonEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['json'];
 
   get component() {
-    return [
-      JsonInput,
-      {
-        form: this.form,
-      },
-    ];
+    return [JsonInput, {}];
   }
 }
