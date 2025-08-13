@@ -2,7 +2,7 @@
 
 用于以可视化方式编辑嵌套的筛选条件组，支持 All($and)/Any($or) 逻辑、条件项与条件组的递归嵌套、添加/删除等交互。
 
-- 组件来源：`@nocobase/flow-engine` 导出的 `FilterGroup`
+- 组件来源：`@nocobase/client` 导出的 `FilterGroup`
 - 典型场景：为筛选按钮、数据范围、联动规则等提供条件编辑 UI
 
 ## 值结构
