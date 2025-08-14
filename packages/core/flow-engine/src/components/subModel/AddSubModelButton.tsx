@@ -434,23 +434,31 @@ const AddSubModelButtonCore = function AddSubModelButton({
       });
 
       addedModel.setParent(model);
-      await addedModel.openPresetStepSettingsDialog();
+      // 在创建 Model 之前，需要先填写预设的配置表单
+      await addedModel.openFlowSettings({
+        preset: true,
+        onSaved: async () => {
+          try {
+            if (onModelCreated) {
+              await onModelCreated(addedModel);
+            }
 
-      if (onModelCreated) {
-        await onModelCreated(addedModel);
-      }
+            if (subModelType === 'array') {
+              model.addSubModel(subModelKey, addedModel);
+            } else {
+              model.setSubModel(subModelKey, addedModel);
+            }
 
-      if (subModelType === 'array') {
-        model.addSubModel(subModelKey, addedModel);
-      } else {
-        model.setSubModel(subModelKey, addedModel);
-      }
+            if (onSubModelAdded) {
+              await onSubModelAdded(addedModel);
+            }
 
-      if (onSubModelAdded) {
-        await onSubModelAdded(addedModel);
-      }
-
-      await addedModel.save();
+            await addedModel.save();
+          } catch (error) {
+            await handleModelCreationError(error, addedModel);
+          }
+        },
+      });
     } catch (error) {
       await handleModelCreationError(error, addedModel);
     }
