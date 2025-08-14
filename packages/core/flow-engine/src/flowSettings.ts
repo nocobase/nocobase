@@ -9,7 +9,7 @@
 
 import { define, observable } from '@formily/reactive';
 import React from 'react';
-import { Collapse, Space, Button } from 'antd';
+import { Collapse, Space, Button, Tabs } from 'antd';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
@@ -573,17 +573,18 @@ export class FlowSettings {
         const renderStepPanels = (steps: StepEntry[]) =>
           steps.map((s) => React.createElement(Panel, { header: s.stepTitle, key: keyOf(s) }, renderStepForm(s)));
 
-        const renderFlowGroupPanel = (fk: string) => {
+        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板
+        const toFlowTabItem = (fk: string) => {
           const group = grouped[fk];
-          return React.createElement(
-            Panel,
-            { header: t(group.title) || fk, key: fk },
-            React.createElement(
+          return {
+            key: fk,
+            label: t(group.title) || fk,
+            children: React.createElement(
               Collapse,
               { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
               ...renderStepPanels(group.steps),
             ),
-          );
+          };
         };
 
         const renderStepsContainer = (): React.ReactNode => {
@@ -602,12 +603,10 @@ export class FlowSettings {
             );
           }
 
-          // 情况 C：多 flow 分组渲染
-          return React.createElement(
-            Collapse,
-            { defaultActiveKey: flowKeysOrdered },
-            ...flowKeysOrdered.map((fk) => renderFlowGroupPanel(fk)),
-          );
+          // 情况 C：多 flow 分组渲染 => 使用 Tabs（每个 flow 一个 Tab）
+          const items = flowKeysOrdered.map((fk) => toFlowTabItem(fk));
+          const defaultActiveKey = flowKey && grouped[flowKey] ? flowKey : flowKeysOrdered[0];
+          return React.createElement(Tabs as any, { items, defaultActiveKey });
         };
 
         const onSaveAll = async () => {
