@@ -504,7 +504,7 @@ export class FlowContext {
       const initialTitle = name;
       node = {
         name,
-        title: initialTitle, // 初始使用 name 作为 title
+        title: metaOrFactory['title'] || initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
         uiSchema: undefined,

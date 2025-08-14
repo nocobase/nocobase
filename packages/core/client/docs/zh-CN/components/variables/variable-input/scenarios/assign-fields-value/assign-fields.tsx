@@ -58,7 +58,7 @@ class PluginAssignFieldsExample extends Plugin {
             title: 'Null',
             type: 'null',
             paths: ['Null'],
-            render: () => <span style={{ color: '#999' }}>null</span>,
+            render: () => <Input readOnly placeholder="<Null>" style={{ color: '#999' }} />,
           });
 
           // 根据字段类型添加不同的 Constant 选项
