@@ -370,16 +370,29 @@ export class FlowSettings {
   }
 
   /**
-   * 打开流程设置入口
+   * 打开流程设置入口（聚合渲染多个 flow 的可配置步骤）
    *
-   * 约定：
-   * - 必须提供 model 实例
-   * - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准
-   * - 当提供 stepKey 时应与某个 flowKey 组合使用
-   * - uiMode 控制以对话框或抽屉方式打开
+   * 行为约定：
+   * - 必须提供 model 实例；用于解析 flow 定义、上下文与保存参数。
+   * - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准（只处理单个 flow）。
+   * - 当提供 stepKey 时，应与某个 flowKey 组合使用；仅渲染该 flow 下命中的步骤。
+   * - 当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
+   * - 当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
+   * - uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
+   *
+   * 副作用：
+   * - 打开对应的视图容器；提交时逐步校验与保存每个 step 的参数，调用 before/after hooks，并最终触发 model.save()。
+   * - 通过 model.context.message 提示保存成功或错误信息。
+   *
+   * 参数：
+   * - options.model: FlowModel 实例（必填）。
+   * - options.flowKey?: 目标 flow 的 key。
+   * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
+   * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
+   * - options.uiMode?: 'dialog' | 'drawer'，默认 'dialog'。
    *
    * @param {FlowSettingsOpenOptions} options 打开选项
-   * @returns {Promise<unknown>} 返回一个 Promise，实际实现后将解析为相应结果
+   * @returns {Promise<unknown>} Promise：打开并交互完成后的结果（当前未返回具体值）
    */
   public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
     const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog' } = options;
@@ -392,8 +405,7 @@ export class FlowSettings {
     const t = getT(model);
     const message = model.context?.message;
 
-    // 2) 需要聚合渲染的情况（所有 flows 或指定 flows 的所有 steps）
-    // 准备需要处理的 flow 列表
+    // 聚合渲染：准备需要处理的 flow 列表（flowKey 优先其余）
     const ModelClass = model.constructor as typeof FlowModel;
     const allFlowsMap = ModelClass.getFlows();
     const targetFlowKeys: string[] = (() => {
@@ -402,7 +414,7 @@ export class FlowSettings {
       return Array.from(allFlowsMap.keys());
     })();
 
-    // 收集可配置的步骤
+    // 收集可配置的步骤：仅包含具备 uiSchema 且未被 hideInSettings 的步骤
     type StepEntry = {
       flowKey: string;
       flowTitle: string;
@@ -418,7 +430,7 @@ export class FlowSettings {
 
     const entries: StepEntry[] = [];
 
-    // 确保 Formily 组件已准备
+    // 确保 Formily 组件已就绪（SchemaField/控件/作用域等）
     await this.load();
 
     for (const fk of targetFlowKeys) {
@@ -431,7 +443,7 @@ export class FlowSettings {
 
       // 遍历步骤，筛选有可配置 UI 的步骤
       for (const sk of Object.keys(flow.steps || {})) {
-        // 如果明确指定了 stepKey，则仅处理匹配的步骤
+        // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
         if (!step || step.hideInSettings) continue;
@@ -470,7 +482,7 @@ export class FlowSettings {
           ...modelStepParams,
         };
 
-        // 包装为表单 schema（垂直布局）
+        // 包装为表单 schema（垂直布局），实际渲染时再进行 compile
         const formSchema = {
           type: 'object',
           properties: {
@@ -503,26 +515,24 @@ export class FlowSettings {
       return {};
     }
 
-    // 注意：不再在单步场景下复用 openStepSettings，统一在当前实现内渲染
-
-    // 多步聚合对话框/抽屉
+    // 渲染视图（对话框/抽屉）
     const SchemaField = createSchemaField();
     const openView = (model as any).context.viewer[uiMode].bind((model as any).context.viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
-      // 为 schema 表达式提供上下文能力
+      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
       useFlowSettingsContext,
       ...(flowEngine?.flowSettings?.scopes || {}),
     } as Record<string, any>;
 
-    // 将步骤分组到 flow 下
+    // 将步骤分组到 flow 下，用于 Collapse 分组展示
     const grouped: Record<string, { title: string; steps: StepEntry[] }> = {};
     entries.forEach((e) => {
       if (!grouped[e.flowKey]) grouped[e.flowKey] = { title: e.flowTitle, steps: [] };
       grouped[e.flowKey].steps.push(e);
     });
 
-    // 为每个步骤创建独立的表单实例
+    // 为每个步骤创建独立的表单实例，互不干扰
     const forms = new Map<string, ReturnType<typeof createForm>>();
     const keyOf = (e: StepEntry) => `${e.flowKey}::${e.stepKey}`;
 
@@ -536,7 +546,7 @@ export class FlowSettings {
       width: 840,
       destroyOnClose: true,
       content: (currentDialog) => {
-        // 渲染单个 step 表单（无 JSX）
+        // 渲染单个 step 表单（无 JSX）：FormProvider + FlowSettingsContextProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
           if (!form) return null;
@@ -577,14 +587,14 @@ export class FlowSettings {
         };
 
         const renderStepsContainer = (): React.ReactNode => {
-          // 当外部明确指定了 flowKey + stepKey 时，直接渲染单步表单（不使用折叠面板）
+          // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
             return renderStepForm(entries[0]);
           }
 
           if (!multipleFlows) {
             const onlyFlow = grouped[flowKeysOrdered[0]];
-            // 未提供 stepKey 且仅有一个步骤时，仍保持折叠面板外观
+            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 区分）
             return React.createElement(
               Collapse,
               { defaultActiveKey: onlyFlow.steps.map((s) => keyOf(s)) },
@@ -592,7 +602,7 @@ export class FlowSettings {
             );
           }
 
-          // 多 flow
+          // 情况 C：多 flow 分组渲染
           return React.createElement(
             Collapse,
             { defaultActiveKey: flowKeysOrdered },
@@ -603,6 +613,7 @@ export class FlowSettings {
         const onSaveAll = async () => {
           try {
             // 逐步提交并保存
+            // 顺序：submit -> setStepParams -> beforeParamsSave -> model.save -> afterParamsSave
             for (const e of entries) {
               const form = forms.get(keyOf(e));
               if (!form) continue;
