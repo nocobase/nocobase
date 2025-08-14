@@ -9,6 +9,7 @@ VariableInput 是一个统一的变量输入组件，支持静态值输入和动
 - **metaTree**: 上下文变量的元数据树，可以是对象或返回对象的函数
 - **converters**: 可选的自定义转换器配置
 - **showValueComponent**: 是否显示值输入组件（默认 true）
+- **onlyLeafSelectable**: 是否仅允许选择叶子节点（默认 false）
 
 ## Converters 机制
 
@@ -69,3 +70,9 @@ VariableInput 组件的核心功能通过 converters 机制实现，该机制包
 演示两个 VariableInput 组件之间通过 `getPropertyMetaTree` 进行交互：
 
 <code src="./demos/linked-components.tsx"></code>
+
+### 仅允许选择叶子节点
+
+通过 `onlyLeafSelectable` 属性限制只能选择叶子节点，不允许选择中间的对象节点：
+
+<code src="./demos/only-leaf-selectable.tsx"></code>
