@@ -296,6 +296,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     flows.set(key, definition as FlowDefinition);
   }
 
+  /**
+   * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
+   */
   public static clearFlows(): void {
     modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
   }
