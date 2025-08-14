@@ -38,6 +38,10 @@ export interface FlowSettingsOpenOptions {
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
   uiMode?: 'dialog' | 'drawer';
+  /** 点击取消按钮后触发的回调（关闭后调用） */
+  onCancel?: () => void | Promise<void>;
+  /** 配置保存成功后触发的回调 */
+  onSaved?: () => void | Promise<void>;
 }
 
 export class FlowSettings {
@@ -391,12 +395,14 @@ export class FlowSettings {
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
    * - options.uiMode?: 'dialog' | 'drawer'，默认 'dialog'。
+   * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
+   * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
    * @param {FlowSettingsOpenOptions} options 打开选项
    * @returns {Promise<unknown>} Promise：打开并交互完成后的结果（当前未返回具体值）
    */
   public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
-    const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset } = options;
+    const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset, onCancel, onSaved } = options;
 
     // 基础校验
     if (!model) {
@@ -643,6 +649,13 @@ export class FlowSettings {
             }
 
             currentDialog.close();
+
+            // 触发保存成功回调
+            try {
+              await onSaved?.();
+            } catch (cbErr) {
+              console.error('FlowSettings.open: onSaved callback error', cbErr);
+            }
           } catch (err) {
             console.error('FlowSettings.open: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
@@ -653,7 +666,20 @@ export class FlowSettings {
         const footerButtons = React.createElement(
           Space,
           { align: 'end' },
-          React.createElement(Button, { onClick: () => currentDialog.close() }, t('Cancel')),
+          React.createElement(
+            Button,
+            {
+              onClick: async () => {
+                currentDialog.close();
+                try {
+                  await onCancel?.();
+                } catch (cbErr) {
+                  console.error('FlowSettings.open: onCancel callback error', cbErr);
+                }
+              },
+            },
+            t('Cancel'),
+          ),
           React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
         );
 

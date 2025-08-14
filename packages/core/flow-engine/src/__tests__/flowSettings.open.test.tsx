@@ -79,6 +79,28 @@ const findPrimaryButton = async (node: any) => {
   return walk(node);
 };
 
+// helper to locate the cancel Button (the non-primary one with text 'Cancel')
+const findCancelButton = async (node: any) => {
+  const { Button } = await import('antd');
+  const walk = (n: any): any => {
+    if (!n || typeof n !== 'object') return null;
+    const isBtn = n.type === Button;
+    const isCancel = isBtn && !n?.props?.type && n?.props?.children === 'Cancel';
+    if (isCancel) return n;
+    const children = n.props?.children;
+    if (!children) return null;
+    if (Array.isArray(children)) {
+      for (const c of children) {
+        const r = walk(c);
+        if (r) return r;
+      }
+      return null;
+    }
+    return walk(children);
+  };
+  return walk(node);
+};
+
 describe('FlowSettings.open rendering behavior', () => {
   afterEach(() => {
     document.querySelectorAll('[data-testid]')?.forEach((n) => n.remove());
@@ -304,6 +326,89 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(save).toHaveBeenCalled();
     expect(success).toHaveBeenCalled();
     expect(afterHook).toHaveBeenCalled();
+    expect(lastDialog.close).toHaveBeenCalled();
+  });
+
+  it('calls onSaved callback after successful save', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog) : null;
+          return lastDialog;
+        },
+      },
+    });
+
+    const onSaved = vi.fn();
+    await flowSettings.open({ model, flowKey: 'flow', stepKey: 'step', onSaved } as any);
+
+    const primaryBtn = await findPrimaryButton(lastTree);
+    expect(primaryBtn).toBeTruthy();
+    await primaryBtn.props.onClick?.();
+
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(lastDialog.close).toHaveBeenCalled();
+  });
+
+  it('calls onCancel callback when cancel button clicked', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog) : null;
+          return lastDialog;
+        },
+      },
+    });
+
+    const onCancel = vi.fn();
+    await flowSettings.open({ model, flowKey: 'flow', stepKey: 'step', onCancel } as any);
+
+    const cancelBtn = await findCancelButton(lastTree);
+    expect(cancelBtn).toBeTruthy();
+    await cancelBtn.props.onClick?.();
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
     expect(lastDialog.close).toHaveBeenCalled();
   });
 
