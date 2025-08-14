@@ -190,6 +190,7 @@ class PackageManager {
         showLicenseInfo(LicenseKeyError.notValid);
       }
       console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
+      console.error(error);
     }
   }
 
