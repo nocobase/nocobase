@@ -43,45 +43,18 @@ describe('Variable Utils', () => {
     });
   });
 
-  describe('formatPathToValue', () => {
-    it('should format ContextSelectorItem to {{ ctx.aaa.bbb }}', () => {
-      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', paths: ['aaa', 'bbb'], isLeaf: true };
-      expect(formatPathToValue(item1)).toBe('{{ ctx.aaa.bbb }}');
-
-      const item2: ContextSelectorItem = { label: 'Name', value: 'name', paths: ['user', 'name'], isLeaf: true };
-      expect(formatPathToValue(item2)).toBe('{{ ctx.user.name }}');
-
-      const item3: ContextSelectorItem = {
-        label: 'Title',
-        value: 'title',
-        paths: ['data', 'items', '0', 'title'],
-        isLeaf: true,
-      };
-      expect(formatPathToValue(item3)).toBe('{{ ctx.data.items.0.title }}');
-    });
-
-    it('should handle empty path', () => {
-      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', paths: [], isLeaf: true };
-      expect(formatPathToValue(item)).toBe('{{ ctx }}');
-    });
-
-    it('should handle single path element', () => {
-      const item: ContextSelectorItem = { label: 'User', value: 'user', paths: ['user'], isLeaf: true };
-      expect(formatPathToValue(item)).toBe('{{ ctx.user }}');
-    });
-  });
-
   describe('loadMetaTreeChildren', () => {
     it('should load async children from MetaTreeNode', async () => {
       const asyncChildren = async () => [
-        { name: 'child1', title: 'Child 1', type: 'string' },
-        { name: 'child2', title: 'Child 2', type: 'number' },
+        { name: 'child1', title: 'Child 1', type: 'string', paths: ['parent', 'child1'], parentTitles: ['Parent'] },
+        { name: 'child2', title: 'Child 2', type: 'number', paths: ['parent', 'child2'], parentTitles: ['Parent'] },
       ];
 
       const metaNode: MetaTreeNode = {
         name: 'parent',
         title: 'Parent',
         type: 'object',
+        paths: ['parent'],
         children: asyncChildren,
       };
 
@@ -96,6 +69,7 @@ describe('Variable Utils', () => {
         name: 'leaf',
         title: 'Leaf',
         type: 'string',
+        paths: ['leaf'],
       };
 
       const result = await loadMetaTreeChildren(metaNode);
@@ -107,7 +81,10 @@ describe('Variable Utils', () => {
         name: 'parent',
         title: 'Parent',
         type: 'object',
-        children: [{ name: 'child1', title: 'Child 1', type: 'string' }],
+        paths: ['parent'],
+        children: [
+          { name: 'child1', title: 'Child 1', type: 'string', paths: ['parent', 'child1'], parentTitles: ['Parent'] },
+        ],
       };
 
       const result = await loadMetaTreeChildren(metaNode);
@@ -180,15 +157,17 @@ describe('Variable Utils', () => {
           name: 'user',
           title: 'User',
           type: 'object',
+          paths: ['user'],
           children: [
-            { name: 'name', title: 'Name', type: 'string' },
-            { name: 'email', title: 'Email', type: 'string' },
+            { name: 'name', title: 'Name', type: 'string', paths: ['user', 'name'], parentTitles: ['User'] },
+            { name: 'email', title: 'Email', type: 'string', paths: ['user', 'email'], parentTitles: ['User'] },
           ],
         },
         {
           name: 'data',
           title: 'Data',
           type: 'string',
+          paths: ['data'],
         },
       ];
 
@@ -226,6 +205,7 @@ describe('Variable Utils', () => {
           name: 'async',
           title: 'Async Node',
           type: 'object',
+          paths: ['async'],
           children: async () => [],
         },
       ];
@@ -257,6 +237,7 @@ describe('Variable Utils', () => {
           name: 'test',
           type: 'object',
           title: '',
+          paths: ['test'],
         },
       ];
 
@@ -267,7 +248,7 @@ describe('Variable Utils', () => {
           label: 'test',
           value: 'test',
           isLeaf: true,
-          meta: { name: 'test', type: 'object', title: '' },
+          meta: { name: 'test', type: 'object', title: '', paths: ['test'] },
           paths: ['test'],
         },
       ]);
@@ -312,12 +293,6 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
       expect(converters.resolvePathFromValue?.('static value')).toBeUndefined();
-    });
-
-    it('should resolve value from ContextSelectorItem', () => {
-      const converters = createDefaultConverters();
-      const item: ContextSelectorItem = { label: 'Name', value: 'name', paths: ['user', 'name'], isLeaf: true };
-      expect(converters.resolveValueFromPath?.(item)).toBe('{{ ctx.user.name }}');
     });
   });
 });

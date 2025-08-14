@@ -81,34 +81,30 @@ export const searchInLoadedNodes = (
   return results;
 };
 
-export const buildContextSelectorItems = (
-  metaTree: MetaTreeNode[],
-  parentPaths: string[] = [],
-): ContextSelectorItem[] => {
+export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSelectorItem[] => {
   if (!metaTree || !Array.isArray(metaTree)) {
     console.warn('buildContextSelectorItems received invalid metaTree:', metaTree);
     return [];
   }
 
-  const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
+  const convertNode = (node: MetaTreeNode): ContextSelectorItem => {
     const hasChildren = node.children;
-    const paths = [...currentPath, node.name];
     const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
       isLeaf: !hasChildren,
       meta: node,
-      paths: paths,
+      paths: node.paths,
     };
 
     if (hasChildren && Array.isArray(node.children)) {
-      option.children = node.children.map((child) => convertNode(child, paths));
+      option.children = node.children.map((child) => convertNode(child));
     }
 
     return option;
   };
 
-  return metaTree.map((node) => convertNode(node, parentPaths));
+  return metaTree.map((node) => convertNode(node));
 };
 
 export const isVariableValue = (value: any): boolean => {
@@ -144,44 +140,4 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   }
 
   return mergedConverters;
-};
-
-// 根据MetaTreeNode的paths和metaTree构建完整的标题路径
-export const buildFullTagTitle = async (metaTreeNode: MetaTreeNode, metaTree?: MetaTreeNode[]): Promise<string> => {
-  if (!metaTreeNode?.paths || metaTreeNode.paths.length === 0) {
-    return metaTreeNode?.title || '';
-  }
-
-  if (!metaTree) {
-    return metaTreeNode.paths.join('/');
-  }
-
-  // 递归查找路径中每个节点的 title
-  const titlePath: string[] = [];
-  let currentNodes: MetaTreeNode[] = metaTree;
-
-  for (const segment of metaTreeNode.paths) {
-    const node = currentNodes.find((n) => n.name === segment);
-    if (!node) {
-      // 如果找不到节点，使用原始名称
-      titlePath.push(segment);
-      break;
-    }
-
-    // 使用 title 或 name
-    titlePath.push(node.title || node.name);
-
-    if (typeof node.children === 'function') {
-      node.children = await node.children();
-    }
-
-    // 准备下一级节点
-    if (Array.isArray(node.children)) {
-      currentNodes = node.children;
-    } else {
-      break;
-    }
-  }
-
-  return titlePath.join('/');
 };

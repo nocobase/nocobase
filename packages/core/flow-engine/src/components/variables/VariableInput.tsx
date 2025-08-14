@@ -131,7 +131,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     (variableValue: string, metaTreeNode?: MetaTreeNode) => {
       setCurrentMetaTreeNode(metaTreeNode);
       const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
-      onChange?.(finalValue);
+      onChange?.(finalValue, metaTreeNode);
     },
     [onChange, resolveValueFromPath],
   );
@@ -188,7 +188,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   return (
     <Space.Compact style={finalStyle}>
-      {showValueComponent && <ValueComponent {...inputProps} />}
+      {showValueComponent && <ValueComponent style={{ width: '100%' }} {...inputProps} />}
       <FlowContextSelector
         metaTree={resolvedMetaTree}
         value={value}

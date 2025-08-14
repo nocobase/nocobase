@@ -43,7 +43,7 @@ export { buildFieldItems, buildActionItems, buildBlockItems, processMetaChildren
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
-export { createRecordProxyContext } from './createRecordProxyContext';
+export { createRecordProxyContext, createCollectionContextMeta } from './createRecordProxyContext';
 
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';

@@ -10,7 +10,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import { parseValueToPath, buildFullTagTitle } from './utils';
+import { parseValueToPath } from './utils';
 import type { MetaTreeNode } from '../../flowContext';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
@@ -41,7 +41,9 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
   const { data: displayedValue } = useRequest(
     async () => {
       if (metaTreeNode) {
-        return await buildFullTagTitle(metaTreeNode, resolvedMetaTree);
+        return metaTreeNode.parentTitles
+          ? [...metaTreeNode.parentTitles, metaTreeNode.title].join('/')
+          : metaTreeNode.title || '';
       }
 
       if (!value) return String(value);

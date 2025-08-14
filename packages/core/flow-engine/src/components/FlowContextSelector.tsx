@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { Button, Cascader } from 'antd';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
-import { useVariableTreeData } from './variables/useVariableTreeData';
-import { formatPathToValue } from './variables/utils';
+import { buildContextSelectorItems, formatPathToValue, parseValueToPath } from './variables/utils';
+import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
 
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
@@ -24,7 +24,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   children,
   metaTree,
   showSearch = false,
-  parseValueToPath: customParseValueToPath,
+  parseValueToPath: customParseValueToPath = parseValueToPath,
   formatPathToValue: customFormatPathToValue,
   open,
   ...cascaderProps
@@ -32,11 +32,44 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  const { options, loading, currentPath, handleLoadData } = useVariableTreeData({
-    metaTree,
-    value,
-    parseValueToPath: customParseValueToPath,
-  });
+  const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
+
+  // 用于强制重新渲染的状态
+  const [updateFlag, setUpdateFlag] = useState(0);
+  const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
+
+  // 构建选项
+  const options = useMemo(() => {
+    return buildContextSelectorItems(resolvedMetaTree);
+  }, [resolvedMetaTree, updateFlag]);
+
+  // 处理异步加载子节点
+  const handleLoadData = useCallback(
+    async (selectedOptions: ContextSelectorItem[]) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (!targetOption || targetOption.children || targetOption.isLeaf) {
+        return;
+      }
+
+      const targetMetaNode = targetOption.meta;
+      if (!targetMetaNode || !targetMetaNode.children || typeof targetMetaNode.children !== 'function') {
+        return;
+      }
+
+      try {
+        const childNodes = await targetMetaNode.children();
+        targetMetaNode.children = childNodes;
+        triggerUpdate();
+      } catch (error) {
+        console.error('Failed to load children:', error);
+      }
+    },
+    [triggerUpdate],
+  );
+
+  const currentPath = useMemo(() => {
+    return customParseValueToPath(value);
+  }, [value]);
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
@@ -53,7 +86,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     (selectedValues: (string | number)[], selectedOptions?: ContextSelectorItem[]) => {
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('', lastOption.meta);
+        onChange?.('', lastOption?.meta);
         return;
       }
 
@@ -65,16 +98,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 使用自定义格式化函数或默认函数
       let formattedValue: string;
       if (customFormatPathToValue) {
-        formattedValue = customFormatPathToValue(lastOption.meta);
+        formattedValue = customFormatPathToValue(lastOption?.meta);
         if (formattedValue === undefined) {
-          formattedValue = formatPathToValue(lastOption.meta);
+          formattedValue = formatPathToValue(lastOption?.meta);
         }
       } else {
-        formattedValue = formatPathToValue(lastOption.meta);
+        formattedValue = formatPathToValue(lastOption?.meta);
       }
 
       if (isLeaf) {
-        onChange?.(formattedValue, lastOption.meta);
+        onChange?.(formattedValue, lastOption?.meta);
         return;
       }
 
@@ -84,7 +117,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        onChange?.(formattedValue, lastOption.meta);
+        onChange?.(formattedValue, lastOption?.meta);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开
@@ -108,8 +141,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       changeOnSelect={true}
       expandTrigger="click"
       open={open}
+      showSearch={children === null}
     >
-      {children || defaultChildren}
+      {children === null ? null : children || defaultChildren}
     </Cascader>
   );
 };

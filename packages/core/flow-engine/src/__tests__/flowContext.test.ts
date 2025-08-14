@@ -254,6 +254,7 @@ describe('FlowContext properties and methods', () => {
             interface: undefined,
             uiSchema: undefined,
             paths: ['bar', 'baz'],
+            parentTitles: ['Bar'],
             children: undefined,
           },
           {
@@ -263,6 +264,7 @@ describe('FlowContext properties and methods', () => {
             interface: undefined,
             uiSchema: undefined,
             paths: ['bar', 'qux'],
+            parentTitles: ['Bar'],
             children: undefined,
           },
         ],
@@ -273,10 +275,10 @@ describe('FlowContext properties and methods', () => {
   it('should support delegate meta and local override in getPropertyMetaTree', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('foo', {
-      meta: { type: 'string', title: 'Delegate Foo', interface: 'text', uiSchema: { 'ui:widget': 'text' } },
+      meta: { type: 'string', title: 'Delegate Foo', interface: 'text', uiSchema: { type: 'text' } },
     });
     delegate.defineProperty('bar', {
-      meta: { type: 'number', title: 'Delegate Bar', interface: 'number', uiSchema: { 'ui:widget': 'number' } },
+      meta: { type: 'number', title: 'Delegate Bar', interface: 'number', uiSchema: { type: 'number' } },
     });
     const ctx = new FlowContext();
     ctx.addDelegate(delegate);
@@ -285,9 +287,9 @@ describe('FlowContext properties and methods', () => {
         type: 'object',
         title: 'Local Bar',
         interface: 'object',
-        uiSchema: { 'ui:widget': 'object' },
+        uiSchema: { type: 'object' },
         properties: {
-          x: { type: 'string', title: 'X', interface: 'text', uiSchema: { 'ui:widget': 'text' } },
+          x: { type: 'string', title: 'X', interface: 'text', uiSchema: { type: 'text' } },
         },
       },
     });
@@ -298,7 +300,7 @@ describe('FlowContext properties and methods', () => {
         title: 'Delegate Foo',
         type: 'string',
         interface: 'text',
-        uiSchema: { 'ui:widget': 'text' },
+        uiSchema: { type: 'text' },
         paths: ['foo'],
         children: undefined,
       },
@@ -307,7 +309,7 @@ describe('FlowContext properties and methods', () => {
         title: 'Local Bar',
         type: 'object',
         interface: 'object',
-        uiSchema: { 'ui:widget': 'object' },
+        uiSchema: { type: 'object' },
         paths: ['bar'],
         children: [
           {
@@ -315,8 +317,9 @@ describe('FlowContext properties and methods', () => {
             title: 'X',
             type: 'string',
             interface: 'text',
-            uiSchema: { 'ui:widget': 'text' },
+            uiSchema: { type: 'text' },
             paths: ['bar', 'x'],
+            parentTitles: ['Local Bar'],
             children: undefined,
           },
         ],
@@ -373,6 +376,7 @@ describe('FlowContext properties and methods', () => {
           interface: undefined,
           uiSchema: undefined,
           paths: ['syncProp', 'field1'],
+          parentTitles: ['Sync Property'],
           children: undefined,
         },
         {
@@ -382,6 +386,7 @@ describe('FlowContext properties and methods', () => {
           interface: undefined,
           uiSchema: undefined,
           paths: ['syncProp', 'field2'],
+          parentTitles: ['Sync Property'],
           children: undefined,
         },
       ],
@@ -402,6 +407,7 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField1'],
+        parentTitles: ['Async Property'],
         children: undefined,
       },
       {
@@ -411,6 +417,7 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField2'],
+        parentTitles: ['Async Property'],
         children: undefined,
       },
     ]);
@@ -857,6 +864,7 @@ describe('FlowContext delayed meta loading', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['userAsync', 'id'],
+      parentTitles: ['Delayed User'],
       children: undefined,
     });
     expect(children[1]).toEqual({
@@ -866,6 +874,7 @@ describe('FlowContext delayed meta loading', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['userAsync', 'name'],
+      parentTitles: ['Delayed User'],
       children: undefined,
     });
   });
@@ -987,6 +996,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'id'],
+      parentTitles: ['User'],
       children: undefined,
     });
     expect(subTree[1]).toEqual({
@@ -996,6 +1006,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'name'],
+      parentTitles: ['User'],
       children: undefined,
     });
   });
@@ -1058,14 +1069,12 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       consoleSpy.mockClear();
       const result = ctx.getPropertyMetaTree(testCase);
 
-      // Should return full tree for invalid formats
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe('user');
-      expect(result[1].name).toBe('data');
+      // Should return empty tree for invalid formats
+      expect(result).toHaveLength(0);
 
       // Should log warning
       expect(consoleSpy).toHaveBeenCalledWith(
-        `[FlowContext] getPropertyMetaTree - unsupported value format: "${testCase}". Only "{{ ctx.propertyName }}" format is supported. Returning full meta tree.`,
+        `[FlowContext] getPropertyMetaTree - unsupported value format: "${testCase}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
       );
     });
 
@@ -1191,6 +1200,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'profile', 'bio'],
+      parentTitles: ['User', 'User Profile'],
       children: undefined,
     });
     expect(profileSubTree[1]).toEqual({
@@ -1200,6 +1210,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'profile', 'avatar'],
+      parentTitles: ['User', 'User Profile'],
       children: undefined,
     });
   });

@@ -14,7 +14,7 @@ import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
 import type { MetaTreeNode } from '../../flowContext';
 import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
-import { parseValueToPath, buildFullTagTitle } from './utils';
+import { parseValueToPath } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
 
@@ -59,7 +59,9 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   const { data: displayedValue } = useRequest(
     async () => {
       if (metaTreeNode) {
-        return await buildFullTagTitle(metaTreeNode, resolvedMetaTree);
+        return metaTreeNode.parentTitles
+          ? [...metaTreeNode.parentTitles, metaTreeNode.title].join('/')
+          : metaTreeNode.title || '';
       }
       if (!value) return String(value);
       const path = parseValueToPath(value);
