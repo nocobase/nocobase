@@ -10,7 +10,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FlowSettings } from '../flowSettings';
 import { DefaultSettingsIcon } from '../components/settings/wrappers/contextual/DefaultSettingsIcon';
-import { DragHandler } from '../components/dnd';
 import { FlowModel } from '../models';
 import { FlowEngine } from '../flowEngine';
 
@@ -68,6 +67,7 @@ vi.mock('@formily/antd-v5', () => ({
 
 vi.mock('antd', () => ({
   Button: vi.fn(() => 'Button'),
+  Collapse: Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' }),
 }));
 
 describe('FlowSettings', () => {
