@@ -81,6 +81,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   converters: propConverters,
   metaTree,
   showValueComponent = true,
+  onlyLeafSelectable = false,
   ...restProps
 }) => {
   const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
@@ -195,7 +196,8 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}
         formatPathToValue={resolveValueFromPath}
-        {...(!showValueComponent && { children: null })}
+        onlyLeafSelectable={onlyLeafSelectable}
+        {...(!showValueComponent && { children: null, placeholder: restProps?.placeholder })}
       />
     </Space.Compact>
   );

@@ -263,25 +263,56 @@ export class FlowContext {
     if (value) {
       const propertyPath = extractPropertyPath(value);
       if (propertyPath && propertyPath.length > 0) {
-        // TODO: 如果父要寻找的父meta对象是个异步的，且没有加载，结果可能返回为null! (实际场景应该不会发生)
-        // TODO: 为以上场景添加单测，并解决该问题
+        const loadChildrenFrom = async (
+          metaOrFactory: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>),
+          fullPath: string[],
+          finalKey: string,
+        ): Promise<MetaTreeNode[]> => {
+          try {
+            const meta: PropertyMeta =
+              typeof metaOrFactory === 'function' ? await (metaOrFactory as any)() : (metaOrFactory as PropertyMeta);
+            if (!meta?.properties) return [];
+            let props = meta.properties;
+            if (typeof props === 'function') {
+              const resolved = await props();
+              meta.properties = resolved;
+              props = resolved;
+            }
+            const childNodes = this.#createChildNodes(props as Record<string, PropertyMeta>, fullPath, [], meta);
+            return Array.isArray(childNodes) ? childNodes : await childNodes();
+          } catch (error) {
+            console.warn(`Failed to load meta for ${finalKey}:`, error);
+            return [];
+          }
+        };
         const targetMeta = this.#findMetaByPath(propertyPath);
         if (targetMeta) {
           const [finalKey, metaOrFactory, fullPath] = targetMeta;
-          // 对于异步 meta factory，返回包装节点
+          const depth = propertyPath.length;
+
+          if (depth === 1) {
+            if (typeof metaOrFactory === 'function') {
+              return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+            }
+            if (metaOrFactory.properties) {
+              if (typeof metaOrFactory.properties === 'function') {
+                return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+              }
+              const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, [], metaOrFactory);
+              return Array.isArray(childNodes) ? childNodes : [];
+            }
+            return [];
+          }
+
           if (typeof metaOrFactory === 'function') {
-            // 构建 parentTitles，通过 meta 树逐层读取真实的 title
             const parentTitles = this.#buildParentTitles(fullPath);
             return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
           }
-          // 对于同步 meta 且有 properties，返回子节点
           if (metaOrFactory.properties) {
-            // 构建 parentTitles，通过 meta 树逐层读取真实的 title，包含当前 meta 的 title
             const parentTitles = [...this.#buildParentTitles(fullPath), metaOrFactory.title];
             const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, parentTitles, metaOrFactory);
             return Array.isArray(childNodes) ? childNodes : [];
           }
-          // 如果没有子节点，返回空数组
           return [];
         }
         // 未找到目标路径，返回空数组
@@ -368,10 +399,7 @@ export class FlowContext {
 
       const wrappedFactory = async (): Promise<PropertyMeta> => {
         const resolvedMeta = await metaOrFactory();
-        const result = this.#resolvePathInMeta(resolvedMeta, remainingPath);
-        if (!result) {
-          throw new Error(`Property path not found: ${remainingPath.join('.')}`);
-        }
+        const result = await this.#resolvePathInMetaAsync(resolvedMeta, remainingPath);
         return result;
       };
 
@@ -397,10 +425,7 @@ export class FlowContext {
           if (!startMeta) {
             throw new Error(`Property ${nextKey} not found in resolved properties`);
           }
-          const result = this.#resolvePathInMeta(startMeta, restPath);
-          if (!result) {
-            throw new Error(`Property path not found: ${restPath.join('.')}`);
-          }
+          const result = await this.#resolvePathInMetaAsync(startMeta, restPath);
           return result;
         };
 
@@ -435,6 +460,39 @@ export class FlowContext {
       if (!current) {
         return null;
       }
+    }
+
+    return current;
+  }
+
+  /**
+   * 支持异步 properties 的路径解析：
+   * - 遇到 properties 为函数时会 await 并缓存其结果
+   * - 持续向下解析直到到达最终的 meta
+   * 若解析失败则抛出异常，由调用方自行处理
+   */
+  async #resolvePathInMetaAsync(meta: PropertyMeta, path: string[]): Promise<PropertyMeta> {
+    if (path.length === 0) return meta;
+
+    let current: PropertyMeta = meta;
+    for (const key of path) {
+      let properties = _.get(current, 'properties');
+
+      if (!properties) {
+        throw new Error(`Property path not found: ${path.join('.')}`);
+      }
+
+      if (typeof properties === 'function') {
+        const resolved = await properties();
+        current.properties = resolved;
+        properties = resolved;
+      }
+
+      const next = (properties as Record<string, PropertyMeta>)[key];
+      if (!next) {
+        throw new Error(`Property ${key} not found while resolving path: ${path.join('.')}`);
+      }
+      current = next;
     }
 
     return current;

@@ -27,6 +27,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   parseValueToPath: customParseValueToPath = parseValueToPath,
   formatPathToValue: customFormatPathToValue,
   open,
+  onlyLeafSelectable = false,
   ...cascaderProps
 }) => {
   // 记录最后点击的路径，用于双击检测
@@ -57,11 +58,19 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       try {
+        targetOption.loading = true;
+        triggerUpdate();
         const childNodes = await targetMetaNode.children();
         targetMetaNode.children = childNodes;
-        triggerUpdate();
+        // 立即把 options 树也补上 children，避免等待下一次重算
+        const childOptions = buildContextSelectorItems(childNodes);
+        targetOption.children = childOptions;
+        targetOption.isLeaf = !childOptions || childOptions.length === 0;
       } catch (error) {
         console.error('Failed to load children:', error);
+      } finally {
+        targetOption.loading = false;
+        triggerUpdate();
       }
     },
     [triggerUpdate],
@@ -70,6 +79,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const currentPath = useMemo(() => {
     return customParseValueToPath(value);
   }, [value]);
+
+  // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
+  // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
+  const effectivePath = useMemo(() => {
+    if (!currentPath || currentPath.length === 0) return currentPath;
+    const topValues = new Set(options.map((o) => String(o.value)));
+    const needTrim = !topValues.has(String(currentPath[0]));
+    const fixed = needTrim ? currentPath.slice(1) : currentPath;
+    return fixed;
+  }, [currentPath, options]);
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
@@ -113,7 +132,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       // 非叶子节点：检查双击
       const lastSelected = lastSelectedRef.current;
-      const isDoubleClick = lastSelected?.path === pathString && now - lastSelected.time < 300;
+      const isDoubleClick = !onlyLeafSelectable && lastSelected?.path === pathString && now - lastSelected.time < 300;
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
@@ -124,21 +143,18 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
         lastSelectedRef.current = { path: pathString, time: now };
       }
     },
-    [onChange, customFormatPathToValue],
+    [onChange, customFormatPathToValue, onlyLeafSelectable],
   );
-
-  // 当前选中的路径值
-  const cascaderValue = currentPath;
 
   return (
     <Cascader
       {...cascaderProps}
       options={options}
-      value={cascaderValue}
+      value={effectivePath}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}
-      changeOnSelect={true}
+      changeOnSelect={!onlyLeafSelectable}
       expandTrigger="click"
       open={open}
       showSearch={children === null}
