@@ -1341,15 +1341,15 @@ export const useTableColumns = (): ColumnInfo[] => {
         columns.push(columnInfo);
       }
 
-      // Search in properties
-      if (schema.properties) {
+      // Search in properties, avoid actions column
+      if (schema.properties && schema.name !== 'actions') {
         Object.keys(schema.properties).forEach((key) => {
           findColumnsInSchema(schema.properties[key], depth + 1);
         });
       }
 
-      // Search in items (for array schemas)
-      if (schema.items) {
+      // Search in items (for array schemas), avoid actions column
+      if (schema.items && schema.name !== 'actions') {
         findColumnsInSchema(schema.items, depth + 1);
       }
     };
