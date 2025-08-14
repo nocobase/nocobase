@@ -386,6 +386,7 @@ export class FlowSettings {
    *
    * 参数：
    * - options.model: FlowModel 实例（必填）。
+   * - options.preset?: 当为 true 时，仅渲染 flow 中标记了 preset=true 的步骤。
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
@@ -395,7 +396,7 @@ export class FlowSettings {
    * @returns {Promise<unknown>} Promise：打开并交互完成后的结果（当前未返回具体值）
    */
   public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
-    const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog' } = options;
+    const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset } = options;
 
     // 基础校验
     if (!model) {
@@ -447,6 +448,8 @@ export class FlowSettings {
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
         if (!step || step.hideInSettings) continue;
+        // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
+        if (preset && !step.preset) continue;
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
         const mergedUiSchema = await resolveStepUiSchema(model, flow, step);

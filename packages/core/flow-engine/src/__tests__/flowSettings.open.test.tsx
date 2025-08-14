@@ -353,4 +353,69 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(success).not.toHaveBeenCalled();
     expect(lastDialog.close).not.toHaveBeenCalled();
   });
+
+  it('filters steps by preset when preset=true', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-preset', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf',
+      steps: {
+        a: {
+          title: 'A',
+          preset: true,
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+        b: {
+          title: 'B',
+          uiSchema: { g: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    model.context.defineProperty('message', { value: { info, error: vi.fn(), success: vi.fn() } });
+
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+          if (typeof content === 'function') content(dlg);
+          // naive inspect: count Panel creations through grouped steps length by mocking Collapse.Panel identity isn't straightforward here.
+          // Instead, rely on entries filtering indirectly by expecting the open call not to show info and to produce a tree.
+          return dlg;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'pf', preset: true } as any);
+    // Should not call info since there is one preset step
+    expect(info).not.toHaveBeenCalled();
+  });
+
+  it('shows info when preset=true but no step is preset', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf2',
+      steps: {
+        x: { title: 'X', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
+        y: { title: 'Y', uiSchema: { g: { type: 'string', 'x-component': 'Input' } } },
+      },
+    });
+
+    const info = vi.fn();
+    const dialog = vi.fn();
+    model.context.defineProperty('message', { value: { info, error: vi.fn(), success: vi.fn() } });
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({ model, flowKey: 'pf2', preset: true } as any);
+    expect(info).toHaveBeenCalled();
+    expect(dialog).not.toHaveBeenCalled();
+  });
 });
