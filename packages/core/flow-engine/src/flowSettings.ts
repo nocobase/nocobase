@@ -14,7 +14,6 @@ import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/D
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import type { FlowModel } from './models';
-import { openStepSettings } from './components';
 import { FlowRuntimeContext } from './flowContext';
 import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
 import { createForm } from '@formily/core';
@@ -393,11 +392,6 @@ export class FlowSettings {
     const t = getT(model);
     const message = model.context?.message;
 
-    // 1) 精确到单个 step 的情况：直接复用单步入口，保持一致的体验
-    if (flowKey && stepKey) {
-      return await openStepSettings({ model, flowKey, stepKey });
-    }
-
     // 2) 需要聚合渲染的情况（所有 flows 或指定 flows 的所有 steps）
     // 准备需要处理的 flow 列表
     const ModelClass = model.constructor as typeof FlowModel;
@@ -437,6 +431,8 @@ export class FlowSettings {
 
       // 遍历步骤，筛选有可配置 UI 的步骤
       for (const sk of Object.keys(flow.steps || {})) {
+        // 如果明确指定了 stepKey，则仅处理匹配的步骤
+        if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
         if (!step || step.hideInSettings) continue;
 
@@ -507,11 +503,7 @@ export class FlowSettings {
       return {};
     }
 
-    // 如果最终只有一个 step，则复用单步弹窗
-    if (entries.length === 1) {
-      const only = entries[0];
-      return await openStepSettings({ model, flowKey: only.flowKey, stepKey: only.stepKey });
-    }
+    // 注意：不再在单步场景下复用 openStepSettings，统一在当前实现内渲染
 
     // 多步聚合对话框/抽屉
     const SchemaField = createSchemaField();
@@ -585,8 +577,14 @@ export class FlowSettings {
         };
 
         const renderStepsContainer = (): React.ReactNode => {
+          // 当外部明确指定了 flowKey + stepKey 时，直接渲染单步表单（不使用折叠面板）
+          if (flowKey && stepKey && entries.length === 1) {
+            return renderStepForm(entries[0]);
+          }
+
           if (!multipleFlows) {
             const onlyFlow = grouped[flowKeysOrdered[0]];
+            // 未提供 stepKey 且仅有一个步骤时，仍保持折叠面板外观
             return React.createElement(
               Collapse,
               { defaultActiveKey: onlyFlow.steps.map((s) => keyOf(s)) },
