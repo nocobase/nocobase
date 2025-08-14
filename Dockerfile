@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y jq expect
 
 WORKDIR /tmp
 COPY . /tmp
+RUN yarn config set disable-self-update-check true
+RUN yarn config set registry https://registry.npmmirror.com/
+RUN yarn config set sqlite3_binary_host_mirror https://npmmirror.com/mirrors/sqlite3/
+
 RUN  yarn install && yarn build --no-dts
 
 SHELL ["/bin/bash", "-c"]
