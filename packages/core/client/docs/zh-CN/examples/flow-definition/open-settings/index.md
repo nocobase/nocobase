@@ -31,7 +31,7 @@ interface FlowSettingsOpenOptions {
 - 情况 A：当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
 - 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
 - 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。
-- 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤；若无匹配步骤，将通过 `message.info` 提示并不会打开配置视图。
+- 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤。
 - uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
 - 保存顺序：对每个 step 执行 submit -> setStepParams -> beforeParamsSave -> 统一 model.save() -> afterParamsSave。
 
