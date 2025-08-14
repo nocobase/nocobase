@@ -546,7 +546,7 @@ export class FlowSettings {
       forms.set(keyOf(e), form);
     });
 
-    openView({
+    return openView({
       title: t('Flow settings'),
       width: 840,
       destroyOnClose: true,
