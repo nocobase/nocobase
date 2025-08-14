@@ -1,0 +1,27 @@
+{
+  "name": "@nocobase/plugin-data-source-mysql",
+  "displayName": "Data source: MySQL",
+  "displayName.zh-CN": "数据源：MySQL",
+  "description": "MySQL data source for NocoBase.",
+  "description.zh-CN": "NocoBase 的 MySQL 数据源。",
+  "version": "1.8.15",
+  "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "mysql2": "^2.3.3"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/plugin-error-handler": "1.x",
+    "@nocobase/plugin-field-sort": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x",
+    "@nocobase/utils": "1.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "keywords": [
+    "Data sources",
+    "MySQL"
+  ]
+}
