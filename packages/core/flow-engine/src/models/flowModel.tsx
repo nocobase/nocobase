@@ -47,7 +47,7 @@ import { FlowSettingsOpenOptions } from '../flowSettings';
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
 // 使用WeakMap存储每个类的flows
-const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -294,6 +294,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
     }
     flows.set(key, definition as FlowDefinition);
+  }
+
+  public static clearFlows(): void {
+    modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
   }
 
   /**
