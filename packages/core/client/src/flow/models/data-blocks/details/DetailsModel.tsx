@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormLayout } from '@formily/antd-v5';
 import {
   AddActionButton,
   DndProvider,
@@ -151,6 +150,15 @@ DetailsModel.registerFlow({
   title: escapeT('Details settings'),
   sort: 150,
   steps: {
+    refresh: {
+      async handler(ctx) {
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        // 1. 先初始化字段网格，确保所有字段都创建完成
+        await ctx.model.applySubModelsAutoFlows('grid');
+      },
+    },
     layout: {
       use: 'layout',
       title: tval('Layout'),

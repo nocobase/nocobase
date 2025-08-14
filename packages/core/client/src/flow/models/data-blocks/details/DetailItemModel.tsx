@@ -25,7 +25,6 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
-    console.log(this.props);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
