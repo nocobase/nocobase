@@ -514,7 +514,9 @@ export class FlowSettings {
     }
 
     if (entries.length === 0) {
-      message?.info?.(t('This model has no configurable flow settings'));
+      if (!preset) {
+        message?.info?.(t('This model has no configurable flow settings'));
+      }
       return {};
     }
 

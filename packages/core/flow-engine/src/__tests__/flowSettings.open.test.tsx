@@ -375,24 +375,21 @@ describe('FlowSettings.open rendering behavior', () => {
       },
     });
 
-    const info = vi.fn();
-    model.context.defineProperty('message', { value: { info, error: vi.fn(), success: vi.fn() } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
 
     model.context.defineProperty('viewer', {
       value: {
-        dialog: ({ content }) => {
-          const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-          if (typeof content === 'function') content(dlg);
-          // naive inspect: count Panel creations through grouped steps length by mocking Collapse.Panel identity isn't straightforward here.
-          // Instead, rely on entries filtering indirectly by expecting the open call not to show info and to produce a tree.
-          return dlg;
-        },
+        dialog,
       },
     });
 
     await flowSettings.open({ model, flowKey: 'pf', preset: true } as any);
-    // Should not call info since there is one preset step
-    expect(info).not.toHaveBeenCalled();
+    expect(dialog).toHaveBeenCalled();
   });
 
   it('shows info when preset=true but no step is preset', async () => {
@@ -415,7 +412,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('viewer', { value: { dialog } });
 
     await flowSettings.open({ model, flowKey: 'pf2', preset: true } as any);
-    expect(info).toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled(); // 这种一般是在添加 sub model 的场景调用的，如果为空应该直接忽略，不需要 info 提示
     expect(dialog).not.toHaveBeenCalled();
   });
 });
