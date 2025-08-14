@@ -70,7 +70,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
 
         // 基于最新的 meta 获取可用操作符，并设置默认值
         const dm = model.context.app?.dataSourceManager;
-        const fi = metaTreeNode.interface
+        const fi = metaTreeNode?.interface
           ? dm?.collectionFieldInterfaceManager?.getFieldInterface(metaTreeNode.interface)
           : null;
         const metaOps = (fi?.filterable?.operators || []).filter(
@@ -79,7 +79,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
         value.operator = metaOps[0]?.value || '';
         value.rightValue = '';
 
-        // 返回变量路径值（去掉根 ctx.collection 前缀）
+        // 返回变量路径值（去掉根 ctx.collection 前缀, 仅保留字段路径）
         return metaTreeNode?.paths.slice(1).join('.');
       },
       resolvePathFromValue(v) {
@@ -209,15 +209,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
         converters={customConverters}
         showValueComponent={false}
         style={{ width: 200 }}
-        placeholder={t('Select context variable')}
+        onlyLeafSelectable={true}
+        placeholder={t('Select field')}
       />
 
       <Select
         style={{ width: 120 }}
-        placeholder={t('Select operator')}
+        placeholder={t('Comparition')}
         value={operator || undefined}
         onChange={handleOperatorChange}
-        disabled={!leftValue}
       >
         {operatorOptions.map((op) => (
           <Select.Option key={op.value} value={op.value}>

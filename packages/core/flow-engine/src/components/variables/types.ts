@@ -20,6 +20,7 @@ export interface FlowContextSelectorProps
   parseValueToPath?: (value: string) => string[] | undefined;
   formatPathToValue?: (item: MetaTreeNode) => string;
   open?: boolean;
+  onlyLeafSelectable?: boolean;
 }
 
 export interface ContextSelectorItem {
@@ -61,6 +62,7 @@ export interface VariableInputProps {
   converters?: Converters;
   showValueComponent?: boolean;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  onlyLeafSelectable?: boolean;
   [key: string]: any;
 }
 
