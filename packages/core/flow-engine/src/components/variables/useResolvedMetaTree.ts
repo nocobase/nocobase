@@ -49,7 +49,11 @@ export const useResolvedMetaTree = (
         setLoading(true);
         setError(null);
         try {
-          const result = await metaTree();
+          let result = await metaTree();
+          // 兼容返回值仍然是函数（惰性 loader）的情况，继续调用一次获取真正的数组
+          if (typeof result === 'function') {
+            result = await (result as unknown as () => Promise<MetaTreeNode[]>)();
+          }
           setResolvedMetaTree(result as MetaTreeNode[]);
         } catch (err) {
           console.warn('Failed to resolve metaTree function:', err);
