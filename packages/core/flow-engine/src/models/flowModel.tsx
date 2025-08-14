@@ -1233,6 +1233,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * @deprecated
    * 打开步骤设置对话框
    * 用于配置流程中特定步骤的参数和设置
    * @param {string} flowKey 流程的唯一标识符
@@ -1276,6 +1277,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  /**
+   * @deprecated
+   * @param dialogWidth
+   * @param dialogTitle
+   * @returns
+   */
   async openPresetStepSettingsDialog(dialogWidth?: number | string, dialogTitle?: string) {
     return this.configureRequiredSteps(dialogWidth, dialogTitle);
   }
