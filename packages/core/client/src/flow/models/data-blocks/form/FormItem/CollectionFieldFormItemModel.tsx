@@ -34,7 +34,7 @@ CollectionFieldFormItemModel.registerFlow({
         const fieldInterface = collectionField.interface;
         if (collectionField) {
           const { type, target } = collectionField;
-          ctx.model.subModels.field.setProps({
+          ctx.model.setProps({
             options: collectionField.enum.length ? collectionField.enum : props.options,
             ...this?.collectionField?.getComponentProps?.(),
             mode: collectionField.type === 'array' ? 'multiple' : undefined,
@@ -42,7 +42,7 @@ CollectionFieldFormItemModel.registerFlow({
             maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
           });
         }
-
+        //TODO 最终用 jio 验证
         if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
@@ -97,7 +97,6 @@ CollectionFieldFormItemModel.registerFlow({
           //   form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
           // }
         }
-
         ctx.model.setProps({ rules, name: ctx.model.fieldPath });
       },
     },
@@ -290,9 +289,8 @@ CollectionFieldFormItemModel.registerFlow({
             });
             await model.applyAutoFlows();
           }
-          ctx.model.subModels.field.setProps({
+          ctx.model.setProps({
             disabled: params.pattern === 'disabled',
-            editable: params.pattern === 'editable',
           });
         }
       },

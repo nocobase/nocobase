@@ -9,12 +9,58 @@
 
 import React from 'react';
 import { Tooltip, Form } from 'antd';
+import type { FormItemProps } from 'antd';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormFieldGridModel } from '../FormFieldGridModel';
 import { FieldModelRenderer } from '../../../fields';
 
-export const FormItem = (props) => {
-  return <Form.Item {...props}>{props.children}</Form.Item>;
+type ChildExtraProps = Record<string, any>;
+
+// 保持 TS 类型和运行时数据同步
+const formItemPropKeys: (keyof FormItemProps)[] = [
+  'colon',
+  'dependencies',
+  'extra',
+  'getValueFromEvent',
+  'getValueProps',
+  'hasFeedback',
+  'help',
+  'htmlFor',
+  'initialValue',
+  'label',
+  'labelAlign',
+  'labelCol',
+  'messageVariables',
+  'name',
+  'normalize',
+  'noStyle',
+  'preserve',
+  'rules',
+  'tooltip',
+  'trigger',
+  'validateStatus',
+  'validateTrigger',
+  'valuePropName',
+  'wrapperCol',
+];
+
+export const FormItem = ({ children, ...rest }: FormItemProps & ChildExtraProps) => {
+  // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
+  const childProps = Object.fromEntries(
+    Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof FormItemProps)),
+  );
+  console.log(childProps, formItemPropKeys);
+  const processedChildren =
+    typeof children === 'function'
+      ? children
+      : React.Children.map(children as React.ReactNode, (child) => {
+          if (React.isValidElement(child)) {
+            return React.cloneElement(child, { ...childProps });
+          }
+          return child;
+        });
+
+  return <Form.Item {...rest}>{processedChildren}</Form.Item>;
 };
 
 export class FormItemModel extends FieldModel<{
@@ -75,7 +121,7 @@ export class FormItemModel extends FieldModel<{
     };
 
     return (
-      <Form.Item
+      <FormItem
         {...restProps}
         labelCol={{ style: { width: labelWidth } }}
         layout={layout}
@@ -83,7 +129,7 @@ export class FormItemModel extends FieldModel<{
         colon={false}
       >
         <FieldModelRenderer model={fieldModel} />
-      </Form.Item>
+      </FormItem>
     );
   }
 }
