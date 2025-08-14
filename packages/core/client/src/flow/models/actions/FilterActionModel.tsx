@@ -12,7 +12,7 @@ import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { CollectionActionModel } from '../base/ActionModel';
-import { FilterGroup, FilterItem, transformFilter } from '../../components/filter';
+import { ContextFilterItem, FilterGroup, FilterItem, transformFilter } from '../../components/filter';
 
 export class FilterActionModel extends CollectionActionModel {
   declare props: ButtonProps & {
@@ -37,7 +37,7 @@ export class FilterActionModel extends CollectionActionModel {
           <FilterContainer
             value={this.props.filterValue}
             ctx={this.context}
-            FilterItem={(props) => <FilterItem {...props} model={this} />}
+            FilterItem={(props) => <ContextFilterItem {...props} model={this} />}
           />
         }
         trigger="click"

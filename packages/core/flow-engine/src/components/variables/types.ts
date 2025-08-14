@@ -57,7 +57,7 @@ export interface Converters {
 
 export interface VariableInputProps {
   value?: any;
-  onChange?: (value: any) => void;
+  onChange?: (value: any, contextMeta?: MetaTreeNode) => void;
   converters?: Converters;
   showValueComponent?: boolean;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);

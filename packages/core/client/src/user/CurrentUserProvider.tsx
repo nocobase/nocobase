@@ -63,6 +63,7 @@ export const CurrentUserProvider = (props) => {
           createRecordProxyContext(
             () => app.flowEngine.context.user,
             () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+            app.flowEngine.translate('Current user'),
           ),
         );
 

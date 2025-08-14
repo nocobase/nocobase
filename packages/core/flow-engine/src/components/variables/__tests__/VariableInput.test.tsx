@@ -73,7 +73,19 @@ describe('VariableInput', () => {
       fireEvent.click(screen.getByText('Name'));
     });
 
-    expect(onChange).toHaveBeenCalledWith('{{ ctx.user.name }}');
+    expect(onChange).toHaveBeenCalledWith(
+      '{{ ctx.user.name }}',
+      expect.objectContaining({
+        name: 'name',
+        title: 'Name',
+        type: 'string',
+        interface: undefined,
+        uiSchema: undefined,
+        paths: ['user', 'name'],
+        parentTitles: ['User'],
+        children: undefined,
+      }),
+    );
   });
 
   it('should handle clear action from VariableTag', async () => {

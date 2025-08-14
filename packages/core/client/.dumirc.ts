@@ -76,16 +76,25 @@ export default defineConfig({
             { title: '概览', link: '/components/filter' },
             { title: 'FilterGroup', link: '/components/filter/filter-group' },
             { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+            { title: '变量筛选项组件', link: '/components/filter/variable-filter-item' },
           ],
         },
         {
           title: 'Variables',
           type: 'group',
           children: [
-            {
-              title: 'VariableInput 示例',
-              link: '/examples/variables',
+            { title: '概览', link: '/components/variables' },
+            { 
+              title: 'VariableInput', 
+              children: [
+                { title: '基础用法', link: '/components/variables/variable-input' },
+                { title: '筛选条件', link: '/components/variables/variable-input/scenarios/filter' },
+                { title: '联动规则', link: '/components/variables/variable-input/scenarios/linkage-rule' },
+                { title: '字段赋值', link: '/components/variables/variable-input/scenarios/assign-fields-value' },
+                { title: '数据范围', link: '/components/variables/variable-input/scenarios/data-scope' },
+              ],
             },
+            { title: 'SlateVariableEditor', link: '/components/variables/slate-variable-editor' },
           ],
         },
       ],
