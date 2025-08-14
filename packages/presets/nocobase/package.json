@@ -32,9 +32,11 @@
     "@nocobase/plugin-data-source-main": "1.8.15",
     "@nocobase/plugin-data-source-manager": "1.8.15",
     "@nocobase/plugin-data-source-sqlserver": "1.8.15",
+
     "@nocobase/plugin-data-source-mysql": "1.8.15",
     "@nocobase/plugin-data-source-oracle": "1.8.15",
     "@nocobase/plugin-data-source-postgresql": "1.8.15",
+
     "@nocobase/plugin-data-visualization": "1.8.15",
     "@nocobase/plugin-departments": "1.8.15",
     "@nocobase/plugin-environment-variables": "1.8.15",
