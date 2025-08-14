@@ -98,7 +98,7 @@ const DataScopeFilterItem = observer(
         title: 'Null',
         type: 'null',
         paths: ['Null'],
-        render: () => <span style={{ color: '#999' }}>null</span>,
+        render: () => <Input readOnly placeholder="<Null>" style={{ color: '#999' }} />,
       });
 
       // 添加 Constant 选项
