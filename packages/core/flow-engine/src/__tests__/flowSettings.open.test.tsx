@@ -59,10 +59,31 @@ vi.mock('antd', () => ({
   Collapse: Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' }),
 }));
 
+// helper to locate the primary Button element in a React element tree
+const findPrimaryButton = async (node: any) => {
+  const { Button } = await import('antd');
+  const walk = (n: any): any => {
+    if (!n || typeof n !== 'object') return null;
+    if (n.type === Button && n?.props?.type === 'primary') return n;
+    const children = n.props?.children;
+    if (!children) return null;
+    if (Array.isArray(children)) {
+      for (const c of children) {
+        const r = walk(c);
+        if (r) return r;
+      }
+      return null;
+    }
+    return walk(children);
+  };
+  return walk(node);
+};
+
 describe('FlowSettings.open rendering behavior', () => {
   afterEach(() => {
     document.querySelectorAll('[data-testid]')?.forEach((n) => n.remove());
     vi.clearAllMocks();
+    FlowModel.clearFlows();
   });
 
   it('renders single-step form directly when flowKey+stepKey provided (no Collapse)', async () => {
@@ -162,5 +183,174 @@ describe('FlowSettings.open rendering behavior', () => {
     // In our minimal mock we don't render real Collapse DOM, but we can check that the FlowViewer was invoked.
     // For robustness, just assert container exists (behavior difference is ensured by code path and not by DOM markers here).
     expect(container).toBeTruthy();
+  });
+
+  it('shows info when there are no configurable steps (entries length 0)', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-none', flowEngine: engine });
+
+    // message spy
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    // viewer spies (should NOT be called)
+    const dialog = vi.fn();
+    const drawer = vi.fn();
+    model.context.defineProperty('viewer', { value: { dialog, drawer } });
+
+    await flowSettings.open({ model } as any);
+
+    expect(info).toHaveBeenCalled();
+    expect(dialog).not.toHaveBeenCalled();
+    expect(drawer).not.toHaveBeenCalled();
+  });
+
+  it('uses drawer uiMode when specified', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-drawer', flowEngine: engine });
+
+    // Register one simple flow/step
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'f',
+      steps: {
+        s: {
+          title: 'S',
+          uiSchema: {
+            field: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    // message stub
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    const openSpy = { lastTree: null as any };
+    const viewerDrawer = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (props: any) => null } as any;
+      openSpy.lastTree = typeof content === 'function' ? content(dlg) : null;
+      return dlg;
+    });
+    const viewerDialog = vi.fn();
+    model.context.defineProperty('viewer', { value: { drawer: viewerDrawer, dialog: viewerDialog } });
+
+    await flowSettings.open({ model, flowKey: 'f', uiMode: 'drawer' } as any);
+    expect(viewerDrawer).toHaveBeenCalledTimes(1);
+    expect(viewerDialog).not.toHaveBeenCalled();
+    expect(openSpy.lastTree).toBeTruthy();
+  });
+
+  it('saves successfully and calls hooks, messages, and close', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-save', flowEngine: engine });
+
+    const beforeHook = vi.fn();
+    const afterHook = vi.fn();
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'fx',
+      steps: {
+        general: {
+          title: 'General',
+          defaultParams: { a: 1 },
+          beforeParamsSave: beforeHook,
+          afterParamsSave: afterHook,
+          uiSchema: {
+            field1: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    const setStepParams = vi.spyOn(model as any, 'setStepParams');
+    const save = vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+
+    // capture returned React tree for triggering primary button
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog) : null;
+          // return dialog object
+          return lastDialog;
+        },
+        drawer: ({ content }) => (model as any).context.viewer.dialog({ content }),
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'fx', stepKey: 'general', uiMode: 'dialog' } as any);
+
+    // traverse the created React element tree to find the primary Button and click it
+    const primaryBtn = await findPrimaryButton(lastTree);
+    expect(primaryBtn).toBeTruthy();
+    await primaryBtn.props.onClick?.();
+
+    // assertions
+    expect(setStepParams).toHaveBeenCalledWith('fx', 'general', expect.any(Object));
+    expect(beforeHook).toHaveBeenCalled();
+    expect(save).toHaveBeenCalled();
+    expect(success).toHaveBeenCalled();
+    expect(afterHook).toHaveBeenCalled();
+    expect(lastDialog.close).toHaveBeenCalled();
+  });
+
+  it('handles save error by showing error message and keeping dialog open', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-error', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'fy',
+      steps: {
+        s: {
+          title: 'S',
+          defaultParams: { b: 2 },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    vi.spyOn(model as any, 'save').mockRejectedValue(new Error('boom'));
+
+    let lastTree: any;
+    let lastDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          lastDialog = { close: vi.fn(), Footer: (p: any) => null } as any;
+          lastTree = typeof content === 'function' ? content(lastDialog) : null;
+          return lastDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'fy', stepKey: 's' } as any);
+
+    const primaryBtn = await findPrimaryButton(lastTree);
+    expect(primaryBtn).toBeTruthy();
+    await primaryBtn.props.onClick?.();
+
+    expect(error).toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
+    expect(lastDialog.close).not.toHaveBeenCalled();
   });
 });
