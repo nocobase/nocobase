@@ -76,6 +76,7 @@ export default defineConfig({
             { title: '概览', link: '/components/filter' },
             { title: 'FilterGroup', link: '/components/filter/filter-group' },
             { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+            { title: '变量筛选项组件', link: '/components/filter/variable-filter-item' },
           ],
         },
         {
