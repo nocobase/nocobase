@@ -18,6 +18,8 @@ interface FlowSettingsOpenOptions {
 	flowKeys?: string[];            // 指定多个 flow（当同时提供 flowKey 时被忽略）
 	stepKey?: string;               // 指定单个步骤（通常与 flowKey 搭配）
 	uiMode?: 'dialog' | 'drawer';   // 展示容器，默认 'dialog'
+	onCancel?: () => void;          // 取消按钮点击后触发（无参数）
+	onSaved?: () => void;           // 配置保存成功后触发（无参数）
 }
 ```
 
@@ -96,3 +98,36 @@ interface FlowSettingsOpenOptions {
 5. 执行 `afterParamsSave(ctx, current, previous)`
 
 若保存成功，默认通过 `model.context.message.success('Configuration saved')` 提示；若失败，则输出错误并通过 `message.error` 提示。
+
+---
+
+## 回调：onSaved 与 onCancel
+
+在打开配置时可以传入两个可选的回调函数：
+
+- `onSaved`: 当点击“确定”并成功完成所有步骤保存后触发（在弹窗关闭之后）。
+- `onCancel`: 当点击“取消”关闭弹窗后触发。
+
+示例：
+
+```ts
+// 推荐：通过 model.openFlowSettings 调用
+await model.openFlowSettings({
+	flowKey: 'myFlow',
+	stepKey: 'general',
+	onSaved: () => {
+		console.log('Saved!');
+	},
+	onCancel: () => {
+		console.log('Canceled.');
+	},
+});
+
+// 或者直接调用 flowEngine.flowSettings.open
+await flowEngine.flowSettings.open({
+	model,
+	flowKey: 'myFlow',
+	onSaved: () => {/* ... */},
+	onCancel: () => {/* ... */},
+});
+```
