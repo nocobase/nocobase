@@ -9,7 +9,6 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { Tooltip } from 'antd';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 import { FormItem } from '../form/FormItem/FormItemModel';
@@ -21,16 +20,12 @@ export class DetailItemModel extends FieldModel<{
 }> {
   onInit(options: any): void {
     super.onInit(options);
-    this.context.defineProperty('fieldValue', {
-      get: () => this.context.record?.[this.fieldPath],
-      cache: false,
-    });
   }
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
-
+    console.log(this.props);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
@@ -55,6 +50,11 @@ DetailItemModel.registerFlow({
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
+        const { collectionField } = ctx.model;
+        ctx.model.setProps(collectionField.getComponentProps());
+        if (collectionField.enum.length) {
+          ctx.model.setProps({ options: collectionField.enum });
+        }
       },
     },
     label: {

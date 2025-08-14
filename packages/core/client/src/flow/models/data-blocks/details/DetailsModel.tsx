@@ -127,7 +127,6 @@ export class DetailsModel extends CollectionBlockModel<{
                   </Droppable>
                 );
               })}
-
               <AddActionButton
                 model={this}
                 items={buildActionItems(this, 'RecordActionModel')}

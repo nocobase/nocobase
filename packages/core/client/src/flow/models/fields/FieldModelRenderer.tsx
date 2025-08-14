@@ -32,11 +32,8 @@ export function FieldModelRenderer(props: any) {
   const modelProps = Object.fromEntries(
     Object.entries(rest).filter(([key]) => !flowModelRendererPropKeys.includes(key as keyof FlowModelRendererProps)),
   );
-
   useEffect(() => {
-    if (model?.setProps) {
-      model.setProps(modelProps);
-    }
+    model.setProps(modelProps);
   }, [modelProps]);
 
   return <FlowModelRenderer model={model} {...rest} />;
