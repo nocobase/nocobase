@@ -190,12 +190,12 @@ export const FIELDS_VALIDATION_OPTIONS = {
         },
         {
           key: 'allowQuerySquareBrackets',
-          label: 'Allow Query Square Brackets',
+          label: 'Allows unencoded square brackets inside the query string',
           componentType: 'checkbox',
         },
         {
           key: 'encodeUri',
-          label: 'Encode URI',
+          label: 'Attempts to encode the URI using encodeURI before validating it again',
           componentType: 'checkbox',
         },
       ],
