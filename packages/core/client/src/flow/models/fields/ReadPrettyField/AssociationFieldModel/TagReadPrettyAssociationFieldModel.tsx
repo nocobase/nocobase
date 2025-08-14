@@ -90,6 +90,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
   // @reactive
   public render() {
     const { fieldNames, clickToOpen = true, value } = this.props;
+    console.log(this.props.value);
     const parentRecord = this.context.record;
     if (!value || !fieldNames) return null;
     const arrayValue = castArray(value);

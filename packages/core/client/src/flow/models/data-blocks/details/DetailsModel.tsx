@@ -27,6 +27,7 @@ import { RecordActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+import { FormComponent } from '../form/FormModel';
 
 export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -104,7 +105,6 @@ export class DetailsModel extends CollectionBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-
     return (
       <>
         <DndProvider>
@@ -138,9 +138,9 @@ export class DetailsModel extends CollectionBlockModel<{
             </Space>
           </div>
         </DndProvider>
-        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
+        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+        </FormComponent>
         {this.renderPagination()}
       </>
     );

@@ -7,29 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseItem } from '@formily/antd-v5';
-import { observable } from '@formily/reactive';
 import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
+import { Tooltip } from 'antd';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+import { FormItem } from '../form/FormItem/FormItemModel';
+import { FieldModelRenderer } from '../../fields';
 
 export class DetailItemModel extends FieldModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
 }> {
-  decoratorProps = observable({} as any);
-
-  setDecoratorProps(props) {
-    Object.assign(this.decoratorProps, props);
-  }
-
-  showTitle(showTitle: boolean) {
-    this.setDecoratorProps({
-      labelStyle: { display: showTitle ? 'flex' : 'none' },
-    });
-  }
-
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('fieldValue', {
@@ -38,18 +27,14 @@ export class DetailItemModel extends FieldModel<{
     });
   }
 
-  // @reactive
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    // fieldModel.context.defineProperty('value', {
-    //   get: () => value,
-    // });
-    fieldModel.setProps({ value: value });
+    const value = this.context.record?.[this.fieldPath];
+
     return (
-      <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
-        {fieldModel.render()}
-      </BaseItem>
+      <FormItem {...this.props} value={value}>
+        <FieldModelRenderer model={fieldModel} />
+      </FormItem>
     );
   }
 }
@@ -96,7 +81,7 @@ DetailItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ title: params.title });
+        ctx.model.setProps({ label: params.title });
       },
     },
     showLabel: {
@@ -115,7 +100,7 @@ DetailItemModel.registerFlow({
         showLabel: true,
       },
       handler(ctx, params) {
-        ctx.model.showTitle(params.showLabel);
+        ctx.model.setProps({ showLabel: params.showLabel });
       },
     },
     tooltip: {
@@ -127,7 +112,7 @@ DetailItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: params.tooltip });
       },
     },
     description: {
@@ -139,7 +124,7 @@ DetailItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ description: params.description });
+        ctx.model.setProps({ extra: params.description });
       },
     },
   },

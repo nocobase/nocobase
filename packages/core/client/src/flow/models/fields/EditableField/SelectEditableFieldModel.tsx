@@ -14,7 +14,6 @@ export class SelectEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {
-    console.log(this.props);
     return [
       Select,
       {
