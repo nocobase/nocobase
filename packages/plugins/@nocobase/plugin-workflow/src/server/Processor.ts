@@ -440,7 +440,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number | string, includeSelfScope = false) {
+  public getScope(sourceNodeId?: number | string, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -471,7 +471,11 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number | string, { additionalScope = {}, includeSelfScope = false } = {}) {
+  public getParsedValue(
+    value,
+    sourceNodeId?: number | string,
+    { additionalScope = {}, includeSelfScope = false } = {},
+  ) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {
