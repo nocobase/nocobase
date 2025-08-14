@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { Button, Cascader } from 'antd';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import { buildContextSelectorItems, formatPathToValue, parseValueToPath } from './variables/utils';
@@ -34,9 +34,38 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
 
+  // 用于强制重新渲染的状态
+  const [updateFlag, setUpdateFlag] = useState(0);
+  const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
+
+  // 构建选项
   const options = useMemo(() => {
     return buildContextSelectorItems(resolvedMetaTree);
-  }, [resolvedMetaTree]);
+  }, [resolvedMetaTree, updateFlag]);
+
+  // 处理异步加载子节点
+  const handleLoadData = useCallback(
+    async (selectedOptions: ContextSelectorItem[]) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (!targetOption || targetOption.children || targetOption.isLeaf) {
+        return;
+      }
+
+      const targetMetaNode = targetOption.meta;
+      if (!targetMetaNode || !targetMetaNode.children || typeof targetMetaNode.children !== 'function') {
+        return;
+      }
+
+      try {
+        const childNodes = await targetMetaNode.children();
+        targetMetaNode.children = childNodes;
+        triggerUpdate();
+      } catch (error) {
+        console.error('Failed to load children:', error);
+      }
+    },
+    [triggerUpdate],
+  );
 
   const currentPath = useMemo(() => {
     return customParseValueToPath(value);
@@ -107,6 +136,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       options={options}
       value={cascaderValue}
       onChange={handleChange}
+      loadData={handleLoadData}
       loading={loading}
       changeOnSelect={true}
       expandTrigger="click"

@@ -20,6 +20,7 @@ const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
  *
  * @param recordOrFactory 要代理的记录对象或记录工厂函数
  * @param collectionOrFactory 记录所属的集合或获取集合的工厂函数
+ * @param title 可选的标题，用于在获取实际的 meta 前显示的标题
  * @returns 包含 get 和 meta 属性的对象，可用于 defineProperty
  *
  * @example
@@ -41,7 +42,32 @@ const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 export function createRecordProxyContext(
   recordOrFactory: any | (() => any),
   collectionOrFactory: Collection | (() => Collection | null),
+  title?: string, // 可选的标题参数，可以用于在获取实际的 meta 前显示的标题
 ) {
+  const metaFn = async () => {
+    const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
+
+    if (!collection) {
+      // 返回 null 表示 meta 暂不可用，不会导致整个 meta tree 构建失败
+      return null;
+    }
+
+    return {
+      type: 'object',
+      title: metaFn.title || collection.title || collection.name,
+      properties: async () => {
+        const properties: Record<string, any> = {};
+
+        // 添加所有字段
+        collection.fields.forEach((field) => {
+          properties[field.name] = createFieldMetadata(field);
+        });
+
+        return properties;
+      },
+    };
+  };
+  metaFn.title = title;
   return {
     get: (flowCtx: FlowModelContext) => {
       const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
@@ -52,29 +78,7 @@ export function createRecordProxyContext(
 
       return new RecordProxy(recordOrFactory, collection, flowCtx);
     },
-    meta: async () => {
-      const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
-
-      if (!collection) {
-        // 返回 null 表示 meta 暂不可用，不会导致整个 meta tree 构建失败
-        return null;
-      }
-
-      return {
-        type: 'object',
-        title: collection.title || collection.name,
-        properties: async () => {
-          const properties: Record<string, any> = {};
-
-          // 添加所有字段
-          collection.fields.forEach((field) => {
-            properties[field.name] = createFieldMetadata(field);
-          });
-
-          return properties;
-        },
-      };
-    },
+    meta: metaFn,
   };
 }
 
@@ -152,4 +156,35 @@ function createMetaBaseProperties(field: CollectionField) {
     interface: field.interface,
     uiSchema: field.uiSchema || {},
   };
+}
+
+export function createCollectionContextMeta(
+  collectionOrFactory: Collection | (() => Collection | null),
+  title?: string,
+) {
+  const metaFn = async () => {
+    const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
+
+    if (!collection) {
+      // 返回 null 表示 meta 暂不可用，不会导致整个 meta tree 构建失败
+      return null;
+    }
+
+    return {
+      type: 'object',
+      title: title || collection.title || collection.name,
+      properties: async () => {
+        const properties: Record<string, any> = {};
+
+        // 添加所有字段
+        collection.fields.forEach((field) => {
+          properties[field.name] = createFieldMetadata(field);
+        });
+
+        return properties;
+      },
+    };
+  };
+  metaFn.title = title;
+  return metaFn;
 }
