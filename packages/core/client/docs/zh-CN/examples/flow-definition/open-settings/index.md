@@ -13,6 +13,7 @@ flowEngine.flowSettings.open(options: FlowSettingsOpenOptions);
 
 interface FlowSettingsOpenOptions {
 	model: FlowModel;               // 必填，所属的模型实例
+	preset?: boolean;               // 仅渲染标记了 preset=true 的步骤（默认 false）
 	flowKey?: string;               // 指定单个 flow
 	flowKeys?: string[];            // 指定多个 flow（当同时提供 flowKey 时被忽略）
 	stepKey?: string;               // 指定单个步骤（通常与 flowKey 搭配）
@@ -28,6 +29,7 @@ interface FlowSettingsOpenOptions {
 - 情况 A：当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
 - 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
 - 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。
+- 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤；若无匹配步骤，将通过 `message.info` 提示并不会打开配置视图。
 - uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
 - 保存顺序：对每个 step 执行 submit -> setStepParams -> beforeParamsSave -> 统一 model.save() -> afterParamsSave。
 
@@ -64,6 +66,14 @@ interface FlowSettingsOpenOptions {
 通过设置 `uiMode: 'drawer'`，可以将默认的对话框切换为抽屉。
 
 <code src="./ui-mode-drawer.tsx"></code>
+
+---
+
+## 仅渲染预设（preset）步骤
+
+当传入 `preset: true` 时，配置弹窗中只会出现被标记为 `preset: true` 的步骤。例如下例中 flow 包含两个步骤，其中仅 `quick` 为预设步骤，因此弹窗中只会显示 `quick`。
+
+<code src="./preset-only-steps.tsx"></code>
 
 ---
 
