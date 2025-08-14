@@ -303,4 +303,31 @@ describe('VariableInput', () => {
     const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
   });
+
+  it('should only allow leaf selection when onlyLeafSelectable is true', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+    render(
+      <VariableInput
+        value=""
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+        onlyLeafSelectable={true}
+      />,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    fireEvent.click(selectorButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+
+    // Click on non-leaf node 'User' with onlyLeafSelectable=true
+    fireEvent.click(screen.getByText('User'));
+
+    // onChange should not be called for non-leaf node when onlyLeafSelectable=true
+    // It should only expand the node, not select it
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
