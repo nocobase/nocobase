@@ -12,14 +12,14 @@ import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
 
-export const parseValueToPath = (value: string): string[] | null => {
-  if (typeof value !== 'string') return null;
+export const parseValueToPath = (value: string): string[] | undefined => {
+  if (typeof value !== 'string') return undefined;
 
   const trimmed = value.trim();
   const variableRegex = /^\{\{\s*ctx(?:\.(.+?))?\s*\}\}$/;
   const match = trimmed.match(variableRegex);
 
-  if (!match) return null;
+  if (!match) return undefined;
 
   const pathString = match[1];
   if (!pathString) return [];
@@ -28,13 +28,13 @@ export const parseValueToPath = (value: string): string[] | null => {
 };
 
 export const formatPathToValue = (item: ContextSelectorItem): string => {
-  const path = item.fullPath || [];
+  const path = item?.fullPath || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
 
 export const loadMetaTreeChildren = async (metaNode: MetaTreeNode): Promise<MetaTreeNode[]> => {
-  if (!metaNode.children) return [];
+  if (!metaNode?.children) return [];
 
   if (typeof metaNode.children === 'function') {
     try {
@@ -66,13 +66,7 @@ export const searchInLoadedNodes = (
 
       // 检查节点标签是否匹配搜索文本
       if (node.label.toLowerCase().includes(lowerSearchText)) {
-        // 创建带路径信息的结果节点
-        const resultNode: ContextSelectorItem = {
-          ...node,
-          // 添加完整路径信息用于显示
-          fullPath: [...parentPaths, ...nodePath],
-        };
-        results.push(resultNode);
+        results.push(node);
       }
 
       // 只搜索已加载的子节点（存在children属性表示已加载）
@@ -96,19 +90,6 @@ export const buildContextSelectorItems = (
   }
 
   const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
-    // 处理无效节点
-    if (!node || typeof node !== 'object' || !node.name) {
-      console.warn('buildContextSelectorItems received invalid node:', node);
-      const invalidPath = [...currentPath, 'invalid'];
-      return {
-        label: 'Invalid Node',
-        value: 'invalid',
-        isLeaf: true,
-        meta: null,
-        fullPath: invalidPath,
-      };
-    }
-
     const hasChildren = node.children;
     const fullPath = [...currentPath, node.name];
     const option: ContextSelectorItem = {
@@ -168,6 +149,49 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   return mergedConverters;
 };
 
+// 根据ContextSelectorItem的fullPath和metaTree构建完整的标题路径
+export const buildFullTagTitle = async (
+  contextSelectorItem: ContextSelectorItem,
+  metaTree?: MetaTreeNode[],
+): Promise<string> => {
+  if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
+    return contextSelectorItem?.label || '';
+  }
+
+  if (!metaTree) {
+    return contextSelectorItem.fullPath.join('/');
+  }
+
+  // 递归查找路径中每个节点的 title
+  const titlePath: string[] = [];
+  let currentNodes: MetaTreeNode[] = metaTree;
+
+  for (const segment of contextSelectorItem.fullPath) {
+    const node = currentNodes.find((n) => n.name === segment);
+    if (!node) {
+      // 如果找不到节点，使用原始名称
+      titlePath.push(segment);
+      break;
+    }
+
+    // 使用 title 或 name
+    titlePath.push(node.title || node.name);
+
+    if (typeof node.children === 'function') {
+      node.children = await node.children();
+    }
+
+    // 准备下一级节点
+    if (Array.isArray(node.children)) {
+      currentNodes = node.children;
+    } else {
+      break;
+    }
+  }
+
+  return titlePath.join('/');
+};
+
 // 根据路径从metaTree中构建对应的ContextSelectorItem
 export const buildContextSelectorItemFromPath = (
   path: string[],
@@ -198,7 +222,8 @@ export const buildContextSelectorItemFromPath = (
   let currentNodes: MetaTreeNode[] = metaTree;
   let targetMeta: MetaTreeNode | null = null;
 
-  for (const segment of path) {
+  for (let i = 0; i < path.length; i++) {
+    const segment = path[i];
     const node = currentNodes.find((n) => n.name === segment);
     if (!node) {
       // 如果找不到节点，返回基本信息
@@ -211,14 +236,14 @@ export const buildContextSelectorItemFromPath = (
           title: segment,
           type: 'string',
         },
-        fullPath: [...parentPaths, ...path.slice(0, path.indexOf(segment) + 1)],
+        fullPath: [...parentPaths, ...path.slice(0, i + 1)],
       };
     }
 
     targetMeta = node;
 
     // 如果还有下一级路径，且当前节点有子节点
-    if (path.indexOf(segment) < path.length - 1) {
+    if (i < path.length - 1) {
       if (Array.isArray(node.children)) {
         currentNodes = node.children;
       } else {

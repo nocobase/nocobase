@@ -993,6 +993,7 @@ describe('workflow > triggers > collection', () => {
     it('stack limit for same execution', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
+        sync: true,
         type: 'collection',
         config: {
           mode: 1,
@@ -1017,8 +1018,6 @@ describe('workflow > triggers > collection', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const posts = await PostRepo.find();
       expect(posts.length).toBe(4);
 
@@ -1030,8 +1029,6 @@ describe('workflow > triggers > collection', () => {
 
       // NOTE: second trigger to ensure no skipped event
       const p3 = await PostRepo.create({ values: { title: 't3' } });
-
-      await sleep(500);
 
       const posts2 = await PostRepo.find();
       expect(posts2.length).toBe(8);

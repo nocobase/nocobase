@@ -12,7 +12,7 @@ import { useRequest } from 'ahooks';
 import { Card, Skeleton, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCurrentRoute, useKeepAlive } from '../route-switch';
+import { useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 
 function InternalFlowPage({ uid, ...props }) {
@@ -33,6 +33,7 @@ export const FlowRoute = () => {
   const flowEngine = useFlowEngine();
   const params = useParams();
   const currentRoute = useCurrentRoute();
+  const { isMobileLayout } = useMobileLayout();
   // console.log('FlowRoute params:', params);
   // const { active } = useKeepAlive();
   const model = useMemo(() => {
@@ -41,6 +42,13 @@ export const FlowRoute = () => {
       use: 'RouteModel',
     });
   }, [params.name, flowEngine]);
+
+  useEffect(() => {
+    model.context.defineProperty('isMobileLayout', {
+      get: () => isMobileLayout,
+    });
+  }, [isMobileLayout, model]);
+
   useEffect(() => {
     // if (!active) {
     //   return;

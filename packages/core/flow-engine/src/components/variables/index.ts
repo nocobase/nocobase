@@ -8,6 +8,10 @@
  */
 
 export { VariableInput } from './VariableInput';
+export { SlateVariableEditor } from './SlateVariableEditor';
 export { VariableTag } from './VariableTag';
+export { InlineVariableTag } from './InlineVariableTag';
+export { useVariableTreeData } from './useVariableTreeData';
+export { useResolvedMetaTree } from './useResolvedMetaTree';
 export * from './types';
 export * from './utils';

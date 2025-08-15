@@ -33,7 +33,7 @@ const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, them
     onRefReady?.(instanceRef.current);
 
     resizeObserverRef.current = new ResizeObserver(() => {
-      instanceRef.current?.resize();
+      instanceRef.current?.resize?.();
     });
     resizeObserverRef.current.observe(chartRef.current);
 

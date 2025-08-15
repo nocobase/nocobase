@@ -71,11 +71,13 @@ export async function resolveDefaultOptions(
   return defaultOptions;
 }
 
+export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
+
 /**
  * 解析参数中的 {{xxx}} 表达式，自动处理异步属性访问
  */
 export async function resolveExpressions<TModel extends FlowModel = FlowModel>(
-  params: Record<string, any>,
+  params: JSONValue,
   ctx: FlowContext,
 ): Promise<any> {
   const compile = async (source: any): Promise<any> => {

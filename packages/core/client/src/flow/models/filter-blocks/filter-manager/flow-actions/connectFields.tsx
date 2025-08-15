@@ -43,7 +43,6 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
   const selectedPathsArray = selectedPaths ? selectedPaths.split(',').filter(Boolean) : [];
 
   return fields
-    .filter((field) => field.filterable)
     .map((field) => {
       const currentPath = prefix ? `${prefix}.${field.name}` : field.name;
       const label = ctx.t(field.title || field.uiSchema?.title) || field.name;

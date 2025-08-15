@@ -31,9 +31,9 @@ describe('Variable Utils', () => {
     it('should handle edge cases', () => {
       expect(parseValueToPath('{{ ctx }}')).toEqual([]);
       expect(parseValueToPath('{{ctx}}')).toEqual([]);
-      expect(parseValueToPath('not a variable')).toBeNull();
-      expect(parseValueToPath('')).toBeNull();
-      expect(parseValueToPath('{{ something.else }}')).toBeNull();
+      expect(parseValueToPath('not a variable')).toBeUndefined();
+      expect(parseValueToPath('')).toBeUndefined();
+      expect(parseValueToPath('{{ something.else }}')).toBeUndefined();
     });
 
     it('should handle whitespace variations', () => {
@@ -44,18 +44,30 @@ describe('Variable Utils', () => {
   });
 
   describe('formatPathToValue', () => {
-    it('should format path array to {{ ctx.aaa.bbb }}', () => {
-      expect(formatPathToValue(['aaa', 'bbb'])).toBe('{{ ctx.aaa.bbb }}');
-      expect(formatPathToValue(['user', 'name'])).toBe('{{ ctx.user.name }}');
-      expect(formatPathToValue(['data', 'items', '0', 'title'])).toBe('{{ ctx.data.items.0.title }}');
+    it('should format ContextSelectorItem to {{ ctx.aaa.bbb }}', () => {
+      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', fullPath: ['aaa', 'bbb'], isLeaf: true };
+      expect(formatPathToValue(item1)).toBe('{{ ctx.aaa.bbb }}');
+
+      const item2: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      expect(formatPathToValue(item2)).toBe('{{ ctx.user.name }}');
+
+      const item3: ContextSelectorItem = {
+        label: 'Title',
+        value: 'title',
+        fullPath: ['data', 'items', '0', 'title'],
+        isLeaf: true,
+      };
+      expect(formatPathToValue(item3)).toBe('{{ ctx.data.items.0.title }}');
     });
 
     it('should handle empty path', () => {
-      expect(formatPathToValue([])).toBe('{{ ctx }}');
+      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', fullPath: [], isLeaf: true };
+      expect(formatPathToValue(item)).toBe('{{ ctx }}');
     });
 
     it('should handle single path element', () => {
-      expect(formatPathToValue(['user'])).toBe('{{ ctx.user }}');
+      const item: ContextSelectorItem = { label: 'User', value: 'user', fullPath: ['user'], isLeaf: true };
+      expect(formatPathToValue(item)).toBe('{{ ctx.user }}');
     });
   });
 
@@ -145,6 +157,20 @@ describe('Variable Utils', () => {
       expect(result).toHaveLength(1);
       expect(result[0].label).toBe('User');
     });
+
+    it('should return the same object instances without creating new ones', () => {
+      const result = searchInLoadedNodes(mockOptions, 'User');
+      expect(result).toHaveLength(1);
+      // Verify that the returned object is the exact same instance as the original
+      expect(result[0]).toBe(mockOptions[0]);
+      expect(result[0].fullPath).toBe(mockOptions[0].fullPath);
+
+      const nestedResult = searchInLoadedNodes(mockOptions, 'Name');
+      expect(nestedResult).toHaveLength(1);
+      // Verify that nested search also returns the same instance
+      expect(nestedResult[0]).toBe(mockOptions[0].children![0]);
+      expect(nestedResult[0].fullPath).toBe(mockOptions[0].children![0].fullPath);
+    });
   });
 
   describe('buildContextSelectorItems', () => {
@@ -225,40 +251,6 @@ describe('Variable Utils', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should handle invalid nodes in metaTree', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      const metaTree: MetaTreeNode[] = [
-        { name: 'valid', title: 'Valid', type: 'object' },
-        null as any,
-        { name: '', title: 'Empty Name', type: 'object' },
-        undefined as any,
-      ];
-
-      const result = buildContextSelectorItems(metaTree);
-
-      expect(result).toHaveLength(4);
-      expect(result[0]).toEqual({
-        label: 'Valid',
-        value: 'valid',
-        isLeaf: true,
-        meta: { name: 'valid', title: 'Valid', type: 'object' },
-        fullPath: ['valid'],
-      });
-
-      // Invalid nodes should be converted to placeholder options
-      expect(result[1]).toEqual({
-        label: 'Invalid Node',
-        value: 'invalid',
-        isLeaf: true,
-        meta: null,
-        fullPath: ['invalid'],
-      });
-
-      expect(consoleSpy).toHaveBeenCalledTimes(3); // null, empty name, undefined
-      consoleSpy.mockRestore();
-    });
-
     it('should use name as fallback when title is missing', () => {
       const metaTree: MetaTreeNode[] = [
         {
@@ -310,10 +302,9 @@ describe('Variable Utils', () => {
   describe('createDefaultConverters', () => {
     it('should create default converters', () => {
       const converters = createDefaultConverters();
-      expect(converters).toHaveProperty('renderInputComponent');
       expect(converters).toHaveProperty('resolvePathFromValue');
       expect(converters).toHaveProperty('resolveValueFromPath');
-      expect(typeof converters.renderInputComponent).toBe('function');
+      expect(converters).not.toHaveProperty('renderInputComponent');
       expect(typeof converters.resolvePathFromValue).toBe('function');
       expect(typeof converters.resolveValueFromPath).toBe('function');
     });
@@ -321,7 +312,13 @@ describe('Variable Utils', () => {
     it('should resolve path from variable value', () => {
       const converters = createDefaultConverters();
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
-      expect(converters.resolvePathFromValue?.('static value')).toBeNull();
+      expect(converters.resolvePathFromValue?.('static value')).toBeUndefined();
+    });
+
+    it('should resolve value from ContextSelectorItem', () => {
+      const converters = createDefaultConverters();
+      const item: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
+      expect(converters.resolveValueFromPath?.(item)).toBe('{{ ctx.user.name }}');
     });
   });
 });

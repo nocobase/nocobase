@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContextSelector } from '../../FlowContextSelector';
 import { createTestFlowContext } from './test-utils';
@@ -97,7 +97,16 @@ describe('FlowContextSelector', () => {
       fireEvent.click(nameOption);
     });
 
-    expect(onChange).toHaveBeenCalledWith('{{ ctx.user.name }}', null);
+    expect(onChange).toHaveBeenCalledWith(
+      '{{ ctx.user.name }}',
+      expect.objectContaining({
+        fullPath: ['user', 'name'],
+        isLeaf: true,
+        label: 'Name',
+        value: 'name',
+        meta: expect.any(Object),
+      }),
+    );
   });
 
   it('should handle leaf node selection', async () => {
@@ -114,7 +123,16 @@ describe('FlowContextSelector', () => {
       fireEvent.click(configOption);
     });
 
-    expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', null);
+    expect(onChange).toHaveBeenCalledWith(
+      '{{ ctx.config }}',
+      expect.objectContaining({
+        fullPath: ['config'],
+        isLeaf: true,
+        label: 'Config',
+        value: 'config',
+        meta: expect.any(Object),
+      }),
+    );
   });
 
   it('should support search functionality', async () => {
@@ -149,7 +167,7 @@ describe('FlowContextSelector', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('should pass through cascader props', () => {
+  it('should pass through cascader props', async () => {
     const flowContext = createTestFlowContext();
     render(
       <FlowContextSelector
@@ -179,10 +197,19 @@ describe('FlowContextSelector', () => {
         fireEvent.click(configOption);
       });
 
-      expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', null);
+      expect(onChange).toHaveBeenCalledWith(
+        '{{ ctx.config }}',
+        expect.objectContaining({
+          fullPath: ['config'],
+          isLeaf: true,
+          label: 'Config',
+          value: 'config',
+          meta: expect.any(Object),
+        }),
+      );
     });
 
-    it('should support double-click selection for non-leaf nodes', async () => {
+    it('should support double-click selection for non-leaf nodes', () => {
       // This test verifies that the double-click logic is implemented
       // In actual usage, users would double-click to select non-leaf nodes
       const onChange = vi.fn();
@@ -192,6 +219,200 @@ describe('FlowContextSelector', () => {
 
       // The implementation supports double-click detection with 300ms window
       // For testing purposes, we verify the component renders correctly
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+  });
+
+  describe('Custom parsing and formatting functions', () => {
+    it('should use custom parseValueToPath function', () => {
+      const onChange = vi.fn();
+      const flowContext = createTestFlowContext();
+      const customParseValueToPath = vi.fn().mockReturnValue(['user', 'name']);
+
+      render(
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="custom.user.name"
+          onChange={onChange}
+          parseValueToPath={customParseValueToPath}
+        />,
+      );
+
+      expect(customParseValueToPath).toHaveBeenCalledWith('custom.user.name');
+    });
+
+    it('should use custom formatPathToValue function', async () => {
+      const onChange = vi.fn();
+      const flowContext = createTestFlowContext();
+      const customFormatPathToValue = vi.fn().mockReturnValue('custom.formatted.value');
+
+      render(
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          onChange={onChange}
+          formatPathToValue={customFormatPathToValue}
+        />,
+      );
+
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+
+      await waitFor(() => {
+        const configOption = screen.getByText('Config');
+        fireEvent.click(configOption);
+      });
+
+      expect(customFormatPathToValue).toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith('custom.formatted.value', expect.any(Object));
+    });
+
+    it('should fallback to default functions when custom functions return undefined', async () => {
+      const onChange = vi.fn();
+      const flowContext = createTestFlowContext();
+      const customFormatPathToValue = vi.fn().mockReturnValue(undefined);
+
+      render(
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          onChange={onChange}
+          formatPathToValue={customFormatPathToValue}
+        />,
+      );
+
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+
+      await waitFor(() => {
+        const configOption = screen.getByText('Config');
+        fireEvent.click(configOption);
+      });
+
+      expect(customFormatPathToValue).toHaveBeenCalled();
+      // Should fallback to default formatPathToValue
+      // Fixed: Now correctly passes ContextSelectorItem to formatPathToValue
+      expect(onChange).toHaveBeenCalledWith('{{ ctx.config }}', expect.any(Object));
+    });
+  });
+
+  describe('Open state control', () => {
+    it('should control dropdown open state with open prop', async () => {
+      const flowContext = createTestFlowContext();
+
+      const { rerender } = render(
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={false} />,
+      );
+
+      // When open=false, cascader should be closed
+      expect(screen.getByRole('button')).toBeInTheDocument();
+      expect(screen.queryByText('User')).not.toBeInTheDocument();
+
+      rerender(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />);
+
+      // When open=true, options should be visible after data loads
+      await waitFor(
+        () => {
+          expect(screen.getByText('User')).toBeInTheDocument();
+        },
+        { timeout: 5000 },
+      );
+    });
+
+    it('should handle programmatic open state changes', async () => {
+      const flowContext = createTestFlowContext();
+
+      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />);
+
+      // Should show dropdown when open=true
+      await waitFor(() => {
+        // Check for dropdown container instead of specific text
+        expect(document.querySelector('.ant-cascader-dropdown')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Error handling and edge cases', () => {
+    it('should handle invalid metaTree function', async () => {
+      const invalidMetaTree = vi.fn().mockRejectedValue(new Error('Network error'));
+
+      render(<FlowContextSelector metaTree={invalidMetaTree} />);
+
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+
+      await waitFor(() => {
+        expect(invalidMetaTree).toHaveBeenCalled();
+      });
+
+      // Should not crash and render properly
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+
+    it('should handle null/undefined metaTree', () => {
+      render(<FlowContextSelector metaTree={undefined} />);
+
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+
+    it('should handle invalid value format', () => {
+      const flowContext = createTestFlowContext();
+
+      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} value="invalid.format" />);
+
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+
+    it('should handle metaTree function returning non-array', async () => {
+      const invalidMetaTree = vi.fn().mockResolvedValue(null);
+
+      render(<FlowContextSelector metaTree={invalidMetaTree} />);
+
+      const cascader = screen.getByRole('button');
+      fireEvent.click(cascader);
+
+      await waitFor(() => {
+        expect(invalidMetaTree).toHaveBeenCalled();
+      });
+
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+  });
+
+  describe('Cascader props validation', () => {
+    it('should accept and render with cascader props', () => {
+      const flowContext = createTestFlowContext();
+
+      // Test that component accepts various Cascader props without crashing
+      render(
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          disabled={true}
+          placeholder="Select a variable"
+          size="large"
+          className="custom-cascader"
+          allowClear={true}
+        />,
+      );
+
+      // Should render without errors
+      expect(screen.getByRole('button')).toBeInTheDocument();
+    });
+
+    it('should pass through Cascader-specific props', () => {
+      const flowContext = createTestFlowContext();
+
+      // Test expandTrigger and other Cascader-specific props
+      render(
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          expandTrigger="hover"
+          changeOnSelect={false}
+          displayRender={(labels) => labels.join(' > ')}
+        />,
+      );
+
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });

@@ -78,7 +78,7 @@ export const openView = defineAction({
                 get: () => ctx,
               });
               pageModel.context.defineProperty('closable', {
-                get: () => openMode !== 'page',
+                get: () => openMode !== 'embed',
               });
               pageModel.invalidateAutoFlowCache(true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
@@ -91,9 +91,9 @@ export const openView = defineAction({
           background: 'var(--nb-box-bg)',
           padding: 0,
         },
-      },
-      bodyStyle: {
-        padding: 0,
+        body: {
+          padding: 0,
+        },
       },
       onClose: () => {
         if (pageModelUid) {

@@ -18,6 +18,7 @@ import { Emitter } from '../emitter';
 import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type {
+  ActionDefinition,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
@@ -529,6 +530,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         let handler: ((ctx: FlowRuntimeContext<this>, params: any) => Promise<any> | any) | undefined;
         let combinedParams: Record<string, any> = {};
         let actionDefinition;
+        let useRawParams: ActionDefinition['useRawParams'] = step.useRawParams;
 
         if (step.use) {
           // Step references a registered action
@@ -541,6 +543,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           }
           // Use step's handler if provided, otherwise use action's handler
           handler = step.handler || actionDefinition.handler;
+          useRawParams = useRawParams ?? actionDefinition.useRawParams;
           // Merge default params: action defaults first, then step defaults
           const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
           const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
@@ -561,9 +564,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         if (modelStepParams !== undefined) {
           combinedParams = { ...combinedParams, ...modelStepParams };
         }
-
-        // 解析 combinedParams 中的表达式
-        combinedParams = await resolveExpressions(combinedParams, flowContext);
+        if (typeof useRawParams === 'function') {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          useRawParams = await useRawParams(flowContext);
+        }
+        if (!useRawParams) {
+          combinedParams = await resolveExpressions(combinedParams, flowContext);
+        }
 
         try {
           if (!handler) {

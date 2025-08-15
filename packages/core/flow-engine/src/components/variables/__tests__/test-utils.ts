@@ -48,23 +48,3 @@ export function createTestFlowContext() {
 
   return flowContext;
 }
-
-/**
- * Create a minimal test FlowContext for basic tests
- */
-export function createMinimalTestFlowContext() {
-  const flowContext = new FlowContext();
-
-  flowContext.defineProperty('user', {
-    value: { name: 'John' },
-    meta: {
-      title: 'User',
-      type: 'object',
-      properties: {
-        name: { title: 'Name', type: 'string' },
-      },
-    },
-  });
-
-  return flowContext;
-}
