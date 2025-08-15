@@ -128,7 +128,7 @@ export default {
         const fullPath = resolve(path, name);
         const relativePath = relative(path, fullPath);
         if (relativePath.startsWith('..') || relativePath.startsWith('/')) {
-          throw new Error('Invalid file path.');
+          ctx.throw(400, ctx.t('Invalid file path.'));
         }
 
         return name;
