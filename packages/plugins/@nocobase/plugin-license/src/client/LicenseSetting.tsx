@@ -90,7 +90,7 @@ function InstanceId() {
       icon={<CopyOutlined />}
       type="link"
     >
-      {t('Copy')}
+      {t('Click to copy')}
     </Button>
   );
 }
