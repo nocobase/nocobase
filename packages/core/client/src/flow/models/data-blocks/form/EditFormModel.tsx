@@ -167,8 +167,8 @@ EditFormModel.registerFlow({
 });
 
 EditFormModel.define({
-  title: escapeT('Form (Edit)'),
-  defaultOptions: {
+  label: escapeT('Form (Edit)'),
+  createModelOptions: {
     use: 'EditFormModel',
     subModels: {
       grid: {

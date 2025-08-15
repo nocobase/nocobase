@@ -22,6 +22,8 @@ export interface FieldSettingsInitParams {
 }
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
+  declare field: any; // TODO:
+
   onInit(options: any): void {
     this.context.defineProperty('collectionField', {
       get: () => {

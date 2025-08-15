@@ -100,7 +100,7 @@ export class FormFilterBlockModel extends FilterBlockModel<{
 
 FormFilterBlockModel.define({
   label: tval('Form'),
-  defaultOptions: {
+  createModelOptions: {
     use: 'FormFilterBlockModel',
     subModels: {
       grid: {

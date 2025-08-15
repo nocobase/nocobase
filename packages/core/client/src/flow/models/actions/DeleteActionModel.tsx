@@ -19,7 +19,7 @@ export class DeleteActionModel extends RecordActionModel {
 }
 
 DeleteActionModel.define({
-  title: escapeT('Delete'),
+  label: escapeT('Delete'),
 });
 
 DeleteActionModel.registerFlow({

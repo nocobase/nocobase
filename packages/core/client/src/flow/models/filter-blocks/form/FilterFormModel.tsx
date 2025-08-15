@@ -69,7 +69,7 @@ export class FilterFormModel extends FilterBlockModel {
 
 FilterFormModel.define({
   hide: true,
-  title: tval('Form'),
+  label: tval('Form'),
 });
 
 FilterFormModel.registerFlow({

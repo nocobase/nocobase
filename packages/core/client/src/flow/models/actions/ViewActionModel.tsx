@@ -19,7 +19,7 @@ export class ViewActionModel extends RecordActionModel {
 }
 
 ViewActionModel.define({
-  title: escapeT('View'),
+  label: escapeT('View'),
 });
 
 ViewActionModel.registerFlow({

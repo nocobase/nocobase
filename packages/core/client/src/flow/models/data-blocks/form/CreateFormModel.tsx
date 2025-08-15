@@ -95,8 +95,8 @@ CreateFormModel.registerFlow({
 });
 
 CreateFormModel.define({
-  title: escapeT('Form (Add new)'),
-  defaultOptions: {
+  label: escapeT('Form (Add new)'),
+  createModelOptions: {
     use: 'CreateFormModel',
     subModels: {
       grid: {

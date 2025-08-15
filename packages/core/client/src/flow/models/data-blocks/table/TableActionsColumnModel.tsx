@@ -121,8 +121,8 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
 }
 
 TableActionsColumnModel.define({
-  title: '{{t("Actions")}}',
-  defaultOptions: {
+  label: '{{t("Actions")}}',
+  createModelOptions: {
     stepParams: {
       tableColumnSettings: {
         editColumTitle: {

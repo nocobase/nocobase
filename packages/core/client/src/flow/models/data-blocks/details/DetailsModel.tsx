@@ -160,8 +160,8 @@ DetailsModel.registerFlow({
 });
 
 DetailsModel.define({
-  title: escapeT('Details'),
-  defaultOptions: {
+  label: escapeT('Details'),
+  createModelOptions: {
     use: 'DetailsModel',
     subModels: {
       grid: {

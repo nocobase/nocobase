@@ -8,7 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { SubModelItemsType } from './components';
+import { SubModelItem, SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
@@ -376,7 +376,6 @@ export interface FlowModelMeta {
   key?: string;
   label?: string;
   group?: string;
-  requiresDataSource?: boolean; // 是否需要数据源
   /**
    * 创建模型时的参数配置（唯一来源）。
    * 支持静态对象或函数（可异步），函数入参为 FlowModelContext 和可选的 extra。
@@ -385,6 +384,7 @@ export interface FlowModelMeta {
     | Record<string, any>
     | ((ctx: FlowModelContext, extra?: any) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
+  toggleable?: SubModelItem['toggleable'];
   // uniqueSub?: boolean;
   /**
    * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择

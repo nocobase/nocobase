@@ -19,7 +19,7 @@ export class PopupRecordActionModel extends RecordActionModel {
 }
 
 PopupRecordActionModel.define({
-  title: escapeT('Popup'),
+  label: escapeT('Popup'),
 });
 
 PopupRecordActionModel.registerFlow({

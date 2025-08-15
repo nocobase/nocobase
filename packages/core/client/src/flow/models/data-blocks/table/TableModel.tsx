@@ -547,9 +547,9 @@ TableModel.registerFlow({
 });
 
 TableModel.define({
-  title: escapeT('Table'),
+  label: escapeT('Table'),
   group: escapeT('Content'),
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableModel',
     subModels: {
       columns: [
