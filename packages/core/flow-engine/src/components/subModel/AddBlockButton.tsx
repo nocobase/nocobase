@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import { FlowModel } from '../../models/flowModel';
 import { ModelConstructor } from '../../types';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
+import { resolveCreateModelOptions } from '../../utils/params-resolvers';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
 
@@ -108,18 +109,13 @@ const AddBlockButtonCore: React.FC<AddBlockButtonProps> = ({
 
       const item: SubModelItem = {
         key: className,
-        label: ModelClass.meta?.title || className,
+        label: ModelClass.meta?.label || className,
         icon: ModelClass.meta?.icon,
-        createModelOptions: {
-          ...ModelClass.meta?.defaultOptions,
-          use: className,
+        createModelOptions: async () => {
+          const opts = await resolveCreateModelOptions(ModelClass.meta?.createModelOptions, model.context);
+          return { ...opts, use: className };
         },
       };
-
-      // 从 meta 中获取 toggleDetector
-      if (ModelClass.meta?.toggleDetector) {
-        item.toggleDetector = ModelClass.meta.toggleDetector;
-      }
 
       registeredItems.push(item);
     }

@@ -17,7 +17,7 @@ import {
   FlowExitException,
   defineAction,
   compileUiSchema,
-  resolveDefaultOptions,
+  resolveCreateModelOptions as resolveDefaultOptions,
   processMetaChildren,
   FLOW_ENGINE_NAMESPACE,
 } from '../index';
@@ -869,7 +869,7 @@ describe('Utils', () => {
         const result = await resolveDefaultOptions(errorFn, mockModel.context);
 
         expect(result).toEqual({});
-        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving createModelOptions function:', expect.any(Error));
 
         consoleSpy.mockRestore();
       });
@@ -882,7 +882,7 @@ describe('Utils', () => {
         const result = await resolveDefaultOptions(rejectFn, mockModel.context);
 
         expect(result).toEqual({});
-        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving createModelOptions function:', expect.any(Error));
 
         consoleSpy.mockRestore();
       });
@@ -915,11 +915,11 @@ describe('Utils', () => {
         const childrenFn = vi.fn().mockReturnValue([
           {
             title: 'Dynamic Table',
-            defaultOptions: { use: 'DynamicTableModel' },
+            createModelOptions: { use: 'DynamicTableModel' },
           },
           {
             title: 'Dynamic Form',
-            defaultOptions: { use: 'DynamicFormModel' },
+            createModelOptions: { use: 'DynamicFormModel' },
           },
         ]);
 
@@ -934,8 +934,6 @@ describe('Utils', () => {
           createModelOptions: {
             use: 'DynamicTableModel',
           },
-          toggleDetector: undefined,
-          customRemove: undefined,
         });
         expect(result[1]).toEqual({
           key: 'dynamic.Dynamic Form',
@@ -944,8 +942,6 @@ describe('Utils', () => {
           createModelOptions: {
             use: 'DynamicFormModel',
           },
-          toggleDetector: undefined,
-          customRemove: undefined,
         });
       });
 
@@ -953,7 +949,7 @@ describe('Utils', () => {
         const asyncChildrenFn = vi.fn().mockResolvedValue([
           {
             title: 'Async Chart',
-            defaultOptions: { use: 'AsyncChartModel' },
+            createModelOptions: { use: 'AsyncChartModel' },
           },
         ]);
 
@@ -981,7 +977,7 @@ describe('Utils', () => {
             children: vi.fn().mockReturnValue([
               {
                 title: 'Nested Item',
-                defaultOptions: { use: 'NestedModel' },
+                createModelOptions: { use: 'NestedModel' },
               },
             ]),
           },
@@ -1045,15 +1041,15 @@ describe('Utils', () => {
     });
 
     describe('mixed static and function children', () => {
-      test('should handle combination of static and function-based defaultOptions within function children', async () => {
+      test('should handle combination of static and function-based createModelOptions within function children', async () => {
         const mixedChildrenFn = vi.fn().mockReturnValue([
           {
             title: 'Static Options Block',
-            defaultOptions: { use: 'StaticModel', config: 'static' },
+            createModelOptions: { use: 'StaticModel', config: 'static' },
           },
           {
             title: 'Dynamic Options Block',
-            defaultOptions: vi.fn().mockReturnValue({ use: 'DynamicModel', config: 'dynamic' }),
+            createModelOptions: vi.fn().mockReturnValue({ use: 'DynamicModel', config: 'dynamic' }),
           },
         ]);
 
@@ -1080,12 +1076,12 @@ describe('Utils', () => {
           {
             title: 'Table',
             icon: 'table',
-            defaultOptions: { use: 'TableModel' },
+            createModelOptions: { use: 'TableModel' },
           },
           {
             title: 'Form',
             icon: 'form',
-            defaultOptions: { use: 'FormModel' },
+            createModelOptions: { use: 'FormModel' },
           },
         ];
 
@@ -1099,8 +1095,6 @@ describe('Utils', () => {
           createModelOptions: {
             use: 'TableModel',
           },
-          toggleDetector: undefined,
-          customRemove: undefined,
         });
         expect(result[1]).toEqual({
           key: 'prefix.Form',
@@ -1109,17 +1103,15 @@ describe('Utils', () => {
           createModelOptions: {
             use: 'FormModel',
           },
-          toggleDetector: undefined,
-          customRemove: undefined,
         });
       });
 
-      test('should handle children with function defaultOptions', async () => {
+      test('should handle children with function createModelOptions', async () => {
         const dynamicOptionsFn = vi.fn().mockReturnValue({ use: 'DynamicModel', parentUid: 'test' });
         const children = [
           {
             title: 'Dynamic Block',
-            defaultOptions: dynamicOptionsFn,
+            createModelOptions: dynamicOptionsFn,
           },
         ];
 
@@ -1132,22 +1124,21 @@ describe('Utils', () => {
         });
       });
 
-      test('should handle children with toggleDetector and customRemove', async () => {
-        const toggleDetector = vi.fn().mockReturnValue(true);
-        const customRemove = vi.fn().mockResolvedValue(undefined);
+      test('should handle children with toggleable and useModel', async () => {
+        const toggleable = vi.fn().mockReturnValue(true);
         const children = [
           {
             title: 'Advanced Block',
-            defaultOptions: { use: 'AdvancedModel' },
-            toggleDetector,
-            customRemove,
+            createModelOptions: { use: 'AdvancedModel' },
+            toggleable,
+            useModel: 'AdvancedModel',
           },
         ];
 
         const result = await processMetaChildren(children, mockModel.context);
 
-        expect(result[0].toggleDetector).toBe(toggleDetector);
-        expect(result[0].customRemove).toBe(customRemove);
+        expect(result[0].toggleable).toBe(toggleable);
+        expect(result[0].createModelOptions.use).toBe('AdvancedModel');
       });
     });
 
@@ -1160,11 +1151,11 @@ describe('Utils', () => {
             children: [
               {
                 title: 'Table',
-                defaultOptions: { use: 'TableModel' },
+                createModelOptions: { use: 'TableModel' },
               },
               {
                 title: 'Form',
-                defaultOptions: { use: 'FormModel' },
+                createModelOptions: { use: 'FormModel' },
               },
             ],
           },
@@ -1173,7 +1164,7 @@ describe('Utils', () => {
             children: [
               {
                 title: 'Chart',
-                defaultOptions: { use: 'ChartModel' },
+                createModelOptions: { use: 'ChartModel' },
               },
             ],
           },
@@ -1196,8 +1187,6 @@ describe('Utils', () => {
               createModelOptions: {
                 use: 'TableModel',
               },
-              toggleDetector: undefined,
-              customRemove: undefined,
             },
             {
               key: 'test.Basic Blocks.Form',
@@ -1206,8 +1195,6 @@ describe('Utils', () => {
               createModelOptions: {
                 use: 'FormModel',
               },
-              toggleDetector: undefined,
-              customRemove: undefined,
             },
           ],
         });
@@ -1225,8 +1212,6 @@ describe('Utils', () => {
               createModelOptions: {
                 use: 'ChartModel',
               },
-              toggleDetector: undefined,
-              customRemove: undefined,
             },
           ],
         });
@@ -1242,11 +1227,11 @@ describe('Utils', () => {
                 children: [
                   {
                     title: 'Item A1a',
-                    defaultOptions: { use: 'ItemA1aModel' },
+                    createModelOptions: { use: 'ItemA1aModel' },
                   },
                   {
                     title: 'Item A1b',
-                    defaultOptions: { use: 'ItemA1bModel' },
+                    createModelOptions: { use: 'ItemA1bModel' },
                   },
                 ],
               },
@@ -1269,8 +1254,8 @@ describe('Utils', () => {
     describe('key generation', () => {
       test('should generate keys with custom prefix', async () => {
         const children = [
-          { title: 'Block1', defaultOptions: { use: 'Model1' } },
-          { title: 'Block2', defaultOptions: { use: 'Model2' } },
+          { title: 'Block1', createModelOptions: { use: 'Model1' } },
+          { title: 'Block2', createModelOptions: { use: 'Model2' } },
         ];
 
         const result = await processMetaChildren(children, mockModel.context, 'custom.');
@@ -1280,7 +1265,7 @@ describe('Utils', () => {
       });
 
       test('should generate keys without prefix when not provided', async () => {
-        const children = [{ title: 'Block1', defaultOptions: { use: 'Model1' } }];
+        const children = [{ title: 'Block1', createModelOptions: { use: 'Model1' } }];
 
         const result = await processMetaChildren(children, mockModel.context);
 
@@ -1288,7 +1273,7 @@ describe('Utils', () => {
       });
 
       test('should handle missing title by generating item keys', async () => {
-        const children = [{ defaultOptions: { use: 'Model1' } }, { defaultOptions: { use: 'Model2' } }];
+        const children = [{ createModelOptions: { use: 'Model1' } }, { createModelOptions: { use: 'Model2' } }];
 
         const result = await processMetaChildren(children, mockModel.context, 'test.');
 
@@ -1302,7 +1287,7 @@ describe('Utils', () => {
         const children = [
           {
             title: 'Block',
-            defaultOptions: { use: 'TableModel', config: { test: true } },
+            createModelOptions: { use: 'TableModel', config: { test: true } },
           },
         ];
 
@@ -1316,7 +1301,7 @@ describe('Utils', () => {
         const children = [
           {
             title: 'Block',
-            defaultOptions: { someOtherProp: 'value' },
+            createModelOptions: { someOtherProp: 'value' },
           },
         ];
 
@@ -1327,7 +1312,7 @@ describe('Utils', () => {
     });
 
     describe('error handling', () => {
-      test('should handle defaultOptions function errors gracefully', async () => {
+      test('should handle createModelOptions function errors gracefully', async () => {
         const errorFn = vi.fn(() => {
           throw new Error('Options error');
         });
@@ -1335,7 +1320,7 @@ describe('Utils', () => {
         const children = [
           {
             title: 'Error Block',
-            defaultOptions: errorFn,
+            createModelOptions: errorFn,
           },
         ];
 
@@ -1346,7 +1331,7 @@ describe('Utils', () => {
         expect(result[0].createModelOptions).toEqual({
           use: 'Error Block',
         });
-        expect(consoleSpy).toHaveBeenCalledWith('Error resolving defaultOptions function:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Error resolving createModelOptions function:', expect.any(Error));
 
         consoleSpy.mockRestore();
       });
@@ -1362,7 +1347,7 @@ describe('Utils', () => {
           null,
           {
             title: 'Valid Block',
-            defaultOptions: { use: 'ValidModel' },
+            createModelOptions: { use: 'ValidModel' },
           },
           undefined,
         ].filter(Boolean); // Filter out null/undefined for realistic test

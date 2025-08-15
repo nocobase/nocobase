@@ -11,7 +11,8 @@ import { SettingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import { FlowModel } from '../../models';
 import { ModelConstructor } from '../../types';
-import { processMetaChildren, resolveDefaultOptions } from '../../utils';
+import { processMetaChildren } from '../../utils';
+import { resolveCreateModelOptions } from '../../utils/params-resolvers';
 import { FlowSettingsButton } from '../common/FlowSettingsButton';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import { AddSubModelButton, SubModelItem, SubModelItemsType, mergeSubModelItems } from './AddSubModelButton';
@@ -98,7 +99,7 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
       if (meta?.children) {
         const item: SubModelItem = {
           key: className,
-          label: meta.title || className,
+          label: meta.label || className,
           icon: meta.icon,
           type: 'group',
           children: async () => {
@@ -111,26 +112,17 @@ const AddFieldButtonCore: React.FC<AddFieldButtonProps> = ({
         // 原有的单个菜单项逻辑
         const item: any = {
           key: className,
-          label: meta?.title || className,
+          label: meta?.label || className,
           icon: meta?.icon,
           createModelOptions: async () => {
-            const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
+            const options = await resolveCreateModelOptions(meta?.createModelOptions, model.context);
 
             return {
-              ...defaultOptions,
+              ...options,
               use: className,
             };
           },
         };
-
-        // 从 meta 中获取 toggleDetector
-        if (meta?.toggleDetector) {
-          item.toggleDetector = meta.toggleDetector;
-        }
-
-        if (meta?.customRemove) {
-          item.customRemove = meta.customRemove;
-        }
 
         registeredItems.push(item);
       }

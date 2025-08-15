@@ -28,8 +28,8 @@ export interface SubModelItem {
   disabled?: boolean;
   icon?: React.ReactNode;
   children?: SubModelItemsType;
-  defaultOptions?: Record<string, any>;
   createModelOptions?:
+    | Record<string, any>
     | { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> }
     | ((item: SubModelItem) => { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> });
   searchable?: boolean;

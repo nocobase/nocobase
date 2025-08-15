@@ -14,7 +14,7 @@ import type { FlowModelContext } from '../flowContext';
 import type { ModelConstructor } from '../types';
 import { BLOCK_GROUP_CONFIGS, MENU_KEYS, SHOW_CURRENT_MODELS } from './constants';
 import { isInheritedFrom } from './inheritance';
-import { resolveDefaultOptions } from './params-resolvers';
+import { resolveCreateModelOptions } from './params-resolvers';
 import { escapeT } from './translation';
 // ==================== 类型定义 ====================
 
@@ -33,8 +33,9 @@ interface MenuGroup extends MenuItemBase {
 
 interface MenuItem extends MenuItemBase {
   createModelOptions?: (() => Promise<any>) | any;
-  toggleDetector?: (ctx: FlowModelContext) => boolean;
-  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
+  // 开关控制由 AddSubModelButton 基于 toggleable 动态构造
+  toggleable?: boolean | ((model: FlowModel) => boolean);
+  useModel?: string;
   children?: MenuItem[] | (() => Promise<MenuItem[]>);
 }
 
@@ -108,7 +109,7 @@ function createDataSourceStepParams(dataSourceKey: string, collectionName: strin
 function buildMenuItem(className: string, meta: any, model: FlowModel): MenuItem {
   const baseItem: MenuItem = {
     key: className,
-    label: meta?.title || className,
+    label: meta?.label || className,
     icon: meta?.icon,
   };
 
@@ -122,16 +123,13 @@ function buildMenuItem(className: string, meta: any, model: FlowModel): MenuItem
   const item: MenuItem = {
     ...baseItem,
     createModelOptions: async () => {
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
+      const options = await resolveCreateModelOptions(meta?.createModelOptions, model.context);
       return {
-        ...defaultOptions,
+        ...options,
         use: className,
       };
     },
   };
-
-  if (meta?.toggleDetector) item.toggleDetector = meta.toggleDetector;
-  if (meta?.customRemove) item.customRemove = meta.customRemove;
 
   return item;
 }
@@ -173,7 +171,7 @@ function createBasicMenuItem(key: string, title: string, className: string, opti
   return {
     key,
     title: escapeT(title),
-    defaultOptions: { use: className, ...options },
+    createModelOptions: { use: className, ...options },
   };
 }
 
@@ -183,7 +181,7 @@ function createCurrentRecordMenuItem(className: string, collection: Collection, 
     key: MENU_KEYS.CURRENT_RECORD,
     title: escapeT('Current record'),
     collections: [collection],
-    defaultOptions: {
+    createModelOptions: {
       use: className,
       stepParams: stepParams || {
         resourceSettings: {
@@ -218,7 +216,7 @@ function createAssociationRecordsMenuItem(
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     title: escapeT('Associated records'),
     fields: associationFields,
-    defaultOptions: (_ctx: any, field: CollectionField) => {
+    createModelOptions: (_ctx: any, field: CollectionField) => {
       return {
         use: className,
         stepParams: {
@@ -380,7 +378,8 @@ export async function processMetaChildren(
         children: nestedChildren,
       });
     } else {
-      const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx);
+      const optionsSource = child.createModelOptions;
+      const defaultOptions = await resolveCreateModelOptions(optionsSource, ctx);
       result.push({
         key: childKey,
         label: child.title,
@@ -392,8 +391,8 @@ export async function processMetaChildren(
               ? defaultOptions.use
               : (defaultOptions?.use as any)?.name || childKey,
         },
-        toggleDetector: child.toggleDetector,
-        customRemove: child.customRemove,
+        toggleable: child.toggleable,
+        useModel: child.useModel,
       });
     }
   }
@@ -446,7 +445,8 @@ async function processDataBlockChildren(
               label: dataSource?.displayName || dataSourceKey,
               children: await Promise.all(
                 fields.map(async (field) => {
-                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx, field);
+                  const optionsSource = child.createModelOptions;
+                  const defaultOptions = await resolveCreateModelOptions(optionsSource, ctx, field);
                   return {
                     key: `${childKey}.${dataSourceKey}.${field.name}`,
                     label: field.uiSchema?.title || field.name,
@@ -484,7 +484,8 @@ async function processDataBlockChildren(
                   );
                 })
                 .map(async (collection) => {
-                  const defaultOptions = await resolveDefaultOptions(child.defaultOptions, ctx, {
+                  const optionsSource = child.createModelOptions;
+                  const defaultOptions = await resolveCreateModelOptions(optionsSource, ctx, {
                     dataSourceKey: dataSource.key,
                     collectionName: collection.name,
                   });
@@ -574,41 +575,6 @@ function getFieldModelClass(fieldInterface: string, fieldClasses: any[], default
   );
 }
 
-function createFieldToggleDetector(fieldName: string, subModelKey: string) {
-  return (ctx: FlowModelContext) => {
-    // FlowModelContext has a model property
-    const model = ctx.model;
-    const subModels = model.subModels?.[subModelKey];
-
-    if (Array.isArray(subModels)) {
-      return subModels.some((subModel) => checkFieldInStepParams(fieldName, subModel));
-    } else if (subModels) {
-      return checkFieldInStepParams(fieldName, subModels);
-    }
-    return false;
-  };
-}
-
-function createFieldCustomRemove(fieldName: string, subModelKey: string) {
-  return async (ctx: FlowModelContext, _item: any) => {
-    // FlowModelContext has a model property
-    const model = ctx.model;
-    const subModels = model.subModels?.[subModelKey];
-
-    if (Array.isArray(subModels)) {
-      const targetModel = subModels.find((subModel) => checkFieldInStepParams(fieldName, subModel));
-      if (targetModel) {
-        await targetModel.destroy();
-        const index = subModels.indexOf(targetModel);
-        if (index > -1) subModels.splice(index, 1);
-      }
-    } else if (subModels && checkFieldInStepParams(fieldName, subModels)) {
-      await subModels.destroy();
-      if (model.subModels) (model.subModels as any)[subModelKey] = undefined;
-    }
-  };
-}
-
 export function buildFieldItems(
   fields: any[],
   model: FlowModel,
@@ -641,7 +607,7 @@ export function buildFieldItems(
       if (!fieldClass) return null;
 
       const defaultOptions = {
-        ...fieldClass.meta?.defaultOptions,
+        ...fieldClass.meta?.createModelOptions,
         use: fieldClassToNameMap.get(fieldClass) || fieldClass.name,
       };
 
@@ -655,8 +621,8 @@ export function buildFieldItems(
           fieldPath: field.name,
           fieldModelClass: fieldClass,
         }),
-        toggleDetector: createFieldToggleDetector(field.name, subModelKey),
-        customRemove: createFieldCustomRemove(field.name, subModelKey),
+        toggleable: (subModel) => checkFieldInStepParams(field.name, subModel),
+        useModel: defaultOptions.use,
       };
     })
     .filter(Boolean);
@@ -750,13 +716,13 @@ async function buildDataSourceBlockItems(
 
   return Promise.all(
     blocks.map(async ({ className, ModelClass }) => {
-      const meta = _.cloneDeep(ModelClass.meta) || { title: className };
-      const defaultOptions = await resolveDefaultOptions(meta?.defaultOptions, model.context);
+      const meta = _.cloneDeep(ModelClass.meta) || { label: className };
+      const defaultOptions = await resolveCreateModelOptions(meta?.createModelOptions, model.context);
 
       if (!isInheritedFrom(ModelClass, CollectionBlockModelClass)) {
         return {
           key: className,
-          label: meta?.title || className,
+          label: meta?.label || className,
           icon: meta?.icon,
           createModelOptions: {
             ..._.cloneDeep(defaultOptions),
@@ -773,9 +739,10 @@ async function buildDataSourceBlockItems(
           const relatedFields = collection?.getRelationshipFields() || [];
           meta.children = buildDynamicMetaChildren(className, currentFlow, collection, relatedFields);
           meta.children.forEach(async (child) => {
-            const childDefault = child.defaultOptions;
-            child.defaultOptions = async (ctx, extra) => {
-              const options = await resolveDefaultOptions(childDefault, ctx, extra);
+            const childSource = child.createModelOptions;
+            child.createModelOptions = async () => {
+              // TODO: To debug issues with child.createModelOptions
+              const options = await resolveCreateModelOptions(childSource, model.context);
               return _.merge(_.cloneDeep(defaultOptions), options);
             };
           });
@@ -785,7 +752,7 @@ async function buildDataSourceBlockItems(
       if (meta?.children) {
         return {
           key: className,
-          label: meta.title || className,
+          label: meta.label || className,
           icon: meta.icon,
           children: await processDataBlockChildren(meta.children, model.context, dataSources, `${className}.`),
         };
@@ -817,7 +784,7 @@ async function buildDataSourceBlockItems(
 
       return {
         key: className,
-        label: meta?.title || className,
+        label: meta?.label || className,
         icon: meta?.icon,
         children,
       };

@@ -99,8 +99,7 @@ export class FormFilterBlockModel extends FilterBlockModel<{
 }
 
 FormFilterBlockModel.define({
-  title: tval('Form'),
-  requiresDataSource: false,
+  label: tval('Form'),
   defaultOptions: {
     use: 'FormFilterBlockModel',
     subModels: {

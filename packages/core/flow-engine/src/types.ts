@@ -373,34 +373,17 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
 }
 
 export interface FlowModelMeta {
-  title?: string;
   key?: string;
   label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
   /**
-   * 默认选项配置，支持静态对象或动态函数形式
-   *
-   * 当为静态对象时，将直接使用该配置作为默认值
-   * 当为函数时，将在创建菜单项时调用，可根据父模型上下文动态生成配置
-   *
-   * @example
-   * // 静态配置
-   * defaultOptions: { someProperty: 'value' }
-   *
-   * // 动态配置
-   * defaultOptions: (ctx) => {
-   *   return {
-   *     someProperty: ctx.model.someData ? 'valueA' : 'valueB'
-   *   };
-   * }
+   * 创建模型时的参数配置（唯一来源）。
+   * 支持静态对象或函数（可异步），函数入参为 FlowModelContext 和可选的 extra。
    */
   createModelOptions?:
     | Record<string, any>
-    | ((ctx: FlowModelContext, item?: any) => Record<string, any> | Promise<Record<string, any>>);
-  defaultOptions?:
-    | Record<string, any>
-    | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
+    | ((ctx: FlowModelContext, extra?: any) => Record<string, any> | Promise<Record<string, any>>);
   icon?: string;
   // uniqueSub?: boolean;
   /**
@@ -434,8 +417,8 @@ export interface FlowModelMeta {
    *   {
    *     title: 'Basic Blocks',
    *     children: [
-   *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
-   *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
+   *       { title: 'Table', createModelOptions: { use: 'TableModel' } },
+   *       { title: 'Form', createModelOptions: { use: 'FormModel' } }
    *     ]
    *   }
    * ]
@@ -444,21 +427,12 @@ export interface FlowModelMeta {
    * children: (ctx) => {
    *   const hasPermission = ctx.model.checkPermission('advanced');
    *   return [
-   *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
-   *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
+   *     { title: 'Basic Table', createModelOptions: { use: 'TableModel' } },
+   *     ...(hasPermission ? [{ title: 'Advanced Chart', createModelOptions: { use: 'ChartModel' } }] : [])
    *   ];
    * }
    */
   children?: false | SubModelItemsType;
-  /**
-   * 切换检测器函数，用于判断该模型是否已存在
-   * 主要用于支持切换式的 UI 交互
-   */
-  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
-  /**
-   * 自定义移除函数，用于处理该项的删除逻辑
-   */
-  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
 }
 
 /**

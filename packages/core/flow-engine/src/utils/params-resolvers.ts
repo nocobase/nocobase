@@ -41,34 +41,34 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
 }
 
 /**
- * 解析 FlowModelMeta 中的 defaultOptions，支持静态值和函数形式
+ * 解析 FlowModelMeta 中的 createModelOptions，支持静态值和函数形式
  * @param defaultOptions - 可以是静态对象或返回对象的函数
- * @param ctx - 模型上下文实例，用于传递给函数形式的 defaultOptions
+ * @param ctx - 模型上下文实例，用于传递给函数形式
  * @returns 解析后的选项对象
  */
-export async function resolveDefaultOptions(
-  defaultOptions:
+export async function resolveCreateModelOptions(
+  createModelOptions:
     | Record<string, any>
     | ((ctx: FlowModelContext, extra?: any) => Record<string, any> | Promise<Record<string, any>>)
     | undefined,
   ctx: FlowModelContext,
   extra?: any,
 ): Promise<Record<string, any>> {
-  if (!defaultOptions) {
+  if (!createModelOptions) {
     return {};
   }
 
-  if (typeof defaultOptions === 'function') {
+  if (typeof createModelOptions === 'function') {
     try {
-      const result = await defaultOptions(ctx, extra);
+      const result = await createModelOptions(ctx, extra);
       return result || {};
     } catch (error) {
-      console.error('Error resolving defaultOptions function:', error);
+      console.error('Error resolving createModelOptions function:', error);
       return {};
     }
   }
 
-  return defaultOptions;
+  return createModelOptions;
 }
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
