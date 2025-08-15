@@ -107,6 +107,41 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
   return metaTree.map((node) => convertNode(node));
 };
 
+/**
+ * 预加载：根据路径逐级加载 ContextSelectorItem 的 children，保证打开时已展开对应层级。
+ */
+export const preloadContextSelectorPath = async (
+  options: ContextSelectorItem[] | undefined,
+  pathSegments: (string | number)[],
+  triggerUpdate?: () => void,
+) => {
+  if (!options || !Array.isArray(options) || !pathSegments || pathSegments.length === 0) return;
+  let list: ContextSelectorItem[] | undefined = options;
+  for (let i = 0; i < pathSegments.length && list; i++) {
+    const seg = String(pathSegments[i]);
+    const opt = list.find((o) => String(o.value) === seg);
+    if (!opt) break;
+    const meta = opt.meta as MetaTreeNode | undefined;
+    const hasLoaded = !!opt.children && Array.isArray(opt.children);
+    if (i < pathSegments.length - 1 && !hasLoaded && meta && typeof meta.children === 'function') {
+      opt.loading = true;
+      try {
+        const childNodes = await loadMetaTreeChildren(meta);
+        meta.children = childNodes;
+        const childOptions = buildContextSelectorItems(childNodes);
+        opt.children = childOptions;
+        opt.isLeaf = !childOptions || childOptions.length === 0;
+        Promise.resolve()
+          .then(() => triggerUpdate?.())
+          .catch(() => {});
+      } finally {
+        opt.loading = false;
+      }
+    }
+    list = Array.isArray(opt.children) ? opt.children : undefined;
+  }
+};
+
 export const isVariableValue = (value: any): boolean => {
   return isVariableExpression(value);
 };

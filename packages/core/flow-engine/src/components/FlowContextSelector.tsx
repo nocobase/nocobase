@@ -7,10 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef, useMemo, useState } from 'react';
+import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { Button, Cascader } from 'antd';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
-import { buildContextSelectorItems, formatPathToValue, parseValueToPath } from './variables/utils';
+import {
+  buildContextSelectorItems,
+  formatPathToValue,
+  parseValueToPath,
+  preloadContextSelectorPath,
+} from './variables/utils';
 import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
 
 const defaultButtonStyle = {
@@ -42,7 +47,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 构建选项
   const options = useMemo(() => {
     return buildContextSelectorItems(resolvedMetaTree);
-  }, [resolvedMetaTree, updateFlag]);
+  }, [resolvedMetaTree]);
 
   // 处理异步加载子节点
   const handleLoadData = useCallback(
@@ -78,7 +83,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   const currentPath = useMemo(() => {
     return customParseValueToPath(value);
-  }, [value]);
+  }, [value, customParseValueToPath]);
 
   // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
   // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
@@ -89,6 +94,16 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     const fixed = needTrim ? currentPath.slice(1) : currentPath;
     return fixed;
   }, [currentPath, options]);
+
+  // 预加载：当存在有效路径时，按路径逐级加载 children，保证默认展开和选中路径可用
+  const pathToPreload = useMemo(() => {
+    return Array.isArray(effectivePath) ? effectivePath : [];
+  }, [effectivePath]);
+
+  useEffect(() => {
+    if (pathToPreload.length === 0 || !options?.length) return;
+    preloadContextSelectorPath(options, pathToPreload, triggerUpdate);
+  }, [options, pathToPreload, triggerUpdate]);
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
