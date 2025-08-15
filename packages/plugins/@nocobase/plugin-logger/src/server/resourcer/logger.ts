@@ -115,10 +115,28 @@ export default {
     download: async (ctx: Context, next: Next) => {
       const path = getLoggerFilePath(ctx.app.name || 'main');
       let { files = [] } = ctx.action.params.values || {};
-      const invalid = files.some((file: string) => !file.endsWith('.log'));
+
+      const readAllLogs = async (dir: string): Promise<string[]> => {
+        const result: string[] = [];
+        const entries = await readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+          if (entry.isDirectory()) {
+            const subFiles = await readAllLogs(fullPath);
+            subFiles.forEach((f) => result.push(join(entry.name, f)));
+          } else if (entry.name.endsWith('.log')) {
+            result.push(entry.name);
+          }
+        }
+        return result;
+      };
+      const allowedFiles = await readAllLogs(path);
+      files = files.map((f: string) => (f.startsWith('/') ? f.slice(1) : f));
+      const invalid = files.some((f: string) => !allowedFiles.includes(f));
       if (invalid) {
-        ctx.throw(400, ctx.t('Invalid file type: ') + invalid);
+        ctx.throw(400, ctx.t('Invalid file selection.'));
       }
+
       files = files.map((file: string) => {
         if (file.startsWith('/')) {
           return file.slice(1);
