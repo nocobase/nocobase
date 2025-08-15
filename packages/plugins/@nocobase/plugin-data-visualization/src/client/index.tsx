@@ -134,8 +134,7 @@ class PluginDataVisualiztionClient extends Plugin {
 }
 
 export default PluginDataVisualiztionClient;
-export { Chart } from './chart/chart';
-export type { ChartProps, ChartType, RenderProps } from './chart/chart';
+export { Chart, ChartProps, ChartType, RenderProps } from './chart/chart';
 export { ChartConfigContext } from './configure';
 export { useSetChartSize } from './hooks';
 export type { FieldOption } from './hooks';

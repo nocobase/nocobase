@@ -38,6 +38,7 @@
     "@nocobase/plugin-data-source-postgresql": "1.8.15",
 
     "@nocobase/plugin-data-visualization": "1.8.15",
+    "@nocobase/plugin-echarts": "1.0.0",
     "@nocobase/plugin-departments": "1.8.15",
     "@nocobase/plugin-environment-variables": "1.8.15",
     "@nocobase/plugin-error-handler": "1.8.15",
@@ -124,6 +125,7 @@
     "@nocobase/plugin-data-source-oracle",
     "@nocobase/plugin-data-source-postgresql",
     "@nocobase/plugin-data-visualization",
+    "@nocobase/plugin-echarts",
     "@nocobase/plugin-environment-variables",
     "@nocobase/plugin-error-handler",
     "@nocobase/plugin-field-formula",

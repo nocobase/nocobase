@@ -13,7 +13,7 @@ import { mysqlFormSchema } from './form-schema';
 
 export class PluginDataSourceMySqlClient extends Plugin {
   async load() {
-    const dsManager = this.app.getPlugin<PluginDataSourceManagerClient>('data-source-manager');
+    const dsManager = this.app.pluginManager.get<PluginDataSourceManagerClient>('data-source-manager');
     dsManager.registerType('mysql', {
       title: 'MySQL',
       schema: mysqlFormSchema,
