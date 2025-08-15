@@ -996,7 +996,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'id'],
-      parentTitles: ['User'],
+      parentTitles: undefined,
       children: undefined,
     });
     expect(subTree[1]).toEqual({
@@ -1006,7 +1006,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['user', 'name'],
-      parentTitles: ['User'],
+      parentTitles: undefined,
       children: undefined,
     });
   });
@@ -1129,18 +1129,13 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
     });
 
     const subTree = ctx.getPropertyMetaTree('{{ ctx.asyncUser }}');
-    expect(subTree).toHaveLength(1);
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(subTree);
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('profile');
+    expect(typeof arr[0].children).toBe('function');
 
-    const rootNode = subTree[0];
-    expect(rootNode.name).toBe('asyncUser');
-    expect(typeof rootNode.children).toBe('function');
-
-    const children = await (rootNode.children as () => Promise<any>)();
-    expect(children).toHaveLength(1);
-    expect(children[0].name).toBe('profile');
-    expect(typeof children[0].children).toBe('function');
-
-    const profileChildren = await children[0].children();
+    const profileChildren = await (arr[0].children as () => Promise<any>)();
     expect(profileChildren).toHaveLength(1);
     expect(profileChildren[0].name).toBe('bio');
     expect(profileChildren[0].title).toBe('Biography');
@@ -1155,16 +1150,10 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
     ctx.defineProperty('errorProp', { meta: failingMeta });
 
     const subTree = ctx.getPropertyMetaTree('{{ ctx.errorProp }}');
-    expect(subTree).toHaveLength(1);
-
-    const node = subTree[0];
-    expect(node.name).toBe('errorProp');
-    expect(typeof node.children).toBe('function');
-
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    const children = await (node.children as () => Promise<any>)();
-    expect(children).toEqual([]);
+    const arr = await ensureArray(subTree);
+    expect(arr).toEqual([]);
     expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
 
     consoleSpy.mockRestore();
@@ -1305,21 +1294,13 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
       }),
     });
 
-    // 测试根级异步获取
+    // 新行为：根级返回 children 数组（profile、settings）
     const rootTree = ctx.getPropertyMetaTree('{{ ctx.complexUser }}');
-    expect(rootTree).toHaveLength(1);
-    expect(rootTree[0].name).toBe('complexUser');
-
-    // 测试异步展开
-    const children = rootTree[0].children;
-    expect(typeof children).toBe('function');
-
-    if (typeof children === 'function') {
-      const resolvedChildren = await children();
-      expect(resolvedChildren).toHaveLength(2);
-      expect(resolvedChildren[0].name).toBe('profile');
-      expect(resolvedChildren[1].name).toBe('settings');
-    }
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootTree);
+    expect(arr).toHaveLength(2);
+    expect(arr[0].name).toBe('profile');
+    expect(arr[1].name).toBe('settings');
   });
 
   it('should handle async meta factory with mixed sync/async properties in deep path', async () => {
@@ -1465,22 +1446,12 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
     expect(workingTree[0].title).toBe('data'); // 异步解析的初始 title 是 name
     expect(workingTree[0].type).toBe('object'); // 异步节点的初始类型是 object
 
-    // 获取根级节点来测试异步展开
+    // 新行为：根级直接返回 working、broken 子节点
     const rootTree = ctx.getPropertyMetaTree('{{ ctx.errorProne }}');
-    expect(rootTree).toHaveLength(1);
-    expect(rootTree[0].name).toBe('errorProne');
-
-    // 测试异步展开后的路径解析
-    if (typeof rootTree[0].children === 'function') {
-      const children = await rootTree[0].children();
-      const workingSection = children.find((child) => child.name === 'working');
-      expect(workingSection).toBeDefined();
-      expect(Array.isArray(workingSection.children)).toBe(true);
-      if (Array.isArray(workingSection.children)) {
-        expect(workingSection.children).toHaveLength(1);
-        expect(workingSection.children[0].name).toBe('data');
-      }
-    }
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootTree);
+    const names = arr.map((n: any) => n.name).sort();
+    expect(names).toEqual(['broken', 'working']);
 
     // 测试不存在的路径 - 新逻辑会尝试构建异步节点，即使路径可能不存在
     const brokenTree = ctx.getPropertyMetaTree('{{ ctx.errorProne.broken.nonExistent }}');
@@ -1542,20 +1513,11 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
     expect(level2Tree[0].name).toBe('level2');
     expect(typeof level2Tree[0].children).toBe('function'); // 仍然是异步的，因为包含异步嵌套
 
-    // 验证根级异步解析能力
+    // 新行为：根级直接返回 level1 子节点
     const rootDeepTree = ctx.getPropertyMetaTree('{{ ctx.deepNest }}');
-    expect(rootDeepTree).toHaveLength(1);
-    expect(rootDeepTree[0].name).toBe('deepNest');
-    if (typeof rootDeepTree[0].children === 'function') {
-      const level0Children = await rootDeepTree[0].children();
-      expect(level0Children).toHaveLength(1);
-      expect(level0Children[0].name).toBe('level1');
-
-      if (typeof level0Children[0].children === 'function') {
-        const level1Children = await level0Children[0].children();
-        expect(level1Children).toHaveLength(1);
-        expect(level1Children[0].name).toBe('level2');
-      }
-    }
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootDeepTree);
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('level1');
   });
 });

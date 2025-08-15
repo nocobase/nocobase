@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar as AntdAvatar, Tabs } from 'antd';
-import { ExtendCollectionsProvider, SchemaComponent } from '@nocobase/client';
+import { ExtendCollectionsProvider, SchemaComponent, useAPIClient } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -27,11 +27,25 @@ import {
   useCreateActionProps,
   useEditActionProps,
 } from './hooks';
+import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 
 const AIEmployeeForm: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
+  const api = useAPIClient();
+  const [knowledgeBaseEnabled, setKnowledgeBaseEnabled] = useState(false);
+
+  useEffect(() => {
+    api
+      .resource('aiSettings')
+      .isKnowledgeBaseEnabled()
+      .then((res) => {
+        setKnowledgeBaseEnabled(res?.data?.data.enabled);
+      })
+      .catch((err) => console.error('api fail aiSettings.isKnowledgeBaseEnabled', err));
+  }, [api]);
+
   return (
     <Tabs
       items={[
@@ -62,6 +76,15 @@ const AIEmployeeForm: React.FC<{
         //   label: t('Data sources'),
         //   children: <DataSourceSettings />,
         // },
+        ...(knowledgeBaseEnabled
+          ? [
+              {
+                key: 'knowledgeBase',
+                label: t('KnowledgeBase'),
+                children: <KnowledgeBaseSettings />,
+              },
+            ]
+          : []),
       ]}
     />
   );

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { Input, Space } from 'antd';
 import type { VariableInputProps } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
@@ -91,7 +91,11 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const { data: resolvedMetaTree, loading } = useRequest(
     async () => {
       if (typeof metaTree === 'function') {
-        return await metaTree();
+        const ret = await metaTree();
+        if (typeof ret === 'function') {
+          return await (ret as unknown as () => any)();
+        }
+        return ret;
       }
       return metaTree;
     },
@@ -103,7 +107,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return currentMetaTreeNode;
     }
 
-    if (isVariableValue(value) && Array.isArray(resolvedMetaTree)) {
+    if (Array.isArray(resolvedMetaTree)) {
       const path = resolvePathFromValue?.(value);
       if (path) {
         return findMetaTreeNodeByPath(resolvedMetaTree, path);
@@ -119,6 +123,15 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     const finalComponent = Component || CustomComponent || (isVariableValue(value) ? VariableTag : Input);
     return finalComponent;
   }, [renderInputComponent, resolvedMetaTreeNode, value]);
+
+  useEffect(() => {
+    if (!resolvedMetaTreeNode) return;
+    if (!Array.isArray(resolvedMetaTree) || !value) return;
+    const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || value;
+    onChange?.(finalValue, resolvedMetaTreeNode);
+    setCurrentMetaTreeNode(resolvedMetaTreeNode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedMetaTreeNode]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
@@ -150,7 +163,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
     return { style, onFocus, onBlur, otherProps };
-  }, [restProps.style, restProps.onFocus, restProps.onBlur, restProps.disabled]);
+  }, [restProps]);
 
   const inputProps = useMemo(() => {
     const baseProps = {

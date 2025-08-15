@@ -17,6 +17,7 @@ export interface AIChatConversation extends TransactionSupported<AIChatConversat
   removeMessages(options: AIMessageRemoveOptions): Promise<void>;
   getMessage(messageId: string): Promise<AIMessage | null>;
   listMessages(query?: AIMessageQuery): Promise<AIMessage[]>;
+  lastUserMessage(): Promise<AIMessage>;
   getChatContext(options?: AIChatContextOptions): Promise<AIChatContext>;
 }
 

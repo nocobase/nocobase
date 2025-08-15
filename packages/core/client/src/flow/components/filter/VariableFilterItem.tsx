@@ -7,13 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import { NumberPicker } from '@formily/antd-v5';
 import merge from 'lodash/merge';
 import { observer } from '@formily/reactive-react';
 import { VariableInput, type MetaTreeNode, type Converters, FlowModel } from '@nocobase/flow-engine';
 import { DateFilterDynamicComponent } from '../../../schema-component';
+import _ from 'lodash';
 
 export interface VariableFilterItemValue {
   leftValue: string;
@@ -38,13 +39,20 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
   const [leftMeta, setLeftMeta] = useState<MetaTreeNode | null>(null);
 
   // 基于字段接口的动态操作符元数据（与原筛选逻辑一致：来源于 collectionFieldInterfaceManager + visible 过滤）
-  const operatorMetaList = useMemo(() => {
+  const operatorMetaList: any[] = useMemo(() => {
     if (!leftMeta?.interface) return [];
     const dm = model.context.app?.dataSourceManager;
     const fi = dm?.collectionFieldInterfaceManager?.getFieldInterface(leftMeta.interface);
     const ops = fi?.filterable?.operators || [];
     return ops.filter((op) => !op.visible || op.visible(leftMeta as any));
   }, [leftMeta, model]);
+
+  useEffect(() => {
+    if (operatorMetaList.length > 0 && !_.find(operatorMetaList, (o) => o.value === value.operator)) {
+      value.operator = '';
+      value.rightValue = '';
+    }
+  }, [operatorMetaList, value]);
 
   // Select 的可见选项
   const operatorOptions = useMemo(() => {
@@ -68,26 +76,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
       resolveValueFromPath: (metaTreeNode: MetaTreeNode) => {
         setLeftMeta(metaTreeNode);
 
-        // 基于最新的 meta 获取可用操作符，并设置默认值
-        const dm = model.context.app?.dataSourceManager;
-        const fi = metaTreeNode?.interface
-          ? dm?.collectionFieldInterfaceManager?.getFieldInterface(metaTreeNode.interface)
-          : null;
-        const metaOps = (fi?.filterable?.operators || []).filter(
-          (op) => !op.visible || op.visible(metaTreeNode as any),
-        );
-        value.operator = metaOps[0]?.value || '';
-        value.rightValue = '';
-
         // 返回变量路径值（去掉根 ctx.collection 前缀, 仅保留字段路径）
-        return metaTreeNode?.paths.slice(1).join('.');
+        return metaTreeNode?.paths.slice(1).join('.') || null;
       },
       resolvePathFromValue(v) {
         if (!v) return v;
         return ['collection', ...String(v).split('.')];
       },
     };
-  }, [model, value]);
+  }, []);
 
   // 处理操作符变化
   const handleOperatorChange = useCallback(
