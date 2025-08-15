@@ -4,7 +4,7 @@
   "Extension name": "扩展名",
   "Size": "文件大小",
   "File size limit": "文件大小限制",
-  "Minimum from 1 byte, maximum up to 1GB.": "最小为 1 字节，最大为 1GB。",
+  "Minimum from 1 byte.": "最小为 1 字节。",
   "MIME type": "MIME 类型",
   "File type (in MIME type format)": "文件类型（MIME 格式）",
   "Multi-types seperated with comma, for example: \"image/*\", \"image/png\", \"image/*, application/pdf\" etc.": "多个类型用逗号分隔，例如：\"image/*\", \"image/png\", \"image/*, application/pdf\" 等。",
