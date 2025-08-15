@@ -1280,7 +1280,7 @@ export const useTableColumns = (): ColumnInfo[] => {
 
     // More comprehensive search for table columns
     const findColumnsInSchema = (schema: any, depth = 0): void => {
-      if (!schema) return;
+      if (!schema || depth > 1) return;
 
       // Direct table column check
       if (
@@ -1341,15 +1341,15 @@ export const useTableColumns = (): ColumnInfo[] => {
         columns.push(columnInfo);
       }
 
-      // Search in properties, avoid actions column
-      if (schema.properties && schema.name !== 'actions') {
+      // Search in properties
+      if (schema.properties) {
         Object.keys(schema.properties).forEach((key) => {
           findColumnsInSchema(schema.properties[key], depth + 1);
         });
       }
 
-      // Search in items (for array schemas), avoid actions column
-      if (schema.items && schema.name !== 'actions') {
+      // Search in items (for array schemas)
+      if (schema.items) {
         findColumnsInSchema(schema.items, depth + 1);
       }
     };
