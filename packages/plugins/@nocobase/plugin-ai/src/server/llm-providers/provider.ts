@@ -179,7 +179,7 @@ export abstract class EmbeddingProvider {
 
   protected get baseUrl() {
     const { serviceOptions } = this.opts;
-    const { baseUrl } = serviceOptions ?? { baseUrl: this.getDefaultUrl() };
+    const baseUrl = serviceOptions?.baseUrl ?? this.getDefaultUrl();
     if (!baseUrl) {
       throw new Error('baseUrl is required');
     }

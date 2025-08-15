@@ -47,7 +47,7 @@ export class AIPluginFeatureManagerImpl
     if (!this.features.vectorStoreProvider) {
       throw this.featureNotSupportedError('knowledgeBase');
     }
-    return this.features.vectorStoreProvider;
+    return this.features.knowledgeBase;
   }
 
   private featureNotSupportedError(featureName: string) {
