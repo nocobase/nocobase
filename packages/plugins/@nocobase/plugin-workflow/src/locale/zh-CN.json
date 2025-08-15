@@ -241,7 +241,7 @@
   "Move all downstream nodes to": "将所有下游节点移至",
   "After end of branches": "分支结束后",
   "Inside of branch": "分支内",
-
+  "Workflow tasks": "流程待办",
   "Workflow todos": "流程待办",
   "New version enabled": "已启用新版本",
   "Workflow is not exists": "工作流不存在",
