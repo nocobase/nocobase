@@ -10,7 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { getLoggerFilePath } from '@nocobase/logger';
 import { readdir, stat } from 'fs/promises';
-import { join, resolve, relative } from 'path';
+import { join, resolve, relative, normalize, isAbsolute } from 'path';
 import stream from 'stream';
 import { pack } from 'tar-fs';
 import zlib from 'zlib';
@@ -121,17 +121,18 @@ export default {
 
       const safeFiles = files.map((f: string) => {
         const name = f.startsWith('/') ? f.slice(1) : f;
-        if (!name.endsWith('.log')) {
+        const safeName = normalize(decodeURIComponent(name));
+        if (!safeName.endsWith('.log')) {
           ctx.throw(400, ctx.t('Invalid file type.'));
         }
 
-        const fullPath = resolve(path, name);
+        const fullPath = resolve(path, safeName);
         const relativePath = relative(path, fullPath);
-        if (relativePath.startsWith('..') || relativePath.startsWith('/')) {
+        if (relativePath.startsWith('..') || isAbsolute(relativePath) || relativePath.includes('\0')) {
           ctx.throw(400, ctx.t('Invalid file path.'));
         }
 
-        return name;
+        return safeName;
       });
       try {
         ctx.attachment('logs.tar.gz');
