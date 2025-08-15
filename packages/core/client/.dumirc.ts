@@ -84,6 +84,10 @@ export default defineConfig({
           type: 'group',
           children: [
             { title: '概览', link: '/components/variables' },
+            {
+              title: 'FlowContextSelector',
+              link: '/components/variables/flow-context-selector',
+            },
             { 
               title: 'VariableInput', 
               children: [
