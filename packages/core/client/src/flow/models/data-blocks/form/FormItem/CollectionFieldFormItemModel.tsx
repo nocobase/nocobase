@@ -8,7 +8,9 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
+import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
+import { EditFormModel } from '../EditFormModel';
 
 export class CollectionFieldFormItemModel extends FormItemModel {}
 
@@ -42,7 +44,7 @@ CollectionFieldFormItemModel.registerFlow({
             maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
           });
         }
-        //TODO 最终用 jio 验证
+        //TODO 最终用 jio 替换验证
         if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
@@ -172,15 +174,30 @@ CollectionFieldFormItemModel.registerFlow({
     },
     initialValue: {
       title: escapeT('Default value'),
-      uiSchema: {
-        defaultValue: {
-          'x-component': 'DefaultValue',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        if (ctx.model.parent.parent instanceof EditFormModel) {
+          return;
+        }
+        return {
+          defaultValue: {
+            'x-component': 'DefaultValue',
+            'x-decorator': 'FormItem',
+          },
+        };
       },
-      defaultParams: (ctx) => ({
-        defaultValue: ctx.model.collectionField.defaultValue,
-      }),
+      defaultParams: (ctx) => {
+        const collectionField = ctx.model.collectionField;
+
+        if (collectionField.interface === 'nanoid') {
+          const { size, customAlphabet } = collectionField.options || { size: 21 };
+          return {
+            defaultValue: Alphabet(customAlphabet, size)(),
+          };
+        }
+        return {
+          defaultValue: collectionField.defaultValue,
+        };
+      },
       handler(ctx, params) {
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
