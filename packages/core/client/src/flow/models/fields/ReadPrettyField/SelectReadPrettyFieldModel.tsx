@@ -46,7 +46,6 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
   // @reactive
   public render() {
     const { options = [], value } = this.props;
-    console.log();
     const currentOptions = getCurrentOptions(value, options, fieldNames);
     const content: any =
       value &&

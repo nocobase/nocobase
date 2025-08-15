@@ -36,7 +36,7 @@ CollectionFieldFormItemModel.registerFlow({
           const { type, target } = collectionField;
           ctx.model.setProps({
             options: collectionField.enum.length ? collectionField.enum : props.options,
-            ...this?.collectionField?.getComponentProps?.(),
+            ...collectionField?.getComponentProps?.(),
             mode: collectionField.type === 'array' ? 'multiple' : undefined,
             multiple: ['belongsToMany', 'hasMany'].includes(type),
             maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
