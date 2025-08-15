@@ -8,43 +8,14 @@
  */
 
 import React from 'react';
-import { Tag } from 'antd';
-import { CloseCircleFilled } from '@ant-design/icons';
+import { Select, Tag } from 'antd';
 import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
 import type { MetaTreeNode } from '../../flowContext';
-import { variableContainerStyle, variableTagContainerStyle } from './styles/variableInput.styles';
+import { variableContainerStyle } from './styles/variableInput.styles';
 import { parseValueToPath } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
-
-// 提取常量样式避免重新创建
-const tagStyle = {
-  display: 'inline-block' as const,
-  lineHeight: '19px',
-  margin: '4px 6px',
-  padding: '2px 7px',
-  borderRadius: '10px',
-  width: 'fit-content',
-  minWidth: 'unset',
-  maxWidth: 'none',
-  flex: 'none',
-  overflow: 'visible' as const,
-  textOverflow: 'clip' as const,
-  whiteSpace: 'nowrap' as const,
-  boxSizing: 'content-box' as const,
-};
-
-const clearButtonStyle = {
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 0,
-  display: 'inline-flex' as const,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-  userSelect: 'none' as const,
-};
 
 const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
@@ -70,36 +41,41 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
     { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );
 
-  return (
-    <div className={cx('variable', variableContainerStyle(!onClear), className)} style={style}>
-      <div
-        role="button"
-        aria-label="variable-tag"
-        style={variableTagContainerStyle(!onClear)}
-        className={cx('variable-input-container', { 'ant-input-disabled': !onClear })}
+  const customTagRender = (props: any) => {
+    const { label, closable, onClose } = props;
+    return (
+      <Tag
+        color="blue"
+        style={{
+          margin: '2px 4px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          lineHeight: '20px',
+          padding: '0 8px',
+        }}
       >
-        <Tag color="blue" style={tagStyle}>
-          {displayedValue ?? ''}
-        </Tag>
-      </div>
-      {onClear && (
-        <button
-          type="button"
-          aria-label="clear"
-          className="clear-button"
-          style={clearButtonStyle}
-          onClick={onClear}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onClear();
-            }
-          }}
-        >
-          <CloseCircleFilled />
-        </button>
-      )}
-    </div>
+        {label}
+      </Tag>
+    );
+  };
+
+  return (
+    <Select
+      className={cx('variable', className)}
+      style={style}
+      value={displayedValue ? [displayedValue] : []}
+      mode="multiple"
+      open={false}
+      allowClear={!!onClear}
+      onClear={onClear}
+      disabled={!onClear}
+      variant="outlined"
+      suffixIcon={null}
+      tagRender={customTagRender}
+      onClick={(e) => e.preventDefault()}
+      maxTagCount="responsive"
+      removeIcon={null}
+    />
   );
 };
 
