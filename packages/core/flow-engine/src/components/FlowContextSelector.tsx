@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { Button, Cascader } from 'antd';
-import type { FlowContextSelectorProps, ContextSelectorItem } from './variables/types';
-import { useVariableTreeData } from './variables/useVariableTreeData';
-import { formatPathToValue } from './variables/utils';
+import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
+import {
+  buildContextSelectorItems,
+  formatPathToValue,
+  parseValueToPath,
+  preloadContextSelectorPath,
+} from './variables/utils';
+import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
 
-// 提取默认按钮样式避免每次重新创建
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
   fontFamily: 'New York, Times New Roman, Times, serif',
@@ -25,21 +29,81 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   children,
   metaTree,
   showSearch = false,
-  parseValueToPath: customParseValueToPath,
+  parseValueToPath: customParseValueToPath = parseValueToPath,
   formatPathToValue: customFormatPathToValue,
   open,
+  onlyLeafSelectable = false,
   ...cascaderProps
 }) => {
   // 记录最后点击的路径，用于双击检测
   const lastSelectedRef = useRef<{ path: string; time: number } | null>(null);
 
-  // 使用 useVariableTreeData Hook 管理数据状态
-  const { options, loading, currentPath, handleLoadData, buildContextSelectorItemFromSelectedOptions } =
-    useVariableTreeData({
-      metaTree,
-      value,
-      parseValueToPath: customParseValueToPath,
-    });
+  const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
+
+  // 用于强制重新渲染的状态
+  const [updateFlag, setUpdateFlag] = useState(0);
+  const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
+
+  // 构建选项
+  const options = useMemo(() => {
+    return buildContextSelectorItems(resolvedMetaTree);
+  }, [resolvedMetaTree]);
+
+  // 处理异步加载子节点
+  const handleLoadData = useCallback(
+    async (selectedOptions: ContextSelectorItem[]) => {
+      const targetOption = selectedOptions[selectedOptions.length - 1];
+      if (!targetOption || targetOption.children || targetOption.isLeaf) {
+        return;
+      }
+
+      const targetMetaNode = targetOption.meta;
+      if (!targetMetaNode || !targetMetaNode.children || typeof targetMetaNode.children !== 'function') {
+        return;
+      }
+
+      try {
+        targetOption.loading = true;
+        triggerUpdate();
+        const childNodes = await targetMetaNode.children();
+        targetMetaNode.children = childNodes;
+        // 立即把 options 树也补上 children，避免等待下一次重算
+        const childOptions = buildContextSelectorItems(childNodes);
+        targetOption.children = childOptions;
+        targetOption.isLeaf = !childOptions || childOptions.length === 0;
+      } catch (error) {
+        console.error('Failed to load children:', error);
+      } finally {
+        targetOption.loading = false;
+        triggerUpdate();
+      }
+    },
+    [triggerUpdate],
+  );
+
+  const currentPath = useMemo(() => {
+    return customParseValueToPath(value);
+  }, [value, customParseValueToPath]);
+
+  // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
+  // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
+  const effectivePath = useMemo(() => {
+    if (!currentPath || currentPath.length === 0) return currentPath;
+    const topValues = new Set(options.map((o) => String(o.value)));
+    const needTrim = !topValues.has(String(currentPath[0]));
+    const fixed = needTrim ? currentPath.slice(1) : currentPath;
+    return fixed;
+  }, [currentPath, options]);
+
+  // 预加载：当存在有效路径时，按路径逐级加载 children，保证默认展开和选中路径可用
+  const pathToPreload = useMemo(() => {
+    return Array.isArray(effectivePath) ? effectivePath : [];
+  }, [effectivePath]);
+
+  useEffect(() => {
+    if (pathToPreload.length === 0 || !options?.length) return;
+    preloadContextSelectorPath(options, pathToPreload, triggerUpdate);
+  }, [options, pathToPreload, triggerUpdate]);
 
   // 默认按钮组件
   const defaultChildren = useMemo(() => {
@@ -53,10 +117,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 处理选择变化事件
   const handleChange = useCallback(
-    (selectedValues: (string | number)[], selectedOptions?: any[]) => {
+    (selectedValues: (string | number)[], selectedOptions?: ContextSelectorItem[]) => {
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
-        onChange?.('', lastOption);
+        onChange?.('', lastOption?.meta);
         return;
       }
 
@@ -68,53 +132,49 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       // 使用自定义格式化函数或默认函数
       let formattedValue: string;
       if (customFormatPathToValue) {
-        formattedValue = customFormatPathToValue(lastOption);
+        formattedValue = customFormatPathToValue(lastOption?.meta);
         if (formattedValue === undefined) {
-          formattedValue = formatPathToValue(lastOption);
+          formattedValue = formatPathToValue(lastOption?.meta);
         }
       } else {
-        formattedValue = formatPathToValue(lastOption);
+        formattedValue = formatPathToValue(lastOption?.meta);
       }
 
       if (isLeaf) {
-        const contextSelectorItem = buildContextSelectorItemFromSelectedOptions(selectedOptions);
-        onChange?.(formattedValue, contextSelectorItem);
+        onChange?.(formattedValue, lastOption?.meta);
         return;
       }
 
       // 非叶子节点：检查双击
       const lastSelected = lastSelectedRef.current;
-      const isDoubleClick = lastSelected?.path === pathString && now - lastSelected.time < 300;
+      const isDoubleClick = !onlyLeafSelectable && lastSelected?.path === pathString && now - lastSelected.time < 300;
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
-        const contextSelectorItem = buildContextSelectorItemFromSelectedOptions(selectedOptions);
-        onChange?.(formattedValue, contextSelectorItem);
+        onChange?.(formattedValue, lastOption?.meta);
         lastSelectedRef.current = null;
       } else {
         // 单击：记录状态，仅展开
         lastSelectedRef.current = { path: pathString, time: now };
       }
     },
-    [onChange, customFormatPathToValue, buildContextSelectorItemFromSelectedOptions],
+    [onChange, customFormatPathToValue, onlyLeafSelectable],
   );
-
-  // 当前选中的路径值
-  const cascaderValue = currentPath;
 
   return (
     <Cascader
       {...cascaderProps}
       options={options}
-      value={cascaderValue}
+      value={effectivePath}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}
-      changeOnSelect={true}
+      changeOnSelect={!onlyLeafSelectable}
       expandTrigger="click"
       open={open}
+      showSearch={children === null}
     >
-      {children || defaultChildren}
+      {children === null ? null : children || defaultChildren}
     </Cascader>
   );
 };

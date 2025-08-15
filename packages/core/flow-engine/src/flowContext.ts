@@ -15,6 +15,7 @@ import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
+import _ from 'lodash';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
@@ -29,9 +30,10 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { FlowExitException, resolveExpressions } from './utils';
+import { FlowExitException, resolveExpressions, extractPropertyPath } from './utils';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { ISchema } from '@nocobase/client';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -40,8 +42,11 @@ export interface MetaTreeNode {
   title: string;
   type: string;
   interface?: string;
-  uiSchema?: any;
+  uiSchema?: ISchema;
+  render?: (props: any) => JSX.Element;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
+  paths: string[];
+  parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -49,7 +54,8 @@ export interface PropertyMeta {
   type: string;
   title: string;
   interface?: string;
-  uiSchema?: any;
+  uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
+  render?: (props: any) => JSX.Element; // 自定义渲染函数
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
 }
@@ -79,6 +85,8 @@ export class FlowContext {
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
   #proxy: FlowContext | null = null;
+  private _metaNodeCache: WeakMap<PropertyMeta | (() => Promise<PropertyMeta> | PropertyMeta), MetaTreeNode> =
+    new WeakMap();
 
   createProxy() {
     if (this.#proxy) {
@@ -138,6 +146,13 @@ export class FlowContext {
     if (this._props[key] && this._props[key]?.once) {
       return;
     }
+
+    // 清除旧属性对应的缓存
+    const oldOptions = this._props[key];
+    if (oldOptions?.meta) {
+      this._clearMetaNodeCacheFor(oldOptions.meta);
+    }
+
     this._props[key] = options;
     delete this._observableCache[key]; // 清除旧的 observable 缓存
     delete this._cache[key];
@@ -210,7 +225,15 @@ export class FlowContext {
     const index = this._delegates.indexOf(ctx);
     if (index !== -1) {
       this._delegates.splice(index, 1);
+      // 不需要清除缓存：委托链变化不影响基于 meta 内容的缓存
     }
+  }
+
+  /**
+   * 清除特定 meta 对象的缓存
+   */
+  private _clearMetaNodeCacheFor(meta: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>)): void {
+    this._metaNodeCache.delete(meta);
   }
 
   has(key: string) {
@@ -220,64 +243,377 @@ export class FlowContext {
   /**
    * 获取属性元数据树
    * 返回的 MetaTreeNode 中可能包含异步的延迟加载逻辑
-   * @returns MetaTreeNode[]
+   * @param value 可选参数，指定要获取的属性路径，格式: "{{ ctx.propertyName }}"
+   * @returns MetaTreeNode[] 根级属性的元数据树，或指定路径的子树
    *
    * @example
-   * // 同步调用，获取 meta tree（现有代码无需修改）
+   * // 同步调用，获取完整 meta tree
    * const metaTree = flowContext.getPropertyMetaTree();
    *
-   * // 某些节点可能包含异步的 children 加载逻辑
+   * // 获取指定属性的子树
+   * const subTree = flowContext.getPropertyMetaTree("{{ ctx.user }}");
+   *
+   * // 获取多层级属性的子树
+   * const profileTree = flowContext.getPropertyMetaTree("{{ ctx.user.profile }}");
    */
-  getPropertyMetaTree(): MetaTreeNode[] {
+  getPropertyMetaTree(value?: string): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
 
-    const createChildNodes = (
-      properties: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>),
-    ) => {
-      return typeof properties === 'function'
-        ? async () => {
-            const resolved = await properties();
-            return Object.entries(resolved).map(([name, meta]) => toTreeNode(name, meta));
-          }
-        : Object.entries(properties).map(([name, meta]) => toTreeNode(name, meta));
-    };
-
-    const toTreeNode = (name: string, metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>)): MetaTreeNode => {
-      if (typeof metaOrFactory === 'function') {
-        // 异步 meta：延迟加载节点
-        return {
-          name,
-          title: name,
-          type: 'object',
-          interface: undefined,
-          uiSchema: undefined,
-          // display: 'default',
-          children: async () => {
-            try {
-              const meta = await metaOrFactory();
-              if (!meta?.properties) return [];
-              const childNodes = createChildNodes(meta.properties);
-              return Array.isArray(childNodes) ? childNodes : await childNodes();
-            } catch (error) {
-              console.warn(`Failed to load meta for ${name}:`, error);
-              return [];
+    // 如果有 value 参数，尝试返回对应属性的子树
+    if (value) {
+      const propertyPath = extractPropertyPath(value);
+      if (propertyPath && propertyPath.length > 0) {
+        const loadChildrenFrom = async (
+          metaOrFactory: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>),
+          fullPath: string[],
+          finalKey: string,
+        ): Promise<MetaTreeNode[]> => {
+          try {
+            const meta: PropertyMeta =
+              typeof metaOrFactory === 'function' ? await (metaOrFactory as any)() : (metaOrFactory as PropertyMeta);
+            if (!meta?.properties) return [];
+            let props = meta.properties;
+            if (typeof props === 'function') {
+              const resolved = await props();
+              meta.properties = resolved;
+              props = resolved;
             }
-          },
+            const childNodes = this.#createChildNodes(props as Record<string, PropertyMeta>, fullPath, [], meta);
+            return Array.isArray(childNodes) ? childNodes : await childNodes();
+          } catch (error) {
+            console.warn(`Failed to load meta for ${finalKey}:`, error);
+            return [];
+          }
         };
+        const targetMeta = this.#findMetaByPath(propertyPath);
+        if (targetMeta) {
+          const [finalKey, metaOrFactory, fullPath] = targetMeta;
+          const depth = propertyPath.length;
+
+          if (depth === 1) {
+            if (typeof metaOrFactory === 'function') {
+              return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+            }
+            if (metaOrFactory.properties) {
+              if (typeof metaOrFactory.properties === 'function') {
+                return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+              }
+              const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, [], metaOrFactory);
+              return Array.isArray(childNodes) ? childNodes : [];
+            }
+            return [];
+          }
+
+          if (typeof metaOrFactory === 'function') {
+            const parentTitles = this.#buildParentTitles(fullPath);
+            return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
+          }
+          if (metaOrFactory.properties) {
+            const parentTitles = [...this.#buildParentTitles(fullPath), metaOrFactory.title];
+            const childNodes = this.#createChildNodes(metaOrFactory.properties, fullPath, parentTitles, metaOrFactory);
+            return Array.isArray(childNodes) ? childNodes : [];
+          }
+          return [];
+        }
+        // 未找到目标路径，返回空数组
+        return [];
+      } else if (propertyPath === null) {
+        console.warn(
+          `[FlowContext] getPropertyMetaTree - unsupported value format: "${value}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
+        );
+        return [];
+      }
+    }
+
+    return Object.entries(metaMap).map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
+  }
+
+  #createChildNodes(
+    properties: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>),
+    parentPaths: string[] = [],
+    parentTitles: string[] = [],
+    parentMeta?: PropertyMeta, // 传入父级 meta 以便缓存结果
+  ): MetaTreeNode[] | (() => Promise<MetaTreeNode[]>) {
+    return typeof properties === 'function'
+      ? async () => {
+          const resolved = await properties();
+          // 缓存解析结果，避免下次重复调用
+          if (parentMeta) {
+            parentMeta.properties = resolved;
+          }
+          return Object.entries(resolved).map(([name, meta]) =>
+            this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
+          );
+        }
+      : Object.entries(properties).map(([name, meta]) =>
+          this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
+        );
+  }
+
+  /**
+   * 根据属性路径查找对应的 meta
+   * @param propertyPath 属性路径数组，例如 ["aaa", "bbb"]
+   * @returns [finalKey, metaOrFactory, fullPath] 或 null
+   */
+  #findMetaByPath(propertyPath: string[]): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+    if (propertyPath.length === 0) return null;
+
+    const [firstKey, ...remainingPath] = propertyPath;
+
+    // 首先查找第一个属性，这里利用委托链机制
+    // 1. 查找自身的属性
+    const ownProperty = this._props[firstKey];
+    if (ownProperty?.meta) {
+      return this.#findMetaInProperty(firstKey, ownProperty.meta, remainingPath, [firstKey]);
+    }
+
+    // 2. 查找委托链中的属性
+    for (const delegate of this._delegates) {
+      const delegateProperty = delegate._props[firstKey];
+      if (delegateProperty?.meta) {
+        return this.#findMetaInProperty(firstKey, delegateProperty.meta, remainingPath, [firstKey]);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 在给定属性的 meta 中查找剩余路径
+   */
+  #findMetaInProperty(
+    currentKey: string,
+    metaOrFactory: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>),
+    remainingPath: string[],
+    currentPath: string[],
+  ): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+    // 如果已经到了最后一层，直接返回当前的 meta
+    if (remainingPath.length === 0) {
+      return [currentKey, metaOrFactory as any, currentPath];
+    }
+
+    // 如果还有剩余路径，但当前是函数类型，构建一个新的异步函数继续解析剩余路径
+    if (typeof metaOrFactory === 'function') {
+      const finalKey = remainingPath[remainingPath.length - 1];
+      const finalPath = [...currentPath, ...remainingPath];
+
+      const wrappedFactory = async (): Promise<PropertyMeta> => {
+        const resolvedMeta = await metaOrFactory();
+        const result = await this.#resolvePathInMetaAsync(resolvedMeta, remainingPath);
+        return result;
+      };
+
+      return [finalKey, wrappedFactory, finalPath];
+    }
+
+    // 如果还有剩余路径，且是同步 meta，尝试继续查找下一层
+    if (metaOrFactory.properties) {
+      const [nextKey, ...restPath] = remainingPath;
+      const nextPath = [...currentPath, nextKey];
+
+      // properties 是异步的，构建新的异步函数继续解析
+      if (typeof metaOrFactory.properties === 'function') {
+        const finalKey = remainingPath[remainingPath.length - 1];
+        const finalPath = [...currentPath, ...remainingPath];
+
+        const wrappedFactory = async (): Promise<PropertyMeta> => {
+          const propertiesFactory = metaOrFactory.properties as () => Promise<Record<string, PropertyMeta>>;
+          const resolvedProperties = await propertiesFactory();
+          // 缓存解析结果，避免下次重复调用
+          metaOrFactory.properties = resolvedProperties;
+          const startMeta = resolvedProperties[nextKey];
+          if (!startMeta) {
+            throw new Error(`Property ${nextKey} not found in resolved properties`);
+          }
+          const result = await this.#resolvePathInMetaAsync(startMeta, restPath);
+          return result;
+        };
+
+        return [finalKey, wrappedFactory, finalPath];
       }
 
-      // 同步 meta：直接创建节点
-      return {
+      // properties 是同步的，继续查找
+      const nextMeta = metaOrFactory.properties[nextKey];
+      if (nextMeta) {
+        return this.#findMetaInProperty(nextKey, nextMeta, restPath, nextPath);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 在给定的 meta 中递归解析路径
+   */
+  #resolvePathInMeta(meta: PropertyMeta, path: string[]): PropertyMeta | null {
+    if (path.length === 0) {
+      return meta;
+    }
+
+    let current = meta;
+    for (const key of path) {
+      const properties = _.get(current, 'properties');
+      if (!properties || typeof properties === 'function') {
+        return null; // 无法同步解析异步 properties
+      }
+      current = _.get(properties, key);
+      if (!current) {
+        return null;
+      }
+    }
+
+    return current;
+  }
+
+  /**
+   * 支持异步 properties 的路径解析：
+   * - 遇到 properties 为函数时会 await 并缓存其结果
+   * - 持续向下解析直到到达最终的 meta
+   * 若解析失败则抛出异常，由调用方自行处理
+   */
+  async #resolvePathInMetaAsync(meta: PropertyMeta, path: string[]): Promise<PropertyMeta> {
+    if (path.length === 0) return meta;
+
+    let current: PropertyMeta = meta;
+    for (const key of path) {
+      let properties = _.get(current, 'properties');
+
+      if (!properties) {
+        throw new Error(`Property path not found: ${path.join('.')}`);
+      }
+
+      if (typeof properties === 'function') {
+        const resolved = await properties();
+        current.properties = resolved;
+        properties = resolved;
+      }
+
+      const next = (properties as Record<string, PropertyMeta>)[key];
+      if (!next) {
+        throw new Error(`Property ${key} not found while resolving path: ${path.join('.')}`);
+      }
+      current = next;
+    }
+
+    return current;
+  }
+
+  /**
+   * 构建 parentTitles 数组，通过递归查找每个路径层级对应的 meta title
+   * @param propertyPath 属性路径数组，例如 ['aaa', 'bbb', 'ccc']
+   * @param excludeLastLevel 是否排除最后一层，默认为 true（parentTitles 不包含当前节点）
+   * @returns string[] 父级标题数组
+   */
+  #buildParentTitles(propertyPath: string[], excludeLastLevel = true): string[] {
+    if (propertyPath.length === 0) return [];
+
+    const pathToProcess = excludeLastLevel ? propertyPath.slice(0, -1) : propertyPath;
+    if (pathToProcess.length === 0) return [];
+
+    const parentTitles: string[] = [];
+
+    // 从根级开始逐层查找 meta title
+    let currentMetas = this._getPropertiesMeta();
+
+    for (let i = 0; i < pathToProcess.length; i++) {
+      const currentKey = pathToProcess[i];
+      const currentMeta = currentMetas[currentKey];
+
+      if (!currentMeta || typeof currentMeta === 'function') {
+        parentTitles.push(currentKey);
+        break;
+      }
+      // 同步 meta，使用 title
+      parentTitles.push(currentMeta.title || currentKey);
+
+      // 为下一层级准备 meta 映射
+      if (i < pathToProcess.length - 1 && currentMeta.properties && typeof currentMeta.properties !== 'function') {
+        currentMetas = currentMeta.properties as Record<string, PropertyMeta>;
+      } else if (i < pathToProcess.length - 1) {
+        // 如果下一层是异步的或者不存在，无法继续，使用路径名填充剩余部分
+        for (let j = i + 1; j < pathToProcess.length; j++) {
+          parentTitles.push(pathToProcess[j]);
+        }
+        break;
+      }
+    }
+
+    return parentTitles;
+  }
+
+  #toTreeNode(
+    name: string,
+    metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>),
+    paths: string[] = [name],
+    parentTitles: string[] = [],
+  ): MetaTreeNode {
+    // 检查缓存
+    const cached = this._metaNodeCache.get(metaOrFactory);
+    if (cached) {
+      // 更新路径信息（因为同一个 meta 可能在不同路径下使用）
+      cached.paths = paths;
+      cached.parentTitles = parentTitles.length > 0 ? parentTitles : undefined;
+      return cached;
+    }
+
+    let node: MetaTreeNode;
+
+    if (typeof metaOrFactory === 'function') {
+      const initialTitle = name;
+      node = {
         name,
-        title: metaOrFactory.title,
+        title: metaOrFactory['title'] || initialTitle, // 初始使用 name 作为 title
+        type: 'object', // 初始类型
+        interface: undefined,
+        uiSchema: undefined,
+        paths,
+        parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
+        children: async () => {
+          try {
+            const meta = await metaOrFactory();
+            const finalTitle = meta?.title || name;
+            node.title = finalTitle;
+            node.type = meta?.type;
+            node.interface = meta?.interface;
+            node.uiSchema = meta?.uiSchema;
+            // parentTitles 保持不变，因为它不包含自身 title
+
+            if (!meta?.properties) return [];
+
+            const childNodes = this.#createChildNodes(meta.properties, paths, [...parentTitles, finalTitle], meta);
+            const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
+
+            // 更新 children 为解析后的结果
+            node.children = resolvedChildren;
+
+            return resolvedChildren;
+          } catch (error) {
+            console.warn(`Failed to load meta for ${name}:`, error);
+            return [];
+          }
+        },
+      };
+    } else {
+      // 同步 meta：直接创建节点
+      const nodeTitle = metaOrFactory.title;
+      node = {
+        name,
+        title: nodeTitle,
         type: metaOrFactory.type,
         interface: metaOrFactory.interface,
         uiSchema: metaOrFactory.uiSchema,
-        children: metaOrFactory.properties ? createChildNodes(metaOrFactory.properties) : undefined,
+        paths,
+        parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
+        children: metaOrFactory.properties
+          ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
+          : undefined,
       };
-    };
+    }
 
-    return Object.entries(metaMap).map(([key, metaOrFactory]) => toTreeNode(key, metaOrFactory));
+    // 缓存节点
+    this._metaNodeCache.set(metaOrFactory, node);
+
+    return node;
   }
 
   _getPropertiesMeta(): Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> {

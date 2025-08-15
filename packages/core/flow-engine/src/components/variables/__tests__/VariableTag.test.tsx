@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { VariableTag } from '../VariableTag';
@@ -40,6 +40,11 @@ describe('VariableTag', () => {
 
   it('should not show close button when onClear is not provided', async () => {
     render(<VariableTag value="{{ ctx.User.Name }}" />);
+
+    await act(async () => {
+      // 等待状态更新完成
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
     const closeButton = screen.queryByLabelText('clear');
     expect(closeButton).not.toBeInTheDocument();
@@ -99,6 +104,11 @@ describe('VariableTag', () => {
   it('should render empty value', async () => {
     const { container } = render(<VariableTag value="" />);
 
+    await act(async () => {
+      // 等待状态更新完成
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
     const tag = container.querySelector('.ant-tag');
     expect(tag).toBeInTheDocument();
     expect(tag).toHaveTextContent('');
@@ -106,6 +116,11 @@ describe('VariableTag', () => {
 
   it('should handle undefined value gracefully', async () => {
     render(<VariableTag />);
+
+    await act(async () => {
+      // 等待状态更新完成
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
     // 应该仍然渲染tag，即使没有value
     const tag = document.querySelector('.ant-tag');
@@ -177,16 +192,19 @@ describe('VariableTag', () => {
         name: 'user',
         title: 'User Information',
         type: 'object',
+        paths: ['user'],
         children: [
           {
             name: 'profile',
             title: 'User Profile',
             type: 'object',
+            paths: ['user', 'profile'],
             children: [
               {
                 name: 'firstName',
                 title: 'First Name',
                 type: 'string',
+                paths: ['user', 'profile', 'firstName'],
               },
             ],
           },
@@ -194,20 +212,16 @@ describe('VariableTag', () => {
       },
     ];
 
-    const mockContextSelectorItem = {
-      label: 'First Name',
-      value: 'firstName',
-      isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
-      meta: mockMetaTree[0].children[0].children[0],
+    const mockMetaTreeNode = {
+      name: 'firstName',
+      title: 'First Name',
+      type: 'string',
+      paths: ['user', 'profile', 'firstName'],
+      parentTitles: ['User Information', 'User Profile'],
     };
 
     render(
-      <VariableTag
-        value="{{ ctx.user.profile.firstName }}"
-        contextSelectorItem={mockContextSelectorItem}
-        metaTree={mockMetaTree}
-      />,
+      <VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTree} />,
     );
 
     // 应该显示 title 而不是 name
@@ -217,20 +231,20 @@ describe('VariableTag', () => {
     });
   });
 
-  it('should fallback to path display when metaTree is not provided', async () => {
-    const mockContextSelectorItem = {
-      label: 'First Name',
-      value: 'firstName',
-      isLeaf: true,
-      fullPath: ['user', 'profile', 'firstName'],
-      meta: null,
+  it('should fallback to title when titles is not provided', async () => {
+    const mockMetaTreeNode = {
+      name: 'firstName',
+      title: 'First Name',
+      type: 'string',
+      paths: ['user', 'profile', 'firstName'],
+      // 没有 titles 属性
     };
 
-    render(<VariableTag value="{{ ctx.user.profile.firstName }}" contextSelectorItem={mockContextSelectorItem} />);
+    render(<VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} />);
 
-    // 没有 metaTree 时应该显示 path
+    // 没有 titles 时应该显示 title
     await waitFor(() => {
-      const tag = screen.getByText('user/profile/firstName');
+      const tag = screen.getByText('First Name');
       expect(tag).toBeInTheDocument();
     });
   });
@@ -241,24 +255,18 @@ describe('VariableTag', () => {
         name: 'user',
         title: 'User Information',
         type: 'object',
+        paths: ['user'],
       },
     ];
 
-    const mockContextSelectorItem = {
-      label: 'User',
-      value: 'user',
-      isLeaf: true,
-      fullPath: ['user'],
-      meta: null,
+    const mockMetaTreeNode = {
+      name: 'user',
+      title: 'User Information',
+      type: 'object',
+      paths: ['user'],
     };
 
-    render(
-      <VariableTag
-        value="{{ ctx.user }}"
-        contextSelectorItem={mockContextSelectorItem}
-        metaTree={mockMetaTreeFunction}
-      />,
-    );
+    render(<VariableTag value="{{ ctx.user }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTreeFunction} />);
 
     await waitFor(() => {
       const tag = screen.getByText('User Information');

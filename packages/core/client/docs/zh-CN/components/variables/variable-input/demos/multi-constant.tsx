@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowContext, VariableInput, Converters } from '@nocobase/flow-engine';
-import { Card, Space, Input } from 'antd';
+import { Card, Space, Input, InputNumber, DatePicker } from 'antd';
 
-class PluginNullOptionExample extends Plugin {
+class PluginMultiConstantExample extends Plugin {
   async load() {
-    const NullOptionExample = () => {
-      const [value, setValue] = useState(null);
+    const MultiConstantExample = () => {
+      const [value, setValue] = useState('');
 
       const flowContext = new FlowContext();
       flowContext.defineProperty('user', {
@@ -23,23 +23,40 @@ class PluginNullOptionExample extends Plugin {
 
       const getMetaTree = () => {
         const baseMetaTree = flowContext.getPropertyMetaTree();
-        baseMetaTree.push({
-          name: 'null',
-          title: 'Null',
-          type: 'null',
+        baseMetaTree.splice(0, 0, {
+          name: 'Constant',
+          title: 'Constant',
+          paths: ['Constant'],
+          type: 'object',
+          children: [
+            { name: 'string', title: 'String', type: 'string', paths: ['Constant', 'string'], render: () => <Input /> },
+            { name: 'number', title: 'Number', type: 'number', paths: ['Constant', 'number'], render: InputNumber },
+            { name: 'date', title: 'Date', type: 'string', paths: ['Constant', 'date'], render: DatePicker },
+          ],
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) =>
-          item?.fullPath?.[0] === 'null' ? (props) => <Input {...props} readOnly value="<Null>" /> : null,
-        resolveValueFromPath: (item) => (item?.fullPath[0] === 'null' ? null : undefined),
+        resolveValueFromPath: (item) => {
+          const path = item?.paths;
+          if (!path || path[0] !== 'Constant') return undefined;
+          switch (path[1]) {
+            case 'string':
+              return '';
+            case 'number':
+              return 0;
+            case 'date':
+              return null;
+            default:
+              return null;
+          }
+        },
       };
 
       return (
         <div style={{ padding: 20 }}>
-          <Card title="Null Option" size="small">
+          <Card title="Multi-Type Constants" size="small">
             <Space direction="vertical" style={{ width: '100%' }}>
               <VariableInput
                 value={value}
@@ -59,14 +76,14 @@ class PluginNullOptionExample extends Plugin {
 
     this.router.add('root', {
       path: '/',
-      element: <NullOptionExample />,
+      element: <MultiConstantExample />,
     });
   }
 }
 
 const app = new Application({
   router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [PluginNullOptionExample],
+  plugins: [PluginMultiConstantExample],
 });
 
 export default app.getRootComponent();

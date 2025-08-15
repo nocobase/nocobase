@@ -7,9 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
-import { createForm, Form } from '@formily/core';
-import { FormProvider } from '@formily/react';
 import {
   BaseRecordResource,
   Collection,
@@ -19,11 +16,11 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { Button, Skeleton } from 'antd';
+import { Button, Skeleton, Form, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FormFieldModel } from '../../fields';
-
+import { FormFieldModel, FieldModelRenderer } from '../../fields';
+import { FormComponent } from './FormModel';
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
 
@@ -36,7 +33,7 @@ export class QuickEditForm extends FlowModel {
   __onSubmitSuccess;
 
   get form() {
-    return this.context.form as Form;
+    return this.context.form;
   }
 
   static async open(options: {
@@ -50,7 +47,6 @@ export class QuickEditForm extends FlowModel {
     onSuccess?: (values: any) => void;
     fieldProps?: any;
   }) {
-    // this.now = Date.now();
     const { flowEngine, target, dataSourceKey, collectionName, fieldPath, filterByTk, record, onSuccess, fieldProps } =
       options;
     const model = flowEngine.createModel({
@@ -76,7 +72,7 @@ export class QuickEditForm extends FlowModel {
       placement: 'rightTop',
       styles: {
         body: {
-          maxWidth: 400,
+          width: 400,
         },
       },
       content: (popover) => {
@@ -99,9 +95,9 @@ export class QuickEditForm extends FlowModel {
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.context.defineProperty('form', {
-      get: () => createForm(),
-    });
+    // this.context.defineProperty('form', {
+    //   get: () => createForm(),
+    // });
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
     });
@@ -127,49 +123,49 @@ export class QuickEditForm extends FlowModel {
     console.log('QuickEditForm.open4', Date.now() - this.now);
 
     return (
-      <form
-        style={{ minWidth: '200px' }}
-        className="quick-edit-form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          await this.form.submit();
-          const formValues = {
-            [this.fieldPath]: this.form.values[this.fieldPath],
-          };
-          const originalValues = {
-            [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
-          };
-          try {
-            this.resource.save(formValues, { refresh: false }).catch((error) => {});
-            this.__onSubmitSuccess?.(formValues);
-            this.viewContainer.close();
-          } catch (error) {
-            console.error('Failed to save form data:', error);
-            this.context.message.error(this.context.t('Failed to save form data'));
-            this.__onSubmitSuccess?.(originalValues);
-          }
-        }}
-      >
-        <FormProvider form={this.form}>
-          <FormLayout layout={'vertical'}>
-            {this.mapSubModels('fields', (field) => {
-              return <FlowModelRenderer key={field.uid} model={field} fallback={<Skeleton.Input size="small" />} />;
-            })}
-          </FormLayout>
-          <FormButtonGroup align="right">
-            <Button
-              onClick={() => {
+      <FormComponent model={this}>
+        {this.mapSubModels('fields', (field) => {
+          return (
+            <Form.Item name={this.fieldPath} key={field.uid} initialValue={this.context.record[this.fieldPath]}>
+              <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
+            </Form.Item>
+          );
+        })}
+        <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            onClick={() => {
+              this.viewContainer.close();
+            }}
+          >
+            {this.context.t('Cancel')}
+          </Button>
+          <Button
+            type="primary"
+            htmlType="submit"
+            onClick={async () => {
+              const values = this.form.getFieldsValue();
+              await this.form.submit();
+              const formValues = {
+                ...values,
+              };
+              const originalValues = {
+                [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
+              };
+              try {
+                this.resource.save(formValues, { refresh: false }).catch((error) => {});
+                this.__onSubmitSuccess?.(formValues);
                 this.viewContainer.close();
-              }}
-            >
-              {this.context.t('Cancel')}
-            </Button>
-            <Button type="primary" htmlType="submit">
-              {this.context.t('Submit')}
-            </Button>
-          </FormButtonGroup>
-        </FormProvider>
-      </form>
+              } catch (error) {
+                console.error('Failed to save form data:', error);
+                this.context.message.error(this.context.t('Failed to save form data'));
+                this.__onSubmitSuccess?.(originalValues);
+              }
+            }}
+          >
+            {this.context.t('Submit')}
+          </Button>
+        </Space>
+      </FormComponent>
     );
   }
 }
@@ -217,7 +213,8 @@ QuickEditForm.registerFlow({
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);
           resource.setData(ctx.inputArgs.record);
-          ctx.model.form.setValues(resource.getData());
+          console.log(ctx.model);
+          ctx.model.form?.setFieldsValue(resource.getData());
         }
       },
     },

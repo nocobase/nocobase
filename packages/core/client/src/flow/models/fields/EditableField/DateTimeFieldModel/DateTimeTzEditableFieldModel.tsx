@@ -6,8 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { PreviewText } from '@formily/antd-v5';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { dayjs } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
 import React from 'react';
@@ -46,41 +44,30 @@ function parseInitialValue(value: string | Date | undefined, format?: string): d
   return d.isValid() ? d : null;
 }
 
-const DatePickerCom = connect(
-  DatePicker,
-  mapProps((props: any, field: any) => {
-    const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
-
-    return {
-      ...rest,
-      value: parseInitialValue(value, format),
-      format,
-      picker,
-      showTime,
-      onChange: (val: any) => {
-        const result = parseToDate(val, format);
-        field.setValue(result);
-      },
-    };
-  }),
-  mapReadPretty(({ value, format = 'YYYY-MM-DD HH:mm:ss', ...rest }) => {
-    if (!value) {
-      return;
-    }
-    const display = value ? dayjs(value).format(format) : '-';
-    return <PreviewText.DatePicker {...rest} value={display} />;
-  }),
-);
-
+const DateTimeTzPicker = (props) => {
+  const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
+  const componentProps = {
+    ...rest,
+    value: parseInitialValue(value, format),
+    format,
+    picker,
+    showTime,
+    onChange: (val: any) => {
+      const result = parseToDate(val, format);
+      rest.onChange(result);
+    },
+  };
+  return <DatePicker {...componentProps} />;
+};
 export class DateTimeTzEditableFieldModel extends DateTimeFieldModel {
   static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
-  setComponentProps(componentProps) {
-    super.setComponentProps({
+  setProps(componentProps) {
+    super.setProps({
       ...componentProps,
       utc: true,
     });
   }
   get component() {
-    return [DatePickerCom, {}];
+    return [DateTimeTzPicker, {}];
   }
 }

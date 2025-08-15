@@ -3,10 +3,10 @@ import { Application, Plugin } from '@nocobase/client';
 import { FlowContext, VariableInput, Converters } from '@nocobase/flow-engine';
 import { Card, Space, Input } from 'antd';
 
-class PluginSingleConstantExample extends Plugin {
+class PluginNullOptionExample extends Plugin {
   async load() {
-    const SingleConstantExample = () => {
-      const [value, setValue] = useState('');
+    const NullOptionExample = () => {
+      const [value, setValue] = useState(null);
 
       const flowContext = new FlowContext();
       flowContext.defineProperty('user', {
@@ -23,22 +23,23 @@ class PluginSingleConstantExample extends Plugin {
 
       const getMetaTree = () => {
         const baseMetaTree = flowContext.getPropertyMetaTree();
-        baseMetaTree.splice(0, 0, {
-          name: 'Constant',
-          title: 'Constant',
-          type: 'string',
+        baseMetaTree.push({
+          name: 'null',
+          title: 'Null',
+          type: 'null',
+          paths: ['null'],
+          render: () => <Input readOnly value="<Null>" />,
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) => (item?.fullPath?.[0] === 'Constant' ? Input : null),
-        resolveValueFromPath: (item) => (item?.fullPath[0] === 'Constant' ? '' : undefined),
+        resolveValueFromPath: (item) => (item?.paths[0] === 'null' ? null : undefined),
       };
 
       return (
         <div style={{ padding: 20 }}>
-          <Card title="Single Constant" size="small">
+          <Card title="Null Option" size="small">
             <Space direction="vertical" style={{ width: '100%' }}>
               <VariableInput
                 value={value}
@@ -58,14 +59,14 @@ class PluginSingleConstantExample extends Plugin {
 
     this.router.add('root', {
       path: '/',
-      element: <SingleConstantExample />,
+      element: <NullOptionExample />,
     });
   }
 }
 
 const app = new Application({
   router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [PluginSingleConstantExample],
+  plugins: [PluginNullOptionExample],
 });
 
 export default app.getRootComponent();

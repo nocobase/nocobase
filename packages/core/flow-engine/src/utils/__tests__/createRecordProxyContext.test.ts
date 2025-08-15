@@ -8,7 +8,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRecordProxyContext } from '../createRecordProxyContext';
+import { createRecordProxyContext, createCollectionContextMeta } from '../createRecordProxyContext';
 import { Collection } from '../../data-source';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel } from '../../models/flowModel';
@@ -155,6 +155,8 @@ describe('createRecordProxyContext', () => {
         interface: 'number',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'id'],
       });
 
       const titleField = fields.find((field) => field.name === 'title');
@@ -165,6 +167,8 @@ describe('createRecordProxyContext', () => {
         interface: 'input',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'title'],
       });
 
       const contentField = fields.find((field) => field.name === 'content');
@@ -175,6 +179,8 @@ describe('createRecordProxyContext', () => {
         interface: 'textarea',
         uiSchema: {},
         children: undefined,
+        parentTitles: ['Posts'],
+        paths: ['currentRecord', 'content'],
       });
     });
 
@@ -227,6 +233,30 @@ describe('createRecordProxyContext', () => {
       const tagsFieldNames = tagsChildren.map((child) => child.name);
       expect(tagsFieldNames).toContain('id');
       expect(tagsFieldNames).toContain('name');
+    });
+
+    /**
+     * 测试自定义 title 参数在元数据中的应用
+     * 场景：为记录代理设置自定义标题，用于在变量选择器中显示更友好的名称
+     * 预期：元数据树节点使用提供的 title，而不是默认的集合标题
+     * 核心功能：验证 title 参数在元数据生成中的正确性
+     */
+    it('should use custom title in metadata when provided', async () => {
+      const record = { id: 1, title: 'Test Post' };
+      const flowContext = new FlowContext();
+
+      const recordContext = createRecordProxyContext(record, postsCollection, '自定义记录标题');
+      flowContext.defineProperty('currentRecord', recordContext);
+
+      const metaTree = flowContext.getPropertyMetaTree();
+      const currentRecordNode = metaTree.find((node) => node.name === 'currentRecord');
+
+      expect(currentRecordNode).toBeDefined();
+      expect(currentRecordNode.title).toBe('自定义记录标题'); // 应该使用自定义标题
+
+      const fields = await getChildren(currentRecordNode);
+      expect(Array.isArray(fields)).toBe(true);
+      expect(fields.length).toBeGreaterThan(0);
     });
 
     /**
@@ -428,6 +458,39 @@ describe('createRecordProxyContext', () => {
       const userNameField = managerChildren.find((f) => f.name === 'name');
       expect(userNameField.type).toBe('string');
       expect(userNameField.title).toBe('User Name');
+    });
+  });
+
+  /**
+   * createCollectionContextMeta 测试组
+   *
+   * 测试独立的集合元数据生成功能
+   */
+  describe('createCollectionContextMeta', () => {
+    /**
+     * 测试基本的集合元数据生成功能
+     * 场景：为集合创建元数据，用于在流程设计器中显示字段信息
+     * 预期：返回包含所有字段的元数据结构
+     * 核心功能：验证元数据生成的基本功能
+     */
+    it('should create collection metadata with custom title', async () => {
+      const metaFn = createCollectionContextMeta(postsCollection, '自定义集合标题');
+
+      expect(typeof metaFn).toBe('function');
+      expect(metaFn.title).toBe('自定义集合标题');
+
+      const meta = await metaFn();
+      expect(meta).toBeDefined();
+      expect(meta.type).toBe('object');
+      expect(meta.title).toBe('自定义集合标题');
+      expect(typeof meta.properties).toBe('function');
+
+      const properties = await meta.properties();
+      expect(properties).toBeDefined();
+      expect(properties.id).toBeDefined();
+      expect(properties.title).toBeDefined();
+      expect(properties.content).toBeDefined();
+      expect(properties.author).toBeDefined();
     });
   });
 });

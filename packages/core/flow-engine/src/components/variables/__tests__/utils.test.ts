@@ -43,45 +43,18 @@ describe('Variable Utils', () => {
     });
   });
 
-  describe('formatPathToValue', () => {
-    it('should format ContextSelectorItem to {{ ctx.aaa.bbb }}', () => {
-      const item1: ContextSelectorItem = { label: 'Bbb', value: 'bbb', fullPath: ['aaa', 'bbb'], isLeaf: true };
-      expect(formatPathToValue(item1)).toBe('{{ ctx.aaa.bbb }}');
-
-      const item2: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
-      expect(formatPathToValue(item2)).toBe('{{ ctx.user.name }}');
-
-      const item3: ContextSelectorItem = {
-        label: 'Title',
-        value: 'title',
-        fullPath: ['data', 'items', '0', 'title'],
-        isLeaf: true,
-      };
-      expect(formatPathToValue(item3)).toBe('{{ ctx.data.items.0.title }}');
-    });
-
-    it('should handle empty path', () => {
-      const item: ContextSelectorItem = { label: 'Context', value: 'ctx', fullPath: [], isLeaf: true };
-      expect(formatPathToValue(item)).toBe('{{ ctx }}');
-    });
-
-    it('should handle single path element', () => {
-      const item: ContextSelectorItem = { label: 'User', value: 'user', fullPath: ['user'], isLeaf: true };
-      expect(formatPathToValue(item)).toBe('{{ ctx.user }}');
-    });
-  });
-
   describe('loadMetaTreeChildren', () => {
     it('should load async children from MetaTreeNode', async () => {
       const asyncChildren = async () => [
-        { name: 'child1', title: 'Child 1', type: 'string' },
-        { name: 'child2', title: 'Child 2', type: 'number' },
+        { name: 'child1', title: 'Child 1', type: 'string', paths: ['parent', 'child1'], parentTitles: ['Parent'] },
+        { name: 'child2', title: 'Child 2', type: 'number', paths: ['parent', 'child2'], parentTitles: ['Parent'] },
       ];
 
       const metaNode: MetaTreeNode = {
         name: 'parent',
         title: 'Parent',
         type: 'object',
+        paths: ['parent'],
         children: asyncChildren,
       };
 
@@ -96,6 +69,7 @@ describe('Variable Utils', () => {
         name: 'leaf',
         title: 'Leaf',
         type: 'string',
+        paths: ['leaf'],
       };
 
       const result = await loadMetaTreeChildren(metaNode);
@@ -107,7 +81,10 @@ describe('Variable Utils', () => {
         name: 'parent',
         title: 'Parent',
         type: 'object',
-        children: [{ name: 'child1', title: 'Child 1', type: 'string' }],
+        paths: ['parent'],
+        children: [
+          { name: 'child1', title: 'Child 1', type: 'string', paths: ['parent', 'child1'], parentTitles: ['Parent'] },
+        ],
       };
 
       const result = await loadMetaTreeChildren(metaNode);
@@ -121,17 +98,17 @@ describe('Variable Utils', () => {
       {
         label: 'User',
         value: 'user',
-        fullPath: ['user'],
+        paths: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, fullPath: ['user', 'name'] },
-          { label: 'Email', value: 'email', isLeaf: true, fullPath: ['user', 'email'] },
+          { label: 'Name', value: 'name', isLeaf: true, paths: ['user', 'name'] },
+          { label: 'Email', value: 'email', isLeaf: true, paths: ['user', 'email'] },
         ],
       },
       {
         label: 'Data',
         value: 'data',
-        fullPath: ['data'],
-        children: [{ label: 'Items', value: 'items', isLeaf: true, fullPath: ['data', 'items'] }],
+        paths: ['data'],
+        children: [{ label: 'Items', value: 'items', isLeaf: true, paths: ['data', 'items'] }],
       },
     ];
 
@@ -163,13 +140,13 @@ describe('Variable Utils', () => {
       expect(result).toHaveLength(1);
       // Verify that the returned object is the exact same instance as the original
       expect(result[0]).toBe(mockOptions[0]);
-      expect(result[0].fullPath).toBe(mockOptions[0].fullPath);
+      expect(result[0].paths).toBe(mockOptions[0].paths);
 
       const nestedResult = searchInLoadedNodes(mockOptions, 'Name');
       expect(nestedResult).toHaveLength(1);
       // Verify that nested search also returns the same instance
       expect(nestedResult[0]).toBe(mockOptions[0].children![0]);
-      expect(nestedResult[0].fullPath).toBe(mockOptions[0].children![0].fullPath);
+      expect(nestedResult[0].paths).toBe(mockOptions[0].children![0].paths);
     });
   });
 
@@ -180,15 +157,17 @@ describe('Variable Utils', () => {
           name: 'user',
           title: 'User',
           type: 'object',
+          paths: ['user'],
           children: [
-            { name: 'name', title: 'Name', type: 'string' },
-            { name: 'email', title: 'Email', type: 'string' },
+            { name: 'name', title: 'Name', type: 'string', paths: ['user', 'name'], parentTitles: ['User'] },
+            { name: 'email', title: 'Email', type: 'string', paths: ['user', 'email'], parentTitles: ['User'] },
           ],
         },
         {
           name: 'data',
           title: 'Data',
           type: 'string',
+          paths: ['data'],
         },
       ];
 
@@ -199,15 +178,15 @@ describe('Variable Utils', () => {
         value: 'user',
         isLeaf: false,
         meta: metaTree[0],
-        fullPath: ['user'],
+        paths: ['user'],
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], fullPath: ['user', 'name'] },
+          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], paths: ['user', 'name'] },
           {
             label: 'Email',
             value: 'email',
             isLeaf: true,
             meta: metaTree[0].children?.[1],
-            fullPath: ['user', 'email'],
+            paths: ['user', 'email'],
           },
         ],
       });
@@ -216,7 +195,7 @@ describe('Variable Utils', () => {
         value: 'data',
         isLeaf: true,
         meta: metaTree[1],
-        fullPath: ['data'],
+        paths: ['data'],
       });
     });
 
@@ -226,6 +205,7 @@ describe('Variable Utils', () => {
           name: 'async',
           title: 'Async Node',
           type: 'object',
+          paths: ['async'],
           children: async () => [],
         },
       ];
@@ -236,7 +216,7 @@ describe('Variable Utils', () => {
         value: 'async',
         isLeaf: false,
         meta: metaTree[0],
-        fullPath: ['async'],
+        paths: ['async'],
       });
     });
 
@@ -257,6 +237,7 @@ describe('Variable Utils', () => {
           name: 'test',
           type: 'object',
           title: '',
+          paths: ['test'],
         },
       ];
 
@@ -267,8 +248,8 @@ describe('Variable Utils', () => {
           label: 'test',
           value: 'test',
           isLeaf: true,
-          meta: { name: 'test', type: 'object', title: '' },
-          fullPath: ['test'],
+          meta: { name: 'test', type: 'object', title: '', paths: ['test'] },
+          paths: ['test'],
         },
       ]);
     });
@@ -304,7 +285,6 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters).toHaveProperty('resolvePathFromValue');
       expect(converters).toHaveProperty('resolveValueFromPath');
-      expect(converters).not.toHaveProperty('renderInputComponent');
       expect(typeof converters.resolvePathFromValue).toBe('function');
       expect(typeof converters.resolveValueFromPath).toBe('function');
     });
@@ -313,12 +293,6 @@ describe('Variable Utils', () => {
       const converters = createDefaultConverters();
       expect(converters.resolvePathFromValue?.('{{ ctx.user.name }}')).toEqual(['user', 'name']);
       expect(converters.resolvePathFromValue?.('static value')).toBeUndefined();
-    });
-
-    it('should resolve value from ContextSelectorItem', () => {
-      const converters = createDefaultConverters();
-      const item: ContextSelectorItem = { label: 'Name', value: 'name', fullPath: ['user', 'name'], isLeaf: true };
-      expect(converters.resolveValueFromPath?.(item)).toBe('{{ ctx.user.name }}');
     });
   });
 });

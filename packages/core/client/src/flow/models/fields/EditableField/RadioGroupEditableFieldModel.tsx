@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Radio } from '@formily/antd-v5';
+import { Radio } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class RadioGroupEditableFieldModel extends FormFieldModel {

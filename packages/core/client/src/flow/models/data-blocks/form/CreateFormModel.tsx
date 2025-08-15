@@ -17,9 +17,8 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { FormModel } from './FormModel';
-import { FormLayout, FormButtonGroup } from '@formily/antd-v5';
-import { FormProvider } from '@formily/react';
+import { FormModel, FormComponent } from './FormModel';
+import { FormButtonGroup } from '@formily/antd-v5';
 import React from 'react';
 
 // CreateFormModel - 专门用于新增记录
@@ -33,10 +32,8 @@ export class CreateFormModel extends FormModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
-      <FormProvider form={this.form}>
-        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
-          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
@@ -58,7 +55,18 @@ export class CreateFormModel extends FormModel {
             <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
           </FormButtonGroup>
         </DndProvider>
-      </FormProvider>
+        {/* <FormProvider form={this.form}> */}
+        {/* <FormLayout
+            colon={colon}
+            labelAlign={labelAlign}
+            labelWidth={labelWidth}
+            labelWrap={labelWrap}
+            layout={layout}
+          >
+          </FormLayout>
+         
+        </FormProvider> */}
+      </FormComponent>
     );
   }
 }

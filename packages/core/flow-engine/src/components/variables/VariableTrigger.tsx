@@ -11,13 +11,13 @@ import React, { useState } from 'react';
 import { Popover } from 'antd';
 import { RenderElementProps } from 'slate-react';
 import { FlowContextSelector } from '../FlowContextSelector';
-import type { ContextSelectorItem, VariableTriggerElement } from './types';
+import type { VariableTriggerElement } from './types';
 import type { MetaTreeNode } from '../../flowContext';
 
 interface VariableTriggerProps extends RenderElementProps {
   element: VariableTriggerElement;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
-  onVariableSelect?: (triggerId: string, value: string, item: ContextSelectorItem) => void;
+  onVariableSelect?: (triggerId: string, value: string, item: MetaTreeNode) => void;
   onTriggerClose?: (triggerId: string) => void;
 }
 
@@ -31,7 +31,7 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
 }) => {
   const [open, setOpen] = useState(true);
 
-  const handleVariableSelect = (value: string, item?: ContextSelectorItem) => {
+  const handleVariableSelect = (value: string, item?: MetaTreeNode) => {
     if (item) {
       setOpen(false);
       onVariableSelect?.(element.triggerId, value, item);

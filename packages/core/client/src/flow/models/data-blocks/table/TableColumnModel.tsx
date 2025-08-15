@@ -87,12 +87,13 @@ export class TableColumnModel extends FieldModel {
           fork.context.defineProperty('record', {
             get: () => record,
           });
-          fork.context.defineProperty('fieldValue', {
-            get: () => value,
-          });
+          // fork.context.defineProperty('fieldValue', {
+          //   get: () => value,
+          // });
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          fork.setProps({ value: value });
           return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
         })}
       </>

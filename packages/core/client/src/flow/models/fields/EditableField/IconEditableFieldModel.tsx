@@ -9,7 +9,6 @@
 
 import { CloseOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
-import { connect, mapProps } from '@formily/react';
 import { Button, Empty, Flex, Input, Popover, Radio, Space, theme } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
@@ -35,7 +34,7 @@ const groupByIconName = (data) => {
   });
 };
 
-function IconField(props: IconPickerProps) {
+export function IconPicker(props: IconPickerProps) {
   const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
@@ -158,15 +157,6 @@ function IconField(props: IconPickerProps) {
     </div>
   );
 }
-
-const IconPicker = connect(
-  IconField,
-  mapProps((props, field: any) => {
-    return {
-      ...props,
-    };
-  }),
-);
 
 export class IconEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['icon'];

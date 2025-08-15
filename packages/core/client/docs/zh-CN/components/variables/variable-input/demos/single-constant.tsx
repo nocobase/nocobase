@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Application, Plugin } from '@nocobase/client';
 import { FlowContext, VariableInput, Converters } from '@nocobase/flow-engine';
-import { Card, Space, Input, InputNumber, DatePicker } from 'antd';
+import { Card, Space, Input } from 'antd';
 
-class PluginMultiConstantExample extends Plugin {
+class PluginSingleConstantExample extends Plugin {
   async load() {
-    const MultiConstantExample = () => {
+    const SingleConstantExample = () => {
       const [value, setValue] = useState('');
 
       const flowContext = new FlowContext();
@@ -26,47 +26,20 @@ class PluginMultiConstantExample extends Plugin {
         baseMetaTree.splice(0, 0, {
           name: 'Constant',
           title: 'Constant',
-          type: 'object',
-          children: [
-            { name: 'string', title: 'String', type: 'string' },
-            { name: 'number', title: 'Number', type: 'number' },
-            { name: 'date', title: 'Date', type: 'string' },
-          ],
+          type: 'string',
+          paths: ['Constant'],
+          render: () => <Input />,
         });
         return baseMetaTree;
       };
 
       const converters: Converters = {
-        renderInputComponent: (item) => {
-          if (item?.fullPath?.[0] !== 'Constant') return null;
-          switch (item.fullPath[1]) {
-            case 'number':
-              return InputNumber;
-            case 'date':
-              return DatePicker;
-            default:
-              return Input;
-          }
-        },
-        resolveValueFromPath: (item) => {
-          const path = item?.fullPath;
-          if (!path || path[0] !== 'Constant') return undefined;
-          switch (path[1]) {
-            case 'string':
-              return '';
-            case 'number':
-              return 0;
-            case 'date':
-              return null;
-            default:
-              return null;
-          }
-        },
+        resolveValueFromPath: (item) => (item?.paths[0] === 'Constant' ? '' : undefined),
       };
 
       return (
         <div style={{ padding: 20 }}>
-          <Card title="Multi-Type Constants" size="small">
+          <Card title="Single Constant" size="small">
             <Space direction="vertical" style={{ width: '100%' }}>
               <VariableInput
                 value={value}
@@ -86,14 +59,14 @@ class PluginMultiConstantExample extends Plugin {
 
     this.router.add('root', {
       path: '/',
-      element: <MultiConstantExample />,
+      element: <SingleConstantExample />,
     });
   }
 }
 
 const app = new Application({
   router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [PluginMultiConstantExample],
+  plugins: [PluginSingleConstantExample],
 });
 
 export default app.getRootComponent();

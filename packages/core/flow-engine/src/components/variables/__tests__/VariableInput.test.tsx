@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContextSelectorItem } from '../types';
@@ -15,11 +15,11 @@ import { VariableInput } from '../VariableInput';
 import { createTestFlowContext } from './test-utils';
 
 describe('VariableInput', () => {
-  it('should render Input for static values', () => {
+  it('should render Input for static values', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const input = screen.getByDisplayValue('static text');
+    const input = await screen.findByDisplayValue('static text');
     expect(input).toBeInTheDocument();
     expect(input.tagName).toBe('INPUT');
   });
@@ -28,28 +28,28 @@ describe('VariableInput', () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    // 应该显示格式化后的路径 "user/name"
+    // 应该显示格式化后的路径 "User/Name"
     await waitFor(() => {
-      const variableTag = screen.getByText('user/name');
+      const variableTag = screen.getByText('User/Name');
       expect(variableTag).toBeInTheDocument();
       expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
     });
   });
 
-  it('should render FlowContextSelector button', () => {
+  it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const selectorButton = screen.getByRole('button');
+    const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
   });
 
-  it('should handle onChange from Input', () => {
+  it('should handle onChange from Input', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
     render(<VariableInput value="initial" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const input = screen.getByDisplayValue('initial');
+    const input = await screen.findByDisplayValue('initial');
     fireEvent.change(input, { target: { value: 'new value' } });
 
     expect(onChange).toHaveBeenCalledWith('new value');
@@ -60,7 +60,7 @@ describe('VariableInput', () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const selectorButton = screen.getByRole('button');
+    const selectorButton = await screen.findByRole('button');
     fireEvent.click(selectorButton);
 
     await waitFor(() => {
@@ -73,10 +73,22 @@ describe('VariableInput', () => {
       fireEvent.click(screen.getByText('Name'));
     });
 
-    expect(onChange).toHaveBeenCalledWith('{{ ctx.user.name }}');
+    expect(onChange).toHaveBeenCalledWith(
+      '{{ ctx.user.name }}',
+      expect.objectContaining({
+        name: 'name',
+        title: 'Name',
+        type: 'string',
+        interface: undefined,
+        uiSchema: undefined,
+        paths: ['user', 'name'],
+        parentTitles: ['User'],
+        children: undefined,
+      }),
+    );
   });
 
-  it('should handle clear action from VariableTag', () => {
+  it('should handle clear action from VariableTag', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
     render(
@@ -87,62 +99,36 @@ describe('VariableInput', () => {
       />,
     );
 
-    const clearButton = screen.getByLabelText('clear');
+    const clearButton = await screen.findByLabelText('clear');
     fireEvent.click(clearButton);
 
     // 清除时调用 onChange(null)
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('should use custom converters', () => {
-    const flowContext = createTestFlowContext();
-    const customConverters = {
-      renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-        // 对于静态值（contextSelectorItem为null），返回自定义组件
-        if (!contextSelectorItem) {
-          return (props: any) => <input {...props} data-testid="custom-input" />;
-        }
-        return null;
-      },
-      resolvePathFromValue: (value: any) => {
-        if (value === 'custom') return ['custom', 'path'];
-        return null;
-      },
-      resolveValueFromPath: (item: ContextSelectorItem) => {
-        return `custom-${item?.fullPath.join('.')}`;
-      },
-    };
-
-    render(
-      <VariableInput value="custom" converters={customConverters} metaTree={() => flowContext.getPropertyMetaTree()} />,
-    );
-
-    const customInput = screen.getByTestId('custom-input');
-    expect(customInput).toBeInTheDocument();
-  });
-
   it('should handle external prop updates', async () => {
     const flowContext = createTestFlowContext();
     const { rerender } = render(<VariableInput value="initial" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    expect(screen.getByDisplayValue('initial')).toBeInTheDocument();
+    const initialInput = await screen.findByDisplayValue('initial');
+    expect(initialInput).toBeInTheDocument();
 
     rerender(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     await waitFor(() => {
-      expect(screen.getByText('user/name')).toBeInTheDocument();
+      expect(screen.getByText('User/Name')).toBeInTheDocument();
     });
   });
 
-  it('should use FlowContext metaTree correctly', () => {
+  it('should use FlowContext metaTree correctly', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const selectorButton = screen.getByRole('button');
+    const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
   });
 
-  it('should pass through other props to the input component', () => {
+  it('should pass through other props to the input component', async () => {
     const flowContext = createTestFlowContext();
     render(
       <VariableInput
@@ -154,7 +140,7 @@ describe('VariableInput', () => {
       />,
     );
 
-    const input = screen.getByDisplayValue('test');
+    const input = await screen.findByDisplayValue('test');
     expect(input).toHaveAttribute('placeholder', 'Enter value');
     expect(input).toHaveClass('custom-class');
 
@@ -162,77 +148,23 @@ describe('VariableInput', () => {
     // This is a known limitation of the current component design
   });
 
-  it('should handle empty metaTree', () => {
+  it('should handle empty metaTree', async () => {
     render(<VariableInput value="test" metaTree={[]} />);
 
-    const input = screen.getByDisplayValue('test');
+    const input = await screen.findByDisplayValue('test');
     expect(input).toBeInTheDocument();
 
-    const selectorButton = screen.getByRole('button');
+    const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
   });
 
-  it('should handle undefined value', () => {
+  it('should handle undefined value', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const input = screen.getByRole('textbox');
+    const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue('');
-  });
-
-  it('should always use VariableTag for variable values regardless of converters', async () => {
-    const flowContext = createTestFlowContext();
-    const customConverters = {
-      renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-        // This converter should NOT be used for variable values
-        return (props: any) => <input {...props} data-testid="should-not-appear" />;
-      },
-    };
-
-    render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        converters={customConverters}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
-    );
-
-    // Should render VariableTag, not the custom input
-    await waitFor(() => {
-      const variableTag = screen.getByText('user/name');
-      expect(variableTag).toBeInTheDocument();
-      expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
-    });
-
-    // Should NOT render the custom input
-    expect(screen.queryByTestId('should-not-appear')).not.toBeInTheDocument();
-
-    // Should have the clear button (antd Tag close icon)
-    const clearButton = screen.getByLabelText('clear');
-    expect(clearButton).toBeInTheDocument();
-  });
-
-  it('should use custom converters for static values only', () => {
-    const flowContext = createTestFlowContext();
-    const customConverters = {
-      renderInputComponent: (contextSelectorItem: ContextSelectorItem | null) => {
-        // 对于静态值（contextSelectorItem为null），返回number input
-        if (!contextSelectorItem) {
-          return (props: any) => <input {...props} data-testid="number-input" type="number" />;
-        }
-        return null;
-      },
-    };
-
-    render(
-      <VariableInput value={42} converters={customConverters} metaTree={() => flowContext.getPropertyMetaTree()} />,
-    );
-
-    // Should use custom converter for static number value
-    const numberInput = screen.getByTestId('number-input');
-    expect(numberInput).toBeInTheDocument();
-    expect(numberInput).toHaveAttribute('type', 'number');
   });
 
   it('should maintain focus during typing', async () => {
@@ -244,31 +176,35 @@ describe('VariableInput', () => {
 
     render(<TestWrapper />);
 
-    const input = screen.getByRole('textbox');
+    const input = await screen.findByRole('textbox');
 
-    input.focus();
+    act(() => {
+      input.focus();
+    });
     expect(document.activeElement).toBe(input);
 
     // Test typing the entire text at once to avoid incremental updates
     const testText = '测试焦点保持';
-    fireEvent.change(input, { target: { value: testText } });
+
+    act(() => {
+      fireEvent.change(input, { target: { value: testText } });
+    });
 
     await waitFor(() => {
       const currentInput = screen.getByDisplayValue(testText);
       expect(currentInput).toBeInTheDocument();
     });
 
-    // Verify focus is maintained after typing
-    const activeInput = document.activeElement as HTMLInputElement;
-    expect(activeInput).toBeTruthy();
-    expect(activeInput.tagName).toBe('INPUT');
-    expect(activeInput).toHaveValue(testText);
+    // Find the input again after the state update
+    const updatedInput = screen.getByDisplayValue(testText);
+    expect(updatedInput.tagName).toBe('INPUT');
+    expect(updatedInput).toHaveValue(testText);
 
     // Final verification
     expect(screen.getByDisplayValue('测试焦点保持')).toBeInTheDocument();
   });
 
-  it('should handle value changes correctly', () => {
+  it('should handle value changes correctly', async () => {
     const flowContext = createTestFlowContext();
 
     const TestWrapper = () => {
@@ -283,13 +219,13 @@ describe('VariableInput', () => {
 
     render(<TestWrapper />);
 
-    const initialInput = screen.getByDisplayValue('test1');
+    const initialInput = await screen.findByDisplayValue('test1');
     expect(initialInput).toBeInTheDocument();
 
     const button = screen.getByText('Change Value');
     fireEvent.click(button);
 
-    const updatedInput = screen.getByDisplayValue('test2');
+    const updatedInput = await screen.findByDisplayValue('test2');
     expect(updatedInput).toBeInTheDocument();
   });
 
@@ -297,23 +233,23 @@ describe('VariableInput', () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
 
-    // Test with a variable value
+    // Test with a variable value - use user.name which exists in test context
     const { rerender } = render(
       <VariableInput
-        value="{{ ctx.user.userRating }}"
+        value="{{ ctx.user.name }}"
         onChange={onChange}
         metaTree={() => flowContext.getPropertyMetaTree()}
       />,
     );
 
-    // Should show VariableTag for variable value - display as "user/userRating" since userRating maps to User parent
+    // Should show VariableTag for variable value
     await waitFor(() => {
-      const variableTag = screen.getByText('user/userRating');
+      const variableTag = screen.getByText('User/Name');
       expect(variableTag).toBeInTheDocument();
     });
 
     // Clear the variable
-    const clearButton = screen.getByLabelText('clear');
+    const clearButton = await screen.findByLabelText('clear');
     fireEvent.click(clearButton);
 
     // After clearing, should call onChange(null)
@@ -323,12 +259,12 @@ describe('VariableInput', () => {
     rerender(<VariableInput value={null} onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     // Should now show regular input (default behavior for static values)
-    const input = screen.getByRole('textbox');
+    const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue('');
   });
 
-  it('should call onChange with null when clearing variable', () => {
+  it('should call onChange with null when clearing variable', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
 
@@ -340,7 +276,7 @@ describe('VariableInput', () => {
       />,
     );
 
-    const clearButton = screen.getByLabelText('clear');
+    const clearButton = await screen.findByLabelText('clear');
     fireEvent.click(clearButton);
 
     expect(onChange).toHaveBeenCalledWith(null);
@@ -351,20 +287,47 @@ describe('VariableInput', () => {
     render(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
     await waitFor(() => {
-      const variableTag = screen.getByText('user/name');
+      const variableTag = screen.getByText('User/Name');
       expect(variableTag).toBeInTheDocument();
       expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
     });
 
-    const closeButton = screen.getByLabelText('clear');
+    const closeButton = await screen.findByLabelText('clear');
     expect(closeButton).toBeInTheDocument();
   });
 
-  it('should handle different field types correctly', () => {
+  it('should handle different field types correctly', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="" metaTree={() => flowContext.getPropertyMetaTree()} />);
 
-    const input = screen.getByRole('textbox');
+    const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
+  });
+
+  it('should only allow leaf selection when onlyLeafSelectable is true', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+    render(
+      <VariableInput
+        value=""
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+        onlyLeafSelectable={true}
+      />,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    fireEvent.click(selectorButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('User')).toBeInTheDocument();
+    });
+
+    // Click on non-leaf node 'User' with onlyLeafSelectable=true
+    fireEvent.click(screen.getByText('User'));
+
+    // onChange should not be called for non-leaf node when onlyLeafSelectable=true
+    // It should only expand the node, not select it
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

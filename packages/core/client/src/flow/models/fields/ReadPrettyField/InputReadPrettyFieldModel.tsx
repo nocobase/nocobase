@@ -12,12 +12,11 @@ import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea'] as any;
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea', 'time'] as any;
 
   // @reactive
   public render() {
-    const value = this.getValue();
-    const { prefix, suffix } = this.props;
+    const { prefix, suffix, value } = this.props;
 
     return (
       <span>
@@ -29,19 +28,18 @@ export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-export class InputReadPrettyFieldModel2 extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
+// export class InputReadPrettyFieldModel2 extends ReadPrettyFieldModel {
+//   static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid'] as any;
 
-  // @reactive
-  public render() {
-    const value = this.getValue();
-    const { prefix, suffix } = this.props;
+//   // @reactive
+//   public render() {
+//     const { prefix, suffix, value } = this.props;
 
-    return (
-      <span>
-        {prefix}
-        {this.translate(value)}2{suffix}
-      </span>
-    );
-  }
-}
+//     return (
+//       <span>
+//         {prefix}
+//         {this.translate(value)}2{suffix}
+//       </span>
+//     );
+//   }
+// }

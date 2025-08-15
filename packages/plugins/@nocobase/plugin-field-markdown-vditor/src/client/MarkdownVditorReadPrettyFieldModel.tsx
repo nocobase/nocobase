@@ -8,16 +8,14 @@
  */
 
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
 export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
   static readonly supportedFieldInterfaces = ['vditor'];
 
-  // @reactive
   public render() {
-    const value = this.getValue();
+    const { value } = this.props;
     const app = this.context.app;
     if (!value) {
       return <div></div>;

@@ -236,6 +236,7 @@ describe('FlowContext properties and methods', () => {
         type: 'string',
         interface: undefined,
         uiSchema: undefined,
+        paths: ['foo'],
         children: undefined,
       },
       {
@@ -244,6 +245,7 @@ describe('FlowContext properties and methods', () => {
         type: 'object',
         interface: undefined,
         uiSchema: undefined,
+        paths: ['bar'],
         children: [
           {
             name: 'baz',
@@ -251,6 +253,8 @@ describe('FlowContext properties and methods', () => {
             type: 'number',
             interface: undefined,
             uiSchema: undefined,
+            paths: ['bar', 'baz'],
+            parentTitles: ['Bar'],
             children: undefined,
           },
           {
@@ -259,6 +263,8 @@ describe('FlowContext properties and methods', () => {
             type: 'string',
             interface: undefined,
             uiSchema: undefined,
+            paths: ['bar', 'qux'],
+            parentTitles: ['Bar'],
             children: undefined,
           },
         ],
@@ -269,10 +275,10 @@ describe('FlowContext properties and methods', () => {
   it('should support delegate meta and local override in getPropertyMetaTree', () => {
     const delegate = new FlowContext();
     delegate.defineProperty('foo', {
-      meta: { type: 'string', title: 'Delegate Foo', interface: 'text', uiSchema: { 'ui:widget': 'text' } },
+      meta: { type: 'string', title: 'Delegate Foo', interface: 'text', uiSchema: { type: 'text' } },
     });
     delegate.defineProperty('bar', {
-      meta: { type: 'number', title: 'Delegate Bar', interface: 'number', uiSchema: { 'ui:widget': 'number' } },
+      meta: { type: 'number', title: 'Delegate Bar', interface: 'number', uiSchema: { type: 'number' } },
     });
     const ctx = new FlowContext();
     ctx.addDelegate(delegate);
@@ -281,9 +287,9 @@ describe('FlowContext properties and methods', () => {
         type: 'object',
         title: 'Local Bar',
         interface: 'object',
-        uiSchema: { 'ui:widget': 'object' },
+        uiSchema: { type: 'object' },
         properties: {
-          x: { type: 'string', title: 'X', interface: 'text', uiSchema: { 'ui:widget': 'text' } },
+          x: { type: 'string', title: 'X', interface: 'text', uiSchema: { type: 'text' } },
         },
       },
     });
@@ -294,21 +300,27 @@ describe('FlowContext properties and methods', () => {
         title: 'Delegate Foo',
         type: 'string',
         interface: 'text',
-        uiSchema: { 'ui:widget': 'text' },
+        uiSchema: { type: 'text' },
+        paths: ['foo'],
+        children: undefined,
       },
       {
         name: 'bar',
         title: 'Local Bar',
         type: 'object',
         interface: 'object',
-        uiSchema: { 'ui:widget': 'object' },
+        uiSchema: { type: 'object' },
+        paths: ['bar'],
         children: [
           {
             name: 'x',
             title: 'X',
             type: 'string',
             interface: 'text',
-            uiSchema: { 'ui:widget': 'text' },
+            uiSchema: { type: 'text' },
+            paths: ['bar', 'x'],
+            parentTitles: ['Local Bar'],
+            children: undefined,
           },
         ],
       },
@@ -355,6 +367,7 @@ describe('FlowContext properties and methods', () => {
       type: 'object',
       interface: undefined,
       uiSchema: undefined,
+      paths: ['syncProp'],
       children: [
         {
           name: 'field1',
@@ -362,6 +375,8 @@ describe('FlowContext properties and methods', () => {
           type: 'string',
           interface: undefined,
           uiSchema: undefined,
+          paths: ['syncProp', 'field1'],
+          parentTitles: ['Sync Property'],
           children: undefined,
         },
         {
@@ -370,6 +385,8 @@ describe('FlowContext properties and methods', () => {
           type: 'number',
           interface: undefined,
           uiSchema: undefined,
+          paths: ['syncProp', 'field2'],
+          parentTitles: ['Sync Property'],
           children: undefined,
         },
       ],
@@ -389,6 +406,8 @@ describe('FlowContext properties and methods', () => {
         type: 'string',
         interface: undefined,
         uiSchema: undefined,
+        paths: ['asyncProp', 'dynamicField1'],
+        parentTitles: ['Async Property'],
         children: undefined,
       },
       {
@@ -397,6 +416,8 @@ describe('FlowContext properties and methods', () => {
         type: 'boolean',
         interface: undefined,
         uiSchema: undefined,
+        paths: ['asyncProp', 'dynamicField2'],
+        parentTitles: ['Async Property'],
         children: undefined,
       },
     ]);
@@ -842,7 +863,8 @@ describe('FlowContext delayed meta loading', () => {
       type: 'number',
       interface: undefined,
       uiSchema: undefined,
-      display: undefined,
+      paths: ['userAsync', 'id'],
+      parentTitles: ['Delayed User'],
       children: undefined,
     });
     expect(children[1]).toEqual({
@@ -851,7 +873,8 @@ describe('FlowContext delayed meta loading', () => {
       type: 'string',
       interface: undefined,
       uiSchema: undefined,
-      display: undefined,
+      paths: ['userAsync', 'name'],
+      parentTitles: ['Delayed User'],
       children: undefined,
     });
   });
@@ -922,5 +945,579 @@ describe('FlowContext delayed meta loading', () => {
     expect(level2Children).toHaveLength(1);
     expect(level2Children[0].name).toBe('level2Field');
     expect(level2Children[0].title).toBe('Level 2 Field');
+  });
+});
+
+describe('FlowContext getPropertyMetaTree with value parameter', () => {
+  it('should return full tree when no value parameter is provided', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+          name: { type: 'string', title: 'Username' },
+        },
+      },
+    });
+    ctx.defineProperty('data', {
+      meta: { type: 'string', title: 'Data' },
+    });
+
+    const tree = ctx.getPropertyMetaTree();
+    expect(tree).toHaveLength(2);
+    expect(tree[0].name).toBe('user');
+    expect(tree[1].name).toBe('data');
+  });
+
+  it('should return subtree for valid {{ ctx.propertyName }} format', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+          name: { type: 'string', title: 'Username' },
+        },
+      },
+    });
+    ctx.defineProperty('data', {
+      meta: { type: 'string', title: 'Data' },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.user }}');
+    expect(subTree).toHaveLength(2);
+    expect(subTree[0]).toEqual({
+      name: 'id',
+      title: 'User ID',
+      type: 'number',
+      interface: undefined,
+      uiSchema: undefined,
+      paths: ['user', 'id'],
+      parentTitles: undefined,
+      children: undefined,
+    });
+    expect(subTree[1]).toEqual({
+      name: 'name',
+      title: 'Username',
+      type: 'string',
+      interface: undefined,
+      uiSchema: undefined,
+      paths: ['user', 'name'],
+      parentTitles: undefined,
+      children: undefined,
+    });
+  });
+
+  it('should handle spaces in {{ ctx.propertyName }} format', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+        },
+      },
+    });
+
+    const subTree1 = ctx.getPropertyMetaTree('{{ctx.user}}');
+    const subTree2 = ctx.getPropertyMetaTree('{{ ctx.user }}');
+    const subTree3 = ctx.getPropertyMetaTree('{{  ctx.user  }}');
+
+    expect(subTree1).toHaveLength(1);
+    expect(subTree2).toHaveLength(1);
+    expect(subTree3).toHaveLength(1);
+    expect(subTree1[0].name).toBe('id');
+    expect(subTree2[0].name).toBe('id');
+    expect(subTree3[0].name).toBe('id');
+  });
+
+  it('should return empty array for property without children', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('simple', {
+      meta: { type: 'string', title: 'Simple' },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.simple }}');
+    expect(subTree).toEqual([]);
+  });
+
+  it('should warn and return full tree for unsupported formats', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+        },
+      },
+    });
+    ctx.defineProperty('data', {
+      meta: { type: 'string', title: 'Data' },
+    });
+
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Test various unsupported formats (should trigger warning)
+    const invalidTestCases = ['user', 'ctx.user', '{{user}}', '{{ user }}', 'invalid format'];
+
+    invalidTestCases.forEach((testCase) => {
+      consoleSpy.mockClear();
+      const result = ctx.getPropertyMetaTree(testCase);
+
+      // Should return empty tree for invalid formats
+      expect(result).toHaveLength(0);
+
+      // Should log warning
+      expect(consoleSpy).toHaveBeenCalledWith(
+        `[FlowContext] getPropertyMetaTree - unsupported value format: "${testCase}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
+      );
+    });
+
+    // Test valid root context formats (should NOT trigger warning)
+    const validRootCases = ['{{ ctx }}', '{{ctx}}'];
+
+    validRootCases.forEach((testCase) => {
+      consoleSpy.mockClear();
+      const result = ctx.getPropertyMetaTree(testCase);
+
+      // Should return full tree (since {{ ctx }} means all properties)
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('user');
+      expect(result[1].name).toBe('data');
+
+      // Should NOT log warning for valid formats
+      expect(consoleSpy).not.toHaveBeenCalled();
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should return empty array when property is not found', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: { type: 'object', title: 'User' },
+    });
+
+    const result = ctx.getPropertyMetaTree('{{ ctx.nonExistent }}');
+    expect(result).toEqual([]);
+  });
+
+  it('should support async meta with value parameter', async () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('asyncUser', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Async User',
+        properties: {
+          profile: {
+            type: 'object',
+            title: 'Profile',
+            properties: async () => {
+              await new Promise((resolve) => setTimeout(resolve, 10));
+              return {
+                bio: { type: 'string', title: 'Biography' },
+              };
+            },
+          },
+        },
+      }),
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.asyncUser }}');
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(subTree);
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('profile');
+    expect(typeof arr[0].children).toBe('function');
+
+    const profileChildren = await (arr[0].children as () => Promise<any>)();
+    expect(profileChildren).toHaveLength(1);
+    expect(profileChildren[0].name).toBe('bio');
+    expect(profileChildren[0].title).toBe('Biography');
+  });
+
+  it('should handle async meta errors with value parameter', async () => {
+    const ctx = new FlowContext();
+    const failingMeta = vi.fn(async () => {
+      throw new Error('Async meta failed');
+    });
+
+    ctx.defineProperty('errorProp', { meta: failingMeta });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.errorProp }}');
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const arr = await ensureArray(subTree);
+    expect(arr).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should support multi-level path like {{ ctx.user.profile }}', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+          profile: {
+            type: 'object',
+            title: 'User Profile',
+            properties: {
+              bio: { type: 'string', title: 'Biography' },
+              avatar: { type: 'string', title: 'Avatar URL' },
+            },
+          },
+        },
+      },
+    });
+
+    // Test getting profile subtree
+    const profileSubTree = ctx.getPropertyMetaTree('{{ ctx.user.profile }}');
+    expect(profileSubTree).toHaveLength(2);
+    expect(profileSubTree[0]).toEqual({
+      name: 'bio',
+      title: 'Biography',
+      type: 'string',
+      interface: undefined,
+      uiSchema: undefined,
+      paths: ['user', 'profile', 'bio'],
+      parentTitles: ['User', 'User Profile'],
+      children: undefined,
+    });
+    expect(profileSubTree[1]).toEqual({
+      name: 'avatar',
+      title: 'Avatar URL',
+      type: 'string',
+      interface: undefined,
+      uiSchema: undefined,
+      paths: ['user', 'profile', 'avatar'],
+      parentTitles: ['User', 'User Profile'],
+      children: undefined,
+    });
+  });
+
+  it('should support deep multi-level path like {{ ctx.data.user.profile.settings }}', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('data', {
+      meta: {
+        type: 'object',
+        title: 'Data',
+        properties: {
+          user: {
+            type: 'object',
+            title: 'User Data',
+            properties: {
+              profile: {
+                type: 'object',
+                title: 'Profile',
+                properties: {
+                  settings: {
+                    type: 'object',
+                    title: 'Settings',
+                    properties: {
+                      theme: { type: 'string', title: 'Theme' },
+                      language: { type: 'string', title: 'Language' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const settingsSubTree = ctx.getPropertyMetaTree('{{ ctx.data.user.profile.settings }}');
+    expect(settingsSubTree).toHaveLength(2);
+    expect(settingsSubTree[0].name).toBe('theme');
+    expect(settingsSubTree[0].title).toBe('Theme');
+    expect(settingsSubTree[1].name).toBe('language');
+    expect(settingsSubTree[1].title).toBe('Language');
+  });
+
+  it('should return empty array when multi-level path property does not exist', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('user', {
+      meta: {
+        type: 'object',
+        title: 'User',
+        properties: {
+          id: { type: 'number', title: 'User ID' },
+        },
+      },
+    });
+    ctx.defineProperty('data', {
+      meta: { type: 'string', title: 'Data' },
+    });
+
+    // Test path that doesn't exist
+    const result = ctx.getPropertyMetaTree('{{ ctx.user.nonExistent }}');
+    expect(result).toEqual([]); // Should return empty array for non-existent path
+  });
+});
+
+describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenarios', () => {
+  it('should handle async meta factory with async properties', async () => {
+    const ctx = new FlowContext();
+
+    // 异步 meta factory 包含异步 properties
+    ctx.defineProperty('complexUser', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Complex User',
+        properties: async () => ({
+          profile: {
+            type: 'object',
+            title: 'Profile',
+            properties: {
+              name: { type: 'string', title: 'Name' },
+              age: { type: 'number', title: 'Age' },
+            },
+          },
+          settings: {
+            type: 'object',
+            title: 'Settings',
+            properties: {
+              theme: { type: 'string', title: 'Theme' },
+              notifications: { type: 'boolean', title: 'Notifications' },
+            },
+          },
+        }),
+      }),
+    });
+
+    // 新行为：根级返回 children 数组（profile、settings）
+    const rootTree = ctx.getPropertyMetaTree('{{ ctx.complexUser }}');
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootTree);
+    expect(arr).toHaveLength(2);
+    expect(arr[0].name).toBe('profile');
+    expect(arr[1].name).toBe('settings');
+  });
+
+  it('should handle async meta factory with mixed sync/async properties in deep path', async () => {
+    const ctx = new FlowContext();
+
+    // 复杂的嵌套场景
+    ctx.defineProperty('enterprise', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Enterprise',
+        properties: {
+          // 同步 properties
+          info: {
+            type: 'object',
+            title: 'Info',
+            properties: async () => ({
+              // 异步 properties 返回同步结构
+              company: {
+                type: 'object',
+                title: 'Company',
+                properties: {
+                  name: { type: 'string', title: 'Company Name' },
+                  industry: { type: 'string', title: 'Industry' },
+                },
+              },
+              location: {
+                type: 'object',
+                title: 'Location',
+                properties: async () => ({
+                  // 深度异步嵌套
+                  address: { type: 'string', title: 'Address' },
+                  coordinates: {
+                    type: 'object',
+                    title: 'Coordinates',
+                    properties: {
+                      lat: { type: 'number', title: 'Latitude' },
+                      lng: { type: 'number', title: 'Longitude' },
+                    },
+                  },
+                }),
+              },
+            }),
+          },
+        },
+      }),
+    });
+
+    // 测试深度路径：{{ ctx.enterprise.info.company.name }}
+    const companyNameTree = ctx.getPropertyMetaTree('{{ ctx.enterprise.info.company.name }}');
+    expect(companyNameTree).toHaveLength(1);
+    expect(companyNameTree[0].name).toBe('name'); // 解析到了最终的 name 属性
+    expect(companyNameTree[0].title).toBe('name'); // 异步解析的初始 title 是 name
+    expect(companyNameTree[0].type).toBe('object'); // 异步节点的初始类型是 object
+
+    // 测试深度路径：{{ ctx.enterprise.info.location.coordinates.lat }}
+    // 这个路径包含异步函数，会返回包装的异步节点
+    const coordinatesTree = ctx.getPropertyMetaTree('{{ ctx.enterprise.info.location.coordinates.lat }}');
+    expect(coordinatesTree).toHaveLength(1);
+    expect(coordinatesTree[0].name).toBe('lat'); // 最终解析到 lat
+    expect(typeof coordinatesTree[0].children).toBe('function'); // 但仍然是异步的
+  });
+
+  it('should handle sync meta with async properties in deep path', () => {
+    const ctx = new FlowContext();
+
+    // 同步 meta 包含异步 properties
+    ctx.defineProperty('project', {
+      meta: {
+        type: 'object',
+        title: 'Project',
+        properties: {
+          details: {
+            type: 'object',
+            title: 'Details',
+            properties: async () => ({
+              // 异步加载详细信息
+              metadata: {
+                type: 'object',
+                title: 'Metadata',
+                properties: {
+                  version: { type: 'string', title: 'Version' },
+                  author: { type: 'string', title: 'Author' },
+                },
+              },
+              dependencies: {
+                type: 'object',
+                title: 'Dependencies',
+                properties: async () => ({
+                  // 双重异步嵌套
+                  production: {
+                    type: 'array',
+                    title: 'Production Dependencies',
+                  },
+                  development: {
+                    type: 'array',
+                    title: 'Development Dependencies',
+                  },
+                }),
+              },
+            }),
+          },
+        },
+      },
+    });
+
+    // 测试路径：{{ ctx.project.details.metadata.version }}
+    // 新逻辑现在能够处理这种复杂场景了！
+    const versionTree = ctx.getPropertyMetaTree('{{ ctx.project.details.metadata.version }}');
+    expect(versionTree).toHaveLength(1);
+    expect(versionTree[0].name).toBe('version'); // 成功解析到最终属性
+    expect(versionTree[0].title).toBe('version'); // 异步解析的初始 title 是 name
+    expect(versionTree[0].type).toBe('object'); // 异步节点的初始类型是 object
+  });
+
+  it('should handle async meta factory with error in deep path resolution', async () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('errorProne', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Error Prone',
+        properties: {
+          working: {
+            type: 'object',
+            title: 'Working Section',
+            properties: {
+              data: { type: 'string', title: 'Data' },
+            },
+          },
+          broken: {
+            type: 'object',
+            title: 'Broken Section',
+            // 这里故意没有 properties，测试路径解析失败的情况
+          },
+        },
+      }),
+    });
+
+    // 测试正常路径 - 新逻辑能直接解析到最终属性！
+    const workingTree = ctx.getPropertyMetaTree('{{ ctx.errorProne.working.data }}');
+    expect(workingTree).toHaveLength(1);
+    expect(workingTree[0].name).toBe('data'); // 直接解析到data属性
+    expect(workingTree[0].title).toBe('data'); // 异步解析的初始 title 是 name
+    expect(workingTree[0].type).toBe('object'); // 异步节点的初始类型是 object
+
+    // 新行为：根级直接返回 working、broken 子节点
+    const rootTree = ctx.getPropertyMetaTree('{{ ctx.errorProne }}');
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootTree);
+    const names = arr.map((n: any) => n.name).sort();
+    expect(names).toEqual(['broken', 'working']);
+
+    // 测试不存在的路径 - 新逻辑会尝试构建异步节点，即使路径可能不存在
+    const brokenTree = ctx.getPropertyMetaTree('{{ ctx.errorProne.broken.nonExistent }}');
+    expect(brokenTree).toHaveLength(1);
+    expect(brokenTree[0].name).toBe('nonExistent');
+    expect(brokenTree[0].title).toBe('nonExistent');
+    expect(typeof brokenTree[0].children).toBe('function'); // 构建了异步解析函数
+
+    // 测试异步解析会优雅失败（因为 broken 没有 properties）
+    if (typeof brokenTree[0].children === 'function') {
+      // 异步解析会失败，但被捕获并返回空数组
+      const result = await brokenTree[0].children();
+      expect(result).toEqual([]); // 错误被优雅处理，返回空数组
+    }
+  });
+
+  it('should handle extremely deep async nesting', async () => {
+    const ctx = new FlowContext();
+
+    // 创建深度嵌套的异步结构
+    ctx.defineProperty('deepNest', {
+      meta: async () => ({
+        type: 'object',
+        title: 'Deep Nest',
+        properties: async () => ({
+          level1: {
+            type: 'object',
+            title: 'Level 1',
+            properties: async () => ({
+              level2: {
+                type: 'object',
+                title: 'Level 2',
+                properties: async () => ({
+                  level3: {
+                    type: 'object',
+                    title: 'Level 3',
+                    properties: {
+                      final: { type: 'string', title: 'Final Value' },
+                    },
+                  },
+                }),
+              },
+            }),
+          },
+        }),
+      }),
+    });
+
+    // 测试深度路径 - 新逻辑能够深入解析到最终属性！
+    const deepTree = ctx.getPropertyMetaTree('{{ ctx.deepNest.level1.level2.level3.final }}');
+    expect(deepTree).toHaveLength(1);
+    expect(deepTree[0].name).toBe('final'); // 直接解析到最终属性！
+    expect(deepTree[0].title).toBe('final'); // 异步解析的初始 title 是 name
+    expect(deepTree[0].type).toBe('object'); // 异步节点的初始类型是 object
+
+    // 测试中间层级的路径
+    const level2Tree = ctx.getPropertyMetaTree('{{ ctx.deepNest.level1.level2 }}');
+    expect(level2Tree).toHaveLength(1);
+    expect(level2Tree[0].name).toBe('level2');
+    expect(typeof level2Tree[0].children).toBe('function'); // 仍然是异步的，因为包含异步嵌套
+
+    // 新行为：根级直接返回 level1 子节点
+    const rootDeepTree = ctx.getPropertyMetaTree('{{ ctx.deepNest }}');
+    const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
+    const arr = await ensureArray(rootDeepTree);
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('level1');
   });
 });

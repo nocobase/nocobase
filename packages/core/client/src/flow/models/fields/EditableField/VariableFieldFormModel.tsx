@@ -40,9 +40,6 @@ export class VariableFieldFormModel extends FlowModel {
     this.context.defineProperty('record', {
       get: () => {},
     });
-    this.context.defineProperty('skipResolveParams', {
-      get: () => true,
-    });
   }
 
   public render() {

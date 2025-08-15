@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Select } from '@formily/antd-v5';
+import { Select } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
 export class SelectEditableFieldModel extends FormFieldModel {
@@ -31,7 +31,7 @@ SelectEditableFieldModel.registerFlow({
       handler(ctx) {
         const collectionField = ctx.model.collectionField;
         if (collectionField.type === 'array') {
-          ctx.model.field.setComponentProps({
+          ctx.model.setProps({
             mode: 'multiple',
           });
         }

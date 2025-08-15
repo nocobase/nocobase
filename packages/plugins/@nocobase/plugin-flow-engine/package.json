@@ -4,7 +4,7 @@
   "displayName.zh-CN": "前端流引擎",
   "description": "",
   "description.zh-CN": "",
-  "version": "1.9.0-alpha.10",
+  "version": "1.9.0-alpha.11",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

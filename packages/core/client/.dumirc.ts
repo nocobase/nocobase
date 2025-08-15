@@ -47,6 +47,10 @@ export default defineConfig({
         link: '/models',
       },
       {
+        title: 'Components',
+        link: '/components',
+      },
+      {
         title: 'Examples',
         link: '/examples/flow-models/hello-world',
       },
@@ -64,6 +68,40 @@ export default defineConfig({
       // },
     ],
     sidebarEnhance: {
+      '/components': [
+        {
+          title: 'Filter',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/filter' },
+            { title: 'FilterGroup', link: '/components/filter/filter-group' },
+            { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+            { title: '变量筛选项组件', link: '/components/filter/variable-filter-item' },
+          ],
+        },
+        {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/variables' },
+            {
+              title: 'FlowContextSelector',
+              link: '/components/variables/flow-context-selector',
+            },
+            { 
+              title: 'VariableInput', 
+              children: [
+                { title: '基础用法', link: '/components/variables/variable-input' },
+                { title: '筛选条件', link: '/components/variables/variable-input/scenarios/filter' },
+                { title: '联动规则', link: '/components/variables/variable-input/scenarios/linkage-rule' },
+                { title: '字段赋值', link: '/components/variables/variable-input/scenarios/assign-fields-value' },
+                { title: '数据范围', link: '/components/variables/variable-input/scenarios/data-scope' },
+              ],
+            },
+            { title: 'SlateVariableEditor', link: '/components/variables/slate-variable-editor' },
+          ],
+        },
+      ],
       '/examples': [
         {
           title: 'FlowModel',
@@ -180,16 +218,6 @@ export default defineConfig({
               link: '/examples/flow-definition/open-step-settings-dialog',
             },
           ]
-        },
-        {
-          title: 'Variables',
-          type: 'group',
-          children: [
-            {
-              title: 'VariableInput 示例',
-              link: '/examples/variables',
-            },
-          ],
         },
         {
           title: 'FlowAction',
@@ -495,6 +523,14 @@ export default defineConfig({
           title: '字段',
           type: 'group',
           children: [
+            {
+              title: 'SubFormFieldModel',
+              link: '/models/fields/sub-form-field-model',
+            },
+            {
+              title: 'SubTableFieldModel',
+              link: '/models/fields/sub-table-field-model',
+            },
             {
               title: 'DisplayFieldModel',
               link: '/models/fields/display-field-model',

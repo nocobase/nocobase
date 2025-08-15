@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
+import { Input } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 import { largeField } from '@nocobase/flow-engine';
 @largeField()
 export class TextareaEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea'];
 
-  setComponentProps(componentProps) {
-    super.setComponentProps({
+  setProps(componentProps) {
+    super.setProps({
       ...componentProps,
       autoSize: {
         maxRows: 10,
