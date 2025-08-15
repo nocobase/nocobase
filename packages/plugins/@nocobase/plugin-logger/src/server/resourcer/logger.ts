@@ -10,7 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { getLoggerFilePath } from '@nocobase/logger';
 import { readdir, stat } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import stream from 'stream';
 import { pack } from 'tar-fs';
 import zlib from 'zlib';
@@ -125,7 +125,7 @@ export default {
           ctx.throw(400, ctx.t('Invalid file type.'));
         }
 
-        const fullPath = join(path, name);
+        const fullPath = resolve(path, name);
         if (!fullPath.startsWith(path)) {
           ctx.throw(400, ctx.t('Invalid file path.'));
         }
