@@ -46,6 +46,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 构建选项
   const options = useMemo(() => {
+    if (!resolvedMetaTree) return [];
     return buildContextSelectorItems(resolvedMetaTree);
   }, [resolvedMetaTree]);
 
