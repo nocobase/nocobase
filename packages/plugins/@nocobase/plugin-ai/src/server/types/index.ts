@@ -7,9 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export { LLMProvider } from './llm-providers/provider';
-export { LLMProviderMeta } from './manager/ai-manager';
-export { ToolOptions } from './manager/tool-manager';
-export type * from './features';
-export type * from './types';
+export * from './ai-chat-conversation.type';
+export * from './knowledge-base.type';

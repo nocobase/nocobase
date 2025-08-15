@@ -8,17 +8,17 @@
  */
 
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
-import { LLMProvider, EmbeddingProvider } from './provider';
-import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { EmbeddingProvider, LLMProvider } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { SupportedModel } from '../manager/ai-manager';
 
-const OPENAI_URL = 'https://api.openai.com/v1';
+const DASHSCOPE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
-export class OpenAIProvider extends LLMProvider {
+export class DashscopeProvider extends LLMProvider {
   declare chatModel: ChatOpenAI;
 
   get baseURL() {
-    return OPENAI_URL;
+    return DASHSCOPE_URL;
   }
 
   createModel() {
@@ -40,14 +40,14 @@ export class OpenAIProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
-      verbose: true,
+      verbose: false,
     });
   }
 }
 
-export class OpenAiEmbeddingProvider extends EmbeddingProvider {
+export class DashscopeEmbeddingProvider extends EmbeddingProvider {
   protected getDefaultUrl(): string {
-    return OPENAI_URL;
+    return DASHSCOPE_URL;
   }
 
   createEmbedding(): EmbeddingsInterface {
@@ -61,31 +61,30 @@ export class OpenAiEmbeddingProvider extends EmbeddingProvider {
   }
 }
 
-export const openaiProviderOptions: LLMProviderMeta = {
-  title: 'OpenAI',
+export const dashscopeProviderOptions = {
+  title: '{{t("Dashscope", {ns: "ai"})}}',
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
   models: {
     [SupportedModel.LLM]: [
-      'gpt-4.1',
-      'gpt-4o',
-      'chatgpt-4o',
-      'o4-mini',
-      'o3',
-      'o3-pro',
-      'o3-mini',
-      'o1',
-      'o1-pro',
-      'o1-mini',
-      'o3-deep-research',
-      'o4-mini-deep-research',
-      'gpt-4-turbo',
-      'gpt-4',
-      'gpt-3.5-turbo',
-      'gpt-4o-search-preview',
-      'gpt-4o-mini-search-preview',
+      'qwen-long',
+      'qwq-plus',
+      'qwen-max',
+      'qwen-plus',
+      'qwen-turbo',
+      'qwen-math-plus',
+      'qwen-math-turbo',
+      'qwen-coder-plus',
+      'qwen-coder-turbo',
     ],
-    [SupportedModel.EMBEDDING]: ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'],
+    [SupportedModel.EMBEDDING]: [
+      'text-embedding-v4',
+      'text-embedding-v3',
+      'text-embedding-v2',
+      'text-embedding-v1',
+      'text-embedding-async-v2',
+      'text-embedding-async-v1',
+    ],
   },
-  provider: OpenAIProvider,
-  embedding: OpenAiEmbeddingProvider,
+  provider: DashscopeProvider,
+  embedding: DashscopeEmbeddingProvider,
 };

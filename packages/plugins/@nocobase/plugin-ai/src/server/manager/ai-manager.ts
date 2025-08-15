@@ -7,15 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProvider, LLMProviderOptions } from '../llm-providers/provider';
+import {
+  LLMProvider,
+  LLMProviderOptions,
+  EmbeddingProvider,
+  EmbeddingProviderOptions,
+} from '../llm-providers/provider';
 import PluginAIServer from '../plugin';
 import _ from 'lodash';
 import { ToolManager } from './tool-manager';
 
 export type LLMProviderMeta = {
   title: string;
+  supportedModel?: SupportedModel[];
+  models?: Partial<Record<SupportedModel, string[]>>;
   provider: new (opts: LLMProviderOptions) => LLMProvider;
+  embedding?: new (opts: EmbeddingProviderOptions) => EmbeddingProvider;
 };
+
+export enum SupportedModel {
+  LLM = 'LLM',
+  EMBEDDING = 'EMBEDDING',
+}
 
 export class AIManager {
   llmProviders = new Map<string, LLMProviderMeta>();
@@ -28,6 +41,16 @@ export class AIManager {
 
   listLLMProviders() {
     const providers = this.llmProviders.entries();
-    return Array.from(providers).map(([name, { title }]) => ({ name, title }));
+    return Array.from(providers).map(([name, { title, supportedModel }]) => ({
+      name,
+      title,
+      supportedModel: supportedModel ?? [SupportedModel.LLM],
+    }));
+  }
+
+  getSupportedProvider(model: SupportedModel): string[] {
+    return Array.from(this.llmProviders.entries())
+      .filter(([_, { supportedModel }]) => supportedModel && supportedModel.includes(model))
+      .map(([name]) => name);
   }
 }
