@@ -28,6 +28,7 @@ import {
   ReadOnlyAssociationField,
   UserMainDepartmentFieldSettings,
   DepartmentOwnersFieldSettings,
+  DepartmentField,
 } from './components';
 
 export class PluginDepartmentsClient extends Plugin {
@@ -40,7 +41,7 @@ export class PluginDepartmentsClient extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.addComponents({
-      UserDepartmentsField: ReadOnlyAssociationField,
+      UserDepartmentsField: DepartmentField,
       UserMainDepartmentField: ReadOnlyAssociationField,
       DepartmentOwnersField: ReadOnlyAssociationField,
     });
