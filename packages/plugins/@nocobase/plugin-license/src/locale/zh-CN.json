@@ -6,5 +6,8 @@
   "Enter license key": "输入授权密钥",
   "Invalid license key": "无效的授权密钥",
   "Change key": "更改密钥",
-  "License key has been set": "授权密钥已设置"
+  "License key has been set": "授权密钥已设置",
+  "Copied": "复制成功",
+  "Copy": "复制",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "复制失败，请打开 ./storage/.license/instance-id 并复制"
 }
