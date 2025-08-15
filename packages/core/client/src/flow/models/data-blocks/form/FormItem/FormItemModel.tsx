@@ -16,8 +16,12 @@ import { FieldModelRenderer } from '../../../fields';
 
 type ChildExtraProps = Record<string, any>;
 
-// 保持 TS 类型和运行时数据同步
-const formItemPropKeys: (keyof FormItemProps)[] = [
+interface ExtendedFormItemProps extends FormItemProps {
+  labelWidth?: number | string;
+  labelWrap?: boolean;
+  showLabel?: boolean;
+}
+const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'colon',
   'dependencies',
   'extra',
@@ -42,12 +46,17 @@ const formItemPropKeys: (keyof FormItemProps)[] = [
   'validateTrigger',
   'valuePropName',
   'wrapperCol',
+  'labelWidth',
+  'labelWrap',
+  'layout',
+  'required',
+  'showLabel',
 ];
 
-export const FormItem = ({ children, ...rest }: FormItemProps & ChildExtraProps) => {
+export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExtraProps) => {
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
   const childProps = Object.fromEntries(
-    Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof FormItemProps)),
+    Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
   );
   const processedChildren =
     typeof children === 'function'
@@ -58,7 +67,7 @@ export const FormItem = ({ children, ...rest }: FormItemProps & ChildExtraProps)
           }
           return child;
         });
-  const { showLabel, label, labelWrap, colon = true, labelWidth, layout, ...restProps } = rest;
+  const { showLabel, label, labelWrap, colon = true, labelWidth, layout } = rest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const renderLabel = () => {
     if (!showLabel) return null;
