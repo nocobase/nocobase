@@ -88,16 +88,6 @@ ReadPrettyFieldModel.registerFlow({
   title: escapeT('Read pretty field settings'),
   sort: 100,
   steps: {
-    init: {
-      handler(ctx, params) {
-        const { collectionField } = ctx.model;
-        ctx.model.setProps(collectionField.getComponentProps());
-        if (collectionField.enum.length) {
-          ctx.model.setProps({ dataSource: collectionField.enum });
-        }
-        ctx.model.setProps({ value: ctx.model.getValue() || ctx.model.getProps().value });
-      },
-    },
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {

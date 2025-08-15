@@ -21,6 +21,8 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
+import { FormItem } from '../form/FormItem/FormItemModel';
+import { FieldModelRenderer } from '../../fields';
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -87,14 +89,14 @@ export class TableColumnModel extends FieldModel {
           fork.context.defineProperty('record', {
             get: () => record,
           });
-          // fork.context.defineProperty('fieldValue', {
-          //   get: () => value,
-          // });
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
-          fork.setProps({ value: value });
-          return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
+          return (
+            <FormItem {...this.props} value={value} noStyle={true}>
+              <FieldModelRenderer model={fork} />
+            </FormItem>
+          );
         })}
       </>
     );
@@ -117,13 +119,18 @@ TableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const field = ctx.model.collectionField;
-        if (!field) {
+        const collectionField = ctx.model.collectionField;
+        if (!collectionField) {
           return;
         }
-        ctx.model.setProps('title', field.title);
-        ctx.model.setProps('dataIndex', field.name);
+        ctx.model.setProps('title', collectionField.title);
+        ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
+        console.log(collectionField);
+        ctx.model.setProps(collectionField.getComponentProps());
+        if (collectionField.enum.length) {
+          ctx.model.setProps({ options: collectionField.enum });
+        }
       },
     },
     title: {

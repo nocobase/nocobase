@@ -8,13 +8,33 @@
  */
 
 import React, { useEffect } from 'react';
-import { FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowModelRenderer, FlowModelRendererProps } from '@nocobase/flow-engine';
 
-export function FieldModelRenderer(props) {
-  const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, ...rest } = props;
+const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
+  'model',
+  'uid',
+  'fallback',
+  'key',
+  'showFlowSettings',
+  'flowSettingsVariant',
+  'hideRemoveInSettings',
+  'showTitle',
+  'skipApplyAutoFlows',
+  'inputArgs',
+  'showErrorFallback',
+  'settingsMenuLevel',
+  'extraToolbarItems',
+];
+
+export function FieldModelRenderer(props: any) {
+  const { model, ...rest } = props;
+
+  const modelProps = Object.fromEntries(
+    Object.entries(rest).filter(([key]) => !flowModelRendererPropKeys.includes(key as keyof FlowModelRendererProps)),
+  );
   useEffect(() => {
-    model.setProps({ id, value, onChange, ['aria-describedby']: ariaDescribedby });
-  }, [model, id, value, ariaDescribedby, onChange]);
+    model.setProps(modelProps);
+  }, [modelProps]);
 
   return <FlowModelRenderer model={model} {...rest} />;
 }

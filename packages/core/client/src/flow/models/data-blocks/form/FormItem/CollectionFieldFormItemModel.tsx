@@ -8,7 +8,10 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
+import { omitBy, isUndefined } from 'lodash';
+import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
+import { EditFormModel } from '../EditFormModel';
 
 export class CollectionFieldFormItemModel extends FormItemModel {}
 
@@ -28,17 +31,34 @@ CollectionFieldFormItemModel.registerFlow({
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
-        ctx.model.setProps({ name: ctx.model.fieldPath });
+        const collectionField = ctx.model.collectionField;
         const props = ctx.model.getProps();
         const rules = [...(props.rules || [])];
-        if (ctx.model.collectionField.interface === 'email') {
+        const fieldInterface = collectionField.interface;
+        if (collectionField) {
+          const { type, target } = collectionField;
+          ctx.model.setProps(
+            omitBy(
+              {
+                options: collectionField.enum.length ? collectionField.enum : props.options,
+                ...collectionField?.getComponentProps?.(),
+                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
+                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
+                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+              },
+              isUndefined,
+            ),
+          );
+        }
+        //TODO 最终用 jio 替换验证
+        if (fieldInterface === 'email') {
           if (!rules.some((rule) => rule.type === 'email')) {
             rules.push({
               type: 'email',
               message: ctx.t('The field value is not a email format'),
             });
           }
-        } else if (ctx.model.collectionField.interface === 'json') {
+        } else if (fieldInterface === 'json') {
           // 检查是否已经有 JSON 校验规则
           if (!rules.some((rule) => rule.validator && rule.name === 'jsonValidator')) {
             rules.push({
@@ -56,8 +76,40 @@ CollectionFieldFormItemModel.registerFlow({
               },
             });
           }
+        } else if (fieldInterface === 'nanoid') {
+          const { size = 21, customAlphabet } = collectionField.options || {};
+          // 绑定校验器
+          if (!rules.some((rule) => rule.validator && rule.name === 'nanoidValidator')) {
+            rules.push({
+              name: 'nanoidValidator',
+              validator: (_, value) => {
+                if (!value) return Promise.resolve(); // 空值不校验
+                if (value.length !== size) {
+                  return Promise.reject(new Error(ctx.t('Field value size is') + ` ${size}`));
+                }
+                if (customAlphabet) {
+                  for (let i = 0; i < value.length; i++) {
+                    if (!customAlphabet.includes(value[i])) {
+                      return Promise.reject(new Error(ctx.t('Field value does not meet the requirements')));
+                    }
+                  }
+                }
+                return Promise.resolve();
+              },
+            });
+          }
+
+          // 如果字段值为空且有自定义字母表，生成默认值
+          // const value = ctx.model.form.getFieldValue(fieldPath);
+          // if (!value && customAlphabet) {
+          //   form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
+          // }
         }
-        ctx.model.setProps({ rules });
+        ctx.model.setProps({
+          rules,
+          name: ctx.model.fieldPath,
+          valuePropName: fieldInterface === 'checkbox' ? 'checked' : 'value',
+        });
       },
     },
     label: {
@@ -132,15 +184,30 @@ CollectionFieldFormItemModel.registerFlow({
     },
     initialValue: {
       title: escapeT('Default value'),
-      uiSchema: {
-        defaultValue: {
-          'x-component': 'DefaultValue',
-          'x-decorator': 'FormItem',
-        },
+      uiSchema: (ctx) => {
+        if (ctx.model.parent.parent instanceof EditFormModel) {
+          return;
+        }
+        return {
+          defaultValue: {
+            'x-component': 'DefaultValue',
+            'x-decorator': 'FormItem',
+          },
+        };
       },
-      defaultParams: (ctx) => ({
-        defaultValue: ctx.model.collectionField.defaultValue,
-      }),
+      defaultParams: (ctx) => {
+        const collectionField = ctx.model.collectionField;
+
+        if (collectionField.interface === 'nanoid') {
+          const { size, customAlphabet } = collectionField.options || { size: 21 };
+          return {
+            defaultValue: Alphabet(customAlphabet, size)(),
+          };
+        }
+        return {
+          defaultValue: collectionField.defaultValue,
+        };
+      },
       handler(ctx, params) {
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
@@ -249,9 +316,8 @@ CollectionFieldFormItemModel.registerFlow({
             });
             await model.applyAutoFlows();
           }
-          ctx.model.subModels.field.setProps({
+          ctx.model.setProps({
             disabled: params.pattern === 'disabled',
-            editable: params.pattern === 'editable',
           });
         }
       },

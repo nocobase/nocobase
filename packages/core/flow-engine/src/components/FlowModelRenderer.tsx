@@ -54,7 +54,7 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
-interface FlowModelRendererProps {
+export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
 
