@@ -8,6 +8,6 @@
   "Change key": "Change key",
   "License key has been set": "License key has been set",
   "Copied": "Copied",
-  "Click to copy": "Click to copy",
+  "Copy": "Copy",
   "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it"
 }

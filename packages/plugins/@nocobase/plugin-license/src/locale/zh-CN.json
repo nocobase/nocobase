@@ -8,6 +8,6 @@
   "Change key": "更改密钥",
   "License key has been set": "授权密钥已设置",
   "Copied": "复制成功",
-  "Click to copy": "点击复制",
+  "Copy": "复制",
   "Failed to copy, please open ./storage/.license/instance-id and copy it": "复制失败，请打开 ./storage/.license/instance-id 并复制"
 }
