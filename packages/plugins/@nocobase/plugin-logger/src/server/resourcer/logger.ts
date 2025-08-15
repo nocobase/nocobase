@@ -114,38 +114,27 @@ export default {
     },
     download: async (ctx: Context, next: Next) => {
       const path = getLoggerFilePath(ctx.app.name || 'main');
-      let { files = [] } = ctx.action.params.values || {};
-
-      const readAllLogs = async (dir: string): Promise<string[]> => {
-        const result: string[] = [];
-        const entries = await readdir(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const fullPath = join(dir, entry.name);
-          if (entry.isDirectory()) {
-            const subFiles = await readAllLogs(fullPath);
-            subFiles.forEach((f) => result.push(join(entry.name, f)));
-          } else if (entry.name.endsWith('.log')) {
-            result.push(entry.name);
-          }
-        }
-        return result;
-      };
-      const allowedFiles = await readAllLogs(path);
-      files = files.map((f: string) => (f.startsWith('/') ? f.slice(1) : f));
-      const invalid = files.some((f: string) => !allowedFiles.includes(f));
-      if (invalid) {
-        ctx.throw(400, ctx.t('Invalid file selection.'));
+      const { files = [] } = ctx.action.params.values || {};
+      if (!files.length) {
+        ctx.throw(400, ctx.t('No files selected.'));
       }
 
-      files = files.map((file: string) => {
-        if (file.startsWith('/')) {
-          return file.slice(1);
+      const safeFiles = files.map((f: string) => {
+        const name = f.startsWith('/') ? f.slice(1) : f;
+        if (!name.endsWith('.log')) {
+          ctx.throw(400, ctx.t('Invalid file type.'));
         }
-        return file;
+
+        const fullPath = join(path, name);
+        if (!fullPath.startsWith(path)) {
+          ctx.throw(400, ctx.t('Invalid file path.'));
+        }
+
+        return name;
       });
       try {
         ctx.attachment('logs.tar.gz');
-        ctx.body = await tarFiles(path, files);
+        ctx.body = await tarFiles(path, safeFiles);
       } catch (err) {
         ctx.log.error(`download error: ${err.message}`, { files, err: err.stack });
         ctx.throw(500, ctx.t('Download logs failed.'));
