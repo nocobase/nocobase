@@ -33,7 +33,6 @@ export function FieldModelRenderer(props: any) {
     Object.entries(rest).filter(([key]) => !flowModelRendererPropKeys.includes(key as keyof FlowModelRendererProps)),
   );
   useEffect(() => {
-    console.log(modelProps);
     model.setProps(modelProps);
   }, [modelProps]);
 
