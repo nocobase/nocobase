@@ -8,4 +8,5 @@
  */
 
 export * from './server';
+export * from './client';
 export { default } from './server';
