@@ -22,7 +22,7 @@ import {
 } from '@nocobase/client';
 import React, { useContext, useMemo, useState } from 'react';
 import { useT } from '../locale';
-import { Button, Dropdown, App } from 'antd';
+import { Button, Dropdown, App, Tag } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
@@ -132,6 +132,18 @@ const AddNew = () => {
   const providers = useLLMProviders();
   const items = providers.map((item) => ({
     ...item,
+    label: (
+      <>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 35 }}>
+          <span>{item.label}</span>
+          <div>
+            {item.supportedModel.map((item) => (
+              <Tag key={item}>{item}</Tag>
+            ))}
+          </div>
+        </div>
+      </>
+    ),
     onClick: () => {
       setVisible(true);
       setProvider(item.value);
@@ -179,10 +191,11 @@ export const LLMServices: React.FC = () => {
         .listLLMProviders()
         .then((res) => {
           const providers = res?.data?.data || [];
-          return providers.map((provider: { name: string; title?: string }) => ({
+          return providers.map((provider: { name: string; title?: string; supportedModel: string[] }) => ({
             key: provider.name,
             label: Schema.compile(provider.title || provider.name, { t }),
             value: provider.name,
+            supportedModel: provider.supportedModel,
           }));
         }),
     {

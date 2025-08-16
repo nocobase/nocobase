@@ -58,7 +58,7 @@ const external = [
   '@nocobase/test',
   '@nocobase/utils',
   '@nocobase/license-kit',
-
+  '@nocobase/flow-engine',
   // @nocobase/auth
   'jsonwebtoken',
 
@@ -509,7 +509,13 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
         },
         {
           test: /\.svg$/i,
+          type: 'asset',
+          resourceQuery: { not: [/react/] }, // exclude react component if *.svg?react
+        },
+        {
+          test: /\.svg$/i,
           issuer: /\.[jt]sx?$/,
+          resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
         },
         {
@@ -551,8 +557,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                   parser: {
                     syntax: 'typescript',
                     tsx: true,
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },
@@ -575,8 +585,12 @@ export async function buildPluginClient(cwd: string, userConfig: any, sourcemap:
                 jsc: {
                   parser: {
                     syntax: 'typescript',
+                    decorators: true,
                   },
                   target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
                 },
               },
             },
@@ -610,12 +624,12 @@ __webpack_require__.p = (function() {
     publicPath += '/';
   }
   return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`
+})();`,
                 };
               }
             });
           });
-        }
+        },
       },
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({

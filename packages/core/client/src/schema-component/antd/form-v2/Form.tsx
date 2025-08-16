@@ -134,12 +134,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
         <FormLayout layout={'vertical'} {...others}>
           <FieldContext.Provider value={f}>
             <Component {...field.componentProps}>
-              <NocoBaseRecursionField
-                basePath={f.address}
-                schema={newSchema}
-                onlyRenderProperties
-                isUseFormilyField
-              />
+              <NocoBaseRecursionField basePath={f.address} schema={newSchema} onlyRenderProperties isUseFormilyField />
             </Component>
           </FieldContext.Provider>
           {/* <FieldContext.Provider value={f}>{children}</FieldContext.Provider> */}

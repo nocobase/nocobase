@@ -10,11 +10,10 @@
 import { useRequest } from '@nocobase/client';
 import { useMemo } from 'react';
 
-export const MapConfigurationResourceKey = 'map-configuration';
-export const getSSKey = (type) => {
+const MapConfigurationResourceKey = 'map-configuration';
+const getSSKey = (type) => {
   return `NOCOBASE_PLUGIN_MAP_CONFIGURATION_${type}`;
 };
-
 export const useMapConfiguration = (type: string, caching = true) => {
   // cache
   const config = useMemo(() => {
