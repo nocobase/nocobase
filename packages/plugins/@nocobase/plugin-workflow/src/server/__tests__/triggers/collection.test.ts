@@ -785,7 +785,7 @@ describe('workflow > triggers > collection', () => {
         });
 
         const tags = await TagRepo.create({ values: [{}] });
-        const tagIds = tags.map((item) => item.id);
+        const tagIds = tags.map((item) => item.id.toString());
 
         const category = await CategoryRepo.create({
           values: {

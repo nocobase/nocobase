@@ -65,9 +65,9 @@ describe('action', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: 1,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, 1);
       });
 
       it('should be local2 storage', async () => {
@@ -94,9 +94,9 @@ describe('action', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: storage.id,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, storage.id);
       });
 
       it('should be custom values', async () => {
@@ -114,9 +114,9 @@ describe('action', () => {
           path: '',
           size: 22,
           meta: {},
-          storageId: 1,
         };
         expect(model.toJSON()).toMatchObject(matcher);
+        assert.equal(model.storageId, 1);
       });
 
       it('should be upload file', async () => {
@@ -130,9 +130,9 @@ describe('action', () => {
           extname: '.txt',
           path: '',
           meta: {},
-          storageId: 1,
         };
         expect(data).toMatchObject(matcher);
+        assert.equal(data.storageId, 1);
       });
 
       it('upload file should be ok', async () => {
@@ -147,11 +147,11 @@ describe('action', () => {
           // size: 13,
           mimetype: 'text/plain',
           meta: {},
-          storageId: 1,
         };
 
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
+        assert.equal(body.data.storageId, 1);
         // 文件的 url 是否正常生成
         expect(body.data.url).toBe(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${body.data.filename}`);
 
@@ -202,11 +202,9 @@ describe('action', () => {
           path: '',
           mimetype: 'text/plain',
           meta: {},
-          storageId: 1,
         };
-
-        // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
+        assert.equal(body.data.storageId, 1);
         // 文件的 url 是否正常生成
         const encodedFilename = querystring.escape(rawText);
         expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
@@ -234,14 +232,14 @@ describe('action', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: 1,
         };
         const { status, body } = await agent.resource('attachments').create({
           attachmentField: 'customers.avatar',
-          values: record,
+          values: { ...record, storageId: 1 },
         });
         expect(status).toBe(200);
         expect(body.data).toMatchObject(record);
+        assert.equal(body.data.storageId, 1);
       });
     });
 
@@ -671,7 +669,7 @@ describe('action', () => {
       it('get default storage', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo();
         expect(status).toBe(200);
-        expect(body.data).toMatchObject({ id: 1 });
+        assert.equal(body.data.id, 1);
       });
 
       it('get storage by unexisted id as 404', async () => {
@@ -683,24 +681,24 @@ describe('action', () => {
         const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.id });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({
-          id: local1.id,
           title: local1.title,
           name: local1.name,
           type: local1.type,
           rules: local1.rules,
         });
+        assert.equal(body.data.id, local1.id);
       });
 
       it('get storage by name', async () => {
         const { body, status } = await agent.resource('storages').getBasicInfo({ filterByTk: local1.name });
         expect(status).toBe(200);
         expect(body.data).toMatchObject({
-          id: local1.id,
           title: local1.title,
           name: local1.name,
           type: local1.type,
           rules: local1.rules,
         });
+        assert.equal(body.data.id, local1.id);
       });
     });
   });

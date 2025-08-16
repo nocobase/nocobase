@@ -187,7 +187,7 @@ describe('collections repository', () => {
         'comments.title': 'comment 1',
       },
     });
-    expect(response2.body.data[0].id).toBe(1);
+    expect(response2.body.data[0].id).toEqualNumberOrString(1);
   });
 
   it('case 3', async () => {
@@ -223,7 +223,7 @@ describe('collections repository', () => {
         ],
       },
     });
-    expect(response2.body.data[0].id).toBe(1);
+    expect(response2.body.data[0].id).toEqualNumberOrString(1);
   });
 
   it('case 5', async () => {

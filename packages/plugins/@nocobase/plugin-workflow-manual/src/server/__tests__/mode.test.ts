@@ -84,8 +84,8 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].status).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].userId).toBe(users[0].id);
-      expect(usersJobs[0].jobId).toBe(j1.id);
+      assert.equal(usersJobs[0].userId, users[0].id);
+      assert.equal(usersJobs[0].jobId, j1.id);
 
       const res1 = await agent.resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].id,
@@ -158,7 +158,7 @@ describe('workflow > instructions > manual', () => {
       });
 
       const res1 = await userAgents[1].resource('workflowManualTasks').submit({
-        filterByTk: usersJobs.find((item) => item.userId === users[1].id).id,
+        filterByTk: usersJobs.find((item) => item.userId == users[1].id).id,
         values: {
           result: { f1: { a: 1 }, _: 'resolve' },
         },
@@ -172,7 +172,7 @@ describe('workflow > instructions > manual', () => {
       expect(j2.result).toEqual({ f1: { a: 1 }, _: 'resolve' });
 
       const res2 = await userAgents[0].resource('workflowManualTasks').submit({
-        filterByTk: usersJobs.find((item) => item.userId === users[0].id).id,
+        filterByTk: usersJobs.find((item) => item.userId == users[0].id).id,
         values: {
           result: { f1: { a: 1 }, _: 'resolve' },
         },
@@ -201,7 +201,7 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await UserJobModel.findAll();
       expect(usersJobs.length).toBe(1);
       expect(usersJobs[0].get('status')).toBe(JOB_STATUS.PENDING);
-      expect(usersJobs[0].get('userId')).toBe(users[0].id);
+      expect(usersJobs[0].get('userId')).toEqualNumberOrString(users[0].id);
 
       const res = await userAgents[0].resource('workflowManualTasks').submit({
         filterByTk: usersJobs[0].get('id'),
