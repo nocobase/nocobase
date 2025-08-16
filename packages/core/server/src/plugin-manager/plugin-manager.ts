@@ -1141,7 +1141,21 @@ export class PluginManager {
     if (this['_initPresetPlugins']) {
       return;
     }
+    const sorter = new Topo.Sorter<string>();
     for (const plugin of this.options.plugins) {
+      if (typeof plugin === 'string') {
+        try {
+          const packageJson = await PluginManager.getPackageJson(plugin);
+          const peerDependencies = Object.keys(packageJson.peerDependencies || {});
+          sorter.add(plugin, { after: peerDependencies, group: packageJson.packageName });
+        } catch (error) {
+          sorter.add(plugin);
+        }
+      } else {
+        sorter.add(plugin);
+      }
+    }
+    for (const plugin of sorter.nodes) {
       const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
       await this.add(p, { enabled: true, isPreset: true, ...opts });
     }
