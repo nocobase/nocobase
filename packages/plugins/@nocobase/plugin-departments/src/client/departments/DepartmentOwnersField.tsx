@@ -22,14 +22,16 @@ import {
   SchemaComponent,
   useActionContext,
   useRecord,
+  AssociationField,
 } from '@nocobase/client';
 import React, { useEffect, useRef, useState } from 'react';
 import { Select } from 'antd';
 import { Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { connect, mapReadPretty, useField } from '@formily/react';
 import { departmentOwnersSchema } from './schemas/departments';
 
-export const DepartmentOwnersField: React.FC = () => {
+// Edit mode
+export const EditableDepartmentOwnersField: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const department = useRecord() as any;
   const field = useField<Field>();
@@ -113,3 +115,6 @@ export const DepartmentOwnersField: React.FC = () => {
     </ActionContextProvider>
   );
 };
+
+// Auto switch between edit and readonly mode
+export const DepartmentOwnersField = connect(EditableDepartmentOwnersField, mapReadPretty(AssociationField.ReadPretty));
