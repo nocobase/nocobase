@@ -12,10 +12,13 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/es/input';
 import React, { useCallback } from 'react';
+import { withAutoFocus } from '../../../hoc/withAutoFocus';
 import { JSONTextAreaProps, Json } from './Json';
 import { InputReadPrettyComposed, ReadPretty } from './ReadPretty';
 import { ScanInput } from './ScanInput';
 export { ReadPretty as InputReadPretty } from './ReadPretty';
+
+const InputWithAutoFocus = withAutoFocus(AntdInput);
 
 type ComposedInput = React.FC<NocoBaseInputProps> & {
   ReadPretty: InputReadPrettyComposed['Input'];
@@ -45,7 +48,7 @@ function InputInner(props: NocoBaseInputProps) {
   if (enableScan) {
     return <ScanInput {...others} onChange={handleChange} />;
   }
-  return <AntdInput {...others} onChange={handleChange} />;
+  return <InputWithAutoFocus {...others} onChange={handleChange} />;
 }
 
 InputInner.Password = AntdInput.Password;
@@ -63,7 +66,7 @@ export const Input: ComposedInput = Object.assign(
   ),
   {
     TextArea: connect(
-      AntdInput.TextArea,
+      withAutoFocus(AntdInput.TextArea),
       mapProps((props, field) => {
         return {
           autoSize: {
@@ -75,7 +78,7 @@ export const Input: ComposedInput = Object.assign(
       }),
       mapReadPretty(ReadPretty.TextArea),
     ),
-    URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
+    URL: connect(withAutoFocus(AntdInput), mapReadPretty(ReadPretty.URL)),
     JSON: connect(Json, mapReadPretty(ReadPretty.JSON)),
     ReadPretty: ReadPretty.Input,
     Preview: ReadPretty.Preview,
