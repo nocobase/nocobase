@@ -11,6 +11,7 @@ import { FilterFormEditableFieldModel } from '../FilterFormEditableFieldModel';
 import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
 export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
+  declare decorator: any;
   enableDisplayMode = false;
 
   setComponentProps(componentProps) {
@@ -25,6 +26,7 @@ export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
       }
       componentProps.format = componentProps?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     }
+    //@ts-ignore
     super.setComponentProps({
       ...componentProps,
       isRange: operator === '$dateBetween',

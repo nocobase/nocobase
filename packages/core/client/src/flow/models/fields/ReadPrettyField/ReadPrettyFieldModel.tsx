@@ -18,10 +18,6 @@ export class ReadPrettyFieldModel extends FieldModel {
     return this.context.fieldValue;
   }
 
-  setProps(props) {
-    Object.assign(this.props, props);
-  }
-
   // @reactive
   public render() {
     const { prefix, suffix, value } = this.props;

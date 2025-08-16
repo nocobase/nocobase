@@ -34,7 +34,7 @@ const groupByIconName = (data) => {
   });
 };
 
-export function IconPicker(props: IconPickerProps) {
+function IconPicker(props: IconPickerProps) {
   const { fontSizeXL } = theme.useToken().token;
   const availableIcons = [...icons.keys()];
   const layout = useFormLayout();
