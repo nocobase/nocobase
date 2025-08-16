@@ -145,6 +145,7 @@ describe('update', () => {
     try {
       await Post.repository.update({
         filterByTk: post1.get('id'),
+        updateAssociationValues: ['posts_tags'],
         values: {
           posts_tags: [
             {
@@ -165,6 +166,7 @@ describe('update', () => {
     try {
       await Post.repository.update({
         filterByTk: post1.get('id'),
+        updateAssociationValues: ['posts_tags'],
         values: {
           tags: [t2.get('id')],
           posts_tags: [
@@ -191,6 +193,7 @@ describe('update', () => {
 
     await db.sync();
     const u1 = await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [post1.get('id')],
@@ -202,6 +205,7 @@ describe('update', () => {
     try {
       await User.repository.update({
         filterByTk: u1.get('id'),
+        updateAssociationValues: ['posts', 'posts.posts_tags'],
         values: {
           posts: [
             {

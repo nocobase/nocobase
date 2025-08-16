@@ -77,6 +77,7 @@ describe('belongs to field', () => {
 
     await expect(
       Profile.repository.create({
+        updateAssociationValues: ['user'],
         values: {
           user: {},
         },

@@ -62,6 +62,7 @@ describe('load collections', function () {
     });
 
     await db.getCollection('users').repository.create({
+      updateAssociationValues: ['group'],
       values: {
         name: '张三',
         group: {
@@ -138,6 +139,7 @@ describe('load collections', function () {
     });
 
     await db.getCollection('users').repository.create({
+      updateAssociationValues: ['group'],
       values: {
         name: '张三',
         group: {

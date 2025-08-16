@@ -74,6 +74,7 @@ pgOnly()('belongs to many with targetCollection', () => {
     });
 
     const org1 = await Org.repository.create({
+      updateAssociationValues: ['users'],
       values: {
         name: 'org1',
         users: [u1.get('id'), s1.get('id')],
@@ -398,6 +399,7 @@ describe('belongs to many', () => {
     const postTagsRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
     await postTagsRepository.create({
+      updateAssociationValues: ['colors'],
       values: {
         name: 't1',
         colors: [
@@ -430,6 +432,7 @@ describe('belongs to many', () => {
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
     await PostTagRepository.create({
+      updateAssociationValues: ['posts_tags'],
       values: {
         name: 't1',
         posts_tags: {
@@ -503,6 +506,7 @@ describe('belongs to many', () => {
 
   test('find and count', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],
@@ -528,6 +532,7 @@ describe('belongs to many', () => {
 
   test('find one', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: { title: 'p1', tags: [{ name: 't1' }, { name: 't2' }] },
     });
 
@@ -550,6 +555,7 @@ describe('belongs to many', () => {
 
   test('find with sort & appends', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [
@@ -583,6 +589,7 @@ describe('belongs to many', () => {
     });
 
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],
@@ -629,6 +636,7 @@ describe('belongs to many', () => {
 
   test('update through table attribute', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [
@@ -697,6 +705,7 @@ describe('belongs to many', () => {
     });
 
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],

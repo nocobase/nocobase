@@ -46,6 +46,7 @@ describe('union role: full permissions', async () => {
     });
     role2 = role2Response.body.data;
     user = await db.getRepository('users').create({
+      updateAssociationValues: ['roles'],
       values: {
         name: 'u1',
         roles: [role1.name, role2.name],
@@ -333,6 +334,7 @@ describe('union role: full permissions', async () => {
           dataSourceKey: 'main',
           name: testTbName,
         },
+        'updateAssociationValues[]': ['actions'],
       })
       .send({
         usingActionsConfig: true,
@@ -561,6 +563,7 @@ describe('union role: full permissions', async () => {
           dataSourceKey: 'main',
           name: 'users',
         },
+        'updateAssociationValues[]': ['actions'],
       })
       .send({
         usingActionsConfig: true,
@@ -623,6 +626,7 @@ describe('union role: full permissions', async () => {
           dataSourceKey: 'main',
           name: 'users',
         },
+        'updateAssociationValues[]': ['actions'],
       })
       .send({
         usingActionsConfig: true,

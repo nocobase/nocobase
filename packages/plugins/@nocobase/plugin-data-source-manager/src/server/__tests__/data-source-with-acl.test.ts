@@ -342,6 +342,7 @@ describe('data source with acl', () => {
 
     // create user resource permission
     const createConnectionResourceResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').create({
+      updateAssociationValues: ['actions'],
       values: {
         dataSourceKey: 'mockInstance1',
         usingActionsConfig: true,
@@ -368,6 +369,7 @@ describe('data source with acl', () => {
         dataSourceKey: 'mockInstance1',
         name: 'posts',
       },
+      updateAssociationValues: ['actions'],
       values: {
         actions: data.actions.map((action) => {
           return {
@@ -570,6 +572,7 @@ describe('data source with acl', () => {
           dataSourceKey: 'main',
           name: 'posts',
         },
+        'updateAssociationValues[]': 'actions',
       })
       .send({
         usingActionsConfig: true,

@@ -9,7 +9,7 @@
 
 import path from 'path';
 
-import { MockDatabase } from '@nocobase/database';
+import { MockDatabase, updateAssociation } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
 
@@ -58,6 +58,7 @@ describe('workflow > instructions > calculation', () => {
       });
 
       const post = await PostRepo.create({
+        updateAssociationValues: ['category'],
         values: {
           title: 't1',
           category: {

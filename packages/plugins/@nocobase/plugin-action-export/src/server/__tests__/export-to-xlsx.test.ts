@@ -366,6 +366,7 @@ describe('export to xlsx with preset', () => {
     await app.db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['attachment1'],
       values: {
         title: 'p1',
         attachment1: [
@@ -1050,6 +1051,7 @@ describe('export to xlsx', () => {
     });
 
     await User.repository.create({
+      updateAssociationValues: ['posts', 'groups'],
       values,
     });
 
@@ -1247,6 +1249,7 @@ describe('export to xlsx', () => {
     });
 
     await User.repository.create({
+      updateAssociationValues: ['groups'],
       values,
     });
 

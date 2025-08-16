@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
+import Database, { Repository } from '@nocobase/database';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
@@ -18,7 +18,7 @@ describe('workflow > instructions > manual > assignees', () => {
   let agent;
   let userAgents;
   let db: Database;
-  let PostRepo;
+  let PostRepo: Repository;
   let CommentRepo;
   let WorkflowModel;
   let workflow;
@@ -102,6 +102,7 @@ describe('workflow > instructions > manual > assignees', () => {
       const post = await PostRepo.create({
         values: { title: 't1', category: { title: 'c1' } },
         context: { state: { currentUser: users[0] } },
+        updateAssociationValues: ['category'],
       });
 
       await sleep(500);

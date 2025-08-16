@@ -57,6 +57,7 @@ describe('sort action', () => {
 
       for (let index = 1; index < 5; index++) {
         await UserCollection.repository.create({
+          updateAssociationValues: ['posts'],
           values: {
             name: `u${index}`,
             posts: [

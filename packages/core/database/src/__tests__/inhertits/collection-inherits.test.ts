@@ -138,6 +138,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     await Child.repository.create({
+      updateAssociationValues: ['bs'],
       values: {
         name: 'child1',
         bs: [
@@ -253,6 +254,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await User.repository.create({
+      updateAssociationValues: ['assocs'],
       values: {
         name: 'user1',
         assocs: [
@@ -303,6 +305,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     await rootCollection.repository.create({
+      updateAssociationValues: ['assocs'],
       values: {
         name: 'root1',
         assocs: [
@@ -314,6 +317,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await child1Collection.repository.create({
+      updateAssociationValues: ['assocs'],
       values: [
         {
           name: 'child1-1',
@@ -409,6 +413,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await studentCollection.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         tags: [
           {
@@ -785,6 +790,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     const a1 = await B.repository.create({
+      updateAssociationValues: ['bs'],
       values: {
         af: 'a1',
         bs: [{ bf: 'b1' }, { bf: 'b2' }],
@@ -846,6 +852,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     await db.getCollection('students').repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         name: 'John',
         score: 100,
@@ -864,6 +871,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await db.getCollection('person').repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         name: 'Max',
         tags: [
@@ -934,6 +942,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     await db.getCollection('person').repository.create({
+      updateAssociationValues: ['pets'],
       values: {
         name: 'Max',
         pets: [
@@ -948,6 +957,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await db.getCollection('students').repository.create({
+      updateAssociationValues: ['pets'],
       values: {
         name: 'John',
         score: 100,
@@ -1114,6 +1124,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     const student = await db.getCollection('students').repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'foo',
         score: 100,
@@ -1126,6 +1137,7 @@ describe.runIf(isPg())('collection inherits', () => {
     expect(student.get('profile').get('grade')).toBe('A');
 
     const teacher = await db.getCollection('teachers').repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'bar',
         salary: 1000,
@@ -1172,6 +1184,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     const student1 = await student.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'student-1',
         profile: {
@@ -1234,6 +1247,7 @@ describe.runIf(isPg())('collection inherits', () => {
     await db.sync();
 
     await db.getCollection('students').repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'foo',
         score: 100,
@@ -1244,6 +1258,7 @@ describe.runIf(isPg())('collection inherits', () => {
     });
 
     await db.getCollection('teachers').repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'bar',
         salary: 1000,

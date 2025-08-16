@@ -214,6 +214,7 @@ describe('destroy', () => {
     await db.sync();
 
     const post = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }],
@@ -253,6 +254,7 @@ describe('destroy', () => {
 
   test('destroy all', async () => {
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [{ title: 'u1p1' }],

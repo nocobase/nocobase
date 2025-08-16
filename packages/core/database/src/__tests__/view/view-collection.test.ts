@@ -122,6 +122,7 @@ describe.runIf(process.env['DB_DIALECT'] === 'postgres')('pg only view', () => {
       await db.sync();
 
       await db.getRepository('orders').create({
+        updateAssociationValues: ['orderItems', 'orderItems.item'],
         values: {
           name: 'order1',
           orderItems: [
@@ -344,6 +345,7 @@ describe('create view', () => {
     await db.sync();
 
     await UserCollection.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'foo',
         profile: {
@@ -498,6 +500,7 @@ describe('create view', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'foo',
         posts: [

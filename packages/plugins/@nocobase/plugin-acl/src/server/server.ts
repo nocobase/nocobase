@@ -376,6 +376,7 @@ export class PluginACLServer extends Plugin {
       }
       const User = this.db.getCollection('users');
       await User.repository.update({
+        updateAssociationValues: ['roles'],
         values: {
           roles: ['root', 'admin', 'member'],
         },

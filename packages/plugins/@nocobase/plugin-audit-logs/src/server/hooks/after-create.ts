@@ -37,6 +37,7 @@ export async function afterCreate(model, options) {
       });
     }
     await AuditLog.repository.create({
+      updateAssociationValues: ['changes'],
       values: {
         type: LOG_TYPE_CREATE,
         collectionName: model.constructor.name,

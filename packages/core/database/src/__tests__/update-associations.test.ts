@@ -89,6 +89,7 @@ describe('update associations', () => {
 
       const profileData = profile.toJSON();
       await User.repository.update({
+        updateAssociationValues: ['profiles'],
         filterByTk: user.id,
         values: {
           profiles: [
@@ -179,6 +180,14 @@ describe('update associations', () => {
       await db.sync();
 
       const a1 = await A.repository.create({
+        updateAssociationValues: [
+          'throughAB',
+          'throughAB.b',
+          'throughAB.b.throughBC',
+          'throughAB.b.throughBC.c',
+          'throughAB.b.throughBC.c.throughCD',
+          'throughAB.b.throughBC.c.throughCD.d',
+        ],
         values: {
           name: 'a1',
           throughAB: [
@@ -322,6 +331,7 @@ describe('update associations', () => {
 
     it('should update association values', async () => {
       const user1 = await User.repository.create({
+        updateAssociationValues: ['posts'],
         values: {
           name: 'u1',
           posts: [{ name: 'u1t1' }],
@@ -335,7 +345,7 @@ describe('update associations', () => {
           name: 'u1',
           posts: [{ id: user1.get('posts')[0].get('id'), name: 'u1t1' }],
         },
-        updateAssociationValues: ['comments'],
+        updateAssociationValues: ['comments', 'posts'],
       });
 
       expect(updateRes[0].toJSON()['posts'].length).toBe(1);
@@ -619,6 +629,7 @@ describe('update associations', () => {
     });
     test('set through value', async () => {
       const p1 = await Post.repository.create({
+        updateAssociationValues: ['tags', 'tags.posts_tags'],
         values: {
           title: 'hello',
           tags: [
@@ -673,6 +684,7 @@ describe('update associations', () => {
         values: { name: 'student1' },
       });
       const teacher = await Teacher.repository.create({
+        updateAssociationValues: ['students'],
         values: {
           name: 'teacher1',
           students: [{ id: student.id }],
@@ -714,6 +726,7 @@ describe('update associations', () => {
         values: { name: 'student1' },
       });
       const teacher = await Teacher.repository.create({
+        updateAssociationValues: ['students'],
         values: {
           name: 'teacher1',
           students: [{ id: student.id }],

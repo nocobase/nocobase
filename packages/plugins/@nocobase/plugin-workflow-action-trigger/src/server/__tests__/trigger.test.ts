@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { omit } from 'lodash';
+import { omit, update } from 'lodash';
 import Database from '@nocobase/database';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -346,6 +346,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('posts').create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
         triggerWorkflows: `${workflow.key}!category`,
       });
@@ -368,6 +369,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('comments').create({
+        updateAssociationValues: ['post.category'],
         values: { content: 'comment1', post: { category: { title: 'c1' } } },
         triggerWorkflows: `${workflow.key}!post.category`,
       });
@@ -431,6 +433,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const p1 = await PostRepo.create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
       });
 

@@ -92,6 +92,7 @@ describe('update action', () => {
 
   test('update has many resource', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['comments'],
       values: {
         title: 'p1',
         comments: [
@@ -121,6 +122,7 @@ describe('update action', () => {
 
   test('update belongs to many through value', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags', 'tags.posts_tags'],
       values: {
         title: 'p1',
         tags: [
@@ -140,6 +142,7 @@ describe('update action', () => {
       .agent()
       .resource('posts.tags', p1t1.get('id'))
       .update({
+        updateAssociationValues: ['posts_tags'],
         filterByTk: p1.get('id'),
         values: {
           posts_tags: {
@@ -154,6 +157,7 @@ describe('update action', () => {
 
   test('update has one', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         title: 'p1',
         profile: {
@@ -168,6 +172,7 @@ describe('update action', () => {
       .agent()
       .resource('posts.profile', p1.get('id'))
       .update({
+        updateAssociationValues: ['post_profile'],
         values: {
           post_profile: 'test0',
         },

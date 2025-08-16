@@ -42,6 +42,7 @@ export default {
       }
 
       const record = await db.getRepository('dataSourcesRolesResources').create({
+        updateAssociationValues: ctx.action.params.updateAssociationValues,
         values: {
           roleName,
           ...ctx.action.params.values,

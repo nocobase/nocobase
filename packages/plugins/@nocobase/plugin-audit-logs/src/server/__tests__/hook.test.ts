@@ -77,6 +77,7 @@ describe('hook', () => {
     const User = db.getCollection('users').model;
     const user = await User.create({ nickname: 'a', token: 'token1' });
     const post = await Post.repository.create({
+      updateAssociationValues: ['context', 'context.state', 'context.state.currentUser'],
       values: { title: 't1' },
       context: {
         state: {

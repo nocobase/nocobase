@@ -222,6 +222,7 @@ describe('m2m array api, bigInt targetKey', () => {
 
     it('should create with belongsToArray', async () => {
       const user = await db.getRepository('users').create({
+        updateAssociationValues: ['tags'],
         values: {
           id: 3,
           username: 'c',
@@ -238,6 +239,7 @@ describe('m2m array api, bigInt targetKey', () => {
       });
       expect(user2.tag_ids).toMatchObject([1, 3]);
       const user3 = await db.getRepository('users').create({
+        updateAssociationValues: ['tags'],
         values: {
           id: 5,
           username: 'e',
@@ -249,6 +251,7 @@ describe('m2m array api, bigInt targetKey', () => {
 
     it('should create target when creating belongsToArray', async () => {
       const user = await db.getRepository('users').create({
+        updateAssociationValues: ['tags'],
         values: {
           id: 5,
           username: 'e',
@@ -305,6 +308,7 @@ describe('m2m array api, bigInt targetKey', () => {
       });
       expect(user.tag_ids).toBeFalsy();
       user = await db.getRepository('users').update({
+        updateAssociationValues: ['tags'],
         filterByTk: 7,
         values: {
           tags: [{ title: 'e' }],

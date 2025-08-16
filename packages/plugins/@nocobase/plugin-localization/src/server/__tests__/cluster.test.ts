@@ -21,6 +21,7 @@ describe('cluster', () => {
     const agent1 = app1.agent();
     const repo1 = app1.db.getRepository('localizationTexts');
     await repo1.create({
+      updateAssociationValues: ['translations'],
       values: [
         {
           module: 'test',

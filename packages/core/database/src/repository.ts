@@ -37,7 +37,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import { ArrayField, Field, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -50,11 +50,13 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import { getKeysByPrefix } from './utils';
 
 const debug = require('debug')('noco-database');
 
 interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
+  updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
 export { Transactionable } from 'sequelize';
@@ -638,6 +640,127 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
+  private filterAssociationField(options: { field: Field; values: Values }) {
+    const { field, values } = options;
+    const key = field.name;
+    const v = values[key];
+    if (!_.isObject(v)) {
+      return;
+    }
+    if (field.targetKey && v[field.targetKey]) {
+      values[key] = _.pick(v, field.targetKey);
+    } else {
+      delete values[key];
+    }
+  }
+
+  private filterAssociationFieldAtKey(options: { field: RelationField; parentValues: any }) {
+    const { field, parentValues } = options;
+    const key = field.name;
+    const v = parentValues?.[key];
+
+    if (Array.isArray(v)) {
+      const tk = (field as RelationField).targetKey;
+      if (!tk) {
+        delete parentValues[key];
+        return;
+      }
+      parentValues[key] = v
+        .map((item) => {
+          if (item && typeof item === 'object' && tk in item) {
+            return { [tk]: item[tk] };
+          }
+          return item;
+        })
+        .filter((item) => {
+          if (item && typeof item === 'object') {
+            return tk in item;
+          }
+          return true;
+        });
+      return;
+    }
+
+    this.filterAssociationField({ field, values: parentValues });
+  }
+
+  getAssociationAction(values: Values, targetKey: string) {
+    if (Array.isArray(values)) {
+      return values[0]?.[targetKey] ? 'update' : 'create';
+    }
+    return values?.[targetKey] ? 'update' : 'create';
+  }
+
+  validateAssociationPermissions(options: (CreateOptions | UpdateOptions) & { collection?: Collection }) {
+    const { context = {}, updateAssociationValues = [], values, collection = this.collection } = options;
+    if (['collections', 'fields', 'uiSchemas', 'systemSettings'].includes(this.collection.name)) {
+      // Skip permission check for collections, fields and uiSchemas
+      return;
+    }
+
+    const paths = updateAssociationValues;
+
+    const visit = (nodeValues: any, coll: Collection, candPaths: string[]) => {
+      if (!nodeValues || typeof nodeValues !== 'object') return;
+
+      for (const key of Object.keys(nodeValues)) {
+        const field = coll.fields.get(key);
+        if (!(field instanceof RelationField)) {
+          continue;
+        }
+        const isTreeChildren = Boolean(field?.options?.treeChildren);
+        if (!options.updateAssociationValues && !isTreeChildren) {
+          this.filterAssociationFieldAtKey({ field, parentValues: nodeValues });
+          continue;
+        }
+
+        const direct = candPaths.includes(key);
+        const childPaths = getKeysByPrefix(candPaths, key);
+
+        // If this relation is not targeted by updateAssociationValues and has no deeper paths,
+        // treat it as a leaf. For non-tree children, filter it to targetKey only as link-only.
+        // For tree children (e.g., 'children' in tree collections), keep the value intact to allow
+        // creating/updating child nodes by full object values.
+        if (!direct && childPaths.length === 0) {
+          if (!isTreeChildren) {
+            this.filterAssociationFieldAtKey({ field, parentValues: nodeValues });
+          }
+          continue;
+        }
+        if (!context.can) {
+          // No permission checker provided; do not enforce permission here.
+          // Still allow deeper traversal below for non-leaf relations.
+          continue;
+        }
+        const action = this.getAssociationAction(nodeValues[key], field.targetKey);
+        const allowed = context.can({ action, resource: field.target });
+
+        if (!allowed && (!context.permission || !context.permission.skip)) {
+          throw new Error(`No permission to update association ${key}`);
+        }
+
+        const current = nodeValues[key];
+        if (current == null) {
+          continue;
+        }
+
+        const targetColl = (field as RelationField).targetCollection();
+        if (!targetColl) continue;
+
+        if (Array.isArray(current)) {
+          for (const item of current) {
+            if (item && typeof item === 'object') {
+              visit(item, targetColl, childPaths);
+            }
+          }
+        } else if (typeof current === 'object') {
+          visit(current, targetColl, childPaths);
+        }
+      }
+    };
+    visit(values, collection, paths);
+  }
+
   /**
    * Save instance to database
    *
@@ -652,7 +775,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
-
+    this.validateAssociationPermissions(options);
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, {
@@ -729,6 +852,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
+    this.validateAssociationPermissions(options);
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
