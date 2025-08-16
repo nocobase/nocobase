@@ -19,7 +19,6 @@ import {
 } from '@ant-design/icons';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { openStepSettings } from './StepSettings';
 import { getT, resolveStepUiSchema } from '../../../../utils';
 
 // Type definitions for better type safety
@@ -177,8 +176,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       try {
-        openStepSettings({
-          model: targetModel,
+        targetModel.openFlowSettings({
           flowKey,
           stepKey,
         });

@@ -214,8 +214,8 @@ export default defineConfig({
               link: '/examples/flow-definition/open-preset-step-settings-dialog',
             },
             {
-              title: '打开某流某步骤的配置表单',
-              link: '/examples/flow-definition/open-step-settings-dialog',
+              title: '打开流配置表单',
+              link: '/examples/flow-definition/open-settings',
             },
           ]
         },
