@@ -636,7 +636,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
             type: 'page',
             title: lang('Workflow tasks'),
             icon: 'CheckCircleOutlined',
-            schemaUid: 'workflow/tasks',
+            schemaUid: 'workflow-tasks',
             options: {
               url: `/page/workflow/tasks`,
               schema: {
