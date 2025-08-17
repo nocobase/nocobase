@@ -12,7 +12,7 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
+  AddSubModelButton,
   AddFieldButton,
   buildActionItems,
   buildFieldItems,
@@ -21,15 +21,17 @@ import {
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, CollectionActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
@@ -376,11 +378,13 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton
+              <AddSubModelButton
                 model={this}
-                items={buildActionItems(this, 'CollectionActionModel')}
+                subModelBaseClass={CollectionActionModel}
                 subModelKey="actions"
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>

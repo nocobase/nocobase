@@ -9,19 +9,22 @@
 
 import { FormButtonGroup } from '@formily/antd-v5';
 import {
-  AddActionButton,
+  AddSubModelButton,
   buildActionItems,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Pagination } from 'antd';
 import React from 'react';
 import { FormModel, FormComponent } from './FormModel';
+import { FormActionModel } from './FormActionModel';
 
 export class EditFormModel extends FormModel {
   createResource(_ctx: any, params: any) {
@@ -83,7 +86,9 @@ export class EditFormModel extends FormModel {
                 />
               </Droppable>
             ))}
-            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
           </FormButtonGroup>
         </DndProvider>
         {this.isMultiRecordResource() && (

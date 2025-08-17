@@ -11,13 +11,15 @@ import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
-  AddActionButton,
+  AddSubModelButton,
   AddFieldButton,
   Collection,
   FlowModelRenderer,
+  FlowSettingsButton,
   buildActionItems,
   buildFieldItems,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React from 'react';
 import { tval } from '@nocobase/utils/client';
@@ -59,7 +61,9 @@ export class FilterFormModel extends FilterBlockModel {
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings={{ showBorder: false }} />
             ))}
-            <AddActionButton model={this} items={buildActionItems(this, 'FilterFormActionModel')} />
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={'FilterFormActionModel'}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
           </FormButtonGroup>
         </FormProvider>
       </Card>

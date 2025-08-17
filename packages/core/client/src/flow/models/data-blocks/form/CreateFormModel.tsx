@@ -8,18 +8,21 @@
  */
 
 import {
-  AddActionButton,
+  AddSubModelButton,
   buildActionItems,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { FormModel, FormComponent } from './FormModel';
 import { FormButtonGroup } from '@formily/antd-v5';
 import React from 'react';
+import { FormActionModel } from './FormActionModel';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
@@ -52,7 +55,9 @@ export class CreateFormModel extends FormModel {
                 />
               </Droppable>
             ))}
-            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
           </FormButtonGroup>
         </DndProvider>
         {/* <FormProvider form={this.form}> */}

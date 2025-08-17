@@ -9,16 +9,18 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
   buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
@@ -128,13 +130,16 @@ export class DetailsModel extends CollectionBlockModel<{
                 );
               })}
 
-              <AddActionButton
+              <AddSubModelButton
                 model={this}
-                items={buildActionItems(this, 'RecordActionModel')}
+                subModelKey="actions"
+                subModelBaseClass={RecordActionModel}
                 onModelCreated={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>

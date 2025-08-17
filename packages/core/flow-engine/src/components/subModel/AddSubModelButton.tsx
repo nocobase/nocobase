@@ -378,13 +378,16 @@ const AddSubModelButtonCore = function AddSubModelButton({
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
-  if (!items) {
-    if (subModelBaseClass) {
-      items = buildSubModelItems(subModelBaseClass);
-    } else if (subModelBaseClasses && subModelBaseClasses.length > 0) {
-      items = buildSubModelGroups(subModelBaseClasses);
+  // 合并 items 与 baseClass 的菜单来源
+  const finalItems = useMemo<SubModelItemsType>(() => {
+    const sources: (SubModelItemsType | undefined | null)[] = [];
+    if (items) sources.push(items);
+    if (subModelBaseClass) sources.push(buildSubModelItems(subModelBaseClass));
+    if (subModelBaseClasses && subModelBaseClasses.length > 0) {
+      sources.push(buildSubModelGroups(subModelBaseClasses));
     }
-  }
+    return mergeSubModelItems(sources, { addDividers: true });
+  }, [items, subModelBaseClass, subModelBaseClasses]);
   // 创建删除处理器
   const removeHandler = useMemo(
     () =>
@@ -459,7 +462,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
   return (
     <LazyDropdown
       menu={{
-        items: transformItems(items, model, subModelKey, subModelType),
+        items: transformItems(finalItems, model, subModelKey, subModelType),
         onClick,
         keepDropdownOpen,
       }}

@@ -11,7 +11,7 @@ import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DragHandler,
   Droppable,
   FlowModelRenderer,
@@ -20,7 +20,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, RecordActionModel } from '../../base/ActionModel';
 import { TableCustomColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
@@ -49,19 +49,16 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton
+    <AddSubModelButton
       model={model}
-      items={buildActionItems(model, 'RecordActionModel')}
+      subModelBaseClass={RecordActionModel}
       subModelKey="actions"
       onModelCreated={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
-      // onSubModelAdded={async (model) => {
-      //   await model.applyAutoFlows();
-      // }}
     >
       <PlusOutlined />
-    </AddActionButton>
+    </AddSubModelButton>
   );
 };
 

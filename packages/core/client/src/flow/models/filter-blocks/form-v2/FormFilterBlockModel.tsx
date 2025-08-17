@@ -13,13 +13,15 @@ import React from 'react';
 import { FormProvider } from '@formily/react';
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import {
-  AddActionButton,
+  AddSubModelButton,
   buildActionItems,
   DndProvider,
   DragHandler,
   Droppable,
   FlowModelRenderer,
+  FlowSettingsButton,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { FilterManager } from '../filter-manager/FilterManager';
 
@@ -90,7 +92,9 @@ export class FormFilterBlockModel extends FilterBlockModel<{
                 />
               </Droppable>
             ))}
-            <AddActionButton model={this} items={buildActionItems(this, 'FilterFormActionModel')} />
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={'FilterFormActionModel'}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
           </FormButtonGroup>
         </DndProvider>
       </FormProvider>
