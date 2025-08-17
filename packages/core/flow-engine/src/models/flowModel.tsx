@@ -1345,6 +1345,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  async openDynamicFlowsEditor(
+    options?: Omit<FlowSettingsOpenOptions, 'model' | 'flowKey' | 'flowKeys' | 'stepKey' | 'preset'>,
+  ) {
+    return this.flowEngine.flowSettings.openDynamicFlowsEditor({
+      model: this,
+      ...options,
+    });
+  }
+
   #dynamicFlows: FlowDefinition[] = [];
 
   // TODO：后面去除这个方法，应该默认加载动态流

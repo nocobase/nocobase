@@ -19,6 +19,8 @@ import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setup
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import type { FlowDefinition } from './types';
+import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
 
 const Panel = Collapse.Panel;
 
@@ -582,7 +584,7 @@ export class FlowSettings {
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
-      width: modeProps.width ?? 840,
+      width: modeProps.width ?? 800,
       destroyOnClose: true,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
@@ -716,5 +718,82 @@ export class FlowSettings {
     });
 
     return true;
+  }
+
+  public async openDynamicFlowsEditor(
+    options: Pick<FlowSettingsOpenOptions, 'model' | 'uiMode' | 'onCancel'> & {
+      onSaved?: (flows: FlowDefinition[]) => void | Promise<void>;
+    },
+  ) {
+    const { model, uiMode = 'dialog', onCancel, onSaved } = options;
+    const t = getT(model);
+    const message = model.context?.message;
+
+    // 构造响应式 value（深度可变）
+    const base = model.getDynamicFlows() || [];
+    const reactiveFlows = observable(JSON.parse(JSON.stringify(base)));
+
+    // 打开视图
+    const viewer = (model as any).context.viewer;
+    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
+    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
+    const openView = viewer[modeType].bind(viewer);
+
+    openView({
+      title: modeProps.title,
+      width: modeProps.width ?? 800,
+      destroyOnClose: true,
+      ...modeProps,
+      content: (currentDialog) => {
+        const editorEl = React.createElement(DynamicFlowsEditor as any, { value: reactiveFlows });
+
+        const onSubmit = async () => {
+          try {
+            const plain = JSON.parse(JSON.stringify(reactiveFlows));
+            (model as any).setDynamicFlows(plain as FlowDefinition[]);
+            await (model as any).saveDynamicFlows();
+            message?.success?.(t('Configuration saved'));
+            currentDialog.close();
+            try {
+              await onSaved?.(plain);
+            } catch (cbErr) {
+              // eslint-disable-next-line no-console
+              console.error('FlowSettings.openDynamicFlowsEditor: onSaved callback error', cbErr);
+            }
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('FlowSettings.openDynamicFlowsEditor: save error', err);
+            message?.error?.(t('Error saving configuration, please check console'));
+          }
+        };
+
+        const footer = React.createElement(
+          currentDialog.Footer,
+          null,
+          React.createElement(
+            Space,
+            { align: 'end' },
+            React.createElement(
+              Button,
+              {
+                onClick: async () => {
+                  currentDialog.close();
+                  try {
+                    await onCancel?.();
+                  } catch (cbErr) {
+                    // eslint-disable-next-line no-console
+                    console.error('FlowSettings.openDynamicFlowsEditor: onCancel callback error', cbErr);
+                  }
+                },
+              },
+              t('Cancel'),
+            ),
+            React.createElement(Button, { type: 'primary', onClick: onSubmit }, t('OK')),
+          ),
+        );
+
+        return React.createElement(React.Fragment, null, editorEl, footer);
+      },
+    });
   }
 }
