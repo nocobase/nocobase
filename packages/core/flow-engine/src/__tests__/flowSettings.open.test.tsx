@@ -520,4 +520,95 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(info).not.toHaveBeenCalled(); // 这种一般是在添加 sub model 的场景调用的，如果为空应该直接忽略，不需要 info 提示
     expect(dialog).not.toHaveBeenCalled();
   });
+
+  it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowObj',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    const sentinelContent = vi.fn();
+    const viewerDialog = vi.fn((opts: any) => {
+      // title/width should come from props
+      expect(opts.title).toBe('Custom title');
+      expect(opts.width).toBe(1024);
+      // extra props should pass through
+      expect(opts.maskClosable).toBe(false);
+      // our content should override incoming props.content
+      expect(opts.content).not.toBe(sentinelContent);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      // Execute content once to ensure it is callable
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog: viewerDialog } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowObj',
+      stepKey: 'step',
+      uiMode: {
+        type: 'dialog',
+        props: { title: 'Custom title', width: 1024, maskClosable: false, content: sentinelContent },
+      },
+    } as any);
+
+    expect(viewerDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts uiMode object with type drawer and calls viewer.drawer', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowObj2',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { g: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const drawer = vi.fn((opts: any) => {
+      // also check title fallback if not provided in props
+      expect(typeof opts.title === 'string').toBe(true);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const dialog = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { drawer, dialog } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowObj2',
+      stepKey: 'step',
+      uiMode: { type: 'drawer', props: {} },
+    } as any);
+
+    expect(drawer).toHaveBeenCalledTimes(1);
+    expect(dialog).not.toHaveBeenCalled();
+  });
 });

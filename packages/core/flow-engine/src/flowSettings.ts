@@ -37,7 +37,10 @@ export interface FlowSettingsOpenOptions {
   /** 指定打开的步骤 key（配合 flowKey 使用） */
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
-  uiMode?: 'dialog' | 'drawer';
+  uiMode?:
+    | 'dialog'
+    | 'drawer'
+    | { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
   /** 点击取消按钮后触发的回调（关闭后调用） */
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */
@@ -394,7 +397,7 @@ export class FlowSettings {
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
-   * - options.uiMode?: 'dialog' | 'drawer'，默认 'dialog'。
+   * - options.uiMode?: 'dialog' | 'drawer' ｜ { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } }，默认 'dialog'。
    * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
@@ -528,7 +531,11 @@ export class FlowSettings {
 
     // 渲染视图（对话框/抽屉）
     const SchemaField = createSchemaField();
-    const openView = (model as any).context.viewer[uiMode].bind((model as any).context.viewer);
+    // 兼容新的 uiMode 定义：字符串或 { type, props }
+    const viewer = (model as any).context.viewer;
+    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
+    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
+    const openView = viewer[modeType].bind(viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
       // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
@@ -553,9 +560,12 @@ export class FlowSettings {
     });
 
     return openView({
-      title: t('Flow settings'),
-      width: 840,
+      // 默认标题与宽度可被传入的 props 覆盖
+      title: modeProps.title ?? t('Flow settings'),
+      width: modeProps.width ?? 840,
       destroyOnClose: true,
+      // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
+      ...modeProps,
       content: (currentDialog) => {
         // 渲染单个 step 表单（无 JSX）：FormProvider + FlowSettingsContextProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
