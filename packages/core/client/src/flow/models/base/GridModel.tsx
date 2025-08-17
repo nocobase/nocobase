@@ -11,7 +11,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
-  AddBlockButton,
+  AddSubModelButton,
   buildBlockItems,
   DndProvider,
   DragHandler,
@@ -385,9 +385,14 @@ export class BlockGridModel extends GridModel {
     const t = this.translate;
     return (
       <>
-        <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
+        <AddSubModelButton 
+          model={this} 
+          items={buildBlockItems(this)} 
+          subModelKey="items"
+          subModelBaseClass="BlockModel"
+        >
           <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-        </AddBlockButton>
+        </AddSubModelButton>
         {/* <FlowSettingsButton
           onClick={() => {
             this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
