@@ -289,7 +289,7 @@ function TaskPageContent() {
         load = getPopupRecord(apiClient, { params: { filterByTk: popupId } });
       } else {
         load = apiClient.resource(collection).get({
-          ...params,
+          // ...params,
           filterByTk: popupId,
         });
       }
@@ -617,7 +617,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
     const items = useTaskTypeItems();
     return {
       isItem: true,
-      title: lang('Workflow Tasks'),
+      title: lang('Workflow tasks'),
       badge: 10,
       async onClick(values) {
         const res = await resource.list();
@@ -634,7 +634,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
         const { data } = await resource.create({
           values: {
             type: 'page',
-            title: lang('Workflow Tasks'),
+            title: lang('Workflow tasks'),
             icon: 'CheckCircleOutlined',
             schemaUid: 'workflow/tasks',
             options: {

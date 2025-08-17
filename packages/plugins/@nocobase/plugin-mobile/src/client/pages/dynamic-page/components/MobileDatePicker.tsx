@@ -80,10 +80,14 @@ const MobileDateTimePicker = connect(
       let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
 
       if (isVariable(props._maxDate)) {
-        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) =>
+          dayjs(result.value?.[0] || result.value),
+        );
       }
       if (isVariable(props._minDate)) {
-        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
+          return dayjs(result.value?.[0] || result.value);
+        });
       }
 
       const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);

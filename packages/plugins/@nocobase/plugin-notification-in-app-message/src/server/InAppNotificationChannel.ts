@@ -27,11 +27,24 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   // }
 
   async load() {
-    this.app.db.on(`${MessagesDefinition.name}.afterSave`, this.onMessageCreatedOrUpdated);
+    this.app.db.on(`${MessagesDefinition.name}.afterCreate`, this.onMessageCreated);
+    this.app.db.on(`${MessagesDefinition.name}.afterUpdate`, this.onMessageUpdated);
     this.defineActions();
   }
 
-  onMessageCreatedOrUpdated = async (model, options) => {
+  onMessageCreated = async (model, options) => {
+    const userId = model.userId;
+    this.app.emit('ws:sendToTag', {
+      tagKey: 'userId',
+      tagValue: userId,
+      message: {
+        type: 'in-app-message:created',
+        payload: model.toJSON(),
+      },
+    });
+  };
+
+  onMessageUpdated = async (model, options) => {
     const userId = model.userId;
     this.app.emit('ws:sendToTag', {
       tagKey: 'userId',

@@ -12,7 +12,7 @@ permissions:
 jobs:
   changelog-review:
     runs-on: ubuntu-latest
-    if: ${{ github.event.changes.body }}
+    if: ${{ github.event.action == 'opened' || (github.event.action == 'edited' && github.event.changes.body) }}
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token

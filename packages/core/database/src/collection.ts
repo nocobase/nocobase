@@ -242,27 +242,42 @@ export class Collection<
     }
     const values = Array.isArray(updateValues) ? updateValues : [updateValues];
     const { t } = context || { t: (key: string, options: any) => key };
+
+    const unwrapTplLabel = (label: any) => {
+      if (typeof label !== 'string') return label as any;
+      const m = label.match(/^[\s\t]*\{\{\s*t\(\s*(['"])(.*?)\1(?:\s*,[\s\S]*)?\)\s*\}\}[\s\t]*$/);
+      return m ? m[2] : label;
+    };
+
     const helper = (field: Field, value: Object) => {
       const val = value[field.name];
       if (!field.options.validation) {
         return;
       }
 
+      const fieldLabel = unwrapTplLabel(field.options.uiSchema?.title || field.name);
       if (field instanceof RelationField) {
         if (field.options?.validation.rules) {
           const isRequired = field.options?.validation.rules.some((rule) => rule.name === 'required');
           if (isRequired && !val) {
             throw new Error(
-              t('{{#label}} is required', { ns: 'client', label: field.options.uiSchema?.title || field.name }),
+              t('{{#label}} is required', {
+                ns: 'client',
+                '#label': `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(
+                  fieldLabel,
+                  { ns: 'client' },
+                )}`,
+              }),
             );
           }
         }
         return;
       }
 
-      const fieldLabel = field.options.uiSchema?.title || field.name;
       const joiSchema = buildJoiSchema(field.options.validation, {
-        label: `${t('Field', { ns: 'client' })}: ${fieldLabel}`,
+        label: `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(fieldLabel, {
+          ns: 'client',
+        })}`,
         value: val,
       });
       const { error } = joiSchema.validate(val, {

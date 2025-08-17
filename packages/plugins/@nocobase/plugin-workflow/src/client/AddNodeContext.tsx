@@ -28,7 +28,7 @@ import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
-import { Button, Dropdown } from 'antd';
+import { Button, Dropdown, Menu } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
 
@@ -40,46 +40,11 @@ interface AddButtonProps {
 
 export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
-  const engine = usePlugin(WorkflowPlugin);
-  const compile = useCompile();
   const { workflow } = useFlowContext() ?? {};
-  const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
   const { styles } = useStyles();
-  const { onCreate, creating } = useAddNodeContext();
-  const groupOptions = engine.useInstructionGroupOptions();
+  const { anchor, creating, onMenuOpen } = useAddNodeContext();
   const executed = useWorkflowExecuted();
-
-  const groups = useMemo(() => {
-    return groupOptions
-      .map((group): MenuItemGroupType => {
-        const groupInstructions = instructionList.filter(
-          (item) =>
-            item.group === group.key &&
-            (item.isAvailable ? item.isAvailable({ engine, workflow, upstream, branchIndex }) : true),
-        );
-
-        return {
-          ...group,
-          type: 'group',
-          children: groupInstructions.map((item) => ({
-            role: 'button',
-            'aria-label': item.type,
-            key: item.type,
-            label: compile(item.title),
-            icon: item.icon,
-          })),
-        };
-      })
-      .filter((group) => group.children.length);
-  }, [branchIndex, compile, engine, groupOptions, instructionList, upstream, workflow]);
-
-  const onClick = useCallback(
-    async ({ keyPath }) => {
-      const [type] = keyPath;
-      onCreate({ type, upstream, branchIndex });
-    },
-    [branchIndex, onCreate, upstream],
-  );
+  const onOpen = useCallback(() => onMenuOpen({ upstream, branchIndex }), [onMenuOpen, upstream, branchIndex]);
 
   if (!workflow) {
     return null;
@@ -87,31 +52,19 @@ export function AddButton(props: AddButtonProps) {
 
   return (
     <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      <Dropdown
-        menu={{
-          items: groups,
-          onClick,
-        }}
-        disabled={Boolean(executed)}
-        overlayClassName={css`
-          .ant-dropdown-menu-root {
-            max-height: 30em;
-            overflow-y: auto;
-          }
-          .ant-dropdown-menu-item-group-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-          }
-        `}
-      >
+      {executed ? (
+        <span className="ant-btn-placeholder" />
+      ) : (
         <Button
           aria-label={props['aria-label'] || 'add-button'}
           shape="circle"
           icon={<PlusOutlined />}
           loading={creating?.upstreamId == upstream?.id && creating?.branchIndex === branchIndex}
           size="small"
+          onClick={onOpen}
+          className={cx({ anchoring: anchor?.upstream === upstream && anchor?.branchIndex === branchIndex })}
         />
-      </Dropdown>
+      )}
     </div>
   );
 }
@@ -265,14 +218,84 @@ function PresetFieldset() {
   );
 }
 
+function NodeMenu() {
+  const compile = useCompile();
+  const engine = usePlugin(WorkflowPlugin);
+  const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
+  const groupOptions = engine.useInstructionGroupOptions();
+  const { anchor, onCreate, onMenuCancel } = useAddNodeContext();
+  const { workflow } = useFlowContext() ?? {};
+
+  const groups = useMemo(() => {
+    return groupOptions
+      .map((group): MenuItemGroupType => {
+        const groupInstructions = instructionList.filter(
+          (item) =>
+            item.group === group.key && (item.isAvailable ? item.isAvailable({ engine, workflow, ...anchor }) : true),
+        );
+
+        return {
+          ...group,
+          type: 'group',
+          children: groupInstructions.map((item) => ({
+            role: 'button',
+            'aria-label': item.type,
+            key: item.type,
+            label: compile(item.title),
+            icon: item.icon,
+          })),
+        };
+      })
+      .filter((group) => group.children.length);
+  }, [groupOptions, instructionList, engine, workflow, anchor, compile]);
+
+  const onClick = useCallback(
+    async ({ keyPath }) => {
+      const [type] = keyPath;
+      await onCreate({ type, ...anchor });
+      onMenuCancel();
+    },
+    [anchor, onCreate],
+  );
+
+  return (
+    <Menu
+      items={groups}
+      onClick={onClick}
+      className={css`
+        .ant-menu-item-group-list {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        &.ant-menu-root.ant-menu-vertical {
+          border-inline-end: none;
+        }
+        .ant-menu-item {
+          display: flex;
+          align-items: center;
+        }
+      `}
+    />
+  );
+}
+
 export function AddNodeContextProvider(props) {
   const api = useAPIClient();
   const compile = useCompile();
   const engine = usePlugin(WorkflowPlugin);
+  const [anchor, setAnchor] = useState(null);
   const [creating, setCreating] = useState(null);
   const [presetting, setPresetting] = useState(null);
   const [formValueChanged, setFormValueChanged] = useState(false);
   const { workflow, nodes, refresh } = useFlowContext() ?? {};
+
+  const onMenuOpen = useCallback(({ upstream, branchIndex }) => {
+    setAnchor({ upstream, branchIndex });
+  }, []);
+  const onMenuCancel = useCallback(() => {
+    setAnchor(null);
+  }, []);
 
   const form = useMemo(() => createForm(), []);
 
@@ -305,7 +328,7 @@ export function AddNodeContextProvider(props) {
   );
 
   const onCreate = useCallback(
-    ({ type, upstream, branchIndex }) => {
+    async ({ type, upstream, branchIndex }) => {
       const instruction = engine.instructions.get(type);
       if (!instruction) {
         console.error(`Instruction "${type}" not found`);
@@ -331,14 +354,40 @@ export function AddNodeContextProvider(props) {
         return;
       }
 
-      create(data);
+      await create(data);
     },
-    [compile, create, engine.instructions],
+    [compile, create, engine.instructions, nodes],
   );
 
   return (
-    <AddNodeContext.Provider value={{ presetting, setPresetting, onCreate, creating, setCreating }}>
+    <AddNodeContext.Provider
+      value={{ presetting, setPresetting, onCreate, creating, setCreating, anchor, onMenuOpen, onMenuCancel }}
+    >
       {props.children}
+      <ActionContextProvider
+        value={{
+          visible: Boolean(anchor),
+          setVisible: onMenuCancel,
+        }}
+      >
+        <SchemaComponent
+          components={{
+            NodeMenu,
+          }}
+          schema={{
+            name: `nodes-menu`,
+            type: 'void',
+            'x-component': 'Action.Drawer',
+            title: `{{ t("Add node", { ns: "${NAMESPACE}" }) }}`,
+            properties: {
+              menu: {
+                type: 'void',
+                'x-component': 'NodeMenu',
+              },
+            },
+          }}
+        />
+      </ActionContextProvider>
       <ActionContextProvider
         value={{
           visible: Boolean(presetting),
@@ -358,7 +407,7 @@ export function AddNodeContextProvider(props) {
             useAddNodeSubmitAction,
           }}
           schema={{
-            name: `modal`,
+            name: `preset-modal`,
             type: 'void',
             'x-decorator': 'FormV2',
             'x-decorator-props': {
