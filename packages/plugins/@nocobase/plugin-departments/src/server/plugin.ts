@@ -27,8 +27,8 @@ import {
   setDepartmentOwners,
   setMainDepartment as setMainDepartmentMiddleware,
   updateDepartmentIsLeaf,
+  setDepartmentsInfo,
 } from './middlewares';
-import { setDepartmentsInfo } from './middlewares/set-departments-roles';
 import { DepartmentModel } from './models/department';
 import { DepartmentDataSyncResource } from './department-data-sync-resource';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
