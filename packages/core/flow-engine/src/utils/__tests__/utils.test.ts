@@ -914,11 +914,11 @@ describe('Utils', () => {
       test('should process function-based children that return static array', async () => {
         const childrenFn = vi.fn().mockReturnValue([
           {
-            title: 'Dynamic Table',
+            label: 'Dynamic Table',
             createModelOptions: { use: 'DynamicTableModel' },
           },
           {
-            title: 'Dynamic Form',
+            label: 'Dynamic Form',
             createModelOptions: { use: 'DynamicFormModel' },
           },
         ]);
@@ -948,7 +948,7 @@ describe('Utils', () => {
       test('should process async function-based children', async () => {
         const asyncChildrenFn = vi.fn().mockResolvedValue([
           {
-            title: 'Async Chart',
+            label: 'Async Chart',
             createModelOptions: { use: 'AsyncChartModel' },
           },
         ]);
@@ -973,10 +973,10 @@ describe('Utils', () => {
       test('should handle function-based children with nested function children', async () => {
         const parentChildrenFn = vi.fn().mockReturnValue([
           {
-            title: 'Parent Group',
+            label: 'Parent Group',
             children: vi.fn().mockReturnValue([
               {
-                title: 'Nested Item',
+                label: 'Nested Item',
                 createModelOptions: { use: 'NestedModel' },
               },
             ]),
@@ -1044,11 +1044,11 @@ describe('Utils', () => {
       test('should handle combination of static and function-based createModelOptions within function children', async () => {
         const mixedChildrenFn = vi.fn().mockReturnValue([
           {
-            title: 'Static Options Block',
+            label: 'Static Options Block',
             createModelOptions: { use: 'StaticModel', config: 'static' },
           },
           {
-            title: 'Dynamic Options Block',
+            label: 'Dynamic Options Block',
             createModelOptions: vi.fn().mockReturnValue({ use: 'DynamicModel', config: 'dynamic' }),
           },
         ]);
@@ -1074,12 +1074,12 @@ describe('Utils', () => {
       test('should process simple children array', async () => {
         const children = [
           {
-            title: 'Table',
+            label: 'Table',
             icon: 'table',
             createModelOptions: { use: 'TableModel' },
           },
           {
-            title: 'Form',
+            label: 'Form',
             icon: 'form',
             createModelOptions: { use: 'FormModel' },
           },
@@ -1110,7 +1110,7 @@ describe('Utils', () => {
         const dynamicOptionsFn = vi.fn().mockReturnValue({ use: 'DynamicModel', parentUid: 'test' });
         const children = [
           {
-            title: 'Dynamic Block',
+            label: 'Dynamic Block',
             createModelOptions: dynamicOptionsFn,
           },
         ];
@@ -1128,7 +1128,7 @@ describe('Utils', () => {
         const toggleable = vi.fn().mockReturnValue(true);
         const children = [
           {
-            title: 'Advanced Block',
+            label: 'Advanced Block',
             createModelOptions: { use: 'AdvancedModel' },
             toggleable,
             useModel: 'AdvancedModel',
@@ -1146,24 +1146,24 @@ describe('Utils', () => {
       test('should process nested children structure', async () => {
         const children = [
           {
-            title: 'Basic Blocks',
+            label: 'Basic Blocks',
             icon: 'blocks',
             children: [
               {
-                title: 'Table',
+                label: 'Table',
                 createModelOptions: { use: 'TableModel' },
               },
               {
-                title: 'Form',
+                label: 'Form',
                 createModelOptions: { use: 'FormModel' },
               },
             ],
           },
           {
-            title: 'Advanced Blocks',
+            label: 'Advanced Blocks',
             children: [
               {
-                title: 'Chart',
+                label: 'Chart',
                 createModelOptions: { use: 'ChartModel' },
               },
             ],
@@ -1220,17 +1220,17 @@ describe('Utils', () => {
       test('should handle deep nesting (3+ levels)', async () => {
         const children = [
           {
-            title: 'Category A',
+            label: 'Category A',
             children: [
               {
-                title: 'Subcategory A1',
+                label: 'Subcategory A1',
                 children: [
                   {
-                    title: 'Item A1a',
+                    label: 'Item A1a',
                     createModelOptions: { use: 'ItemA1aModel' },
                   },
                   {
-                    title: 'Item A1b',
+                    label: 'Item A1b',
                     createModelOptions: { use: 'ItemA1bModel' },
                   },
                 ],
@@ -1254,8 +1254,8 @@ describe('Utils', () => {
     describe('key generation', () => {
       test('should generate keys with custom prefix', async () => {
         const children = [
-          { title: 'Block1', createModelOptions: { use: 'Model1' } },
-          { title: 'Block2', createModelOptions: { use: 'Model2' } },
+          { label: 'Block1', createModelOptions: { use: 'Model1' } },
+          { label: 'Block2', createModelOptions: { use: 'Model2' } },
         ];
 
         const result = await processMetaChildren(children, mockModel.context, 'custom.');
@@ -1265,14 +1265,14 @@ describe('Utils', () => {
       });
 
       test('should generate keys without prefix when not provided', async () => {
-        const children = [{ title: 'Block1', createModelOptions: { use: 'Model1' } }];
+        const children = [{ label: 'Block1', createModelOptions: { use: 'Model1' } }];
 
         const result = await processMetaChildren(children, mockModel.context);
 
         expect(result[0].key).toBe('Block1');
       });
 
-      test('should handle missing title by generating item keys', async () => {
+      test('should handle missing label by generating item keys', async () => {
         const children = [{ createModelOptions: { use: 'Model1' } }, { createModelOptions: { use: 'Model2' } }];
 
         const result = await processMetaChildren(children, mockModel.context, 'test.');
@@ -1286,7 +1286,7 @@ describe('Utils', () => {
       test('should preserve string use property', async () => {
         const children = [
           {
-            title: 'Block',
+            label: 'Block',
             createModelOptions: { use: 'TableModel', config: { test: true } },
           },
         ];
@@ -1300,7 +1300,7 @@ describe('Utils', () => {
       test('should fallback to key when use is not resolvable', async () => {
         const children = [
           {
-            title: 'Block',
+            label: 'Block',
             createModelOptions: { someOtherProp: 'value' },
           },
         ];
@@ -1319,7 +1319,7 @@ describe('Utils', () => {
 
         const children = [
           {
-            title: 'Error Block',
+            label: 'Error Block',
             createModelOptions: errorFn,
           },
         ];
@@ -1346,7 +1346,7 @@ describe('Utils', () => {
         const children = [
           null,
           {
-            title: 'Valid Block',
+            label: 'Valid Block',
             createModelOptions: { use: 'ValidModel' },
           },
           undefined,

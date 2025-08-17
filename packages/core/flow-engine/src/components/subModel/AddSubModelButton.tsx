@@ -276,7 +276,7 @@ const transformSubModelItems = async (
 /**
  * 转换 SubModelItemsType 到 LazyDropdown 的 ItemsType 格式
  */
-const transformItems = (
+export const transformItems = (
   items: SubModelItemsType,
   model: FlowModel,
   subModelKey: string,

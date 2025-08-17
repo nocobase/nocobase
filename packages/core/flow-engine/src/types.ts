@@ -415,10 +415,10 @@ export interface FlowModelMeta {
    * // 静态配置
    * children: [
    *   {
-   *     title: 'Basic Blocks',
+   *     label: 'Basic Blocks',
    *     children: [
-   *       { title: 'Table', createModelOptions: { use: 'TableModel' } },
-   *       { title: 'Form', createModelOptions: { use: 'FormModel' } }
+   *       { label: 'Table', createModelOptions: { use: 'TableModel' } },
+   *       { label: 'Form', createModelOptions: { use: 'FormModel' } }
    *     ]
    *   }
    * ]
@@ -427,8 +427,8 @@ export interface FlowModelMeta {
    * children: (ctx) => {
    *   const hasPermission = ctx.model.checkPermission('advanced');
    *   return [
-   *     { title: 'Basic Table', createModelOptions: { use: 'TableModel' } },
-   *     ...(hasPermission ? [{ title: 'Advanced Chart', createModelOptions: { use: 'ChartModel' } }] : [])
+   *     { label: 'Basic Table', createModelOptions: { use: 'TableModel' } },
+   *     ...(hasPermission ? [{ label: 'Advanced Chart', createModelOptions: { use: 'ChartModel' } }] : [])
    *   ];
    * }
    */

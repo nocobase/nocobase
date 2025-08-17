@@ -23,7 +23,7 @@ export function buildSubModelItem(M: ModelConstructor) {
   };
   if (!item.children) {
     item['createModelOptions'] = meta.createModelOptions || {
-      use: M.name,
+      use: M.name, //TODO: this is wrong after code minized, we need to fix this
     };
   }
   return item;

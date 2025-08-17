@@ -167,10 +167,10 @@ export function buildActionItems(
 // ==================== 动态 Meta Children 构建器 ====================
 
 // 构建基础菜单项
-function createBasicMenuItem(key: string, title: string, className: string, options?: any) {
+function createBasicMenuItem(key: string, label: string, className: string, options?: any) {
   return {
     key,
-    title: escapeT(title),
+    label: escapeT(label),
     createModelOptions: { use: className, ...options },
   };
 }
@@ -179,7 +179,7 @@ function createBasicMenuItem(key: string, title: string, className: string, opti
 function createCurrentRecordMenuItem(className: string, collection: Collection, stepParams?: any) {
   return {
     key: MENU_KEYS.CURRENT_RECORD,
-    title: escapeT('Current record'),
+    label: escapeT('Current record'),
     collections: [collection],
     createModelOptions: {
       use: className,
@@ -214,7 +214,7 @@ function createAssociationRecordsMenuItem(
 
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
-    title: escapeT('Associated records'),
+    label: escapeT('Associated records'),
     fields: associationFields,
     createModelOptions: (_ctx: any, field: CollectionField) => {
       return {
@@ -367,13 +367,14 @@ export async function processMetaChildren(
 
   for (let i = 0; i < resolvedChildren.length; i++) {
     const child = resolvedChildren[i];
-    const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
+    const label = child?.label;
+    const childKey = `${keyPrefix}${label || `item-${i}`}`;
 
     if (child.children) {
       const nestedChildren = await processMetaChildren(child.children, ctx, `${childKey}.`);
       result.push({
         key: childKey,
-        label: child.title,
+        label,
         icon: child.icon,
         children: nestedChildren,
       });
@@ -382,7 +383,7 @@ export async function processMetaChildren(
       const defaultOptions = await resolveCreateModelOptions(optionsSource, ctx);
       result.push({
         key: childKey,
-        label: child.title,
+        label,
         icon: child.icon,
         createModelOptions: {
           ...defaultOptions,
@@ -412,13 +413,14 @@ async function processDataBlockChildren(
 
   for (let i = 0; i < resolvedChildren.length; i++) {
     const child = resolvedChildren[i];
-    const childKey = `${keyPrefix}${child.title || `item-${i}`}`;
+    const label = child?.label;
+    const childKey = `${keyPrefix}${label || `item-${i}`}`;
 
     if (child.children) {
       const nestedChildren = await processDataBlockChildren(child.children, ctx, dataSources, `${childKey}.`);
       result.push({
         key: childKey,
-        label: child.title,
+        label,
         icon: child.icon,
         children: nestedChildren,
       });
@@ -516,7 +518,7 @@ async function processDataBlockChildren(
         const singleItem = menuItems[0].children[0];
         result.push({
           key: childKey,
-          label: child.title,
+          label: label,
           icon: child.icon,
           createModelOptions: singleItem.createModelOptions,
         });
@@ -525,14 +527,14 @@ async function processDataBlockChildren(
         if (menuItems.length === 1) {
           result.push({
             key: childKey,
-            label: child.title,
+            label,
             icon: child.icon,
             children: menuItems[0].children,
           });
         } else {
           result.push({
             key: childKey,
-            label: child.title,
+            label,
             icon: child.icon,
             children: menuItems,
           });
