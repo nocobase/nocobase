@@ -19,6 +19,13 @@ export function buildSubModelItem(M: ModelConstructor) {
   const item = {
     key: M.name,
     label: meta.label || M.name,
+    // Ensure toggleable models can be detected and toggled in menus
+    // Meta.toggleable indicates the item should behave like a switch (unique per parent)
+    // Add corresponding flags so AddSubModelButton can compute toggle state and removal
+    toggleable: meta.toggleable,
+    // Use the model class name for toggle detection (engine.getModelClass)
+    // This is required by AddSubModelButton to locate existing instances
+    useModel: M.name,
     children: buildSubModelChildren(M),
   };
   if (!item.children) {
