@@ -12,10 +12,12 @@ import {
   buildFieldItems,
   SingleRecordResource,
   escapeT,
-  AddFieldButton,
+  AddSubModelButton,
+  FlowSettingsButton,
   useFlowEngine,
   DndProvider,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
@@ -65,7 +67,7 @@ const AddFieldColumn = ({ model }) => {
     },
   );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
@@ -79,7 +81,10 @@ const AddFieldColumn = ({ model }) => {
           currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
         }
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

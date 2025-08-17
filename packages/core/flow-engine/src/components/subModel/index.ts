@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AddFieldButton';
 export * from './AddSubModelButton';
 export * from './utils';
 //

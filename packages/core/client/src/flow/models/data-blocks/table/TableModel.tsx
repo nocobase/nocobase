@@ -13,8 +13,6 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
   AddSubModelButton,
-  AddFieldButton,
-  buildActionItems,
   buildFieldItems,
   DndProvider,
   DragHandler,
@@ -144,7 +142,7 @@ const AddFieldColumn = ({ model }) => {
     }),
   );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
@@ -155,7 +153,10 @@ const AddFieldColumn = ({ model }) => {
       onSubModelAdded={async (column: TableColumnModel) => {
         model.addAppends(column.fieldPath, true);
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

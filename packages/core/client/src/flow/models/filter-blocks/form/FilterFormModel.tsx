@@ -12,11 +12,9 @@ import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
 import {
   AddSubModelButton,
-  AddFieldButton,
   Collection,
   FlowModelRenderer,
   FlowSettingsButton,
-  buildActionItems,
   buildFieldItems,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
@@ -56,7 +54,9 @@ export class FilterFormModel extends FilterBlockModel {
               <FlowModelRenderer model={field} showFlowSettings={{ showBorder: false }} />
             ))}
           </FormLayout>
-          <AddFieldButton items={fieldItems} subModelKey="fields" model={this} />
+          <AddSubModelButton items={fieldItems} subModelKey="fields" model={this} keepDropdownOpen>
+            <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+          </AddSubModelButton>
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings={{ showBorder: false }} />
