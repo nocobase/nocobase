@@ -745,7 +745,7 @@ export class FlowSettings {
       destroyOnClose: true,
       ...modeProps,
       content: (currentDialog) => {
-        const editorEl = React.createElement(DynamicFlowsEditor as any, { value: reactiveFlows });
+        const editorEl = React.createElement(DynamicFlowsEditor as any, { value: reactiveFlows, model });
 
         const onSubmit = async () => {
           try {

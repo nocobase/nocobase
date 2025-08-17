@@ -378,6 +378,7 @@ export interface FlowModelMeta {
   label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
+  eventList?: { label: string; value: string }[]; // 支持的事件列表
   /**
    * 默认选项配置，支持静态对象或动态函数形式
    *

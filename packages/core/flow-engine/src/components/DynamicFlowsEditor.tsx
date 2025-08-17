@@ -9,11 +9,12 @@
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@nocobase/utils/client';
-import { Collapse, Space, Button, Tabs, Input, Modal, Form, Empty } from 'antd';
+import { Collapse, Space, Button, Tabs, Input, Modal, Form, Empty, Select } from 'antd';
 import type { FormInstance } from 'antd';
 import { FlowDefinition } from '../types';
 import { observer } from '@formily/react';
 import React from 'react';
+import { FlowModel } from '../models';
 
 const Panel = Collapse.Panel;
 
@@ -25,8 +26,9 @@ const Panel = Collapse.Panel;
  * - 支持新增/删除 Flow 与 Step；所有改动直接作用于传入的响应式 value
  */
 export const DynamicFlowsEditor = observer(
-  (props: { value: FlowDefinition[] }) => {
-    const { value } = props;
+  (props: { value: FlowDefinition[]; model: FlowModel }) => {
+    const { value, model } = props;
+    const eventList = (model.constructor as any).meta?.eventList || [];
 
     // 活动 tab
     const [activeKey, setActiveKey] = React.useState<string>(() => {
@@ -224,7 +226,14 @@ export const DynamicFlowsEditor = observer(
               name="eventName"
               extra="The event name used to dispatch and trigger this flow"
             >
-              <Input style={{ width: '100%' }} placeholder="选择一个事件名称" />
+              <Select
+                style={{ width: '100%' }}
+                placeholder="选择一个事件名称"
+                options={eventList}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
 
             <Form.Item label="Steps">
