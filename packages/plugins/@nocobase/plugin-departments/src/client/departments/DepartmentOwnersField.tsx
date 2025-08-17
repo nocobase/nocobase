@@ -29,6 +29,7 @@ import { Select } from 'antd';
 import { Field } from '@formily/core';
 import { connect, mapReadPretty, useField } from '@formily/react';
 import { departmentOwnersSchema } from './schemas/departments';
+import { useDepartmentTranslation } from '../locale';
 
 // Edit mode
 export const EditableDepartmentOwnersField: React.FC = () => {
@@ -37,6 +38,8 @@ export const EditableDepartmentOwnersField: React.FC = () => {
   const field = useField<Field>();
   const [value, setValue] = useState([]);
   const selectedRows = useRef([]);
+  const { t } = useDepartmentTranslation();
+  const isCreate = !department?.id;
   const handleSelect = (_: number[], rows: any[]) => {
     selectedRows.current = rows;
   };
@@ -106,6 +109,8 @@ export const EditableDepartmentOwnersField: React.FC = () => {
         value={value}
         labelInValue={true}
         onDropdownVisibleChange={(open) => setVisible(open)}
+        disabled={isCreate}
+        placeholder={isCreate ? t('Please create department first') : ''}
       />
       <SchemaComponent
         schema={departmentOwnersSchema}
