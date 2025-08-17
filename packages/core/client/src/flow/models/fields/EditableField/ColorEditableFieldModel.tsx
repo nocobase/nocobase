@@ -49,6 +49,6 @@ export class ColorEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['color'];
 
   get component() {
-    return [ColorPicker, { style: {} }];
+    return [ColorPicker, {}];
   }
 }
