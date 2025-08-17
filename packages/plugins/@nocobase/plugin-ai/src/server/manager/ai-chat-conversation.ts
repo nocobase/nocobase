@@ -102,6 +102,18 @@ class AIChatConversationImpl implements AIChatConversation {
       filter,
     });
   }
+
+  async lastUserMessage(): Promise<AIMessage> {
+    const filter: Filter = {
+      sessionId: this.sessionId,
+      role: 'user',
+    };
+    return await this.aiConversationMessagesRepo.findOne({
+      sort: ['-messageId'],
+      filter,
+    });
+  }
+
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
     const messages = await this.formatMessages(aiMessages, options.provider);

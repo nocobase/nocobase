@@ -24,14 +24,22 @@ import { uid } from '@formily/shared';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const useCreateFormProps = () => {
+  const t = useT();
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
           username: `${uid()}`,
+          enableKnowledgeBase: false,
+          knowledgeBase: {
+            knowledgeBaseIds: [],
+            topK: 3,
+            score: '0.6',
+          },
+          knowledgeBasePrompt: t('knowledge Base Prompt default'),
         },
       }),
-    [],
+    [t],
   );
   return {
     form,
