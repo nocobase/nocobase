@@ -277,6 +277,7 @@ export interface CreateModelOptions {
   uid?: string;
   use: RegisteredModelClassName | ModelConstructor;
   props?: IModelComponentProps;
+  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
   stepParams?: StepParams;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   parentId?: string;
@@ -364,6 +365,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
+  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;
