@@ -165,7 +165,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.emitter.on(eventName, listener);
   }
 
-  onInit(options) {}
+  onInit(options) {
+    this.loadDynamicFlows()
+      .then((flows) => {
+        if (!_.isEmpty(flows)) {
+          this.setDynamicFlows(flows);
+        }
+      })
+      .catch((error) => {
+        console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
+      });
+  }
 
   get async() {
     return this._options.async || false;
@@ -1333,6 +1343,31 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       model: this,
       ...options,
     });
+  }
+
+  #dynamicFlows: FlowDefinition[] = [];
+
+  // TODO：后面去除这个方法，应该默认加载动态流
+  async loadDynamicFlows(): Promise<FlowDefinition[]> {
+    return JSON.parse(localStorage.getItem('DYNAMIC_FLOWS') || '[]');
+  }
+
+  async saveDynamicFlows(): Promise<void> {
+    // TODO: 暂时的做法，后面需要改进
+    localStorage.setItem('DYNAMIC_FLOWS', JSON.stringify(this.#dynamicFlows));
+  }
+
+  setDynamicFlows(flows: FlowDefinition[]): void {
+    this.#dynamicFlows = flows;
+
+    flows.forEach((flow) => {
+      // @ts-ignore
+      this.constructor.registerFlow(flow);
+    });
+  }
+
+  getDynamicFlows(): FlowDefinition[] {
+    return this.#dynamicFlows;
   }
 }
 
