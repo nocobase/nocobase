@@ -45,10 +45,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
 
   // 构建选项
+  // 注意：rc-cascader 内部对 options 做了基于引用的缓存（useEntities）。
+  // 懒加载 children 时我们会原位修改 metaTree；此处依赖 updateFlag 以确保 options 引用变化，
+  // 触发 rc-cascader 重新构建 pathKeyEntities，避免二级节点未被索引导致的报错。
   const options = useMemo(() => {
     if (!resolvedMetaTree) return [];
     return buildContextSelectorItems(resolvedMetaTree);
-  }, [resolvedMetaTree]);
+  }, [resolvedMetaTree, updateFlag]);
 
   // 处理异步加载子节点
   const handleLoadData = useCallback(

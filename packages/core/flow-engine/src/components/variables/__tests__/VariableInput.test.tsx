@@ -15,6 +15,55 @@ import { VariableInput } from '../VariableInput';
 import { createTestFlowContext } from './test-utils';
 
 describe('VariableInput', () => {
+  it('should not emit duplicate onChange during initial restoration', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+    render(
+      <VariableInput
+        value="{{ ctx.user.name }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
+
+    // Should call at most once while restoring meta from value
+    await waitFor(
+      () => {
+        expect(onChange.mock.calls.length).toBeLessThanOrEqual(1);
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it('should emit onChange on mount to backfill meta from initial value', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+
+    render(
+      <VariableInput
+        value="{{ ctx.user.name }}"
+        onChange={onChange}
+        metaTree={() => flowContext.getPropertyMetaTree()}
+      />,
+    );
+
+    await waitFor(
+      () => {
+        // should have been called exactly once during initialization
+        expect(onChange).toHaveBeenCalledTimes(1);
+        const [val, meta] = onChange.mock.calls[0];
+        expect(val).toBe('{{ ctx.user.name }}');
+        expect(meta).toEqual(
+          expect.objectContaining({
+            name: 'name',
+            title: 'Name',
+            paths: ['user', 'name'],
+          }),
+        );
+      },
+      { timeout: 3000 },
+    );
+  });
   it('should render Input for static values', async () => {
     const flowContext = createTestFlowContext();
     render(<VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />);
@@ -55,7 +104,7 @@ describe('VariableInput', () => {
     const input = await screen.findByDisplayValue('initial');
     fireEvent.change(input, { target: { value: 'new value' } });
 
-    expect(onChange).toHaveBeenCalledWith('new value');
+    expect(onChange).toHaveBeenCalledWith('new value', undefined);
   });
 
   it('should handle variable selection from FlowContextSelector', async () => {
