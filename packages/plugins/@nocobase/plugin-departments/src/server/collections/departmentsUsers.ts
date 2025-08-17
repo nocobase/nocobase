@@ -25,13 +25,7 @@ export default defineCollection({
   fields: [
     {
       type: 'boolean',
-      name: 'isOwner', // Weather the user is the owner of the department
-      allowNull: false,
-      defaultValue: false,
-    },
-    {
-      type: 'boolean',
-      name: 'isMain', // Weather this is the main department of the user
+      name: 'isOwner',
       allowNull: false,
       defaultValue: false,
     },

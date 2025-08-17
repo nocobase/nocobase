@@ -20,82 +20,58 @@ import { Context, Next } from '@nocobase/actions';
 
 export const setMainDepartment = async (ctx: Context, next: Next) => {
   await next();
+
   const { associatedName, resourceName, associatedIndex, actionName, values } = ctx.action.params;
+
+  // When operating from department side: departments.members
   if (associatedName === 'departments' && resourceName === 'members' && values?.length) {
+    const userRepo = ctx.db.getRepository('users');
     const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const usersHasMain = await throughRepo.find({
-      filter: {
-        userId: {
-          $in: values,
-        },
-        isMain: true,
-      },
-    });
-    const userIdsHasMain = usersHasMain.map((item) => item.userId);
+
     if (actionName === 'add' || actionName === 'set') {
-      await throughRepo.update({
-        filter: {
-          userId: {
-            $in: values.filter((id) => !userIdsHasMain.includes(id)),
-          },
-          departmentId: associatedIndex,
-        },
-        values: {
-          isMain: true,
-        },
-      });
+      // Set first main if not have one
+      for (const userId of values) {
+        const user = await userRepo.findOne({ filterByTk: userId, fields: ['id', 'mainDepartmentId'] });
+        if (!user?.mainDepartmentId) {
+          await userRepo.update({
+            filterByTk: userId,
+            values: { mainDepartmentId: associatedIndex },
+          });
+        }
+      }
       return;
     }
 
     if (actionName === 'remove') {
-      const userIdsHasNoMain = values.filter((id) => !userIdsHasMain.includes(id));
-      for (const userId of userIdsHasNoMain) {
-        const firstDept = await throughRepo.findOne({
-          filter: {
-            userId,
-          },
-        });
-        if (firstDept) {
-          await throughRepo.update({
-            filter: {
-              userId,
-              departmentId: firstDept.departmentId,
-            },
-            values: {
-              isMain: true,
-            },
+      for (const userId of values) {
+        const user = await userRepo.findOne({ filterByTk: userId, fields: ['id', 'mainDepartmentId'] });
+        if (user?.mainDepartmentId === associatedIndex) {
+          const firstDept = await throughRepo.findOne({
+            filter: { userId, departmentId: { $ne: associatedIndex } },
+          });
+          await userRepo.update({
+            filterByTk: userId,
+            values: { mainDepartmentId: firstDept ? firstDept.departmentId : null },
           });
         }
       }
     }
   }
 
+  // When operating from user side: users.departments
   if (associatedName === 'users' && resourceName === 'departments' && ['add', 'remove', 'set'].includes(actionName)) {
+    const userRepo = ctx.db.getRepository('users');
     const throughRepo = ctx.db.getRepository('departmentsUsers');
-    const hasMain = await throughRepo.findOne({
-      filter: {
-        userId: associatedIndex,
-        isMain: true,
-      },
-    });
-    if (hasMain) {
-      return;
-    }
-    const firstDept = await throughRepo.findOne({
-      filter: {
-        userId: associatedIndex,
-      },
-    });
-    if (firstDept) {
-      await throughRepo.update({
-        filter: {
-          userId: associatedIndex,
-          departmentId: firstDept.departmentId,
-        },
-        values: {
-          isMain: true,
-        },
-      });
+    const user = await userRepo.findOne({ filterByTk: associatedIndex, fields: ['id', 'mainDepartmentId'] });
+
+    if (!user?.mainDepartmentId) {
+      const firstDept = await throughRepo.findOne({ filter: { userId: associatedIndex } });
+      if (firstDept) {
+        await userRepo.update({
+          filterByTk: associatedIndex,
+          values: { mainDepartmentId: firstDept.departmentId },
+        });
+      }
     }
   }
 };
