@@ -56,6 +56,7 @@ vi.mock('@formily/antd-v5', () => ({
 vi.mock('antd', () => ({
   Button: () => 'Button',
   Space: () => 'Space',
+  Tabs: () => 'Tabs',
   Collapse: Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' }),
 }));
 
@@ -610,5 +611,94 @@ describe('FlowSettings.open rendering behavior', () => {
 
     expect(drawer).toHaveBeenCalledTimes(1);
     expect(dialog).not.toHaveBeenCalled();
+  });
+
+  it('sets title to step title when flowKey+stepKey are provided and only one step matches', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-title-step', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'tf-step',
+      steps: {
+        general: {
+          title: 'General',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('General');
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'tf-step', stepKey: 'general' } as any);
+    expect(dialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets title to flow title when only one flow and no stepKey', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'tf-flow',
+      title: 'My Flow',
+      steps: {
+        a: { title: 'A', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
+        b: { title: 'B', uiSchema: { g: { type: 'string', 'x-component': 'Input' } } },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('My Flow');
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    // do not pass stepKey, and also omit flowKey to allow aggregator path to pick the only flow
+    await flowSettings.open({ model } as any);
+    expect(dialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets empty title when rendering multiple flows together', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'f1',
+      title: 'Flow 1',
+      steps: { s1: { title: 'S1', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
+    });
+    M.registerFlow({
+      key: 'f2',
+      title: 'Flow 2',
+      steps: { s2: { title: 'S2', uiSchema: { b: { type: 'string', 'x-component': 'Input' } } } },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('');
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    // omit flowKey to include all flows
+    await flowSettings.open({ model } as any);
+    expect(dialog).toHaveBeenCalledTimes(1);
   });
 });

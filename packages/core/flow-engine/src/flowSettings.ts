@@ -559,9 +559,29 @@ export class FlowSettings {
       forms.set(keyOf(e), form);
     });
 
+    // 判定是否存在多个 flow
+    const flowKeysOrdered = Object.keys(grouped);
+    const multipleFlows = flowKeysOrdered.length > 1;
+
+    const getTitle = () => {
+      // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 返回 step 标题
+      if (flowKey && stepKey && entries.length === 1) {
+        return entries[0].stepTitle;
+      }
+
+      if (!multipleFlows) {
+        const onlyFlow = grouped[flowKeysOrdered[0]];
+        // 情况 B：未提供 stepKey 且仅有一个步骤 => 返回 flow 标题
+        return onlyFlow.title;
+      }
+
+      // 情况 C：多 flow 分组渲染 => 返回空标题
+      return '';
+    };
+
     return openView({
       // 默认标题与宽度可被传入的 props 覆盖
-      title: modeProps.title ?? t('Flow settings'),
+      title: modeProps.title || getTitle(),
       width: modeProps.width ?? 840,
       destroyOnClose: true,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
@@ -586,10 +606,6 @@ export class FlowSettings {
             ),
           );
         };
-
-        // 判定是否存在多个 flow
-        const flowKeysOrdered = Object.keys(grouped);
-        const multipleFlows = flowKeysOrdered.length > 1;
 
         const renderStepPanels = (steps: StepEntry[]) =>
           steps.map((s) => React.createElement(Panel, { header: s.stepTitle, key: keyOf(s) }, renderStepForm(s)));
