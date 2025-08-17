@@ -64,8 +64,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(({
 
   // 处理左侧值变化（值由 converters 决定如何解析）
   const handleLeftChange = useCallback(
-    (variableValue: string) => {
+    (variableValue: string, meta?: MetaTreeNode) => {
       value.leftValue = variableValue || '';
+      if (meta) {
+        setLeftMeta(meta);
+      }
     },
     [value],
   );
