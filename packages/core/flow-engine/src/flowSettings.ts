@@ -402,9 +402,9 @@ export class FlowSettings {
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
    * @param {FlowSettingsOpenOptions} options 打开选项
-   * @returns {Promise<unknown>} Promise：打开并交互完成后的结果（当前未返回具体值）
+   * @returns {Promise<boolean>} 是否成功打开弹窗
    */
-  public async open(options: FlowSettingsOpenOptions): Promise<unknown> {
+  public async open(options: FlowSettingsOpenOptions): Promise<boolean> {
     const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset, onCancel, onSaved } = options;
 
     // 基础校验
@@ -526,7 +526,7 @@ export class FlowSettings {
       if (!preset) {
         message?.info?.(t('This model has no configurable flow settings'));
       }
-      return {};
+      return false;
     }
 
     // 渲染视图（对话框/抽屉）
@@ -579,7 +579,7 @@ export class FlowSettings {
       return '';
     };
 
-    return openView({
+    openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
       width: modeProps.width ?? 840,
@@ -714,5 +714,7 @@ export class FlowSettings {
         return React.createElement(React.Fragment, null, stepsEl, footerEl);
       },
     });
+
+    return true;
   }
 }

@@ -7,9 +7,9 @@
 ## 方法签名
 
 ```ts
-model.openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>);
+model.openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>): Promise<boolean>;
 
-flowEngine.flowSettings.open(options: FlowSettingsOpenOptions);
+flowEngine.flowSettings.open(options: FlowSettingsOpenOptions): Promise<boolean>;
 
 interface FlowSettingsOpenOptions {
 	model: FlowModel;               // 必填，所属的模型实例
@@ -23,6 +23,13 @@ interface FlowSettingsOpenOptions {
 }
 ```
 
+### 返回值
+
+- 返回 `true`：已成功打开配置弹窗（对话框或抽屉）。
+- 返回 `false`：未打开弹窗，通常因为没有任何可配置的步骤（例如步骤均无 `uiSchema` 或被 `hideInSettings` 过滤；或在 `preset: true` 时没有命中预设步骤）。
+
+注意：返回值仅表示“是否打开了弹窗”，不代表用户是否点击了“确定”保存。保存成功与否可通过 `onSaved` 回调感知。
+
 ## 行为约定一览
 
 - 必须提供 model 实例；用于读取 flow 定义、上下文与保存参数。
@@ -34,6 +41,8 @@ interface FlowSettingsOpenOptions {
 - 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤。
 - uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
 - 保存顺序：对每个 step 执行 submit -> setStepParams -> beforeParamsSave -> 统一 model.save() -> afterParamsSave。
+
+- 方法返回布尔值：`true` 表示已打开弹窗；`false` 表示未打开（例如没有可配置步骤），此时不会触发 `onSaved`/`onCancel` 回调。
 
 > 提示：仅包含具备 uiSchema 且未被 hideInSettings 的步骤会被渲染到配置表单中。
 
@@ -112,7 +121,7 @@ interface FlowSettingsOpenOptions {
 
 ```ts
 // 推荐：通过 model.openFlowSettings 调用
-await model.openFlowSettings({
+const opened = await model.openFlowSettings({
 	flowKey: 'myFlow',
 	stepKey: 'general',
 	onSaved: () => {
@@ -123,11 +132,20 @@ await model.openFlowSettings({
 	},
 });
 
+if (!opened) {
+	// 未打开弹窗时的兜底处理，例如：直接执行后续逻辑或提示用户
+	console.log('No configurable steps, nothing opened.');
+}
+
 // 或者直接调用 flowEngine.flowSettings.open
-await flowEngine.flowSettings.open({
+const openedByEngine = await flowEngine.flowSettings.open({
 	model,
 	flowKey: 'myFlow',
 	onSaved: () => {/* ... */},
 	onCancel: () => {/* ... */},
 });
+
+if (!openedByEngine) {
+	// 兜底处理
+}
 ```
