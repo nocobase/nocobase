@@ -114,43 +114,32 @@ export const DynamicFlowsEditor = observer(
       stepKey,
       form,
     }) => {
-      // 自定义 JSON 校验器
-      const jsonValidator = (_: any, value: string) => {
-        if (!value?.trim()) {
-          return Promise.reject(new Error('Params JSON is required'));
-        }
-        try {
-          JSON.parse(value);
-          return Promise.resolve();
-        } catch (e) {
-          const msg = (e as Error)?.message || 'Invalid JSON';
-          return Promise.reject(new Error(`Invalid JSON: ${msg}`));
-        }
-      };
-
       return (
-        <Form.Item
-          name={['steps', stepKey, 'defaultParamsText']}
-          label="Default parameters"
-          initialValue={JSON.stringify((flow.steps as any)[stepKey]?.defaultParams || {}, null, 2)}
-          validateTrigger={['onBlur']}
-          rules={[{ validator: jsonValidator }]}
-        >
-          <Input.TextArea
-            onBlur={() => {
-              const v = form.getFieldValue(['steps', stepKey, 'defaultParamsText']);
-              try {
-                const obj = v ? JSON.parse(v) : {};
-                (flow.steps as any)[stepKey].defaultParams = obj;
-              } catch (e) {
-                // eslint-disable-next-line no-console
-                console.warn('DynamicFlowsEditor: invalid JSON for defaultParams', e);
-              }
-            }}
-            autoSize={{ minRows: 6 }}
-            placeholder={'{\n  "foo": "bar"\n}'}
-          />
-        </Form.Item>
+        <>
+          <Form.Item name={['steps', stepKey, 'targetUid']} label="Target UID">
+            <Input
+              placeholder="Enter target uid"
+              onChange={(e: any) => {
+                const v = e?.target?.value;
+                (flow.steps as any)[stepKey] = (flow.steps as any)[stepKey] || ({} as any);
+                (flow.steps as any)[stepKey].defaultParams = (flow.steps as any)[stepKey].defaultParams || {};
+                (flow.steps as any)[stepKey].defaultParams.targetUid = v;
+              }}
+            />
+          </Form.Item>
+          <Form.Item name={['steps', stepKey, 'action']} label="Action">
+            <Select
+              placeholder="Select an action"
+              options={[]}
+              allowClear
+              onChange={(val: any) => {
+                (flow.steps as any)[stepKey] = (flow.steps as any)[stepKey] || ({} as any);
+                (flow.steps as any)[stepKey].defaultParams = (flow.steps as any)[stepKey].defaultParams || {};
+                (flow.steps as any)[stepKey].defaultParams.action = val;
+              }}
+            />
+          </Form.Item>
+        </>
       );
     };
 
@@ -162,7 +151,10 @@ export const DynamicFlowsEditor = observer(
           const stepsInitial: Record<string, any> = {};
           for (const sk of stepKeys) {
             const params = (flow.steps as any)[sk]?.defaultParams || {};
-            stepsInitial[sk] = { defaultParamsText: JSON.stringify(params, null, 2) };
+            stepsInitial[sk] = {
+              targetUid: params.targetUid ?? '',
+              action: params.action ?? undefined,
+            };
           }
           return {
             eventName: typeof (flow as any).on === 'string' ? (flow as any).on : (flow as any).on?.eventName ?? '',
