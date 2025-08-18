@@ -277,6 +277,7 @@ export interface CreateModelOptions {
   uid?: string;
   use: RegisteredModelClassName | ModelConstructor;
   props?: IModelComponentProps;
+  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
   stepParams?: StepParams;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   parentId?: string;
@@ -364,6 +365,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
+  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;
@@ -378,6 +380,7 @@ export interface FlowModelMeta {
   label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
+  eventList?: { label: string; value: string }[]; // 支持的事件列表
   /**
    * 默认选项配置，支持静态对象或动态函数形式
    *

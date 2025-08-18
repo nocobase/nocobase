@@ -43,6 +43,12 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
 
   const customTagRender = (props: any) => {
     const { label, closable, onClose } = props;
+
+    const truncateText = (text: string, maxLength = 16) => {
+      if (!text || text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    };
+
     return (
       <Tag
         color="blue"
@@ -52,9 +58,12 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
           fontSize: '12px',
           lineHeight: '20px',
           padding: '0 8px',
+          height: '24px',
+          display: 'inline-flex',
+          alignItems: 'center',
         }}
       >
-        {label}
+        {truncateText(label)}
       </Tag>
     );
   };
@@ -62,18 +71,24 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   return (
     <Select
       className={cx('variable', className)}
-      style={style}
+      style={{
+        height: '32px',
+        minHeight: '32px',
+        maxWidth: '200px',
+        flex: '1 1 auto',
+        ...style,
+      }}
       value={displayedValue ? [displayedValue] : []}
-      mode="multiple"
+      mode="tags"
       open={false}
       allowClear={!!onClear}
+      maxTagTextLength={20}
       onClear={onClear}
       disabled={!onClear}
       variant="outlined"
       suffixIcon={null}
       tagRender={customTagRender}
       onClick={(e) => e.preventDefault()}
-      maxTagCount="responsive"
       removeIcon={null}
     />
   );

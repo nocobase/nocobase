@@ -8,14 +8,17 @@
  */
 
 import { observable } from '@formily/reactive';
+import { ISchema } from '@nocobase/client';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
+import _ from 'lodash';
+import loglevel from 'loglevel';
+import pino from 'pino';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
-import _ from 'lodash';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
@@ -30,10 +33,9 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { FlowExitException, resolveExpressions, extractPropertyPath } from './utils';
+import { extractPropertyPath, FlowExitException, resolveExpressions } from './utils';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
-import { ISchema } from '@nocobase/client';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -764,6 +766,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare route: RouteOptions;
   declare location: Location;
   declare sql: FlowSQLRepository;
+  declare logger: pino.Logger;
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -807,6 +810,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
+    });
+    this.defineProperty('logger', {
+      get: () => {
+        return this.engine.logger.child({ module: 'flow-engine' });
+      },
     });
     this.defineProperty('auth', {
       get: () => ({
