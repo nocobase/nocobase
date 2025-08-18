@@ -323,6 +323,7 @@ describe('validation', () => {
             validation: {
               type: 'string',
               rules: [
+                { key: `r_${uid()}`, name: 'required' },
                 { key: `r_${uid()}`, name: 'min', args: { limit: 2 } },
                 { key: `r_${uid()}`, name: 'max', args: { limit: 5 } },
                 { key: `r_${uid()}`, name: 'pattern', args: { regex: /^[a-zA-Z]+$/ } }, // only letters
