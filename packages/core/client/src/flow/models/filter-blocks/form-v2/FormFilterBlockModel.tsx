@@ -14,7 +14,6 @@ import { FormProvider } from '@formily/react';
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import {
   AddSubModelButton,
-  buildActionItems,
   DndProvider,
   DragHandler,
   Droppable,

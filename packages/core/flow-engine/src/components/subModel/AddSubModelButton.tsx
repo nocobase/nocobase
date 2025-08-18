@@ -54,8 +54,9 @@ interface AddSubModelButtonProps {
   subModelBaseClasses?: Array<string | ModelConstructor>;
   subModelType?: 'object' | 'array';
   subModelKey: string;
-  onModelCreated?: (subModel: FlowModel) => Promise<void>;
-  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelInit?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelAdd?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelRemove?: (subModel: FlowModel) => Promise<void>;
   children?: React.ReactNode;
   keepDropdownOpen?: boolean;
 }
@@ -219,7 +220,9 @@ const transformSubModelItems = async (
   }
 
   // 批量执行 toggleDetector
-  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(model.context)));
+  const toggleResults = await Promise.allSettled(
+    toggleItems.map(({ item }) => (item.toggleDetector ? item.toggleDetector(model.context) : Promise.resolve(false))),
+  );
 
   const toggleMap = new Map<number, boolean>();
   toggleItems.forEach(({ index }, i) => {
@@ -317,7 +320,7 @@ const createDefaultRemoveHandler = (config: {
   subModelKey: string;
   subModelType: 'object' | 'array';
 }) => {
-  return async (item: SubModelItem, parentModel: FlowModel): Promise<void> => {
+  return async (item: SubModelItem, parentModel: FlowModel): Promise<FlowModel | null> => {
     const { model, subModelKey, subModelType } = config;
 
     if (subModelType === 'array') {
@@ -343,6 +346,7 @@ const createDefaultRemoveHandler = (config: {
           await targetModel.destroy();
           const index = subModels.indexOf(targetModel);
           if (index > -1) subModels.splice(index, 1);
+          return targetModel;
         }
       }
     } else {
@@ -350,8 +354,10 @@ const createDefaultRemoveHandler = (config: {
       if (subModel) {
         await subModel.destroy();
         (model.subModels as any)[subModelKey] = undefined;
+        return subModel;
       }
     }
+    return null;
   };
 };
 
@@ -375,8 +381,9 @@ const AddSubModelButtonCore = function AddSubModelButton({
   subModelBaseClasses,
   subModelType = 'array',
   subModelKey,
-  onModelCreated,
-  onSubModelAdded,
+  afterSubModelInit,
+  afterSubModelAdd,
+  afterSubModelRemove,
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
@@ -410,10 +417,25 @@ const AddSubModelButtonCore = function AddSubModelButton({
     // 处理可切换菜单项的开关操作
     if (item.toggleDetector && isToggled) {
       try {
+        // 先定位将要删除的 subModel，供回调使用
+        let removedModel: FlowModel | null = null;
+        try {
+          const C = model.flowEngine.getModelClass(item.useModel);
+          if (C) {
+            removedModel = model.findSubModel(subModelKey, (m) => m.constructor === C);
+          }
+        } catch (e) {
+          // Ignore error
+        }
+
         if (item.customRemove) {
           await item.customRemove(model.context, item);
         } else {
-          await removeHandler(item, model);
+          removedModel = (await removeHandler(item, model)) || removedModel;
+        }
+
+        if (afterSubModelRemove && removedModel) {
+          await afterSubModelRemove(removedModel);
         }
       } catch (error) {
         console.error('Failed to remove sub model:', error);
@@ -441,8 +463,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
       addedModel.setParent(model);
       await addedModel.openPresetStepSettingsDialog();
 
-      if (onModelCreated) {
-        await onModelCreated(addedModel);
+      if (afterSubModelInit) {
+        await afterSubModelInit(addedModel);
       }
 
       if (subModelType === 'array') {
@@ -451,8 +473,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
         model.setSubModel(subModelKey, addedModel);
       }
 
-      if (onSubModelAdded) {
-        await onSubModelAdded(addedModel);
+      if (afterSubModelAdd) {
+        await afterSubModelAdd(addedModel);
       }
 
       await addedModel.save();

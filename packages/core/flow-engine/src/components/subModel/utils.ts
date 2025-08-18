@@ -100,10 +100,14 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
       if (!children || children?.length === 0) {
         continue;
       }
+      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
+      const groupLabel =
+        BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
       items.push({
-        key: BaseClass.name,
+        // 使用传入的字符串作为 key，避免使用类名在压缩后不稳定的问题
+        key: typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name,
         type: 'group',
-        label: BaseClass.meta?.label || BaseClass.name,
+        label: groupLabel,
         children,
       });
     }

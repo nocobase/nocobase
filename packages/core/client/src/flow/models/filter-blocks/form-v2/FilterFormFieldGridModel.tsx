@@ -153,7 +153,7 @@ export class FilterFormFieldGridModel extends GridModel {
         items={this.menuItems}
         subModelKey="items"
         model={this}
-        onModelCreated={this.onModelCreated.bind(this)}
+        afterSubModelInit={this.onModelCreated.bind(this)}
         keepDropdownOpen
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
