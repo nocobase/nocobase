@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { Input, Space } from 'antd';
 import type { VariableInputProps } from './types';
 import { FlowContextSelector } from '../FlowContextSelector';
@@ -24,38 +24,40 @@ const compactStyle = {
 
 /**
  * 根据路径数组在metaTree中查找对应的MetaTreeNode
- * @param metaTree MetaTreeNode数组
- * @param targetPath 目标路径数组，例如 ["user", "profile"]
- * @returns 找到的MetaTreeNode或null
+ * - 支持在 metaTree 为子树（如去掉了根级 ctx.collection）的情况下，自动裁剪首段进行查找
  */
 const findMetaTreeNodeByPath = (metaTree: MetaTreeNode[], targetPath: string[]): MetaTreeNode | null => {
-  if (!targetPath || targetPath.length === 0) {
-    return null;
-  }
+  if (!targetPath || targetPath.length === 0) return null;
 
-  // 递归搜索函数
   const searchInNodes = (nodes: MetaTreeNode[], path: string[]): MetaTreeNode | null => {
     for (const node of nodes) {
-      // 检查当前节点的paths是否匹配目标路径
       if (node.paths && arraysEqual(node.paths, path)) {
         return node;
       }
-
-      // 如果当前节点的路径是目标路径的前缀，则继续在子节点中搜索
       if (node.paths && isPathPrefix(node.paths, path) && node.children) {
-        // 同步子节点：直接搜索
         if (Array.isArray(node.children)) {
           const found = searchInNodes(node.children, path);
           if (found) return found;
         }
-        // 异步子节点：暂时跳过，因为这是一个同步函数
-        // 在实际使用中，如果遇到异步子节点，可能需要在组件层面处理
       }
     }
     return null;
   };
 
-  return searchInNodes(metaTree, targetPath);
+  // 1) 直接尝试完整路径
+  const direct = searchInNodes(metaTree, targetPath);
+  if (direct) return direct;
+
+  // 2) 若顶层不包含首段，则裁剪首段重试（兼容子树作为 metaTree 的情况）
+  const topNames = new Set((metaTree || []).map((n) => String(n.name)));
+  if (!topNames.has(String(targetPath[0]))) {
+    const trimmed = targetPath.slice(1);
+    if (trimmed.length > 0) {
+      return searchInNodes(metaTree, trimmed);
+    }
+  }
+
+  return null;
 };
 
 /**
@@ -85,6 +87,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   ...restProps
 }) => {
   const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
+  const lastEmitRef = useRef<{ value: any; path?: string } | null>(null);
   const { resolveValueFromPath, resolvePathFromValue, renderInputComponent } = useMemo(() => {
     return createFinalConverters(propConverters);
   }, [propConverters]);
@@ -102,20 +105,88 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     { refreshDeps: [metaTree] },
   );
 
-  const resolvedMetaTreeNode = useMemo(() => {
-    if (currentMetaTreeNode) {
-      return currentMetaTreeNode;
-    }
+  const emitChange = useCallback(
+    (nextValue: any, meta?: MetaTreeNode) => {
+      const nextPath = meta?.paths ? meta.paths.join('.') : undefined;
+      const last = lastEmitRef.current;
+      if (last && last.value === nextValue && last.path === nextPath) {
+        return false;
+      }
+      lastEmitRef.current = { value: nextValue, path: nextPath };
+      onChange?.(nextValue, meta);
+      return true;
+    },
+    [onChange],
+  );
 
+  const resolvedMetaTreeNode = useMemo(() => {
+    if (currentMetaTreeNode) return currentMetaTreeNode;
     if (Array.isArray(resolvedMetaTree)) {
       const path = resolvePathFromValue?.(value);
       if (path) {
         return findMetaTreeNodeByPath(resolvedMetaTree, path);
       }
     }
-
     return null;
   }, [currentMetaTreeNode, value, resolvedMetaTree, resolvePathFromValue]);
+
+  // 当 value 存在但 currentMetaTreeNode 还未恢复，尝试按路径逐级加载（支持 children 为函数的场景）
+  useEffect(() => {
+    const restoreFromValue = async () => {
+      if (!Array.isArray(resolvedMetaTree) || !value) return;
+
+      // 若已存在且路径匹配，跳过
+      if (currentMetaTreeNode) {
+        return;
+      }
+
+      const rawPath = resolvePathFromValue?.(value);
+      if (!rawPath || rawPath.length === 0) return;
+
+      // 兼容 metaTree 为子树的情况：若顶层无首段，裁剪第一段
+      const topNames = new Set(resolvedMetaTree.map((n) => String(n.name)));
+      const path = !topNames.has(String(rawPath[0])) ? rawPath.slice(1) : rawPath;
+      if (path.length === 0) return;
+
+      // 逐级解析，必要时异步加载 children
+      let nodes: MetaTreeNode[] | undefined = resolvedMetaTree;
+      let found: MetaTreeNode | null = null;
+      for (let i = 0; i < path.length; i++) {
+        if (!nodes) {
+          found = null;
+          break;
+        }
+        const seg = String(path[i]);
+        const node = nodes.find((n) => String(n?.name) === seg);
+        if (!node) {
+          found = null;
+          break;
+        }
+        found = node;
+        if (i < path.length - 1) {
+          if (Array.isArray(node.children)) {
+            nodes = node.children as any;
+          } else if (typeof node.children === 'function') {
+            try {
+              const childNodes = await (node.children as any)();
+              node.children = childNodes;
+              nodes = childNodes as any;
+            } catch {
+              nodes = undefined;
+            }
+          } else {
+            nodes = undefined;
+          }
+        }
+      }
+
+      if (found) {
+        setCurrentMetaTreeNode(found);
+      }
+    };
+
+    restoreFromValue();
+  }, [resolvedMetaTree, value, resolvePathFromValue, currentMetaTreeNode]);
 
   const ValueComponent = useMemo(() => {
     const Component = renderInputComponent?.(resolvedMetaTreeNode);
@@ -128,7 +199,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (!resolvedMetaTreeNode) return;
     if (!Array.isArray(resolvedMetaTree) || !value) return;
     const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || value;
-    onChange?.(finalValue, resolvedMetaTreeNode);
+    emitChange(finalValue, resolvedMetaTreeNode);
     setCurrentMetaTreeNode(resolvedMetaTreeNode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedMetaTreeNode]);
@@ -136,18 +207,18 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
-      onChange?.(newValue);
+      emitChange(newValue);
     },
-    [onChange],
+    [emitChange],
   );
 
   const handleVariableSelect = useCallback(
     (variableValue: string, metaTreeNode?: MetaTreeNode) => {
       setCurrentMetaTreeNode(metaTreeNode);
       const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
-      onChange?.(finalValue, metaTreeNode);
+      emitChange(finalValue, metaTreeNode);
     },
-    [onChange, resolveValueFromPath],
+    [emitChange, resolveValueFromPath],
   );
 
   const { disabled } = restProps;
@@ -157,8 +228,8 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return;
     }
     setCurrentMetaTreeNode(null);
-    onChange?.(null);
-  }, [onChange, disabled]);
+    emitChange(null);
+  }, [emitChange, disabled]);
 
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;

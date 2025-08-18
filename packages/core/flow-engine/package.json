@@ -12,6 +12,7 @@
     "ahooks": "^3.7.2",
     "dompurify": "^3.0.2",
     "lodash": "^4.x",
+    "pino": "^8.0.0",
     "ses": "^1.14.0",
     "slate": "^0.103.0",
     "slate-history": "^0.109.0",

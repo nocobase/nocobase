@@ -10,6 +10,7 @@
 export * from './confirm';
 export * from './dataScope';
 export * from './openView';
+export * from './runjs';
 export * from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';

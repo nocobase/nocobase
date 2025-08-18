@@ -8,9 +8,46 @@
  */
 
 import { define, observable } from '@formily/reactive';
+import React from 'react';
+import { Collapse, Space, Button, Tabs } from 'antd';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import type { FlowModel } from './models';
+import { FlowRuntimeContext } from './flowContext';
+import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import type { FlowDefinition } from './types';
+import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
+
+const Panel = Collapse.Panel;
+
+/**
+ * 打开流程设置的参数接口
+ */
+export interface FlowSettingsOpenOptions {
+  /** 目标模型实例（必填） */
+  model: FlowModel;
+  /** 是否打开预设（preset）步骤的配置 */
+  preset?: boolean;
+  /** 指定打开的单个流程 key（优先级高于 flowKeys） */
+  flowKey?: string;
+  /** 指定同时打开的多个流程 key（当 flowKey 存在时忽略） */
+  flowKeys?: string[];
+  /** 指定打开的步骤 key（配合 flowKey 使用） */
+  stepKey?: string;
+  /** 弹窗展现形式（drawer 或 dialog） */
+  uiMode?:
+    | 'dialog'
+    | 'drawer'
+    | { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
+  /** 点击取消按钮后触发的回调（关闭后调用） */
+  onCancel?: () => void | Promise<void>;
+  /** 配置保存成功后触发的回调 */
+  onSaved?: () => void | Promise<void>;
+}
 
 export class FlowSettings {
   public components: Record<string, any> = {};
@@ -339,5 +376,424 @@ export class FlowSettings {
    */
   public async openStepSettingsDialog(props: StepSettingsDialogProps): Promise<any> {
     return await openStepSettingsDialog(props);
+  }
+
+  /**
+   * 打开流程设置入口（聚合渲染多个 flow 的可配置步骤）
+   *
+   * 行为约定：
+   * - 必须提供 model 实例；用于解析 flow 定义、上下文与保存参数。
+   * - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准（只处理单个 flow）。
+   * - 当提供 stepKey 时，应与某个 flowKey 组合使用；仅渲染该 flow 下命中的步骤。
+   * - 当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
+   * - 当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
+   * - uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
+   *
+   * 副作用：
+   * - 打开对应的视图容器；提交时逐步校验与保存每个 step 的参数，调用 before/after hooks，并最终触发 model.save()。
+   * - 通过 model.context.message 提示保存成功或错误信息。
+   *
+   * 参数：
+   * - options.model: FlowModel 实例（必填）。
+   * - options.preset?: 当为 true 时，仅渲染 flow 中标记了 preset=true 的步骤。
+   * - options.flowKey?: 目标 flow 的 key。
+   * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
+   * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
+   * - options.uiMode?: 'dialog' | 'drawer' ｜ { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } }，默认 'dialog'。
+   * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
+   * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
+   *
+   * @param {FlowSettingsOpenOptions} options 打开选项
+   * @returns {Promise<boolean>} 是否成功打开弹窗
+   */
+  public async open(options: FlowSettingsOpenOptions): Promise<boolean> {
+    const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset, onCancel, onSaved } = options;
+
+    // 基础校验
+    if (!model) {
+      throw new Error('FlowSettings.open: model is required');
+    }
+
+    const t = getT(model);
+    const message = model.context?.message;
+
+    // 聚合渲染：准备需要处理的 flow 列表（flowKey 优先其余）
+    const ModelClass = model.constructor as typeof FlowModel;
+    const allFlowsMap = ModelClass.getFlows();
+    const targetFlowKeys: string[] = (() => {
+      if (flowKey) return [flowKey];
+      if (Array.isArray(flowKeys) && flowKeys.length) return flowKeys;
+      return Array.from(allFlowsMap.keys());
+    })();
+
+    // 收集可配置的步骤：仅包含具备 uiSchema 且未被 hideInSettings 的步骤
+    type StepEntry = {
+      flowKey: string;
+      flowTitle: string;
+      stepKey: string;
+      stepTitle: string;
+      formSchema: any; // ISchema 片段（已包装）
+      initialValues: any;
+      previousParams: any;
+      beforeParamsSave?: Function;
+      afterParamsSave?: Function;
+      ctx: any; // FlowRuntimeContext
+    };
+
+    const entries: StepEntry[] = [];
+
+    // 确保 Formily 组件已就绪（SchemaField/控件/作用域等）
+    await this.load();
+
+    for (const fk of targetFlowKeys) {
+      const flow = model.getFlow(fk);
+      if (!flow) {
+        // 忽略无效 flowKey，但记录日志
+        console.warn(`FlowSettings.open: Flow with key '${fk}' not found`);
+        continue;
+      }
+
+      // 遍历步骤，筛选有可配置 UI 的步骤
+      for (const sk of Object.keys(flow.steps || {})) {
+        // 如明确指定了 stepKey，则仅处理对应步骤
+        if (stepKey && sk !== stepKey) continue;
+        const step = (flow.steps as any)[sk];
+        if (!step || step.hideInSettings) continue;
+        // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
+        if (preset && !step.preset) continue;
+
+        // 解析合并后的 uiSchema（包含 action 的 schema）
+        const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
+        if (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) continue;
+
+        // 计算标题与 hooks
+        let stepTitle: string = step.title;
+        let beforeParamsSave = step.beforeParamsSave;
+        let afterParamsSave = step.afterParamsSave;
+        let actionDefaultParams: Record<string, any> = {};
+        if (step.use) {
+          const action = (model as any).flowEngine?.getAction?.(step.use);
+          if (action) {
+            actionDefaultParams = action.defaultParams || {};
+            stepTitle = stepTitle || action.title;
+            beforeParamsSave = beforeParamsSave || action.beforeParamsSave;
+            afterParamsSave = afterParamsSave || action.afterParamsSave;
+          }
+        }
+
+        // 构建 settings 上下文
+        const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
+        setupRuntimeContextSteps(flowRuntimeContext as any, flow as any, model as any, fk);
+        flowRuntimeContext.defineProperty('currentStep', { value: step });
+
+        // 解析默认值 + 当前参数
+        const modelStepParams = (model as any).getStepParams(fk, sk) || {};
+        const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext as any);
+        const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext as any);
+        const initialValues = {
+          ...(resolvedActionDefaults || {}),
+          ...(resolvedDefaultParams || {}),
+          ...modelStepParams,
+        };
+
+        // 包装为表单 schema（垂直布局），实际渲染时再进行 compile
+        const formSchema = {
+          type: 'object',
+          properties: {
+            layout: {
+              type: 'void',
+              'x-component': 'FormLayout',
+              'x-component-props': { layout: 'vertical' },
+              properties: mergedUiSchema,
+            },
+          },
+        } as ISchema;
+
+        entries.push({
+          flowKey: fk,
+          flowTitle: flow.title || fk,
+          stepKey: sk,
+          stepTitle: t(stepTitle) || sk,
+          initialValues,
+          previousParams: { ...(modelStepParams || {}) },
+          formSchema,
+          beforeParamsSave,
+          afterParamsSave,
+          ctx: flowRuntimeContext,
+        });
+      }
+    }
+
+    if (entries.length === 0) {
+      if (!preset) {
+        message?.info?.(t('This model has no configurable flow settings'));
+      }
+      return false;
+    }
+
+    // 渲染视图（对话框/抽屉）
+    const SchemaField = createSchemaField();
+    // 兼容新的 uiMode 定义：字符串或 { type, props }
+    const viewer = (model as any).context.viewer;
+    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
+    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
+    const openView = viewer[modeType].bind(viewer);
+    const flowEngine = (model as any).flowEngine;
+    const scopes = {
+      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
+      useFlowSettingsContext,
+      ...(flowEngine?.flowSettings?.scopes || {}),
+    } as Record<string, any>;
+
+    // 将步骤分组到 flow 下，用于 Collapse 分组展示
+    const grouped: Record<string, { title: string; steps: StepEntry[] }> = {};
+    entries.forEach((e) => {
+      if (!grouped[e.flowKey]) grouped[e.flowKey] = { title: e.flowTitle, steps: [] };
+      grouped[e.flowKey].steps.push(e);
+    });
+
+    // 为每个步骤创建独立的表单实例，互不干扰
+    const forms = new Map<string, ReturnType<typeof createForm>>();
+    const keyOf = (e: StepEntry) => `${e.flowKey}::${e.stepKey}`;
+
+    entries.forEach((e) => {
+      const form = createForm({ initialValues: compileUiSchema(scopes, e.initialValues) });
+      forms.set(keyOf(e), form);
+    });
+
+    // 判定是否存在多个 flow
+    const flowKeysOrdered = Object.keys(grouped);
+    const multipleFlows = flowKeysOrdered.length > 1;
+
+    const getTitle = () => {
+      // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 返回 step 标题
+      if (flowKey && stepKey && entries.length === 1) {
+        return entries[0].stepTitle;
+      }
+
+      if (!multipleFlows) {
+        const onlyFlow = grouped[flowKeysOrdered[0]];
+        // 情况 B：未提供 stepKey 且仅有一个步骤 => 返回 flow 标题
+        return onlyFlow.title;
+      }
+
+      // 情况 C：多 flow 分组渲染 => 返回空标题
+      return '';
+    };
+
+    openView({
+      // 默认标题与宽度可被传入的 props 覆盖
+      title: modeProps.title || getTitle(),
+      width: modeProps.width ?? 800,
+      destroyOnClose: true,
+      // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
+      ...modeProps,
+      content: (currentDialog) => {
+        // 渲染单个 step 表单（无 JSX）：FormProvider + FlowSettingsContextProvider + SchemaField
+        const renderStepForm = (entry: StepEntry) => {
+          const form = forms.get(keyOf(entry));
+          if (!form) return null;
+          const compiledSchema = compileUiSchema(scopes, entry.formSchema);
+          return React.createElement(
+            FormProvider as any,
+            { form },
+            React.createElement(
+              FlowSettingsContextProvider as any,
+              { value: entry.ctx },
+              React.createElement(SchemaField as any, {
+                schema: compiledSchema,
+                components: flowEngine?.flowSettings?.components || {},
+                scope: scopes,
+              }),
+            ),
+          );
+        };
+
+        const renderStepPanels = (steps: StepEntry[]) =>
+          steps.map((s) => React.createElement(Panel, { header: s.stepTitle, key: keyOf(s) }, renderStepForm(s)));
+
+        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板
+        const toFlowTabItem = (fk: string) => {
+          const group = grouped[fk];
+          return {
+            key: fk,
+            label: t(group.title) || fk,
+            children: React.createElement(
+              Collapse,
+              { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
+              ...renderStepPanels(group.steps),
+            ),
+          };
+        };
+
+        const renderStepsContainer = (): React.ReactNode => {
+          // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
+          if (flowKey && stepKey && entries.length === 1) {
+            return renderStepForm(entries[0]);
+          }
+
+          if (!multipleFlows) {
+            const onlyFlow = grouped[flowKeysOrdered[0]];
+            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 区分）
+            return React.createElement(
+              Collapse,
+              { defaultActiveKey: onlyFlow.steps.map((s) => keyOf(s)) },
+              ...renderStepPanels(onlyFlow.steps),
+            );
+          }
+
+          // 情况 C：多 flow 分组渲染 => 使用 Tabs（每个 flow 一个 Tab）
+          const items = flowKeysOrdered.map((fk) => toFlowTabItem(fk));
+          const defaultActiveKey = flowKey && grouped[flowKey] ? flowKey : flowKeysOrdered[0];
+          return React.createElement(Tabs as any, { items, defaultActiveKey });
+        };
+
+        const onSaveAll = async () => {
+          try {
+            // 逐步提交并保存
+            // 顺序：submit -> setStepParams -> beforeParamsSave -> model.save -> afterParamsSave
+            for (const e of entries) {
+              const form = forms.get(keyOf(e));
+              if (!form) continue;
+              await form.submit();
+              const currentValues = form.values;
+              (model as any).setStepParams(e.flowKey, e.stepKey, currentValues);
+
+              if (typeof e.beforeParamsSave === 'function') {
+                await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);
+              }
+            }
+
+            await (model as any).save();
+            message?.success?.(t('Configuration saved'));
+
+            for (const e of entries) {
+              const form = forms.get(keyOf(e));
+              if (!form) continue;
+              const currentValues = form.values;
+              if (typeof e.afterParamsSave === 'function') {
+                await e.afterParamsSave(e.ctx, currentValues, e.previousParams);
+              }
+            }
+
+            currentDialog.close();
+
+            // 触发保存成功回调
+            try {
+              await onSaved?.();
+            } catch (cbErr) {
+              console.error('FlowSettings.open: onSaved callback error', cbErr);
+            }
+          } catch (err) {
+            console.error('FlowSettings.open: save error', err);
+            message?.error?.(t('Error saving configuration, please check console'));
+          }
+        };
+
+        const stepsEl = renderStepsContainer();
+        const footerButtons = React.createElement(
+          Space,
+          { align: 'end' },
+          React.createElement(
+            Button,
+            {
+              onClick: async () => {
+                currentDialog.close();
+                try {
+                  await onCancel?.();
+                } catch (cbErr) {
+                  console.error('FlowSettings.open: onCancel callback error', cbErr);
+                }
+              },
+            },
+            t('Cancel'),
+          ),
+          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
+        );
+
+        const footerEl = React.createElement(currentDialog.Footer, null, footerButtons);
+
+        return React.createElement(React.Fragment, null, stepsEl, footerEl);
+      },
+    });
+
+    return true;
+  }
+
+  public async openDynamicFlowsEditor(
+    options: Pick<FlowSettingsOpenOptions, 'model' | 'uiMode' | 'onCancel'> & {
+      onSaved?: (flows: FlowDefinition[]) => void | Promise<void>;
+    },
+  ) {
+    const { model, uiMode = 'dialog', onCancel, onSaved } = options;
+    const t = getT(model);
+    const message = model.context?.message;
+
+    // 构造响应式 value（深度可变）
+    const base = model.getDynamicFlows() || [];
+    const reactiveFlows = observable(JSON.parse(JSON.stringify(base)));
+
+    // 打开视图
+    const viewer = (model as any).context.viewer;
+    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
+    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
+    const openView = viewer[modeType].bind(viewer);
+
+    openView({
+      title: modeProps.title,
+      width: modeProps.width ?? 800,
+      destroyOnClose: true,
+      ...modeProps,
+      content: (currentDialog) => {
+        const editorEl = React.createElement(DynamicFlowsEditor as any, { value: reactiveFlows, model });
+
+        const onSubmit = async () => {
+          try {
+            const plain = JSON.parse(JSON.stringify(reactiveFlows));
+            (model as any).setDynamicFlows(plain as FlowDefinition[]);
+            await (model as any).saveDynamicFlows();
+            message?.success?.(t('Configuration saved'));
+            currentDialog.close();
+            try {
+              await onSaved?.(plain);
+            } catch (cbErr) {
+              // eslint-disable-next-line no-console
+              console.error('FlowSettings.openDynamicFlowsEditor: onSaved callback error', cbErr);
+            }
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('FlowSettings.openDynamicFlowsEditor: save error', err);
+            message?.error?.(t('Error saving configuration, please check console'));
+          }
+        };
+
+        const footer = React.createElement(
+          currentDialog.Footer,
+          null,
+          React.createElement(
+            Space,
+            { align: 'end' },
+            React.createElement(
+              Button,
+              {
+                onClick: async () => {
+                  currentDialog.close();
+                  try {
+                    await onCancel?.();
+                  } catch (cbErr) {
+                    // eslint-disable-next-line no-console
+                    console.error('FlowSettings.openDynamicFlowsEditor: onCancel callback error', cbErr);
+                  }
+                },
+              },
+              t('Cancel'),
+            ),
+            React.createElement(Button, { type: 'primary', onClick: onSubmit }, t('OK')),
+          ),
+        );
+
+        return React.createElement(React.Fragment, null, editorEl, footer);
+      },
+    });
   }
 }
