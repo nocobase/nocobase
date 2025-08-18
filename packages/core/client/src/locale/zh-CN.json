@@ -410,6 +410,7 @@
   "Set validation rules": "设置验证规则",
   "Max length": "最大长度",
   "Min length": "最小长度",
+  "This field is required": "此字段为必填项",
   "Maximum": "最大值",
   "Minimum": "最小值",
   "Max length must greater than min length": "最大长度必须大于最小长度",

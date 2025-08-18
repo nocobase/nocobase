@@ -21,13 +21,13 @@ export const FIELDS_VALIDATION_OPTIONS = {
     ...DEFAULT_VALIDATION_RULES,
     {
       key: 'max',
-      label: 'Max value',
+      label: 'Max length',
       hasValue: true,
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
     },
     {
       key: 'min',
-      label: 'Min value',
+      label: 'Min length',
       hasValue: true,
       params: [{ key: 'limit', label: 'Limit', componentType: 'inputNumber', required: true }],
     },
@@ -264,13 +264,13 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
     {
       key: 'max',
-      label: 'Max',
+      label: 'Max value',
       hasValue: true,
       params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
     },
     {
       key: 'min',
-      label: 'Min',
+      label: 'Min value',
       hasValue: true,
       params: [{ key: 'date', label: 'Date', componentType: 'datePicker', required: true }],
     },
