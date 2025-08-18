@@ -41,7 +41,7 @@ CollectionFieldFormItemModel.registerFlow({
             omitBy(
               {
                 options: collectionField.enum.length ? collectionField.enum : props.options,
-                ...collectionField?.getComponentProps?.(),
+                ...collectionField.getComponentProps(),
                 mode: collectionField.type === 'array' ? 'multiple' : props.mode,
                 multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
                 maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,

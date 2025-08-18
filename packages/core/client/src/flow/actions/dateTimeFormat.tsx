@@ -172,6 +172,9 @@ export const dateTimeFormat = defineAction({
     };
   },
   handler(ctx: any, params) {
-    ctx.model.setProps({ ...params });
+    ctx.model.setProps({
+      ...params,
+      format: params?.showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
+    });
   },
 });
