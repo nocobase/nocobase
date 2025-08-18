@@ -326,7 +326,7 @@ const InternalAction: React.FC<InternalActionProps> = observer(function Com(prop
     aclCtx,
     icon,
     loading: typeof loadingOfUseAction === 'boolean' ? loadingOfUseAction : loading,
-    disabled,
+    disabled: disabled ?? false,
     buttonStyle,
     handleMouseEnter,
     tarComponent,
