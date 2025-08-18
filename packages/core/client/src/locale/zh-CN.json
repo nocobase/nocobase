@@ -907,6 +907,7 @@
   "Perform the {{title}}": "执行{{title}}",
   "{{#label}} must be a string": "{{#label}} 必须是字符串",
   "{{#label}} is required": "{{#label}} 是必填项",
+  "(currently not effective in sub-forms/sub-tables)": "（该字段作为子表单/子表格不生效）",
   "{{#label}} is not allowed to be empty": "{{#label}} 不能为空字符串",
   "{{#label}} length must be at least {{#limit}} characters long": "{{#label}} 长度不能少于 {{#limit}} 个字符",
   "{{#label}} length must be less than or equal to {{#limit}} characters long": "{{#label}} 长度不能超过 {{#limit}} 个字符",

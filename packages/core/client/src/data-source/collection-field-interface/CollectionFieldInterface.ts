@@ -107,6 +107,7 @@ export abstract class CollectionFieldInterface {
                 type: this.validationType,
                 availableValidationOptions: [...new Set(this.availableValidationOptions)],
                 excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
+                isAssociation: this.isAssociation,
               },
             },
           }

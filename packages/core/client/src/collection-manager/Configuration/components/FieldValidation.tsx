@@ -38,10 +38,11 @@ interface FieldValidationProps {
   type?: string;
   availableValidationOptions?: string[];
   excludeValidationOptions?: string[];
+  isAssociation?: boolean;
 }
 
 export const FieldValidation = observer((props: FieldValidationProps) => {
-  const { value, onChange, type, availableValidationOptions, excludeValidationOptions } = props;
+  const { value, onChange, type, availableValidationOptions, excludeValidationOptions, isAssociation } = props;
   const { t } = useTranslation();
   const token = useAntdToken();
   const noCascadeCls = css`
@@ -557,7 +558,14 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                         />
                       )}
                     </div>
-                    <span>{ruleLabel}</span>
+                    <span>
+                      {ruleLabel}
+                      {isAssociation && rule.name === REQUIRED_RULE_KEY && (
+                        <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>
+                          {t('(currently not effective in sub-forms/sub-tables)')}
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <Button
                     type="text"
