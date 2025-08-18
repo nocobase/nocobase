@@ -8,6 +8,7 @@
  */
 
 import { FlowModelContext } from '../../flowContext';
+import { FlowEngine } from '../../flowEngine';
 import { ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
@@ -74,7 +75,7 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
 
 export function buildSubModelItems(subModelBaseClass: string | ModelConstructor, exclude = []) {
   return async (ctx: FlowModelContext) => {
-    const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);
+    const SubModelClasses = (ctx.engine as FlowEngine).getSubclassesOf(subModelBaseClass);
     // Collect and sort subclasses by meta.sort (ascending), excluding hidden or inherited ones in `exclude`
     const candidates = Array.from(SubModelClasses.values())
       .filter((M) => !(M as any).meta?.hide)
@@ -112,7 +113,10 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
         children = await buildSubModelItems(subModelBaseClass, exclude)(ctx);
       }
       exclude.push(BaseClass);
-      if (!children || children?.length === 0) {
+
+      const hasChildren =
+        typeof children === 'function' ? true : Array.isArray(children) ? children.length > 0 : !!children;
+      if (!hasChildren) {
         continue;
       }
       // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
