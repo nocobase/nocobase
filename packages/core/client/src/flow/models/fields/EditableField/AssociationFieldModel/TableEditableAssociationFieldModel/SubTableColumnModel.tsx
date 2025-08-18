@@ -194,12 +194,7 @@ export class SubTableColumnModel extends FieldModel {
                       defaultValue={value}
                     />
                   ) : (
-                    <FieldModelRenderer
-                      model={fork}
-                      {...this.props}
-                      {...props}
-                      id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]}
-                    />
+                    <FieldModelRenderer model={fork} id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]} />
                   )}
                 </FormItem>
               );
