@@ -30,6 +30,7 @@ import { Field } from '@formily/core';
 import { connect, mapReadPretty, useField } from '@formily/react';
 import { departmentOwnersSchema } from './schemas/departments';
 import { useDepartmentTranslation } from '../locale';
+import { useFilterActionProps } from '../hooks';
 
 // Edit mode
 export const EditableDepartmentOwnersField: React.FC = () => {
@@ -115,7 +116,7 @@ export const EditableDepartmentOwnersField: React.FC = () => {
       <SchemaComponent
         schema={departmentOwnersSchema}
         components={{ RequestProvider }}
-        scope={{ department, handleSelect, useSelectOwners }}
+        scope={{ department, handleSelect, useSelectOwners, useFilterActionProps }}
       />
     </ActionContextProvider>
   );
