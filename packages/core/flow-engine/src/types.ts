@@ -206,6 +206,7 @@ export type StepUIMode =
  */
 export interface StepDefinition<TModel extends FlowModel = FlowModel>
   extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  key?: string; // Unique identifier for the step within the flow
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
   use?: string; // Name of the registered ActionDefinition to use as base
@@ -365,7 +366,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
-  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
+  flowRegistry: Record<string, Omit<FlowDefinition, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;
@@ -380,6 +381,7 @@ export interface FlowModelMeta {
   label?: string;
   group?: string;
   requiresDataSource?: boolean; // 是否需要数据源
+  eventList?: { label: string; value: string }[]; // 支持的事件列表
   /**
    * 默认选项配置，支持静态对象或动态函数形式
    *

@@ -13,7 +13,6 @@ import { Alert, Button, Dropdown, Space } from 'antd';
 import React, { useCallback } from 'react';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { openStepSettings } from '../../wrappers/contextual';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {
@@ -92,8 +91,7 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
         const [flowKey, stepKey] = key.split(':');
 
         try {
-          openStepSettings({
-            model,
+          model.openFlowSettings({
             flowKey,
             stepKey,
           });

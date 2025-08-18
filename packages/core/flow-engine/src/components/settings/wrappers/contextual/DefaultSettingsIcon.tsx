@@ -177,8 +177,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       try {
-        openStepSettings({
-          model: targetModel,
+        targetModel.openFlowSettings({
           flowKey,
           stepKey,
         });

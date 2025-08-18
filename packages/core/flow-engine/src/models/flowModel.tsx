@@ -42,12 +42,13 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
+import { FlowSettingsOpenOptions } from '../flowSettings';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
 // 使用WeakMap存储每个类的flows
-const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -170,7 +171,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.emitter.on(eventName, listener);
   }
 
-  onInit(options) {}
+  onInit(options) {
+    this.loadDynamicFlows()
+      .then((flows) => {
+        if (!_.isEmpty(flows)) {
+          this.setDynamicFlows(flows);
+        }
+      })
+      .catch((error) => {
+        console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
+      });
+  }
 
   get async() {
     return this._options.async || false;
@@ -299,6 +310,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
     }
     flows.set(key, definition as FlowDefinition);
+  }
+
+  /**
+   * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
+   */
+  public static clearFlows(): void {
+    modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
   }
 
   /**
@@ -1236,6 +1254,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * @deprecated
    * 打开步骤设置对话框
    * 用于配置流程中特定步骤的参数和设置
    * @param {string} flowKey 流程的唯一标识符
@@ -1279,6 +1298,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  /**
+   * @deprecated
+   * @param dialogWidth
+   * @param dialogTitle
+   * @returns
+   */
   async openPresetStepSettingsDialog(dialogWidth?: number | string, dialogTitle?: string) {
     return this.configureRequiredSteps(dialogWidth, dialogTitle);
   }
@@ -1321,6 +1346,52 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       data['flowRegistry'][key] = flow.toData();
     }
     return data;
+  }
+
+  /**
+   * Opens the flow settings dialog for this flow model.
+   * @param options - Configuration options for opening flow settings, excluding the model property
+   * @returns A promise that resolves when the flow settings dialog is opened
+   */
+  async openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>) {
+    return this.flowEngine.flowSettings.open({
+      model: this,
+      ...options,
+    });
+  }
+
+  async openDynamicFlowsEditor(
+    options?: Omit<FlowSettingsOpenOptions, 'model' | 'flowKey' | 'flowKeys' | 'stepKey' | 'preset'>,
+  ) {
+    return this.flowEngine.flowSettings.openDynamicFlowsEditor({
+      model: this,
+      ...options,
+    });
+  }
+
+  #dynamicFlows: FlowDefinition[] = [];
+
+  // TODO：后面去除这个方法，应该默认加载动态流
+  async loadDynamicFlows(): Promise<FlowDefinition[]> {
+    return JSON.parse(localStorage.getItem('DYNAMIC_FLOWS') || '[]');
+  }
+
+  async saveDynamicFlows(): Promise<void> {
+    // TODO: 暂时的做法，后面需要改进
+    localStorage.setItem('DYNAMIC_FLOWS', JSON.stringify(this.#dynamicFlows));
+  }
+
+  setDynamicFlows(flows: FlowDefinition[]): void {
+    this.#dynamicFlows = flows;
+
+    flows.forEach((flow) => {
+      // @ts-ignore
+      this.constructor.registerFlow(flow);
+    });
+  }
+
+  getDynamicFlows(): FlowDefinition[] {
+    return this.#dynamicFlows;
   }
 }
 
