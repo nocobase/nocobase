@@ -7,19 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { Dropdown, Modal, App } from 'antd';
-import type { MenuProps } from 'antd';
 import {
-  SettingOutlined,
+  CopyOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
   MenuOutlined,
-  CopyOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import { App, Dropdown, Modal } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { getT, resolveStepUiSchema } from '../../../../utils';
+import { openStepSettings } from './StepSettings';
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -211,8 +212,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const getModelConfigurableFlowsAndSteps = useCallback(
     async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
       try {
-        const ModelClass = targetModel.constructor as typeof FlowModel;
-        const flows = ModelClass.getFlows();
+        const flows = targetModel.getFlows();
 
         const flowsArray = Array.from(flows.values());
 

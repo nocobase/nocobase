@@ -121,8 +121,7 @@ const openRequiredParamsStepFormDialog = async ({
     (async () => {
       try {
         // 获取所有流程
-        const constructor = model.constructor as typeof FlowModel;
-        const allFlows = constructor.getFlows();
+        const allFlows = (model as FlowModel).getFlows();
 
         // 收集所有需要配置参数的步骤
         const requiredSteps: Array<{
