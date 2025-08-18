@@ -61,7 +61,19 @@ const collectAssociationPathsFromWhere = (where: any): string[] => {
  *   - For an include with association "posts", it matches "posts.comments" and passes "comments" to its children.
  *   - For an include with association "profile", it keeps the node as-is (no child path remainder).
  */
-const pruneIncludeTreeByPaths = (includes = [], normalizedPaths: string[]): any[] => {
+const pruneIncludeTreeByPaths = (
+  includes = [],
+  requiredPathsRaw: string[],
+  options: { underscored: boolean },
+): any[] => {
+  const normalizedPaths = options.underscored
+    ? requiredPathsRaw.map((p) =>
+        p
+          .split('.')
+          .map((s) => snakeCase(s))
+          .join('.'),
+      )
+    : requiredPathsRaw;
   if (!includes?.length || !normalizedPaths?.length) return [];
 
   const pruned = [];
@@ -70,7 +82,7 @@ const pruneIncludeTreeByPaths = (includes = [], normalizedPaths: string[]): any[
     const association = inc?.association;
     if (!association) continue;
 
-    const assocKey = snakeCase(String(association));
+    const assocKey = options.underscored ? snakeCase(String(association)) : String(association);
 
     // Keep current node only if any path equals the alias or starts with "alias."
     const matched = normalizedPaths.filter((p) => p === assocKey || p.startsWith(assocKey + '.'));
@@ -81,7 +93,7 @@ const pruneIncludeTreeByPaths = (includes = [], normalizedPaths: string[]): any[
       .map((p) => (p === assocKey ? null : p.slice(assocKey.length + 1)))
       .filter(Boolean) as string[];
 
-    const children = pruneIncludeTreeByPaths(inc.include ?? [], childRemainders);
+    const children = pruneIncludeTreeByPaths(inc.include ?? [], childRemainders, options);
 
     const copy = { ...inc };
     if (children.length) {
@@ -174,15 +186,7 @@ export const mergeIncludes = (includes = []): any[] => {
 };
 
 export const filterIncludes = (where, includes, options: { underscored: boolean }) => {
-  const requiredPathsRaw = collectAssociationPathsFromWhere(where);
-  const normalizedPaths = options.underscored
-    ? requiredPathsRaw.map((p) =>
-        p
-          .split('.')
-          .map((s) => snakeCase(s))
-          .join('.'),
-      )
-    : requiredPathsRaw;
-  const result = pruneIncludeTreeByPaths(includes, normalizedPaths);
+  const path = collectAssociationPathsFromWhere(where);
+  const result = pruneIncludeTreeByPaths(includes, path, options);
   return result;
 };
