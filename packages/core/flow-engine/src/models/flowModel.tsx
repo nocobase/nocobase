@@ -17,6 +17,7 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
+import { InstanceFlowRegistry } from '../InstanceFlowRegistry';
 import type {
   ActionDefinition,
   ArrayElementType,
@@ -88,6 +89,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _reactiveWrapperCache?: React.ComponentType;
 
+  flowRegistry: InstanceFlowRegistry;
+
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
       throw new Error('FlowModel must be initialized with a FlowEngine instance.');
@@ -125,6 +128,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     //   this.onInit(options);
     // });
     this.createSubModels(options.subModels);
+
+    this.flowRegistry = new InstanceFlowRegistry(this);
+    this.flowRegistry.addFlows(options.flowRegistry);
 
     this.observerDispose = observe(this.stepParams, (changed) => {
       // if doesn't change, skip
@@ -352,6 +358,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
    */
   public getFlow(key: string): FlowDefinition | undefined {
+    if (this.flowRegistry.hasFlow(key)) {
+      return this.flowRegistry.getFlow(key);
+    }
     // 获取当前类的构造函数
     const currentClass = this.constructor as typeof FlowModel;
 
@@ -372,6 +381,25 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     return undefined;
+  }
+
+  getFlows() {
+    // 获取当前类的构造函数
+    const currentClass = this.constructor as typeof FlowModel;
+    // 返回当前类及其父类的所有流程定义
+    const globalFlows = currentClass.getFlows();
+    const instanceFlows = this.flowRegistry.getFlows();
+    const allFlows = new Map<string, FlowDefinition>();
+
+    for (const [key, flow] of globalFlows.entries()) {
+      allFlows.set(key, flow);
+    }
+
+    for (const [key, flow] of instanceFlows.entries()) {
+      allFlows.set(key, flow as any);
+    }
+
+    return allFlows;
   }
 
   /**
@@ -483,23 +511,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
-    // Create a new FlowContext instance for this flow execution
-    const createLogger = (level: string) => (message: string, meta?: any) => {
-      const logMessage = `[${level.toUpperCase()}] [Flow: ${flowKey}] [Model: ${this.uid}] ${message}`;
-      const logMeta = { flowKey, modelUid: this.uid, ...meta };
-      console[level.toLowerCase()](logMessage, logMeta);
-    };
-
     const flowContext = new FlowRuntimeContext(this, flowKey);
 
-    flowContext.defineProperty('logger', {
-      value: {
-        info: createLogger('INFO'),
-        warn: createLogger('WARN'),
-        error: createLogger('ERROR'),
-        debug: createLogger('DEBUG'),
-      },
-    });
     flowContext.defineProperty('reactView', {
       value: this.reactView,
     });
@@ -613,8 +626,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     // 获取所有流程
-    const constructor = this.constructor as typeof FlowModel;
-    const allFlows = constructor.getFlows();
+    const allFlows = this.getFlows();
     const runId = `${this.uid}-${eventName}-${Date.now()}`;
 
     allFlows.forEach((flow) => {
@@ -672,8 +684,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {FlowDefinition[]} 按 sort 排序的自动应用流程定义数组
    */
   public getAutoFlows(): FlowDefinition[] {
-    const constructor = this.constructor as typeof FlowModel;
-    const allFlows = constructor.getFlows();
+    const allFlows = this.getFlows();
 
     // 过滤出自动流程并按 sort 排序
     // 没有 on 属性且没有 manual: true 的流程默认自动执行
@@ -1304,6 +1315,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       } else if (subModels[subModelKey] instanceof FlowModel) {
         (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel).serialize();
       }
+    }
+    for (const [key, flow] of this.flowRegistry.getFlows()) {
+      data['flowRegistry'] = data['flowRegistry'] || {};
+      data['flowRegistry'][key] = flow.toData();
     }
     return data;
   }

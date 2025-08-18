@@ -4,6 +4,8 @@
 
 ---
 
+<code src="./demos/basic.tsx"></code>
+
 ## 1. 初始化实例化流
 
 在创建模型时可以传入 `flowRegistry` 进行初始化：
