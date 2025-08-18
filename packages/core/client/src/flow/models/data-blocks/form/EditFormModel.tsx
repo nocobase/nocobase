@@ -14,9 +14,9 @@ import {
   DragHandler,
   Droppable,
   escapeT,
+  FlowModelContext,
   FlowModelRenderer,
   FlowSettingsButton,
-  MENU_KEYS,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
@@ -27,27 +27,10 @@ import { FormModel, FormComponent } from './FormModel';
 import { FormActionModel } from './FormActionModel';
 
 export class EditFormModel extends FormModel {
-  protected static override buildCurrentRecordItem(ctx: any, c: any, input: any) {
-    return {
-      key: MENU_KEYS.CURRENT_RECORD,
-      label: escapeT('Current record'),
-      createModelOptions: {
-        use: 'EditFormModel',
-        stepParams: {
-          resourceSettings: {
-            init: {
-              filterByTk: input.filterByTk,
-              collectionName: input.collectionName || c.name,
-              dataSourceKey: c.dataSource.key,
-              ...(input.associationName && { associationName: input.associationName }),
-              ...(input.sourceId && { sourceId: input.sourceId }),
-            },
-          },
-        },
-      },
-    };
+  static override getChildrenFilters(_ctx: FlowModelContext) {
+    return { currentRecord: true };
   }
-  createResource(_ctx: any, params: any) {
+  createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
