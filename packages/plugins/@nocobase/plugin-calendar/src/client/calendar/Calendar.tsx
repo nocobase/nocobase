@@ -162,13 +162,13 @@ const useEvents = (
           targetTitleCollectionField,
           targetTitle?.TitleRenderer,
         );
-
-        const event: Event = {
+        const event: Event | any = {
           id: get(item, fieldNames.id || 'id'),
           colorFieldValue: item[fieldNames.colorFieldName],
           title: title || t('Untitle'),
           start: eventStart.toDate(),
           end: eventStart.add(intervalTime, 'millisecond').toDate(),
+          rawTitle: get(item, fieldNames.title),
         };
 
         events.push(event);
@@ -472,6 +472,9 @@ export const Calendar: any = withDynamicSchemaProps(
               }}
               components={components}
               localizer={localizer}
+              tooltipAccessor={(val) => {
+                return val.rawTitle ? val.rawTitle : '';
+              }}
             />
           </PopupContextProvider>
           <ActionContextProvider

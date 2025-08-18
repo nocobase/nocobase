@@ -1280,7 +1280,7 @@ export const useTableColumns = (): ColumnInfo[] => {
 
     // More comprehensive search for table columns
     const findColumnsInSchema = (schema: any, depth = 0): void => {
-      if (!schema) return;
+      if (!schema || depth > 1) return;
 
       // Direct table column check
       if (

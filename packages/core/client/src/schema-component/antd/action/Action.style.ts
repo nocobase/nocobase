@@ -17,6 +17,7 @@ const useStyles = genStyleHook('nb-action', (token) => {
       position: 'relative',
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
       '&.nb-action-link': {
+        textWrap: 'nowrap',
         margin: '-12px',
         padding: '12px',
         '.nb-action-title': {

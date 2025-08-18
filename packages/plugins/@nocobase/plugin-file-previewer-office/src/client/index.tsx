@@ -107,7 +107,11 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
           return true;
         }
         if (file.url) {
-          const url = new URL(file.url);
+          const src =
+            file.url.startsWith('https://') || file.url.startsWith('http://')
+              ? file.url
+              : `${location.origin}/${file.url.replace(/^\//, '')}`;
+          const url = new URL(src);
           const parts = url.pathname.split('.');
           if (parts.length > 1) {
             const ext = parts[parts.length - 1].toLowerCase();
