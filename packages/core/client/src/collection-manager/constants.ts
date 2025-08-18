@@ -44,7 +44,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
       params: [
         {
           key: 'allowFullyQualified',
-          label: 'domains ending with a . character are permitted',
+          label: 'Domains ending with a . character are permitted',
           componentType: 'checkbox',
         },
         {
