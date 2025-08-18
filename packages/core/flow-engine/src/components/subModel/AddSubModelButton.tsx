@@ -265,6 +265,8 @@ const transformSubModelItems = async (
       const originalLabel = model.translate(item.label) || '';
       transformedItem.label = createSwitchLabel(originalLabel, isToggled);
       transformedItem.isToggled = isToggled;
+      // toggleable 项默认保持下拉菜单打开，便于连续操作
+      transformedItem.keepDropdownOpen = item.keepDropdownOpen ?? true;
     }
 
     return transformedItem;

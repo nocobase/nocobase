@@ -362,7 +362,7 @@ export class FlowEngine {
       }
     }
     this.#modelInstances.delete(uid);
-    return false;
+    return true;
   }
 
   /**
