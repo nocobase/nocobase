@@ -53,7 +53,7 @@ const AddActionToolbarComponent = ({ model }) => {
       model={model}
       subModelBaseClass={RecordActionModel}
       subModelKey="actions"
-      onModelCreated={async (actionModel) => {
+      afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
     >

@@ -57,11 +57,11 @@ const AddDetailField = ({ model }) => {
       subModelKey={'items'}
       subModelBaseClass="DetailFormItemModel"
       items={items}
-      onModelCreated={async (item: DetailItemModel) => {
+      afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         await field.applyAutoFlows();
       }}
-      onSubModelAdded={async (item: DetailItemModel) => {
+      afterSubModelAdd={async (item: DetailItemModel) => {
         model.context.blockModel.addAppends(item.fieldPath, true);
       }}
       keepDropdownOpen

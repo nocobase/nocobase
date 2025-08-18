@@ -144,7 +144,7 @@ BlockModel.registerFlow({
   },
 });
 
-BlockModel.define({ hide: true });
+BlockModel.define({ hide: true, label: escapeT('Other blocks') });
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
@@ -332,8 +332,8 @@ CollectionBlockModel.registerFlow({
   },
 });
 
-CollectionBlockModel.define({ hide: true });
+CollectionBlockModel.define({ hide: true, label: 'Data blocks' });
 
 export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
-FilterBlockModel.define({ hide: true });
+FilterBlockModel.define({ hide: true, label: 'Filter blocks' });

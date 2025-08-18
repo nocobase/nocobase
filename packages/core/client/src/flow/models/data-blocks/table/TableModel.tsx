@@ -147,10 +147,10 @@ const AddFieldColumn = ({ model }) => {
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
       items={items}
-      onModelCreated={async (column: TableColumnModel) => {
+      afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: TableColumnModel) => {
+      afterSubModelAdd={async (column: TableColumnModel) => {
         model.addAppends(column.fieldPath, true);
       }}
       keepDropdownOpen
@@ -379,11 +379,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddSubModelButton
-                model={this}
-                subModelBaseClass={CollectionActionModel}
-                subModelKey="actions"
-              >
+              <AddSubModelButton model={this} subModelBaseClass={CollectionActionModel} subModelKey="actions">
                 <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
               </AddSubModelButton>
             </Space>

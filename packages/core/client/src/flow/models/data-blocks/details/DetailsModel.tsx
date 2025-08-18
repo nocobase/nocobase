@@ -134,7 +134,7 @@ export class DetailsModel extends CollectionBlockModel<{
                 model={this}
                 subModelKey="actions"
                 subModelBaseClass={RecordActionModel}
-                onModelCreated={async (actionModel) => {
+                afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
               >

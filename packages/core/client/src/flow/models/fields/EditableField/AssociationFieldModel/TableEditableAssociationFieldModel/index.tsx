@@ -72,10 +72,10 @@ const AddFieldColumn = ({ model }) => {
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
       items={items}
-      onModelCreated={async (column: SubTableColumnModel) => {
+      afterSubModelInit={async (column: SubTableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: SubTableColumnModel) => {
+      afterSubModelAdd={async (column: SubTableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
