@@ -83,59 +83,59 @@ export class ReadPrettyFieldModel extends FieldModel {
   }
 }
 
-ReadPrettyFieldModel.registerFlow({
-  key: 'readPrettyFieldSettings',
-  title: escapeT('Read pretty field settings'),
-  sort: 100,
-  steps: {
-    model: {
-      title: escapeT('Field component'),
-      uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('ReadPrettyFieldModel').keys()];
-        if (classes.length === 1) {
-          return null;
-        }
-        return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model,
-              value: model,
-            })),
-          },
-        };
-      },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.use,
-        };
-      },
-      beforeParamsSave: async (ctx, params, previousParams) => {
-        if (params.use !== previousParams.use) {
-          await ctx.engine.replaceModel(ctx.model.uid, {
-            use: params.use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-              readPrettyFieldSettings: {
-                model: {
-                  use: params.use,
-                },
-              },
-            },
-          });
-          ctx.exit();
-        }
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-      },
-    },
-  },
-});
+// ReadPrettyFieldModel.registerFlow({
+//   key: 'readPrettyFieldSettings',
+//   title: escapeT('Read pretty field settings'),
+//   sort: 100,
+//   steps: {
+//     model: {
+//       title: escapeT('Field component'),
+//       uiSchema: (ctx) => {
+//         const classes = [...ctx.model.collectionField.getSubclassesOf('ReadPrettyFieldModel').keys()];
+//         if (classes.length === 1) {
+//           return null;
+//         }
+//         return {
+//           use: {
+//             type: 'string',
+//             'x-component': 'Select',
+//             'x-decorator': 'FormItem',
+//             enum: classes.map((model) => ({
+//               label: model,
+//               value: model,
+//             })),
+//           },
+//         };
+//       },
+//       defaultParams: (ctx) => {
+//         return {
+//           use: ctx.model.use,
+//         };
+//       },
+//       beforeParamsSave: async (ctx, params, previousParams) => {
+//         if (params.use !== previousParams.use) {
+//           await ctx.engine.replaceModel(ctx.model.uid, {
+//             use: params.use,
+//             stepParams: {
+//               fieldSettings: {
+//                 init: ctx.model.getFieldSettingsInitParams(),
+//               },
+//               readPrettyFieldSettings: {
+//                 model: {
+//                   use: params.use,
+//                 },
+//               },
+//             },
+//           });
+//           ctx.exit();
+//         }
+//       },
+//       async handler(ctx, params) {
+//         console.log('Sub model step1 handler');
+//         if (!params.use) {
+//           throw new Error('model use is a required parameter');
+//         }
+//       },
+//     },
+//   },
+// });

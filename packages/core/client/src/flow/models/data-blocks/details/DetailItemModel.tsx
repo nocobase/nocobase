@@ -126,5 +126,9 @@ DetailItemModel.registerFlow({
         ctx.model.setProps({ extra: params.description });
       },
     },
+    model: {
+      title: escapeT('Field component'),
+      use: 'fieldComponent',
+    },
   },
 });

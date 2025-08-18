@@ -210,6 +210,10 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('editable', params.editable);
       },
     },
+    model: {
+      title: escapeT('Field component'),
+      use: 'fieldComponent',
+    },
   },
 });
 
