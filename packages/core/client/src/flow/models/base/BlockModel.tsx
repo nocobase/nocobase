@@ -27,6 +27,216 @@ import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
+// ===== Local helpers (file-scoped) =====
+function resolveDefineContext(ctx: FlowModelContext) {
+  const current = ctx.currentFlow;
+  const inputCF = current?.inputArgs || {};
+  const resource: BaseRecordResource | undefined = ctx.resource;
+  const inputCtx = ctx.inputArgs || {};
+  const bm = ctx.blockModel as any;
+  const rsParams = typeof bm?.getStepParams === 'function' ? bm.getStepParams('resourceSettings', 'init') || {} : {};
+
+  const dsm = (ctx as any).dataSourceManager;
+  const resolveCollection = (): Collection | undefined => {
+    const fromFlow = current?.blockModel?.collection as Collection | undefined;
+    const fromCtx = ctx.collection as Collection | undefined;
+    if (fromFlow || fromCtx) return fromFlow || fromCtx;
+    const targetName = (current?.inputArgs as any)?.collectionName || rsParams.collectionName;
+    if (!targetName) return undefined;
+    const dataSources = dsm?.getDataSources?.() || [];
+    for (const ds of dataSources) {
+      const found = ds.getCollection?.(targetName);
+      if (found) return found;
+    }
+    return undefined;
+  };
+
+  const c = resolveCollection();
+  const filterByTk = inputCF.filterByTk ?? inputCtx.filterByTk ?? rsParams.filterByTk ?? resource?.getFilterByTk?.();
+  const targetCollectionNameCF =
+    (inputCF.collectionName as string | undefined) ?? inputCtx.collectionName ?? rsParams.collectionName;
+
+  return { current, inputCF, rsParams, c, filterByTk, targetCollectionNameCF } as const;
+}
+
+async function resolveAllowedCollectionsWhitelist(ctx: FlowModelContext, filters: any): Promise<Set<string> | null> {
+  const src = filters?.collections;
+  if (!src) return null;
+  const list: Collection[] = typeof src === 'function' ? (await src(ctx)) || [] : src || [];
+  return new Set(list.map((col) => `${col.dataSourceKey}:${col.name}`));
+}
+
+function isAllowedCollection(col: Collection, allowedSet: Set<string> | null): boolean {
+  return allowedSet ? allowedSet.has(`${col.dataSourceKey}:${col.name}`) : true;
+}
+
+function makeCurrentCollectionItem(modelName: string, c: Collection): SubModelItem {
+  return {
+    key: MENU_KEYS.CURRENT_COLLECTIONS,
+    label: escapeT('Current collection'),
+    createModelOptions: {
+      use: modelName,
+      stepParams: { resourceSettings: { init: { dataSourceKey: c.dataSource.key, collectionName: c.name } } },
+    },
+  };
+}
+
+function makeCurrentRecordItem(
+  modelName: string,
+  targetName: string,
+  dataSourceKey: string,
+  filterByTk: any,
+  inputCF: any,
+): SubModelItem {
+  return {
+    key: MENU_KEYS.CURRENT_RECORD,
+    label: escapeT('Current record'),
+    createModelOptions: {
+      use: modelName,
+      stepParams: {
+        resourceSettings: {
+          init: {
+            filterByTk,
+            collectionName: targetName,
+            dataSourceKey,
+            ...(inputCF.associationName && { associationName: inputCF.associationName }),
+            ...(inputCF.sourceId && { sourceId: inputCF.sourceId }),
+          },
+        },
+      },
+    },
+  };
+}
+
+function resolveAssocFrom(c: Collection, targetName?: string) {
+  if (!targetName || targetName === c.name) {
+    return { assocFrom: c, isCrossDS: false } as const;
+  }
+  const found = c.dataSource.getCollection(targetName);
+  return { assocFrom: found, isCrossDS: !found } as const;
+}
+
+function pushGroupOrFlatten(
+  items: SubModelItem[],
+  modelName: string,
+  menuKey: string,
+  label: string,
+  children: SubModelItem[],
+  alwaysKeep = false,
+) {
+  if (alwaysKeep || items.length > 0) {
+    items.push({ key: `${modelName}.${menuKey}`, label, children });
+  } else {
+    items.push(...children);
+  }
+}
+
+function buildAssociatedRecordsItem(
+  ctx: FlowModelContext,
+  assocFrom: Collection,
+  filterByTk: any,
+  modelName: string,
+  allowedSet: Set<string> | null,
+  filterAssociatedFields?: (fields: CollectionField[]) => CollectionField[],
+): SubModelItem | null {
+  let relatedFields = assocFrom.getRelationshipFields();
+  relatedFields = relatedFields.filter(
+    (f) => f.target !== assocFrom.name && !!f.targetCollection && f.interface !== 'mbm',
+  );
+  relatedFields = filterAssociatedFields ? filterAssociatedFields(relatedFields) : relatedFields;
+  if (relatedFields.length === 0) return null;
+
+  // group by dataSource
+  const byDS = new Map<string, CollectionField[]>();
+  for (const f of relatedFields) {
+    const dsKey = f.collection.dataSource.key;
+    if (!byDS.has(dsKey)) byDS.set(dsKey, []);
+    byDS.get(dsKey)!.push(f);
+  }
+  const groups = Array.from(byDS.entries())
+    .map(([dsKey, fields]) => ({
+      key: `ds:${dsKey}`,
+      label: dsKey,
+      children: fields
+        .map((field) => ({
+          key: `field:${field.name}`,
+          label: field.uiSchema?.title || field.name,
+          createModelOptions: {
+            use: modelName,
+            stepParams: {
+              resourceSettings: {
+                init: {
+                  dataSourceKey: field.collection.dataSource.key,
+                  collectionName: field.target,
+                  associationName: `${field.collection.name}.${field.name}`,
+                  sourceId: filterByTk,
+                },
+              },
+            },
+          },
+        }))
+        // apply allowed collections if present
+        .filter((item) =>
+          allowedSet
+            ? allowedSet.has(
+                `${item.createModelOptions.stepParams.resourceSettings.init.dataSourceKey}:${item.createModelOptions.stepParams.resourceSettings.init.collectionName}`,
+              )
+            : true,
+        ),
+    }))
+    .filter((g) => g.children && g.children.length > 0);
+
+  if (groups.length === 0) return null;
+  const children = groups.length === 1 && Array.isArray(groups[0].children) ? (groups[0].children as any) : groups;
+  return {
+    key: MENU_KEYS.ASSOCIATION_RECORDS,
+    label: escapeT('Associated records'),
+    children,
+  } as any;
+}
+
+function buildCollectionsMenuGroups(
+  ctx: FlowModelContext,
+  modelName: string,
+  filter?: (col: Collection) => boolean,
+  preserveGrouping = false,
+): SubModelItem[] {
+  const dsm = (ctx as any).dataSourceManager;
+  const dataSources: DataSource[] = dsm?.getDataSources?.() ?? [];
+
+  const groups = dataSources
+    .map((ds) => {
+      let cols = (ds.getCollections?.() ?? []) as Collection[];
+      if (filter) cols = cols.filter(filter);
+      return { ds, cols };
+    })
+    .filter((g) => g.cols.length > 0);
+
+  if (groups.length === 0) return [];
+
+  const makeItem = (ds: DataSource, col: Collection): SubModelItem => ({
+    key: `ds:${ds.key}.col:${col.name}`,
+    label: col.title || col.name,
+    createModelOptions: () => ({
+      use: modelName,
+      stepParams: {
+        resourceSettings: { init: { dataSourceKey: ds.key, collectionName: col.name } },
+      },
+    }),
+  });
+
+  if (groups.length === 1 && !preserveGrouping) {
+    const g = groups[0];
+    return g.cols.map((c) => makeItem(g.ds, c));
+  }
+
+  return groups.map((g) => ({
+    key: `ds:${g.ds.key}`,
+    label: g.ds.displayName || g.ds.key,
+    children: g.cols.map((c) => makeItem(g.ds, c)),
+  }));
+}
+
 export interface ResourceSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
@@ -171,213 +381,27 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return {};
   }
 
-  // Builder: DS -> collections tree, with single-DS flattening
-  // Subclasses can override to filter data sources/collections or customize menu items.
-  protected static buildCollectionsMenuGroups(
-    ctx: FlowModelContext,
-    filter?: (col: Collection) => boolean,
-    preserveGrouping = false,
-  ): SubModelItem[] {
-    const dsm = (ctx as any).dataSourceManager;
-    const dataSources: DataSource[] = dsm?.getDataSources?.() ?? [];
-    const className = (this as any).name as string;
-
-    const groups = dataSources
-      .map((ds) => {
-        let cols = (ds.getCollections?.() ?? []) as Collection[];
-        if (filter) cols = cols.filter(filter);
-        return { ds, cols };
-      })
-      .filter((g) => g.cols.length > 0);
-
-    if (groups.length === 0) return [];
-
-    const makeItem = (ds: DataSource, col: Collection): SubModelItem => ({
-      key: `ds:${ds.key}.col:${col.name}`,
-      label: col.title || col.name,
-      createModelOptions: () => ({
-        use: className,
-        stepParams: {
-          resourceSettings: { init: { dataSourceKey: ds.key, collectionName: col.name } },
-        },
-      }),
-    });
-
-    if (groups.length === 1 && !preserveGrouping) {
-      const g = groups[0];
-      return g.cols.map((c) => makeItem(g.ds, c));
-    }
-
-    return groups.map((g) => ({
-      key: `ds:${g.ds.key}`,
-      label: g.ds.displayName || g.ds.key,
-      children: g.cols.map((c) => makeItem(g.ds, c)),
-    }));
-  }
-
-  // ---------- Helpers for defineChildren (reduce duplication) ----------
-  protected static resolveDefineContext(ctx: FlowModelContext) {
-    const current = ctx.currentFlow;
-    const inputCF = current?.inputArgs || {};
-    const resource: BaseRecordResource | undefined = ctx.resource;
-    const inputCtx = ctx.inputArgs || {};
-    const bm = ctx.blockModel as any;
-    const rsParams = typeof bm?.getStepParams === 'function' ? bm.getStepParams('resourceSettings', 'init') || {} : {};
-
-    const dsm = (ctx as any).dataSourceManager;
-    const resolveCollection = (): Collection | undefined => {
-      const fromFlow = current?.blockModel?.collection as Collection | undefined;
-      const fromCtx = ctx.collection as Collection | undefined;
-      if (fromFlow || fromCtx) return fromFlow || fromCtx;
-      const targetName = (current?.inputArgs as any)?.collectionName || rsParams.collectionName;
-      if (!targetName) return undefined;
-      const dataSources = dsm?.getDataSources?.() || [];
-      for (const ds of dataSources) {
-        const found = ds.getCollection?.(targetName);
-        if (found) return found;
-      }
-      return undefined;
-    };
-
-    const c = resolveCollection();
-    const filterByTk = inputCF.filterByTk ?? inputCtx.filterByTk ?? rsParams.filterByTk ?? resource?.getFilterByTk?.();
-    const targetCollectionNameCF =
-      (inputCF.collectionName as string | undefined) ?? inputCtx.collectionName ?? rsParams.collectionName;
-
-    return { current, inputCF, rsParams, c, filterByTk, targetCollectionNameCF } as const;
-  }
-
-  protected static async resolveAllowedCollectionsWhitelist(
-    ctx: FlowModelContext,
-    filters: any,
-  ): Promise<Set<string> | null> {
-    const src = filters?.collections;
-    if (!src) return null;
-    const list: Collection[] = typeof src === 'function' ? (await src(ctx)) || [] : src || [];
-    return new Set(list.map((col) => `${col.dataSourceKey}:${col.name}`));
-  }
-
-  protected static isAllowedCollection(col: Collection, allowedSet: Set<string> | null): boolean {
-    return allowedSet ? allowedSet.has(`${col.dataSourceKey}:${col.name}`) : true;
-  }
-
-  protected static makeCurrentCollectionItem(modelName: string, c: Collection): SubModelItem {
-    return {
-      key: MENU_KEYS.CURRENT_COLLECTIONS,
-      label: escapeT('Current collection'),
-      createModelOptions: {
-        use: modelName,
-        stepParams: { resourceSettings: { init: { dataSourceKey: c.dataSource.key, collectionName: c.name } } },
-      },
-    };
-  }
-
-  protected static makeCurrentRecordItem(
-    modelName: string,
-    targetName: string,
-    dataSourceKey: string,
-    filterByTk: any,
-    inputCF: any,
-  ): SubModelItem {
-    return {
-      key: MENU_KEYS.CURRENT_RECORD,
-      label: escapeT('Current record'),
-      createModelOptions: {
-        use: modelName,
-        stepParams: {
-          resourceSettings: {
-            init: {
-              filterByTk,
-              collectionName: targetName,
-              dataSourceKey,
-              ...(inputCF.associationName && { associationName: inputCF.associationName }),
-              ...(inputCF.sourceId && { sourceId: inputCF.sourceId }),
-            },
-          },
-        },
-      },
-    };
-  }
-
-  protected static buildAssociatedRecordsItem(
-    ctx: FlowModelContext,
-    assocFrom: Collection,
-    filterByTk: any,
-    modelName: string,
-    allowedSet: Set<string> | null,
-  ): SubModelItem | null {
-    let relatedFields = assocFrom.getRelationshipFields();
-    relatedFields = relatedFields.filter(
-      (f) => f.target !== assocFrom.name && !!f.targetCollection && f.interface !== 'mbm',
-    );
-    // subclass hook
-    // @ts-ignore
-    relatedFields = (this as any).filterAssociatedFields?.(relatedFields) || relatedFields;
-    if (relatedFields.length === 0) return null;
-
-    // group by dataSource
-    const byDS = new Map<string, CollectionField[]>();
-    for (const f of relatedFields) {
-      const dsKey = f.collection.dataSource.key;
-      if (!byDS.has(dsKey)) byDS.set(dsKey, []);
-      byDS.get(dsKey)!.push(f);
-    }
-    const groups = Array.from(byDS.entries())
-      .map(([dsKey, fields]) => ({
-        key: `ds:${dsKey}`,
-        label: dsKey,
-        children: fields
-          .map((field) => ({
-            key: `field:${field.name}`,
-            label: field.uiSchema?.title || field.name,
-            createModelOptions: {
-              use: modelName,
-              stepParams: {
-                resourceSettings: {
-                  init: {
-                    dataSourceKey: field.collection.dataSource.key,
-                    collectionName: field.target,
-                    associationName: `${field.collection.name}.${field.name}`,
-                    sourceId: filterByTk,
-                  },
-                },
-              },
-            },
-          }))
-          // apply allowed collections if present
-          .filter((item) =>
-            allowedSet
-              ? allowedSet.has(
-                  `${item.createModelOptions.stepParams.resourceSettings.init.dataSourceKey}:${item.createModelOptions.stepParams.resourceSettings.init.collectionName}`,
-                )
-              : true,
-          ),
-      }))
-      .filter((g) => g.children && g.children.length > 0);
-
-    if (groups.length === 0) return null;
-    const children = groups.length === 1 && Array.isArray(groups[0].children) ? (groups[0].children as any) : groups;
-    return {
-      key: MENU_KEYS.ASSOCIATION_RECORDS,
-      label: escapeT('Associated records'),
-      children,
-    } as any;
-  }
-
   // Default children for all collection-based blocks:
   // - Associated records (when currentFlow has filterByTk)
   // - Other records/collections depending on context
   static async defineChildren(ctx: FlowModelContext) {
     const modelName = (this as any).name as string;
-    const { inputCF, c, filterByTk, targetCollectionNameCF } = (this as any).resolveDefineContext(ctx);
+    const { inputCF, c, filterByTk, targetCollectionNameCF } = resolveDefineContext(ctx);
 
     // Helper: build DS->collections group(s)
     const buildCollectionsByDS = (filter?: (col: Collection) => boolean, preserveGrouping = false) =>
-      (this as any).buildCollectionsMenuGroups(ctx, filter, preserveGrouping);
+      buildCollectionsMenuGroups(ctx, modelName, filter, preserveGrouping);
 
     // Helper: build "Associated records" entry via helper
     const buildAssociationRecords = (assocFrom: Collection, allowedSet: Set<string> | null): SubModelItem | null =>
-      (this as any).buildAssociatedRecordsItem(ctx, assocFrom, filterByTk, modelName, allowedSet);
+      buildAssociatedRecordsItem(
+        ctx,
+        assocFrom,
+        filterByTk,
+        modelName,
+        allowedSet,
+        (this as any).filterAssociatedFields,
+      );
 
     const defaultFilters = {
       currentCollection: true,
@@ -389,8 +413,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const filters = { ...defaultFilters, ...subclassFilters };
 
     // Build allowed collection filter from filters.collections (as white-list)
-    const allowedSet = await (this as any).resolveAllowedCollectionsWhitelist(ctx, filters);
-    const isAllowed = (col: Collection) => (this as any).isAllowedCollection(col, allowedSet);
+    const allowedSet = await resolveAllowedCollectionsWhitelist(ctx, filters);
+    const isAllowed = (col: Collection) => isAllowedCollection(col, allowedSet);
 
     // Record context branch
     if (filterByTk && c) {
@@ -401,21 +425,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         const targetName = targetCollectionNameCF || c.name;
         const targetCol = c.dataSource.getCollection(targetName) || c; // fallback
         if (!allowedSet || (targetCol && isAllowed(targetCol))) {
-          items.push((this as any).makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
+          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
         }
       }
 
       // Associated records (always included in record context)
       {
-        const targetName = targetCollectionNameCF;
-        let isCrossDS = false;
-        let assocFrom: Collection | undefined;
-        if (!targetName || targetName === c.name) {
-          assocFrom = c;
-        } else {
-          assocFrom = c.dataSource.getCollection(targetName);
-          if (!assocFrom) isCrossDS = true;
-        }
+        const { assocFrom, isCrossDS } = resolveAssocFrom(c, targetCollectionNameCF);
         if (!isCrossDS && assocFrom) {
           // Apply allowed collections filter on fields by their target collection
           const assocItem = buildAssociationRecords(assocFrom, allowedSet);
@@ -426,31 +442,21 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       // Other records (collections)
       if (filters.otherRecords) {
         const otherChildren = buildCollectionsByDS(allowedSet ? isAllowed : undefined, !!allowedSet);
-        items.push({ key: MENU_KEYS.OTHER_RECORDS, label: escapeT('Other records'), children: otherChildren });
+        pushGroupOrFlatten(items, modelName, MENU_KEYS.OTHER_RECORDS, escapeT('Other records'), otherChildren, true);
       }
 
-      // Do not flatten when only 'Other records' exists; keep the group label
       return items;
     }
 
     // Non-record context
     const items: SubModelItem[] = [];
     if (filters.currentCollection && c && (!allowedSet || isAllowed(c))) {
-      items.push((this as any).makeCurrentCollectionItem(modelName, c));
+      items.push(makeCurrentCollectionItem(modelName, c));
     }
 
     if (filters.otherCollections) {
       const children = buildCollectionsByDS(allowedSet ? isAllowed : undefined, !!allowedSet);
-      if (items.length > 0) {
-        items.push({
-          key: `${this.name}.${MENU_KEYS.OTHER_COLLECTIONS}`,
-          label: escapeT('Other collections'),
-          children,
-        });
-      } else {
-        // When it's the only menu, omit the 'Other collections' wrapper
-        items.push(...children);
-      }
+      pushGroupOrFlatten(items, modelName, MENU_KEYS.OTHER_COLLECTIONS, escapeT('Other collections'), children, false);
     }
     return items;
   }

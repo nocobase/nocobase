@@ -137,3 +137,16 @@ interface SubModelItem {
 ### 通过 Model.defineChildren() 的方式自定义 group children
 
 <code src="./demos/add-sub-model-group-children.tsx"></code>
+
+### 通过 CollectionBlockModel.getChildrenFilters() 限制可用集合
+
+<code src="./demos/collection-comments-define-children.tsx"></code>
+
+这个示例展示了如何通过继承 `CollectionBlockModel` 并重写 `getChildrenFilters` 方法来限制区块可用的集合：
+
+- **CommentsBlockModel**: 只能使用 `comments` 集合
+- **UsersBlockModel**: 只能使用 `users` 集合
+- 通过 `collections` 字段返回过滤后的集合列表
+- 其他集合（如 `posts`、`products`）虽然存在，但不会在对应区块的选择菜单中显示
+
+通过这种方式，可以为不同的业务场景创建专用的区块，确保数据源的正确性和安全性。
