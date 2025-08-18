@@ -161,6 +161,10 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
+  protected static override filterAssociatedFields(fields: any[]): any[] {
+    const toMany = ['o2m', 'm2m'];
+    return fields.filter((f) => toMany.includes(f.interface));
+  }
   get resource() {
     return super.resource as MultiRecordResource;
   }

@@ -43,7 +43,6 @@ class HelloDataBlockModel extends DataBlockModel {
 
 HelloDataBlockModel.define({
   label: 'Hello Data Block Model',
-  children: [],
 });
 
 class HelloCollectionBlockModel extends CollectionBlockModel {

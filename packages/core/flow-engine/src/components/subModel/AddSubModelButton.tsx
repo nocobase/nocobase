@@ -12,7 +12,7 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModel } from '../../models';
-import { ModelConstructor } from '../../types';
+import { CreateModelOptions, ModelConstructor } from '../../types';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 import { buildSubModelGroups, buildSubModelItems } from './utils';
@@ -20,6 +20,8 @@ import { buildSubModelGroups, buildSubModelItems } from './utils';
 // ============================================================================
 // 类型定义
 // ============================================================================
+
+type CreateModelOptionsStringUse = Omit<CreateModelOptions, 'use'> & { use?: string };
 
 export interface SubModelItem {
   key?: string;
@@ -29,9 +31,8 @@ export interface SubModelItem {
   icon?: React.ReactNode;
   children?: SubModelItemsType;
   createModelOptions?:
-    | Record<string, any>
-    | { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> }
-    | ((item: SubModelItem) => { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> });
+    | CreateModelOptionsStringUse
+    | ((ctx: FlowModelContext, extra?: any) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>);
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
@@ -113,10 +114,10 @@ const handleModelCreationError = async (error: any, addedModel?: FlowModel) => {
 /**
  * 安全地获取菜单项的创建选项
  */
-const getCreateModelOptions = async (item: SubModelItem) => {
+const getCreateModelOptions = async (item: SubModelItem, ctx: FlowModelContext) => {
   let createOpts = item.createModelOptions;
   if (typeof createOpts === 'function') {
-    createOpts = await createOpts(item);
+    createOpts = await createOpts(ctx);
   }
   return {
     use: item.useModel,
@@ -326,7 +327,7 @@ const createDefaultRemoveHandler = (config: {
     if (subModelType === 'array') {
       const subModels = (model.subModels as any)[subModelKey] as FlowModel[];
       if (Array.isArray(subModels)) {
-        const createOpts = await getCreateModelOptions(item);
+        const createOpts = await getCreateModelOptions(item, parentModel.context);
         const targetModel = subModels.find((subModel) => {
           if (createOpts?.use) {
             try {
@@ -444,7 +445,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
 
     // 处理添加操作
-    const createOpts = await getCreateModelOptions(item);
+    const createOpts = await getCreateModelOptions(item, model.context);
 
     if (!validateCreateModelOptions(createOpts)) {
       return;

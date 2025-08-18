@@ -13,11 +13,12 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  FlowModelContext,
   FlowModelRenderer,
   FlowSettingsButton,
+  MENU_KEYS,
   MultiRecordResource,
   SingleRecordResource,
-  buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
@@ -34,6 +35,26 @@ export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
+  protected static override buildCurrentRecordItem(ctx: FlowModelContext, c: any, input: any) {
+    return {
+      key: MENU_KEYS.CURRENT_RECORD,
+      label: escapeT('Current record'),
+      createModelOptions: {
+        use: 'DetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              filterByTk: input.filterByTk,
+              collectionName: input.collectionName || c.name,
+              dataSourceKey: c.dataSource.key,
+              ...(input.associationName && { associationName: input.associationName }),
+              ...(input.sourceId && { sourceId: input.sourceId }),
+            },
+          },
+        },
+      },
+    };
+  }
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();

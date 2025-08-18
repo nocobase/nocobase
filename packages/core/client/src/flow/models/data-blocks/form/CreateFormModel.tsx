@@ -9,7 +9,6 @@
 
 import {
   AddSubModelButton,
-  buildActionItems,
   DndProvider,
   DragHandler,
   Droppable,

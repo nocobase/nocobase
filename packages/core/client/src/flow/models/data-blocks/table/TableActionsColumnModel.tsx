@@ -16,7 +16,6 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';

@@ -12,7 +12,6 @@ import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
-  buildBlockItems,
   DndProvider,
   DragHandler,
   Droppable,
@@ -385,21 +384,14 @@ export class BlockGridModel extends GridModel {
     const t = this.translate;
     return (
       <>
-        <AddSubModelButton 
-          model={this} 
-          items={buildBlockItems(this)} 
+        <AddSubModelButton
+          model={this}
           subModelKey="items"
-          subModelBaseClass="BlockModel"
+          // subModelBaseClass={"DataBlockModel"}
+          subModelBaseClasses={['DataBlockModel', 'FilterBlockModel', 'BlockModel']}
         >
           <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
         </AddSubModelButton>
-        {/* <FlowSettingsButton
-          onClick={() => {
-            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
-          }}
-        >
-          {t('Configure rows')}
-        </FlowSettingsButton> */}
       </>
     );
   }
