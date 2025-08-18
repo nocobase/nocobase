@@ -199,7 +199,6 @@ export function CategoryTabs() {
 
   const onEdit = useCallback(
     (item) => {
-      console.log('----------', form);
       setEditing(true);
       const values = cloneDeep(item);
       form.setValues(values);
