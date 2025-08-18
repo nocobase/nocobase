@@ -18,12 +18,14 @@ import {
   FlowsFloatContextMenu,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { omitBy, isUndefined } from 'lodash';
 import { TableColumnProps, Tooltip, Form } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { FieldModelRenderer } from '../../../FieldModelRenderer';
+import { FormItem } from '../../../../data-blocks/form/FormItem/FormItem';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -175,7 +177,7 @@ export class SubTableColumnModel extends FieldModel {
               return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
             } else {
               return (
-                <Form.Item
+                <FormItem
                   {...this.props}
                   key={id}
                   name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
@@ -194,11 +196,12 @@ export class SubTableColumnModel extends FieldModel {
                   ) : (
                     <FieldModelRenderer
                       model={fork}
+                      {...this.props}
                       {...props}
                       id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]}
                     />
                   )}
-                </Form.Item>
+                </FormItem>
               );
             }
           })}
@@ -224,12 +227,30 @@ SubTableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const field = ctx.model.collectionField;
-        if (!field) {
+        const collectionField = ctx.model.collectionField;
+        const props = ctx.model.getProps();
+        if (!collectionField) {
           return;
         }
-        ctx.model.setProps('title', field.title);
-        ctx.model.setProps('dataIndex', field.name);
+        const fieldInterface = collectionField.interface;
+        if (collectionField) {
+          const { type, target } = collectionField;
+          ctx.model.setProps(
+            omitBy(
+              {
+                options: collectionField.enum.length ? collectionField.enum : props.options,
+                ...collectionField.getComponentProps(),
+                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
+                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
+                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+                valuePropName: fieldInterface === 'checkbox' ? 'checked' : 'value',
+              },
+              isUndefined,
+            ),
+          );
+        }
+        ctx.model.setProps('title', collectionField.title);
+        ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {

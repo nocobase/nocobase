@@ -11,7 +11,7 @@ import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
-import { FormItem } from '../form/FormItem/FormItemModel';
+import { FormItem } from '../form/FormItem/FormItem';
 import { FieldModelRenderer } from '../../fields';
 
 export class DetailItemModel extends FieldModel<{

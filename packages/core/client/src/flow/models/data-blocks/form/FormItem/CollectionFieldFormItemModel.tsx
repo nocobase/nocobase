@@ -98,12 +98,6 @@ CollectionFieldFormItemModel.registerFlow({
               },
             });
           }
-
-          // 如果字段值为空且有自定义字母表，生成默认值
-          // const value = ctx.model.form.getFieldValue(fieldPath);
-          // if (!value && customAlphabet) {
-          //   form.setFieldValue(fieldPath, Alphabet(customAlphabet, size)());
-          // }
         }
         ctx.model.setProps({
           rules,

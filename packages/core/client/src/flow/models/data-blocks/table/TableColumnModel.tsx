@@ -21,7 +21,7 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
-import { FormItem } from '../form/FormItem/FormItemModel';
+import { FormItem } from '../form/FormItem/FormItem';
 import { FieldModelRenderer } from '../../fields';
 
 export class TableColumnModel extends FieldModel {
@@ -126,7 +126,6 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
-        console.log(collectionField);
         ctx.model.setProps(collectionField.getComponentProps());
         if (collectionField.enum.length) {
           ctx.model.setProps({ options: collectionField.enum });
