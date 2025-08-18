@@ -382,6 +382,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                             })()
                           ) : option.componentType === 'inputNumber' ? (
                             <InputNumber
+                              precision={0}
+                              step={1}
                               value={rule.args?.[`${param.key}_${option.value}`] || ''}
                               onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${option.value}`, val)}
                               style={{ width: '100%' }}
@@ -454,6 +456,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 </Select>
               ) : param.componentType === 'inputNumber' ? (
                 <InputNumber
+                  precision={0}
+                  step={1}
                   value={currentValue !== undefined ? currentValue : ''}
                   onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
                   placeholder={t('Enter value')}
