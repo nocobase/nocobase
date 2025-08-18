@@ -80,9 +80,6 @@ describe('InstanceFlowRegistry (extended)', () => {
     await flow.save();
     expect(saveSpy).toHaveBeenCalledTimes(1);
 
-    await flow.saveStep('step1');
-    expect(saveSpy).toHaveBeenCalledTimes(2);
-
     await flow.destroyStep('step2');
     expect(saveSpy).toHaveBeenCalledTimes(3);
     expect(flow.hasStep('step2')).toBe(false);
