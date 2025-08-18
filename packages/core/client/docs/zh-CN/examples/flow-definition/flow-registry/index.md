@@ -12,12 +12,20 @@
 const flows = flowRegistry.getFlows();
 const flow = flowRegistry.getFlow(flowKey);
 
+flowRegistry.mapFlows((flow) => {
+  return <FlowComponent flow={flow} />
+});
+
 const flow = flowRegistry.addFlow('flow1', { title: 'Flow1' });
 await flow.save();
 flow.title = 'Flow Edited';
 await flow.save();
 flow.remove();
 await flow.destroy();
+
+flow.mapSteps((step) => {
+  return <StepComponent step={step} />
+});
 
 const step = flow.addStep('step1', { title: 'Step 1' });
 await step.save();

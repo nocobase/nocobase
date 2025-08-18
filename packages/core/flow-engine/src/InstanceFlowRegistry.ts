@@ -46,6 +46,12 @@ export class InstanceFlowRegistry {
     return this.flowDefs;
   }
 
+  mapFlows(callback: (flow: FlowDef) => any) {
+    return [...this.flowDefs.values()].map((flow) => {
+      return callback(flow);
+    });
+  }
+
   hasFlow(flowKey: FlowKey) {
     return this.flowDefs.has(flowKey);
   }
