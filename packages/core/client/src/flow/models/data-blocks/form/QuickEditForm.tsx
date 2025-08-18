@@ -16,11 +16,13 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { Button, Skeleton, Form, Space } from 'antd';
+import { omitBy, isUndefined } from 'lodash';
+import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { FormFieldModel, FieldModelRenderer } from '../../fields';
 import { FormComponent } from './FormModel';
+import { FormItem } from './FormItem';
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
 
@@ -126,9 +128,14 @@ export class QuickEditForm extends FlowModel {
       <FormComponent model={this}>
         {this.mapSubModels('fields', (field) => {
           return (
-            <Form.Item name={this.fieldPath} key={field.uid} initialValue={this.context.record[this.fieldPath]}>
+            <FormItem
+              name={this.fieldPath}
+              key={field.uid}
+              initialValue={this.context.record[this.fieldPath]}
+              {...this.props}
+            >
               <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
-            </Form.Item>
+            </FormItem>
           );
         })}
         <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -209,11 +216,24 @@ QuickEditForm.registerFlow({
           });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
+          const { type, target } = collectionField;
+          const props: any = fieldModel.getProps();
+          fieldModel.setProps(
+            omitBy(
+              {
+                options: collectionField.enum.length ? collectionField.enum : props.options,
+                ...collectionField.getComponentProps(),
+                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
+                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
+                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+              },
+              isUndefined,
+            ),
+          );
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);
           resource.setData(ctx.inputArgs.record);
-          console.log(ctx.model);
           ctx.model.form?.setFieldsValue(resource.getData());
         }
       },
