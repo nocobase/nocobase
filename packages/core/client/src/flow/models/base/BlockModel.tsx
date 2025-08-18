@@ -369,36 +369,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   // - Other records/collections depending on context
   static async defineChildren(ctx: FlowModelContext) {
     const modelName = (this as any).name as string;
-    const current = ctx.currentFlow;
-    const inputCF = current?.inputArgs || {};
-    const resource: BaseRecordResource | undefined = ctx.resource;
-    const inputCtx = ctx.inputArgs || {};
-    const rsParams =
-      typeof ctx.blockModel?.getStepParams === 'function'
-        ? ctx.blockModel.getStepParams('resourceSettings', 'init') || {}
-        : {};
-
-    // Resolve current collection (c) from multiple sources
-    const resolveCollection = (): Collection | undefined => {
-      const fromFlow = current?.blockModel?.collection as Collection | undefined;
-      const fromCtx = ctx.collection as Collection | undefined;
-      if (fromFlow || fromCtx) return fromFlow || fromCtx;
-      const targetName = (current?.inputArgs as any)?.collectionName || rsParams.collectionName;
-      if (!targetName) return undefined;
-      const dsm = (ctx as any).dataSourceManager;
-      const dataSources = dsm?.getDataSources?.() || [];
-      for (const ds of dataSources) {
-        const found = ds.getCollection?.(targetName);
-        if (found) return found;
-      }
-      return undefined;
-    };
-
-    // Normalized context values
-    const c = resolveCollection();
-    const filterByTk = inputCF.filterByTk ?? inputCtx.filterByTk ?? rsParams.filterByTk ?? resource?.getFilterByTk?.();
-    const targetCollectionNameCF =
-      (inputCF.collectionName as string | undefined) ?? inputCtx.collectionName ?? rsParams.collectionName;
+    const { inputCF, c, filterByTk, targetCollectionNameCF } = (this as any).resolveDefineContext(ctx);
 
     // Helper: build DS->collections group(s)
     const buildCollectionsByDS = (filter?: (col: Collection) => boolean, preserveGrouping = false) =>
