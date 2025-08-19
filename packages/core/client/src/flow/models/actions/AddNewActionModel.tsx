@@ -20,7 +20,7 @@ export class AddNewActionModel extends CollectionActionModel {
 }
 
 AddNewActionModel.define({
-  title: escapeT('Add new'),
+  label: escapeT('Add new'),
 });
 
 AddNewActionModel.registerFlow({

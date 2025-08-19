@@ -19,7 +19,7 @@ export class BulkDeleteActionModel extends CollectionActionModel {
 }
 
 BulkDeleteActionModel.define({
-  title: escapeT('Delete'),
+  label: escapeT('Delete'),
 });
 
 BulkDeleteActionModel.registerFlow({

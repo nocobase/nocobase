@@ -36,7 +36,7 @@ export class JavaScriptBlockModel extends BlockModel {
 }
 
 JavaScriptBlockModel.define({
-  title: 'JavaScript block',
+  label: 'JavaScript block',
 });
 
 JavaScriptBlockModel.registerFlow({

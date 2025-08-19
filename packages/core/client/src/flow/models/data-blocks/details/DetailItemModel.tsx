@@ -56,7 +56,7 @@ export class DetailItemModel extends FieldModel<{
 
 DetailItemModel.define({
   icon: 'DetailFormItem',
-  defaultOptions: {
+  createModelOptions: {
     use: 'DetailItemModel',
   },
   sort: 100,

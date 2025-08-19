@@ -13,7 +13,7 @@ import { FieldModel } from '../../../base/FieldModel';
 import { FormFieldGridModel } from '../FormFieldGridModel';
 import { FieldModelRenderer } from '../../../fields';
 
-export const FormItem = (props) => {
+const FormItem = (props) => {
   return <Form.Item {...props}>{props.children}</Form.Item>;
 };
 

@@ -50,5 +50,5 @@ SubmitFilterFormActionModel.registerFlow({
 });
 
 SubmitFilterFormActionModel.define({
-  title: tval('Filter'),
+  label: tval('Filter'),
 });

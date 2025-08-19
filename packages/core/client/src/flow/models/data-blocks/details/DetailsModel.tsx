@@ -9,16 +9,18 @@
 
 import { FormLayout } from '@formily/antd-v5';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
+  FlowModelContext,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
-  buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
@@ -32,6 +34,9 @@ export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
+  static override getChildrenFilters(_ctx: FlowModelContext) {
+    return { currentRecord: true };
+  }
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
@@ -128,13 +133,16 @@ export class DetailsModel extends CollectionBlockModel<{
                 );
               })}
 
-              <AddActionButton
+              <AddSubModelButton
                 model={this}
-                items={buildActionItems(this, 'RecordActionModel')}
-                onModelCreated={async (actionModel) => {
+                subModelKey="actions"
+                subModelBaseClass={RecordActionModel}
+                afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
@@ -160,8 +168,8 @@ DetailsModel.registerFlow({
 });
 
 DetailsModel.define({
-  title: escapeT('Details'),
-  defaultOptions: {
+  label: escapeT('Details'),
+  createModelOptions: {
     use: 'DetailsModel',
     subModels: {
       grid: {

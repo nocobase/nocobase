@@ -14,7 +14,7 @@ export class CollectionFieldFormItemModel extends FormItemModel {}
 
 CollectionFieldFormItemModel.define({
   icon: 'CollectionFieldFormItemModel',
-  defaultOptions: {
+  createModelOptions: {
     use: 'CollectionFieldFormItemModel',
   },
   sort: 100,

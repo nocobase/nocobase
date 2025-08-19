@@ -102,9 +102,9 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: escapeT('Table column'),
+  label: escapeT('Table column'),
   icon: 'TableColumn',
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableColumnModel',
   },
   sort: 0,

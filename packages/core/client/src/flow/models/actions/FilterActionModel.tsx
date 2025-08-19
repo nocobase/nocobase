@@ -56,23 +56,8 @@ export class FilterActionModel extends CollectionActionModel {
 }
 
 FilterActionModel.define({
-  title: escapeT('Filter'),
-  toggleDetector: ({ model }) => {
-    let ret = false;
-    model.findSubModel('actions', (action) => {
-      if (action.constructor === FilterActionModel) {
-        ret = true;
-      }
-    });
-    return ret;
-  },
-  customRemove: async ({ model }, item) => {
-    model.findSubModel('actions', (action) => {
-      if (action instanceof FilterActionModel) {
-        action.destroy();
-      }
-    });
-  },
+  label: escapeT('Filter'),
+  toggleable: true,
 });
 
 FilterActionModel.registerFlow({
