@@ -207,9 +207,9 @@ export class SubTableColumnModel extends FieldModel {
 }
 
 SubTableColumnModel.define({
-  title: escapeT('Table column'),
+  label: escapeT('Table column'),
   icon: 'TableColumn',
-  defaultOptions: {
+  createModelOptions: {
     use: 'SubTableColumnModel',
   },
   sort: 0,

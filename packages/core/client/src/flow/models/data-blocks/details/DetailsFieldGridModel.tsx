@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
@@ -51,19 +52,22 @@ const AddDetailField = ({ model }) => {
     }),
   );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'items'}
       subModelBaseClass="DetailFormItemModel"
       items={items}
-      onModelCreated={async (item: DetailItemModel) => {
+      afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         await field.applyAutoFlows();
       }}
-      onSubModelAdded={async (item: DetailItemModel) => {
+      afterSubModelAdd={async (item: DetailItemModel) => {
         model.context.blockModel.addAppends(item.fieldPath, true);
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

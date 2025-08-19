@@ -137,3 +137,6 @@ interface SubModelItem {
 ### 通过 Model.defineChildren() 的方式自定义 group children
 
 <code src="./demos/add-sub-model-group-children.tsx"></code>
+
+<!-- ### 通过 CollectionBlockModel.getChildrenFilters() 限制可用Collections -->
+<!-- <code src="./demos/collection-comments-define-children.tsx"></code> -->

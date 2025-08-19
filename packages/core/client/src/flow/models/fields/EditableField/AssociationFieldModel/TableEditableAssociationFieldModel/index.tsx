@@ -12,10 +12,12 @@ import {
   buildFieldItems,
   SingleRecordResource,
   escapeT,
-  AddFieldButton,
+  AddSubModelButton,
+  FlowSettingsButton,
   useFlowEngine,
   DndProvider,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
@@ -65,21 +67,24 @@ const AddFieldColumn = ({ model }) => {
     },
   );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
       items={items}
-      onModelCreated={async (column: SubTableColumnModel) => {
+      afterSubModelInit={async (column: SubTableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: SubTableColumnModel) => {
+      afterSubModelAdd={async (column: SubTableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
         }
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

@@ -19,7 +19,7 @@ export class EditActionModel extends RecordActionModel {
 }
 
 EditActionModel.define({
-  title: escapeT('Edit'),
+  label: escapeT('Edit'),
 });
 
 EditActionModel.registerFlow({

@@ -12,7 +12,7 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModel } from '../../models';
-import { ModelConstructor } from '../../types';
+import { CreateModelOptions, ModelConstructor } from '../../types';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
 import { buildSubModelGroups, buildSubModelItems } from './utils';
@@ -21,6 +21,8 @@ import { buildSubModelGroups, buildSubModelItems } from './utils';
 // 类型定义
 // ============================================================================
 
+type CreateModelOptionsStringUse = Omit<CreateModelOptions, 'use'> & { use?: string };
+
 export interface SubModelItem {
   key?: string;
   label?: string | React.ReactNode;
@@ -28,10 +30,9 @@ export interface SubModelItem {
   disabled?: boolean;
   icon?: React.ReactNode;
   children?: SubModelItemsType;
-  defaultOptions?: Record<string, any>;
   createModelOptions?:
-    | { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> }
-    | ((item: SubModelItem) => { use?: string; props?: Record<string, any>; stepParams?: Record<string, any> });
+    | CreateModelOptionsStringUse
+    | ((ctx: FlowModelContext, extra?: any) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>);
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;
@@ -54,8 +55,9 @@ interface AddSubModelButtonProps {
   subModelBaseClasses?: Array<string | ModelConstructor>;
   subModelType?: 'object' | 'array';
   subModelKey: string;
-  onModelCreated?: (subModel: FlowModel) => Promise<void>;
-  onSubModelAdded?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelInit?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelAdd?: (subModel: FlowModel) => Promise<void>;
+  afterSubModelRemove?: (subModel: FlowModel) => Promise<void>;
   children?: React.ReactNode;
   keepDropdownOpen?: boolean;
 }
@@ -112,10 +114,10 @@ const handleModelCreationError = async (error: any, addedModel?: FlowModel) => {
 /**
  * 安全地获取菜单项的创建选项
  */
-const getCreateModelOptions = async (item: SubModelItem) => {
+const getCreateModelOptions = async (item: SubModelItem, ctx: FlowModelContext) => {
   let createOpts = item.createModelOptions;
   if (typeof createOpts === 'function') {
-    createOpts = await createOpts(item);
+    createOpts = await createOpts(ctx);
   }
   return {
     use: item.useModel,
@@ -219,7 +221,9 @@ const transformSubModelItems = async (
   }
 
   // 批量执行 toggleDetector
-  const toggleResults = await Promise.allSettled(toggleItems.map(({ item }) => item.toggleDetector!(model.context)));
+  const toggleResults = await Promise.allSettled(
+    toggleItems.map(({ item }) => (item.toggleDetector ? item.toggleDetector(model.context) : Promise.resolve(false))),
+  );
 
   const toggleMap = new Map<number, boolean>();
   toggleItems.forEach(({ index }, i) => {
@@ -265,6 +269,8 @@ const transformSubModelItems = async (
       const originalLabel = model.translate(item.label) || '';
       transformedItem.label = createSwitchLabel(originalLabel, isToggled);
       transformedItem.isToggled = isToggled;
+      // toggleable 项默认保持下拉菜单打开，便于连续操作
+      transformedItem.keepDropdownOpen = item.keepDropdownOpen ?? true;
     }
 
     return transformedItem;
@@ -276,7 +282,7 @@ const transformSubModelItems = async (
 /**
  * 转换 SubModelItemsType 到 LazyDropdown 的 ItemsType 格式
  */
-const transformItems = (
+export const transformItems = (
   items: SubModelItemsType,
   model: FlowModel,
   subModelKey: string,
@@ -315,13 +321,13 @@ const createDefaultRemoveHandler = (config: {
   subModelKey: string;
   subModelType: 'object' | 'array';
 }) => {
-  return async (item: SubModelItem, parentModel: FlowModel): Promise<void> => {
+  return async (item: SubModelItem, parentModel: FlowModel): Promise<FlowModel | null> => {
     const { model, subModelKey, subModelType } = config;
 
     if (subModelType === 'array') {
       const subModels = (model.subModels as any)[subModelKey] as FlowModel[];
       if (Array.isArray(subModels)) {
-        const createOpts = await getCreateModelOptions(item);
+        const createOpts = await getCreateModelOptions(item, parentModel.context);
         const targetModel = subModels.find((subModel) => {
           if (createOpts?.use) {
             try {
@@ -341,6 +347,7 @@ const createDefaultRemoveHandler = (config: {
           await targetModel.destroy();
           const index = subModels.indexOf(targetModel);
           if (index > -1) subModels.splice(index, 1);
+          return targetModel;
         }
       }
     } else {
@@ -348,8 +355,10 @@ const createDefaultRemoveHandler = (config: {
       if (subModel) {
         await subModel.destroy();
         (model.subModels as any)[subModelKey] = undefined;
+        return subModel;
       }
     }
+    return null;
   };
 };
 
@@ -373,18 +382,22 @@ const AddSubModelButtonCore = function AddSubModelButton({
   subModelBaseClasses,
   subModelType = 'array',
   subModelKey,
-  onModelCreated,
-  onSubModelAdded,
+  afterSubModelInit,
+  afterSubModelAdd,
+  afterSubModelRemove,
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
-  if (!items) {
-    if (subModelBaseClass) {
-      items = buildSubModelItems(subModelBaseClass);
-    } else if (subModelBaseClasses && subModelBaseClasses.length > 0) {
-      items = buildSubModelGroups(subModelBaseClasses);
+  // 合并 items 与 baseClass 的菜单来源
+  const finalItems = useMemo<SubModelItemsType>(() => {
+    const sources: (SubModelItemsType | undefined | null)[] = [];
+    if (items) sources.push(items);
+    if (subModelBaseClass) sources.push(buildSubModelItems(subModelBaseClass));
+    if (subModelBaseClasses && subModelBaseClasses.length > 0) {
+      sources.push(buildSubModelGroups(subModelBaseClasses));
     }
-  }
+    return mergeSubModelItems(sources, { addDividers: true });
+  }, [items, subModelBaseClass, subModelBaseClasses]);
   // 创建删除处理器
   const removeHandler = useMemo(
     () =>
@@ -405,10 +418,25 @@ const AddSubModelButtonCore = function AddSubModelButton({
     // 处理可切换菜单项的开关操作
     if (item.toggleDetector && isToggled) {
       try {
+        // 先定位将要删除的 subModel，供回调使用
+        let removedModel: FlowModel | null = null;
+        try {
+          const C = model.flowEngine.getModelClass(item.useModel);
+          if (C) {
+            removedModel = model.findSubModel(subModelKey, (m) => m.constructor === C);
+          }
+        } catch (e) {
+          // Ignore error
+        }
+
         if (item.customRemove) {
           await item.customRemove(model.context, item);
         } else {
-          await removeHandler(item, model);
+          removedModel = (await removeHandler(item, model)) || removedModel;
+        }
+
+        if (afterSubModelRemove && removedModel) {
+          await afterSubModelRemove(removedModel);
         }
       } catch (error) {
         console.error('Failed to remove sub model:', error);
@@ -417,7 +445,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
 
     // 处理添加操作
-    const createOpts = await getCreateModelOptions(item);
+    const createOpts = await getCreateModelOptions(item, model.context);
 
     if (!validateCreateModelOptions(createOpts)) {
       return;
@@ -437,8 +465,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
 
       const toAdd = async () => {
         try {
-          if (onModelCreated) {
-            await onModelCreated(addedModel);
+          if (afterSubModelInit) {
+            await afterSubModelInit(addedModel);
           }
 
           if (subModelType === 'array') {
@@ -447,8 +475,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
             model.setSubModel(subModelKey, addedModel);
           }
 
-          if (onSubModelAdded) {
-            await onSubModelAdded(addedModel);
+          if (afterSubModelAdd) {
+            await afterSubModelAdd(addedModel);
           }
 
           await addedModel.save();
@@ -477,7 +505,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
   return (
     <LazyDropdown
       menu={{
-        items: transformItems(items, model, subModelKey, subModelType),
+        items: transformItems(finalItems, model, subModelKey, subModelType),
         onClick,
         keepDropdownOpen,
       }}

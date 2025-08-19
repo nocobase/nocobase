@@ -32,7 +32,7 @@ export const ShortcutList: React.FC = observer(() => {
         <AddSubModelButton
           model={model}
           subModelKey={'shortcuts'}
-          onSubModelAdded={async () => {
+          afterSubModelAdd={async () => {
             if (!model.isNewModel) {
               return;
             }

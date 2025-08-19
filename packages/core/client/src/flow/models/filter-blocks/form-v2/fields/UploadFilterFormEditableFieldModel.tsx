@@ -45,6 +45,7 @@ const CardUpload = (props) => {
   );
 };
 export class UploadFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+  declare setComponentProps: any; //TODO: this should be removed after field refactored
   static readonly supportedFieldInterfaces = [
     'attachment',
     'm2m',

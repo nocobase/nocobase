@@ -25,7 +25,7 @@ export class FormSubmitActionModel extends FormActionModel {
 }
 
 FormSubmitActionModel.define({
-  title: escapeT('Submit'),
+  label: escapeT('Submit'),
 });
 
 FormSubmitActionModel.registerFlow({

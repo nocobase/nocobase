@@ -8,66 +8,91 @@
  */
 
 import { FlowModelContext } from '../../flowContext';
+import { FlowEngine } from '../../flowEngine';
 import { ModelConstructor } from '../../types';
-import { isInheritedFrom } from '../../utils';
+import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
+import { SubModelItem } from './AddSubModelButton';
+import * as _ from 'lodash';
 
-export function buildSubModelItem(M: ModelConstructor) {
+function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModelItem {
   const meta = M.meta || {};
   if (meta.hide) {
     return;
   }
-  const item = {
+  const item: SubModelItem = {
     key: M.name,
     label: meta.label || M.name,
-    children: buildSubModelChildren(M),
+    // Ensure toggleable models can be detected and toggled in menus
+    // Meta.toggleable indicates the item should behave like a switch (unique per parent)
+    // Add corresponding flags so AddSubModelButton can compute toggle state and removal
+    toggleable: meta.toggleable,
+    // Use the model class name for toggle detection (engine.getModelClass)
+    // This is required by AddSubModelButton to locate existing instances
+    useModel: M.name,
+    children: buildSubModelChildren(M, ctx),
   };
-  if (!item.children) {
-    item['createModelOptions'] = meta.createModelOptions || {
-      use: M.name,
-    };
-  }
+  item['createModelOptions'] = meta.createModelOptions || {
+    use: M.name, //TODO: this is wrong after code minized, we need to fix this
+  };
   return item;
 }
 
-export function buildSubModelChildren(M: ModelConstructor) {
-  const meta = M.meta || {};
+function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
+  const meta = (M as any).meta || {};
   let children: any;
-  if (meta.children) {
-    // @ts-ignore
-    if (meta.children === false) {
-      children = null;
-    }
-    if (Array.isArray(meta.children)) {
-      children = meta.children;
-    } else if (typeof meta.children === 'function') {
-      children = meta.children;
-    }
-  } else if (M['defineChildren']) {
+  if (M['defineChildren']) {
     children = M['defineChildren'].bind(M);
   }
+  if (typeof children === 'function') {
+    const orininalChildren = children;
+    children = async () => {
+      const resolved = await orininalChildren(ctx);
+      // deep clone and wrap createModelOptions
+      const wrap = (nodes: any[]): any[] =>
+        nodes?.map((n) => {
+          const node = { ...n };
+          if (node.children) {
+            node.children = Array.isArray(node.children) ? wrap(node.children) : node.children;
+          } else if (node.createModelOptions) {
+            const src = node.createModelOptions;
+            node.createModelOptions = async (...args: any[]) => {
+              const extraArg = args && args.length > 0 ? args[args.length - 1] : undefined;
+              // Resolve default options from FlowModel.define meta first, then child-specific options.
+              const defaultOpts = await resolveCreateModelOptions(meta?.createModelOptions, ctx, extraArg);
+              const childOpts = await resolveCreateModelOptions(src, ctx, extraArg);
+              // Merge with child options taking precedence over defaults.
+              return _.merge({}, _.cloneDeep(defaultOpts), childOpts);
+            };
+          }
+          return node;
+        });
+      return wrap(resolved);
+    };
+  }
+
   return children;
 }
 
 export function buildSubModelItems(subModelBaseClass: string | ModelConstructor, exclude = []) {
   return async (ctx: FlowModelContext) => {
-    const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);
-    const items = [];
-    for (const [name, M] of SubModelClasses) {
-      let isInherited = false;
-      for (const P of exclude) {
-        if (M === P || M.name === P.name || isInheritedFrom(M, P)) {
-          isInherited = true;
-          break;
+    const SubModelClasses = (ctx.engine as FlowEngine).getSubclassesOf(subModelBaseClass);
+    // Collect and sort subclasses by meta.sort (ascending), excluding hidden or inherited ones in `exclude`
+    const candidates = Array.from(SubModelClasses.values())
+      .filter((M) => !(M as any).meta?.hide)
+      .filter((M) => {
+        for (const P of exclude) {
+          if (M === P || (M as any).name === (P as any).name || isInheritedFrom(M, P)) {
+            return false;
+          }
         }
-      }
-      if (isInherited) {
-        continue;
-      }
-      const item = buildSubModelItem(M);
-      if (!item) {
-        continue;
-      }
-      items.push(item);
+        return true;
+      })
+      .sort((A, B) => ((A as any).meta?.sort || 0) - ((B as any).meta?.sort || 0));
+
+    const items: SubModelItem[] = [];
+    for (const M of candidates) {
+      const item = buildSubModelItem(M, ctx);
+      if (item) items.push(item);
     }
     return items;
   };
@@ -82,21 +107,26 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
       if (!BaseClass) {
         continue;
       }
-      let children = buildSubModelChildren(BaseClass);
-      if (typeof children === 'function') {
-        children = await children(ctx);
-      }
+      let children = buildSubModelChildren(BaseClass, ctx);
+
       if (!children) {
         children = await buildSubModelItems(subModelBaseClass, exclude)(ctx);
       }
       exclude.push(BaseClass);
-      if (!children || children?.length === 0) {
+
+      const hasChildren =
+        typeof children === 'function' ? true : Array.isArray(children) ? children.length > 0 : !!children;
+      if (!hasChildren) {
         continue;
       }
+      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
+      const groupLabel =
+        BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
       items.push({
-        key: BaseClass.name,
+        // 使用传入的字符串作为 key，避免使用类名在压缩后不稳定的问题
+        key: typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name,
         type: 'group',
-        label: BaseClass.meta?.label || BaseClass.name,
+        label: groupLabel,
         children,
       });
     }

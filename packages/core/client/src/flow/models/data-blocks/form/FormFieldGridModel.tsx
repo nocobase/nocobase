@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddFieldButton, buildFieldItems } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, buildFieldItems } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
@@ -66,15 +67,18 @@ export class FormFieldGridModel extends GridModel<{
 
     return (
       <>
-        <AddFieldButton
+        <AddSubModelButton
           items={fieldItems}
           subModelKey="items"
           subModelBaseClass={FormCustomFormItemModel}
           model={this}
-          onSubModelAdded={async (field: CollectionFieldFormItemModel) => {
+          afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
             this.context.blockModel.addAppends(field.fieldPath, true);
           }}
-        />
+          keepDropdownOpen
+        >
+          <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+        </AddSubModelButton>
         {/* <FlowSettingsButton
           onClick={() => {
             this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);

@@ -12,24 +12,24 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
-  AddFieldButton,
-  buildActionItems,
+  AddSubModelButton,
   buildFieldItems,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, CollectionActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
 import { TableColumnModel } from './TableColumnModel';
@@ -142,22 +142,29 @@ const AddFieldColumn = ({ model }) => {
     }),
   );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
       subModelBaseClass="TableCustomColumnModel"
       items={items}
-      onModelCreated={async (column: TableColumnModel) => {
+      afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: TableColumnModel) => {
+      afterSubModelAdd={async (column: TableColumnModel) => {
         model.addAppends(column.fieldPath, true);
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
+  protected static override filterAssociatedFields(fields: any[]): any[] {
+    const toMany = ['o2m', 'm2m'];
+    return fields.filter((f) => toMany.includes(f.interface));
+  }
   get resource() {
     return super.resource as MultiRecordResource;
   }
@@ -376,11 +383,9 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton
-                model={this}
-                items={buildActionItems(this, 'CollectionActionModel')}
-                subModelKey="actions"
-              />
+              <AddSubModelButton model={this} subModelBaseClass={CollectionActionModel} subModelKey="actions">
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
@@ -547,9 +552,9 @@ TableModel.registerFlow({
 });
 
 TableModel.define({
-  title: escapeT('Table'),
+  label: escapeT('Table'),
   group: escapeT('Content'),
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableModel',
     subModels: {
       columns: [

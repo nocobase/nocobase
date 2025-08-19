@@ -20,7 +20,10 @@ export * from './moveBlock';
 export const EMPTY_COLUMN_UID = 'EMPTY_COLUMN';
 
 // 可拖拽图标组件
-export const DragHandler: FC<{ model: FlowModel }> = ({ model, children = <DragOutlined /> }) => {
+export const DragHandler: FC<{ model: FlowModel; children: React.ReactNode }> = ({
+  model,
+  children = <DragOutlined />,
+}) => {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: model.uid });
   return (
     <span

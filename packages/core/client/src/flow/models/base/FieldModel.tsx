@@ -22,6 +22,8 @@ export interface FieldSettingsInitParams {
 }
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
+  declare field: any; // TODO: remove it after field has been refactored!! this is used to by pass build error
+
   onInit(options: any): void {
     this.context.defineProperty('collectionField', {
       get: () => {

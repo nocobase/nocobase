@@ -20,6 +20,6 @@ export class AIFormItem extends FormCustomFormItemModel {
 }
 
 AIFormItem.define({
-  title: 'AI Employee',
+  label: 'AI Employee',
   hide: true,
 });
