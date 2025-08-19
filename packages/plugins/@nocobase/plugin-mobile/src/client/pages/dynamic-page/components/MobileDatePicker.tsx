@@ -53,6 +53,8 @@ const MobileDateTimePicker = connect(
       showTime = false,
       picker,
       disabled,
+      dateOnly,
+      utc,
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
@@ -98,8 +100,17 @@ const MobileDateTimePicker = connect(
     const handleConfirm = useCallback(
       (value) => {
         setVisible(false);
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
+        if (dateOnly) {
+          onChange(dayjs(value).format('YYYY-MM-DD'));
+        } else if (!utc) {
+          if (showTime) {
+            onChange(dayjs(value).format('YYYY-MM-DD'));
+          }
+          onChange(dayjs(value).startOf(picker).format('YYYY-MM-DD'));
+        } else {
+          const selectedDateTime = new Date(value);
+          onChange(selectedDateTime);
+        }
       },
       [showTime, onChange],
     );
