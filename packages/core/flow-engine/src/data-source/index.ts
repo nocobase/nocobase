@@ -613,8 +613,7 @@ export class CollectionField {
   }
 
   getComponentProps() {
-    const { type, target } = this;
-    console.log(this.interface);
+    const { type, target } = this.options;
     const componentProps = _.omitBy(
       {
         ...(this.options.uiSchema?.['x-component-props'] || {}),

@@ -50,7 +50,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         others.onChange(val);
         onChange(val);
       };
-      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path });
+      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path, ...others });
     }, [model, id, value, ariaDescribedby, onChange]);
 
     return <FlowModelRenderer model={model} {...rest} />;
