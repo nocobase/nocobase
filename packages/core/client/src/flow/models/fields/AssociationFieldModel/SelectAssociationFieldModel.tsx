@@ -72,7 +72,7 @@ export function LazySelect(props) {
   );
 }
 
-export class SelectEditableAssociationFieldModel extends AssociationFieldModel {
+export class SelectAssociationFieldModel extends AssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
 
@@ -105,7 +105,7 @@ const paginationState = {
 };
 
 // 事件绑定
-SelectEditableAssociationFieldModel.registerFlow({
+SelectAssociationFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 300,
   steps: {
@@ -142,7 +142,7 @@ SelectEditableAssociationFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-SelectEditableAssociationFieldModel.registerFlow({
+SelectAssociationFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -172,7 +172,7 @@ SelectEditableAssociationFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-SelectEditableAssociationFieldModel.registerFlow({
+SelectAssociationFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -212,7 +212,7 @@ SelectEditableAssociationFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-SelectEditableAssociationFieldModel.registerFlow({
+SelectAssociationFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -260,7 +260,7 @@ SelectEditableAssociationFieldModel.registerFlow({
 });
 
 //专有配置项
-SelectEditableAssociationFieldModel.registerFlow({
+SelectAssociationFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
   sort: 200,

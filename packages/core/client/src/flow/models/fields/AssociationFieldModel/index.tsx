@@ -8,5 +8,5 @@
  */
 
 export * from './AssociationFieldModel';
-export * from './SelectEditableAssociationFieldModel';
+export * from './SelectAssociationFieldModel';
 export * from './TableAssociationFieldModel';
