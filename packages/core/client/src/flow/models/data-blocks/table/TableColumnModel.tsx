@@ -151,9 +151,12 @@ TableColumnModel.registerFlow({
           },
         },
       },
-      defaultParams: (ctx) => ({
-        title: ctx.model.collectionField?.title,
-      }),
+      defaultParams: (ctx) => {
+        console.log(ctx.model.collectionField?.title || ctx.model.title);
+        return {
+          title: ctx.model.collectionField?.title || ctx.model.title,
+        };
+      },
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
@@ -236,6 +239,7 @@ TableCustomColumnModel.registerFlow({
       defaultParams: (ctx) => {
         return {
           title:
+            ctx.model.title ||
             ctx.model.constructor['meta']?.title ||
             ctx.model.flowEngine.findModelClass((_, ModelClass) => {
               return ModelClass === ctx.model.constructor;
