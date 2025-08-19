@@ -125,6 +125,13 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
     return buf;
   });
 
+  const filterProperties = useCallback(
+    (s) => {
+      return s['x-component'] !== footerNodeName;
+    },
+    [footerNodeName],
+  );
+
   const title = field.title || '';
 
   const closePopup = useCallback(() => {
@@ -133,22 +140,14 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const popupContent = isSpecialSchema ? (
     <div style={{ padding: 12, ...specialStyle }}>
-      <SchemaComponent
-        basePath={field.address}
-        schema={fieldSchema}
-        filterProperties={(s) => {
-          return s['x-component'] !== footerNodeName;
-        }}
-      />
+      <SchemaComponent basePath={field.address} schema={fieldSchema} filterProperties={filterProperties} />
     </div>
   ) : (
     <SchemaComponent
       basePath={field.address}
-      schema={fieldSchema}
+      schema={fieldSchema.properties.grid || fieldSchema}
       onlyRenderProperties
-      filterProperties={(s) => {
-        return s['x-component'] !== footerNodeName;
-      }}
+      filterProperties={fieldSchema.properties.grid ? undefined : filterProperties} // 这样改能解决 Iphone 弹窗卡死的问题，具体原因未知
     />
   );
 
