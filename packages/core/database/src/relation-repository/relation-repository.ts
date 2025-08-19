@@ -44,9 +44,6 @@ export abstract class RelationRepository {
     this.sourceCollection = sourceCollection;
 
     this.setSourceKeyValue(sourceKeyValue);
-    if (this.sourceKeyValue === '0ab1800f-d175-4118-a529-e42368a17e85') {
-      console.log(this.sourceKeyValue);
-    }
     this.associationName = association;
     this.association = this.sourceCollection.model.associations[association];
 
