@@ -154,6 +154,11 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
     return filteredOptions;
   }, [validationType, availableValidationOptions, excludeValidationOptions]);
 
+  const allowDecimalInputNumber = useMemo(
+    () => validationType === 'number' && (validationOptions || []).some((opt: any) => opt?.key === 'precision'),
+    [validationType, validationOptions],
+  );
+
   useEffect(() => {
     if (!formilyField) return;
     let hasError = false;
@@ -383,8 +388,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                             })()
                           ) : option.componentType === 'inputNumber' ? (
                             <InputNumber
-                              precision={0}
-                              step={1}
+                              precision={allowDecimalInputNumber ? undefined : 0}
+                              step={allowDecimalInputNumber ? 0.1 : 1}
                               value={rule.args?.[`${param.key}_${option.value}`] || ''}
                               onChange={(val) => handleRuleValueChange(rule.key, `${param.key}_${option.value}`, val)}
                               style={{ width: '100%' }}
@@ -457,8 +462,8 @@ export const FieldValidation = observer((props: FieldValidationProps) => {
                 </Select>
               ) : param.componentType === 'inputNumber' ? (
                 <InputNumber
-                  precision={0}
-                  step={1}
+                  precision={allowDecimalInputNumber ? undefined : 0}
+                  step={allowDecimalInputNumber ? 0.1 : 1}
                   value={currentValue !== undefined ? currentValue : ''}
                   onChange={(val) => handleRuleValueChange(rule.key, param.key, val)}
                   placeholder={t('Enter value')}
