@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
@@ -21,6 +28,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
+import { ImageEditor } from './ImageEditor';
+import { useImageEditor } from './useImageEditor';
 import { useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../hooks';
@@ -257,9 +266,14 @@ function DefaultThumbnailPreviewer({ file }) {
 }
 
 function AttachmentListItem(props) {
-  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, showFileName } = props;
+  const { file, disabled, onPreview, onDelete: propsOnDelete, readPretty, showFileName, onFileReplace } = props;
   const { componentCls: prefixCls } = useStyles();
   const { t } = useTranslation();
+
+  const { isEditorVisible, currentFile, openEditor, closeEditor, handleSave } = useImageEditor({
+    onFileReplace,
+  });
+
   const handleClick = useCallback(
     (e) => {
       e.preventDefault();
@@ -274,6 +288,12 @@ function AttachmentListItem(props) {
   const onDownload = useCallback(() => {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
+  const onEdit = useCallback(() => {
+    // Only allow editing for image files
+    if (matchMimetype(file, 'image/*')) {
+      openEditor(file);
+    }
+  }, [file, openEditor]);
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [
     <span key="thumbnail" className={`${prefixCls}-list-item-thumbnail`}>
@@ -304,6 +324,9 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
+          {!readPretty && !disabled && file.status !== 'uploading' && (
+            <Button size={'small'} type={'text'} icon={<EditOutlined />} onClick={onEdit} />
+          )}
           {!readPretty && file.url && (
             <Button size={'small'} type={'text'} icon={<DownloadOutlined />} onClick={onDownload} />
           )}
@@ -320,20 +343,39 @@ function AttachmentListItem(props) {
     </div>
   );
   return (
-    <div
-      style={{
-        marginBottom: showFileName !== false && file.title ? '28px' : '0px',
-      }}
-      className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
-    >
-      {file.status === 'error' ? (
-        <Tooltip title={file.response} getPopupContainer={(node) => node.parentNode as HTMLElement}>
-          {content}
-        </Tooltip>
-      ) : (
-        content
+    <>
+      <div
+        style={{
+          marginBottom: showFileName !== false && file.title ? '28px' : '0px',
+        }}
+        className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
+      >
+        {file.status === 'error' ? (
+          <Tooltip title={file.response} getPopupContainer={(node) => node.parentNode as HTMLElement}>
+            {content}
+          </Tooltip>
+        ) : (
+          content
+        )}
+      </div>
+
+      {/* Image Editor Modal */}
+      {isEditorVisible && currentFile && (
+        <ImageEditor
+          visible={isEditorVisible}
+          onCancel={closeEditor}
+          onSave={handleSave}
+          imageUrl={currentFile.url}
+          fileName={currentFile.title || currentFile.filename}
+          enableCompression={true}
+          compressionOptions={{
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          }}
+        />
       )}
-    </div>
+    </>
   );
 }
 
@@ -373,6 +415,18 @@ export function AttachmentList(props) {
     },
     [multiple, onChange, value],
   );
+
+  const onFileReplace = useCallback(
+    (originalFile, newFile) => {
+      if (multiple) {
+        const newValue = value.map((item) => (item.id === originalFile.id ? newFile : item));
+        onChange(newValue);
+      } else {
+        onChange(newFile);
+      }
+    },
+    [multiple, onChange, value],
+  );
   return (
     <>
       {fileList.map((file, index) => (
@@ -385,6 +439,7 @@ export function AttachmentList(props) {
           onDelete={onDelete}
           readPretty={readPretty}
           showFileName={showFileName}
+          onFileReplace={onFileReplace}
         />
       ))}
       <Previewer index={preview} onSwitchIndex={setPreview} list={fileList} />
@@ -460,6 +515,18 @@ export function Uploader({ rules, ...props }: UploadProps) {
     });
   }, []);
 
+  const onFileReplaceUploaded = useCallback((originalFile, newFile) => {
+    setUploadedList((prevUploadedList) => {
+      const index = prevUploadedList.findIndex((item) => item.id === originalFile.id);
+      if (index !== -1) {
+        const newList = [...prevUploadedList];
+        newList[index] = newFile;
+        return newList;
+      }
+      return prevUploadedList;
+    });
+  }, []);
+
   const QRCodeUploader = useComponent('QRCodeUploader');
 
   const { mimetype: accept, size } = rules ?? {};
@@ -469,10 +536,24 @@ export function Uploader({ rules, ...props }: UploadProps) {
   return (
     <>
       {uploadedList.map((file, index) => (
-        <AttachmentListItem key={file.id} file={file} index={index} disabled={disabled} onDelete={onDeleteUploaded} />
+        <AttachmentListItem
+          key={file.id}
+          file={file}
+          index={index}
+          disabled={disabled}
+          onDelete={onDeleteUploaded}
+          onFileReplace={onFileReplaceUploaded}
+        />
       ))}
       {pendingList.map((file, index) => (
-        <AttachmentListItem key={file.uid} file={file} index={index} disabled={disabled} onDelete={onDeletePending} />
+        <AttachmentListItem
+          key={file.uid}
+          file={file}
+          index={index}
+          disabled={disabled}
+          onDelete={onDeletePending}
+          onFileReplace={onFileReplaceUploaded}
+        />
       ))}
       <div
         className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}
