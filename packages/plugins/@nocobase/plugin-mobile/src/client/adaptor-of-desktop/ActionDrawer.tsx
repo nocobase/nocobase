@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, Schema, useField, useFieldSchema } from '@formily/react';
 import {
   Action,
   FlagProvider,
@@ -111,6 +111,12 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   const { visible, setVisible } = useActionContext();
   const { visiblePopup } = usePopupContainer(visible);
 
+  // 克隆的目的是为了把底部按钮的 schema 去掉，避免重复渲染。
+  // 不使用 filterProperties 的原因是防止 Iphone 中出现卡死的问题，具体原因未知。
+  const clonedFieldSchema = useMemo(() => {
+    return new Schema(fieldSchema.toJSON());
+  }, [fieldSchema]);
+
   // this schema need to add padding in the content area of the popup
   const isSpecialSchema = isChangePasswordSchema(fieldSchema) || isEditProfileSchema(fieldSchema);
 
@@ -118,19 +124,15 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const specialStyle = isSpecialSchema ? { backgroundColor: 'white' } : {};
 
-  const footerSchema = fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === footerNodeName) {
-      return s;
-    }
-    return buf;
-  });
-
-  const filterProperties = useCallback(
-    (s) => {
-      return s['x-component'] !== footerNodeName;
-    },
-    [footerNodeName],
-  );
+  const footerSchema = useMemo(() => {
+    return clonedFieldSchema.reduceProperties((buf, s) => {
+      if (s['x-component'] === footerNodeName) {
+        s.parent.removeProperty(s.name); // 移除掉底部按钮区域的 schema
+        return s;
+      }
+      return buf;
+    }) as Schema;
+  }, [clonedFieldSchema, footerNodeName]);
 
   const title = field.title || '';
 
@@ -140,27 +142,15 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const popupContent = isSpecialSchema ? (
     <div style={{ padding: 12, ...specialStyle }}>
-      <SchemaComponent basePath={field.address} schema={fieldSchema} filterProperties={filterProperties} />
+      <SchemaComponent basePath={field.address} schema={clonedFieldSchema} />
     </div>
   ) : (
-    <SchemaComponent
-      basePath={field.address}
-      schema={fieldSchema}
-      onlyRenderProperties
-      filterProperties={filterProperties}
-    />
+    <SchemaComponent basePath={field.address} schema={clonedFieldSchema} />
   );
 
   const footerContent = footerSchema ? (
     <div className="nb-mobile-action-drawer-footer" style={isSpecialSchema ? specialStyle : null}>
-      <NocoBaseRecursionField
-        basePath={field.address}
-        schema={fieldSchema}
-        onlyRenderProperties
-        filterProperties={(s) => {
-          return s['x-component'] === footerNodeName;
-        }}
-      />
+      <NocoBaseRecursionField basePath={field.address} schema={footerSchema} />
     </div>
   ) : null;
 
