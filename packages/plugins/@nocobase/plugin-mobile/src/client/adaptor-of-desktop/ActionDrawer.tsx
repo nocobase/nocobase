@@ -145,9 +145,9 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   ) : (
     <SchemaComponent
       basePath={field.address}
-      schema={fieldSchema.properties.grid || fieldSchema}
+      schema={fieldSchema}
       onlyRenderProperties
-      filterProperties={fieldSchema.properties.grid ? undefined : filterProperties} // 这样改能解决 Iphone 弹窗卡死的问题，具体原因未知
+      filterProperties={filterProperties}
     />
   );
 
