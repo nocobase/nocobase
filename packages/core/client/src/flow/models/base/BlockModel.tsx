@@ -27,21 +27,20 @@ import React from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
-// ===== Local helpers (file-scoped) =====
 function resolveDefineContext(ctx: FlowModelContext) {
   const current = ctx.currentFlow;
   const inputCF = current?.inputArgs || {};
   const resource: BaseRecordResource | undefined = ctx.resource;
   const inputCtx = ctx.inputArgs || {};
-  const bm = ctx.blockModel as any;
+  const bm = ctx.blockModel;
   const rsParams = typeof bm?.getStepParams === 'function' ? bm.getStepParams('resourceSettings', 'init') || {} : {};
 
-  const dsm = (ctx as any).dataSourceManager;
+  const dsm = ctx.dataSourceManager;
   const resolveCollection = (): Collection | undefined => {
     const fromFlow = current?.blockModel?.collection as Collection | undefined;
     const fromCtx = ctx.collection as Collection | undefined;
     if (fromFlow || fromCtx) return fromFlow || fromCtx;
-    const targetName = (current?.inputArgs as any)?.collectionName || rsParams.collectionName;
+    const targetName = current?.inputArgs?.collectionName || rsParams.collectionName;
     if (!targetName) return undefined;
     const dataSources = dsm?.getDataSources?.() || [];
     for (const ds of dataSources) {
@@ -85,7 +84,7 @@ function makeCurrentRecordItem(
   modelName: string,
   targetName: string,
   dataSourceKey: string,
-  filterByTk: any,
+  filterByTk: string,
   inputCF: any,
 ): SubModelItem {
   return {
@@ -187,12 +186,12 @@ function buildAssociatedRecordsItem(
     .filter((g) => g.children && g.children.length > 0);
 
   if (groups.length === 0) return null;
-  const children = groups.length === 1 && Array.isArray(groups[0].children) ? (groups[0].children as any) : groups;
+  const children = groups.length === 1 && Array.isArray(groups[0].children) ? groups[0].children : groups;
   return {
     key: MENU_KEYS.ASSOCIATION_RECORDS,
     label: escapeT('Associated records'),
     children,
-  } as any;
+  } as SubModelItem;
 }
 
 function buildCollectionsMenuGroups(
@@ -201,7 +200,7 @@ function buildCollectionsMenuGroups(
   filter?: (col: Collection) => boolean,
   preserveGrouping = false,
 ): SubModelItem[] {
-  const dsm = (ctx as any).dataSourceManager;
+  const dsm = ctx.dataSourceManager;
   const dataSources: DataSource[] = dsm?.getDataSources?.() ?? [];
 
   const groups = dataSources
@@ -364,12 +363,10 @@ DataBlockModel.define({ hide: true, label: escapeT('Data blocks') });
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
 
-  // Hook: subclasses can narrow which association fields are offered (e.g., only to-many)
   protected static filterAssociatedFields(fields: CollectionField[]): CollectionField[] {
     return fields;
   }
 
-  // Centralized config for building children; subclasses can override to customize behavior.
   static getChildrenFilters(_ctx: FlowModelContext): {
     currentCollection?: boolean;
     currentRecord?: boolean;
@@ -381,11 +378,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return {};
   }
 
-  // Default children for all collection-based blocks:
-  // - Associated records (when currentFlow has filterByTk)
-  // - Other records/collections depending on context
   static async defineChildren(ctx: FlowModelContext) {
-    const modelName = (this as any).name as string;
+    const modelName = this.name as string;
     const { inputCF, c, filterByTk, targetCollectionNameCF } = resolveDefineContext(ctx);
 
     // Helper: build DS->collections group(s)
@@ -394,14 +388,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
     // Helper: build "Associated records" entry via helper
     const buildAssociationRecords = (assocFrom: Collection, allowedSet: Set<string> | null): SubModelItem | null =>
-      buildAssociatedRecordsItem(
-        ctx,
-        assocFrom,
-        filterByTk,
-        modelName,
-        allowedSet,
-        (this as any).filterAssociatedFields,
-      );
+      buildAssociatedRecordsItem(ctx, assocFrom, filterByTk, modelName, allowedSet, this.filterAssociatedFields);
 
     const defaultFilters = {
       currentCollection: true,
@@ -409,37 +396,30 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       otherCollections: true,
       otherRecords: true,
     };
-    const subclassFilters = ((this as any).getChildrenFilters?.(ctx) as any) || {};
+    const subclassFilters = this.getChildrenFilters?.(ctx) || {};
     const filters = { ...defaultFilters, ...subclassFilters };
 
-    // Build allowed collection filter from filters.collections (as white-list)
     const allowedSet = await resolveAllowedCollectionsWhitelist(ctx, filters);
     const isAllowed = (col: Collection) => isAllowedCollection(col, allowedSet);
 
-    // Record context branch
     if (filterByTk && c) {
       const items: SubModelItem[] = [];
 
-      // Optional current record
       if (filters.currentRecord) {
         const targetName = targetCollectionNameCF || c.name;
-        const targetCol = c.dataSource.getCollection(targetName) || c; // fallback
+        const targetCol = c.dataSource.getCollection(targetName) || c;
         if (!allowedSet || (targetCol && isAllowed(targetCol))) {
           items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
         }
       }
 
-      // Associated records (always included in record context)
-      {
-        const { assocFrom, isCrossDS } = resolveAssocFrom(c, targetCollectionNameCF);
-        if (!isCrossDS && assocFrom) {
-          // Apply allowed collections filter on fields by their target collection
-          const assocItem = buildAssociationRecords(assocFrom, allowedSet);
-          if (assocItem) items.push(assocItem);
-        }
+      const { assocFrom, isCrossDS } = resolveAssocFrom(c, targetCollectionNameCF);
+      if (!isCrossDS && assocFrom) {
+        // Apply allowed collections filter on fields by their target collection
+        const assocItem = buildAssociationRecords(assocFrom, allowedSet);
+        if (assocItem) items.push(assocItem);
       }
 
-      // Other records (collections)
       if (filters.otherRecords) {
         const otherChildren = buildCollectionsByDS(allowedSet ? isAllowed : undefined, !!allowedSet);
         pushGroupOrFlatten(items, modelName, MENU_KEYS.OTHER_RECORDS, escapeT('Other records'), otherChildren, true);
@@ -448,7 +428,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       return items;
     }
 
-    // Non-record context
     const items: SubModelItem[] = [];
     if (filters.currentCollection && c && (!allowedSet || isAllowed(c))) {
       items.push(makeCurrentCollectionItem(modelName, c));

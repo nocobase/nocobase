@@ -11,50 +11,7 @@ class ContainerModel extends FlowModel {
         {this.mapSubModels('items', (item) => {
           return <FlowModelRenderer key={item.uid} model={item} showFlowSettings={{ showBorder: true }} />;
         })}
-        <AddSubModelButton
-          model={this}
-          subModelKey={'items'}
-          // 使用 items 来展示 defineChildren 功能
-          items={async (ctx) => {
-            const items = [];
-
-            // 调用 CommentsBlockModel 的 defineChildren 方法
-            const commentsChildren = await CommentsBlockModel.defineChildren(ctx);
-            if (commentsChildren && commentsChildren.length > 0) {
-              items.push({
-                key: 'comments-group',
-                label: '评论相关区块',
-                children: commentsChildren.map((child) => ({
-                  ...child,
-                  // 修改 createModelOptions 以使用 CommentsBlockModel
-                  createModelOptions: {
-                    use: 'CommentsBlockModel',
-                    stepParams: child.createModelOptions?.stepParams || {},
-                  },
-                })),
-              });
-            }
-
-            // 调用 UsersBlockModel 的 defineChildren 方法
-            const usersChildren = await UsersBlockModel.defineChildren(ctx);
-            if (usersChildren && usersChildren.length > 0) {
-              items.push({
-                key: 'users-group',
-                label: '用户相关区块',
-                children: usersChildren.map((child) => ({
-                  ...child,
-                  // 修改 createModelOptions 以使用 UsersBlockModel
-                  createModelOptions: {
-                    use: 'UsersBlockModel',
-                    stepParams: child.createModelOptions?.stepParams || {},
-                  },
-                })),
-              });
-            }
-
-            return items;
-          }}
-        >
+        <AddSubModelButton model={this} subModelKey={'items'} subModelBaseClass={CollectionBlockModel}>
           <Button>添加区块</Button>
         </AddSubModelButton>
       </Space>
