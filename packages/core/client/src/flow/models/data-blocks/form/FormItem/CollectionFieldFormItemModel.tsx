@@ -36,19 +36,7 @@ CollectionFieldFormItemModel.registerFlow({
         const rules = [...(props.rules || [])];
         const fieldInterface = collectionField.interface;
         if (collectionField) {
-          const { type, target } = collectionField;
-          ctx.model.setProps(
-            omitBy(
-              {
-                options: collectionField.enum.length ? collectionField.enum : props.options,
-                ...collectionField.getComponentProps(),
-                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
-                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
-                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
-              },
-              isUndefined,
-            ),
-          );
+          ctx.model.setProps(collectionField.getComponentProps());
         }
         //TODO 最终用 jio 替换验证
         if (fieldInterface === 'email') {
@@ -102,7 +90,6 @@ CollectionFieldFormItemModel.registerFlow({
         ctx.model.setProps({
           rules,
           name: ctx.model.fieldPath,
-          valuePropName: fieldInterface === 'checkbox' ? 'checked' : 'value',
         });
       },
     },

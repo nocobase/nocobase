@@ -51,9 +51,6 @@ DetailItemModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
         const { collectionField } = ctx.model;
         ctx.model.setProps(collectionField.getComponentProps());
-        if (collectionField.enum.length) {
-          ctx.model.setProps({ options: collectionField.enum });
-        }
       },
     },
     label: {

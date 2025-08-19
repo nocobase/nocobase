@@ -126,10 +126,9 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
-        ctx.model.setProps(collectionField.getComponentProps());
-        if (collectionField.enum.length) {
-          ctx.model.setProps({ options: collectionField.enum });
-        }
+        ctx.model.setProps({
+          ...collectionField.getComponentProps(),
+        });
       },
     },
     title: {

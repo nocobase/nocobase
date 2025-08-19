@@ -16,7 +16,6 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { omitBy, isUndefined } from 'lodash';
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -216,20 +215,7 @@ QuickEditForm.registerFlow({
           });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
-          const { type, target } = collectionField;
-          const props: any = fieldModel.getProps();
-          fieldModel.setProps(
-            omitBy(
-              {
-                options: collectionField.enum.length ? collectionField.enum : props.options,
-                ...collectionField.getComponentProps(),
-                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
-                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
-                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
-              },
-              isUndefined,
-            ),
-          );
+          ctx.model.setProps(collectionField.getComponentProps());
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);

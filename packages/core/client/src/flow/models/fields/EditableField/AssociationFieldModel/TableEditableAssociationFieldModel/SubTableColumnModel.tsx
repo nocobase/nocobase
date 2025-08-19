@@ -223,27 +223,10 @@ SubTableColumnModel.registerFlow({
     init: {
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;
-        const props = ctx.model.getProps();
         if (!collectionField) {
           return;
         }
-        const fieldInterface = collectionField.interface;
-        if (collectionField) {
-          const { type, target } = collectionField;
-          ctx.model.setProps(
-            omitBy(
-              {
-                options: collectionField.enum.length ? collectionField.enum : props.options,
-                ...collectionField.getComponentProps(),
-                mode: collectionField.type === 'array' ? 'multiple' : props.mode,
-                multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : props.multiple,
-                maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
-                valuePropName: fieldInterface === 'checkbox' ? 'checked' : 'value',
-              },
-              isUndefined,
-            ),
-          );
-        }
+        ctx.model.setProps(collectionField.getComponentProps());
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
