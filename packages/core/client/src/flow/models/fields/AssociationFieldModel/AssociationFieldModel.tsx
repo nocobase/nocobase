@@ -7,5 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FormItemModel';
-export * from './CollectionFieldFormItemModel';
+import { FormFieldModel } from '../FormFieldModel';
+
+export class AssociationFieldModel extends FormFieldModel {
+  public static readonly supportedFieldInterfaces = null;
+}

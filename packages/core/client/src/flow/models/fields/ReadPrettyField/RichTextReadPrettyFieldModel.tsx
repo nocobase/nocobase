@@ -9,7 +9,7 @@
 
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
-import { MarkdownReadPretty } from '../../../internal/components/MarkdownReadPretty';
+import { MarkdownReadPretty } from '../../../internal/components/MarkdownDisplay/MarkdownReadPretty';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {

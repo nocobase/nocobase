@@ -8,7 +8,6 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
-import { omitBy, isUndefined } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';

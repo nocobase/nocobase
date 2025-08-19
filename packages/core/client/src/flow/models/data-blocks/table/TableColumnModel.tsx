@@ -22,7 +22,7 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
-import { FieldModelRenderer } from '../../fields';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 
 export class TableColumnModel extends FieldModel {
   getColumnProps(): TableColumnProps {
@@ -151,12 +151,9 @@ TableColumnModel.registerFlow({
           },
         },
       },
-      defaultParams: (ctx) => {
-        console.log(ctx.model.collectionField?.title || ctx.model.title);
-        return {
-          title: ctx.model.collectionField?.title || ctx.model.title,
-        };
-      },
+      defaultParams: (ctx) => ({
+        title: ctx.model.collectionField?.title,
+      }),
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);

@@ -7,5 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FormItemModel';
-export * from './CollectionFieldFormItemModel';
+import { Checkbox } from 'antd';
+import { FormFieldModel } from './FormFieldModel';
+
+export class CheckboxFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['checkbox'];
+
+  get component() {
+    return [Checkbox, {}];
+  }
+}

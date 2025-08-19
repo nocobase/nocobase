@@ -10,7 +10,7 @@
 import React from 'react';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormFieldGridModel } from '../FormFieldGridModel';
-import { FieldModelRenderer } from '../../../fields';
+import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { FormItem } from './FormItem';
 
 export class FormItemModel extends FieldModel<{

@@ -19,9 +19,11 @@ import {
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FormFieldModel, FieldModelRenderer } from '../../fields';
 import { FormComponent } from './FormModel';
-import { FormItem } from './FormItem';
+import { FormItem } from './FormItem/FormItem';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { FormFieldModel } from '../../fields';
+
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
 
@@ -96,9 +98,6 @@ export class QuickEditForm extends FlowModel {
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    // this.context.defineProperty('form', {
-    //   get: () => createForm(),
-    // });
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
     });

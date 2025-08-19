@@ -7,5 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FormItemModel';
-export * from './CollectionFieldFormItemModel';
+import { Radio } from 'antd';
+import { FormFieldModel } from './FormFieldModel';
+
+export class RadioGroupFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['radioGroup'];
+
+  get component() {
+    return [Radio.Group, {}];
+  }
+}

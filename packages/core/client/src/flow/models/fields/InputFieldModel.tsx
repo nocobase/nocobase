@@ -7,5 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FormItemModel';
-export * from './CollectionFieldFormItemModel';
+import { Input } from 'antd';
+import { FormFieldModel } from './FormFieldModel';
+
+export class InputFieldModel extends FormFieldModel {
+  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence', 'nanoid'];
+  get component() {
+    return [Input, {}];
+  }
+}

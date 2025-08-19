@@ -7,5 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FormItemModel';
-export * from './CollectionFieldFormItemModel';
+import { MapFieldModel } from './MapFieldModel';
+
+export class PolygonFieldModel extends MapFieldModel {
+  static supportedFieldInterfaces = ['polygon'];
+  getMapFieldType() {
+    return 'polygon';
+  }
+}

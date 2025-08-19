@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableFieldModel } from '../../fields/EditableField/EditableFieldModel';
+import { EditableFieldModel } from '../../fields/EditableFieldModel';
 
 export class FilterFormFieldModel extends EditableFieldModel {}
