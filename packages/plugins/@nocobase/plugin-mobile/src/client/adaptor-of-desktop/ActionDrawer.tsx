@@ -115,7 +115,7 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
   // 不使用 filterProperties 的原因是防止 Iphone 中出现卡死的问题，具体原因未知。
   const clonedFieldSchema = useMemo(() => {
     return new Schema(fieldSchema.toJSON());
-  }, [fieldSchema]);
+  }, []); // 不需要依赖 fieldSchema，不然会导致在弹窗中添加区块时不刷新 UI
 
   // this schema need to add padding in the content area of the popup
   const isSpecialSchema = isChangePasswordSchema(fieldSchema) || isEditProfileSchema(fieldSchema);
