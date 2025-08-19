@@ -8,16 +8,15 @@
  */
 
 import { useForm } from '@formily/react';
-import { reactive } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { escapeT } from '@nocobase/flow-engine';
 import { InputNumberReadPretty } from '../../../components/InputNumberReadPretty';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class NumberReadPrettyFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer', 'id', 'formula'];
-  // @reactive
   public render() {
     const { value } = this.props;
     return (
@@ -49,10 +48,10 @@ const UnitConversion = () => {
 NumberReadPrettyFieldModel.registerFlow({
   key: 'numberSettings',
   sort: 100,
-  title: 'Number settings',
+  title: escapeT('Number settings'),
   steps: {
     format: {
-      title: 'Format',
+      title: escapeT('Format'),
       uiSchema: (ctx) => {
         return {
           formatStyle: {
@@ -60,11 +59,11 @@ NumberReadPrettyFieldModel.registerFlow({
             enum: [
               {
                 value: 'normal',
-                label: 'Normal',
+                label: escapeT('Normal'),
               },
               {
                 value: 'scientifix',
-                label: 'Scientifix notation',
+                label: escapeT('Scientifix notation'),
               },
             ],
             'x-decorator': 'FormItem',
