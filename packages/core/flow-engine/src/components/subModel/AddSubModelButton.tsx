@@ -485,16 +485,39 @@ const AddSubModelButtonCore = function AddSubModelButton({
         }
       };
 
-      // 在创建 Model 之前，需要先填写预设的配置表单
-      const opened = await addedModel.openFlowSettings({
-        preset: true,
-        onSaved: async () => {
-          await toAdd();
-        },
-      });
+      // 判断目标模型是否包含任何标记为 preset 的步骤
+      const hasPresetSteps = (() => {
+        try {
+          const ModelClass = (model.flowEngine as any).getModelClass(createOpts.use);
+          if (!ModelClass || typeof ModelClass.getFlows !== 'function') return false;
+          const flows: Map<string, any> = ModelClass.getFlows();
+          for (const [, flow] of flows) {
+            const steps = flow?.steps || {};
+            for (const sk of Object.keys(steps)) {
+              if (steps[sk]?.preset) return true;
+            }
+          }
+        } catch (e) {
+          // 安静失败，按无 preset 处理
+        }
+        return false;
+      })();
 
-      // 如果没有匹配到预配置表单，则直接添加模型
-      if (!opened) {
+      if (hasPresetSteps) {
+        // 在创建 Model 之前，需要先填写预设的配置表单
+        const opened = await addedModel.openFlowSettings({
+          preset: true,
+          onSaved: async () => {
+            await toAdd();
+          },
+        });
+
+        // 如果没有匹配到预配置表单，则直接添加模型
+        if (!opened) {
+          await toAdd();
+        }
+      } else {
+        // 无需预设步骤，直接添加
         await toAdd();
       }
     } catch (error) {
