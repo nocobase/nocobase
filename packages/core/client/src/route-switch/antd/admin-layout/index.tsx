@@ -674,7 +674,7 @@ export const InternalAdminLayout = () => {
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
-  const { isMobileLayout, setIsMobileLayout } = useMobileLayout();
+  const { isMobileLayout } = useMobileLayout();
   const [collapsed, setCollapsed] = useState(isMobileLayout);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
@@ -775,16 +775,14 @@ export const InternalAdminLayout = () => {
       >
         <RouteContext.Consumer>
           {(value: RouteContextType) => {
-            const { isMobile: _isMobile } = value;
-
-            if (_isMobile !== isMobileLayout) {
-              setIsMobileLayout(_isMobile);
-            }
+            const { isMobile } = value;
 
             return (
-              <ConfigProvider theme={_isMobile ? mobileTheme : theme}>
-                <LayoutContent />
-              </ConfigProvider>
+              <SetIsMobileLayout isMobile={isMobile}>
+                <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                  <LayoutContent />
+                </ConfigProvider>
+              </SetIsMobileLayout>
             );
           }}
         </RouteContext.Consumer>
@@ -792,6 +790,21 @@ export const InternalAdminLayout = () => {
     </DndContext>
   );
 };
+
+/**
+ * 用来调用 setIsMobileLayout 的组件
+ * @param props
+ * @returns
+ */
+function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
+  const { setIsMobileLayout } = useMobileLayout();
+
+  useEffect(() => {
+    setIsMobileLayout(props.isMobile);
+  }, [props.isMobile, setIsMobileLayout]);
+
+  return props.children;
+}
 
 const NavigateToDefaultPage: FC = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
