@@ -22,11 +22,11 @@
   "Plain text": "纯文本",
   "detail URL": "详情链接",
   "Details page for desktop": "桌面端详情页",
-  "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/admin”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
+  "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/admin\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/admin”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
   "Mark as read": "标为已读",
   "Mark as unread": "标为未读",
   "Mark all as read": "全部标为已读",
-  "Support two types of links: internal links and external links. If using an internal link, the link starts with\"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/m”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
+  "Support two types of links: internal links and external links. If using an internal link, the link starts with \"/\", for example, \"/m\". If using an external link, the link starts with \"http\", for example, \"https://example.com\".": "支持两种链接类型：内部链接和外部链接。如果使用内部链接，链接以“/”开头，例如“/m”。如果使用外部链接，链接以“http”开头，例如“https://example.com”。",
   "Details page for mobile": "移动端详情页",
   "The message page has already been created.": "站内信页面已创建。",
   "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "从节点结果中选择接收者时，仅支持用户ID（或用户ID数组）。其他将不匹配任何用户。"

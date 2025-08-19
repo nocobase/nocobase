@@ -17,6 +17,7 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
+import { InstanceFlowRegistry } from '../InstanceFlowRegistry';
 import type {
   ActionDefinition,
   ArrayElementType,
@@ -41,12 +42,13 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
+import { FlowSettingsOpenOptions } from '../flowSettings';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
 // 使用WeakMap存储每个类的flows
-const modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -88,6 +90,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _reactiveWrapperCache?: React.ComponentType;
 
+  flowRegistry: InstanceFlowRegistry;
+
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
       throw new Error('FlowModel must be initialized with a FlowEngine instance.');
@@ -125,6 +129,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     //   this.onInit(options);
     // });
     this.createSubModels(options.subModels);
+
+    this.flowRegistry = new InstanceFlowRegistry(this);
+    this.flowRegistry.addFlows(options.flowRegistry);
 
     this.observerDispose = observe(this.stepParams, (changed) => {
       // if doesn't change, skip
@@ -164,7 +171,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.emitter.on(eventName, listener);
   }
 
-  onInit(options) {}
+  onInit(options) {
+    this.loadDynamicFlows()
+      .then((flows) => {
+        if (!_.isEmpty(flows)) {
+          this.setDynamicFlows(flows);
+        }
+      })
+      .catch((error) => {
+        console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
+      });
+  }
 
   get async() {
     return this._options.async || false;
@@ -296,6 +313,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
+   */
+  public static clearFlows(): void {
+    modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+  }
+
+  /**
    * 扩展已存在的流程定义。通过合并现有流程和扩展定义来创建新的流程。
    * @template TModel 具体的FlowModel子类类型
    * @param {string | ExtendedFlowDefinition} keyOrDefinition 流程的 Key 或 ExtendedFlowDefinition 对象。
@@ -352,6 +376,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
    */
   public getFlow(key: string): FlowDefinition | undefined {
+    if (this.flowRegistry.hasFlow(key)) {
+      return this.flowRegistry.getFlow(key);
+    }
     // 获取当前类的构造函数
     const currentClass = this.constructor as typeof FlowModel;
 
@@ -372,6 +399,25 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     return undefined;
+  }
+
+  getFlows() {
+    // 获取当前类的构造函数
+    const currentClass = this.constructor as typeof FlowModel;
+    // 返回当前类及其父类的所有流程定义
+    const globalFlows = currentClass.getFlows();
+    const instanceFlows = this.flowRegistry.getFlows();
+    const allFlows = new Map<string, FlowDefinition>();
+
+    for (const [key, flow] of globalFlows.entries()) {
+      allFlows.set(key, flow);
+    }
+
+    for (const [key, flow] of instanceFlows.entries()) {
+      allFlows.set(key, flow as any);
+    }
+
+    return allFlows;
   }
 
   /**
@@ -483,23 +529,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
-    // Create a new FlowContext instance for this flow execution
-    const createLogger = (level: string) => (message: string, meta?: any) => {
-      const logMessage = `[${level.toUpperCase()}] [Flow: ${flowKey}] [Model: ${this.uid}] ${message}`;
-      const logMeta = { flowKey, modelUid: this.uid, ...meta };
-      console[level.toLowerCase()](logMessage, logMeta);
-    };
-
     const flowContext = new FlowRuntimeContext(this, flowKey);
 
-    flowContext.defineProperty('logger', {
-      value: {
-        info: createLogger('INFO'),
-        warn: createLogger('WARN'),
-        error: createLogger('ERROR'),
-        debug: createLogger('DEBUG'),
-      },
-    });
     flowContext.defineProperty('reactView', {
       value: this.reactView,
     });
@@ -613,8 +644,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     // 获取所有流程
-    const constructor = this.constructor as typeof FlowModel;
-    const allFlows = constructor.getFlows();
+    const allFlows = this.getFlows();
     const runId = `${this.uid}-${eventName}-${Date.now()}`;
 
     allFlows.forEach((flow) => {
@@ -672,8 +702,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {FlowDefinition[]} 按 sort 排序的自动应用流程定义数组
    */
   public getAutoFlows(): FlowDefinition[] {
-    const constructor = this.constructor as typeof FlowModel;
-    const allFlows = constructor.getFlows();
+    const allFlows = this.getFlows();
 
     // 过滤出自动流程并按 sort 排序
     // 没有 on 属性且没有 manual: true 的流程默认自动执行
@@ -1225,6 +1254,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * @deprecated
    * 打开步骤设置对话框
    * 用于配置流程中特定步骤的参数和设置
    * @param {string} flowKey 流程的唯一标识符
@@ -1268,6 +1298,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  /**
+   * @deprecated
+   * @param dialogWidth
+   * @param dialogTitle
+   * @returns
+   */
   async openPresetStepSettingsDialog(dialogWidth?: number | string, dialogTitle?: string) {
     return this.configureRequiredSteps(dialogWidth, dialogTitle);
   }
@@ -1305,7 +1341,57 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         (data.subModels as any)[subModelKey] = (subModels[subModelKey] as FlowModel).serialize();
       }
     }
+    for (const [key, flow] of this.flowRegistry.getFlows()) {
+      data['flowRegistry'] = data['flowRegistry'] || {};
+      data['flowRegistry'][key] = flow.toData();
+    }
     return data;
+  }
+
+  /**
+   * Opens the flow settings dialog for this flow model.
+   * @param options - Configuration options for opening flow settings, excluding the model property
+   * @returns A promise that resolves when the flow settings dialog is opened
+   */
+  async openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>) {
+    return this.flowEngine.flowSettings.open({
+      model: this,
+      ...options,
+    });
+  }
+
+  async openDynamicFlowsEditor(
+    options?: Omit<FlowSettingsOpenOptions, 'model' | 'flowKey' | 'flowKeys' | 'stepKey' | 'preset'>,
+  ) {
+    return this.flowEngine.flowSettings.openDynamicFlowsEditor({
+      model: this,
+      ...options,
+    });
+  }
+
+  #dynamicFlows: FlowDefinition[] = [];
+
+  // TODO：后面去除这个方法，应该默认加载动态流
+  async loadDynamicFlows(): Promise<FlowDefinition[]> {
+    return JSON.parse(localStorage.getItem('DYNAMIC_FLOWS') || '[]');
+  }
+
+  async saveDynamicFlows(): Promise<void> {
+    // TODO: 暂时的做法，后面需要改进
+    localStorage.setItem('DYNAMIC_FLOWS', JSON.stringify(this.#dynamicFlows));
+  }
+
+  setDynamicFlows(flows: FlowDefinition[]): void {
+    this.#dynamicFlows = flows;
+
+    flows.forEach((flow) => {
+      // @ts-ignore
+      this.constructor.registerFlow(flow);
+    });
+  }
+
+  getDynamicFlows(): FlowDefinition[] {
+    return this.#dynamicFlows;
   }
 }
 

@@ -8,8 +8,8 @@
  */
 
 import type { FlowRuntimeContext } from '../flowContext';
-import type { FlowDefinition } from '../types';
 import { FlowModel } from '../models/flowModel';
+import type { FlowDefinition } from '../types';
 import { escapeT } from './translation';
 
 /**

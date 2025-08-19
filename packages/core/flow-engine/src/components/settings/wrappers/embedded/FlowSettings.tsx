@@ -11,10 +11,10 @@ import { Alert, Form, Input, InputNumber, Select, Switch } from 'antd';
 import React, { useCallback, useEffect } from 'react';
 // TODO: ISchema may need to be imported from a different package or refactored.
 import { observer } from '@formily/react';
+import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
 import { resolveDefaultParams, setupRuntimeContextSteps } from '../../../../utils';
-import { FlowRuntimeContext } from '../../../../flowContext';
 
 const { Item: FormItem } = Form;
 
@@ -86,8 +86,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
   const [form] = Form.useForm();
 
   // 获取流程定义
-  const ModelClass = model.constructor as typeof FlowModel;
-  const flows = ModelClass.getFlows();
+  const flows = model.getFlows();
   const flow = flows.get(flowKey);
 
   // 获取可配置的步骤

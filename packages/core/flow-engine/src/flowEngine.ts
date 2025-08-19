@@ -8,6 +8,7 @@
  */
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
+import pino from 'pino';
 import { FlowEngineContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
@@ -86,6 +87,8 @@ export class FlowEngine {
    */
   #flowContext: FlowEngineContext;
 
+  logger: pino.Logger;
+
   /**
    * Flow settings, including components and form scopes.
    * @public
@@ -107,6 +110,19 @@ export class FlowEngine {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
     this.registerModels({ FlowModel });
+    this.logger = pino({
+      level: 'trace',
+      browser: {
+        write: {
+          fatal: (o) => console.trace(o),
+          error: (o) => console.error(o),
+          warn: (o) => console.warn(o),
+          info: (o) => console.info(o),
+          debug: (o) => console.debug(o),
+          trace: (o) => console.trace(o),
+        },
+      },
+    });
   }
 
   /**
@@ -509,7 +525,7 @@ export class FlowEngine {
 
     if (typeof optionsOrFn === 'function') {
       // 函数模式：传入当前options，获取新的options
-      userOptions = optionsOrFn(oldModel);
+      userOptions = optionsOrFn(oldModel as any);
     } else {
       // 对象模式：直接使用提供的options替换
       userOptions = optionsOrFn || {};
