@@ -8,16 +8,15 @@
  */
 
 import { useForm } from '@formily/react';
-import { reactive } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { escapeT } from '@nocobase/flow-engine';
 import { InputNumberReadPretty } from '../../../components/InputNumberReadPretty';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class NumberReadPrettyFieldModel extends ReadPrettyFieldModel {
-  public static readonly supportedFieldInterfaces = ['number', 'integer', 'id'];
-  // @reactive
+  public static readonly supportedFieldInterfaces = ['number', 'integer', 'id', 'formula'];
   public render() {
     const { value } = this.props;
     return (
@@ -45,98 +44,101 @@ const UnitConversion = () => {
     </Select>
   );
 };
+
 NumberReadPrettyFieldModel.registerFlow({
   key: 'numberSettings',
   sort: 100,
-  title: 'Number settings',
+  title: escapeT('Number settings'),
   steps: {
     format: {
-      title: 'Format',
-      uiSchema: {
-        formatStyle: {
-          type: 'string',
-          enum: [
-            {
-              value: 'normal',
-              label: 'Normal',
-            },
-            {
-              value: 'scientifix',
-              label: 'Scientifix notation',
-            },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          title: "{{t('Style')}}",
-        },
-        unitConversion: {
-          type: 'number',
-          'x-decorator': 'FormItem',
-          'x-component': 'NumberPicker',
-          title: "{{t('Unit conversion')}}",
-          'x-component-props': {
-            style: { width: '100%' },
-            addonBefore: <UnitConversion />,
+      title: escapeT('Format'),
+      uiSchema: (ctx) => {
+        return {
+          formatStyle: {
+            type: 'string',
+            enum: [
+              {
+                value: 'normal',
+                label: escapeT('Normal'),
+              },
+              {
+                value: 'scientifix',
+                label: escapeT('Scientifix notation'),
+              },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            title: "{{t('Style')}}",
           },
-        },
-        separator: {
-          type: 'string',
-          enum: [
-            {
-              value: '0,0.00',
-              label: '100,000.00',
+          unitConversion: {
+            type: 'number',
+            'x-decorator': 'FormItem',
+            'x-component': 'NumberPicker',
+            title: "{{t('Unit conversion')}}",
+            'x-component-props': {
+              style: { width: '100%' },
+              addonBefore: <UnitConversion />,
             },
-            {
-              value: '0.0,00',
-              label: '100.000,00',
-            },
-            {
-              value: '0 0,00',
-              label: '100 000.00',
-            },
-            {
-              value: '0.00',
-              label: '100000.00',
-            },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          title: "{{t('Separator')}}",
-        },
-        step: {
-          type: 'string',
-          title: '{{t("Precision")}}',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
-            { value: '1', label: '1' },
-            { value: '0.1', label: '1.0' },
-            { value: '0.01', label: '1.00' },
-            { value: '0.001', label: '1.000' },
-            { value: '0.0001', label: '1.0000' },
-            { value: '0.00001', label: '1.00000' },
-            { value: '0.000001', label: '1.000000' },
-            { value: '0.0000001', label: '1.0000000' },
-            { value: '0.00000001', label: '1.00000000' },
-          ],
-        },
-        addonBefore: {
-          type: 'string',
-          title: '{{t("Prefix")}}',
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-        },
-        addonAfter: {
-          type: 'string',
-          title: '{{t("Suffix")}}',
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-        },
+          },
+          separator: {
+            type: 'string',
+            enum: [
+              {
+                value: '0,0.00',
+                label: '100,000.00',
+              },
+              {
+                value: '0.0,00',
+                label: '100.000,00',
+              },
+              {
+                value: '0 0,00',
+                label: '100 000.00',
+              },
+              {
+                value: '0.00',
+                label: '100000.00',
+              },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            title: "{{t('Separator')}}",
+          },
+          step: {
+            type: 'string',
+            title: '{{t("Precision")}}',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              { value: '1', label: '1' },
+              { value: '0.1', label: '1.0' },
+              { value: '0.01', label: '1.00' },
+              { value: '0.001', label: '1.000' },
+              { value: '0.0001', label: '1.0000' },
+              { value: '0.00001', label: '1.00000' },
+              { value: '0.000001', label: '1.000000' },
+              { value: '0.0000001', label: '1.0000000' },
+              { value: '0.00000001', label: '1.00000000' },
+            ],
+          },
+          addonBefore: {
+            type: 'string',
+            title: '{{t("Prefix")}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+          addonAfter: {
+            type: 'string',
+            title: '{{t("Suffix")}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        };
       },
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
           ctx.model.props;
-        const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
+        const { step: prescition } = ctx.model.getProps() || {};
         return {
           formatStyle: formatStyle || 'normal',
           unitConversion,
@@ -149,7 +151,7 @@ NumberReadPrettyFieldModel.registerFlow({
       },
       handler(ctx, params) {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } = params;
-        const { step: prescition } = ctx.model.collectionField?.getComponentProps() || {};
+        const { step: prescition } = ctx.model.getProps() || {};
         ctx.model.setProps({
           formatStyle: formatStyle || 'normal',
           unitConversion,

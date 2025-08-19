@@ -12,10 +12,11 @@ import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
-const ColorPicker = (props) => {
+export const ColorPicker = (props) => {
   const componentProps = {
     ...props,
     trigger: 'hover',
+    style: { maWidth: 30 },
     destroyTooltipOnHide: true,
     onChange: (color) => {
       props.onChange(color.toHexString());
@@ -48,6 +49,6 @@ export class ColorEditableFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['color'];
 
   get component() {
-    return [ColorPicker, { style: { maxWidth: 28 } }];
+    return [ColorPicker, {}];
   }
 }

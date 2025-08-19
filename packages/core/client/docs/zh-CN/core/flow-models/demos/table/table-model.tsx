@@ -1,5 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, Collection, FlowModel, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  Collection,
+  FlowModel,
+  FlowModelRenderer,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { Button, Dropdown, Space, Table } from 'antd';
 import React from 'react';
 import { ActionModel } from './action-model';

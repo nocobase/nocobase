@@ -18,12 +18,14 @@ import {
   FlowsFloatContextMenu,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { omitBy, isUndefined } from 'lodash';
 import { TableColumnProps, Tooltip, Form } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../../../../base/FieldModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 import { EditableFieldModel } from '../../EditableFieldModel';
 import { FieldModelRenderer } from '../../../FieldModelRenderer';
+import { FormItem } from '../../../../data-blocks/form/FormItem/FormItem';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -48,7 +50,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         others.onChange(val);
         onChange(val);
       };
-      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path });
+      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path, ...others });
     }, [model, id, value, ariaDescribedby, onChange]);
 
     return <FlowModelRenderer model={model} {...rest} />;
@@ -175,7 +177,7 @@ export class SubTableColumnModel extends FieldModel {
               return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
             } else {
               return (
-                <Form.Item
+                <FormItem
                   {...this.props}
                   key={id}
                   name={[(this.parent as EditableFieldModel).fieldPath, rowIdx, action.fieldPath]}
@@ -192,13 +194,9 @@ export class SubTableColumnModel extends FieldModel {
                       defaultValue={value}
                     />
                   ) : (
-                    <FieldModelRenderer
-                      model={fork}
-                      {...props}
-                      id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]}
-                    />
+                    <FieldModelRenderer model={fork} id={[(this.parent as EditableFieldModel).fieldPath, rowIdx]} />
                   )}
-                </Form.Item>
+                </FormItem>
               );
             }
           })}
@@ -224,12 +222,13 @@ SubTableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const field = ctx.model.collectionField;
-        if (!field) {
+        const collectionField = ctx.model.collectionField;
+        if (!collectionField) {
           return;
         }
-        ctx.model.setProps('title', field.title);
-        ctx.model.setProps('dataIndex', field.name);
+        ctx.model.setProps(collectionField.getComponentProps());
+        ctx.model.setProps('title', collectionField.title);
+        ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {

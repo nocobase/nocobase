@@ -8,13 +8,7 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import {
-  buildActionItems,
-  buildBlockItems,
-  buildFieldItems,
-  MENU_KEYS,
-  processMetaChildren,
-} from '../index';
+import { buildActionItems, buildBlockItems, buildFieldItems, MENU_KEYS, processMetaChildren } from '../index';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel } from '../../models/flowModel';
 import type { FlowModelContext } from '../../flowContext';
@@ -47,16 +41,21 @@ function attachDataSources(engine: FlowEngine) {
   // relationship fields
   const postsCollection = mainDS.getCollection('posts')!;
   const usersCollection = remoteDS.getCollection('users')!;
-  
-  const commentsField = new CollectionField({ name: 'comments', interface: 'o2m', target: 'comments', title: 'Comments' });
+
+  const commentsField = new CollectionField({
+    name: 'comments',
+    interface: 'o2m',
+    target: 'comments',
+    title: 'Comments',
+  });
   const authorField = new CollectionField({ name: 'author', interface: 'm2o', target: 'users', title: 'Author' });
   const postField = new CollectionField({ name: 'post', interface: 'm2o', target: 'posts', title: 'Post' });
-  
+
   // Set collection references manually to ensure proper linking
   (commentsField as any).collection = postsCollection;
   (authorField as any).collection = postsCollection;
   (postField as any).collection = usersCollection;
-  
+
   postsCollection.addField(commentsField);
   postsCollection.addField(authorField);
   // remote -> main relation to ensure association fields across data sources
@@ -117,10 +116,7 @@ describe('menu-builders', () => {
       const childB = items.find((i) => i.key === 'ChildWithChildren')!;
       expect(typeof childB.children).toBe('function');
       const childBChildren = await (childB.children as any)();
-      expect(childBChildren.map((c) => c.key)).toEqual([
-        'ChildWithChildren.Option 1',
-        'ChildWithChildren.Option 2',
-      ]);
+      expect(childBChildren.map((c) => c.key)).toEqual(['ChildWithChildren.Option 1', 'ChildWithChildren.Option 2']);
       expect(childBChildren[0].createModelOptions).toEqual({ use: 'NestedModel1' });
       expect(childBChildren[1].createModelOptions).toEqual({ use: 'NestedModel2' });
 
@@ -142,9 +138,7 @@ describe('menu-builders', () => {
                 { label: 'Child B', createModelOptions: async () => ({ use: 'CB', extra: 1 }) },
                 {
                   label: 'Level 2',
-                  children: async () => [
-                    { label: 'Leaf', createModelOptions: { use: 'LeafModel' } },
-                  ],
+                  children: async () => [{ label: 'Leaf', createModelOptions: { use: 'LeafModel' } }],
                 },
               ],
             },
@@ -216,14 +210,14 @@ describe('menu-builders', () => {
       attachDataSources(engine);
       const dsm = engine.context.dataSourceManager;
       const posts = dsm.getDataSource('main')!.getCollection('posts')!;
-      
+
       const titleField = new CollectionField({ name: 'title', interface: 'input', title: 'Title' });
       const contentField = new CollectionField({ name: 'content', interface: 'richText', title: 'Content' });
-      
+
       // Set collection references manually to ensure proper linking
       (titleField as any).collection = posts;
       (contentField as any).collection = posts;
-      
+
       posts.addField(titleField);
       posts.addField(contentField);
 
@@ -441,9 +435,9 @@ describe('menu-builders', () => {
       const mainAssoc = assocDSNodes.find((d) => d.key.endsWith('.main'));
       expect(mainAssoc.children[0].key).toBe('AssocCollectionBlock.Associated records.main.author');
       expect(mainAssoc.children[0].createModelOptions.use).toBe('AssocCollectionBlock');
-      expect(
-        mainAssoc.children[0].createModelOptions.stepParams.resourceSettings.init.associationName,
-      ).toBe('posts.author');
+      expect(mainAssoc.children[0].createModelOptions.stepParams.resourceSettings.init.associationName).toBe(
+        'posts.author',
+      );
 
       // Second child: Only Posts -> should collapse DS layer and collection layer when single target
       const onlyPosts = assocChildren.find((i) => i.key === 'AssocCollectionBlock.Only Posts');
@@ -510,9 +504,7 @@ describe('menu-builders', () => {
       const [dataGroup] = buildBlockItems(model);
       const dataChildren = await (dataGroup.children as () => Promise<any[]>)();
       const block = dataChildren.find((c) => c.key === 'AssocSingleFieldBlock');
-      const assocNode = (block.children as any[]).find(
-        (i) => i.key === 'AssocSingleFieldBlock.Associated records',
-      );
+      const assocNode = (block.children as any[]).find((i) => i.key === 'AssocSingleFieldBlock.Associated records');
       // With single DS and one field, DS layer may collapse or not depending on implementation;
       // pick first child (DS or field) robustly and then select field node accordingly.
       const first = Array.isArray(assocNode.children) ? (assocNode.children as any[])[0] : undefined;
@@ -525,7 +517,15 @@ describe('menu-builders', () => {
       class AColl extends CollectionBlockModel {}
       class BFilter extends FilterBlockModel {}
       class COther extends BlockModel {}
-      engine.registerModels({ BlockModel, DataBlockModel, FilterBlockModel, CollectionBlockModel, AColl, BFilter, COther });
+      engine.registerModels({
+        BlockModel,
+        DataBlockModel,
+        FilterBlockModel,
+        CollectionBlockModel,
+        AColl,
+        BFilter,
+        COther,
+      });
 
       const items = buildBlockItems(model, (_M, name) => name === 'BFilter');
       expect(items).toHaveLength(1);
@@ -590,10 +590,7 @@ describe('menu-builders', () => {
       const detailsItem1 = dataChildren1.find((i) => i.key === 'DetailsModel');
       const detailsChildren1 = detailsItem1.children as any[];
       const keys1 = detailsChildren1.map((c) => c.key).sort();
-      expect(keys1).toEqual([
-        'DetailsModel.{{t("Current collection")}}',
-        'DetailsModel.{{t("Other collections")}}',
-      ]);
+      expect(keys1).toEqual(['DetailsModel.{{t("Current collection")}}', 'DetailsModel.{{t("Other collections")}}']);
 
       // 2) With filterByTk and same collection -> should include Current record (for DetailsModel), Association records, Other records
       (parent.context as FlowModelContext).defineProperty('currentFlow', {
@@ -624,9 +621,7 @@ describe('menu-builders', () => {
       const dataChildren3 = await (dataGroup3.children as () => Promise<any[]>)();
       const detailsItem3 = dataChildren3.find((i) => i.key === 'DetailsModel');
       const detailsChildren3 = detailsItem3.children as any[];
-      const currentRecordItem = detailsChildren3.find(
-        (c) => c.key === 'DetailsModel.{{t("Current record")}}',
-      );
+      const currentRecordItem = detailsChildren3.find((c) => c.key === 'DetailsModel.{{t("Current record")}}');
       expect(currentRecordItem).toBeTruthy();
       const stepParams = currentRecordItem.createModelOptions.stepParams;
       expect(stepParams.resourceSettings.init.collectionName).toBe('comments');
@@ -667,9 +662,7 @@ describe('menu-builders', () => {
       class FuncChildBlock extends CollectionBlockModel {
         static meta = {
           label: 'FuncChild',
-          children: async () => [
-            { label: 'Dynamic Item', createModelOptions: { use: 'FuncChildBlock' } },
-          ],
+          children: async () => [{ label: 'Dynamic Item', createModelOptions: { use: 'FuncChildBlock' } }],
         };
       }
       class ThrowChildBlock extends CollectionBlockModel {
@@ -698,13 +691,10 @@ describe('menu-builders', () => {
       expect(dynamicNode).toBeTruthy();
       // has DS layer because multiple data sources exist
       const dsKeys = (dynamicNode.children as any[]).map((d) => d.key).sort();
-      expect(dsKeys).toEqual([
-        'FuncChildBlock.Dynamic Item.main',
-        'FuncChildBlock.Dynamic Item.remote',
-      ]);
+      expect(dsKeys).toEqual(['FuncChildBlock.Dynamic Item.main', 'FuncChildBlock.Dynamic Item.remote']);
 
       // thrown children resolved to empty array
-      expect((throwItem.children as any[])).toEqual([]);
+      expect(throwItem.children as any[]).toEqual([]);
     });
 
     test('data block item with async createModelOptions is resolved (non-association)', async () => {
@@ -768,10 +758,7 @@ describe('menu-builders', () => {
       expect(mainPosts.createModelOptions.stepParams.resourceSettings.init).toEqual(
         expect.objectContaining({ dataSourceKey: 'main', collectionName: 'posts' }),
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Error resolving createModelOptions function:',
-        expect.any(Error),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Error resolving createModelOptions function:', expect.any(Error));
       consoleSpy.mockRestore();
     });
 
@@ -780,9 +767,7 @@ describe('menu-builders', () => {
       class GoodDataBlock extends CollectionBlockModel {
         static meta = {
           label: 'GoodData',
-          children: async () => [
-            { label: 'Dyn', createModelOptions: async () => ({ use: 'GoodDataBlock', x: 1 }) },
-          ],
+          children: async () => [{ label: 'Dyn', createModelOptions: async () => ({ use: 'GoodDataBlock', x: 1 }) }],
         };
       }
       class BrokenBlock extends BlockModel {

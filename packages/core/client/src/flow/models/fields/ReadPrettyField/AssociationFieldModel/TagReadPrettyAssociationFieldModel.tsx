@@ -87,7 +87,6 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
     this.setProps({ ...this.props, onClick: fn });
   }
   private fieldModelCache: Record<string, FlowModel> = {};
-  // @reactive
   public render() {
     const { fieldNames, clickToOpen = true, value } = this.props;
     const parentRecord = this.context.record;

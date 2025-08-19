@@ -8,14 +8,10 @@
  */
 
 import React from 'react';
-import { Tooltip, Form } from 'antd';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormFieldGridModel } from '../FormFieldGridModel';
 import { FieldModelRenderer } from '../../../fields';
-
-const FormItem = (props) => {
-  return <Form.Item {...props}>{props.children}</Form.Item>;
-};
+import { FormItem } from './FormItem';
 
 export class FormItemModel extends FieldModel<{
   parent: FormFieldGridModel;
@@ -31,59 +27,11 @@ export class FormItemModel extends FieldModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const { showLabel, label, labelWrap, colon = true, labelWidth, layout, ...restProps } = this.getProps();
-    const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
-    const renderLabel = () => {
-      if (!showLabel) return null;
-      if (effectiveLabelWrap) {
-        // 垂直布局或者 labelWrap = true，宽度100%，自动换行
-        return (
-          <div
-            style={{
-              width: '100%',
-              whiteSpace: 'normal',
-              wordBreak: 'break-word',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-            }}
-          >
-            <span style={{ flex: 1 }}>{label}</span>
-            {colon && <span style={{ marginLeft: 4, flexShrink: 0 }}>:</span>}
-          </div>
-        );
-      }
-      // labelWrap = false → 省略 + tooltip
-      return (
-        <Tooltip title={label}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              maxWidth: (typeof labelWidth === 'number' ? labelWidth : 120) - 20,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              verticalAlign: 'middle',
-            }}
-          >
-            <span style={{ flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-            {colon && <span style={{ marginLeft: 4, flexShrink: 0 }}>:</span>}
-          </div>
-        </Tooltip>
-      );
-    };
 
     return (
-      <Form.Item
-        {...restProps}
-        labelCol={{ style: { width: labelWidth } }}
-        layout={layout}
-        label={renderLabel()}
-        colon={false}
-      >
+      <FormItem {...this.props}>
         <FieldModelRenderer model={fieldModel} />
-      </Form.Item>
+      </FormItem>
     );
   }
 }

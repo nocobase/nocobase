@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormLayout } from '@formily/antd-v5';
 import {
   AddSubModelButton,
   DndProvider,
@@ -29,6 +28,7 @@ import { RecordActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+import { FormComponent } from '../form/FormModel';
 
 export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -109,7 +109,6 @@ export class DetailsModel extends CollectionBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-
     return (
       <>
         <DndProvider>
@@ -146,9 +145,9 @@ export class DetailsModel extends CollectionBlockModel<{
             </Space>
           </div>
         </DndProvider>
-        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
+        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+        </FormComponent>
         {this.renderPagination()}
       </>
     );
@@ -160,6 +159,15 @@ DetailsModel.registerFlow({
   title: escapeT('Details settings'),
   sort: 150,
   steps: {
+    refresh: {
+      async handler(ctx) {
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        // 1. 先初始化字段网格，确保所有字段都创建完成
+        await ctx.model.applySubModelsAutoFlows('grid');
+      },
+    },
     layout: {
       use: 'layout',
       title: tval('Layout'),

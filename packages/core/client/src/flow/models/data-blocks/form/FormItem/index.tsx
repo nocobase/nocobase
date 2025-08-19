@@ -9,3 +9,4 @@
 
 export * from './FormItemModel';
 export * from './CollectionFieldFormItemModel';
+export * from './FormItem';

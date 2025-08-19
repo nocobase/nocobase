@@ -11,22 +11,6 @@ import { escapeT } from '@nocobase/flow-engine';
 import { FormFieldModel } from '../FormFieldModel';
 
 export class DateTimeFieldModel extends FormFieldModel {
-  setProps(props) {
-    let { dateFormat, timeFormat } = props || {};
-    if (!props.format && (dateFormat || timeFormat)) {
-      if (!dateFormat) {
-        dateFormat = this.props?.dateFormat || 'YYYY-MM-DD';
-      }
-      if (!timeFormat) {
-        timeFormat = this.props?.timeFormat || 'HH:mm:ss';
-      }
-      props.format = props?.showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
-    }
-    super.setProps({
-      ...props,
-    });
-  }
-
   get component() {
     return [DatePicker, {}];
   }
@@ -34,7 +18,7 @@ export class DateTimeFieldModel extends FormFieldModel {
 
 DateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
-  sort: 600,
+  sort: 3000,
   title: escapeT('Datetime settings'),
   steps: {
     dateFormat: {
