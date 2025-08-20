@@ -47,6 +47,11 @@ interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
    * 不需要手动传入，调用方（如 AddSubModelButton）会自动生成。
    */
   persistKey?: string;
+  /**
+   * 仅用于“状态刷新”的版本号。变化时会重新计算根 items，
+   * 但不会清空已加载的 children，避免 UI 闪烁。
+   */
+  stateVersion?: number;
 }
 
 interface ExtendedMenuInfo {
@@ -96,8 +101,6 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
     }
   };
 
-  // （已移动）清空缓存逻辑放到自动加载 effect 中，避免顺序问题
-
   // 收集所有异步 group
   const collectAsyncGroups = (items: Item[], path: string[] = []): [string, () => Item[] | Promise<Item[]>][] => {
     const result: [string, () => Item[] | Promise<Item[]>][] = [];
@@ -113,17 +116,19 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
     return result;
   };
 
-  // 自动加载所有 group 的异步 children
+  // 自动加载所有 group 的异步 children；不清空缓存，避免闪烁。
+  // 已加载的分支使用 handleLoadChildren(..., true) 原位刷新，界面继续显示旧内容，
+  // 待新数据返回后再无感替换。
   useEffect(() => {
     if (!menuVisible || !rootItems.length) return;
-    // 根 items 变化或菜单重新打开时，先清空缓存，确保 defineChildren/toggle 状态重新计算
-    setLoadedChildren({});
-    setLoadingKeys(new Set());
-
     const asyncGroups = collectAsyncGroups(rootItems);
     for (const [keyPath, loader] of asyncGroups) {
-      // 强制加载，避免清空缓存后由于闭包引用旧状态而被提前 return
-      handleLoadChildren(keyPath, loader, true);
+      // 强制加载，但不清空缓存；若已有数据则后台刷新
+      try {
+        handleLoadChildren(keyPath, loader, true);
+      } catch (e) {
+        // 忽略刷新错误，保持已有内容
+      }
     }
   }, [menuVisible, rootItems]);
 
@@ -381,7 +386,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     if (menuVisible) {
       loadRootItems();
     }
-  }, [menu.items, menuVisible]);
+  }, [menu.items, menuVisible, menu.stateVersion]);
 
   // 预取根层的异步 children（非 group），减少首次展开时的加载闪烁
   useEffect(() => {

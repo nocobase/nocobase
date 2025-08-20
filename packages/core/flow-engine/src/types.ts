@@ -369,7 +369,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
-  flowRegistry: Record<string, Omit<FlowDefinition, 'key'>>;
+  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;
