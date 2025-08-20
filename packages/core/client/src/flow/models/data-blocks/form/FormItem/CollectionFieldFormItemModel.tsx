@@ -14,22 +14,16 @@ import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
 
 export class CollectionFieldFormItemModel extends FormItemModel {
-  // Provide children for collection fields -> form items
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'CollectionFieldFormItemModel',
       fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
-      // toggleStepParamsKeys defaults to ['fieldSettings','init']
-      // searchPlaceholder defaults to ctx.t('Search fields')
     });
   }
 }
 
 CollectionFieldFormItemModel.define({
   icon: 'CollectionFieldFormItemModel',
-  createModelOptions: {
-    use: 'CollectionFieldFormItemModel',
-  },
   sort: 100,
 });
 

@@ -12,7 +12,7 @@ import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
-export const ColorPicker = (props) => {
+const ColorPicker = (props) => {
   const componentProps = {
     ...props,
     trigger: 'hover',

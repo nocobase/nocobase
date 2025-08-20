@@ -21,7 +21,7 @@ import _ from 'lodash';
 import React from 'react';
 import { FormFieldModel, FieldModelRenderer } from '../../fields';
 import { FormComponent } from './FormModel';
-import { FormItem } from './FormItem';
+import { FormItem } from './FormItem/FormItem';
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
 

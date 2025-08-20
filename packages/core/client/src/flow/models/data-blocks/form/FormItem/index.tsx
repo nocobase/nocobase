@@ -9,4 +9,4 @@
 
 export * from './FormItemModel';
 export * from './CollectionFieldFormItemModel';
-export * from './FormItem';
+// export * from './FormItem';  // dupliated exports with nocobase/client, will break build process, hence commit it
