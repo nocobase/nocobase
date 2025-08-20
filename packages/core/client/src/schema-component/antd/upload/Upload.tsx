@@ -289,10 +289,7 @@ function AttachmentListItem(props) {
     saveAs(file.url, `${file.title}${file.extname}`);
   }, [file]);
   const onEdit = useCallback(() => {
-    // Only allow editing for image files
-    if (matchMimetype(file, 'image/*')) {
-      openEditor(file);
-    }
+    openEditor(file);
   }, [file, openEditor]);
   const { ThumbnailPreviewer = DefaultThumbnailPreviewer } = attachmentFileTypes.getTypeByFile(file) ?? {};
   const item = [
@@ -324,7 +321,8 @@ function AttachmentListItem(props) {
       <div className={`${prefixCls}-list-item-info`}>{wrappedItem}</div>
       <span className={`${prefixCls}-list-item-actions`}>
         <Space size={3}>
-          {!readPretty && !disabled && file.status !== 'uploading' && (
+          {/* Only allow editing for image files */}
+          {!readPretty && !disabled && matchMimetype(file, 'image/*') && file.status !== 'uploading' && (
             <Button size={'small'} type={'text'} icon={<EditOutlined />} onClick={onEdit} />
           )}
           {!readPretty && file.url && (
