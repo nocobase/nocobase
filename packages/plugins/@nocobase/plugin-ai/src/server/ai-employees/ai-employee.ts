@@ -360,7 +360,7 @@ export class AIEmployee {
           topK,
           score,
           filter: {
-            knowledgeBaseOuterId: knowledgeBaseOuterIds,
+            knowledgeBaseOuterId: { in: knowledgeBaseOuterIds },
           },
         });
         queryResult = [...queryResult, ...result];
