@@ -187,10 +187,13 @@ export function parseDate(value: any, options = {} as { timezone?: string }) {
 
   const input = value;
   if (typeof value === 'string') {
-    const match = /(.+)((\+|-)\d\d:\d\d)$/.exec(value);
+    const hasTimePart = /(T\d\d)|(\s\d\d)/.test(value);
+    const match = /(.+)((\+|-)[\d]{2}:[\d]{2})$/.exec(value);
     if (match) {
       value = match[1];
-      timezone = match[2];
+      if (hasTimePart) {
+        timezone = match[2];
+      }
     }
     if (/^(\(|\[)/.test(value)) {
       return parseDateBetween(input, options);
@@ -237,12 +240,15 @@ function parseDateBetween(value: any, options = {} as { timezone?: string }) {
   if (typeof value !== 'string') {
     return;
   }
-  const match = /(.+)((\+|-)\d\d:\d\d)$/.exec(value);
+  const match = /(.+)((\+|-)[\d]{2}:[\d]{2})$/.exec(value);
   let timezone = options.timezone || '+00:00';
 
+  const hasTimePart = /(T\d\d)|(\s\d\d)/.test(value);
   if (match) {
     value = match[1];
-    timezone = match[2];
+    if (hasTimePart) {
+      timezone = match[2];
+    }
   }
 
   const m = /^(\(|\[)(.+),(.+)(\)|\])$/.exec(value);
