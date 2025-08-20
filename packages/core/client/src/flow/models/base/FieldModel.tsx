@@ -59,7 +59,7 @@ FieldModel.registerFlow({
     init: {
       handler(ctx, params) {
         const { dataSourceKey, collectionName, fieldPath } = params;
-        if (!params) {
+        if (!Object.keys(params).length) {
           return;
         }
         if (!dataSourceKey) {
