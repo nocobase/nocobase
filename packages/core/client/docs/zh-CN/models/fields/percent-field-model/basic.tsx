@@ -3,17 +3,13 @@ import {
   Plugin,
   FieldModelRenderer,
   FormItemV2 as FormItem,
-  InputFieldModel,
+  PercentFieldModel,
+  PercentInput,
   FormComponent,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Form, Input } from 'antd';
+import { Form } from 'antd';
 import React from 'react';
-
-function Text(props) {
-  const { value } = props;
-  return <span>{value}</span>;
-}
 
 class HelloModel extends FlowModel {
   render() {
@@ -21,22 +17,15 @@ class HelloModel extends FlowModel {
       <FormComponent
         model={this}
         layoutProps={{ layout: 'vertical' }}
-        initialValues={{ name: 'NocoBase', age: 18, obj: { a: 'a' } }}
+        initialValues={{ percent1: 0.01, percent2: 0.03 }}
       >
-        <FormItem
-          label="Name"
-          name="name"
-          tooltip="What do you want others to call you?"
-          extra="We must make sure that your are a human."
-        >
+        <FormItem label="Percent field1" name="percent1">
           <FieldModelRenderer model={this.subModels.field} />
         </FormItem>
-        <FormItem label="Age" name="age">
-          <Text />
+        <FormItem label="Percent field2" name="percent2">
+          <PercentInput />
         </FormItem>
-        <FormItem required rules={[{ required: true }]} label="A" name={['obj', 'a']}>
-          <Input />
-        </FormItem>
+
         <Form.Item noStyle shouldUpdate>
           {() => (
             <div>
@@ -52,14 +41,14 @@ class HelloModel extends FlowModel {
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
-    this.flowEngine.registerModels({ HelloModel, InputFieldModel });
+    this.flowEngine.registerModels({ HelloModel, PercentFieldModel });
 
     // 创建 HelloModel 的实例（仅用于示例）
     const model = this.flowEngine.createModel({
       use: 'HelloModel',
       subModels: {
         field: {
-          use: 'InputFieldModel',
+          use: 'PercentFieldModel',
         },
       },
     });

@@ -3,17 +3,16 @@ import {
   Plugin,
   FieldModelRenderer,
   FormItemV2 as FormItem,
-  InputFieldModel,
+  DateTimeNoTzFieldModel,
+  DateOnlyFieldModel,
+  DateTimeTzFieldModel,
+  FormItemModel,
+  DateOnlyPicker,
   FormComponent,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Form, Input } from 'antd';
+import { Form, DatePicker } from 'antd';
 import React from 'react';
-
-function Text(props) {
-  const { value } = props;
-  return <span>{value}</span>;
-}
 
 class HelloModel extends FlowModel {
   render() {
@@ -21,21 +20,27 @@ class HelloModel extends FlowModel {
       <FormComponent
         model={this}
         layoutProps={{ layout: 'vertical' }}
-        initialValues={{ name: 'NocoBase', age: 18, obj: { a: 'a' } }}
+        initialValues={{
+          dateOnly: '2026-03-22',
+          dateTimeTz: '2015-04-25T16:00:10.000Z',
+          dateTimeNoTz: '2015-04-18 12:04:55',
+          dateOnly1: '2025-03-19',
+        }}
       >
-        <FormItem
-          label="Name"
-          name="name"
-          tooltip="What do you want others to call you?"
-          extra="We must make sure that your are a human."
-        >
-          <FieldModelRenderer model={this.subModels.field} />
+        <FormItem label="DateOnly" name="dateOnly">
+          <FieldModelRenderer model={this.subModels.dateOnly} />
         </FormItem>
-        <FormItem label="Age" name="age">
-          <Text />
+        <FormItem label="DateTimeTz" name="dateTimeTz">
+          <FieldModelRenderer model={this.subModels.dateTimeTz} showTime />
         </FormItem>
-        <FormItem required rules={[{ required: true }]} label="A" name={['obj', 'a']}>
-          <Input />
+        <FormItem label="DateTimeNoTz" name="dateTimeNoTz">
+          <FieldModelRenderer model={this.subModels.dateTimeNoTz} showTime />
+        </FormItem>
+        <FormItem rules={[{ required: true }]} label="DateOnly1" name="dateOnly1">
+          <DateOnlyPicker />
+        </FormItem>
+        <FormItem rules={[{ required: true }]} label="Date" name="date">
+          <DatePicker showTime />
         </FormItem>
         <Form.Item noStyle shouldUpdate>
           {() => (
@@ -52,14 +57,26 @@ class HelloModel extends FlowModel {
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
-    this.flowEngine.registerModels({ HelloModel, InputFieldModel });
+    this.flowEngine.registerModels({
+      HelloModel,
+      DateTimeNoTzFieldModel,
+      DateOnlyFieldModel,
+      DateTimeTzFieldModel,
+      FormItemModel,
+    });
 
     // 创建 HelloModel 的实例（仅用于示例）
     const model = this.flowEngine.createModel({
       use: 'HelloModel',
       subModels: {
-        field: {
-          use: 'InputFieldModel',
+        dateOnly: {
+          use: 'DateOnlyFieldModel',
+        },
+        dateTimeTz: {
+          use: 'DateTimeTzFieldModel',
+        },
+        dateTimeNoTz: {
+          use: 'DateTimeNoTzFieldModel',
         },
       },
     });

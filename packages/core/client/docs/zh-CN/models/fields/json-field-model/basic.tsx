@@ -3,7 +3,7 @@ import {
   Plugin,
   FieldModelRenderer,
   FormItemV2 as FormItem,
-  InputFieldModel,
+  JsonFieldModel,
   FormComponent,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
@@ -21,7 +21,12 @@ class HelloModel extends FlowModel {
       <FormComponent
         model={this}
         layoutProps={{ layout: 'vertical' }}
-        initialValues={{ name: 'NocoBase', age: 18, obj: { a: 'a' } }}
+        initialValues={{
+          name: {
+            name: 'NocoBase',
+          },
+          obj: { a: { test: 33 } },
+        }}
       >
         <FormItem
           label="Name"
@@ -35,7 +40,7 @@ class HelloModel extends FlowModel {
           <Text />
         </FormItem>
         <FormItem required rules={[{ required: true }]} label="A" name={['obj', 'a']}>
-          <Input />
+          <Input.TextArea />
         </FormItem>
         <Form.Item noStyle shouldUpdate>
           {() => (
@@ -52,14 +57,14 @@ class HelloModel extends FlowModel {
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
-    this.flowEngine.registerModels({ HelloModel, InputFieldModel });
+    this.flowEngine.registerModels({ HelloModel, JsonFieldModel });
 
     // 创建 HelloModel 的实例（仅用于示例）
     const model = this.flowEngine.createModel({
       use: 'HelloModel',
       subModels: {
         field: {
-          use: 'InputFieldModel',
+          use: 'JsonFieldModel',
         },
       },
     });

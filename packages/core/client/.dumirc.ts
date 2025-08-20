@@ -552,6 +552,22 @@ export default defineConfig({
               link: '/models/fields/input-number-field-model',
             },
             {
+              title: 'PercentFieldModel',
+              link: '/models/fields/percent-field-model',
+            },
+            {
+              title: 'SelectFieldModel',
+              link: '/models/fields/select-field-model',
+            },
+            {
+              title: 'JSONFieldModel',
+              link: '/models/fields/json-field-model',
+            },
+            {
+              title: 'DateFieldModel',
+              link: '/models/fields/date-field-model',
+            },
+            {
               title: 'PreviewFieldModel',
               link: '/models/fields/preview-field-model',
             },
