@@ -155,11 +155,11 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
     this.app.addComponents({ MobileTabBarWorkflowTasksItem });
     if (mobileManager.mobileRouter) {
-      mobileManager.mobileRouter.add('mobile.page.workflow', {
-        path: '/page/workflow',
-      });
+      // mobileManager.mobileRouter.add('mobile.page.workflow', {
+      //   path: '/page/workflow',
+      // });
       mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
-        path: '/page/workflow/tasks/:taskType/:status/:popupId?',
+        path: '/page/workflow-tasks/:taskType/:status/:popupId?',
         Component: observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' }),
       });
     }
