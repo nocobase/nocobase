@@ -144,7 +144,7 @@ export interface BuildFieldChildrenOptions {
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
   const { useModel, fieldUseModel } = options;
-  const collection = ctx.collection as Collection;
+  const collection: Collection = ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];

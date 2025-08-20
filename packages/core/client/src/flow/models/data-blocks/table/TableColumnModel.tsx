@@ -292,4 +292,5 @@ TableCustomColumnModel.registerFlow({
 
 TableCustomColumnModel.define({
   hide: true,
+  label: escapeT('Other columns'),
 });

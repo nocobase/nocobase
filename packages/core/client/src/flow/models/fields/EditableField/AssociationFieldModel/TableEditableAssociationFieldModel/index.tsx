@@ -21,19 +21,20 @@ import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel'
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
+import { TableCustomColumnModel } from '../../../../data-blocks/table/TableColumnModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClasses={['TableCustomColumnModel', 'SubTableColumnModel']}
-      afterSubModelInit={async (column: SubTableColumnModel) => {
+      subModelBaseClasses={['SubTableColumnModel', 'TableCustomColumnModel']}
+      afterSubModelInit={async (column: SubTableColumnModel | TableCustomColumnModel) => {
         await column.applyAutoFlows();
       }}
-      afterSubModelAdd={async (column: SubTableColumnModel) => {
+      afterSubModelAdd={async (column: SubTableColumnModel | TableCustomColumnModel) => {
         const currentBlockModel = model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
+        if (currentBlockModel instanceof EditFormModel && column instanceof SubTableColumnModel) {
           currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
         }
       }}
