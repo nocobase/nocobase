@@ -59,6 +59,9 @@ FieldModel.registerFlow({
     init: {
       handler(ctx, params) {
         const { dataSourceKey, collectionName, fieldPath } = params;
+        if (!params) {
+          return;
+        }
         if (!dataSourceKey) {
           throw new Error('dataSourceKey is a required parameter');
         }

@@ -43,4 +43,5 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './components/filter';
+export * from './common/FieldModelRenderer';
 //
