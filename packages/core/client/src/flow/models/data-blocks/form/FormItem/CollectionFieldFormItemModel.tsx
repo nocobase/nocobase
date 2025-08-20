@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { omitBy, isUndefined } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
@@ -16,56 +16,12 @@ import { EditFormModel } from '../EditFormModel';
 export class CollectionFieldFormItemModel extends FormItemModel {
   // Provide children for collection fields -> form items
   static defineChildren(ctx: FlowModelContext) {
-    const collection: Collection = ctx.collection;
-    const fields = collection.getFields();
-    const children = fields
-      .filter((f) => !!f?.interface)
-      .map((f) => {
-        const fieldPath = f.name;
-        const formUse = f.getFirstSubclassNameOf('FormFieldModel');
-        return {
-          key: fieldPath,
-          label: f.title,
-          toggleable: (subModel) => subModel.getStepParams?.('fieldSettings', 'init').fieldPath === fieldPath,
-          useModel: 'CollectionFieldFormItemModel',
-          createModelOptions: () => ({
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: collection.dataSourceKey,
-                  collectionName: collection.name,
-                  fieldPath,
-                },
-              },
-            },
-            subModels: {
-              field: {
-                use: formUse,
-                stepParams: {
-                  fieldSettings: {
-                    init: {
-                      dataSourceKey: collection.dataSourceKey,
-                      collectionName: collection.name,
-                      fieldPath,
-                    },
-                  },
-                },
-              },
-            },
-          }),
-        };
-      });
-
-    return [
-      {
-        key: 'addField',
-        label: '', // 这个空group是为了添加搜索
-        type: 'group' as const,
-        searchable: true,
-        searchPlaceholder: ctx.t('Search fields'),
-        children,
-      },
-    ];
+    return buildWrapperFieldChildren(ctx, {
+      useModel: 'CollectionFieldFormItemModel',
+      fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
+      // toggleStepParamsKeys defaults to ['fieldSettings','init']
+      // searchPlaceholder defaults to ctx.t('Search fields')
+    });
   }
 }
 
