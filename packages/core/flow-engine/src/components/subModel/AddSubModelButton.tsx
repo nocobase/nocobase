@@ -397,7 +397,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
   }, [model, subModelKey, subModelType]);
   // Internal tick to force reloading menu items when subModels change
-  const [, setRefreshTick] = React.useState(0);
+  const [refreshTick, setRefreshTick] = React.useState(0);
   // 合并 items 与 baseClass 的菜单来源
   const finalItems = useMemo<SubModelItemsType>(() => {
     const sources: (SubModelItemsType | undefined | null)[] = [];
@@ -539,13 +539,19 @@ const AddSubModelButtonCore = function AddSubModelButton({
     }
   };
 
+  const itemsFactory = useMemo(
+    () => transformItems(finalItems, model, subModelKey, subModelType),
+    [finalItems, model, subModelKey, subModelType],
+  );
+
   return (
     <LazyDropdown
       menu={{
-        items: transformItems(finalItems, model, subModelKey, subModelType),
+        items: itemsFactory,
         onClick,
         keepDropdownOpen,
         persistKey,
+        stateVersion: refreshTick,
       }}
     >
       {children}
