@@ -10,7 +10,7 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
-
+import { jioToJoiSchema } from './jioToJoiSchema';
 export interface DataSourceOptions extends Record<string, any> {
   key: string;
   displayName?: string;
@@ -612,6 +612,10 @@ export class CollectionField {
     return this.options.target && this.collection.collectionManager.getCollection(this.options.target);
   }
 
+  get validation() {
+    return this.options.validation;
+  }
+
   getComponentProps() {
     const { type, target } = this.options;
     const componentProps = _.omitBy(
@@ -625,6 +629,28 @@ export class CollectionField {
       },
       _.isUndefined,
     );
+    if (this.validation) {
+      // 初始化数据表字段jio验证规则
+      const rules = [];
+      const schema = jioToJoiSchema(this.validation);
+      const label = this.title;
+      rules.push({
+        validator: (_, value) => {
+          const { error } = schema.validate(value, {
+            context: { label },
+            abortEarly: false,
+          });
+
+          if (error) {
+            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+            return Promise.reject(message);
+          }
+
+          return Promise.resolve();
+        },
+      });
+      componentProps.rules = rules;
+    }
     return componentProps;
   }
 
