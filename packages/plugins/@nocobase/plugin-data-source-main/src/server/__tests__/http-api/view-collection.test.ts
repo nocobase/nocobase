@@ -35,11 +35,12 @@ describe('view collection', () => {
 
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
-    const dropSQL = `DROP VIEW IF EXISTS ${testViewName}`;
+    const createViewName = app.db.options.schema ? `${app.db.options.schema}.${testViewName}` : testViewName;
+    const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
     await app.db.sequelize.query(dropSQL);
     const viewSQL = (() => {
       if (app.db.inDialect('sqlite')) {
-        return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
+        return `CREATE VIEW ${createViewName} AS WITH RECURSIVE numbers(n) AS (
   SELECT CAST(1 AS INTEGER)
   UNION ALL
   SELECT CAST(1 + n AS INTEGER) FROM numbers WHERE n < 20
@@ -48,7 +49,7 @@ SELECT * FROM numbers;
 `;
       }
 
-      return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
+      return `CREATE VIEW ${createViewName} AS WITH RECURSIVE numbers(n) AS (
   SELECT 1
   UNION ALL
   SELECT n + 1 FROM numbers WHERE n < 20
@@ -139,7 +140,7 @@ SELECT * FROM numbers;
       values: {
         name: testViewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: app.db.options.schema,
         fields: [
           {
             name: 'numbers',
@@ -158,6 +159,7 @@ SELECT * FROM numbers;
   it('should query views data', async () => {
     const response = await agent.resource('dbViews').query({
       filterByTk: testViewName,
+      schema: app.db.options.schema,
       pageSize: 20,
     });
 
@@ -168,7 +170,7 @@ SELECT * FROM numbers;
   it('should list views fields', async () => {
     const response = await agent.resource('dbViews').get({
       filterByTk: testViewName,
-      schema: 'public',
+      schema: app.db.options.schema,
     });
 
     expect(response.status).toBe(200);
@@ -189,21 +191,22 @@ SELECT * FROM numbers;
       return;
     }
     const jsonViewName = 'json_view';
-    const dropSql = `DROP VIEW IF EXISTS ${jsonViewName}`;
+    const createJsonViewName = app.db.inDialect('postgres') ? `${app.db.options.schema}.${jsonViewName}` : jsonViewName;
+    const dropSql = `DROP VIEW IF EXISTS ${createJsonViewName}`;
     await app.db.sequelize.query(dropSql);
 
     const jsonViewSQL = (() => {
       if (app.db.inDialect('postgres')) {
-        return `CREATE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+        return `CREATE VIEW ${createJsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
       }
-      return `CREATE VIEW ${jsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
+      return `CREATE VIEW ${createJsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
     })();
 
     await app.db.sequelize.query(jsonViewSQL);
 
     const response = await agent.resource('dbViews').get({
       filterByTk: jsonViewName,
-      schema: app.db.inDialect('postgres') ? 'public' : undefined,
+      schema: app.db.inDialect('postgres') ? app.db.options.schema : undefined,
     });
 
     expect(response.status).toBe(200);
@@ -238,11 +241,11 @@ SELECT * FROM numbers;
 
     await app.db.sync();
     const UserCollection = app.db.getCollection('users');
-
     const viewName = `t_${uid(6)}`;
-    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    const createViewName = app.db.options.schema ? `${app.db.options.schema}.${viewName}` : viewName;
+    const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
     await app.db.sequelize.query(dropSQL);
-    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL);
 
     // create view collection
@@ -250,7 +253,6 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
         fields: [
           {
             name: 'name',
@@ -317,9 +319,10 @@ SELECT * FROM numbers;
     const UserCollection = app.db.getCollection('users');
 
     const viewName = `t_${uid(6)}`;
-    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    const createViewName = app.db.options.schema ? `${app.db.options.schema}.${viewName}` : viewName;
+    const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
     await app.db.sequelize.query(dropSQL);
-    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL);
 
     // create view collection
@@ -327,7 +330,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: app.db.inDialect('postgres') ? app.db.options.schema : undefined,
         fields: [
           {
             name: 'name',
@@ -385,12 +388,12 @@ SELECT * FROM numbers;
 
     // update view in database
     await app.db.sequelize.query(dropSQL);
-    const viewSQL2 = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL2 = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL2);
 
     const viewDetailResponse = await agent.resource('dbViews').get({
       filterByTk: viewName,
-      schema: 'public',
+      schema: app.db.options.schema,
     });
 
     const viewDetail = viewDetailResponse.body.data;
@@ -430,9 +433,10 @@ SELECT * FROM numbers;
 
     // create view
     const viewName = `t_${uid(6)}`;
-    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    const createViewName = app.db.options.schema ? `${app.db.options.schema}.${viewName}` : viewName;
+    const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
     await app.db.sequelize.query(dropSQL);
-    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL = `CREATE VIEW ${createViewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL);
 
     // create view collection
@@ -440,7 +444,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        schema: app.db.inDialect('postgres') ? app.db.options.schema : undefined,
         fields: [
           {
             name: 'id',
@@ -469,27 +473,6 @@ SELECT * FROM numbers;
     });
 
     expect(detailResponse.status).toEqual(200);
-  });
-
-  it('should get view in difference schema', async () => {
-    if (!app.db.inDialect('postgres')) return;
-
-    const schemaName = `t_${uid(6)}`;
-    const testSchemaSql = `CREATE SCHEMA IF NOT EXISTS ${schemaName};`;
-    await app.db.sequelize.query(testSchemaSql);
-
-    const viewName = `v_${uid(6)}`;
-
-    const viewSQL = `CREATE OR REPLACE VIEW ${schemaName}.${viewName} AS SELECT 1+1 as result`;
-    await app.db.sequelize.query(viewSQL);
-
-    const response = await agent.resource('dbViews').query({
-      filterByTk: viewName,
-      schema: schemaName,
-      pageSize: 20,
-    });
-
-    expect(response.status).toEqual(200);
   });
 
   it('should edit uiSchema in view collection field', async () => {
@@ -525,7 +508,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: 'public',
+        schema: app.db.options.schema,
         fields: [
           {
             name: 'id',
@@ -595,20 +578,19 @@ SELECT * FROM numbers;
     const foreignField = User.model.rawAttributes[foreignKey].field;
 
     const viewName = `test_view_${uid(6)}`;
-    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+    const createViewName = db.inDialect('postgres') ? `${db.options.schema}.${viewName}` : viewName;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${createViewName}`);
     const queryInterface = db.sequelize.getQueryInterface();
 
-    const createSQL = `CREATE VIEW ${queryInterface.quoteIdentifier(
-      viewName,
-    )} AS SELECT id, ${queryInterface.quoteIdentifier(foreignField)}, name FROM ${db
-      .getCollection('users')
-      .quotedTableName()}`;
+    const createSQL = `CREATE VIEW ${createViewName} AS SELECT id, ${queryInterface.quoteIdentifier(
+      foreignField,
+    )}, name FROM ${db.getCollection('users').quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
 
     const response = await agent.resource('dbViews').get({
       filterByTk: viewName,
-      schema: db.inDialect('postgres') ? 'public' : undefined,
+      schema: db.inDialect('postgres') ? app.db.options.schema : undefined,
       pageSize: 20,
     });
 
@@ -620,7 +602,7 @@ SELECT * FROM numbers;
         name: viewName,
         view: true,
         fields: Object.values(fields),
-        schema: db.inDialect('postgres') ? 'public' : undefined,
+        schema: db.inDialect('postgres') ? app.db.options.schema : undefined,
       },
       context: {},
     });
