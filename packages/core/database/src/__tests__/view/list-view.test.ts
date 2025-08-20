@@ -24,14 +24,18 @@ describe('list view', () => {
   });
 
   it('should list view', async () => {
-    const dropViewSQL1 = `DROP VIEW IF EXISTS test1`;
+    const viewName1 = 'test1';
+    const newViewName1 = db.options.schema ? `${db.options.schema}.${viewName1}` : viewName1;
+    const dropViewSQL1 = `DROP VIEW IF EXISTS ${newViewName1}`;
     await db.sequelize.query(dropViewSQL1);
 
-    const dropViewSQL2 = `DROP VIEW IF EXISTS test2`;
+    const viewName2 = 'test2';
+    const newViewName2 = db.options.schema ? `${db.options.schema}.${viewName2}` : viewName2;
+    const dropViewSQL2 = `DROP VIEW IF EXISTS ${newViewName2}`;
     await db.sequelize.query(dropViewSQL2);
 
-    const sql1 = `CREATE VIEW test1 AS SELECT 1`;
-    const sql2 = `CREATE VIEW test2 AS SELECT 2`;
+    const sql1 = `CREATE VIEW ${newViewName1} AS SELECT 1`;
+    const sql2 = `CREATE VIEW ${newViewName2} AS SELECT 2`;
 
     await db.sequelize.query(sql1);
     await db.sequelize.query(sql2);
