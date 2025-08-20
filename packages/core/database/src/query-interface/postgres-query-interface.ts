@@ -108,7 +108,16 @@ export default class PostgresQueryInterface extends QueryInterface {
   }
 
   async listViews() {
-    const sql = `
+    const targetSchema = this.db.options?.schema || 'public';
+
+    const sql = targetSchema
+      ? `
+      SELECT viewname as name, definition, schemaname as schema
+      FROM pg_views
+      WHERE schemaname = '${targetSchema}'
+      ORDER BY viewname;
+    `
+      : `
       SELECT viewname as name, definition, schemaname as schema
       FROM pg_views
       WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
