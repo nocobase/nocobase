@@ -184,7 +184,7 @@ const openStepSettingsDialog = async ({
                         }
 
                         currentDialog.close();
-                        await model.save();
+                        await model.saveStepParams();
                         message.success(t('Configuration saved'));
                         // Call afterParamsSave callback if it exists
                         if (afterParamsSave) {

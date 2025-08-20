@@ -17,6 +17,7 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
+import { FlowSettingsOpenOptions } from '../flowSettings';
 import { InstanceFlowRegistry } from '../InstanceFlowRegistry';
 import type {
   ActionDefinition,
@@ -42,7 +43,6 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
-import { FlowSettingsOpenOptions } from '../flowSettings';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -77,7 +77,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 上一次 applyAutoFlows 的执行参数
    */
   private _lastAutoRunParams: any[] | null = null;
-  private observerDispose: () => void;
+  protected observerDispose: () => void;
   #flowContext: FlowModelContext;
 
   /**
@@ -201,6 +201,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   get reactView() {
     return this.flowEngine.reactView;
+  }
+
+  get parentId() {
+    return this._options.parentId;
   }
 
   static get meta() {
@@ -1241,6 +1245,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     return this.flowEngine.saveModel(this);
+  }
+
+  async saveStepParams() {
+    return this.flowEngine.saveModel(this, { onlyStepParams: true });
   }
 
   async destroy() {

@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { define, observable } from '@formily/reactive';
-import React from 'react';
-import { Collapse, Space, Button, Tabs } from 'antd';
-import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
-import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
-import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
-import type { FlowModel } from './models';
-import { FlowRuntimeContext } from './flowContext';
-import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
-import type { FlowDefinition } from './types';
+import { define, observable } from '@formily/reactive';
+import { Button, Collapse, Space, Tabs } from 'antd';
+import React from 'react';
 import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
+import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
+import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
+import { FlowRuntimeContext } from './flowContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import type { FlowModel } from './models';
+import type { FlowDefinition } from './types';
+import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
 
 const Panel = Collapse.Panel;
 
@@ -664,7 +664,7 @@ export class FlowSettings {
               }
             }
 
-            await (model as any).save();
+            await (model as FlowModel).saveStepParams();
             message?.success?.(t('Configuration saved'));
 
             for (const e of entries) {

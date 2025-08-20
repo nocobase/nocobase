@@ -62,7 +62,6 @@ export const FlowRoute = () => {
     model.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-
     model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
@@ -79,20 +78,22 @@ export const FlowPage = (props) => {
         subKey: 'page',
         subType: 'object',
         use: pageModelClass,
-        subModels: {
+      };
+      if (pageModelClass === 'SubPageModel') {
+        options['subModels'] = {
           tabs: [
             {
-              use: 'PageTabModel',
+              use: 'SubPageTabModel',
               subModels: {
                 grid: {
-                  // async: true,
+                  async: true,
                   use: 'BlockGridModel',
                 },
               },
             },
           ],
-        },
-      };
+        };
+      }
       const data = await flowEngine.loadOrCreateModel(options);
       if (data?.uid && onModelLoaded) {
         onModelLoaded(data.uid);
