@@ -10,11 +10,9 @@
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem, SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
+import type { FlowDef } from './FlowDef';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
-
-// 定义从 SubModelItem 使用的 CreateModelOptions 类型
-type CreateModelOptionsStringUse = CreateModelOptions & { use: string };
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -129,25 +127,6 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
       };
 
   steps: Record<string, StepDefinition<TModel>>;
-}
-
-// 扩展FlowDefinition类型，添加partial标记用于部分覆盖
-export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
-  /**
-   * Whether this flow should be executed manually only (prevents auto-execution)
-   * Flows without 'on' property are auto-executed by default unless manual: true
-   */
-  manual?: boolean;
-  /**
-   * Sort order for flow execution, lower numbers execute first
-   * Defaults to 0, can be negative
-   */
-  sort?: number;
-  /**
-   * 当设置为true时，表示这是对现有流程的部分覆盖，而不是完全替换
-   * 如果父类中不存在同名流程，此标记将被忽略
-   */
-  patch?: boolean;
 }
 
 export interface IModelComponentProps {
@@ -296,6 +275,18 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   save(model: T): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
+}
+
+export interface IFlowRepository {
+  addFlows(flowDefs: Record<string, Omit<FlowDefinition, 'key'>>): void;
+  addFlow(flowKey: string, flowOptions: Omit<FlowDefinition, 'key'>): FlowDef | void;
+  removeFlow(flowKey: string): void;
+  getFlows(): Map<string, FlowDef>;
+  mapFlows<T = any>(callback: (flow: FlowDef) => T): T[];
+  hasFlow(flowKey: string): boolean;
+  getFlow(flowKey: string): FlowDef | undefined;
+  saveFlow(flow: FlowDef): Promise<any> | void;
+  destroyFlow(flowKey: string): Promise<any> | void;
 }
 
 /**

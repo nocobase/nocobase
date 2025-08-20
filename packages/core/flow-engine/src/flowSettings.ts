@@ -19,8 +19,6 @@ import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setup
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
-import type { FlowDefinition } from './types';
-import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
 
 const Panel = Collapse.Panel;
 
@@ -418,8 +416,7 @@ export class FlowSettings {
     const message = model.context?.message;
 
     // 聚合渲染：准备需要处理的 flow 列表（flowKey 优先其余）
-    const ModelClass = model.constructor as typeof FlowModel;
-    const allFlowsMap = ModelClass.getFlows();
+    const allFlowsMap = model.getFlows();
     const targetFlowKeys: string[] = (() => {
       if (flowKey) return [flowKey];
       if (Array.isArray(flowKeys) && flowKeys.length) return flowKeys;
@@ -720,6 +717,11 @@ export class FlowSettings {
     return true;
   }
 
+  // =============================
+  // Dynamic flows editor (disabled)
+  // Kept as comments to preserve context
+  // =============================
+  /*
   public async openDynamicFlowsEditor(
     options: Pick<FlowSettingsOpenOptions, 'model' | 'uiMode' | 'onCancel'> & {
       onSaved?: (flows: FlowDefinition[]) => void | Promise<void>;
@@ -757,11 +759,9 @@ export class FlowSettings {
             try {
               await onSaved?.(plain);
             } catch (cbErr) {
-              // eslint-disable-next-line no-console
               console.error('FlowSettings.openDynamicFlowsEditor: onSaved callback error', cbErr);
             }
           } catch (err) {
-            // eslint-disable-next-line no-console
             console.error('FlowSettings.openDynamicFlowsEditor: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
@@ -781,7 +781,6 @@ export class FlowSettings {
                   try {
                     await onCancel?.();
                   } catch (cbErr) {
-                    // eslint-disable-next-line no-console
                     console.error('FlowSettings.openDynamicFlowsEditor: onCancel callback error', cbErr);
                   }
                 },
@@ -796,4 +795,5 @@ export class FlowSettings {
       },
     });
   }
+  */
 }

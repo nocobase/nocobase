@@ -32,7 +32,7 @@ import type {
   StepDefinition,
   StepParams,
 } from '../types';
-import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps } from '../types';
+import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import {
   FlowExitException,
   isInheritedFrom,
@@ -43,12 +43,16 @@ import {
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 import { FlowSettingsOpenOptions } from '../flowSettings';
+import { GlobalFlowRegistry } from '../GlobalFlowRegistry';
+import { FlowDef } from '../FlowDef';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
 // 使用WeakMap存储每个类的flows
 let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+// 使用WeakMap存储每个类的 GlobalFlowRegistry 单例
+const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -172,6 +176,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   onInit(options) {
+    // Dynamic flows loading is disabled. Previous logic preserved for reference:
+    /*
     this.loadDynamicFlows()
       .then((flows) => {
         if (!_.isEmpty(flows)) {
@@ -181,6 +187,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       .catch((error) => {
         console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
       });
+    */
   }
 
   get async() {
@@ -205,6 +212,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   static get meta() {
     return modelMetas.get(this);
+  }
+
+  static get globalFlowRegistry(): GlobalFlowRegistry {
+    const Cls = this as unknown as typeof FlowModel;
+    let reg = modelGlobalRegistries.get(Cls);
+    if (!reg) {
+      reg = new GlobalFlowRegistry(Cls);
+      modelGlobalRegistries.set(Cls, reg);
+    }
+    return reg;
   }
 
   get title() {
@@ -320,103 +337,28 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * 扩展已存在的流程定义。通过合并现有流程和扩展定义来创建新的流程。
-   * @template TModel 具体的FlowModel子类类型
-   * @param {string | ExtendedFlowDefinition} keyOrDefinition 流程的 Key 或 ExtendedFlowDefinition 对象。
-   *        如果为字符串，则为流程 Key，需要配合 extendDefinition 参数。
-   *        如果为对象，则为包含 key 属性的完整 ExtendedFlowDefinition。
-   * @param {Omit<ExtendedFlowDefinition, 'key'>} [extendDefinition] 当第一个参数为流程 Key 时，此参数为流程的扩展定义。
-   * @returns {void}
-   */
-  public static extendFlow<TModel extends FlowModel = FlowModel>(
-    keyOrDefinition: string | ExtendedFlowDefinition,
-    extendDefinition?: Omit<ExtendedFlowDefinition, 'key'>,
-  ): void {
-    let definition: ExtendedFlowDefinition;
-    let key: string;
-
-    if (typeof keyOrDefinition === 'string' && extendDefinition) {
-      key = keyOrDefinition;
-      definition = {
-        ...extendDefinition,
-        key,
-      };
-    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
-      key = keyOrDefinition.key;
-      definition = keyOrDefinition;
-    } else {
-      throw new Error('Invalid arguments for extendFlow');
-    }
-
-    // 获取所有流程（包括从父类继承的）
-    const allFlows = this.getFlows();
-    const originalFlow = allFlows.get(key);
-
-    if (!originalFlow) {
-      console.warn(
-        `FlowModel.extendFlow: Cannot extend flow '${key}' as it does not exist in parent class. Registering as new flow.`,
-      );
-      // 移除patch标记，作为新流程注册
-      const { patch, ...newFlowDef } = definition;
-      this.registerFlow(newFlowDef as FlowDefinition<TModel>);
-      return;
-    }
-
-    // 合并流程定义
-    const mergedFlow = mergeFlowDefinitions(originalFlow, definition);
-
-    // 注册合并后的流程
-    this.registerFlow(mergedFlow as FlowDefinition<TModel>);
-  }
-
-  /**
    * 获取已注册的流程定义。
    * 如果当前类不存在对应的flow，会继续往父类查找。
    * @param {string} key 流程 Key。
    * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
    */
-  public getFlow(key: string): FlowDefinition | undefined {
+  public getFlow(key: string): FlowDef | undefined {
     if (this.flowRegistry.hasFlow(key)) {
       return this.flowRegistry.getFlow(key);
     }
-    // 获取当前类的构造函数
-    const currentClass = this.constructor as typeof FlowModel;
-
-    // 遍历类继承链，查找流程
-    let cls: typeof FlowModel | null = currentClass;
-    while (cls) {
-      const flows = modelFlows.get(cls);
-      if (flows && flows.has(key)) {
-        return flows.get(key);
-      }
-
-      // 获取父类
-      const proto = Object.getPrototypeOf(cls);
-      if (proto === Function.prototype || proto === Object.prototype) {
-        break;
-      }
-      cls = proto as typeof FlowModel;
-    }
-
-    return undefined;
+    const Cls = this.constructor as typeof FlowModel;
+    return Cls.globalFlowRegistry.getFlow(key);
   }
 
   getFlows() {
-    // 获取当前类的构造函数
-    const currentClass = this.constructor as typeof FlowModel;
-    // 返回当前类及其父类的所有流程定义
-    const globalFlows = currentClass.getFlows();
     const instanceFlows = this.flowRegistry.getFlows();
-    const allFlows = new Map<string, FlowDefinition>();
-
-    for (const [key, flow] of globalFlows.entries()) {
-      allFlows.set(key, flow);
+    const allFlows = new Map<string, FlowDef>(instanceFlows);
+    const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
+    for (const [key, def] of staticFlows) {
+      if (!allFlows.has(key)) {
+        allFlows.set(key, def);
+      }
     }
-
-    for (const [key, flow] of instanceFlows.entries()) {
-      allFlows.set(key, flow as any);
-    }
-
     return allFlows;
   }
 
@@ -647,7 +589,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const allFlows = this.getFlows();
     const runId = `${this.uid}-${eventName}-${Date.now()}`;
 
-    allFlows.forEach((flow) => {
+    allFlows.forEach((flow: FlowDefinition) => {
       if (flow.on) {
         let flowEvent = '';
         if (typeof flow.on === 'string') {
@@ -667,34 +609,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         });
       }
     });
-  }
-
-  /**
-   * 创建一个新的 FlowModel 子类，并预注册指定的流程。
-   * @param {ExtendedFlowDefinition[]} flows 要预注册的流程定义数组
-   *        如果flow.patch为true，则表示这是对父类同名流程的部分覆盖
-   * @returns 新创建的 FlowModel 子类
-   */
-  public static extends<T extends typeof FlowModel>(this: T, flows: ExtendedFlowDefinition[] = []): T {
-    class CustomFlowModel extends (this as unknown as typeof FlowModel) {
-      // @ts-ignore
-      static name = `CustomFlowModel_${uid()}`;
-    }
-
-    // 处理流程注册和覆盖
-    if (flows.length > 0) {
-      flows.forEach((flowDefinition) => {
-        // 如果标记为部分覆盖，则调用extendFlow方法
-        if (flowDefinition.patch === true) {
-          CustomFlowModel.extendFlow(flowDefinition);
-        } else {
-          // 完全覆盖或新增流程
-          CustomFlowModel.registerFlow(flowDefinition as FlowDefinition);
-        }
-      });
-    }
-
-    return CustomFlowModel as unknown as T;
   }
 
   /**
@@ -1360,6 +1274,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  // =============================
+  // Dynamic flows (disabled)
+  // The following APIs are kept as comments to preserve context
+  // =============================
+  /*
   async openDynamicFlowsEditor(
     options?: Omit<FlowSettingsOpenOptions, 'model' | 'flowKey' | 'flowKeys' | 'stepKey' | 'preset'>,
   ) {
@@ -1371,19 +1290,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   #dynamicFlows: FlowDefinition[] = [];
 
-  // TODO：后面去除这个方法，应该默认加载动态流
   async loadDynamicFlows(): Promise<FlowDefinition[]> {
     return JSON.parse(localStorage.getItem('DYNAMIC_FLOWS') || '[]');
   }
 
   async saveDynamicFlows(): Promise<void> {
-    // TODO: 暂时的做法，后面需要改进
     localStorage.setItem('DYNAMIC_FLOWS', JSON.stringify(this.#dynamicFlows));
   }
 
   setDynamicFlows(flows: FlowDefinition[]): void {
     this.#dynamicFlows = flows;
-
     flows.forEach((flow) => {
       // @ts-ignore
       this.constructor.registerFlow(flow);
@@ -1393,6 +1309,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   getDynamicFlows(): FlowDefinition[] {
     return this.#dynamicFlows;
   }
+  */
 }
 
 export class ErrorFlowModel extends FlowModel {
