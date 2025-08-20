@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { vitest } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel } from '../flowModel';
 
@@ -221,5 +222,235 @@ describe('InstanceFlowRegistry (extended)', () => {
         },
       },
     });
+  });
+
+  // 新增测试：mapFlows 方法
+  test('mapFlows iterates over all flows', () => {
+    const model = createModel();
+    model.flowRegistry.addFlows({
+      flow1: { title: 'Flow 1' },
+      flow2: { title: 'Flow 2' },
+      flow3: { title: 'Flow 3' },
+    });
+
+    const titles = model.flowRegistry.mapFlows((flow) => flow.title);
+    expect(titles).toEqual(['Flow 1', 'Flow 2', 'Flow 3']);
+
+    const keys = model.flowRegistry.mapFlows((flow) => flow.key);
+    expect(keys).toEqual(['flow1', 'flow2', 'flow3']);
+  });
+
+  // 新增测试：getFlows 返回 Map
+  test('getFlows returns Map of flows', () => {
+    const model = createModel();
+    model.flowRegistry.addFlow('test', { title: 'Test' });
+
+    const flows = model.flowRegistry.getFlows();
+    expect(flows instanceof Map).toBe(true);
+    expect(flows.size).toBe(1);
+    expect(flows.has('test')).toBe(true);
+  });
+
+  // 新增测试：removeFlow 独立测试
+  test('removeFlow deletes flow from registry', () => {
+    const model = createModel();
+    model.flowRegistry.addFlow('test', { title: 'Test' });
+
+    expect(model.flowRegistry.hasFlow('test')).toBe(true);
+    model.flowRegistry.removeFlow('test');
+    expect(model.flowRegistry.hasFlow('test')).toBe(false);
+  });
+
+  // 新增测试：FlowDef setters
+  test('FlowDef setters update properties', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      manual: false,
+      on: 'update',
+    });
+
+    flow.title = 'Updated Title';
+    flow.manual = true;
+    flow.on = 'create';
+
+    expect(flow.title).toBe('Updated Title');
+    expect(flow.manual).toBe(true);
+    expect(flow.on).toBe('create');
+  });
+
+  // 新增测试：FlowDef setOptions
+  test('FlowDef setOptions updates flow properties', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', { title: 'Test' });
+
+    flow.setOptions({
+      title: 'New Title',
+      sort: 10,
+      manual: true,
+      on: 'delete',
+    });
+
+    expect(flow.title).toBe('New Title');
+    expect(flow.sort).toBe(10);
+    expect(flow.manual).toBe(true);
+    expect(flow.on).toBe('delete');
+  });
+
+  // 新增测试：mapSteps 方法
+  test('FlowDef mapSteps iterates over all steps', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: {
+        step1: { title: 'Step 1', sort: 10 } as any,
+        step2: { title: 'Step 2', sort: 20 } as any,
+        step3: { title: 'Step 3', sort: 30 } as any,
+      },
+    });
+
+    const stepTitles = flow.mapSteps((step) => step.title);
+    expect(stepTitles).toEqual(['Step 1', 'Step 2', 'Step 3']);
+
+    const stepKeys = flow.mapSteps((step) => step.key);
+    expect(stepKeys).toEqual(['step1', 'step2', 'step3']);
+  });
+
+  // 新增测试：FlowStep 属性和方法
+  test('FlowStep properties and methods', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: {
+        step1: {
+          title: 'Step 1',
+          uiSchema: { type: 'object' },
+          defaultParams: { param1: 'value1' },
+          use: 'someAction',
+          sort: 10,
+        } as any,
+      },
+    });
+
+    const step = flow.getStep('step1')!;
+    expect(step.key).toBe('step1');
+    expect(step.flowKey).toBe('test');
+    expect(step.title).toBe('Step 1');
+    expect(step.uiSchema).toEqual({ type: 'object' });
+    expect(step.defaultParams).toEqual({ param1: 'value1' });
+    expect(step.use).toBe('someAction');
+
+    // 测试 title setter
+    step.title = 'Updated Step Title';
+    expect(step.title).toBe('Updated Step Title');
+  });
+
+  // 新增测试：FlowStep setOptions
+  test('FlowStep setOptions updates step properties', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: {
+        step1: { title: 'Step 1' } as any,
+      },
+    });
+
+    const step = flow.getStep('step1')!;
+    step.setOptions({
+      title: 'Updated Step',
+      uiSchema: { type: 'string' },
+      defaultParams: { newParam: 'newValue' },
+      use: 'newAction',
+    });
+
+    expect(step.title).toBe('Updated Step');
+    expect(step.uiSchema).toEqual({ type: 'string' });
+    expect(step.defaultParams).toEqual({ newParam: 'newValue' });
+    expect(step.use).toBe('newAction');
+  });
+
+  // 新增测试：边界情况和错误处理
+  test('handles non-existent flow operations gracefully', () => {
+    const model = createModel();
+
+    expect(model.flowRegistry.getFlow('nonexistent')).toBeUndefined();
+    expect(model.flowRegistry.hasFlow('nonexistent')).toBe(false);
+
+    // removeFlow on non-existent should not throw
+    expect(() => model.flowRegistry.removeFlow('nonexistent')).not.toThrow();
+
+    // mapFlows on empty registry
+    const emptyResults = model.flowRegistry.mapFlows((flow) => flow.title);
+    expect(emptyResults).toEqual([]);
+  });
+
+  // 新增测试：addStep 与现有 key 的行为
+  test('addStep with existing key updates step', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: { step1: { title: 'Original' } as any },
+    });
+
+    expect(flow.getSteps().size).toBe(1);
+    expect(flow.getStep('step1')!.title).toBe('Original');
+
+    // 使用相同的 key 添加步骤应该更新现有步骤
+    const updatedStep = flow.addStep('step1', { title: 'Updated' });
+    expect(updatedStep.title).toBe('Updated');
+    expect(flow.getSteps().size).toBe(1); // 仍然只有一个步骤
+    expect(flow.getStep('step1')!.title).toBe('Updated');
+  });
+
+  // 新增测试：FlowStep 的异步方法
+  test('FlowStep async methods call flowDef methods', async () => {
+    const model = createModel();
+    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: { step1: { title: 'Step 1' } as any },
+    });
+
+    const step = flow.getStep('step1')!;
+
+    // 测试 step.save()
+    await step.save();
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+
+    // 测试 step.remove()
+    step.remove();
+    expect(flow.hasStep('step1')).toBe(false);
+
+    // 重新添加步骤来测试 destroy
+    flow.addStep('step2', { title: 'Step 2' });
+    const step2 = flow.getStep('step2')!;
+
+    await step2.destroy();
+    expect(saveSpy).toHaveBeenCalledTimes(2);
+    expect(flow.hasStep('step2')).toBe(false);
+  });
+
+  // 新增测试：FlowDef defaultParams 的默认值
+  test('FlowStep defaultParams returns empty object when undefined', () => {
+    const model = createModel();
+    const flow = model.flowRegistry.addFlow('test', {
+      title: 'Test',
+      steps: { step1: { title: 'Step 1' } as any }, // 没有 defaultParams
+    });
+
+    const step = flow.getStep('step1')!;
+    expect(step.defaultParams).toEqual({});
+  });
+
+  // 新增测试：空的 addFlows 调用
+  test('addFlows handles empty or null input', () => {
+    const model = createModel();
+
+    expect(() => model.flowRegistry.addFlows({})).not.toThrow();
+    expect(() => model.flowRegistry.addFlows(null as any)).not.toThrow();
+    expect(() => model.flowRegistry.addFlows(undefined as any)).not.toThrow();
+
+    expect(model.flowRegistry.getFlows().size).toBe(0);
   });
 });
