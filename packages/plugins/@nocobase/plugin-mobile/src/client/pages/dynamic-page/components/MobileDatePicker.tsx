@@ -7,25 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DatePicker, Picker } from 'antd-mobile';
-import { Space, Select } from 'antd';
-import {
-  mapDatePicker,
-  DatePicker as NBDatePicker,
-  useDatePickerContext,
-  useCompile,
-  inferPickerType,
-  TimePicker as NBTimePicker,
-  mapTimeFormat,
-  useVariables,
-  isVariable,
-  useLocalVariables,
-} from '@nocobase/client';
-import { autorun } from '@formily/reactive';
-import dayjs from 'dayjs';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { autorun } from '@formily/reactive';
+import {
+  inferPickerType,
+  isVariable,
+  mapDatePicker,
+  mapTimeFormat,
+  DatePicker as NBDatePicker,
+  TimePicker as NBTimePicker,
+  useCompile,
+  useDatePickerContext,
+  useLocalVariables,
+  useVariables,
+} from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
+import { Select, Space } from 'antd';
+import { DatePicker, Picker } from 'antd-mobile';
+import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
@@ -133,7 +133,7 @@ const MobileDateTimePicker = connect(
     }, []);
     return (
       <>
-        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <NBDatePicker
             onClick={() => setVisible(true)}
             value={value}
@@ -326,7 +326,7 @@ const MobileTimePicker: ComposedMobileTimePicker = connect(
     };
 
     return (
-      <div contentEditable="false" onClick={() => setVisible(true)}>
+      <div onClick={() => setVisible(true)}>
         <NBTimePicker {...props} style={{ pointerEvents: 'none' }} />
         <Picker onConfirm={handleTimeChange} columns={timeData} visible={visible} />
       </div>
@@ -342,4 +342,4 @@ MobileDateFilterWithPicker.displayName = 'MobileDateFilterWithPicker';
 MobileTimePicker.displayName = 'MobileTimePicker';
 
 MobileTimePicker.RangePicker = NBTimePicker.RangePicker;
-export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker, MobileTimePicker };
+export { MobileDateFilterWithPicker, MobileDateTimePicker, MobileRangePicker, MobileTimePicker };
