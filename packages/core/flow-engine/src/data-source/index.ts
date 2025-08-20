@@ -649,6 +649,7 @@ export class CollectionField {
           return Promise.resolve();
         },
       });
+      console.log(rules);
       componentProps.rules = rules;
     }
     return componentProps;
