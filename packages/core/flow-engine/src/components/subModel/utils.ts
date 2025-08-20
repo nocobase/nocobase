@@ -150,7 +150,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
   const children: SubModelItem[] = [];
 
   for (const f of fields) {
-    if (!f?.interface) continue;
+    if (!f?.options?.interface) continue;
     const fieldPath = f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FormFieldModel';

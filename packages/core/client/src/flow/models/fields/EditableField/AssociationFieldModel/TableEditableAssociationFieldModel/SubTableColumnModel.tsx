@@ -442,4 +442,5 @@ SubTableColumnModel.registerFlow({
 
 SubTableColumnModel.define({
   hide: true,
+  label: escapeT('Table column'),
 });
