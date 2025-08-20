@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
@@ -18,6 +18,61 @@ export class DetailItemModel extends FieldModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
 }> {
+  static defineChildren(ctx: FlowModelContext) {
+    const collection: Collection = ctx.collection;
+    const fields = collection.getFields();
+    const children = fields
+      .filter((f) => !!f?.interface)
+      .map((f) => {
+        const fieldPath = f.name;
+        const readPrettyUse = f.getFirstSubclassNameOf('ReadPrettyFieldModel');
+        return {
+          key: fieldPath,
+          label: f.title,
+          toggleable: (subModel) => {
+            const p = subModel.getStepParams('fieldSettings', 'init');
+            return p.fieldPath === fieldPath;
+          },
+          useModel: 'DetailItemModel',
+          createModelOptions: () => ({
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: collection.name,
+                  fieldPath,
+                },
+              },
+            },
+            subModels: {
+              field: {
+                use: readPrettyUse,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: collection.dataSourceKey,
+                      collectionName: collection.name,
+                      fieldPath,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        };
+      });
+
+    return [
+      {
+        key: 'addField',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+        children,
+      },
+    ];
+  }
   onInit(options: any): void {
     super.onInit(options);
   }

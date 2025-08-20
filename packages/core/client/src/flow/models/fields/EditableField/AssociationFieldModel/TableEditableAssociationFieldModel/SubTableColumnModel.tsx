@@ -17,6 +17,8 @@ import {
   FlowModelRenderer,
   FlowsFloatContextMenu,
   useFlowEngine,
+  FlowModelContext,
+  Collection,
 } from '@nocobase/flow-engine';
 import { omitBy, isUndefined } from 'lodash';
 import { TableColumnProps, Tooltip, Form } from 'antd';
@@ -96,6 +98,66 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 });
 
 export class SubTableColumnModel extends FieldModel {
+  static defineChildren(ctx: FlowModelContext) {
+    const collection: Collection = ctx.collection;
+
+    const transformItem = (use: string) => {
+      const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
+      if (selectGroup.includes(use)) return 'SelectEditableFieldModel';
+      return use;
+    };
+
+    const fields = collection.getFields();
+    const children = fields
+      .filter((f) => !!f?.interface)
+      .map((f) => {
+        const fieldPath = f.name;
+        const editableUse = f.getFirstSubclassNameOf('FormFieldModel');
+        const finalUse = transformItem(editableUse);
+        return {
+          key: fieldPath,
+          label: f.title,
+          toggleable: (subModel) => subModel.getStepParams?.('fieldSettings', 'init').fieldPath === fieldPath,
+          useModel: 'SubTableColumnModel',
+          createModelOptions: () => ({
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: collection.name,
+                  fieldPath,
+                },
+              },
+            },
+            subModels: {
+              field: {
+                use: finalUse,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: collection.dataSourceKey,
+                      collectionName: collection.name,
+                      fieldPath,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        };
+      });
+
+    return [
+      {
+        key: 'addField',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: ctx.t('Search fields'),
+        children,
+      },
+    ];
+  }
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>

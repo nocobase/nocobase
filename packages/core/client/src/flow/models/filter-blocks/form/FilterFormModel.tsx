@@ -10,13 +10,7 @@
 import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
 import { createForm, Form } from '@formily/core';
 import { FormProvider } from '@formily/react';
-import {
-  AddSubModelButton,
-  Collection,
-  FlowModelRenderer,
-  FlowSettingsButton,
-  buildFieldItems,
-} from '@nocobase/flow-engine';
+import { AddSubModelButton, Collection, FlowModelRenderer, FlowSettingsButton } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import React from 'react';
@@ -28,24 +22,6 @@ export class FilterFormModel extends FilterBlockModel {
   collection: Collection;
 
   render() {
-    const fieldItems = buildFieldItems(
-      this.collection.getFields(),
-      this,
-      'EditableFieldModel',
-      'fields',
-      ({ defaultOptions, fieldPath }) => ({
-        use: defaultOptions.use,
-        stepParams: {
-          default: {
-            step1: {
-              dataSourceKey: this.collection.dataSourceKey,
-              collectionName: this.collection.name,
-              fieldPath,
-            },
-          },
-        },
-      }),
-    );
     return (
       <Card>
         <FormProvider form={this.form}>
@@ -54,14 +30,26 @@ export class FilterFormModel extends FilterBlockModel {
               <FlowModelRenderer model={field} showFlowSettings={{ showBorder: false }} />
             ))}
           </FormLayout>
-          <AddSubModelButton items={fieldItems} subModelKey="fields" model={this} keepDropdownOpen>
+          <AddSubModelButton
+            key="filter-form-fields-add"
+            subModelKey="fields"
+            model={this}
+            keepDropdownOpen
+            // TODO: 这里字段重构后要改错字段对应的 form item model 才能显示下拉菜单
+            subModelBaseClasses={['EditableFieldModel']}
+          >
             <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
           </AddSubModelButton>
           <FormButtonGroup>
             {this.mapSubModels('actions', (action) => (
               <FlowModelRenderer model={action} showFlowSettings={{ showBorder: false }} />
             ))}
-            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={'FilterFormActionModel'}>
+            <AddSubModelButton
+              key="filter-form-actions-add"
+              model={this}
+              subModelKey="actions"
+              subModelBaseClass={'FilterFormActionModel'}
+            >
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>
           </FormButtonGroup>

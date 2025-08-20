@@ -112,6 +112,7 @@ const AddFieldColumn = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
+      key={'table-add-columns'}
       subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
       afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
@@ -352,7 +353,12 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddSubModelButton model={this} subModelBaseClass={CollectionActionModel} subModelKey="actions">
+              <AddSubModelButton
+                key={'table-column-add-actions'}
+                model={this}
+                subModelBaseClass={CollectionActionModel}
+                subModelKey="actions"
+              >
                 <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
               </AddSubModelButton>
             </Space>

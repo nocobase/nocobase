@@ -103,7 +103,8 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
     const items = [];
     const exclude = [];
     for (const subModelBaseClass of subModelBaseClasses) {
-      const BaseClass = ctx.engine.getModelClass(subModelBaseClass);
+      const BaseClass =
+        typeof subModelBaseClass === 'string' ? ctx.engine.getModelClass(subModelBaseClass) : subModelBaseClass;
       if (!BaseClass) {
         continue;
       }

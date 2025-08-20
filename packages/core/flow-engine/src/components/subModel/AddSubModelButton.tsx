@@ -388,6 +388,16 @@ const AddSubModelButtonCore = function AddSubModelButton({
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
+  const persistKey = useMemo(() => {
+    try {
+      const id = (model && (model as any).uid) || 'unknown-model';
+      return `asmb:${id}:${subModelKey}:${subModelType}`;
+    } catch (e) {
+      return `asmb:unknown:${subModelKey}:${subModelType}`;
+    }
+  }, [model, subModelKey, subModelType]);
+  // Internal tick to force reloading menu items when subModels change
+  const [, setRefreshTick] = React.useState(0);
   // 合并 items 与 baseClass 的菜单来源
   const finalItems = useMemo<SubModelItemsType>(() => {
     const sources: (SubModelItemsType | undefined | null)[] = [];
@@ -438,6 +448,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
         if (afterSubModelRemove && removedModel) {
           await afterSubModelRemove(removedModel);
         }
+        // Force refresh items so toggle state recalculates while dropdown stays open
+        setRefreshTick((x) => x + 1);
       } catch (error) {
         console.error('Failed to remove sub model:', error);
       }
@@ -480,6 +492,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
           }
 
           await addedModel.save();
+          // Force refresh items so toggle state recalculates while dropdown stays open
+          setRefreshTick((x) => x + 1);
         } catch (error) {
           await handleModelCreationError(error, addedModel);
         }
@@ -531,6 +545,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
         items: transformItems(finalItems, model, subModelKey, subModelType),
         onClick,
         keepDropdownOpen,
+        persistKey,
       }}
     >
       {children}

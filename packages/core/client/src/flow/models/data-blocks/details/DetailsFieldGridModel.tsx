@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddSubModelButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
@@ -18,45 +18,11 @@ import { DetailsModel } from './DetailsModel';
 const AddDetailField = ({ model }) => {
   const blockModel = model.context.blockModel as DetailsModel;
   const collection = blockModel.collection;
-
-  const items = buildFieldItems(
-    collection.getFields(),
-    blockModel,
-    'ReadPrettyFieldModel',
-    'items',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'DetailItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: collection.dataSourceKey,
-            collectionName: collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
-              },
-            },
-          },
-        },
-      },
-    }),
-  );
   return (
     <AddSubModelButton
       model={model}
       subModelKey={'items'}
-      subModelBaseClass="DetailFormItemModel"
-      items={items}
+      subModelBaseClasses={['DetailItemModel', 'DetailFormItemModel']}
       afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         await field.applyAutoFlows();
