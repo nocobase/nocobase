@@ -122,5 +122,13 @@ export const EditableDepartmentOwnersField: React.FC = () => {
   );
 };
 
-// Auto switch between edit and readonly mode
-export const DepartmentOwnersField = connect(EditableDepartmentOwnersField, mapReadPretty(AssociationField.ReadPretty));
+// ReadPretty Mode
+const ReadDepartmentOwnersField = (props) => {
+  const defaultFieldNames = {
+    label: 'nickname',
+    value: 'id',
+  };
+  return <AssociationField.ReadPretty {...props} fieldNames={defaultFieldNames} />;
+};
+
+export const DepartmentOwnersField = connect(EditableDepartmentOwnersField, mapReadPretty(ReadDepartmentOwnersField));
