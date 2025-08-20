@@ -45,6 +45,9 @@ export abstract class CollectionFieldInterface {
   isAssociation?: boolean;
   operators?: any[];
   properties?: any;
+  validationType?: string;
+  availableValidationOptions: string[] = [];
+  excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
@@ -87,11 +90,32 @@ export abstract class CollectionFieldInterface {
     }
     this.componentOptions.push(componentOption);
   }
-  getConfigureFormProperties() {
+  getConfigureFormProperties(collectionInfo?: any): Record<string, ISchema> {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
+    this.availableValidationOptions.push('required');
+    const isViewCollection = collectionInfo?.view;
+    const isSqlCollection = collectionInfo?.template === 'sql' || collectionInfo?.sql;
+    const validationProps =
+      !isViewCollection && !isSqlCollection && this.validationType
+        ? {
+            validation: {
+              title: '{{ t("Validation") }}',
+              required: false,
+              'x-decorator': 'FormItem',
+              'x-component': 'FieldValidation',
+              'x-component-props': {
+                type: this.validationType,
+                availableValidationOptions: [...new Set(this.availableValidationOptions)],
+                excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
+                isAssociation: this.isAssociation,
+              },
+            },
+          }
+        : {};
     return {
       ...cloneDeep({ ...defaultProps, ...this?.properties }),
       ...defaultValueProps,
+      ...validationProps,
     };
   }
   getDefaultValueProperty() {

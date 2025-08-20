@@ -9,22 +9,28 @@
 
 import { FormButtonGroup } from '@formily/antd-v5';
 import {
-  AddActionButton,
-  buildActionItems,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
+  FlowModelContext,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Pagination } from 'antd';
 import React from 'react';
 import { FormModel, FormComponent } from './FormModel';
+import { FormActionModel } from './FormActionModel';
 
 export class EditFormModel extends FormModel {
-  createResource(_ctx: any, params: any) {
+  static override getChildrenFilters(_ctx: FlowModelContext) {
+    return { currentRecord: true };
+  }
+  createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
@@ -83,7 +89,9 @@ export class EditFormModel extends FormModel {
                 />
               </Droppable>
             ))}
-            <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
           </FormButtonGroup>
         </DndProvider>
         {this.isMultiRecordResource() && (
@@ -167,8 +175,8 @@ EditFormModel.registerFlow({
 });
 
 EditFormModel.define({
-  title: escapeT('Form (Edit)'),
-  defaultOptions: {
+  label: escapeT('Form (Edit)'),
+  createModelOptions: {
     use: 'EditFormModel',
     subModels: {
       grid: {

@@ -9,77 +9,38 @@
 import { DragEndEvent } from '@dnd-kit/core';
 import React from 'react';
 import {
-  buildFieldItems,
   SingleRecordResource,
   escapeT,
-  AddFieldButton,
+  AddSubModelButton,
+  FlowSettingsButton,
   useFlowEngine,
   DndProvider,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { EditableAssociationFieldModel } from '../EditableAssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../../data-blocks/form/EditFormModel';
 
-const transformItem = (use: string) => {
-  const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
-  if (selectGroup.includes(use)) {
-    return 'SelectEditableFieldModel';
-  }
-  return use;
-};
-
 const AddFieldColumn = ({ model }) => {
-  const items = buildFieldItems(
-    model.collection.getFields(),
-    model,
-    'FormFieldModel',
-    'columns',
-    ({ defaultOptions, fieldPath }) => {
-      return {
-        use: 'SubTableColumnModel',
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: model.collection.dataSourceKey,
-              collectionName: model.collection.name,
-              fieldPath,
-            },
-          },
-        },
-        subModels: {
-          field: {
-            use: transformItem(defaultOptions.use),
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: model.collection.dataSourceKey,
-                  collectionName: model.collection.name,
-                  fieldPath,
-                },
-              },
-            },
-          },
-        },
-      };
-    },
-  );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClass="TableCustomColumnModel"
-      items={items}
-      onModelCreated={async (column: SubTableColumnModel) => {
+      subModelBaseClasses={['SubTableColumnModel']}
+      afterSubModelInit={async (column: SubTableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: SubTableColumnModel) => {
+      afterSubModelAdd={async (column: SubTableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
         }
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

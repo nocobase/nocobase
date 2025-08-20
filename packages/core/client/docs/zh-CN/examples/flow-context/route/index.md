@@ -20,3 +20,7 @@ type RouteOptions = {
 ### 路由监听
 
 <code src="./reaction.tsx"></code>
+
+### 路由监听（高级）
+
+<code src="./reaction2.tsx"></code>

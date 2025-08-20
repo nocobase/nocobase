@@ -613,7 +613,19 @@ export class CollectionField {
   }
 
   getComponentProps() {
-    return this.options.uiSchema?.['x-component-props'] || {};
+    const { type, target } = this.options;
+    const componentProps = _.omitBy(
+      {
+        ...(this.options.uiSchema?.['x-component-props'] || {}),
+        options: this.enum.length ? this.enum : undefined,
+        mode: this.type === 'array' ? 'multiple' : undefined,
+        multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : undefined,
+        maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+        valuePropName: this.interface === 'checkbox' ? 'checked' : 'value',
+      },
+      _.isUndefined,
+    );
+    return componentProps;
   }
 
   getFields(): CollectionField[] {

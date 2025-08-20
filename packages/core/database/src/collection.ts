@@ -22,10 +22,11 @@ import {
 } from 'sequelize';
 import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
-import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { buildJoiSchema, getJoiErrorMessage } from './utils/field-validation';
 
 export type RepositoryType = typeof Repository;
 
@@ -231,6 +232,79 @@ export class Collection<
     for (const [_, field] of this.fields) {
       if (field.options.treeChildren) {
         return field;
+      }
+    }
+  }
+
+  validate(options: {
+    values: Record<string, any> | Record<string, any>[];
+    operation: 'create' | 'update';
+    context: { t: Function };
+  }) {
+    const { values: updateValues, context, operation } = options;
+    if (!updateValues) {
+      return;
+    }
+    const values = Array.isArray(updateValues) ? updateValues : [updateValues];
+    const { t } = context || { t: (key: string, options: any) => key };
+
+    const unwrapTplLabel = (label: any) => {
+      if (typeof label !== 'string') return label as any;
+      const m = label.match(/^[\s\t]*\{\{\s*t\(\s*(['"])(.*?)\1(?:\s*,[\s\S]*)?\)\s*\}\}[\s\t]*$/);
+      return m ? m[2] : label;
+    };
+
+    const helper = (field: Field, value: Object) => {
+      const val = value[field.name];
+      if (!field.options.validation) {
+        return;
+      }
+
+      const fieldLabel = unwrapTplLabel(field.options.uiSchema?.title || field.name);
+      if (field instanceof RelationField) {
+        if (field.options?.validation.rules) {
+          const isRequired = field.options?.validation.rules.some((rule) => rule.name === 'required');
+          if (isRequired && !val) {
+            throw new Error(
+              t('{{#label}} is required', {
+                ns: 'client',
+                '#label': `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(
+                  fieldLabel,
+                  { ns: 'client' },
+                )}`,
+              }),
+            );
+          }
+        }
+        return;
+      }
+
+      const joiSchema = buildJoiSchema(field.options.validation, {
+        label: `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(fieldLabel, {
+          ns: 'client',
+        })}`,
+        value: val,
+      });
+      const { error } = joiSchema.validate(val, {
+        messages: getJoiErrorMessage(t),
+      });
+      if (error) {
+        throw error;
+      }
+    };
+    for (const value of values) {
+      if (operation === 'create') {
+        for (const [, field] of this.fields) {
+          helper(field, value);
+        }
+      }
+      if (operation === 'update') {
+        for (const key of Object.keys(value)) {
+          const field = this.getField(key);
+          if (field) {
+            helper(field, value);
+          }
+        }
       }
     }
   }

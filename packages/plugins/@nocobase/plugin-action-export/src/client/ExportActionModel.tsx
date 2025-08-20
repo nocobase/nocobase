@@ -30,7 +30,7 @@ export class ExportActionModel extends CollectionActionModel {
 }
 
 ExportActionModel.define({
-  title: escapeT('Export'),
+  label: escapeT('Export'),
 });
 
 ExportActionModel.registerFlow({

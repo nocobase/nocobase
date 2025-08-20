@@ -15,11 +15,16 @@ import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { FormActionModel } from './FormActionModel';
 import { FormFieldGridModel } from './FormFieldGridModel';
+import { CollectionField } from '@nocobase/flow-engine';
 
 export class FormModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
 }> {
+  protected static override filterAssociatedFields(fields: CollectionField[]): CollectionField[] {
+    const toMany = ['o2m', 'm2m'];
+    return fields.filter((f: any) => toMany.includes(f.interface));
+  }
   get form() {
     return this.context.form;
   }

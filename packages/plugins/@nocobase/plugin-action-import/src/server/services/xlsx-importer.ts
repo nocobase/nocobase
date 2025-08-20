@@ -438,7 +438,7 @@ export class XlsxImporter extends EventEmitter {
     const workbook = this.options.workbook;
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false }) as string[][];
 
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);

@@ -83,7 +83,7 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
 }
 
 ChartBlockModel.define({
-  title: escapeT('Charts'),
+  label: escapeT('Charts'),
 });
 
 ChartBlockModel.registerFlow({

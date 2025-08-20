@@ -1448,7 +1448,7 @@ describe('FlowModel', () => {
 
       test('should return meta title when defined', () => {
         TestFlowModel.define({
-          title: 'Test Model Title',
+          label: 'Test Model Title',
           group: 'test',
         });
 
@@ -1458,7 +1458,7 @@ describe('FlowModel', () => {
 
       test('should translate meta title using translate method', () => {
         TestFlowModel.define({
-          title: 'model.title.key',
+          label: 'model.title.key',
           group: 'test',
         });
 
@@ -1482,7 +1482,7 @@ describe('FlowModel', () => {
 
       test('should return instance title when set via setTitle', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 
@@ -1494,7 +1494,7 @@ describe('FlowModel', () => {
 
       test('should prioritize instance title over meta title', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 
@@ -1508,7 +1508,7 @@ describe('FlowModel', () => {
 
       test('should fall back to meta title when instance title is cleared', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 
@@ -1523,7 +1523,7 @@ describe('FlowModel', () => {
 
       test('should handle null and undefined instance titles', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 
@@ -1555,7 +1555,7 @@ describe('FlowModel', () => {
 
       test('should handle empty string title', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 
@@ -1581,7 +1581,7 @@ describe('FlowModel', () => {
           static name = 'ParentModel';
         };
         ParentModel.define({
-          title: 'Parent Title',
+          label: 'Parent Title',
           group: 'parent',
         });
 
@@ -1602,7 +1602,7 @@ describe('FlowModel', () => {
           static name = 'ParentModel';
         };
         ParentModel.define({
-          title: 'Parent Title',
+          label: 'Parent Title',
           group: 'parent',
         });
 
@@ -1610,7 +1610,7 @@ describe('FlowModel', () => {
           static name = 'ChildModel';
         };
         ChildModel.define({
-          title: 'Child Title',
+          label: 'Child Title',
           group: 'child',
         });
 
@@ -1626,7 +1626,7 @@ describe('FlowModel', () => {
           static name = 'ParentModel';
         };
         ParentModel.define({
-          title: 'Parent Title',
+          label: 'Parent Title',
           group: 'parent',
         });
 
@@ -1634,7 +1634,7 @@ describe('FlowModel', () => {
           static name = 'ChildModel';
         };
         ChildModel.define({
-          title: 'Child Title',
+          label: 'Child Title',
           group: 'child',
         });
 
@@ -1653,7 +1653,7 @@ describe('FlowModel', () => {
         });
 
         TestFlowModel.define({
-          title: 'meta.title.key',
+          label: 'meta.title.key',
           group: 'test',
         });
 
@@ -1685,7 +1685,7 @@ describe('FlowModel', () => {
       // this means after deserialization, should set title in some flow step
       test('should maintain title after serialization/deserialization cycle', () => {
         TestFlowModel.define({
-          title: 'Meta Title',
+          label: 'Meta Title',
           group: 'test',
         });
 

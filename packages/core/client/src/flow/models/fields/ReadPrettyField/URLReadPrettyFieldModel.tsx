@@ -18,7 +18,7 @@ export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
   public render() {
     const { value } = this.props;
     const content = value && (
-      <a target="_blank" rel="noopener noreferrer" href={value}>
+      <a target="_blank" rel="noopener noreferrer" href={value} style={{ overflowWrap: 'anywhere' }}>
         {value}
       </a>
     );
