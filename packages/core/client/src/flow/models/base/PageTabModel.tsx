@@ -111,6 +111,7 @@ export class MainPageTabModel extends PageTabModel {
   async destroy() {
     this.observerDispose();
     this.invalidateAutoFlowCache(true);
+    this.flowEngine.removeModel(this.uid);
     await this.context.api.request({
       method: 'post',
       url: 'desktopRoutes:destroy',
