@@ -19,6 +19,7 @@ import {
   FlowModel,
   FlowModelContext,
   MENU_KEYS,
+  ModelConstructor,
   MultiRecordResource,
   SingleRecordResource,
   SubModelItem,
@@ -259,7 +260,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   protected defaultBlockTitle() {
-    return `${this.translate(this.constructor['meta']?.title || this.constructor.name)}`;
+    return `${this.translate(this.constructor['meta']?.label || this.constructor.name)}`;
   }
 
   renderComponent(): any {
@@ -537,7 +538,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       collectionTitle += ` (${this.collection?.title})`;
     }
     return `
-    ${this.translate(this.constructor['meta']?.title || this.constructor.name)}:
+    ${this.translate(this.constructor['meta']?.label || this.constructor.name)}:
     ${collectionTitle}`;
   }
 

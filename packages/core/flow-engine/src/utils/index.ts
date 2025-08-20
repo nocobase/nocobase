@@ -36,9 +36,6 @@ export { resolveDefaultParams, resolveCreateModelOptions, resolveExpressions } f
 // Schema 工具
 export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
 
-// 菜单构建器
-export { buildFieldItems, processMetaChildren } from './menu-builders';
-
 // Runtime Context Steps 设置
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 

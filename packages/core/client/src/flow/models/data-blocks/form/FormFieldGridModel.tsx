@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddSubModelButton, FlowSettingsButton, buildFieldItems } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
@@ -32,45 +32,12 @@ export class FormFieldGridModel extends GridModel<{
   };
   renderAddSubModelButton() {
     const formModelInstance = this.context.blockModel as FormModel;
-    const fieldItems = buildFieldItems(
-      formModelInstance.collection.getFields(),
-      formModelInstance,
-      'FormFieldModel',
-      'items',
-      ({ defaultOptions, fieldPath }) => ({
-        use: 'CollectionFieldFormItemModel',
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: formModelInstance.collection.dataSourceKey,
-              collectionName: formModelInstance.collection.name,
-              fieldPath,
-            },
-          },
-        },
-        subModels: {
-          field: {
-            use: defaultOptions.use,
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: formModelInstance.collection.dataSourceKey,
-                  collectionName: formModelInstance.collection.name,
-                  fieldPath,
-                },
-              },
-            },
-          },
-        },
-      }),
-    );
 
     return (
       <>
         <AddSubModelButton
-          items={fieldItems}
           subModelKey="items"
-          subModelBaseClass={FormCustomFormItemModel}
+          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel']}
           model={this}
           afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
             this.context.blockModel.addAppends(field.fieldPath, true);

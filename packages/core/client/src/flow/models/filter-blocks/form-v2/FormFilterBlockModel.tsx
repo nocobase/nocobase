@@ -91,7 +91,12 @@ export class FormFilterBlockModel extends FilterBlockModel<{
                 />
               </Droppable>
             ))}
-            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={'FilterFormActionModel'}>
+            <AddSubModelButton
+              key="filter-form-v2-actions-add"
+              model={this}
+              subModelKey="actions"
+              subModelBaseClass={'FilterFormActionModel'}
+            >
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>
           </FormButtonGroup>

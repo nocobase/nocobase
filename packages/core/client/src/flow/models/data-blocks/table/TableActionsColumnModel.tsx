@@ -49,6 +49,7 @@ const Columns = observer<any>(({ record, model, index }) => {
 const AddActionToolbarComponent = ({ model }) => {
   return (
     <AddSubModelButton
+      key="table-row-actions-add"
       model={model}
       subModelBaseClass={RecordActionModel}
       subModelKey="actions"

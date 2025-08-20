@@ -42,6 +42,11 @@ export type ItemsType = Item[] | (() => Item[] | Promise<Item[]>);
 interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
   items: ItemsType;
   keepDropdownOpen?: boolean;
+  /**
+   * 在父节点短暂重建（卸载/重挂载）时用于恢复打开状态的持久键。
+   * 不需要手动传入，调用方（如 AddSubModelButton）会自动生成。
+   */
+  persistKey?: string;
 }
 
 interface ExtendedMenuInfo {
@@ -72,8 +77,8 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
   const [loadedChildren, setLoadedChildren] = useState<Record<string, Item[]>>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
 
-  const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>) => {
-    if (loadedChildren[keyPath] || loadingKeys.has(keyPath)) return;
+  const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>, force = false) => {
+    if (!force && (loadedChildren[keyPath] || loadingKeys.has(keyPath))) return;
 
     setLoadingKeys((prev) => new Set(prev).add(keyPath));
     try {
@@ -90,6 +95,8 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
       });
     }
   };
+
+  // （已移动）清空缓存逻辑放到自动加载 effect 中，避免顺序问题
 
   // 收集所有异步 group
   const collectAsyncGroups = (items: Item[], path: string[] = []): [string, () => Item[] | Promise<Item[]>][] => {
@@ -109,11 +116,14 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
   // 自动加载所有 group 的异步 children
   useEffect(() => {
     if (!menuVisible || !rootItems.length) return;
+    // 根 items 变化或菜单重新打开时，先清空缓存，确保 defineChildren/toggle 状态重新计算
+    setLoadedChildren({});
+    setLoadingKeys(new Set());
+
     const asyncGroups = collectAsyncGroups(rootItems);
     for (const [keyPath, loader] of asyncGroups) {
-      if (!loadedChildren[keyPath] && !loadingKeys.has(keyPath)) {
-        handleLoadChildren(keyPath, loader);
-      }
+      // 强制加载，避免清空缓存后由于闭包引用旧状态而被提前 return
+      handleLoadChildren(keyPath, loader, true);
     }
   }, [menuVisible, rootItems]);
 
@@ -205,7 +215,7 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
                   const container = menuContainer as HTMLElement;
                   container.style.maxHeight = `${dropdownMaxHeight}px`;
                   container.style.overflowY = 'auto';
-                  container.classList.add('submenu-ready');
+                  // 移除 ready/opacity 切换，避免可见的淡入闪烁
                 }
               });
             }
@@ -225,10 +235,10 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
         const container = menu as HTMLElement;
         const rect = container.getBoundingClientRect();
 
-        if (rect.width > 0 && rect.height > 0 && !container.classList.contains('submenu-ready')) {
+        if (rect.width > 0 && rect.height > 0) {
           container.style.maxHeight = `${dropdownMaxHeight}px`;
           container.style.overflowY = 'auto';
-          container.classList.add('submenu-ready');
+          // 无需额外的 class 标记
         }
       });
     }, 200);
@@ -307,6 +317,10 @@ const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
 
 // ==================== Main Component ====================
 
+// 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
+const DROPDOWN_PERSIST_TTL_MS = 350;
+const dropdownPersistRegistry: Map<string, number> = new Map();
+
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
   const engine = useFlowEngine();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -321,6 +335,30 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
+
+  // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
+  useEffect(() => {
+    if (!menu.persistKey) return;
+    const until = dropdownPersistRegistry.get(menu.persistKey) || 0;
+    if (until > Date.now()) {
+      setMenuVisible(true);
+    }
+  }, [menu.persistKey]);
+
+  // 在卸载时，若当前是打开状态，记录一个短暂的保持时间窗，供下次重挂载时恢复
+  useEffect(() => {
+    return () => {
+      if (menu.persistKey && menuVisible) {
+        const until = Date.now() + DROPDOWN_PERSIST_TTL_MS;
+        dropdownPersistRegistry.set(menu.persistKey, until);
+        // 定时清理
+        setTimeout(() => {
+          const v = dropdownPersistRegistry.get(menu.persistKey) || 0;
+          if (v <= Date.now()) dropdownPersistRegistry.delete(menu.persistKey);
+        }, DROPDOWN_PERSIST_TTL_MS + 100);
+      }
+    };
+  }, [menu.persistKey, menuVisible]);
 
   // 加载根 items，支持同步/异步函数
   useEffect(() => {
@@ -344,6 +382,21 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       loadRootItems();
     }
   }, [menu.items, menuVisible]);
+
+  // 预取根层的异步 children（非 group），减少首次展开时的加载闪烁
+  useEffect(() => {
+    if (!menuVisible || !rootItems.length) return;
+    rootItems.forEach((item) => {
+      const hasAsyncChildren = typeof item.children === 'function';
+      if (hasAsyncChildren && item.type !== 'group') {
+        try {
+          handleLoadChildren(item.key, item.children as () => Item[] | Promise<Item[]>);
+        } catch (e) {
+          // 忽略预取错误，按需加载
+        }
+      }
+    });
+  }, [menuVisible, rootItems, handleLoadChildren]);
 
   // 递归解析 items，支持 children 为同步/异步函数
   const resolveItems = (items: Item[], path: string[] = []): any[] => {
@@ -487,30 +540,11 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         max-height: ${dropdownMaxHeight}px;
         overflow-y: auto;
       }
-
-      /* 子菜单初始状态：透明且准备好样式 */
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu {
-        opacity: 0;
-        max-height: ${dropdownMaxHeight}px !important;
-        overflow-y: auto !important;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      /* 样式设置完成后显示 */
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu.submenu-ready {
-        opacity: 1;
-      }
-
-      /* 针对动态加载的深层菜单 */
+      /* 子菜单直接可见，避免透明度切换导致的闪烁 */
+      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu,
       .ant-dropdown-menu-submenu-popup .ant-dropdown-menu-submenu-popup .ant-dropdown-menu {
-        opacity: 0;
         max-height: ${dropdownMaxHeight}px !important;
         overflow-y: auto !important;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu-submenu-popup .ant-dropdown-menu.submenu-ready {
-        opacity: 1;
       }
     `;
   }, [dropdownMaxHeight]);

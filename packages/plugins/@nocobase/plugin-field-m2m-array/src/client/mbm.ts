@@ -37,6 +37,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['belongsToArray'];
+  validationType = 'object';
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};

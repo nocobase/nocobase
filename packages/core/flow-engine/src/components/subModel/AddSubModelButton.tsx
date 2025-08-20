@@ -388,6 +388,16 @@ const AddSubModelButtonCore = function AddSubModelButton({
   children = 'Add',
   keepDropdownOpen = false,
 }: AddSubModelButtonProps) {
+  const persistKey = useMemo(() => {
+    try {
+      const id = (model && (model as any).uid) || 'unknown-model';
+      return `asmb:${id}:${subModelKey}:${subModelType}`;
+    } catch (e) {
+      return `asmb:unknown:${subModelKey}:${subModelType}`;
+    }
+  }, [model, subModelKey, subModelType]);
+  // Internal tick to force reloading menu items when subModels change
+  const [, setRefreshTick] = React.useState(0);
   // 合并 items 与 baseClass 的菜单来源
   const finalItems = useMemo<SubModelItemsType>(() => {
     const sources: (SubModelItemsType | undefined | null)[] = [];
@@ -438,6 +448,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
         if (afterSubModelRemove && removedModel) {
           await afterSubModelRemove(removedModel);
         }
+        // Force refresh items so toggle state recalculates while dropdown stays open
+        setRefreshTick((x) => x + 1);
       } catch (error) {
         console.error('Failed to remove sub model:', error);
       }
@@ -480,21 +492,46 @@ const AddSubModelButtonCore = function AddSubModelButton({
           }
 
           await addedModel.save();
+          // Force refresh items so toggle state recalculates while dropdown stays open
+          setRefreshTick((x) => x + 1);
         } catch (error) {
           await handleModelCreationError(error, addedModel);
         }
       };
 
-      // 在创建 Model 之前，需要先填写预设的配置表单
-      const opened = await addedModel.openFlowSettings({
-        preset: true,
-        onSaved: async () => {
-          await toAdd();
-        },
-      });
+      // 判断目标模型是否包含任何标记为 preset 的步骤
+      const hasPresetSteps = (() => {
+        try {
+          const ModelClass = (model.flowEngine as any).getModelClass(createOpts.use);
+          if (!ModelClass || typeof ModelClass.getFlows !== 'function') return false;
+          const flows: Map<string, any> = ModelClass.getFlows();
+          for (const [, flow] of flows) {
+            const steps = flow?.steps || {};
+            for (const sk of Object.keys(steps)) {
+              if (steps[sk]?.preset) return true;
+            }
+          }
+        } catch (e) {
+          // 安静失败，按无 preset 处理
+        }
+        return false;
+      })();
 
-      // 如果没有匹配到预配置表单，则直接添加模型
-      if (!opened) {
+      if (hasPresetSteps) {
+        // 在创建 Model 之前，需要先填写预设的配置表单
+        const opened = await addedModel.openFlowSettings({
+          preset: true,
+          onSaved: async () => {
+            await toAdd();
+          },
+        });
+
+        // 如果没有匹配到预配置表单，则直接添加模型
+        if (!opened) {
+          await toAdd();
+        }
+      } else {
+        // 无需预设步骤，直接添加
         await toAdd();
       }
     } catch (error) {
@@ -508,6 +545,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
         items: transformItems(finalItems, model, subModelKey, subModelType),
         onClick,
         keepDropdownOpen,
+        persistKey,
       }}
     >
       {children}

@@ -7,12 +7,66 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
 
-export class CollectionFieldFormItemModel extends FormItemModel {}
+export class CollectionFieldFormItemModel extends FormItemModel {
+  // Provide children for collection fields -> form items
+  static defineChildren(ctx: FlowModelContext) {
+    const collection: Collection = ctx.collection;
+    const fields = collection.getFields();
+    const children = fields
+      .filter((f) => !!f?.interface)
+      .map((f) => {
+        const fieldPath = f.name;
+        const formUse = f.getFirstSubclassNameOf('FormFieldModel');
+        return {
+          key: fieldPath,
+          label: f.title,
+          toggleable: (subModel) => subModel.getStepParams?.('fieldSettings', 'init').fieldPath === fieldPath,
+          useModel: 'CollectionFieldFormItemModel',
+          createModelOptions: () => ({
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: collection.name,
+                  fieldPath,
+                },
+              },
+            },
+            subModels: {
+              field: {
+                use: formUse,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: collection.dataSourceKey,
+                      collectionName: collection.name,
+                      fieldPath,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        };
+      });
+
+    return [
+      {
+        key: 'addField',
+        label: '', // 这个空group是为了添加搜索
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: ctx.t('Search fields'),
+        children,
+      },
+    ];
+  }
+}
 
 CollectionFieldFormItemModel.define({
   icon: 'CollectionFieldFormItemModel',

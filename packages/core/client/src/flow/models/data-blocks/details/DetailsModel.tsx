@@ -133,6 +133,7 @@ export class DetailsModel extends CollectionBlockModel<{
               })}
 
               <AddSubModelButton
+                key="details-actions-add"
                 model={this}
                 subModelKey="actions"
                 subModelBaseClass={RecordActionModel}

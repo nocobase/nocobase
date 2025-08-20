@@ -9,7 +9,6 @@
 import { DragEndEvent } from '@dnd-kit/core';
 import React from 'react';
 import {
-  buildFieldItems,
   SingleRecordResource,
   escapeT,
   AddSubModelButton,
@@ -23,55 +22,12 @@ import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
 
-const transformItem = (use: string) => {
-  const selectGroup = ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'];
-  if (selectGroup.includes(use)) {
-    return 'SelectEditableFieldModel';
-  }
-  return use;
-};
-
 const AddFieldColumn = ({ model }) => {
-  const items = buildFieldItems(
-    model.collection.getFields(),
-    model,
-    'FormFieldModel',
-    'columns',
-    ({ defaultOptions, fieldPath }) => {
-      return {
-        use: 'SubTableColumnModel',
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: model.collection.dataSourceKey,
-              collectionName: model.collection.name,
-              fieldPath,
-            },
-          },
-        },
-        subModels: {
-          field: {
-            use: transformItem(defaultOptions.use),
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: model.collection.dataSourceKey,
-                  collectionName: model.collection.name,
-                  fieldPath,
-                },
-              },
-            },
-          },
-        },
-      };
-    },
-  );
   return (
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClass="TableCustomColumnModel"
-      items={items}
+      subModelBaseClasses={['TableCustomColumnModel', 'SubTableColumnModel']}
       afterSubModelInit={async (column: SubTableColumnModel) => {
         await column.applyAutoFlows();
       }}
