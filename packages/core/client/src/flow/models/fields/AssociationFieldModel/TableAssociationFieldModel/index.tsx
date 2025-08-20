@@ -27,7 +27,7 @@ const AddFieldColumn = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClasses={['TableCustomColumnModel', 'SubTableColumnModel']}
+      subModelBaseClasses={['SubTableColumnModel']}
       afterSubModelInit={async (column: SubTableColumnModel) => {
         await column.applyAutoFlows();
       }}

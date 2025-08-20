@@ -8,6 +8,7 @@
  */
 
 import { FlowModelContext } from '../../flowContext';
+import type { Collection } from '../../data-source';
 import { FlowEngine } from '../../flowEngine';
 import { ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
@@ -133,4 +134,68 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
     }
     return items;
   };
+}
+
+// ==================== Field-driven children builders ====================
+export interface BuildFieldChildrenOptions {
+  useModel: string;
+  fieldUseModel?: string | ((field: any) => string);
+}
+
+export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
+  const { useModel, fieldUseModel } = options;
+  const collection: Collection = ctx.model['collection'] || ctx.collection;
+  const fields = collection.getFields();
+  const defaultItemKeys = ['fieldSettings', 'init'];
+  const children: SubModelItem[] = [];
+
+  for (const f of fields) {
+    if (!f?.options?.interface) continue;
+    const fieldPath = f.name;
+
+    const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FormFieldModel';
+    const stepPayload = {
+      dataSourceKey: collection.dataSourceKey,
+      collectionName: collection.name,
+      fieldPath,
+    };
+
+    children.push({
+      key: fieldPath,
+      label: f.title,
+      toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
+      useModel: useModel,
+      createModelOptions: () => ({
+        use: useModel,
+        stepParams: {
+          fieldSettings: {
+            init: stepPayload,
+          },
+        },
+        subModels: {
+          field: {
+            use: childUse,
+            stepParams: {
+              fieldSettings: {
+                init: stepPayload,
+              },
+            },
+          },
+        },
+      }),
+    });
+  }
+
+  const groupKey = 'addField';
+  const finalSearchPlaceholder = ctx.t('Search fields');
+  return [
+    {
+      key: groupKey,
+      label: '', // 这个是为了搜索框的占位group, 如果写入内容，会导致出现两层group labels, 本问题的本质是 subModelBaseClass 构建的goup没地方指定是否允许搜索
+      type: 'group' as const,
+      searchable: true,
+      searchPlaceholder: finalSearchPlaceholder,
+      children,
+    },
+  ];
 }

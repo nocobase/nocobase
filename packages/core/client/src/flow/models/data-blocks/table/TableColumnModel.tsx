@@ -18,6 +18,7 @@ import {
   useFlowSettingsContext,
   FlowModelContext,
   Collection,
+  buildWrapperFieldChildren,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -28,55 +29,10 @@ import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 
 export class TableColumnModel extends FieldModel {
   static defineChildren(ctx: FlowModelContext) {
-    const collection: Collection = ctx.collection;
-    const fields = collection.getFields();
-    const children = fields
-      .filter((f) => !!f?.interface)
-      .map((f) => {
-        const fieldPath = f.name;
-        const readPrettyUse = f.getFirstSubclassNameOf('ReadPrettyFieldModel');
-        return {
-          key: fieldPath,
-          label: f.title,
-          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
-          useModel: 'TableColumnModel',
-          createModelOptions: () => ({
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: collection.dataSourceKey,
-                  collectionName: collection.name,
-                  fieldPath,
-                },
-              },
-            },
-            subModels: {
-              field: {
-                use: readPrettyUse,
-                stepParams: {
-                  fieldSettings: {
-                    init: {
-                      dataSourceKey: collection.dataSourceKey,
-                      collectionName: collection.name,
-                      fieldPath,
-                    },
-                  },
-                },
-              },
-            },
-          }),
-        };
-      });
-
-    return [
-      {
-        key: 'addField',
-        type: 'group' as const, // 这个额外的group是为了添加搜索
-        searchable: true,
-        searchPlaceholder: 'Search fields',
-        children,
-      },
-    ];
+    return buildWrapperFieldChildren(ctx, {
+      useModel: 'TableColumnModel',
+      fieldUseModel: (f) => f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+    });
   }
   getColumnProps(): TableColumnProps {
     const titleContent = (
@@ -333,4 +289,5 @@ TableCustomColumnModel.registerFlow({
 
 TableCustomColumnModel.define({
   hide: true,
+  label: escapeT('Other columns'),
 });
