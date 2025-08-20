@@ -209,12 +209,6 @@ export class SubPageModel extends PageModel {
   createPageTabModelOptions = (): CreateModelOptions => {
     return {
       use: 'SubPageTabModel',
-      subModels: {
-        grid: {
-          async: true,
-          use: 'BlockGridModel',
-        },
-      },
     };
   };
 }

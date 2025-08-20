@@ -84,12 +84,6 @@ export const FlowPage = (props) => {
           tabs: [
             {
               use: 'SubPageTabModel',
-              subModels: {
-                grid: {
-                  async: true,
-                  use: 'BlockGridModel',
-                },
-              },
             },
           ],
         };
