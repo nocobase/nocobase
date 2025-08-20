@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
-import { AddSubModelButton, CreateModelOptions, FlowModel, FlowModelRenderer, escapeT } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  CreateModelOptions,
+  FlowModel,
+  FlowModelRenderer,
+  FlowSettingsButton,
+  escapeT,
+} from '@nocobase/flow-engine';
 import { Button, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -74,7 +82,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
               },
             ]}
           >
-            <Button>{this.context.t('Add tab')}</Button>
+            <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
           </AddSubModelButton>
         }
       />
