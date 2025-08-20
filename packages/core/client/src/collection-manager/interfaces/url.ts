@@ -36,6 +36,8 @@ export class UrlFieldInterface extends CollectionFieldInterface {
   ];
   availableTypes = ['string', 'text'];
   schemaInitialize(schema: ISchema, { block }) {}
+  validationType = 'string';
+  availableValidationOptions = ['uri', 'pattern'];
   properties = {
     ...defaultProps,
   };

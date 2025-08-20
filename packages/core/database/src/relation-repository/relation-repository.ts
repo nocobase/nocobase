@@ -192,6 +192,7 @@ export abstract class RelationRepository {
 
     const sourceModel = await this.getSourceModel(transaction);
 
+    this.collection.validate({ values, context: options.context, operation: 'create' });
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
 
     await updateAssociations(instance, values, { ...options, transaction });

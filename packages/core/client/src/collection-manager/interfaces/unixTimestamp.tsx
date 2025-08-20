@@ -32,6 +32,8 @@ export class UnixTimestampFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['unixTimestamp'];
   hasDefaultValue = false;
+  validationType = 'date';
+  availableValidationOptions = ['timestamp'];
   properties = {
     ...defaultProps,
     ...dateTimeProps,
