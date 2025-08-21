@@ -41,7 +41,7 @@ export class TableColumnModel extends FieldModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 7px', margin: '-11px -7px' }}
           showBorder={false}
-          settingsMenuLevel={2}
+          settingsMenuLevel={3}
           extraToolbarItems={[
             {
               key: 'drag-handler',
