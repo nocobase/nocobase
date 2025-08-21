@@ -15,7 +15,6 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
-import loglevel from 'loglevel';
 import pino from 'pino';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';

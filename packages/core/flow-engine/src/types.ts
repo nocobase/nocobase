@@ -8,10 +8,13 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { SubModelItemsType } from './components';
+import { SubModelItem, SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+
+// 定义从 SubModelItem 使用的 CreateModelOptions 类型
+type CreateModelOptionsStringUse = CreateModelOptions & { use: string };
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -206,6 +209,7 @@ export type StepUIMode =
  */
 export interface StepDefinition<TModel extends FlowModel = FlowModel>
   extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  key?: string; // Unique identifier for the step within the flow
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
   use?: string; // Name of the registered ActionDefinition to use as base
@@ -374,95 +378,24 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   sortIndex?: number;
 }
 
-export interface FlowModelMeta {
-  title?: string;
-  key?: string;
-  label?: string;
-  group?: string;
-  requiresDataSource?: boolean; // 是否需要数据源
-  eventList?: { label: string; value: string }[]; // 支持的事件列表
-  /**
-   * 默认选项配置，支持静态对象或动态函数形式
-   *
-   * 当为静态对象时，将直接使用该配置作为默认值
-   * 当为函数时，将在创建菜单项时调用，可根据父模型上下文动态生成配置
-   *
-   * @example
-   * // 静态配置
-   * defaultOptions: { someProperty: 'value' }
-   *
-   * // 动态配置
-   * defaultOptions: (ctx) => {
-   *   return {
-   *     someProperty: ctx.model.someData ? 'valueA' : 'valueB'
-   *   };
-   * }
-   */
-  createModelOptions?:
-    | Record<string, any>
-    | ((ctx: FlowModelContext, item?: any) => Record<string, any> | Promise<Record<string, any>>);
-  defaultOptions?:
-    | Record<string, any>
-    | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
-  icon?: string;
-  // uniqueSub?: boolean;
-  /**
-   * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
-   * 排序最靠前的将作为默认选择
-   * @default 0
-   */
-  sort?: number;
-  /**
-   * 是否在菜单中隐藏该模型类
-   * @default false
-   */
-  hide?: boolean;
-  /**
-   * 子菜单项定义，支持创建多层嵌套的层级菜单结构
-   *
-   * 当定义了 children 时，该模型本身不会直接出现在菜单中，
-   * 而是显示为一个包含子菜单项的分组。每个子项都可以再有自己的 children，
-   * 形成无限层级的嵌套结构。
-   *
-   * 对于数据区块类型，系统会自动为每个叶子节点生成数据源和数据表的选择菜单。
-   * 对于普通区块和动作，叶子节点将直接作为可选择的菜单项。
-   *
-   * 支持静态数组和函数形式：
-   * - 静态数组：直接定义固定的子项列表
-   * - 函数形式：可根据父模型动态生成子项，支持同步和异步函数
-   *
-   * @example
-   * // 静态配置
-   * children: [
-   *   {
-   *     title: 'Basic Blocks',
-   *     children: [
-   *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
-   *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
-   *     ]
-   *   }
-   * ]
-   *
-   * // 动态配置
-   * children: (ctx) => {
-   *   const hasPermission = ctx.model.checkPermission('advanced');
-   *   return [
-   *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
-   *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
-   *   ];
-   * }
-   */
-  children?: false | SubModelItemsType;
-  /**
-   * 切换检测器函数，用于判断该模型是否已存在
-   * 主要用于支持切换式的 UI 交互
-   */
-  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
-  /**
-   * 自定义移除函数，用于处理该项的删除逻辑
-   */
-  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
-}
+export type FlowModelMeta =
+  // 从 SubModelItem 选取的属性，保持原始类型
+  Pick<SubModelItem, 'key' | 'label' | 'icon' | 'createModelOptions' | 'toggleable'> & {
+    // FlowModelMeta 独有的属性
+    group?: string;
+    /**
+     * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
+     * 排序最靠前的将作为默认选择
+     * @default 0
+     */
+    sort?: number;
+    /**
+     * 是否在菜单中隐藏该模型类
+     * @default false
+     */
+    hide?: boolean;
+    eventList?: { label: string; value: string }[]; // 支持的事件列表
+  };
 
 /**
  * 字段 FlowModel 的专用元数据接口

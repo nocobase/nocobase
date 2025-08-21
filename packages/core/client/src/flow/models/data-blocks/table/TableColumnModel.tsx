@@ -16,13 +16,24 @@ import {
   FlowModel,
   FlowsFloatContextMenu,
   useFlowSettingsContext,
+  FlowModelContext,
+  Collection,
+  buildWrapperFieldChildren,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
+import { FormItem } from '../form/FormItem/FormItem';
+import { FieldModelRenderer } from '../../fields';
 
 export class TableColumnModel extends FieldModel {
+  static defineChildren(ctx: FlowModelContext) {
+    return buildWrapperFieldChildren(ctx, {
+      useModel: 'TableColumnModel',
+      fieldUseModel: (f) => f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+    });
+  }
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -87,14 +98,14 @@ export class TableColumnModel extends FieldModel {
           fork.context.defineProperty('record', {
             get: () => record,
           });
-          // fork.context.defineProperty('fieldValue', {
-          //   get: () => value,
-          // });
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
-          fork.setProps({ value: value });
-          return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
+          return (
+            <FormItem {...this.props} value={value} noStyle={true}>
+              <FieldModelRenderer model={fork} />
+            </FormItem>
+          );
         })}
       </>
     );
@@ -102,9 +113,9 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: escapeT('Table column'),
+  label: escapeT('Table column'),
   icon: 'TableColumn',
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableColumnModel',
   },
   sort: 0,
@@ -117,13 +128,16 @@ TableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const field = ctx.model.collectionField;
-        if (!field) {
+        const collectionField = ctx.model.collectionField;
+        if (!collectionField) {
           return;
         }
-        ctx.model.setProps('title', field.title);
-        ctx.model.setProps('dataIndex', field.name);
+        ctx.model.setProps('title', collectionField.title);
+        ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
+        ctx.model.setProps({
+          ...collectionField.getComponentProps(),
+        });
       },
     },
     title: {
@@ -146,9 +160,12 @@ TableColumnModel.registerFlow({
           },
         },
       },
-      defaultParams: (ctx) => ({
-        title: ctx.model.collectionField?.title,
-      }),
+      defaultParams: (ctx) => {
+        console.log(ctx.model.collectionField?.title || ctx.model.title);
+        return {
+          title: ctx.model.collectionField?.title || ctx.model.title,
+        };
+      },
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
@@ -204,6 +221,10 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('editable', params.editable);
       },
     },
+    model: {
+      title: escapeT('Field component'),
+      use: 'fieldComponent',
+    },
   },
 });
 
@@ -227,6 +248,7 @@ TableCustomColumnModel.registerFlow({
       defaultParams: (ctx) => {
         return {
           title:
+            ctx.model.title ||
             ctx.model.constructor['meta']?.title ||
             ctx.model.flowEngine.findModelClass((_, ModelClass) => {
               return ModelClass === ctx.model.constructor;
@@ -270,4 +292,5 @@ TableCustomColumnModel.registerFlow({
 
 TableCustomColumnModel.define({
   hide: true,
+  label: escapeT('Other columns'),
 });

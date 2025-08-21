@@ -32,8 +32,12 @@ describe('InstanceFlowRegistry (extended)', () => {
 
     expect(flow.hasStep('step1')).toBe(true);
 
-    flow.setStep('step1', { title: 'Step 1 (updated)' } as any);
-    expect(flow.getStep('step1')).toEqual({ title: 'Step 1 (updated)' });
+    flow.setStep('step1', { title: 'Step 1 (updated)' });
+    expect(flow.getStep('step1').serialize()).toEqual({
+      flowKey: 'flow1',
+      key: 'step1',
+      title: 'Step 1 (updated)',
+    });
   });
 
   test('removeStep', () => {
@@ -62,7 +66,13 @@ describe('InstanceFlowRegistry (extended)', () => {
 
     expect(model.flowRegistry.hasFlow('flowA')).toBe(true);
     expect(model.flowRegistry.hasFlow('flowB')).toBe(true);
-    expect(model.flowRegistry.getFlow('flowB')!.steps.s1).toEqual({ title: 'S1' });
+
+    const step = model.flowRegistry.getFlow('flowB')!.getStep('s1')!;
+    expect(step.serialize()).toEqual({
+      title: 'S1',
+      key: 's1',
+      flowKey: 'flowB',
+    });
   });
 
   test('saveFlow/saveStep/destroyStep/destroyFlow call model.save()', async () => {
@@ -80,15 +90,12 @@ describe('InstanceFlowRegistry (extended)', () => {
     await flow.save();
     expect(saveSpy).toHaveBeenCalledTimes(1);
 
-    await flow.saveStep('step1');
-    expect(saveSpy).toHaveBeenCalledTimes(2);
-
     await flow.destroyStep('step2');
-    expect(saveSpy).toHaveBeenCalledTimes(3);
+    expect(saveSpy).toHaveBeenCalledTimes(2);
     expect(flow.hasStep('step2')).toBe(false);
 
     await flow.destroy();
-    expect(saveSpy).toHaveBeenCalledTimes(4);
+    expect(saveSpy).toHaveBeenCalledTimes(3);
     expect(model.flowRegistry.hasFlow('flow1')).toBe(false);
   });
 
@@ -141,11 +148,16 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(data.title).toBe('Flow 1');
     expect(data.sort).toBe(1);
     expect(data.manual).toBe(true);
-    expect(data.steps!.step1).toEqual({ title: 'Step 1', sort: 10 });
+    expect(data.steps.step1).toEqual({
+      title: 'Step 1',
+      sort: 10,
+      key: 'step1',
+      flowKey: 'flow1',
+    });
 
     // 修改原步骤对象，不应影响已生成的快照
     (flow.getStep('step1') as any).title = 'Changed';
-    expect(data.steps!.step1.title).toBe('Step 1');
+    expect(data.steps.step1.title).toBe('Step 1');
   });
 
   test('model serialize', () => {
@@ -165,7 +177,12 @@ describe('InstanceFlowRegistry (extended)', () => {
       sort: 1,
       manual: true,
       steps: {
-        step1: { title: 'Step 1', sort: 10 },
+        step1: {
+          title: 'Step 1',
+          sort: 10,
+          key: 'step1',
+          flowKey: 'flow1',
+        },
       },
     });
   });
@@ -196,7 +213,12 @@ describe('InstanceFlowRegistry (extended)', () => {
       sort: 1,
       manual: true,
       steps: {
-        step1: { title: 'Step 1', sort: 10 },
+        step1: {
+          title: 'Step 1',
+          sort: 10,
+          key: 'step1',
+          flowKey: 'flow1',
+        },
       },
     });
   });

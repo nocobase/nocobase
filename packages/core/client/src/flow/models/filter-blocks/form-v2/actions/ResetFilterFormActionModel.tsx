@@ -39,5 +39,5 @@ ResetFilterFormActionModel.registerFlow({
 });
 
 ResetFilterFormActionModel.define({
-  title: 'Reset',
+  label: 'Reset',
 });

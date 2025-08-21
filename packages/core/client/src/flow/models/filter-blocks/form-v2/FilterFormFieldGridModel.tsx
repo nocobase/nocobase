@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddFieldButton, FlowModel, FlowModelOptions, observable } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowModel, FlowModelOptions, FlowSettingsButton, observable } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { CreateFormModel } from '../..';
 import { FilterBlockModel } from '../../base/BlockModel';
@@ -148,12 +149,15 @@ export class FilterFormFieldGridModel extends GridModel {
 
     // 向筛选表单区块添加字段 model
     return (
-      <AddFieldButton
+      <AddSubModelButton
         items={this.menuItems}
         subModelKey="items"
         model={this}
-        onModelCreated={this.onModelCreated.bind(this)}
-      />
+        afterSubModelInit={this.onModelCreated.bind(this)}
+        keepDropdownOpen
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+      </AddSubModelButton>
     );
   }
 }

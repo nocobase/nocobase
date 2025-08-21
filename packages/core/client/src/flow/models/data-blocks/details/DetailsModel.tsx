@@ -7,18 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormLayout } from '@formily/antd-v5';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
+  FlowModelContext,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
-  buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
@@ -27,11 +28,15 @@ import { RecordActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+import { FormComponent } from '../form/FormModel';
 
 export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
+  static override getChildrenFilters(_ctx: FlowModelContext) {
+    return { currentRecord: true };
+  }
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
@@ -104,7 +109,6 @@ export class DetailsModel extends CollectionBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-
     return (
       <>
         <DndProvider>
@@ -128,19 +132,23 @@ export class DetailsModel extends CollectionBlockModel<{
                 );
               })}
 
-              <AddActionButton
+              <AddSubModelButton
+                key="details-actions-add"
                 model={this}
-                items={buildActionItems(this, 'RecordActionModel')}
-                onModelCreated={async (actionModel) => {
+                subModelKey="actions"
+                subModelBaseClass={RecordActionModel}
+                afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
-        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
+        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+        </FormComponent>
         {this.renderPagination()}
       </>
     );
@@ -152,6 +160,15 @@ DetailsModel.registerFlow({
   title: escapeT('Details settings'),
   sort: 150,
   steps: {
+    refresh: {
+      async handler(ctx) {
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        // 1. 先初始化字段网格，确保所有字段都创建完成
+        await ctx.model.applySubModelsAutoFlows('grid');
+      },
+    },
     layout: {
       use: 'layout',
       title: tval('Layout'),
@@ -160,8 +177,8 @@ DetailsModel.registerFlow({
 });
 
 DetailsModel.define({
-  title: escapeT('Details'),
-  defaultOptions: {
+  label: escapeT('Details'),
+  createModelOptions: {
     use: 'DetailsModel',
     subModels: {
       grid: {

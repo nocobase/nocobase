@@ -1,5 +1,11 @@
 import { SettingOutlined } from '@ant-design/icons';
-import { AddActionButton, Collection, FlowModel, FlowModelRenderer, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  Collection,
+  FlowModel,
+  FlowModelRenderer,
+  MultiRecordResource,
+} from '@nocobase/flow-engine';
 import { Button, Dropdown, Space, Table } from 'antd';
 import React from 'react';
 import { ActionModel } from './action-model';
@@ -62,7 +68,7 @@ export class TableModel extends FlowModel<S> {
               inputArgs={{ currentModel: this, resource: this.resource }}
             />
           ))}
-          <AddActionButton
+          <AddSubModelButton
             model={this}
             subModelKey={'actions'}
             items={() => [
@@ -78,7 +84,7 @@ export class TableModel extends FlowModel<S> {
             <Button type="primary" icon={<SettingOutlined />}>
               Configure actions
             </Button>
-          </AddActionButton>
+          </AddSubModelButton>
         </Space>
         <Table
           rowKey="id"

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// import { onFormValuesChange } from '@formily/core';
-// import { useField, useFormEffects } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
 import { Form } from 'antd';
 import { Checkbox, DatePicker, FormFieldModel, InputNumber, Input as InputString } from '@nocobase/client';
@@ -72,13 +71,14 @@ function areValuesEqual(value1, value2) {
   return _.isEqual(value1, value2);
 }
 
-function Result(props) {
+export function FormulaResult(props) {
   const { value, collectionField, form, id, ...others } = props;
-  const { dataType, expression, engine = 'math.js' } = collectionField.options;
+  const { dataType, expression, engine = 'math.js' } = collectionField?.options || {};
   const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const watchedValues = Form.useWatch([], form);
   const fieldPath = Array.isArray(id) ? id?.join('.') : id;
+  const { t } = useTranslation();
 
   useEffect(() => {
     setEditingValue(value);
@@ -110,19 +110,20 @@ function Result(props) {
     }
   }, [editingValue]);
   const Component = TypedComponents[dataType] ?? InputString;
+  if (!collectionField) {
+    return;
+  }
   return (
     <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />
   );
 }
-
-export default Result;
 
 export class FormulaFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['formula'];
 
   get component() {
     return [
-      Result,
+      FormulaResult,
       {
         collectionField: this.collectionField,
         form: this.form,

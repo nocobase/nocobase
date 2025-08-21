@@ -31,12 +31,12 @@ const getSchema = (
   defaultValues: any,
   record: any,
   compile,
-  getContainer,
+  collectionInfo,
 ): ISchema => {
   if (!schema) {
     return;
   }
-  const properties = schema.getConfigureFormProperties();
+  const properties = schema.getConfigureFormProperties(collectionInfo);
   if (properties?.name) {
     properties.name['x-disabled'] = true;
   }
@@ -196,7 +196,7 @@ export const EditFieldAction = (props) => {
             } else {
               defaultValues.autoCreateReverseField = true;
             }
-            const schema = getSchema(interfaceConf, defaultValues, record, compile, getContainer);
+            const schema = getSchema(interfaceConf, defaultValues, record, compile, parentRecord);
             setSchema(schema);
             setVisible(true);
           }}

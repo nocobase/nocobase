@@ -18,3 +18,4 @@ export * from './dataLoadingMode';
 export * from './displayMode';
 export * from './layout';
 export * from './required';
+export * from './fieldComponent';

@@ -40,7 +40,6 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
   getProps() {
     return {
       style: { width: '100%' },
-      ...this.collectionField.getComponentProps(),
       ...this.props,
     };
   }
@@ -50,20 +49,3 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     return <Component {...props} {...this.getProps()} />;
   }
 }
-
-EditableFieldModel.registerFlow({
-  key: 'editableFieldSetting',
-  sort: 400,
-  steps: {
-    initProps: {
-      handler(ctx) {
-        const collectionField = ctx.model.collectionField;
-        if (collectionField.enum.length) {
-          ctx.model.setProps({
-            options: collectionField.enum,
-          });
-        }
-      },
-    },
-  },
-});

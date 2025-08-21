@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { escapeT, largeField } from '@nocobase/flow-engine';
-import { connect, mapReadPretty } from '@formily/react';
 import { css, FormFieldModel } from '@nocobase/client';
 import React from 'react';
 import { MapComponent } from './MapComponent';
-import { PointReadPretty } from './MapReadPrettyFieldModel';
 
 const className = css`
   height: 100%;
@@ -21,13 +19,14 @@ const className = css`
   }
 `;
 
-const InternalMap = connect((props) => {
+const InternalMap = (props) => {
   return (
     <div className={className}>
       <MapComponent {...props} />
     </div>
   );
-}, mapReadPretty(PointReadPretty));
+};
+
 @largeField()
 export class MapEditableFieldModel extends FormFieldModel {
   getMapFieldType() {

@@ -111,5 +111,5 @@ CollapseFilterFormActionModel.registerFlow({
 });
 
 CollapseFilterFormActionModel.define({
-  title: tval('Collapse/Expand'),
+  label: tval('Collapse/Expand'),
 });

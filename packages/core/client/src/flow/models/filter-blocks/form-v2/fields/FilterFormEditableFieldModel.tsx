@@ -13,6 +13,8 @@ import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldM
 import { FilterManager } from '../../filter-manager/FilterManager';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
+  declare decorator: any;
+
   enableOperator = true;
   enableRequired = false;
   enableDisplayMode = false;

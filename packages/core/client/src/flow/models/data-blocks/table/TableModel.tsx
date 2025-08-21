@@ -12,27 +12,26 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
-  AddFieldButton,
-  buildActionItems,
-  buildFieldItems,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, CollectionActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
-import { TableColumnModel } from './TableColumnModel';
+import { TableColumnModel, TableCustomColumnModel } from './TableColumnModel';
 import { extractIndex } from './utils';
 
 type TableModelStructure = {
@@ -109,55 +108,33 @@ const HeaderWrapperComponent = React.memo((props) => {
 });
 
 const AddFieldColumn = ({ model }) => {
-  const items = buildFieldItems(
-    model.collection.getFields(),
-    model,
-    'ReadPrettyFieldModel',
-    'columns',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'TableColumnModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: model.collection.dataSourceKey,
-            collectionName: model.collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: model.collection.dataSourceKey,
-                collectionName: model.collection.name,
-                fieldPath,
-              },
-            },
-          },
-        },
-      },
-    }),
-  );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClass="TableCustomColumnModel"
-      items={items}
-      onModelCreated={async (column: TableColumnModel) => {
+      key={'table-add-columns'}
+      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
+      afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: TableColumnModel) => {
-        model.addAppends(column.fieldPath, true);
+      afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
+        // Only append fields for actual table field columns
+        if (column instanceof TableColumnModel) {
+          model.addAppends(column.fieldPath, true);
+        }
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
+  protected static override filterAssociatedFields(fields: any[]): any[] {
+    const toMany = ['o2m', 'm2m'];
+    return fields.filter((f) => toMany.includes(f.interface));
+  }
   get resource() {
     return super.resource as MultiRecordResource;
   }
@@ -376,11 +353,14 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton
+              <AddSubModelButton
+                key={'table-column-add-actions'}
                 model={this}
-                items={buildActionItems(this, 'CollectionActionModel')}
+                subModelBaseClass={CollectionActionModel}
                 subModelKey="actions"
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
@@ -547,9 +527,9 @@ TableModel.registerFlow({
 });
 
 TableModel.define({
-  title: escapeT('Table'),
+  label: escapeT('Table'),
   group: escapeT('Content'),
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableModel',
     subModels: {
       columns: [

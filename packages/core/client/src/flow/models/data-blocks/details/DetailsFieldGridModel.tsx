@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddFieldButton, buildFieldItems, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
+import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
@@ -17,53 +18,22 @@ import { DetailsModel } from './DetailsModel';
 const AddDetailField = ({ model }) => {
   const blockModel = model.context.blockModel as DetailsModel;
   const collection = blockModel.collection;
-
-  const items = buildFieldItems(
-    collection.getFields(),
-    blockModel,
-    'ReadPrettyFieldModel',
-    'items',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'DetailItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: collection.dataSourceKey,
-            collectionName: collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
-              },
-            },
-          },
-        },
-      },
-    }),
-  );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'items'}
-      subModelBaseClass="DetailFormItemModel"
-      items={items}
-      onModelCreated={async (item: DetailItemModel) => {
+      subModelBaseClasses={['DetailItemModel', 'DetailFormItemModel']}
+      afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         await field.applyAutoFlows();
       }}
-      onSubModelAdded={async (item: DetailItemModel) => {
+      afterSubModelAdd={async (item: DetailItemModel) => {
         model.context.blockModel.addAppends(item.fieldPath, true);
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 

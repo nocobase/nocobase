@@ -478,12 +478,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const items = [...menuItems];
 
     if (showCopyUidButton || showDeleteButton) {
-      // 如果有flows配置项，添加分割线
-      if (configurableFlowsAndSteps.length > 0) {
-        items.push({
-          type: 'divider' as const,
-        });
-      }
+      // 使用分组呈现常用操作（不再使用分割线）
+      items.push({
+        key: 'common-actions',
+        label: t('Common actions'),
+        type: 'group' as const,
+      });
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
@@ -505,7 +505,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, configurableFlowsAndSteps.length, model.uid, model.destroy]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy]);
 
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
   if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {

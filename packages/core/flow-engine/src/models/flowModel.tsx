@@ -209,7 +209,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   get title() {
     // model 可以通过 setTitle 来自定义title， 具有更高的优先级
-    return this.translate(this._title) || this.translate(this.constructor['meta']?.title);
+    return this.translate(this._title) || this.translate(this.constructor['meta']?.label);
   }
 
   setTitle(value: string) {

@@ -125,6 +125,13 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
     return buf;
   });
 
+  const filterProperties = useCallback(
+    (s) => {
+      return s['x-component'] !== footerNodeName;
+    },
+    [footerNodeName],
+  );
+
   const title = field.title || '';
 
   const closePopup = useCallback(() => {
@@ -133,20 +140,14 @@ export const ActionDrawerUsedInMobile: any = observer((props: { footerNodeName?:
 
   const popupContent = isSpecialSchema ? (
     <div style={{ padding: 12, ...specialStyle }}>
-      <SchemaComponent
-        schema={fieldSchema}
-        filterProperties={(s) => {
-          return s['x-component'] !== footerNodeName;
-        }}
-      />
+      <SchemaComponent basePath={field.address} schema={fieldSchema} filterProperties={filterProperties} />
     </div>
   ) : (
     <SchemaComponent
+      basePath={field.address}
       schema={fieldSchema}
       onlyRenderProperties
-      filterProperties={(s) => {
-        return s['x-component'] !== footerNodeName;
-      }}
+      filterProperties={filterProperties}
     />
   );
 
