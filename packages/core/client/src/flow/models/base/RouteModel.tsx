@@ -20,7 +20,7 @@ RouteModel.registerFlow({
       defaultParams(ctx) {
         return {
           mode: 'page',
-          pageModelClass: 'MainPageModel',
+          pageModelClass: 'RootPageModel',
         };
       },
     },

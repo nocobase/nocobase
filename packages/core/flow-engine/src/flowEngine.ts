@@ -477,9 +477,9 @@ export class FlowEngine {
    * @param {T} model Model instance to save
    * @returns {Promise<any>} Repository save result
    */
-  async saveModel<T extends FlowModel = FlowModel>(model: T) {
+  async saveModel<T extends FlowModel = FlowModel>(model: T, options?: { onlyStepParams?: boolean }): Promise<any> {
     if (!this.ensureModelRepository()) return;
-    return await this.#modelRepository.save(model);
+    return await this.#modelRepository.save(model, options);
   }
 
   /**

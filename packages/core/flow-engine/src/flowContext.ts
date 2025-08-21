@@ -756,6 +756,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
+  declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
   declare view: FlowView;

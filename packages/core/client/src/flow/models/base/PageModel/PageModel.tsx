@@ -10,61 +10,80 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { uid } from '@formily/shared';
-import { FlowModel, FlowModelRenderer, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  CreateModelOptions,
+  FlowModel,
+  FlowModelRenderer,
+  FlowSettingsButton,
+  escapeT,
+} from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
+import { BasePageTabModel } from '../PageTabModel';
 
 type PageModelStructure = {
   subModels: {
-    tabs: FlowModel[];
+    tabs: BasePageTabModel[];
   };
 };
 
 export class PageModel extends FlowModel<PageModelStructure> {
-  addTab(tab: any) {
-    const model = this.addSubModel('tabs', tab);
-    model.save();
-  }
+  createPageTabModelOptions = (): CreateModelOptions => {
+    const modeId = uid();
+    return {
+      uid: modeId,
+      use: 'RootPageTabModel',
+      props: {
+        route: {
+          parentId: this.props.routeId,
+          type: 'tabs',
+          schemaUid: modeId,
+          tabSchemaName: uid(),
+          params: [],
+          hideInMenu: false,
+          enableTabs: false,
+        },
+      },
+    };
+  };
 
-  getItems() {
-    return this.mapSubModels('tabs', (tab) => {
+  mapTabs() {
+    return this.mapSubModels('tabs', (model) => {
       return {
-        key: tab.uid,
-        label: tab.props.label || 'Unnamed',
-        children: <FlowModelRenderer model={tab} />,
+        key: model.uid,
+        label: <FlowModelRenderer model={model} showFlowSettings={{ showBackground: true, showBorder: false }} />,
+        children: model.renderChildren(),
       };
     });
   }
 
   renderFirstTab() {
-    return <FlowModelRenderer model={this.subModels.tabs?.[0]} />;
+    const firstTab = this.subModels.tabs?.[0];
+    return firstTab?.renderChildren();
   }
 
   renderTabs() {
     return (
       <Tabs
         tabBarStyle={this.props.tabBarStyle}
-        items={this.getItems()}
+        items={this.mapTabs()}
         // destroyInactiveTabPane
         tabBarExtraContent={
-          <FlowSettingsButton
-            icon={<PlusOutlined />}
-            style={{ marginRight: 8 }}
-            onClick={() => {
-              this.addTab({
-                use: 'PageTabModel',
-                props: { key: uid(), label: `Tab - ${uid()}` },
-                subModels: {
-                  grid: {
-                    use: 'BlockGridModel',
-                  },
-                },
-              });
-            }}
+          <AddSubModelButton
+            model={this}
+            subModelKey={'tabs'}
+            items={[
+              {
+                key: 'blank',
+                label: this.context.t('Blank tab'),
+                createModelOptions: this.createPageTabModelOptions,
+              },
+            ]}
           >
-            {this.flowEngine.translate('Add tab')}
-          </FlowSettingsButton>
+            <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+          </AddSubModelButton>
         }
       />
     );
@@ -107,12 +126,12 @@ PageModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
-        // enableTabs: {
-        //   type: 'boolean',
-        //   title: escapeT('Enable tabs'),
-        //   'x-decorator': 'FormItem',
-        //   'x-component': 'Switch',
-        // },
+        enableTabs: {
+          type: 'boolean',
+          title: escapeT('Enable tabs'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+        },
       },
       defaultParams(ctx) {
         return {
@@ -152,6 +171,3 @@ PageModel.registerFlow({
     },
   },
 });
-
-export class MainPageModel extends PageModel {}
-export class SubPageModel extends PageModel {}
