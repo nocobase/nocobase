@@ -140,7 +140,7 @@ SELECT * FROM numbers;
       values: {
         name: testViewName,
         view: true,
-        schema: app.db.options.schema,
+        schema: app.db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
         fields: [
           {
             name: 'numbers',
@@ -191,7 +191,7 @@ SELECT * FROM numbers;
       return;
     }
     const jsonViewName = 'json_view';
-    const createJsonViewName = app.db.inDialect('postgres') ? `${app.db.options.schema}.${jsonViewName}` : jsonViewName;
+    const createJsonViewName = app.db.options.schema ? `${app.db.options.schema}.${jsonViewName}` : jsonViewName;
     const dropSql = `DROP VIEW IF EXISTS ${createJsonViewName}`;
     await app.db.sequelize.query(dropSql);
 
@@ -276,12 +276,11 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
 
-    // drop view first
     await app.db.sequelize.query(dropSQL);
 
-    // remove source collection
     await app.db.getCollection('collections').repository.destroy({
       filterByTk: 'users',
+      cascade: true,
       context: {},
     });
 
@@ -330,7 +329,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? app.db.options.schema : undefined,
+        schema: app.db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
         fields: [
           {
             name: 'name',
@@ -444,7 +443,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: app.db.inDialect('postgres') ? app.db.options.schema : undefined,
+        schema: app.db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
         fields: [
           {
             name: 'id',
@@ -578,7 +577,7 @@ SELECT * FROM numbers;
     const foreignField = User.model.rawAttributes[foreignKey].field;
 
     const viewName = `test_view_${uid(6)}`;
-    const createViewName = db.inDialect('postgres') ? `${db.options.schema}.${viewName}` : viewName;
+    const createViewName = app.db.options.schema ? `${db.options.schema}.${viewName}` : viewName;
     await db.sequelize.query(`DROP VIEW IF EXISTS ${createViewName}`);
     const queryInterface = db.sequelize.getQueryInterface();
 
@@ -590,7 +589,7 @@ SELECT * FROM numbers;
 
     const response = await agent.resource('dbViews').get({
       filterByTk: viewName,
-      schema: db.inDialect('postgres') ? app.db.options.schema : undefined,
+      schema: db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
       pageSize: 20,
     });
 
@@ -602,7 +601,7 @@ SELECT * FROM numbers;
         name: viewName,
         view: true,
         fields: Object.values(fields),
-        schema: db.inDialect('postgres') ? app.db.options.schema : undefined,
+        schema: db.inDialect('postgres') ? app.db.options.schema || 'public' : undefined,
       },
       context: {},
     });
