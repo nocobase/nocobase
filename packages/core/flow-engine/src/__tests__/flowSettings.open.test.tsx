@@ -658,7 +658,7 @@ describe('FlowSettings.open rendering behavior', () => {
     });
 
     const dialog = vi.fn((opts: any) => {
-      expect(opts.title).toBe('My Flow');
+      expect(opts.title).toBe('A');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
       if (typeof opts.content === 'function') opts.content(dlg);
       return dlg;

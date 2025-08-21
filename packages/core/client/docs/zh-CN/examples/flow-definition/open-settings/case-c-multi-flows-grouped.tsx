@@ -23,12 +23,21 @@ const flowA = defineFlow({
         ctx.model.setProps('a', p.a);
       },
     },
+    s2: {
+      title: 'B-配置',
+      uiSchema: {
+        b: { type: 'string', title: 'B 值', 'x-decorator': 'FormItem', 'x-component': 'Input' },
+      },
+      handler(ctx, p) {
+        ctx.model.setProps('b', p.b);
+      },
+    },
   },
 });
 
 const flowB = defineFlow({
   key: 'flowB',
-  title: 'Flow B',
+  title: 'Flow B（只有一个 step）',
   steps: {
     s1: {
       title: 'B-配置',

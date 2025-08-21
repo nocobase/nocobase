@@ -511,7 +511,7 @@ export class FlowSettings {
 
         entries.push({
           flowKey: fk,
-          flowTitle: flow.title || fk,
+          flowTitle: t(flow.title) || fk,
           stepKey: sk,
           stepTitle: t(stepTitle) || sk,
           initialValues,
@@ -572,9 +572,8 @@ export class FlowSettings {
       }
 
       if (!multipleFlows) {
-        const onlyFlow = grouped[flowKeysOrdered[0]];
-        // 情况 B：未提供 stepKey 且仅有一个步骤 => 返回 flow 标题
-        return onlyFlow.title;
+        // 情况 B：未提供 stepKey 且仅有一个步骤 => 与情况 A 一致
+        return entries[0].stepTitle;
       }
 
       // 情况 C：多 flow 分组渲染 => 返回空标题
@@ -612,17 +611,20 @@ export class FlowSettings {
         const renderStepPanels = (steps: StepEntry[]) =>
           steps.map((s) => React.createElement(Panel, { header: s.stepTitle, key: keyOf(s) }, renderStepForm(s)));
 
-        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板
+        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板（如果只有一个步骤，会显示成表单）
         const toFlowTabItem = (fk: string) => {
           const group = grouped[fk];
           return {
             key: fk,
             label: t(group.title) || fk,
-            children: React.createElement(
-              Collapse,
-              { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
-              ...renderStepPanels(group.steps),
-            ),
+            children:
+              group.steps.length > 1
+                ? React.createElement(
+                    Collapse,
+                    { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
+                    ...renderStepPanels(group.steps),
+                  )
+                : renderStepForm(group.steps[0]),
           };
         };
 
@@ -633,13 +635,8 @@ export class FlowSettings {
           }
 
           if (!multipleFlows) {
-            const onlyFlow = grouped[flowKeysOrdered[0]];
-            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 区分）
-            return React.createElement(
-              Collapse,
-              { defaultActiveKey: onlyFlow.steps.map((s) => keyOf(s)) },
-              ...renderStepPanels(onlyFlow.steps),
-            );
+            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
+            return renderStepForm(entries[0]);
           }
 
           // 情况 C：多 flow 分组渲染 => 使用 Tabs（每个 flow 一个 Tab）

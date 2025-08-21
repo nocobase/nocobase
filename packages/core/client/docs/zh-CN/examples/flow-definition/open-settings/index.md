@@ -48,17 +48,17 @@ interface FlowSettingsOpenOptions {
 
 ---
 
-## 情况 A：flowKey + stepKey 且唯一命中，单步直出（无折叠）
+## 情况 A：flowKey + stepKey 且唯一命中，单步直出
 
-当明确指定了 flowKey 和 stepKey，并且最终只命中一个步骤时，界面会直接展示该步骤的表单，不再包裹折叠面板。
+当明确指定了 flowKey 和 stepKey，并且最终只命中一个步骤时，界面会直接展示该步骤的表单。
 
 <code src="./case-a-single-step-direct.tsx"></code>
 
 ---
 
-## 情况 B：单个 flow 且仅一个步骤，但不指定 stepKey（保持折叠样式）
+## 情况 B：单个 flow 且仅一个步骤，但不指定 stepKey
 
-当只指定 flowKey 且该 flow 仅有一个步骤时，会展示折叠面板外观（默认展开），用于区分与“单步直出”的视觉差异。
+当只指定 flowKey 且该 flow 仅有一个步骤时，会展示展示该步骤的表单。
 
 <code src="./case-b-single-flow-single-step-collapse.tsx"></code>
 
@@ -66,7 +66,7 @@ interface FlowSettingsOpenOptions {
 
 ## 情况 C：多个 flow 命中，按 flow 分组渲染
 
-当命中多个 flow（例如通过 flowKeys 指定多个 key）时，会对每个 flow 生成一个折叠面板分组，分组内再以折叠面板展示各个步骤。
+当命中多个 flow（例如通过 flowKeys 指定多个 key）时，会对每个 flow 生成一个折叠面板分组，分组内再以折叠面板展示各个步骤。当只有一个步骤时，会直接展示该步骤的表单。
 
 <code src="./case-c-multi-flows-grouped.tsx"></code>
 
