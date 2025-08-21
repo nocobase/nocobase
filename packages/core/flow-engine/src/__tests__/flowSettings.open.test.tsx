@@ -297,7 +297,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info, error, success } });
 
     const setStepParams = vi.spyOn(model as any, 'setStepParams');
-    const save = vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const save = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     // capture returned React tree for triggering primary button
     let lastTree: any;
@@ -435,7 +435,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const success = vi.fn();
     model.context.defineProperty('message', { value: { info, error, success } });
 
-    vi.spyOn(model as any, 'save').mockRejectedValue(new Error('boom'));
+    vi.spyOn(model as any, 'saveStepParams').mockRejectedValue(new Error('boom'));
 
     let lastTree: any;
     let lastDialog: any;
