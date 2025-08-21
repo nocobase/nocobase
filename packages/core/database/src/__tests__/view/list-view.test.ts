@@ -24,6 +24,10 @@ describe('list view', () => {
   });
 
   it('should list view', async () => {
+    if (db.inDialect('postgres')) {
+      await db.prepare();
+    }
+
     const viewName1 = 'test1';
     const newViewName1 = db.options.schema ? `${db.options.schema}.${viewName1}` : viewName1;
     const dropViewSQL1 = `DROP VIEW IF EXISTS ${newViewName1}`;
