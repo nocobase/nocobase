@@ -51,6 +51,9 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 // 使用WeakMap存储每个类的 GlobalFlowRegistry 单例
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
+// 使用WeakMap存储每个类的专属 Action 定义
+const modelActions = new WeakMap<typeof FlowModel, Map<string, ActionDefinition>>();
+
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
@@ -221,6 +224,42 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return reg;
   }
 
+  /**
+   * 注册仅当前 FlowModel 类及其子类可用的 Action。
+   * 该注册是类级别的，不会影响全局（FlowEngine）的 Action 注册。
+   */
+  public static registerAction<TModel extends FlowModel = FlowModel>(
+    this: typeof FlowModel,
+    definition: ActionDefinition<TModel>,
+  ): void {
+    if (!definition?.name) {
+      throw new Error('FlowModel.registerAction: Action must have a name.');
+    }
+    let actions = modelActions.get(this);
+    if (!actions) {
+      actions = new Map();
+      modelActions.set(this, actions);
+    }
+    if (actions.has(definition.name)) {
+      console.warn(
+        `FlowModel.registerAction: Action '${definition.name}' is already registered on ${this.name}. It will be overwritten.`,
+      );
+    }
+    actions.set(definition.name, definition as ActionDefinition);
+  }
+
+  /**
+   * 批量注册仅当前 FlowModel 类及其子类可用的 Actions。
+   */
+  public static registerActions<TModel extends FlowModel = FlowModel>(
+    this: typeof FlowModel,
+    actions: Record<string, ActionDefinition<TModel>>,
+  ): void {
+    for (const [, def] of Object.entries(actions || {})) {
+      this.registerAction(def);
+    }
+  }
+
   get title() {
     // model 可以通过 setTitle 来自定义title， 具有更高的优先级
     return this.translate(this._title) || this.translate(this.constructor['meta']?.label);
@@ -320,6 +359,64 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     const Cls = this.constructor as typeof FlowModel;
     return Cls.globalFlowRegistry.getFlow(key);
+  }
+
+  /**
+   * 获取当前模型可用的所有 Actions：
+   * - 包含全局（FlowEngine）注册的 Actions；
+   * - 合并类级（FlowModel.registerAction(s)）注册的 Actions，并考虑继承（子类覆盖父类同名 Action）。
+   */
+  public getActions<TModel extends FlowModel = this>(): Map<string, ActionDefinition<TModel>> {
+    const all = new Map<string, ActionDefinition<TModel>>();
+    // 1) 全局 Actions
+    try {
+      const globals = this.flowEngine?.getActions<TModel>();
+      if (globals) {
+        for (const [k, v] of globals) all.set(k, v);
+      }
+    } catch (e) {
+      // ignore if engine not ready
+    }
+    // 2) 类级 Actions（考虑继承，父类在前，子类在后以便覆盖）
+    const chain: Array<typeof FlowModel> = [];
+    let Cls: any = this.constructor as typeof FlowModel;
+    while (Cls && Cls !== Function.prototype && Cls !== Object.prototype) {
+      chain.push(Cls);
+      const proto = Object.getPrototypeOf(Cls);
+      if (!proto || proto === Function.prototype || proto === Object.prototype) break;
+      Cls = proto;
+    }
+    chain.reverse();
+    for (const C of chain) {
+      const own = modelActions.get(C);
+      if (own) {
+        for (const [k, v] of own) all.set(k, v as ActionDefinition<TModel>);
+      }
+    }
+    return all;
+  }
+
+  /**
+   * 获取指定名称的 Action（优先返回类级注册的，未找到则回退到全局）。
+   */
+  public getAction<TModel extends FlowModel = this>(name: string): ActionDefinition<TModel> | undefined {
+    // 先查找类级（含继承）
+    const chain: Array<typeof FlowModel> = [];
+    let Cls: any = this.constructor as typeof FlowModel;
+    while (Cls && Cls !== Function.prototype && Cls !== Object.prototype) {
+      chain.push(Cls);
+      const proto = Object.getPrototypeOf(Cls);
+      if (!proto || proto === Function.prototype || proto === Object.prototype) break;
+      Cls = proto;
+    }
+    for (const C of chain) {
+      const own = modelActions.get(C);
+      if (own && own.has(name)) {
+        return own.get(name) as ActionDefinition<TModel>;
+      }
+    }
+    // 再回退到全局引擎（兼容单测对 engine.getAction 的 mock）
+    return this.flowEngine?.getAction<TModel>(name);
   }
 
   getFlows() {
@@ -442,7 +539,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
         if (step.use) {
           // Step references a registered action
-          actionDefinition = currentFlowEngine.getAction(step.use);
+          actionDefinition = this.getAction(step.use);
           if (!actionDefinition) {
             console.error(
               `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,

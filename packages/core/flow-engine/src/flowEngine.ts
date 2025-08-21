@@ -210,6 +210,14 @@ export class FlowEngine {
   }
 
   /**
+   * Get all registered global actions.
+   * Returns a new Map to avoid external mutation of internal state.
+   */
+  public getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
+    return new Map(this.#actions as Map<string, ActionDefinition<TModel>>);
+  }
+
+  /**
    * Register a single model class.
    * @param {string} name Model class name
    * @param {ModelConstructor} modelClass Model class constructor
