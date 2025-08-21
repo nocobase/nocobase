@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { ISchema } from '@nocobase/client';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
