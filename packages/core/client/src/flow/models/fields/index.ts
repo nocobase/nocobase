@@ -26,6 +26,7 @@ export * from './SelectFieldModel';
 export * from './TextareaFieldModel';
 export * from './TimeFieldModel';
 export * from './UploadFieldModel';
+export * from './CollectionSelectorFieldModel';
 export * from './VariableFieldFormModel';
 
 export * from './ReadPrettyField';
