@@ -18,7 +18,6 @@ import {
   FlowsFloatContextMenu,
   useFlowEngine,
   FlowModelContext,
-  Collection,
   buildWrapperFieldChildren,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Form } from 'antd';
@@ -196,6 +195,7 @@ export class SubTableColumnModel extends FieldModel {
                   name={[(this.parent as FormFieldModel).fieldPath, rowIdx, action.fieldPath]}
                   style={{ marginBottom: 0 }}
                   initialValue={value}
+                  showLabel={false}
                 >
                   {fork.constructor.isLargeField ? (
                     <LargeFieldEdit

@@ -53,7 +53,6 @@ export function jioToJoiSchema<T extends JioType>(jioConfig: {
 
     if (Array.isArray(args)) return args;
 
-    // email 特殊处理：自动禁用内置 TLD 列表，保留 minDomainSegments
     if (ruleName === 'email') {
       const emailArgs = { ...args };
       if (emailArgs.tlds?.allow === true) {
@@ -66,6 +65,14 @@ export function jioToJoiSchema<T extends JioType>(jioConfig: {
     if (['length', 'min', 'max'].includes(ruleName)) {
       return [args.limit];
     }
+    if (ruleName === 'pattern') {
+      const regex = args?.regex;
+      if (regex instanceof RegExp) {
+        return [regex];
+      } else {
+        return [new RegExp(regex)];
+      }
+    }
     const values = Object.values(args);
     return values.length ? values : [];
   };
@@ -76,7 +83,6 @@ export function jioToJoiSchema<T extends JioType>(jioConfig: {
   jioConfig.rules?.forEach((rule) => {
     const { name, args } = rule;
     if (name === 'required') hasRequired = true;
-
     if (typeof schema[name] === 'function') {
       try {
         schema = schema[name](...getArgs(name, args));
