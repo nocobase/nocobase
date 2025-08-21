@@ -13,6 +13,7 @@ import React from 'react';
 
 class HelloModel extends FlowModel {
   render() {
+    console.log(this);
     return (
       <FormComponent
         model={this}
@@ -29,7 +30,7 @@ class HelloModel extends FlowModel {
         <Form.Item noStyle shouldUpdate>
           {() => (
             <div>
-              当前表单值：<pre>{JSON.stringify(this.context.form.getFieldsValue(), null, 2)}</pre>
+              当前表单值：<pre>{JSON.stringify(this.context.form?.getFieldsValue(), null, 2)}</pre>
             </div>
           )}
         </Form.Item>

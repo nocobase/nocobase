@@ -23,12 +23,7 @@ class HelloModel extends FlowModel {
           multipleSelect1: ['apple'],
         }}
       >
-        <FormItem
-          label="SingleSelect"
-          name="singleSelect"
-          tooltip="What do you want others to call you?"
-          extra="We must make sure that your are a human."
-        >
+        <FormItem label="SingleSelect" name="singleSelect">
           <FieldModelRenderer
             model={this.subModels.field1}
             options={[
@@ -99,7 +94,7 @@ class HelloModel extends FlowModel {
         <Form.Item noStyle shouldUpdate>
           {() => (
             <div>
-              当前表单值：<pre>{JSON.stringify(this.context.form.getFieldsValue(), null, 2)}</pre>
+              当前表单值：<pre>{JSON.stringify(this.context.form?.getFieldsValue(), null, 2)}</pre>
             </div>
           )}
         </Form.Item>

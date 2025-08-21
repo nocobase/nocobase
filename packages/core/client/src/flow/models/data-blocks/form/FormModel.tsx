@@ -51,7 +51,7 @@ export function FormComponent({
   model,
   children,
   layoutProps = {} as any,
-  initialValues: any,
+  initialValues,
 }: {
   model: any;
   children: React.ReactNode;
