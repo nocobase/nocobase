@@ -7,17 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowDefinition, ModelConstructor, IFlowRepository } from './types';
+import { FlowDefinitionOptions, ModelConstructor, IFlowRepository } from './types';
 import { FlowModel } from './models';
-import { FlowDef } from './FlowDef';
+import { FlowDefinition } from './FlowDefinition';
 
 type FlowKey = string;
-type FlowDefinitionOptions = Omit<FlowDefinition, 'key'>;
 
 export class GlobalFlowRegistry implements IFlowRepository {
   constructor(private target: ModelConstructor | FlowModel) {}
 
-  private cache: Map<FlowKey, FlowDef> = new Map();
+  private cache: Map<FlowKey, FlowDefinition> = new Map();
 
   addFlows(flows: Record<FlowKey, FlowDefinitionOptions>): void {
     for (const [flowKey, flowOptions] of Object.entries(flows || {})) {
@@ -25,8 +24,8 @@ export class GlobalFlowRegistry implements IFlowRepository {
     }
   }
 
-  addFlow(flowKey: FlowKey, options: FlowDefinitionOptions): FlowDef | void {
-    const def = new FlowDef({ key: flowKey, ...options } as any, this);
+  addFlow(flowKey: FlowKey, options: FlowDefinitionOptions): FlowDefinition | void {
+    const def = new FlowDefinition({ key: flowKey, ...options } as any, this);
     this.cache.set(flowKey, def);
     return def;
   }
@@ -40,7 +39,7 @@ export class GlobalFlowRegistry implements IFlowRepository {
     return !!this.getFlow(flowKey);
   }
 
-  getFlow(flowKey: FlowKey): FlowDef | undefined {
+  getFlow(flowKey: FlowKey): FlowDefinition | undefined {
     if (this.cache.has(flowKey)) {
       return this.cache.get(flowKey);
     }
@@ -51,25 +50,25 @@ export class GlobalFlowRegistry implements IFlowRepository {
     return undefined;
   }
 
-  getFlows(): Map<FlowKey, FlowDef> {
-    const flows = new Map<FlowKey, FlowDef>(this.cache);
+  getFlows(): Map<FlowKey, FlowDefinition> {
+    const flows = new Map<FlowKey, FlowDefinition>(this.cache);
     const proto: typeof FlowModel | null = Object.getPrototypeOf(this.target);
     if (proto !== Function.prototype && proto !== Object.prototype && proto?.globalFlowRegistry) {
       for (const [key, def] of proto.globalFlowRegistry.getFlows().entries()) {
         if (!flows.has(key)) {
-          flows.set(key, new FlowDef(def, this));
+          flows.set(key, new FlowDefinition(def, this));
         }
       }
     }
     return flows;
   }
 
-  mapFlows<T = any>(callback: (flow: FlowDef) => T): T[] {
+  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[] {
     const flows = this.getFlows();
     return [...flows.values()].map((flow) => callback(flow));
   }
 
-  saveFlow(flow: FlowDef): void {
+  saveFlow(flow: FlowDefinition): void {
     // No-op for static flows
   }
 

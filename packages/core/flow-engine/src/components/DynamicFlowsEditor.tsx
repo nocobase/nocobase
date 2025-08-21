@@ -11,10 +11,10 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@nocobase/utils/client';
 import { Collapse, Space, Button, Tabs, Input, Modal, Form, Empty, Select } from 'antd';
 import type { FormInstance } from 'antd';
-import { FlowDefinition } from '../types';
 import { observer } from '@formily/react';
 import React from 'react';
 import { FlowModel } from '../models';
+import { FlowDefinition } from '../FlowDefinition';
 
 const Panel = Collapse.Panel;
 
@@ -26,7 +26,7 @@ const Panel = Collapse.Panel;
  * - 支持新增/删除 Flow 与 Step；所有改动直接作用于传入的响应式 value
  */
 export const DynamicFlowsEditor = observer(
-  (props: { value: FlowDefinition[]; model: FlowModel }) => {
+  (props: { value: FlowDefinitionOptions[]; model: FlowModel }) => {
     const { value, model } = props;
     const eventList = (model.constructor as any).meta?.eventList || [];
 
@@ -98,7 +98,7 @@ export const DynamicFlowsEditor = observer(
     const addStep = React.useCallback(
       (flow: FlowDefinition) => {
         const key = getNextStepKey(flow);
-        flow.steps = flow.steps || {};
+        // flow.steps = flow.steps || {};
         (flow.steps as any)[key] = { defaultParams: {} } as any;
       },
       [getNextStepKey],

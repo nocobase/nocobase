@@ -24,7 +24,7 @@ import type {
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
-  FlowDefinition,
+  FlowDefinitionOptions,
   FlowModelMeta,
   FlowModelOptions,
   ParamObject,
@@ -36,7 +36,6 @@ import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import {
   FlowExitException,
   isInheritedFrom,
-  mergeFlowDefinitions,
   resolveDefaultParams,
   resolveExpressions,
   setupRuntimeContextSteps,
@@ -44,7 +43,7 @@ import {
 import { ForkFlowModel } from './forkFlowModel';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import { GlobalFlowRegistry } from '../GlobalFlowRegistry';
-import { FlowDef } from '../FlowDef';
+import { FlowDefinition } from '../FlowDefinition';
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -286,18 +285,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 注册一个流程 (Flow)。支持泛型，能够正确推导出模型类型。
    * @template TModel 具体的FlowModel子类类型
-   * @param {string | FlowDefinition<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
+   * @param {string | FlowDefinitionOptions<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinitionOptions 对象。
    *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
-   *        如果为对象，则为包含 key 属性的完整 FlowDefinition。
-   * @param {FlowDefinition<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   *        如果为对象，则为包含 key 属性的完整 FlowDefinitionOptions。
+   * @param {FlowDefinitionOptions<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
   public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
     this: TModel,
-    keyOrDefinition: string | FlowDefinition<InstanceType<TModel>>,
-    flowDefinition?: Omit<FlowDefinition<InstanceType<TModel>>, 'key'> & { key?: string },
+    keyOrDefinition: string | FlowDefinitionOptions<InstanceType<TModel>>,
+    flowDefinition?: Omit<FlowDefinitionOptions<InstanceType<TModel>>, 'key'> & { key?: string },
   ): void {
-    let definition: FlowDefinition<InstanceType<TModel>>;
+    let definition: FlowDefinitionOptions<InstanceType<TModel>>;
     let key: string;
 
     if (typeof keyOrDefinition === 'string' && flowDefinition) {
@@ -326,7 +325,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (flows.has(key)) {
       console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
     }
-    flows.set(key, definition as FlowDefinition);
+    flows.set(key, new FlowDefinition(definition, (this as InstanceType<TModel>).flowRegistry));
   }
 
   /**
@@ -342,7 +341,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {string} key 流程 Key。
    * @returns {FlowDefinition | undefined} 流程定义，如果未找到则返回 undefined。
    */
-  public getFlow(key: string): FlowDef | undefined {
+  public getFlow(key: string): FlowDefinition | undefined {
     if (this.flowRegistry.hasFlow(key)) {
       return this.flowRegistry.getFlow(key);
     }
@@ -352,7 +351,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   getFlows() {
     const instanceFlows = this.flowRegistry.getFlows();
-    const allFlows = new Map<string, FlowDef>(instanceFlows);
+    const allFlows = new Map<string, FlowDefinition>(instanceFlows);
     const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
     for (const [key, def] of staticFlows) {
       if (!allFlows.has(key)) {
@@ -1306,7 +1305,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  getDynamicFlows(): FlowDefinition[] {
+  getDynamicFlows(): FlowDefinitionOptions[] {
     return this.#dynamicFlows;
   }
   */
@@ -1324,6 +1323,8 @@ export class ErrorFlowModel extends FlowModel {
   }
 }
 
-export function defineFlow<TModel extends FlowModel = FlowModel>(definition: FlowDefinition): FlowDefinition<TModel> {
-  return definition as FlowDefinition<TModel>;
+export function defineFlow<TModel extends FlowModel = FlowModel>(
+  definition: FlowDefinitionOptions,
+): FlowDefinitionOptions<TModel> {
+  return definition as FlowDefinitionOptions<TModel>;
 }

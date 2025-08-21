@@ -10,7 +10,7 @@
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem, SubModelItemsType } from './components';
 import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
-import type { FlowDef } from './FlowDef';
+import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 
@@ -41,7 +41,7 @@ export type DeepPartial<T> = {
 /**
  * Defines a flow with generic model type support.
  */
-export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
+export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
   /**
    * Unique identifier for the flow.
    * 建议采用统一的 xxxSettings 风格命名，例如：
@@ -260,7 +260,7 @@ export interface CreateModelOptions {
   uid?: string;
   use: RegisteredModelClassName | ModelConstructor;
   props?: IModelComponentProps;
-  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
+  flowRegistry?: Record<string, Omit<FlowDefinitionOptions, 'key'>>;
   stepParams?: StepParams;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   parentId?: string;
@@ -278,14 +278,14 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
 }
 
 export interface IFlowRepository {
-  addFlows(flowDefs: Record<string, Omit<FlowDefinition, 'key'>>): void;
-  addFlow(flowKey: string, flowOptions: Omit<FlowDefinition, 'key'>): FlowDef | void;
+  addFlows(flowDefs: Record<string, Omit<FlowDefinitionOptions, 'key'>>): void;
+  addFlow(flowKey: string, flowOptions: Omit<FlowDefinitionOptions, 'key'>): FlowDefinition | void;
   removeFlow(flowKey: string): void;
-  getFlows(): Map<string, FlowDef>;
-  mapFlows<T = any>(callback: (flow: FlowDef) => T): T[];
+  getFlows(): Map<string, FlowDefinition>;
+  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[];
   hasFlow(flowKey: string): boolean;
-  getFlow(flowKey: string): FlowDef | undefined;
-  saveFlow(flow: FlowDef): Promise<any> | void;
+  getFlow(flowKey: string): FlowDefinition | undefined;
+  saveFlow(flow: FlowDefinition): Promise<any> | void;
   destroyFlow(flowKey: string): Promise<any> | void;
 }
 
@@ -360,7 +360,7 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
-  flowRegistry?: Record<string, Omit<FlowDefinition, 'key'>>;
+  flowRegistry?: Record<string, Omit<FlowDefinitionOptions, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;

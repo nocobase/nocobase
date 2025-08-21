@@ -10,25 +10,24 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import { FlowModel } from './models';
-import { FlowDefinition, IFlowRepository } from './types';
-import { FlowDef } from './FlowDef';
+import { FlowDefinitionOptions, IFlowRepository } from './types';
+import { FlowDefinition } from './FlowDefinition';
 
 type FlowKey = string;
-type FlowDefinitionOptions = Omit<FlowDefinition, 'key'>;
 
 export class InstanceFlowRegistry implements IFlowRepository {
-  flowDefs: Map<FlowKey, FlowDef> = observable.shallow(new Map());
+  flowDefs: Map<FlowKey, FlowDefinition> = observable.shallow(new Map());
 
   constructor(protected model: FlowModel) {}
 
-  addFlows(flowDefs: Record<FlowKey, FlowDefinitionOptions>) {
+  addFlows(flowDefs: Record<FlowKey, Omit<FlowDefinitionOptions, 'key'>>): void {
     for (const [flowKey, flowOptions] of Object.entries(flowDefs || {})) {
       this.addFlow(flowKey, flowOptions);
     }
   }
 
-  addFlow(flowKey: FlowKey, flowOptions: FlowDefinitionOptions) {
-    const flowDef = new FlowDef(
+  addFlow(flowKey: FlowKey, flowOptions: Omit<FlowDefinitionOptions, 'key'>) {
+    const flowDef = new FlowDefinition(
       {
         key: flowKey,
         ...flowOptions,
@@ -47,7 +46,7 @@ export class InstanceFlowRegistry implements IFlowRepository {
     return this.flowDefs;
   }
 
-  mapFlows<T = any>(callback: (flow: FlowDef) => T): T[] {
+  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[] {
     return [...this.flowDefs.values()].map((flow) => callback(flow));
   }
 
@@ -55,11 +54,11 @@ export class InstanceFlowRegistry implements IFlowRepository {
     return this.flowDefs.has(flowKey);
   }
 
-  getFlow(flowKey: FlowKey): FlowDef | undefined {
+  getFlow(flowKey: FlowKey): FlowDefinition | undefined {
     return this.flowDefs.get(flowKey) as any;
   }
 
-  async saveFlow(flow: FlowDef) {
+  async saveFlow(flow: FlowDefinition) {
     await this.model.save();
   }
 
