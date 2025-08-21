@@ -29,7 +29,7 @@ function PageTabChildrenRenderer({ ctx, options }) {
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-export class PageTabModel extends FlowModel<{
+export class BasePageTabModel extends FlowModel<{
   subModels: {
     grid: BlockGridModel;
   };
@@ -43,15 +43,11 @@ export class PageTabModel extends FlowModel<{
   }
 
   render() {
-    return (
-      <div>
-        <RemoteFlowModelRenderer parentId={this.uid} subKey={'grid'} showFlowSettings={false} />
-      </div>
-    );
+    return <div>{this.getTabTitle()}</div>;
   }
 }
 
-PageTabModel.registerFlow({
+BasePageTabModel.registerFlow({
   key: 'pageTabSettings',
   title: escapeT('Tab settings'),
   steps: {
@@ -71,10 +67,7 @@ PageTabModel.registerFlow({
   },
 });
 
-export class MainPageTabModel extends PageTabModel {
-  render() {
-    return <span>{this.getTabTitle()}</span>;
-  }
+export class RootPageTabModel extends BasePageTabModel {
   renderChildren() {
     return (
       <PageTabChildrenRenderer
@@ -126,11 +119,7 @@ export class MainPageTabModel extends PageTabModel {
   }
 }
 
-export class SubPageTabModel extends PageTabModel {
-  render() {
-    return <div>{this.getTabTitle()}</div>;
-  }
-
+export class ChildPageTabModel extends BasePageTabModel {
   renderChildren() {
     return (
       <PageTabChildrenRenderer
@@ -143,6 +132,23 @@ export class SubPageTabModel extends PageTabModel {
           use: 'BlockGridModel',
         }}
       />
+    );
+  }
+}
+
+/**
+ * @deprecated Use `BasePageTabModel` instead.
+ */
+export class PageTabModel extends FlowModel<{
+  subModels: {
+    grid: BlockGridModel;
+  };
+}> {
+  render() {
+    return (
+      <div>
+        <RemoteFlowModelRenderer parentId={this.uid} subKey={'grid'} showFlowSettings={false} />
+      </div>
     );
   }
 }

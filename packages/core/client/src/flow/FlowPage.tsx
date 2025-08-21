@@ -68,7 +68,7 @@ export const FlowRoute = () => {
 };
 
 export const FlowPage = (props) => {
-  const { pageModelClass = 'SubPageModel', parentId, onModelLoaded, ...rest } = props;
+  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
   const { loading, data } = useRequest(
     async () => {
@@ -79,11 +79,11 @@ export const FlowPage = (props) => {
         subType: 'object',
         use: pageModelClass,
       };
-      if (pageModelClass === 'SubPageModel') {
+      if (pageModelClass === 'ChildPageModel') {
         options['subModels'] = {
           tabs: [
             {
-              use: 'SubPageTabModel',
+              use: 'ChildPageTabModel',
             },
           ],
         };

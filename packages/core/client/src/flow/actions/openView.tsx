@@ -41,7 +41,7 @@ export const openView = defineAction({
   defaultParams: {
     mode: 'drawer',
     size: 'medium',
-    pageModelClass: 'SubPageModel',
+    pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
     // eslint-disable-next-line prefer-const

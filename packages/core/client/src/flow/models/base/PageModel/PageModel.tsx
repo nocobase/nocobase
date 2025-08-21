@@ -18,14 +18,14 @@ import {
   FlowSettingsButton,
   escapeT,
 } from '@nocobase/flow-engine';
-import { Button, Tabs } from 'antd';
+import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { PageTabModel } from './PageTabModel';
+import { BasePageTabModel } from '../PageTabModel';
 
 type PageModelStructure = {
   subModels: {
-    tabs: PageTabModel[];
+    tabs: BasePageTabModel[];
   };
 };
 
@@ -34,7 +34,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     const modeId = uid();
     return {
       uid: modeId,
-      use: 'MainPageTabModel',
+      use: 'RootPageTabModel',
       props: {
         route: {
           parentId: this.props.routeId,
@@ -49,11 +49,6 @@ export class PageModel extends FlowModel<PageModelStructure> {
     };
   };
 
-  renderFirstTab() {
-    const firstTab = this.subModels.tabs?.[0];
-    return firstTab?.renderChildren();
-  }
-
   mapTabs() {
     return this.mapSubModels('tabs', (model) => {
       return {
@@ -62,6 +57,11 @@ export class PageModel extends FlowModel<PageModelStructure> {
         children: model.renderChildren(),
       };
     });
+  }
+
+  renderFirstTab() {
+    const firstTab = this.subModels.tabs?.[0];
+    return firstTab?.renderChildren();
   }
 
   renderTabs() {
@@ -171,52 +171,3 @@ PageModel.registerFlow({
     },
   },
 });
-
-export class MainPageModel extends PageModel {}
-
-MainPageModel.registerFlow({
-  key: 'mainPageSettings',
-  steps: {
-    init: {
-      async handler(ctx, params) {
-        if (ctx.model.hasSubModel('tabs')) {
-          return;
-        }
-        // TODO: 加载当前页面对应的路由及子节点
-        const { data } = await ctx.api.request({
-          url: `desktopRoutes:listAccessible?tree=true&sort=sort&filter[parent.schemaUid]=${ctx.model.parentId}`,
-        });
-        ctx.model.setProps('routeId', data?.data?.[0]?.id);
-        const routes = _.castArray(data?.data?.[0]?.children);
-        for (const route of routes) {
-          const model = await ctx.engine.createModel({
-            parentId: ctx.model.uid,
-            uid: route.schemaUid,
-            subKey: 'tabs',
-            subType: 'array',
-            use: 'MainPageTabModel',
-            props: {
-              route,
-            },
-            stepParams: {
-              pageTabSettings: {
-                tab: {
-                  title: route.title,
-                },
-              },
-            },
-          });
-          ctx.model.addSubModel('tabs', model);
-        }
-      },
-    },
-  },
-});
-
-export class SubPageModel extends PageModel {
-  createPageTabModelOptions = (): CreateModelOptions => {
-    return {
-      use: 'SubPageTabModel',
-    };
-  };
-}
