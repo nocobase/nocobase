@@ -9,7 +9,8 @@
 
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
-import type { IFlowRepository, FlowDefinitionOptions, StepDefinition } from './types';
+import type { FlowDefinitionOptions, StepDefinition } from './types';
+import { IFlowRepository } from './flow-registry/BaseFlowRegistry';
 
 export class FlowDefinition {
   _steps: Map<string, FlowStep> = observable.shallow(new Map());

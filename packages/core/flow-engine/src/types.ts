@@ -279,18 +279,6 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
 }
 
-export interface IFlowRepository {
-  addFlows(flowDefs: Record<string, Omit<FlowDefinitionOptions, 'key'>>): void;
-  addFlow(flowKey: string, flowOptions: Omit<FlowDefinitionOptions, 'key'>): FlowDefinition | void;
-  removeFlow(flowKey: string): void;
-  getFlows(): Map<string, FlowDefinition>;
-  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[];
-  hasFlow(flowKey: string): boolean;
-  getFlow(flowKey: string): FlowDefinition | undefined;
-  saveFlow(flow: FlowDefinition): Promise<any> | void;
-  destroyFlow(flowKey: string): Promise<any> | void;
-}
-
 /**
  * 步骤设置对话框的属性接口
  */

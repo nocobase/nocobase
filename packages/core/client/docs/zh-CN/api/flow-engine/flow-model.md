@@ -87,7 +87,7 @@
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
 
-- **static getFlows(): Map\<string, FlowDefinition\>**  
+- **getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
 - **getAutoFlows(): FlowDefinition[]**  

@@ -8,8 +8,8 @@
  */
 
 import { observable } from '@formily/reactive';
-import { FlowModel } from './models';
-import { FlowDefinition } from './FlowDefinition';
+import { FlowModel } from '../models';
+import { FlowDefinition } from '../FlowDefinition';
 import { BaseFlowRegistry } from './BaseFlowRegistry';
 
 type FlowKey = string;

@@ -17,7 +17,7 @@ import { openStepSettingsDialog as openStepSettingsDialogFn } from '../component
 import { Emitter } from '../emitter';
 import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
-import { InstanceFlowRegistry } from '../InstanceFlowRegistry';
+import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import type {
   ActionDefinition,
   ArrayElementType,
@@ -42,7 +42,7 @@ import {
 } from '../utils';
 import { ForkFlowModel } from './forkFlowModel';
 import { FlowSettingsOpenOptions } from '../flowSettings';
-import { GlobalFlowRegistry } from '../GlobalFlowRegistry';
+import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 
 // 使用WeakMap存储每个类的meta

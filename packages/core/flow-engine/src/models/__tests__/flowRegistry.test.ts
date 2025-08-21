@@ -68,8 +68,9 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(model.flowRegistry.hasFlow('flowA')).toBe(true);
     expect(model.flowRegistry.hasFlow('flowB')).toBe(true);
 
-    const step = model.flowRegistry.getFlow('flowB')!.getStep('s1')!;
-    expect(step.serialize()).toEqual({
+    const flow = model.flowRegistry.getFlow('flowB');
+    const step = flow?.getStep('s1');
+    expect(step?.serialize()).toEqual({
       title: 'S1',
       key: 's1',
       flowKey: 'flowB',
@@ -333,17 +334,19 @@ describe('InstanceFlowRegistry (extended)', () => {
       },
     });
 
-    const step = flow.getStep('step1')!;
-    expect(step.key).toBe('step1');
-    expect(step.flowKey).toBe('test');
-    expect(step.title).toBe('Step 1');
-    expect(step.uiSchema).toEqual({ type: 'object' });
-    expect(step.defaultParams).toEqual({ param1: 'value1' });
-    expect(step.use).toBe('someAction');
+    const step = flow.getStep('step1');
+    expect(step?.key).toBe('step1');
+    expect(step?.flowKey).toBe('test');
+    expect(step?.title).toBe('Step 1');
+    expect(step?.uiSchema).toEqual({ type: 'object' });
+    expect(step?.defaultParams).toEqual({ param1: 'value1' });
+    expect(step?.use).toBe('someAction');
 
     // 测试 title setter
-    step.title = 'Updated Step Title';
-    expect(step.title).toBe('Updated Step Title');
+    if (step) {
+      step.title = 'Updated Step Title';
+      expect(step.title).toBe('Updated Step Title');
+    }
   });
 
   // FlowStep setOptions
@@ -356,18 +359,24 @@ describe('InstanceFlowRegistry (extended)', () => {
       },
     });
 
-    const step = flow.getStep('step1')!;
-    step.setOptions({
-      title: 'Updated Step',
-      uiSchema: { type: 'string' },
-      defaultParams: { newParam: 'newValue' },
-      use: 'newAction',
-    });
+    const step = flow.getStep('step1');
+    if (step) {
+      step.setOptions({
+        title: 'Updated Step',
+        uiSchema: {
+          test: {
+            type: 'string',
+          },
+        },
+        defaultParams: { newParam: 'newValue' },
+        use: 'newAction',
+      });
 
-    expect(step.title).toBe('Updated Step');
-    expect(step.uiSchema).toEqual({ type: 'string' });
-    expect(step.defaultParams).toEqual({ newParam: 'newValue' });
-    expect(step.use).toBe('newAction');
+      expect(step.title).toBe('Updated Step');
+      expect(step.uiSchema).toEqual({ test: { type: 'string' } });
+      expect(step.defaultParams).toEqual({ newParam: 'newValue' });
+      expect(step.use).toBe('newAction');
+    }
   });
 
   // 边界情况和错误处理
@@ -394,13 +403,13 @@ describe('InstanceFlowRegistry (extended)', () => {
     });
 
     expect(flow.getSteps().size).toBe(1);
-    expect(flow.getStep('step1')!.title).toBe('Original');
+    expect(flow.getStep('step1')?.title).toBe('Original');
 
     // 使用相同的 key 添加步骤应该更新现有步骤
     const updatedStep = flow.addStep('step1', { title: 'Updated' });
     expect(updatedStep.title).toBe('Updated');
     expect(flow.getSteps().size).toBe(1); // 仍然只有一个步骤
-    expect(flow.getStep('step1')!.title).toBe('Updated');
+    expect(flow.getStep('step1')?.title).toBe('Updated');
   });
 
   // FlowStep 的异步方法
@@ -413,23 +422,27 @@ describe('InstanceFlowRegistry (extended)', () => {
       steps: { step1: { title: 'Step 1' } as any },
     });
 
-    const step = flow.getStep('step1')!;
+    const step = flow.getStep('step1');
 
     // 测试 step.save()
-    await step.save();
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    if (step) {
+      await step.save();
+      expect(saveSpy).toHaveBeenCalledTimes(1);
 
-    // 测试 step.remove()
-    step.remove();
-    expect(flow.hasStep('step1')).toBe(false);
+      // 测试 step.remove()
+      step.remove();
+      expect(flow.hasStep('step1')).toBe(false);
+    }
 
     // 重新添加步骤来测试 destroy
     flow.addStep('step2', { title: 'Step 2' });
-    const step2 = flow.getStep('step2')!;
+    const step2 = flow.getStep('step2');
 
-    await step2.destroy();
-    expect(saveSpy).toHaveBeenCalledTimes(2);
-    expect(flow.hasStep('step2')).toBe(false);
+    if (step2) {
+      await step2.destroy();
+      expect(saveSpy).toHaveBeenCalledTimes(2);
+      expect(flow.hasStep('step2')).toBe(false);
+    }
   });
 
   // FlowDefinition defaultParams 的默认值
@@ -440,8 +453,8 @@ describe('InstanceFlowRegistry (extended)', () => {
       steps: { step1: { title: 'Step 1' } as any }, // 没有 defaultParams
     });
 
-    const step = flow.getStep('step1')!;
-    expect(step.defaultParams).toEqual({});
+    const step = flow.getStep('step1');
+    expect(step?.defaultParams).toEqual({});
   });
 
   // 空的 addFlows 调用

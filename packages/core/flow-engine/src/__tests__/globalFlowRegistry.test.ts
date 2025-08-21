@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FlowModel } from '../models/flowModel';
-import { GlobalFlowRegistry } from '../GlobalFlowRegistry';
+import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 
 describe('GlobalFlowRegistry (class-level flows)', () => {
   class BaseModel extends FlowModel {}
@@ -38,8 +38,8 @@ describe('GlobalFlowRegistry (class-level flows)', () => {
     expect(def).toBeTruthy();
     const got = gr.getFlow('alpha');
     expect(got).toBeTruthy();
-    expect(got!.key).toBe('alpha');
-    expect(got!.title).toBe('Alpha');
+    expect(got?.key).toBe('alpha');
+    expect(got?.title).toBe('Alpha');
 
     const flows = gr.getFlows();
     expect(flows instanceof Map).toBe(true);
@@ -61,7 +61,7 @@ describe('GlobalFlowRegistry (class-level flows)', () => {
     // 子类能看到父类的 flow
     let def = childGR.getFlow('common');
     expect(def).toBeTruthy();
-    expect(def!.title).toBe('FromParent');
+    expect(def?.title).toBe('FromParent');
 
     // 子类覆盖同名 flow
     childGR.addFlow('common', {
@@ -70,15 +70,15 @@ describe('GlobalFlowRegistry (class-level flows)', () => {
       steps: { c: { title: 'C', handler: (ctx: any, params: any) => {} } },
     });
     def = childGR.getFlow('common');
-    expect(def!.title).toBe('FromChild');
+    expect(def?.title).toBe('FromChild');
 
     // 父类仍保持不变
     const parentDef = parentGR.getFlow('common');
-    expect(parentDef!.title).toBe('FromParent');
+    expect(parentDef?.title).toBe('FromParent');
 
     // getFlows 包含父类 + 子类（子类覆盖父类）
     const flows = childGR.getFlows();
     expect(flows.has('common')).toBe(true);
-    expect(flows.get('common')!.title).toBe('FromChild');
+    expect(flows.get('common')?.title).toBe('FromChild');
   });
 });

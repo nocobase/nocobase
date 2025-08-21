@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowDefinitionOptions, ModelConstructor } from './types';
-import { FlowModel } from './models';
-import { FlowDefinition } from './FlowDefinition';
+import { FlowDefinitionOptions, ModelConstructor } from '../types';
+import { FlowModel } from '../models';
+import { FlowDefinition } from '../FlowDefinition';
 import { BaseFlowRegistry } from './BaseFlowRegistry';
 
 type FlowKey = string;
@@ -41,7 +41,7 @@ export class GlobalFlowRegistry extends BaseFlowRegistry {
     if (proto !== Function.prototype && proto !== Object.prototype && proto?.globalFlowRegistry) {
       for (const [key, def] of proto.globalFlowRegistry.getFlows().entries()) {
         if (!flows.has(key)) {
-          flows.set(key, new FlowDefinition(def, this));
+          flows.set(key, def);
         }
       }
     }
