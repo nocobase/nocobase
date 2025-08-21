@@ -36,12 +36,10 @@ interface FlowSettingsOpenOptions {
 - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准（只处理单个 flow）。
 - 当提供 stepKey 时，应与某个 flowKey 组合使用；仅渲染该 flow 下命中的步骤。
 - 情况 A：当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
-- 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
-- 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。
+- 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
+- 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。如果每组只有一个步骤，则直接展示该步骤的表单。
 - 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤。
-- uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
 - 保存顺序：对每个 step 执行 submit -> setStepParams -> beforeParamsSave -> 统一 model.save() -> afterParamsSave。
-
 - 方法返回布尔值：`true` 表示已打开弹窗；`false` 表示未打开（例如没有可配置步骤），此时不会触发 `onSaved`/`onCancel` 回调。
 
 > 提示：仅包含具备 uiSchema 且未被 hideInSettings 的步骤会被渲染到配置表单中。
