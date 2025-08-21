@@ -568,10 +568,6 @@ export default defineConfig({
               link: '/models/fields/date-field-model',
             },
             {
-              title: 'PreviewFieldModel',
-              link: '/models/fields/preview-field-model',
-            },
-            {
               title: 'UploadFieldModel',
               link: '/models/fields/upload-field-model',
             },
