@@ -92,7 +92,10 @@ UploadFieldModel.registerFlow({
       async handler(ctx, params) {
         const { file, onSuccess, onError, onProgress } = ctx.inputArgs.fileData;
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
-        const fileCollection = ctx.model.collectionField.target;
+        const fileCollection = ctx.model.props.target;
+        if (!fileManagerPlugin) {
+          return onSuccess(file);
+        }
         try {
           // 上传前检查存储策略
           const { data: checkData } = await ctx.api.resource('storages').check({

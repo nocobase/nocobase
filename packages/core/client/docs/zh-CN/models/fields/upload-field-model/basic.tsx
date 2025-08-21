@@ -3,12 +3,11 @@ import {
   Plugin,
   FieldModelRenderer,
   FormItemV2 as FormItem,
-  JsonFieldModel,
+  UploadFieldModel,
+  CardUpload,
   FormComponent,
-  JsonInput,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Form } from 'antd';
 import React from 'react';
 
 class HelloModel extends FlowModel {
@@ -18,26 +17,26 @@ class HelloModel extends FlowModel {
         model={this}
         layoutProps={{ layout: 'vertical' }}
         initialValues={{
-          json: {
-            name: 'NocoBase',
-          },
-          json1: { a: { test: 33 } },
+          file: [
+            {
+              preview: 'https://minio.v2.test.nocobase.com/test/7ad6a3e3ea0ec2b0e2a3ef21542bf06d.png',
+              url: 'https://minio.v2.test.nocobase.com/test/7ad6a3e3ea0ec2b0e2a3ef21542bf06d.png',
+            },
+          ],
+          file1: [
+            {
+              url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+              preview: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+            },
+          ],
         }}
       >
-        <FormItem label="JSON" name="json">
-          <FieldModelRenderer model={this.subModels.field} />
+        <FormItem label="File" name="file">
+          <FieldModelRenderer model={this.subModels.field} target="attachments" />
         </FormItem>
-
-        <FormItem label="JSON1" name={'json1'}>
-          <JsonInput />
+        <FormItem rules={[{ required: true }]} label="File1" name="file1">
+          <CardUpload />
         </FormItem>
-        <Form.Item noStyle shouldUpdate>
-          {() => (
-            <div>
-              当前表单值：<pre>{JSON.stringify(this.context.form?.getFieldsValue(), null, 2)}</pre>
-            </div>
-          )}
-        </Form.Item>
       </FormComponent>
     );
   }
@@ -46,14 +45,14 @@ class HelloModel extends FlowModel {
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
-    this.flowEngine.registerModels({ HelloModel, JsonFieldModel });
+    this.flowEngine.registerModels({ HelloModel, UploadFieldModel });
 
     // 创建 HelloModel 的实例（仅用于示例）
     const model = this.flowEngine.createModel({
       use: 'HelloModel',
       subModels: {
         field: {
-          use: 'JsonFieldModel',
+          use: 'UploadFieldModel',
         },
       },
     });

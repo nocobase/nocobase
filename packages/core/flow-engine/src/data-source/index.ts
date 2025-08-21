@@ -626,6 +626,7 @@ export class CollectionField {
         multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
         valuePropName: this.interface === 'checkbox' ? 'checked' : 'value',
+        target: target,
       },
       _.isUndefined,
     );
@@ -649,7 +650,6 @@ export class CollectionField {
           return Promise.resolve();
         },
       });
-      console.log(rules);
       componentProps.rules = rules;
     }
     return componentProps;
