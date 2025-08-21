@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
-import { ButtonProps } from 'antd';
+import { BaseRecordResource, escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { ButtonProps, Form } from 'antd';
 import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
-import { FormSubmitActionModel } from '../data-blocks/form/FormActionModel';
+import { CollectionBlockModel } from '../base/BlockModel';
+import { FormModel } from '../data-blocks/form';
+import { FormActionModel, FormSubmitActionModel } from '../data-blocks/form/FormActionModel';
 
 export class CollectionTriggerWorkflowActionModel extends CollectionActionModel {
   defaultProps: ButtonProps = {
@@ -107,6 +109,70 @@ RecordTriggerWorkflowActionModel.registerFlow({
           });
         } catch (error) {
           ctx.message.error(ctx.t('Failed to trigger workflow'));
+        }
+      },
+    },
+  },
+});
+
+export class FormTriggerWorkflowActionModel extends FormActionModel {
+  defaultProps: ButtonProps = {
+    title: escapeT('Trigger workflow'),
+    htmlType: 'submit',
+  };
+}
+
+FormTriggerWorkflowActionModel.define({
+  label: escapeT('Trigger workflow'),
+});
+
+FormTriggerWorkflowActionModel.registerFlow({
+  key: 'triggerWorkflowSettings',
+  on: 'click',
+  steps: {
+    runTrigger: {
+      title: escapeT('Trigger workflows'),
+      uiSchema: {
+        triggerWorkflows: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+      },
+      async handler(ctx, params) {
+        if (!ctx?.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        if (!ctx.blockModel) {
+          throw new Error('Block model is not initialized');
+        }
+        const resource = ctx.resource as BaseRecordResource;
+        const blockModel = ctx.blockModel as FormModel;
+        try {
+          await blockModel.form.validateFields();
+          const values = blockModel.form.getFieldsValue();
+          resource.runAction('trigger', {
+            method: 'post',
+            params: {
+              triggerWorkflows: params.triggerWorkflows,
+            },
+          });
+        } catch (error) {
+          // 显示保存失败提示
+          ctx.message.error(ctx.t('Save failed'));
+          console.error('Form submission error:', error);
+          return;
+        }
+
+        ctx.message.success(ctx.t('Saved successfully'));
+
+        // TODO: 以下暂时先这么写
+        const parentBlockModel = ctx.currentFlow?.blockModel as CollectionBlockModel;
+        if (parentBlockModel) {
+          parentBlockModel.resource.refresh();
+        }
+        if (ctx.currentView && ctx.closable) {
+          ctx.currentView.close();
         }
       },
     },
