@@ -33,4 +33,5 @@ export * from './filter-blocks/form-v2/FilterFormFieldGridModel';
 export * from './filter-blocks/form-v2/fields';
 export * from './filter-blocks/form-v2/actions';
 export * from './other-blocks/html/HtmlBlockModel';
+export * from './common/JsonInput';
 //

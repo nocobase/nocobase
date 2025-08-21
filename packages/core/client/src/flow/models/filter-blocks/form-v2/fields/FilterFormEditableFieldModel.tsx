@@ -9,7 +9,7 @@
 
 import { reaction } from '@formily/reactive';
 import { debounce } from 'lodash';
-import { EditableFieldModel } from '../../../fields/EditableField/EditableFieldModel';
+import { EditableFieldModel } from '../../../fields/EditableFieldModel';
 import { FilterManager } from '../../filter-manager/FilterManager';
 
 export class FilterFormEditableFieldModel extends EditableFieldModel {
@@ -29,7 +29,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
     // 创建防抖的 doFilter 方法，延迟 300ms
     this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
     this.dispose = reaction(
-      () => this.field.value, // 追踪器函数：返回要监听的值
+      () => this.props.value, // 追踪器函数：返回要监听的值
       () => {
         if (this.context.blockModel.autoTriggerFilter) {
           this.debouncedDoFilter(); // 响应器函数：值变化时执行
@@ -40,7 +40,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
       },
     );
 
-    this.field.componentProps.onKeyDown = this.handleEnterPress.bind(this); // 添加回车事件监听
+    this.props.onKeyDown = this.handleEnterPress.bind(this); // 添加回车事件监听
   }
 
   onUnmount() {

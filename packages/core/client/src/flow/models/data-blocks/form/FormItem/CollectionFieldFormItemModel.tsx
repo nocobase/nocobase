@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
-import { omitBy, isUndefined } from 'lodash';
+import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
@@ -36,63 +35,10 @@ CollectionFieldFormItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
-        const props = ctx.model.getProps();
-        const rules = [...(props.rules || [])];
-        const fieldInterface = collectionField.interface;
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
-        //TODO 最终用 jio 替换验证
-        if (fieldInterface === 'email') {
-          if (!rules.some((rule) => rule.type === 'email')) {
-            rules.push({
-              type: 'email',
-              message: ctx.t('The field value is not a email format'),
-            });
-          }
-        } else if (fieldInterface === 'json') {
-          // 检查是否已经有 JSON 校验规则
-          if (!rules.some((rule) => rule.validator && rule.name === 'jsonValidator')) {
-            rules.push({
-              name: 'jsonValidator',
-              validator: (_, value) => {
-                if (!value || value.trim() === '') {
-                  return Promise.resolve();
-                }
-                try {
-                  JSON.parse(value);
-                  return Promise.resolve();
-                } catch (err: any) {
-                  return Promise.reject(new Error(err.message));
-                }
-              },
-            });
-          }
-        } else if (fieldInterface === 'nanoid') {
-          const { size = 21, customAlphabet } = collectionField.options || {};
-          // 绑定校验器
-          if (!rules.some((rule) => rule.validator && rule.name === 'nanoidValidator')) {
-            rules.push({
-              name: 'nanoidValidator',
-              validator: (_, value) => {
-                if (!value) return Promise.resolve(); // 空值不校验
-                if (value.length !== size) {
-                  return Promise.reject(new Error(ctx.t('Field value size is') + ` ${size}`));
-                }
-                if (customAlphabet) {
-                  for (let i = 0; i < value.length; i++) {
-                    if (!customAlphabet.includes(value[i])) {
-                      return Promise.reject(new Error(ctx.t('Field value does not meet the requirements')));
-                    }
-                  }
-                }
-                return Promise.resolve();
-              },
-            });
-          }
-        }
         ctx.model.setProps({
-          rules,
           name: ctx.model.fieldPath,
         });
       },
