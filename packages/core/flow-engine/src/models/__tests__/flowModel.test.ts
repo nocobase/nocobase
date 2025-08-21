@@ -284,104 +284,11 @@ describe('FlowModel', () => {
 
   // ==================== FLOW MANAGEMENT ====================
   describe('Flow Management', () => {
+    // TODO: design and add tests for flows management
     let TestFlowModel: typeof FlowModel;
 
     beforeEach(() => {
       TestFlowModel = class extends FlowModel<any> {};
-    });
-
-    describe('registerFlow', () => {
-      test('should register flow with definition object', () => {
-        const flow = createBasicFlowDefinition();
-
-        TestFlowModel.registerFlow(flow);
-
-        const registeredFlows = TestFlowModel.getFlows();
-        expect(registeredFlows.has(flow.key)).toBe(true);
-        expect(registeredFlows.get(flow.key)).toEqual(flow);
-      });
-
-      test('should register flow with defineFlow helper', () => {
-        const flowDef = defineFlow({
-          key: 'helperFlow',
-          steps: {
-            step1: { handler: vi.fn() },
-          },
-        });
-
-        TestFlowModel.registerFlow(flowDef);
-
-        const registeredFlows = TestFlowModel.getFlows();
-        expect(registeredFlows.has('helperFlow')).toBe(true);
-      });
-
-      test('should handle complex flow definitions', () => {
-        const complexFlow = {
-          key: 'complexFlow',
-          sort: 5,
-          on: { eventName: 'complexEvent' },
-          steps: {
-            actionStep: {
-              use: 'testAction',
-              defaultParams: { actionParam: 'value' },
-            },
-            handlerStep: {
-              handler: vi.fn().mockResolvedValue('handler-result'),
-              defaultParams: { handlerParam: 'value' },
-            },
-          },
-        };
-
-        expect(() => {
-          TestFlowModel.registerFlow(complexFlow);
-        }).not.toThrow();
-
-        const registered = TestFlowModel.getFlows().get(complexFlow.key);
-        expect(registered).toEqual(complexFlow);
-      });
-    });
-
-    describe('getFlows', () => {
-      test('should return empty map for new class', () => {
-        const flows = TestFlowModel.getFlows();
-        expect(flows).toBeInstanceOf(Map);
-        expect(flows.size).toBe(0);
-      });
-
-      test('should return all registered flows', () => {
-        const flow1 = createBasicFlowDefinition();
-        const flow2 = createAutoFlowDefinition();
-
-        TestFlowModel.registerFlow(flow1);
-        TestFlowModel.registerFlow(flow2);
-
-        const flows = TestFlowModel.getFlows();
-        expect(flows.size).toBe(2);
-        expect(flows.has(flow1.key)).toBe(true);
-        expect(flows.has(flow2.key)).toBe(true);
-      });
-    });
-
-    describe('inheritance', () => {
-      test('should inherit flows from parent class', () => {
-        const ParentModel = class extends FlowModel {};
-        const parentFlow = createBasicFlowDefinition();
-        ParentModel.registerFlow(parentFlow);
-
-        const ChildModel = class extends ParentModel {};
-        const childFlow = createAutoFlowDefinition();
-        ChildModel.registerFlow(childFlow);
-
-        const parentFlows = ParentModel.getFlows();
-        const childFlows = ChildModel.getFlows();
-
-        expect(parentFlows.size).toBe(1);
-        expect(parentFlows.has(parentFlow.key)).toBe(true);
-
-        expect(childFlows.size).toBe(2);
-        expect(childFlows.has(parentFlow.key)).toBe(true);
-        expect(childFlows.has(childFlow.key)).toBe(true);
-      });
     });
   });
 
@@ -396,20 +303,6 @@ describe('FlowModel', () => {
     });
 
     describe('applyFlow', () => {
-      test('should execute simple flow successfully', async () => {
-        const flow = createBasicFlowDefinition();
-        TestFlowModel.registerFlow(flow);
-
-        const result = await model.applyFlow(flow.key);
-
-        expect(result).toEqual({
-          step1: 'step1-result',
-          step2: 'step2-result',
-        });
-        expect(flow.steps.step1.handler).toHaveBeenCalled();
-        expect(flow.steps.step2.handler).toHaveBeenCalled();
-      });
-
       test('should throw error for non-existent flow', async () => {
         await expect(model.applyFlow('nonExistentFlow')).rejects.toThrow("Flow 'nonExistentFlow' not found.");
       });

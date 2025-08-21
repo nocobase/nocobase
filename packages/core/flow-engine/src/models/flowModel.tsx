@@ -290,7 +290,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {void}
    */
   public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
-    this: typeof FlowModel,
+    this: typeof FlowModel<any>,
     keyOrDefinition: string | FlowDefinitionOptions<InstanceType<TModel>>,
     flowDefinition?: Omit<FlowDefinitionOptions<InstanceType<TModel>>, 'key'> & { key?: string },
   ): void {
@@ -328,6 +328,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
     for (const [key, def] of staticFlows) {
       if (!allFlows.has(key)) {
+        // instance flows have priority over static flows
         allFlows.set(key, def);
       }
     }
