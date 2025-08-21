@@ -187,12 +187,13 @@ export function parseDate(value: any, options = {} as { timezone?: string }) {
 
   const input = value;
   if (typeof value === 'string') {
-    const hasTimePart = /(T\d\d)|(\s\d\d)/.test(value);
-    const match = /(.+)((\+|-)[\d]{2}:[\d]{2})$/.exec(value);
+    const match = /(.+)((\+|-)\d\d:\d\d)$/.exec(value);
     if (match) {
-      value = match[1];
-      if (hasTimePart) {
-        timezone = match[2];
+      const body = match[1];
+      const suffixTz = match[2];
+      value = body;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(body)) {
+        timezone = suffixTz;
       }
     }
     if (/^(\(|\[)/.test(value)) {
@@ -240,15 +241,13 @@ function parseDateBetween(value: any, options = {} as { timezone?: string }) {
   if (typeof value !== 'string') {
     return;
   }
-  const match = /(.+)((\+|-)[\d]{2}:[\d]{2})$/.exec(value);
+  const match = /(.+)((\+|-)\d\d:\d\d)$/.exec(value);
   let timezone = options.timezone || '+00:00';
 
-  const hasTimePart = /(T\d\d)|(\s\d\d)/.test(value);
   if (match) {
     value = match[1];
-    if (hasTimePart) {
-      timezone = match[2];
-    }
+    // 区间字符串始终采用输入后缀时区，与现有测试保持一致
+    timezone = match[2];
   }
 
   const m = /^(\(|\[)(.+),(.+)(\)|\])$/.exec(value);
