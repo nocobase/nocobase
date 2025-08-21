@@ -937,9 +937,11 @@ export class FlowRuntimeContext<
   TModel extends FlowModel = FlowModel,
   TMode extends 'runtime' | 'settings' = any,
 > extends BaseFlowModelContext {
+  declare steps: Record<string, { params: Record<string, any>; uiSchema?: any; result?: any }>;
   stepResults: Record<string, any> = {};
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
-
+  declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare getStepResults: (stepKey: string) => any;
   constructor(
     public model: TModel,
     public flowKey: string,
@@ -948,6 +950,12 @@ export class FlowRuntimeContext<
     super();
     this.addDelegate(this.model.context);
     const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
+    this.defineMethod('getStepParams', (stepKey: string) => {
+      return _.get(this.steps, [stepKey, 'params']) || {};
+    });
+    this.defineMethod('getStepResults', (stepKey: string) => {
+      return _.get(this.steps, [stepKey, 'result']) || {};
+    });
     this.defineMethod(
       'useResource',
       (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {

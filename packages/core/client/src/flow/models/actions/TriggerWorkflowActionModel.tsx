@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseRecordResource, escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import {
+  BaseRecordResource,
+  escapeT,
+  MultiRecordResource,
+  SingleRecordResource,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import { ButtonProps, Form } from 'antd';
 import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
 import { CollectionBlockModel } from '../base/BlockModel';
@@ -29,9 +35,10 @@ CollectionTriggerWorkflowActionModel.registerFlow({
   title: escapeT('Trigger workflow settings'),
   on: 'click',
   steps: {
-    runTrigger: {
+    setContextType: {
+      // hideInSettings: true,
       preset: true,
-      title: escapeT('Trigger workflows'),
+      title: escapeT('Context type'),
       uiSchema: {
         contextType: {
           type: 'string',
@@ -42,6 +49,11 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             { label: escapeT('Multiple records'), value: 'multiple' },
           ],
         },
+      },
+    },
+    runTrigger: {
+      title: escapeT('Trigger workflows'),
+      uiSchema: {
         triggerWorkflows: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -53,8 +65,10 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(ctx.t('Please enter the workflow to trigger'));
           return;
         }
+        const { contextType } = ctx.getStepParams('setContextType');
+        console.log('contextType', contextType);
         // 选中多条记录时
-        if (params.contextType === 'multiple') {
+        if (contextType === 'multiple') {
           console.log((ctx.resource as MultiRecordResource).getSelectedRows());
         }
         await ctx.api.request({
