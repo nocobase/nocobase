@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AxiosRequestConfig } from 'axios';
 import _ from 'lodash';
 import { APIResource } from './apiResource';
 import { FilterItem } from './filterItem';
@@ -33,10 +34,37 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     headers: {} as Record<string, any>,
   };
 
+  protected updateAssociationValues: string[] = [];
+  protected runActionOptions = {};
+
   protected filterGroups = new Map<string, any>();
 
   get supportsFilter() {
     return true;
+  }
+
+  mergeRequestConfig(...args: AxiosRequestConfig[]): AxiosRequestConfig {
+    const base = {} as AxiosRequestConfig;
+
+    // 限制到 2 层
+    const customizer = (objValue: any, srcValue: any, key: string, object: any, source: any, stack: any) => {
+      const depth = stack.size; // lodash 内部 stack 能告诉你当前深度
+      if (Array.isArray(srcValue)) {
+        // 数组覆盖
+        return srcValue;
+      }
+      if (depth > 1) {
+        // 超过 2 层就直接替换
+        return srcValue;
+      }
+    };
+
+    return args.reduce((acc, cur) => _.mergeWith(acc, cur, customizer), base);
+  }
+
+  setRunActionOptions(action: string, options: AxiosRequestConfig) {
+    this.runActionOptions[action] = options;
+    return this;
   }
 
   protected splitValue(value: string | string[]): string[] {
@@ -57,22 +85,25 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
         url = `${this.resourceName}:${action || 'get'}`;
       }
     }
-
     return url;
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
-    try {
-      const { data } = await this.api.request({
+    const config = this.mergeRequestConfig(
+      _.omit(this.request, ['params', 'data', 'method']),
+      {
         method: 'post',
-        headers: {
-          ...this.request.headers,
-          ...options.headers,
-        },
-        ..._.omit(this.request, ['method', 'params', 'data']),
         url: this.buildURL(action),
-        ...options,
-      });
+      },
+      this.runActionOptions?.[action],
+      options,
+    );
+    if (['create', 'update', 'firstOrCreate', 'updateOrCreate'].includes(action)) {
+      config.params = config.params || {};
+      config.params.updateAssociationValues = this.getUpdateAssociationValues();
+    }
+    try {
+      const { data } = await this.api.request(config);
       if (!data?.data) {
         return data;
       }
@@ -174,12 +205,8 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this;
   }
 
-  setUpdateAssociationValues(updateAssociationValues: string[]) {
-    return this.addRequestParameter('updateAssociationValues', updateAssociationValues);
-  }
-
   getUpdateAssociationValues(): string[] {
-    return this.request.params.updateAssociationValues || [];
+    return this.updateAssociationValues || [];
   }
 
   addUpdateAssociationValues(updateAssociationValues: string | string[]) {
@@ -190,7 +217,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
         currentUpdateAssociationValues.push(append);
       }
     });
-    this.request.params.updateAssociationValues = currentUpdateAssociationValues;
+    this.updateAssociationValues = currentUpdateAssociationValues;
     return this;
   }
 
