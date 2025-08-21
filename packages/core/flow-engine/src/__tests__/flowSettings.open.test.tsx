@@ -701,4 +701,238 @@ describe('FlowSettings.open rendering behavior', () => {
     await flowSettings.open({ model } as any);
     expect(dialog).toHaveBeenCalledTimes(1);
   });
+
+  it('resolves function-based step uiMode when single step is rendered', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-step-uimode-function', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithFunctionUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => ({ type: 'drawer', props: { title: 'Function Title', width: 800 } }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const drawer = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Function Title');
+      expect(opts.width).toBe(800);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const dialog = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { drawer, dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithFunctionUiMode', stepKey: 'step' } as any);
+
+    expect(drawer).toHaveBeenCalledTimes(1);
+    expect(dialog).not.toHaveBeenCalled();
+  });
+
+  it('resolves async function-based step uiMode when single step is rendered', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-step-uimode-async-function', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithAsyncFunctionUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: async (ctx: any) => {
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            return { type: 'dialog', props: { title: 'Async Function Title', width: 900 } };
+          },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Async Function Title');
+      expect(opts.width).toBe(900);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithAsyncFunctionUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses step static uiMode object when single step is rendered', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-step-uimode-static', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithStaticUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: { type: 'drawer', props: { title: 'Static Title', width: 700 } },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const drawer = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Static Title');
+      expect(opts.width).toBe(700);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const dialog = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { drawer, dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithStaticUiMode', stepKey: 'step' } as any);
+
+    expect(drawer).toHaveBeenCalledTimes(1);
+    expect(dialog).not.toHaveBeenCalled();
+  });
+
+  it('fallbacks to global uiMode when step has no uiMode and single step is rendered', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-step-uimode-fallback', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithoutStepUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          // no uiMode defined at step level
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const drawer = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Global Title');
+      expect(opts.width).toBe(600);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const dialog = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { drawer, dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowWithoutStepUiMode',
+      stepKey: 'step',
+      uiMode: { type: 'drawer', props: { title: 'Global Title', width: 600 } },
+    } as any);
+
+    expect(drawer).toHaveBeenCalledTimes(1);
+    expect(dialog).not.toHaveBeenCalled();
+  });
+
+  it('ignores step uiMode when multiple steps are rendered', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-multi-step-ignore-uimode', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithMultiSteps',
+      steps: {
+        step1: {
+          title: 'Step1',
+          uiMode: { type: 'drawer', props: { title: 'Should be ignored', width: 999 } },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+        step2: {
+          title: 'Step2',
+          uiMode: (ctx: any) => ({ type: 'drawer', props: { title: 'Should also be ignored', width: 888 } }),
+          uiSchema: { g: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      // Should use global uiMode setting, not step-level uiMode
+      expect(opts.title).toBe('Global Multi Steps Title');
+      expect(opts.width).toBe(1000);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const drawer = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { dialog, drawer } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowWithMultiSteps',
+      uiMode: { type: 'dialog', props: { title: 'Global Multi Steps Title', width: 1000 } },
+    } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+    expect(drawer).not.toHaveBeenCalled();
+  });
+
+  it('handles error in function-based step uiMode gracefully', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-step-uimode-error', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithErrorUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => {
+            throw new Error('uiMode function error');
+          },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    // Mock console.error to avoid log noise during test
+    const originalConsoleError = console.error;
+    console.error = vi.fn();
+
+    const dialog = vi.fn((opts: any) => {
+      // Should fallback to default 'dialog' when function throws error
+      expect(typeof opts.title === 'string').toBe(true);
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithErrorUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledWith('Error resolving uiMode function:', expect.any(Error));
+
+    // Restore console.error
+    console.error = originalConsoleError;
+  });
 });

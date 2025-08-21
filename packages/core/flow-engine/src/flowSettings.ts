@@ -16,11 +16,18 @@ import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowRuntimeContext } from './flowContext';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  resolveUiMode,
+  setupRuntimeContextSteps,
+} from './utils';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
 import type { FlowDefinition } from './types';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
-import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
 
 const Panel = Collapse.Panel;
 
@@ -438,6 +445,7 @@ export class FlowSettings {
       beforeParamsSave?: Function;
       afterParamsSave?: Function;
       ctx: any; // FlowRuntimeContext
+      uiMode: any; // UI 模式
     };
 
     const entries: StepEntry[] = [];
@@ -520,6 +528,7 @@ export class FlowSettings {
           beforeParamsSave,
           afterParamsSave,
           ctx: flowRuntimeContext,
+          uiMode: step.uiMode,
         });
       }
     }
@@ -535,8 +544,12 @@ export class FlowSettings {
     const SchemaField = createSchemaField();
     // 兼容新的 uiMode 定义：字符串或 { type, props }
     const viewer = (model as any).context.viewer;
-    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
-    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
+    // 解析 uiMode，支持函数式
+    const resolvedUiMode =
+      entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
+    const modeType: 'dialog' | 'drawer' = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type;
+    const modeProps: Record<string, any> =
+      typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
     const openView = viewer[modeType].bind(viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
