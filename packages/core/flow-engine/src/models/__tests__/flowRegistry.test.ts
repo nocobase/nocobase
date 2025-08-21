@@ -224,13 +224,13 @@ describe('InstanceFlowRegistry (extended)', () => {
     });
   });
 
-  // 新增测试：mapFlows 方法
+  // mapFlows 方法
   test('mapFlows iterates over all flows', () => {
     const model = createModel();
     model.flowRegistry.addFlows({
-      flow1: { title: 'Flow 1' },
-      flow2: { title: 'Flow 2' },
-      flow3: { title: 'Flow 3' },
+      flow1: { title: 'Flow 1', steps: {} },
+      flow2: { title: 'Flow 2', steps: {} },
+      flow3: { title: 'Flow 3', steps: {} },
     });
 
     const titles = model.flowRegistry.mapFlows((flow) => flow.title);
@@ -240,10 +240,10 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(keys).toEqual(['flow1', 'flow2', 'flow3']);
   });
 
-  // 新增测试：getFlows 返回 Map
+  // getFlows 返回 Map
   test('getFlows returns Map of flows', () => {
     const model = createModel();
-    model.flowRegistry.addFlow('test', { title: 'Test' });
+    model.flowRegistry.addFlow('test', { title: 'Test', steps: {} });
 
     const flows = model.flowRegistry.getFlows();
     expect(flows instanceof Map).toBe(true);
@@ -251,23 +251,24 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flows.has('test')).toBe(true);
   });
 
-  // 新增测试：removeFlow 独立测试
+  // removeFlow 独立测试
   test('removeFlow deletes flow from registry', () => {
     const model = createModel();
-    model.flowRegistry.addFlow('test', { title: 'Test' });
+    model.flowRegistry.addFlow('test', { title: 'Test', steps: {} });
 
     expect(model.flowRegistry.hasFlow('test')).toBe(true);
     model.flowRegistry.removeFlow('test');
     expect(model.flowRegistry.hasFlow('test')).toBe(false);
   });
 
-  // 新增测试：FlowDef setters
-  test('FlowDef setters update properties', () => {
+  // FlowDefinition setters
+  test('FlowDefinition setters update properties', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
       title: 'Test',
       manual: false,
       on: 'update',
+      steps: {},
     });
 
     flow.title = 'Updated Title';
@@ -279,10 +280,10 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flow.on).toBe('create');
   });
 
-  // 新增测试：FlowDef setOptions
-  test('FlowDef setOptions updates flow properties', () => {
+  // FlowDefinition setOptions
+  test('FlowDefinition setOptions updates flow properties', () => {
     const model = createModel();
-    const flow = model.flowRegistry.addFlow('test', { title: 'Test' });
+    const flow = model.flowRegistry.addFlow('test', { title: 'Test', steps: {} });
 
     flow.setOptions({
       title: 'New Title',
@@ -297,8 +298,8 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flow.on).toBe('delete');
   });
 
-  // 新增测试：mapSteps 方法
-  test('FlowDef mapSteps iterates over all steps', () => {
+  // mapSteps 方法
+  test('FlowDefinition mapSteps iterates over all steps', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
       title: 'Test',
@@ -316,7 +317,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(stepKeys).toEqual(['step1', 'step2', 'step3']);
   });
 
-  // 新增测试：FlowStep 属性和方法
+  // FlowStep 属性和方法
   test('FlowStep properties and methods', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
@@ -345,7 +346,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(step.title).toBe('Updated Step Title');
   });
 
-  // 新增测试：FlowStep setOptions
+  // FlowStep setOptions
   test('FlowStep setOptions updates step properties', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
@@ -369,7 +370,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(step.use).toBe('newAction');
   });
 
-  // 新增测试：边界情况和错误处理
+  // 边界情况和错误处理
   test('handles non-existent flow operations gracefully', () => {
     const model = createModel();
 
@@ -384,7 +385,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(emptyResults).toEqual([]);
   });
 
-  // 新增测试：addStep 与现有 key 的行为
+  // addStep 与现有 key 的行为
   test('addStep with existing key updates step', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
@@ -402,7 +403,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flow.getStep('step1')!.title).toBe('Updated');
   });
 
-  // 新增测试：FlowStep 的异步方法
+  // FlowStep 的异步方法
   test('FlowStep async methods call flowDef methods', async () => {
     const model = createModel();
     const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
@@ -431,7 +432,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flow.hasStep('step2')).toBe(false);
   });
 
-  // 新增测试：FlowDef defaultParams 的默认值
+  // FlowDefinition defaultParams 的默认值
   test('FlowStep defaultParams returns empty object when undefined', () => {
     const model = createModel();
     const flow = model.flowRegistry.addFlow('test', {
@@ -443,7 +444,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(step.defaultParams).toEqual({});
   });
 
-  // 新增测试：空的 addFlows 调用
+  // 空的 addFlows 调用
   test('addFlows handles empty or null input', () => {
     const model = createModel();
 

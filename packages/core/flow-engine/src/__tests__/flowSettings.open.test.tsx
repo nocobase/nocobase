@@ -106,7 +106,6 @@ describe('FlowSettings.open rendering behavior', () => {
   afterEach(() => {
     document.querySelectorAll('[data-testid]')?.forEach((n) => n.remove());
     vi.clearAllMocks();
-    FlowModel.clearFlows();
   });
 
   it('renders single-step form directly when flowKey+stepKey provided (no Collapse)', async () => {

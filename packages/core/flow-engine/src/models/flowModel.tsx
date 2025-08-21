@@ -48,8 +48,6 @@ import { FlowDefinition } from '../FlowDefinition';
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
-// 使用WeakMap存储每个类的flows
-let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 // 使用WeakMap存储每个类的 GlobalFlowRegistry 单例
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
@@ -283,7 +281,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * 注册一个流程 (Flow)。支持泛型，能够正确推导出模型类型。
+   * 注册一个 Flow。
    * @template TModel 具体的FlowModel子类类型
    * @param {string | FlowDefinitionOptions<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinitionOptions 对象。
    *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
@@ -292,48 +290,23 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {void}
    */
   public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
-    this: TModel,
+    this: typeof FlowModel,
     keyOrDefinition: string | FlowDefinitionOptions<InstanceType<TModel>>,
     flowDefinition?: Omit<FlowDefinitionOptions<InstanceType<TModel>>, 'key'> & { key?: string },
   ): void {
-    let definition: FlowDefinitionOptions<InstanceType<TModel>>;
-    let key: string;
-
-    if (typeof keyOrDefinition === 'string' && flowDefinition) {
-      key = keyOrDefinition;
-      definition = {
-        ...flowDefinition,
-        key,
-      };
-    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
-      key = keyOrDefinition.key;
-      definition = keyOrDefinition;
+    if (typeof keyOrDefinition === 'string') {
+      this.globalFlowRegistry.addFlow(keyOrDefinition, flowDefinition);
     } else {
-      throw new Error('Invalid arguments for registerFlow');
+      this.globalFlowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
     }
-
-    // 确保当前类有自己的flows Map
-    const ModelClass = this;
-    if (!modelFlows.has(ModelClass as any)) {
-      modelFlows.set(ModelClass as any, new Map<string, FlowDefinition>());
-    }
-    const flows = modelFlows.get(ModelClass as any);
-    if (!flows) {
-      throw new Error('Failed to get flows Map for model class');
-    }
-
-    if (flows.has(key)) {
-      console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
-    }
-    flows.set(key, new FlowDefinition(definition, (this as InstanceType<TModel>).flowRegistry));
   }
 
-  /**
-   * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
-   */
-  public static clearFlows(): void {
-    modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
-  }
+  // /**
+  //  * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
+  //  */
+  // public static clearFlows(): void {
+  //   modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+  // }
 
   /**
    * 获取已注册的流程定义。
@@ -358,44 +331,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         allFlows.set(key, def);
       }
     }
-    return allFlows;
-  }
-
-  /**
-   * 获取所有已注册的流程定义，包括从父类继承的流程。
-   * @returns {Map<string, FlowDefinition>} 一个包含所有流程定义的 Map 对象，Key 为流程 Key，Value 为流程定义。
-   */
-  public static getFlows(): Map<string, FlowDefinition> {
-    // 创建一个新的Map来存储所有流程
-    const allFlows = new Map<string, FlowDefinition>();
-
-    // 收集所有类的flows
-    const classFlows: Map<string, FlowDefinition>[] = [];
-    let cls: typeof FlowModel | null = this;
-    while (cls) {
-      const flows = modelFlows.get(cls);
-      if (flows) {
-        classFlows.push(flows);
-      }
-
-      // 获取父类
-      const proto = Object.getPrototypeOf(cls);
-      if (proto === Function.prototype || proto === Object.prototype) {
-        break;
-      }
-      cls = proto as typeof FlowModel;
-    }
-
-    // 按照父类优先的顺序合并flows，但每个类内部维持原来的顺序
-    // 从最后一个（最顶层父类）开始合并到第一个（当前类）
-    // 子类的同名flow会覆盖父类的
-    for (let i = classFlows.length - 1; i >= 0; i--) {
-      const flows = classFlows[i];
-      for (const [key, flow] of flows.entries()) {
-        allFlows.set(key, flow);
-      }
-    }
-
     return allFlows;
   }
 

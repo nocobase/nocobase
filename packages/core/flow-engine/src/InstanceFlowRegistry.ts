@@ -8,61 +8,22 @@
  */
 
 import { observable } from '@formily/reactive';
-import _ from 'lodash';
 import { FlowModel } from './models';
-import { FlowDefinitionOptions, IFlowRepository } from './types';
 import { FlowDefinition } from './FlowDefinition';
+import { BaseFlowRegistry } from './BaseFlowRegistry';
 
 type FlowKey = string;
 
-export class InstanceFlowRegistry implements IFlowRepository {
-  flowDefs: Map<FlowKey, FlowDefinition> = observable.shallow(new Map());
-
-  constructor(protected model: FlowModel) {}
-
-  addFlows(flowDefs: Record<FlowKey, Omit<FlowDefinitionOptions, 'key'>>): void {
-    for (const [flowKey, flowOptions] of Object.entries(flowDefs || {})) {
-      this.addFlow(flowKey, flowOptions);
-    }
+export class InstanceFlowRegistry extends BaseFlowRegistry {
+  constructor(protected model: FlowModel) {
+    super();
   }
 
-  addFlow(flowKey: FlowKey, flowOptions: Omit<FlowDefinitionOptions, 'key'>) {
-    const flowDef = new FlowDefinition(
-      {
-        key: flowKey,
-        ...flowOptions,
-      },
-      this,
-    );
-    this.flowDefs.set(flowKey, flowDef);
-    return flowDef;
-  }
-
-  removeFlow(flowKey: FlowKey) {
-    this.flowDefs.delete(flowKey);
-  }
-
-  getFlows() {
-    return this.flowDefs;
-  }
-
-  mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[] {
-    return [...this.flowDefs.values()].map((flow) => callback(flow));
-  }
-
-  hasFlow(flowKey: FlowKey) {
-    return this.flowDefs.has(flowKey);
-  }
-
-  getFlow(flowKey: FlowKey): FlowDefinition | undefined {
-    return this.flowDefs.get(flowKey) as any;
-  }
-
-  async saveFlow(flow: FlowDefinition) {
+  async saveFlow(flow: FlowDefinition): Promise<void> {
     await this.model.save();
   }
 
-  async destroyFlow(flowKey: FlowKey) {
+  async destroyFlow(flowKey: FlowKey): Promise<void> {
     this.removeFlow(flowKey);
     // TODO
     await this.model.save();

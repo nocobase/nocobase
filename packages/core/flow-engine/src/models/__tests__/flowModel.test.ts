@@ -12,9 +12,8 @@ import { vi } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowDefinition, FlowModelOptions, ModelConstructor } from '../../types';
+import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowModel, defineFlow } from '../flowModel';
-import { ForkFlowModel } from '../forkFlowModel';
 import { FlowExitException } from '../../utils';
 import { RecordProxy } from '../../RecordProxy';
 
@@ -75,7 +74,7 @@ const createMockFlowEngine = (): FlowEngine => {
   return new FlowEngine();
 };
 
-const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
+const createBasicFlowDefinition = (overrides: Partial<FlowDefinitionOptions> = {}): FlowDefinitionOptions => ({
   key: 'testFlow',
   steps: {
     step1: {
@@ -88,7 +87,7 @@ const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): Flo
   ...overrides,
 });
 
-const createAutoFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
+const createAutoFlowDefinition = (overrides: Partial<FlowDefinitionOptions> = {}): FlowDefinitionOptions => ({
   key: 'autoFlow',
   sort: 1,
   steps: {
@@ -99,7 +98,10 @@ const createAutoFlowDefinition = (overrides: Partial<FlowDefinition> = {}): Flow
   ...overrides,
 });
 
-const createEventFlowDefinition = (eventName: string, overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
+const createEventFlowDefinition = (
+  eventName: string,
+  overrides: Partial<FlowDefinitionOptions> = {},
+): FlowDefinitionOptions => ({
   key: `${eventName}Flow`,
   on: { eventName },
   steps: {
@@ -112,8 +114,8 @@ const createEventFlowDefinition = (eventName: string, overrides: Partial<FlowDef
 
 const createErrorFlowDefinition = (
   errorMessage = 'Test error',
-  overrides: Partial<FlowDefinition> = {},
-): FlowDefinition => ({
+  overrides: Partial<FlowDefinitionOptions> = {},
+): FlowDefinitionOptions => ({
   key: 'errorFlow',
   steps: {
     errorStep: {
@@ -285,9 +287,7 @@ describe('FlowModel', () => {
     let TestFlowModel: typeof FlowModel;
 
     beforeEach(() => {
-      TestFlowModel = class extends FlowModel<any> {
-        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
-      };
+      TestFlowModel = class extends FlowModel<any> {};
     });
 
     describe('registerFlow', () => {
@@ -391,9 +391,7 @@ describe('FlowModel', () => {
     let TestFlowModel: typeof FlowModel<DefaultStructure>;
 
     beforeEach(() => {
-      TestFlowModel = class extends FlowModel {
-        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
-      };
+      TestFlowModel = class extends FlowModel {};
       model = new TestFlowModel(modelOptions);
     });
 
@@ -424,7 +422,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle FlowExitException correctly', async () => {
-        const exitFlow: FlowDefinition = {
+        const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
             step1: {
@@ -465,7 +463,7 @@ describe('FlowModel', () => {
           defaultParams: { actionParam: 'actionValue' },
         });
 
-        const actionFlow: FlowDefinition = {
+        const actionFlow: FlowDefinitionOptions = {
           key: 'actionFlow',
           steps: {
             actionStep: {
@@ -494,7 +492,7 @@ describe('FlowModel', () => {
         model.flowEngine.getAction = vi.fn().mockReturnValue(null);
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-        const actionFlow: FlowDefinition = {
+        const actionFlow: FlowDefinitionOptions = {
           key: 'actionFlow',
           steps: {
             missingActionStep: {
@@ -1435,9 +1433,7 @@ describe('FlowModel', () => {
     let TestFlowModel: any;
 
     beforeEach(() => {
-      TestFlowModel = class extends FlowModel {
-        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
-      };
+      TestFlowModel = class extends FlowModel {};
       model = new TestFlowModel(modelOptions);
     });
 
@@ -1577,17 +1573,13 @@ describe('FlowModel', () => {
 
     describe('title inheritance', () => {
       test('should not inherit meta title from parent class by default', () => {
-        const ParentModel = class extends FlowModel {
-          static name = 'ParentModel';
-        };
+        const ParentModel = class extends FlowModel {};
         ParentModel.define({
           label: 'Parent Title',
           group: 'parent',
         });
 
-        const ChildModel = class extends ParentModel {
-          static name = 'ChildModel';
-        };
+        const ChildModel = class extends ParentModel {};
 
         const parentInstance = new ParentModel(modelOptions);
         const childInstance = new ChildModel(modelOptions);
@@ -1598,17 +1590,13 @@ describe('FlowModel', () => {
       });
 
       test('should override parent meta title with child meta title', () => {
-        const ParentModel = class extends FlowModel {
-          static name = 'ParentModel';
-        };
+        const ParentModel = class extends FlowModel {};
         ParentModel.define({
           label: 'Parent Title',
           group: 'parent',
         });
 
-        const ChildModel = class extends ParentModel {
-          static name = 'ChildModel';
-        };
+        const ChildModel = class extends ParentModel {};
         ChildModel.define({
           label: 'Child Title',
           group: 'child',
@@ -1622,17 +1610,13 @@ describe('FlowModel', () => {
       });
 
       test('should allow instance title to override meta title', () => {
-        const ParentModel = class extends FlowModel {
-          static name = 'ParentModel';
-        };
+        const ParentModel = class extends FlowModel {};
         ParentModel.define({
           label: 'Parent Title',
           group: 'parent',
         });
 
-        const ChildModel = class extends ParentModel {
-          static name = 'ChildModel';
-        };
+        const ChildModel = class extends ParentModel {};
         ChildModel.define({
           label: 'Child Title',
           group: 'child',
@@ -1854,9 +1838,7 @@ describe('FlowModel', () => {
     let TestFlowModel: typeof FlowModel;
 
     beforeEach(() => {
-      TestFlowModel = class extends FlowModel<any> {
-        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
-      };
+      TestFlowModel = class extends FlowModel<any> {};
       model = new TestFlowModel({
         ...modelOptions,
         uid: 'test-expression-model-uid',
@@ -1865,7 +1847,7 @@ describe('FlowModel', () => {
 
     describe('{{ctx.xxx.yyy.zzz}} expression resolution', () => {
       test('should resolve simple ctx expressions in step parameters', async () => {
-        const flow: FlowDefinition = {
+        const flow: FlowDefinitionOptions = {
           key: 'expressionFlow',
 
           steps: {
@@ -1901,7 +1883,7 @@ describe('FlowModel', () => {
       });
 
       test('should resolve nested ctx expressions with multiple levels', async () => {
-        const flow: FlowDefinition = {
+        const flow: FlowDefinitionOptions = {
           key: 'nestedExpressionFlow',
 
           steps: {
@@ -1948,7 +1930,7 @@ describe('FlowModel', () => {
       });
 
       test('should resolve async expressions with RecordProxy', async () => {
-        const flow: FlowDefinition = {
+        const flow: FlowDefinitionOptions = {
           key: 'asyncRecordFlow',
 
           steps: {
@@ -2117,7 +2099,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle mixed sync and async expressions', async () => {
-        const flow: FlowDefinition = {
+        const flow: FlowDefinitionOptions = {
           key: 'mixedFlow',
 
           steps: {
@@ -2216,7 +2198,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle deeply nested async expressions', async () => {
-        const flow: FlowDefinition = {
+        const flow: FlowDefinitionOptions = {
           key: 'deepAsyncFlow',
 
           steps: {
@@ -2382,9 +2364,7 @@ describe('FlowModel', () => {
     let TestFlowModel: typeof FlowModel;
 
     beforeEach(() => {
-      TestFlowModel = class extends FlowModel<any> {
-        static name = `TestModel_${Math.random().toString(36).substring(2, 11)}`;
-      };
+      TestFlowModel = class extends FlowModel<any> {};
       model = new TestFlowModel({
         ...modelOptions,
         uid: 'test-raw-params-model-uid',
@@ -2421,7 +2401,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const actionFlow: FlowDefinition = {
+        const actionFlow: FlowDefinitionOptions = {
           key: 'rawParamsActionFlow',
           steps: {
             rawParamsStep: {
@@ -2459,7 +2439,7 @@ describe('FlowModel', () => {
           return 'step-result';
         });
 
-        const stepFlow: FlowDefinition = {
+        const stepFlow: FlowDefinitionOptions = {
           key: 'rawParamsStepFlow',
           steps: {
             rawParamsStep: {
@@ -2508,7 +2488,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const priorityFlow: FlowDefinition = {
+        const priorityFlow: FlowDefinitionOptions = {
           key: 'priorityFlow',
           steps: {
             priorityStep: {
@@ -2553,7 +2533,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const resolvedFlow: FlowDefinition = {
+        const resolvedFlow: FlowDefinitionOptions = {
           key: 'resolvedFlow',
           steps: {
             resolvedStep: {
@@ -2599,7 +2579,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const dynamicFlow: FlowDefinition = {
+        const dynamicFlow: FlowDefinitionOptions = {
           key: 'dynamicFlow',
           steps: {
             dynamicStep: {
@@ -2640,7 +2620,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const dynamicResolvedFlow: FlowDefinition = {
+        const dynamicResolvedFlow: FlowDefinitionOptions = {
           key: 'dynamicResolvedFlow',
           steps: {
             dynamicResolvedStep: {
@@ -2681,7 +2661,7 @@ describe('FlowModel', () => {
           },
         });
 
-        const asyncFlow: FlowDefinition = {
+        const asyncFlow: FlowDefinitionOptions = {
           key: 'asyncFlow',
           steps: {
             asyncStep: {
@@ -2722,7 +2702,7 @@ describe('FlowModel', () => {
           return 'resolved-result';
         });
 
-        const mixedFlow: FlowDefinition = {
+        const mixedFlow: FlowDefinitionOptions = {
           key: 'mixedFlow',
           steps: {
             rawStep: {
@@ -2776,7 +2756,7 @@ describe('FlowModel', () => {
           return 'model-params-result';
         });
 
-        const modelParamsFlow: FlowDefinition = {
+        const modelParamsFlow: FlowDefinitionOptions = {
           key: 'modelParamsFlow',
           steps: {
             modelStep: {
@@ -2837,14 +2817,12 @@ describe('FlowModel', () => {
     });
 
     test('should handle flows with no steps', async () => {
-      const emptyFlow: FlowDefinition = {
+      const emptyFlow: FlowDefinitionOptions = {
         key: 'emptyFlow',
         steps: {},
       };
 
-      const TestModel = class extends FlowModel {
-        static name = 'TestEmptyFlowModel';
-      };
+      const TestModel = class extends FlowModel {};
       TestModel.registerFlow(emptyFlow);
 
       const model = new TestModel(modelOptions);
@@ -2855,9 +2833,7 @@ describe('FlowModel', () => {
 
     test('should handle concurrent flow executions', async () => {
       const flow = createBasicFlowDefinition();
-      const TestModel = class extends FlowModel {
-        static name = 'TestConcurrentModel';
-      };
+      const TestModel = class extends FlowModel {};
       TestModel.registerFlow(flow);
 
       const model = new TestModel(modelOptions);

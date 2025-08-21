@@ -28,6 +28,8 @@ import type { FlowModel } from './models';
  */
 export type ArrayElementType<T> = T extends (infer U)[] ? U : T;
 
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
     ? DeepPartial<U>[]
