@@ -108,14 +108,22 @@ describe('FlowSettings.open rendering behavior', () => {
     vi.clearAllMocks();
   });
 
+  // 创建测试特定的 FlowModel 子类，确保每个测试有独立的 globalFlowRegistry
+  const createIsolatedFlowModel = (testId: string) => {
+    // 动态创建匿名类，每个类都有独立的 globalFlowRegistry
+    return class extends FlowModel {
+      static testId = testId; // 用于调试识别
+    };
+  };
+
   it('renders single-step form directly when flowKey+stepKey provided (no Collapse)', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-1', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-1');
+    const model = new TestFlowModel({ uid: 'm-open-1', flowEngine: engine });
 
     // Register a dummy flow with one step
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'testFlow',
       steps: {
         general: {
@@ -161,10 +169,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('renders Collapse when only one step matched but no stepKey provided', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-2', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-2');
+    const model = new TestFlowModel({ uid: 'm-open-2', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'testFlow2',
       steps: {
         general: {
@@ -210,7 +218,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('shows info when there are no configurable steps (entries length 0)', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-none', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-3');
+    const model = new TestFlowModel({ uid: 'm-open-none', flowEngine: engine });
 
     // message spy
     const info = vi.fn();
@@ -233,11 +242,11 @@ describe('FlowSettings.open rendering behavior', () => {
   it('uses drawer uiMode when specified', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-drawer', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-4');
+    const model = new TestFlowModel({ uid: 'm-open-drawer', flowEngine: engine });
 
     // Register one simple flow/step
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f',
       steps: {
         s: {
@@ -270,12 +279,12 @@ describe('FlowSettings.open rendering behavior', () => {
   it('saves successfully and calls hooks, messages, and close', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-save', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-5');
+    const model = new TestFlowModel({ uid: 'm-open-save', flowEngine: engine });
 
     const beforeHook = vi.fn();
     const afterHook = vi.fn();
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'fx',
       steps: {
         general: {
@@ -332,10 +341,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('calls onSaved callback after successful save', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-6');
+    const model = new TestFlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flow',
       steps: {
         step: {
@@ -374,10 +383,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('calls onCancel callback when cancel button clicked', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-7');
+    const model = new TestFlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flow',
       steps: {
         step: {
@@ -415,10 +424,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('handles save error by showing error message and keeping dialog open', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-error', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-8');
+    const model = new TestFlowModel({ uid: 'm-open-error', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'fy',
       steps: {
         s: {
@@ -462,10 +471,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('filters steps by preset when preset=true', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-preset', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-9');
+    const model = new TestFlowModel({ uid: 'm-open-preset', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'pf',
       steps: {
         a: {
@@ -500,10 +509,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('shows info when preset=true but no step is preset', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-10');
+    const model = new TestFlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'pf2',
       steps: {
         x: { title: 'X', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
@@ -524,10 +533,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-11');
+    const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flowObj',
       steps: {
         step: {
@@ -577,10 +586,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('accepts uiMode object with type drawer and calls viewer.drawer', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-12');
+    const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flowObj2',
       steps: {
         step: {
@@ -615,10 +624,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('sets title to step title when flowKey+stepKey are provided and only one step matches', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-step', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-13');
+    const model = new TestFlowModel({ uid: 'm-open-title-step', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'tf-step',
       steps: {
         general: {
@@ -644,10 +653,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('sets title to flow title when only one flow and no stepKey', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-14');
+    const model = new TestFlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'tf-flow',
       title: 'My Flow',
       steps: {
@@ -673,15 +682,15 @@ describe('FlowSettings.open rendering behavior', () => {
   it('sets empty title when rendering multiple flows together', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-15');
+    const model = new TestFlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f1',
       title: 'Flow 1',
       steps: { s1: { title: 'S1', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
     });
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f2',
       title: 'Flow 2',
       steps: { s2: { title: 'S2', uiSchema: { b: { type: 'string', 'x-component': 'Input' } } } },

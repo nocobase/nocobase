@@ -290,6 +290,11 @@ describe('FlowModel', () => {
     beforeEach(() => {
       TestFlowModel = class extends FlowModel<any> {};
     });
+
+    it('placeholder test - should create FlowModel subclass', () => {
+      expect(TestFlowModel).toBeDefined();
+      expect(TestFlowModel.prototype).toBeInstanceOf(FlowModel);
+    });
   });
 
   // ==================== FLOW EXECUTION ====================
