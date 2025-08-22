@@ -24,6 +24,11 @@ type ViewType = 'drawer' | 'popover' | 'dialog' | 'embed';
 type ViewProps = {
   content: React.ReactNode | ((view: FlowView) => React.ReactNode);
   width?: number | string;
+  /**
+   * 是否继承父类上下文
+   * @default true
+   */
+  inheritContext?: boolean;
   [key: string]: any;
 };
 

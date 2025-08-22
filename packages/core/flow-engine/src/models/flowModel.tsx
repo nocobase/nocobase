@@ -1047,6 +1047,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
+  removeParentDelegate() {
+    if (!this.parent) {
+      return;
+    }
+    this.context.removeDelegate(this.parent.context);
+  }
+
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
     let model: T;
     if (options instanceof FlowModel) {
