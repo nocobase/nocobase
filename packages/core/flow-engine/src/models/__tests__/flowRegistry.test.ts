@@ -38,6 +38,7 @@ describe('InstanceFlowRegistry (extended)', () => {
       flowKey: 'flow1',
       key: 'step1',
       title: 'Step 1 (updated)',
+      sort: 1,
     });
   });
 
@@ -74,6 +75,7 @@ describe('InstanceFlowRegistry (extended)', () => {
       title: 'S1',
       key: 's1',
       flowKey: 'flowB',
+      sort: 1,
     });
   });
 
@@ -101,39 +103,79 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(model.flowRegistry.hasFlow('flow1')).toBe(false);
   });
 
-  test.skip('moveStep only adjusts sort (no Map reset)', () => {
+  // InstanceFlowRegistry moveStep tests
+  test('moveStep reorders steps with integer sort values', async () => {
     const model = createModel();
-    const flow = model.flowRegistry.addFlow('flow1', {
-      title: 'Flow 1',
+    const flow = model.flowRegistry.addFlow('testFlow', {
+      title: 'Test Flow',
       steps: {
-        s1: { title: 'S1', sort: 10 } as any,
-        s2: { title: 'S2', sort: 20 } as any,
-        s3: { title: 'S3', sort: 30 } as any,
+        step1: { title: 'Step 1' } as any,
+        step2: { title: 'Step 2' } as any,
+        step3: { title: 'Step 3' } as any,
       },
     });
 
-    // 移动 s3 到 s1 前
-    flow.moveStep('s3', 's1');
+    // Move step3 before step2
+    await model.flowRegistry.moveStep('testFlow', 'step3', 'step2');
 
-    const s1 = flow.getStep('s1') as any;
-    const s2 = flow.getStep('s2') as any;
-    const s3 = flow.getStep('s3') as any;
+    // Verify new order
+    const reorderedSteps = Object.keys(flow.steps);
+    expect(reorderedSteps).toEqual(['step1', 'step3', 'step2']);
 
-    // 只关心排序关系：s3 应该在 s1 之前（sort 更小）
-    expect(s3.sort).toBeLessThan(s1.sort);
-    // 其他步骤的排序可以保持或在无间隙时被规范化，这里不做强绑定
-    expect(s1.sort).toBeGreaterThan(0);
-    expect(s2.sort).toBeGreaterThan(s1.sort - 10); // 宽松断言，防止规范化导致的变动
+    // Verify sort values are integers and in correct order
+    expect(flow.getStep('step1')?.serialize().sort).toBe(1);
+    expect(flow.getStep('step3')?.serialize().sort).toBe(2);
+    expect(flow.getStep('step2')?.serialize().sort).toBe(3);
+  });
 
-    // 再把 s1 移到 s2 前，断言 s1.sort < s2.sort
-    const beforeS1Sort = (flow.getStep('s1') as any).sort;
-    flow.moveStep('s1', 's2');
-    const afterS1Sort = (flow.getStep('s1') as any).sort;
-    const afterS2Sort = (flow.getStep('s2') as any).sort;
+  test('moveStep calls model.save after reordering', async () => {
+    const model = createModel();
+    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
 
-    expect(afterS1Sort).toBeLessThan(afterS2Sort);
-    // 至少发生了变化（有意义的移动）
-    expect(afterS1Sort).not.toBe(beforeS1Sort);
+    model.flowRegistry.addFlow('testFlow', {
+      title: 'Test Flow',
+      steps: {
+        step1: { title: 'Step 1' } as any,
+        step2: { title: 'Step 2' } as any,
+      },
+    });
+
+    await model.flowRegistry.moveStep('testFlow', 'step1', 'step2');
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    saveSpy.mockRestore();
+  });
+
+  test('moveStep throws error for non-existent flow', async () => {
+    const model = createModel();
+    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+
+    await expect(model.flowRegistry.moveStep('nonExistentFlow', 'step1', 'step2')).rejects.toThrow(
+      "Flow 'nonExistentFlow' not found",
+    );
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    saveSpy.mockRestore();
+  });
+
+  test('moveStep throws error for non-existent steps', async () => {
+    const model = createModel();
+    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+
+    model.flowRegistry.addFlow('testFlow', {
+      title: 'Test Flow',
+      steps: {
+        step1: { title: 'Step 1' } as any,
+        step2: { title: 'Step 2' } as any,
+      },
+    });
+
+    await expect(model.flowRegistry.moveStep('testFlow', 'nonExistentStep', 'step2')).rejects.toThrow(
+      "Source step 'nonExistentStep' not found",
+    );
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    saveSpy.mockRestore();
   });
 
   test('toData merges steps into options snapshot', () => {

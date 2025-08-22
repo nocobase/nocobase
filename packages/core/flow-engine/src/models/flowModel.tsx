@@ -45,9 +45,14 @@ import { FlowSettingsOpenOptions } from '../flowSettings';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
+import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
+import type { EventDefinition } from '../types';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
+
+// 使用 WeakMap 为每个类缓存一个 ModelEventRegistry 实例
+const classEventRegistries = new WeakMap<typeof FlowModel, ModelEventRegistry>();
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
@@ -225,7 +230,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return reg;
   }
 
-  // 受保护：获取当前类的动作注册表（含父子链注入），按类缓存
+  // 获取当前类的动作注册表（含父子链注入），按类缓存
   protected static get actionRegistry(): ModelActionRegistry {
     const ModelClass = this;
     let registry = classActionRegistries.get(ModelClass);
@@ -240,6 +245,25 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
       registry = new ModelActionRegistry(ModelClass, parentRegistry);
       classActionRegistries.set(ModelClass, registry);
+    }
+    return registry;
+  }
+
+  // 获取当前类的事件注册表（含父子链注入），按类缓存
+  protected static get eventRegistry(): ModelEventRegistry {
+    const ModelClass = this;
+    let registry = classEventRegistries.get(ModelClass);
+    if (!registry) {
+      let parentRegistry: ModelEventRegistry | null = null;
+      const ParentClass = Object.getPrototypeOf(ModelClass);
+      if (ParentClass && ParentClass !== Function.prototype && ParentClass !== Object.prototype) {
+        const isSubclassOfFlowModel = ParentClass === FlowModel || isInheritedFrom(ParentClass, FlowModel);
+        if (isSubclassOfFlowModel) {
+          parentRegistry = (ParentClass as typeof FlowModel).eventRegistry as ModelEventRegistry;
+        }
+      }
+      registry = new ModelEventRegistry(ModelClass, parentRegistry);
+      classEventRegistries.set(ModelClass, registry);
     }
     return registry;
   }
@@ -259,6 +283,23 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     actions: Record<string, ActionDefinition<TModel>>,
   ): void {
     this.actionRegistry.registerActions(actions);
+  }
+
+  /**
+   * 注册仅当前 FlowModel 类及其子类可用的 Event。
+   * 该注册是类级别的，不会影响全局（FlowEngine）的 Event 注册。
+   */
+  public static registerEvent<TModel extends FlowModel = FlowModel>(definition: EventDefinition<TModel>): void {
+    this.eventRegistry.registerEvent(definition);
+  }
+
+  /**
+   * 批量注册仅当前 FlowModel 类及其子类可用的 Events。
+   */
+  public static registerEvents<TModel extends FlowModel = FlowModel>(
+    events: Record<string, EventDefinition<TModel>>,
+  ): void {
+    this.eventRegistry.registerEvents(events);
   }
 
   get title() {
@@ -375,6 +416,31 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (globalActions) for (const [k, v] of globalActions) actions.set(k, v);
     for (const [k, v] of merged) actions.set(k, v);
     return actions;
+  }
+
+  /**
+   * 获取当前模型可用的所有 Events：
+   * - 包含全局（FlowEngine）注册的 Events；
+   * - 合并类级（FlowModel.registerEvent(s)）注册的 Events，并考虑继承（子类覆盖父类同名 Event）。
+   */
+  public getEvents<TModel extends FlowModel = this>(): Map<string, EventDefinition<TModel>> {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const merged = ModelClass.eventRegistry.getEvents();
+    const events = new Map<string, EventDefinition<TModel>>();
+    const globalEvents = this.flowEngine?.getEvents<TModel>();
+    if (globalEvents) for (const [k, v] of globalEvents) events.set(k, v);
+    for (const [k, v] of merged) events.set(k, v);
+    return events;
+  }
+
+  /**
+   * 获取指定名称的 Event（优先返回类级注册的，未找到则回退到全局）。
+   */
+  public getEvent<TModel extends FlowModel = this>(name: string): EventDefinition<TModel> | undefined {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const own = ModelClass.eventRegistry.getEvent(name) as EventDefinition<TModel> | undefined;
+    if (own) return own;
+    return this.flowEngine?.getEvent<TModel>(name);
   }
 
   /**
