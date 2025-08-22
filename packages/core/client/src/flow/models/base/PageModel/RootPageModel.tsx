@@ -27,7 +27,7 @@ RootPageModel.registerFlow({
         ctx.model.setProps('routeId', data?.data?.[0]?.id);
         const routes = _.castArray(data?.data?.[0]?.children);
         for (const route of routes) {
-          const model = await ctx.engine.createModel({
+          const model = ctx.engine.createModel({
             parentId: ctx.model.uid,
             uid: route.schemaUid,
             subKey: 'tabs',

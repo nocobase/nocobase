@@ -43,7 +43,7 @@ export class BasePageTabModel extends FlowModel<{
   }
 
   render() {
-    return <div>{this.getTabTitle()}</div>;
+    return this.getTabTitle();
   }
 }
 
@@ -73,7 +73,7 @@ export class RootPageTabModel extends BasePageTabModel {
       <PageTabChildrenRenderer
         ctx={this.context}
         options={{
-          uid: this.props.route.tabSchemaName,
+          uid: this.props.route.schemaUid,
           subKey: 'grid',
           async: true,
           subType: 'object',
