@@ -17,7 +17,9 @@ import { BlockGridModel } from './GridModel';
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(
     async () => {
-      return await ctx.engine.loadOrCreateModel(options);
+      const model: FlowModel = await ctx.engine.loadOrCreateModel(options);
+      model.context.addDelegate(ctx);
+      return model;
     },
     {
       refreshDeps: [ctx.model.uid],

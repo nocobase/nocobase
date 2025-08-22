@@ -73,6 +73,9 @@ export function useDialog() {
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {
+        if (config.preventClose) {
+          return;
+        }
         resolvePromise?.(result);
         dialogRef.current?.destroy();
       },
@@ -88,9 +91,17 @@ export function useDialog() {
       },
     };
 
+    const ctx = new FlowContext();
+    ctx.defineProperty('view', {
+      get: () => currentDialog,
+    });
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    }
+
     // 内部组件，在 Provider 内部计算 content
     const DialogWithContext = () => {
-      const content = typeof config.content === 'function' ? config.content(currentDialog) : config.content;
+      const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
 
       return (
         <DialogComponent
@@ -109,12 +120,6 @@ export function useDialog() {
         </DialogComponent>
       );
     };
-
-    const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDialog,
-    });
-    ctx.delegate(flowContext);
 
     const dialog = (
       <FlowViewContextProvider context={ctx}>

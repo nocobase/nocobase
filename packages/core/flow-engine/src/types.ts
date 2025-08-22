@@ -198,8 +198,7 @@ export type StepUIMode =
   | 'drawer'
   // | 'switch'
   // | 'select'
-  | { type: 'dialog'; props?: Record<string, any> }
-  | { type: 'drawer'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 

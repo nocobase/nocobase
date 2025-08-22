@@ -28,7 +28,7 @@ const PageComponent = forwardRef((props: any, ref) => {
 
   if (!visible) return null;
 
-  return <div {...rest}>{children}</div>;
+  return <div>{children}</div>;
 });
 
 export default PageComponent;

@@ -958,10 +958,10 @@ export class FlowRuntimeContext<
     this.addDelegate(this.model.context);
     const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
     this.defineMethod('getStepParams', (stepKey: string) => {
-      return _.get(this.steps, [stepKey, 'params']) || {};
+      return model.getStepParams(flowKey, stepKey) || {};
     });
     this.defineMethod('getStepResults', (stepKey: string) => {
-      return _.get(this.steps, [stepKey, 'result']) || {};
+      return _.get(this.steps, [stepKey, 'result']);
     });
     this.defineMethod(
       'useResource',

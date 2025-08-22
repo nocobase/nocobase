@@ -35,30 +35,44 @@ CollectionTriggerWorkflowActionModel.registerFlow({
   title: escapeT('Trigger workflow settings'),
   on: 'click',
   steps: {
-    setContextType: {
-      // hideInSettings: true,
-      preset: true,
-      title: escapeT('Context type'),
-      uiSchema: {
-        contextType: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-          enum: [
-            { label: escapeT('None'), value: 'none' },
-            { label: escapeT('Multiple records'), value: 'multiple' },
-          ],
-        },
-      },
-    },
+    // setContextType: {
+    //   // hideInSettings: true,
+    //   preset: true,
+    //   title: escapeT('Context type'),
+    //   uiSchema: {
+
+    //   },
+    // },
     runTrigger: {
       title: escapeT('Trigger workflows'),
-      uiSchema: {
-        triggerWorkflows: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
+      preset: true,
+      uiMode: {
+        props: {
+          width: 800,
         },
+      },
+      uiSchema: (ctx) => {
+        return {
+          contextType: {
+            type: 'string',
+            title: 'Context type',
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            'x-hidden': !!ctx.getStepParams('runTrigger').contextType,
+            enum: [
+              { label: escapeT('None'), value: 'none' },
+              { label: escapeT('Multiple records'), value: 'multiple' },
+            ],
+          },
+          triggerWorkflows: {
+            type: 'string',
+            // required: true,
+            title: 'Bind workflows',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayTable',
+          },
+        };
       },
       async handler(ctx, params) {
         if (!params.triggerWorkflows) {
@@ -185,8 +199,8 @@ FormTriggerWorkflowActionModel.registerFlow({
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.currentView && ctx.closable) {
-          ctx.currentView.close();
+        if (ctx.view) {
+          ctx.view.close();
         }
       },
     },

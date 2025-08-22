@@ -60,7 +60,8 @@ export const openView = defineAction({
 
     await ctx.viewer.open({
       type: openMode,
-      closable: false,
+      preventClose: !!params.preventClose,
+      inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[size],
       content: (currentView) => {
