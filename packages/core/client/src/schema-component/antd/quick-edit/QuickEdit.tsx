@@ -18,7 +18,6 @@ import { useCollection } from '../../../data-source/collection/CollectionProvide
 import { useToken } from '../../../style';
 import { FormItem } from '../form-item';
 import { StablePopover } from '../popover';
-import { useDesignable } from '../../';
 
 export interface QuickEditProps extends IFormItemProps {
   children?: React.ReactNode;
