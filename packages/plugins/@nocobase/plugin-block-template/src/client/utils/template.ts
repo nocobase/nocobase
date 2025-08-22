@@ -187,7 +187,12 @@ function cleanSchema(schema?: any) {
   const properties = schema?.properties || {};
   for (const key of Object.keys(properties)) {
     // 如果x-component是undefined/null
-    if (schema.properties[key]['x-component'] == null && shouldDeleteNoComponentSchema(schema.properties[key])) {
+    if (
+      schema.properties[key]['x-component'] == null &&
+      schema.properties[key]['x-template-id'] &&
+      !schema.properties[key]['x-template-root-id'] &&
+      shouldDeleteNoComponentSchema(schema.properties[key])
+    ) {
       delete schema.properties[key];
     }
     if (properties[key]?.['x-component-props'] === null) {
