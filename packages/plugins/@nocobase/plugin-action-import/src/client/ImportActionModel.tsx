@@ -120,6 +120,9 @@ export class ImportActionModel extends CollectionActionModel {
     type: 'default',
     icon: 'uploadoutlined',
   };
+  getActionName() {
+    return 'importXlsx';
+  }
 }
 
 ImportActionModel.define({

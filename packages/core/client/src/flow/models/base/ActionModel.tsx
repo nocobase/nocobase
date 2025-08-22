@@ -26,9 +26,7 @@ export class ActionModel extends FlowModel {
   enableEditType = true;
   enableEditDanger = true;
 
-  getActionName() {
-    return 'view';
-  }
+  getActionName() {}
 
   onInit(options: any): void {
     super.onInit(options);
@@ -36,7 +34,10 @@ export class ActionModel extends FlowModel {
       return await this.flowEngine.context.acl.aclCheck(params);
     });
     this.context.defineProperty('actionName', {
-      get: () => this.getActionName(),
+      get: () => {
+        console.log(this.getActionName);
+        return this.getActionName();
+      },
       cache: false,
     });
   }
@@ -77,16 +78,24 @@ export class ActionModel extends FlowModel {
 ActionModel.registerFlow({
   key: 'buttonSettings',
   title: escapeT('Button settings'),
+  sort: -999,
   steps: {
     aclCheck: {
       async handler(ctx, params) {
         {
-          const r = await ctx.model.context.aclCheck({
+          const result = await ctx.model.context.aclCheck({
             dataSourceKey: ctx.model.context.dataSource,
             resourceName: ctx.blockModel.resource.getResourceName(),
             actionName: ctx.model.context.actionName,
           });
-          if (!r) {
+          console.log({
+            dataSourceKey: ctx.model.context.dataSource,
+            resourceName: ctx.blockModel.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+          });
+          console.log(result);
+
+          if (!result) {
             ctx.model.hidden = true; // 内核、激活 UI 配置是半透明不隐藏
             // ctx.exitAll(); //TODO 没有权限退出所有
           }

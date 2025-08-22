@@ -517,7 +517,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   onInit(options) {
-    console.log(options);
     this.context.defineProperty('blockModel', {
       value: this,
     });
@@ -633,16 +632,15 @@ CollectionBlockModel.registerFlow({
             actionName: ctx.model.context.actionName,
           });
           if (!r) {
-            ctx.model.hidden = true; // 内核、激活 UI 配置是半透明不隐藏
+            ctx.model.hidden = true;
             ctx.exit();
-            // ctx.exitAll(); //TODO 没有权限退出所有
+            // ctx.exitAll(); //TODO 缺api 预期没有权限时后续所有流都不执行
           }
         }
       },
     },
     init: {
       handler(ctx, params) {
-        console.log(888);
         if (!params.dataSourceKey) {
           throw new Error('dataSourceKey is required');
         }
