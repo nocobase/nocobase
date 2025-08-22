@@ -16,6 +16,10 @@ import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowRuntimeContext } from './flowContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import type { FlowModel } from './models';
+import type { FlowDefinition } from './types';
+import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
   getT,
@@ -24,10 +28,6 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
-import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
-import type { FlowModel } from './models';
-import type { FlowDefinition } from './types';
-import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 
 const Panel = Collapse.Panel;
 
@@ -49,7 +49,7 @@ export interface FlowSettingsOpenOptions {
   uiMode?:
     | 'dialog'
     | 'drawer'
-    | { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
+    | { type?: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
   /** 点击取消按钮后触发的回调（关闭后调用） */
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */
@@ -547,10 +547,11 @@ export class FlowSettings {
     // 解析 uiMode，支持函数式
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
-    const modeType: 'dialog' | 'drawer' = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type;
+    const modeType: 'dialog' | 'drawer' =
+      typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
     const modeProps: Record<string, any> =
       typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
-    const openView = viewer[modeType].bind(viewer);
+    const openView = viewer[modeType || 'dialog'].bind(viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
       // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
