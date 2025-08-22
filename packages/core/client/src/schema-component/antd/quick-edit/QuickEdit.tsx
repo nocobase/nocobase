@@ -12,12 +12,13 @@ import { css } from '@emotion/css';
 import { IFormItemProps } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useToken } from '../../../style';
 import { FormItem } from '../form-item';
 import { StablePopover } from '../popover';
+import { useDesignable } from '../../';
 
 export interface QuickEditProps extends IFormItemProps {
   children?: React.ReactNode;
@@ -75,6 +76,11 @@ export const Editable = observer(
               display: none;
             }
           `}
+          onOpenChange={(open) => {
+            if (open) {
+              field.validate();
+            }
+          }}
         >
           <div
             style={{
