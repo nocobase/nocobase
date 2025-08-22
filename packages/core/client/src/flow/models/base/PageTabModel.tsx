@@ -73,7 +73,7 @@ export class RootPageTabModel extends BasePageTabModel {
       <PageTabChildrenRenderer
         ctx={this.context}
         options={{
-          uid: this.props.route.schemaUid,
+          uid: this.props.route.tabSchemaName,
           subKey: 'grid',
           async: true,
           subType: 'object',
