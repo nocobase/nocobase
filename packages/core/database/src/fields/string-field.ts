@@ -20,14 +20,10 @@ export class StringField extends Field {
   }
 
   additionalSequelizeOptions() {
-    const { name, trim, unique, primaryKey } = this.options;
+    const { name, trim, unique } = this.options;
 
     return {
       set(value) {
-        // String primary keys are not allowed to be modified (this is also the logic in Sequelize's underlying `set`).
-        if (primaryKey) {
-          return;
-        }
         if (unique && value === '') {
           value = null;
         }
