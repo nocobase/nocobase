@@ -88,9 +88,17 @@ export function useDrawer() {
       },
     };
 
+    const ctx = new FlowContext();
+    ctx.defineProperty('view', {
+      get: () => currentDrawer,
+    });
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    }
+
     // 内部组件，在 Provider 内部计算 content
     const DrawerWithContext = () => {
-      const content = typeof config.content === 'function' ? config.content(currentDrawer) : config.content;
+      const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
 
       return (
         <DrawerComponent
@@ -109,12 +117,6 @@ export function useDrawer() {
         </DrawerComponent>
       );
     };
-
-    const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDrawer,
-    });
-    ctx.delegate(flowContext);
 
     const drawer = (
       <FlowViewContextProvider context={ctx}>

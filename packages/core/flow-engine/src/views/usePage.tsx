@@ -8,6 +8,8 @@
  */
 
 import React from 'react';
+import { FlowContext } from '../flowContext';
+import { FlowViewContextProvider } from '../FlowContextProvider';
 import { useFlowEngine } from '../provider';
 import PageComponent from './PageComponent';
 import usePatchElement from './usePatchElement';
@@ -18,7 +20,7 @@ export function usePage() {
   const holderRef = React.useRef(null);
   const flowEngine = useFlowEngine();
 
-  const open = (config) => {
+  const open = (config, flowContext) => {
     uuid += 1;
     const pageRef = React.createRef<{ destroy: () => void; update: (config: any) => void }>();
 
@@ -28,7 +30,7 @@ export function usePage() {
       resolvePromise = resolve;
     });
 
-    const { target, content, ...restConfig } = config;
+    const { target, content, inheritContext = true, ...restConfig } = config;
 
     // 构造 currentPage 实例
     const currentPage = {
@@ -40,22 +42,32 @@ export function usePage() {
       },
     };
 
+    const ctx = new FlowContext();
+    ctx.defineProperty('view', {
+      get: () => currentPage,
+    });
+    if (inheritContext) {
+      ctx.addDelegate(flowContext);
+    }
+
     // 支持 content 为函数，传递 currentPage
-    const pageContent = typeof content === 'function' ? content(currentPage) : content;
+    const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
 
     const page = (
-      <PageComponent
-        key={`page-${uuid}`}
-        ref={pageRef}
-        {...restConfig}
-        afterClose={() => {
-          closeFunc?.();
-          config.onClose?.();
-          resolvePromise?.(config.result);
-        }}
-      >
-        {pageContent}
-      </PageComponent>
+      <FlowViewContextProvider context={ctx}>
+        <PageComponent
+          key={`page-${uuid}`}
+          ref={pageRef}
+          {...restConfig}
+          afterClose={() => {
+            closeFunc?.();
+            config.onClose?.();
+            resolvePromise?.(config.result);
+          }}
+        >
+          {pageContent}
+        </PageComponent>
+      </FlowViewContextProvider>
     );
 
     if (target && target instanceof HTMLElement) {
