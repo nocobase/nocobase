@@ -30,6 +30,7 @@ export const Editable = observer(
     const fieldSchema = useFieldSchema();
     const value = field.value;
     const { token } = useToken();
+    fieldSchema.required = field.required;
     const schema: any = {
       name: fieldSchema.name,
       'x-collection-field': fieldSchema['x-collection-field'],
