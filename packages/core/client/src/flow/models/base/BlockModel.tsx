@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
+import { Result } from 'antd';
 import { Observer } from '@formily/reactive-react';
 import {
   BaseRecordResource,
@@ -24,7 +25,8 @@ import {
   SingleRecordResource,
   SubModelItem,
 } from '@nocobase/flow-engine';
-import React from 'react';
+import { useTranslation } from 'react-i18next';
+import React, { useMemo } from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
@@ -245,6 +247,24 @@ export interface ResourceSettingsInitParams {
   filterByTk?: string;
 }
 
+const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
+  const { t } = useTranslation();
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
+      {
+        actionName,
+        name: collectionTitle,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [collectionTitle, actionName, t]);
+  return (
+    <BlockItemCard>
+      <Result status="404" subTitle={messageValue} />
+    </BlockItemCard>
+  );
+};
+
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
 
@@ -268,15 +288,27 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   render() {
-    return (
-      <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
-        <Observer>
-          {() => {
-            return this.renderComponent();
-          }}
-        </Observer>
-      </BlockItemCard>
-    );
+    if (this.hidden) {
+      if (this.flowEngine.flowSettings?.enabled) {
+        return (
+          <CollectionNotAllowView
+            collectionTitle={(this as any).collection.title}
+            actionName={this.context.actionName || 'view'}
+          />
+        );
+      }
+      return null;
+    } else {
+      return (
+        <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
+          <Observer>
+            {() => {
+              return this.renderComponent();
+            }}
+          </Observer>
+        </BlockItemCard>
+      );
+    }
   }
 }
 
@@ -470,6 +502,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return this.context.association;
   }
 
+  getResourceActionName() {
+    return 'view';
+  }
   /**
    * 获取可用于筛选的字段列表
    */
@@ -482,8 +517,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   onInit(options) {
+    console.log(options);
     this.context.defineProperty('blockModel', {
       value: this,
+    });
+    this.context.defineProperty('actionName', {
+      get: () => this.getResourceActionName(),
+      cache: false,
     });
     this.context.defineProperty('dataSource', {
       get: () => {
@@ -522,6 +562,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         }
         return this.dataSource.getAssocation(params.associationName);
       },
+    });
+    this.context.defineMethod('aclCheck', async (params) => {
+      return await this.flowEngine.context.acl.aclCheck(params);
     });
   }
 
@@ -579,9 +622,27 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
 CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
+  sort: -999, //置顶，
   steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        {
+          const r = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource,
+            resourceName: ctx.model.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+          });
+          if (!r) {
+            ctx.model.hidden = true; // 内核、激活 UI 配置是半透明不隐藏
+            ctx.exit();
+            // ctx.exitAll(); //TODO 没有权限退出所有
+          }
+        }
+      },
+    },
     init: {
       handler(ctx, params) {
+        console.log(888);
         if (!params.dataSourceKey) {
           throw new Error('dataSourceKey is required');
         }
@@ -609,9 +670,12 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
+        if (ctx.model.hidden) {
+          ctx.model.resource.loading = false;
+          ctx.exit();
+        }
         const filterManager: FilterManager = ctx.model.context.filterManager;
         filterManager.bindToTarget(ctx.model.uid);
-
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {

@@ -16,6 +16,9 @@ export class ViewActionModel extends RecordActionModel {
     type: 'link',
     title: escapeT('View'),
   };
+  getActionName() {
+    return 'view';
+  }
 }
 
 ViewActionModel.define({

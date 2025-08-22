@@ -19,6 +19,11 @@ export class CollectionFieldFormItemModel extends FormItemModel {
       fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
     });
   }
+  // onInit(options: any): void {
+  //   this.context.defineMethod('aclCheck', (params) => {
+  //     console.log(this.flowEngine.context);
+  //   });
+  // }
 }
 
 CollectionFieldFormItemModel.define({

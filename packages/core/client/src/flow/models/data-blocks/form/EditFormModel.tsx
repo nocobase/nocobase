@@ -55,7 +55,9 @@ export class EditFormModel extends FormModel {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
   }
-
+  getResourceActionName() {
+    return 'update';
+  }
   handlePageChange = async (page: number) => {
     if (this.resource instanceof MultiRecordResource) {
       const multiResource = this.resource as MultiRecordResource;

@@ -16,6 +16,9 @@ export class DeleteActionModel extends RecordActionModel {
     type: 'link',
     title: escapeT('Delete'),
   };
+  getActionName() {
+    return 'destroy';
+  }
 }
 
 DeleteActionModel.define({

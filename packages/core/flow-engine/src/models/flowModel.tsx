@@ -60,6 +60,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
   protected _title: string;
+  public hidden: boolean;
 
   /**
    * 所有 fork 实例的引用集合。

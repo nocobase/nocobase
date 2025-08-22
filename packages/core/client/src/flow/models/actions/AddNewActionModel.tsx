@@ -17,6 +17,9 @@ export class AddNewActionModel extends CollectionActionModel {
     title: escapeT('Add new'),
     icon: 'PlusOutlined',
   };
+  getActionName() {
+    return 'create';
+  }
 }
 
 AddNewActionModel.define({
