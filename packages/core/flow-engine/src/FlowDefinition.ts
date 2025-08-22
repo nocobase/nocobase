@@ -61,10 +61,19 @@ export class FlowDefinition {
 
   get steps() {
     const steps: Record<string, StepDefinition> = {};
-    for (const [stepKey, step] of this._steps) {
+    const sortedSteps = this.getSortedSteps();
+    for (const [stepKey, step] of sortedSteps) {
       steps[stepKey] = step.serialize();
     }
     return steps;
+  }
+
+  getSortedSteps(): [string, FlowStep][] {
+    return [...this._steps.entries()].sort(([, stepA], [, stepB]) => {
+      const sortA = stepA.serialize().sort ?? 0;
+      const sortB = stepB.serialize().sort ?? 0;
+      return sortA - sortB;
+    });
   }
 
   setOptions(flowOptions: Omit<FlowDefinitionOptions, 'key' | 'steps'>) {
@@ -76,7 +85,8 @@ export class FlowDefinition {
   }
 
   mapSteps(callback: (step: FlowStep) => any) {
-    return [...this._steps.values()].map((step) => {
+    const sortedSteps = this.getSortedSteps();
+    return sortedSteps.map(([, step]) => {
       return callback(step);
     });
   }
@@ -91,6 +101,12 @@ export class FlowDefinition {
       existingStep.setOptions(flowStep);
       return existingStep;
     } else {
+      // Auto-assign sort value if not provided
+      if (flowStep.sort === undefined) {
+        const maxSort = Math.max(0, ...Array.from(this._steps.values()).map((step) => step.serialize().sort ?? 0));
+        flowStep = { ...flowStep, sort: maxSort + 1 };
+      }
+
       const newStep = new FlowStep(
         {
           ...flowStep,
@@ -111,7 +127,38 @@ export class FlowDefinition {
     return this._steps.has(stepKey);
   }
 
-  moveStep(sourceStepKey: string, targetStepKey: string) {}
+  moveStep(sourceStepKey: string, targetStepKey: string) {
+    if (!this._steps.has(sourceStepKey)) {
+      throw new Error(`Source step '${sourceStepKey}' not found`);
+    }
+    if (!this._steps.has(targetStepKey)) {
+      throw new Error(`Target step '${targetStepKey}' not found`);
+    }
+    if (sourceStepKey === targetStepKey) {
+      return; // No need to move
+    }
+
+    // Get current sorted steps
+    const sortedSteps = this.getSortedSteps();
+    const newOrder: [string, FlowStep][] = [];
+
+    // Remove source step from current order
+    const filteredSteps = sortedSteps.filter(([key]) => key !== sourceStepKey);
+    const sourceStep = this._steps.get(sourceStepKey)!;
+
+    // Insert source step before target step
+    for (const [stepKey, step] of filteredSteps) {
+      if (stepKey === targetStepKey) {
+        newOrder.push([sourceStepKey, sourceStep]);
+      }
+      newOrder.push([stepKey, step]);
+    }
+
+    // Reassign sort values as integers: 1, 2, 3, ...
+    newOrder.forEach(([stepKey, step], index) => {
+      step.setOptions({ sort: index + 1 });
+    });
+  }
 
   removeStep(stepKey: string) {
     this._steps.delete(stepKey);
@@ -146,7 +193,8 @@ export class FlowDefinition {
     const data: any = {
       ...this.options,
     };
-    for (const [stepKey, step] of this._steps) {
+    const sortedSteps = this.getSortedSteps();
+    for (const [stepKey, step] of sortedSteps) {
       data.steps = data.steps || {};
       data.steps[stepKey] = {
         ...step.serialize(),
