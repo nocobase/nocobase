@@ -23,6 +23,8 @@ import type {
 } from './types';
 import { isInheritedFrom } from './utils';
 import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
+import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
+import type { EventDefinition } from './types';
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -51,6 +53,11 @@ export class FlowEngine {
    * Global action registry
    */
   #actionRegistry = new EngineActionRegistry();
+
+  /**
+   * Global event registry
+   */
+  #eventRegistry = new EngineEventRegistry();
 
   /**
    * Registered model classes.
@@ -196,6 +203,27 @@ export class FlowEngine {
    */
   public getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
     return this.#actionRegistry.getActions<TModel>();
+  }
+
+  /**
+   * Register multiple events.
+   */
+  registerEvents(events: Record<string, EventDefinition>): void {
+    this.#eventRegistry.registerEvents(events);
+  }
+
+  /**
+   * Get a registered event definition.
+   */
+  public getEvent<TModel extends FlowModel = FlowModel>(name: string): EventDefinition<TModel> | undefined {
+    return this.#eventRegistry.getEvent<TModel>(name);
+  }
+
+  /**
+   * Get all registered global events.
+   */
+  public getEvents<TModel extends FlowModel = FlowModel>(): Map<string, EventDefinition<TModel>> {
+    return this.#eventRegistry.getEvents<TModel>();
   }
 
   /**

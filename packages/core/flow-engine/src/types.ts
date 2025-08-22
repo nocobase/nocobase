@@ -98,35 +98,10 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
   sort?: number;
 
   /**
-   * Optional configuration to allow this flow to be triggered by `dispatchEvent`。
-   * 支持字符串或对象形式：
-   * - 字符串：直接指定事件名（如 'click'、'submit' 等），推荐与主流事件命名保持一致。
-   * - 对象：可扩展更多事件配置，目前支持 { eventName, handler }
-   *   - eventName: 事件名，推荐使用 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等主流命名
-   *   - handler: 事件触发时的自定义处理函数（可选，若不指定则默认执行 flow 的 steps）
-   *
-   * @example
-   * // 字符串形式，仅指定事件名
-   * on: 'click'
-   *
-   * // 对象形式，指定事件名和自定义处理函数
-   * on: {
-   *   eventName: 'click',
-   *   handler: (ctx, params) => {
-   *     // 自定义事件处理逻辑
-   *     ctx.logger.info('Custom click event triggered');
-   *   }
-   * }
-   *
-   * // 推荐事件名
-   * 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等
+   * 允许该 Flow 被 `dispatchEvent` 触发的事件配置。
+   * 仅用于声明触发事件名（字符串或 { eventName }），不包含处理函数。
    */
-  on?:
-    | string
-    | {
-        eventName: string;
-        handler?: (ctx: FlowRuntimeContext<TModel>, params: Record<string, any>) => void | Promise<void>;
-      };
+  on?: FlowEvent<TModel>;
 
   steps: Record<string, StepDefinition<TModel>>;
 }
@@ -174,6 +149,40 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
   useRawParams?: boolean | ((ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>);
 }
 
+/**
+ * Flow 事件名称集合。
+ * - 收录内置常用事件，便于智能提示；
+ * - 允许扩展字符串以保持向后兼容。
+ */
+export type FlowEventName =
+  | 'click'
+  | 'submit'
+  | 'reset'
+  | 'remove'
+  | 'openView'
+  | 'dropdownOpen'
+  | 'popupScroll'
+  | 'search'
+  | 'customRequest'
+  | 'collapseToggle'
+  // fallback to any string for extensibility
+  | (string & {});
+
+/**
+ * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
+ */
+export type FlowEvent<TModel extends FlowModel = FlowModel> = FlowEventName | { eventName: FlowEventName };
+
+/**
+ * 事件定义：用于事件注册表（全局/模型类级）。
+ */
+export interface EventDefinition<TModel extends FlowModel = FlowModel> {
+  name: FlowEventName;
+  label?: string;
+  title?: string;
+  description?: string;
+}
+
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
@@ -194,6 +203,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
   use?: string; // Name of the registered ActionDefinition to use as base
+  sort?: number; // Sort order for step execution, lower numbers execute first
 
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。

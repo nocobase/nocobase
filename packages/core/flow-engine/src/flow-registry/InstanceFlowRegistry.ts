@@ -28,4 +28,9 @@ export class InstanceFlowRegistry extends BaseFlowRegistry {
     // TODO
     await this.model.save();
   }
+
+  async moveStep(flowKey: FlowKey, sourceStepKey: string, targetStepKey: string): Promise<void> {
+    super.moveStep(flowKey, sourceStepKey, targetStepKey);
+    await this.model.save();
+  }
 }

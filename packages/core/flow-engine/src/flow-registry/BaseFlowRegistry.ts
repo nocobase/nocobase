@@ -23,6 +23,7 @@ export interface IFlowRepository {
   getFlow(flowKey: string): FlowDefinition | undefined;
   saveFlow(flow: FlowDefinition): Promise<any> | void;
   destroyFlow(flowKey: string): Promise<any> | void;
+  moveStep(flowKey: string, sourceStepKey: string, targetStepKey: string): Promise<any> | void;
 }
 
 /**
@@ -74,6 +75,14 @@ export abstract class BaseFlowRegistry implements IFlowRepository {
   mapFlows<T = any>(callback: (flow: FlowDefinition) => T): T[] {
     const flows = this.getFlows();
     return [...flows.values()].map((flow) => callback(flow));
+  }
+
+  moveStep(flowKey: FlowKey, sourceStepKey: string, targetStepKey: string): void {
+    const flow = this.getFlow(flowKey);
+    if (!flow) {
+      throw new Error(`Flow '${flowKey}' not found`);
+    }
+    flow.moveStep(sourceStepKey, targetStepKey);
   }
 
   // 抽象方法 - 子类必须实现持久化逻辑

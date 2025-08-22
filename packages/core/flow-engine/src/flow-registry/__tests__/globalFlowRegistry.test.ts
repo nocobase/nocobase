@@ -30,7 +30,7 @@ describe('GlobalFlowRegistry', () => {
     expect(flow).toBeDefined();
     expect(flow?.key).toBe('parentFlow');
     expect(flow?.title).toBe('Parent Flow');
-    expect(flow?.getStep('stepA')?.serialize()).toEqual({ key: 'stepA', flowKey: 'parentFlow', title: 'A' });
+    expect(flow?.getStep('stepA')?.serialize()).toEqual({ key: 'stepA', flowKey: 'parentFlow', title: 'A', sort: 1 });
   });
 
   test('saveFlow/destroyFlow on global registry are no-ops', () => {
