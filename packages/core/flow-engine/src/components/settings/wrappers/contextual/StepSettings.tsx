@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { autorun, model as observableModel } from '@formily/reactive';
 import { message } from 'antd';
+import { FlowRuntimeContext } from '../../../../flowContext';
 import { StepSettingsProps } from '../../../../types';
 import { getT, resolveUiMode, setupRuntimeContextSteps } from '../../../../utils';
-import { FlowRuntimeContext } from '../../../../flowContext';
 import { openStepSettingsDialog } from './StepSettingsDialog';
 import { openStepSettingsDrawer } from './StepSettingsDrawer';
-import { autorun, model as observableModel } from '@formily/reactive';
 
 /**
  * 统一的步骤设置入口函数
@@ -57,13 +57,13 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
 
   if (typeof resolvedUiMode === 'string') {
     settingMode = resolvedUiMode;
-  } else if (typeof resolvedUiMode === 'object' && resolvedUiMode.type) {
-    settingMode = resolvedUiMode.type;
+  } else if (typeof resolvedUiMode === 'object') {
+    settingMode = resolvedUiMode.type || 'dialog';
     uiModeProps = observableModel(resolvedUiMode.props || {});
     const disposer = autorun(() => {
       resolveUiMode(step.uiMode, ctx)
         .then((newUiMode) => {
-          if (typeof newUiMode === 'object' && newUiMode.type) {
+          if (typeof newUiMode === 'object') {
             Object.assign(uiModeProps, newUiMode.props || {});
           }
         })
