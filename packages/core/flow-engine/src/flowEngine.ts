@@ -108,7 +108,7 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
-    this.registerModels({ FlowModel });
+    // this.registerModels({ FlowModel }); // 会造成循环依赖问题，移除掉
     this.logger = pino({
       level: 'trace',
       browser: {

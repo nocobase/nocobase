@@ -26,7 +26,7 @@ describe('EngineActionRegistry', () => {
 
     // Registering duplicate action should warn and override
     reg.registerActions({ a: { name: 'a', handler: handler2 } });
-    expect(warnSpy).toHaveBeenCalledWith("FlowEngine: Action with name 'a' is already registered.");
+    expect(warnSpy).toHaveBeenCalledWith("Action 'a' is already registered. It will be overwritten.");
     expect(reg.getAction('a')?.handler).toBe(handler2);
 
     warnSpy.mockRestore();

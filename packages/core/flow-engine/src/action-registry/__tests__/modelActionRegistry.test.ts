@@ -8,8 +8,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
+import { FlowModel } from '../../models/flowModel';
 
 describe('ModelActionRegistry (class-level)', () => {
   it('warns and overrides when registering duplicate actions on same class', () => {
