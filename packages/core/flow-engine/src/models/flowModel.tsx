@@ -44,15 +44,16 @@ import { ForkFlowModel } from './forkFlowModel';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
+import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
+
+// 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
+const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
-// 使用WeakMap存储每个类的 GlobalFlowRegistry 单例
+// 使用WeakMap存储每个类的 GlobalFlowRegistry
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
-
-// 使用WeakMap存储每个类的专属 Action 定义
-const modelActions = new WeakMap<typeof FlowModel, Map<string, ActionDefinition>>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -224,40 +225,40 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return reg;
   }
 
+  // 受保护：获取当前类的动作注册表（含父子链注入），按类缓存
+  protected static get actionRegistry(): ModelActionRegistry {
+    const ModelClass = this;
+    let registry = classActionRegistries.get(ModelClass);
+    if (!registry) {
+      let parentRegistry: ModelActionRegistry | null = null;
+      const ParentClass = Object.getPrototypeOf(ModelClass);
+      if (ParentClass && ParentClass !== Function.prototype && ParentClass !== Object.prototype) {
+        const isSubclassOfFlowModel = ParentClass === FlowModel || isInheritedFrom(ParentClass, FlowModel);
+        if (isSubclassOfFlowModel) {
+          parentRegistry = (ParentClass as typeof FlowModel).actionRegistry as ModelActionRegistry;
+        }
+      }
+      registry = new ModelActionRegistry(ModelClass, parentRegistry);
+      classActionRegistries.set(ModelClass, registry);
+    }
+    return registry;
+  }
+
   /**
    * 注册仅当前 FlowModel 类及其子类可用的 Action。
    * 该注册是类级别的，不会影响全局（FlowEngine）的 Action 注册。
    */
-  public static registerAction<TModel extends FlowModel = FlowModel>(
-    this: typeof FlowModel,
-    definition: ActionDefinition<TModel>,
-  ): void {
-    if (!definition?.name) {
-      throw new Error('FlowModel.registerAction: Action must have a name.');
-    }
-    let actions = modelActions.get(this);
-    if (!actions) {
-      actions = new Map();
-      modelActions.set(this, actions);
-    }
-    if (actions.has(definition.name)) {
-      console.warn(
-        `FlowModel.registerAction: Action '${definition.name}' is already registered on ${this.name}. It will be overwritten.`,
-      );
-    }
-    actions.set(definition.name, definition as ActionDefinition);
+  public static registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
+    this.actionRegistry.registerAction(definition);
   }
 
   /**
    * 批量注册仅当前 FlowModel 类及其子类可用的 Actions。
    */
   public static registerActions<TModel extends FlowModel = FlowModel>(
-    this: typeof FlowModel,
     actions: Record<string, ActionDefinition<TModel>>,
   ): void {
-    for (const [, def] of Object.entries(actions || {})) {
-      this.registerAction(def);
-    }
+    this.actionRegistry.registerActions(actions);
   }
 
   get title() {
@@ -367,55 +368,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * - 合并类级（FlowModel.registerAction(s)）注册的 Actions，并考虑继承（子类覆盖父类同名 Action）。
    */
   public getActions<TModel extends FlowModel = this>(): Map<string, ActionDefinition<TModel>> {
-    const all = new Map<string, ActionDefinition<TModel>>();
-    // 1) 全局 Actions
-    try {
-      const globals = this.flowEngine?.getActions<TModel>();
-      if (globals) {
-        for (const [k, v] of globals) all.set(k, v);
-      }
-    } catch (e) {
-      // ignore if engine not ready
-    }
-    // 2) 类级 Actions（考虑继承，父类在前，子类在后以便覆盖）
-    const chain: Array<typeof FlowModel> = [];
-    let Cls: any = this.constructor as typeof FlowModel;
-    while (Cls && Cls !== Function.prototype && Cls !== Object.prototype) {
-      chain.push(Cls);
-      const proto = Object.getPrototypeOf(Cls);
-      if (!proto || proto === Function.prototype || proto === Object.prototype) break;
-      Cls = proto;
-    }
-    chain.reverse();
-    for (const C of chain) {
-      const own = modelActions.get(C);
-      if (own) {
-        for (const [k, v] of own) all.set(k, v as ActionDefinition<TModel>);
-      }
-    }
-    return all;
+    const ModelClass = this.constructor as typeof FlowModel;
+    const merged = ModelClass.actionRegistry.getActions();
+    const actions = new Map<string, ActionDefinition<TModel>>();
+    const globalActions = this.flowEngine?.getActions<TModel>();
+    if (globalActions) for (const [k, v] of globalActions) actions.set(k, v);
+    for (const [k, v] of merged) actions.set(k, v);
+    return actions;
   }
 
   /**
    * 获取指定名称的 Action（优先返回类级注册的，未找到则回退到全局）。
    */
   public getAction<TModel extends FlowModel = this>(name: string): ActionDefinition<TModel> | undefined {
-    // 先查找类级（含继承）
-    const chain: Array<typeof FlowModel> = [];
-    let Cls: any = this.constructor as typeof FlowModel;
-    while (Cls && Cls !== Function.prototype && Cls !== Object.prototype) {
-      chain.push(Cls);
-      const proto = Object.getPrototypeOf(Cls);
-      if (!proto || proto === Function.prototype || proto === Object.prototype) break;
-      Cls = proto;
-    }
-    for (const C of chain) {
-      const own = modelActions.get(C);
-      if (own && own.has(name)) {
-        return own.get(name) as ActionDefinition<TModel>;
-      }
-    }
-    // 再回退到全局引擎（兼容单测对 engine.getAction 的 mock）
+    const ModelClass = this.constructor as typeof FlowModel;
+    const own = ModelClass.actionRegistry.getAction(name) as ActionDefinition<TModel> | undefined;
+    if (own) return own;
     return this.flowEngine?.getAction<TModel>(name);
   }
 
@@ -425,7 +393,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
     for (const [key, def] of staticFlows) {
       if (!allFlows.has(key)) {
-        // instance flows have priority over static flows
+        // 实例级流程优先于静态流程
         allFlows.set(key, def);
       }
     }

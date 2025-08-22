@@ -22,6 +22,7 @@ import type {
   ModelConstructor,
 } from './types';
 import { isInheritedFrom } from './utils';
+import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -47,11 +48,9 @@ import { isInheritedFrom } from './utils';
  */
 export class FlowEngine {
   /**
-   * Registered action definitions.
-   * Key is the action name, value is ActionDefinition.
-   * @private
+   * Global action registry
    */
-  #actions: Map<string, ActionDefinition> = new Map();
+  #actionRegistry = new EngineActionRegistry();
 
   /**
    * Registered model classes.
@@ -178,25 +177,7 @@ export class FlowEngine {
    * @param {Record<string, ActionDefinition>} actions Action definition object collection
    */
   registerActions(actions: Record<string, ActionDefinition>): void {
-    for (const [, definition] of Object.entries(actions)) {
-      this.#registerAction(definition);
-    }
-  }
-
-  /**
-   * Register a single action.
-   * @template TModel Specific FlowModel subclass type, defaults to FlowModel.
-   * @param {ActionDefinition<TModel>} definition Action definition object, including name and handler.
-   * @private
-   */
-  #registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
-    if (!definition.name) {
-      throw new Error('FlowEngine: Action must have a name.');
-    }
-    if (this.#actions.has(definition.name)) {
-      throw new Error(`FlowEngine: Action with name '${definition.name}' is already registered.`);
-    }
-    this.#actions.set(definition.name, definition as ActionDefinition);
+    this.#actionRegistry.registerActions(actions);
   }
 
   /**
@@ -206,7 +187,7 @@ export class FlowEngine {
    * @returns {ActionDefinition<TModel> | undefined} Action definition, or undefined if not found
    */
   public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
-    return this.#actions.get(name) as ActionDefinition<TModel> | undefined;
+    return this.#actionRegistry.getAction<TModel>(name);
   }
 
   /**
@@ -214,7 +195,7 @@ export class FlowEngine {
    * Returns a new Map to avoid external mutation of internal state.
    */
   public getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
-    return new Map(this.#actions as Map<string, ActionDefinition<TModel>>);
+    return this.#actionRegistry.getActions<TModel>();
   }
 
   /**
