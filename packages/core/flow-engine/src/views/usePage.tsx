@@ -30,13 +30,16 @@ export function usePage() {
       resolvePromise = resolve;
     });
 
-    const { target, content, inheritContext = true, ...restConfig } = config;
+    const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
 
     // 构造 currentPage 实例
     const currentPage = {
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any) => {
+        if (preventClose) {
+          return;
+        }
         resolvePromise?.(result);
         pageRef.current?.destroy();
       },

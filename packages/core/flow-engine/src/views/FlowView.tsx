@@ -29,6 +29,10 @@ type ViewProps = {
    * @default true
    */
   inheritContext?: boolean;
+  /**
+   * 阻止关闭 View
+   */
+  preventClose?: boolean;
   [key: string]: any;
 };
 
