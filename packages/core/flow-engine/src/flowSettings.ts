@@ -467,7 +467,7 @@ export class FlowSettings {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
-        if (!step || step.hideInSettings) continue;
+        if (!preset && (!step || step.hideInSettings)) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 

@@ -522,6 +522,112 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(dialog).not.toHaveBeenCalled();
   });
 
+  it('shows dialog when preset=true and step has hideInSettings=true', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-preset-hidden', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf3',
+      steps: {
+        hiddenStep: {
+          title: 'Hidden Step',
+          preset: true,
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+        visibleStep: {
+          title: 'Visible Step',
+          uiSchema: { field2: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({ model, flowKey: 'pf3', preset: true } as any);
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，因为 hiddenStep 有 preset=true
+  });
+
+  it('ignores hideInSettings when preset=true for individual step', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-preset-single-hidden', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf4',
+      steps: {
+        targetStep: {
+          title: 'Target Step',
+          preset: true,
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'pf4',
+      stepKey: 'targetStep',
+      preset: true,
+    } as any);
+
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，即使 hideInSettings=true
+  });
+
+  it('respects hideInSettings when preset=false', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-normal-hidden', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf5',
+      steps: {
+        hiddenStep: {
+          title: 'Hidden Step',
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+        visibleStep: {
+          title: 'Visible Step',
+          uiSchema: { field2: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({ model, flowKey: 'pf5', preset: false } as any);
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，但只包含 visibleStep
+  });
+
   it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
