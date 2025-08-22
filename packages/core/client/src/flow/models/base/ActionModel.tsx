@@ -35,7 +35,7 @@ export class ActionModel extends FlowModel {
     });
     this.context.defineProperty('actionName', {
       get: () => {
-        console.log(this.getActionName);
+        console.log(this.getActionName());
         return this.getActionName();
       },
       cache: false,

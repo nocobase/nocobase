@@ -20,11 +20,11 @@ import {
   FlowModel,
   FlowModelContext,
   MENU_KEYS,
-  ModelConstructor,
   MultiRecordResource,
   SingleRecordResource,
   SubModelItem,
 } from '@nocobase/flow-engine';
+import { capitalize } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
@@ -253,7 +253,7 @@ const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
       {
-        actionName,
+        actionName: t(capitalize(actionName)),
         name: collectionTitle,
       },
     ).replaceAll('&gt;', '>');
