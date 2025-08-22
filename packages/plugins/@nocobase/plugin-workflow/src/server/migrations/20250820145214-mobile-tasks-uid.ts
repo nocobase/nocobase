@@ -31,6 +31,7 @@ export default class extends Migration {
     });
     if (!route) {
       app.logger.debug(`no route found to be migrated.`);
+      return;
     }
     await route.update({
       schemaUid: 'workflow-tasks',
