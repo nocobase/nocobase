@@ -9,7 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { define, observable } from '@formily/reactive';
+import { autorun, define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
 import React from 'react';
 import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
@@ -28,6 +28,7 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
+import _ from 'lodash';
 
 const Panel = Collapse.Panel;
 
@@ -594,11 +595,33 @@ export class FlowSettings {
       return '';
     };
 
+    const dispose = { value: () => {} };
+    // 支持 uiMode 函数中使用响应式对象
+    const autoUpdateViewProps = (step, currentDialog) => {
+      dispose.value = reaction(
+        () => {
+          return resolveUiMode(step.uiMode || uiMode, step.ctx);
+        },
+        (newValue) => {
+          newValue
+            .then((newUiMode: any) => {
+              if (_.isPlainObject(newUiMode?.props)) {
+                currentDialog.update(newUiMode.props);
+              }
+            })
+            .catch((error) => {
+              console.warn('Error resolving uiMode:', error);
+            });
+        },
+      );
+    };
+
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
       width: modeProps.width ?? 600,
       destroyOnClose: true,
+      onClose: () => dispose.value(),
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       content: (currentDialog) => {
@@ -645,10 +668,14 @@ export class FlowSettings {
         const renderStepsContainer = (): React.ReactNode => {
           // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
-            return renderStepForm(entries[0]);
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
+            return renderStepForm(step);
           }
 
           if (!multipleFlows) {
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
             // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
             return renderStepForm(entries[0]);
           }

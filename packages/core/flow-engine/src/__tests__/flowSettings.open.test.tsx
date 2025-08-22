@@ -935,4 +935,287 @@ describe('FlowSettings.open rendering behavior', () => {
     // Restore console.error
     console.error = originalConsoleError;
   });
+
+  it('supports reactive objects in uiMode function and auto-updates dialog props', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-reactive-uimode', flowEngine: engine });
+
+    // Create reactive state object
+    const reactiveState = observable({
+      title: 'Initial Title',
+      width: 600,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithReactiveUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const updateSpy = vi.fn();
+    const closeSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      // Verify initial props
+      expect(opts.title).toBe('Initial Title');
+      expect(opts.width).toBe(600);
+
+      const dlg = {
+        close: closeSpy,
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithReactiveUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+
+    // Wait for autorun to be setup
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Update reactive state
+    reactiveState.title = 'Updated Title';
+    reactiveState.width = 800;
+
+    // Wait for reactive update
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Verify that dialog.update was called with new props
+    expect(updateSpy).toHaveBeenCalledWith({
+      title: 'Updated Title',
+      width: 800,
+    });
+  });
+
+  it('properly disposes reactive listener when dialog is closed', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-reactive-dispose', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Title',
+      width: 500,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithReactiveDispose',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    let onCloseFn: Function | undefined;
+    const updateSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      // Capture the onClose callback
+      onCloseFn = opts.onClose;
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithReactiveDispose', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+    expect(typeof onCloseFn).toBe('function');
+
+    // Wait for autorun to be setup
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Call the dispose function to simulate dialog close
+    onCloseFn?.();
+
+    // Update reactive state after disposal
+    reactiveState.title = 'Should Not Update';
+    reactiveState.width = 999;
+
+    // Wait to ensure no update occurs
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify that dialog.update was NOT called after disposal
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it('handles reactive uiMode when rendering multiple steps (should ignore step-level reactive uiMode)', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-multi-reactive', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Reactive Title',
+      width: 700,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithMultiStepsReactive',
+      steps: {
+        step1: {
+          title: 'Step1',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+        step2: {
+          title: 'Step2',
+          uiSchema: { g: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      // When multiple steps, should use global uiMode, not step-level reactive uiMode
+      expect(opts.title).toBe('Global Title');
+      expect(opts.width).toBe(1000);
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: vi.fn(),
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowWithMultiStepsReactive',
+      uiMode: { type: 'dialog', props: { title: 'Global Title', width: 1000 } },
+    } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles async reactive uiMode function updates', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-async-reactive', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Async Title',
+      width: 650,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithAsyncReactiveUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: async (ctx: any) => {
+            return {
+              type: 'dialog',
+              props: {
+                title: reactiveState.title,
+                width: reactiveState.width,
+              },
+            };
+          },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const updateSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Async Title');
+      expect(opts.width).toBe(650);
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithAsyncReactiveUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+
+    // Wait for autorun and async uiMode resolution
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // Update reactive state
+    reactiveState.title = 'Async Updated Title';
+    reactiveState.width = 750;
+
+    // Wait for reactive update
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify that dialog.update was called with new props
+    expect(updateSpy).toHaveBeenCalledWith({
+      title: 'Async Updated Title',
+      width: 750,
+    });
+  });
 });
