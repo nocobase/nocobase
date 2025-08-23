@@ -85,8 +85,24 @@ export const FlowPage = (props) => {
           tabs: [
             {
               use: 'ChildPageTabModel',
+              stepParams: {
+                pageTabSettings: {
+                  tab: {
+                    title: 'Details',
+                  },
+                },
+              },
             },
           ],
+        };
+        // 弹窗或者子页面中，默认显示 tab
+        options['stepParams'] = {
+          pageSettings: {
+            general: {
+              displayTitle: false,
+              enableTabs: true,
+            },
+          },
         };
       }
       const data = await flowEngine.loadOrCreateModel(options);
