@@ -626,12 +626,12 @@ CollectionBlockModel.registerFlow({
     aclCheck: {
       async handler(ctx, params) {
         {
-          const r = await ctx.model.context.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource,
+          const result = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource.key,
             resourceName: ctx.model.resource.getResourceName(),
             actionName: ctx.model.context.actionName,
           });
-          if (!r) {
+          if (!result) {
             ctx.model.hidden = true;
             ctx.exit();
             // ctx.exitAll(); //TODO 缺api 预期没有权限时后续所有流都不执行

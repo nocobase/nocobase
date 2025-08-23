@@ -64,13 +64,12 @@ export class ACL {
   }
 
   parseAction(options: CheckOptions) {
-    const { resourceName, actionName, dataSourceKey } = options;
-    const [collectionName, fieldName] = (resourceName?.includes('.') && resourceName.split('.')) || [];
-
+    const { resourceName, actionName, dataSourceKey = 'main' } = options;
     const targetResource =
       resourceName?.includes('.') &&
-      this.flowEngine.context.dataSourceManager.getDataSource(dataSourceKey).collectionManager.getAssocation(fieldName)
-        .target;
+      this.flowEngine.context.dataSourceManager
+        .getDataSource(dataSourceKey)
+        .collectionManager.getAssocation(resourceName)?.target;
 
     if (this.inResources(targetResource)) {
       return this.getResourceActionParams(targetResource, actionName);
