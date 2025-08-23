@@ -13,7 +13,7 @@ import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('General'),
+  title: escapeT('Edit popup'),
   uiSchema: {
     mode: {
       type: 'string',
