@@ -30,6 +30,7 @@ import type {
   FlowModelOptions,
   ParamObject,
   ParentFlowModel,
+  PersistOptions,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -42,6 +43,7 @@ import {
   resolveExpressions,
   setupRuntimeContextSteps,
 } from '../utils';
+import { FlowExitAllException } from '../utils/exceptions';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -53,6 +55,7 @@ let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
+  public hidden = false;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
@@ -633,6 +636,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             return Promise.resolve(stepResults);
           }
 
+          if (error instanceof FlowExitAllException) {
+            console.log(`[FlowEngine] ${error.message}`);
+            return Promise.resolve(error);
+          }
+
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
           return Promise.reject(error);
         }
@@ -834,6 +842,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           for (const flow of autoApplyFlows) {
             try {
               const result = await this.applyFlow(flow.key, inputArgs, runId);
+              if (result instanceof FlowExitAllException) {
+                console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);
+                break; // 终止后续流程执行
+              }
               results.push(result);
             } catch (error) {
               console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
@@ -1232,11 +1244,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel) {
+  moveTo(targetModel: FlowModel, options?: PersistOptions) {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-    return this.flowEngine.moveModel(this.uid, targetModel.uid);
+    return this.flowEngine.moveModel(this.uid, targetModel.uid, options);
   }
 
   remove() {
