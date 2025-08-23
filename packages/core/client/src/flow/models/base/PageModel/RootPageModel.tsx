@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { PageModel } from './PageModel';
+import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 export class RootPageModel extends PageModel {}
 
@@ -25,8 +26,13 @@ RootPageModel.registerFlow({
           url: `desktopRoutes:listAccessible?tree=true&sort=sort&filter[parent.schemaUid]=${ctx.model.parentId}`,
         });
         ctx.model.setProps('routeId', data?.data?.[0]?.id);
-        const routes = _.castArray(data?.data?.[0]?.children);
+        const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.[0]?.children);
         for (const route of routes) {
+          // 过滤掉隐藏的路由
+          if (route.hideInMenu) {
+            continue;
+          }
+
           const model = ctx.engine.createModel({
             parentId: ctx.model.uid,
             uid: route.schemaUid,
