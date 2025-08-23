@@ -40,6 +40,7 @@ RootPageModel.registerFlow({
               pageTabSettings: {
                 tab: {
                   title: route.title,
+                  icon: route.icon,
                 },
               },
             },

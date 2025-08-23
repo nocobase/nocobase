@@ -117,6 +117,7 @@ export class RootPageTabModel extends BasePageTabModel {
       data: {
         ...this.props.route,
         title: this.getTabTitle(''),
+        icon: this.getTabIcon(),
       },
     });
   }
