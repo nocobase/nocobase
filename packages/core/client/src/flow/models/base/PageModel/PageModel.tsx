@@ -13,6 +13,9 @@ import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
   CreateModelOptions,
+  DndProvider,
+  DragHandler,
+  Droppable,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -53,7 +56,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return this.mapSubModels('tabs', (model) => {
       return {
         key: model.uid,
-        label: <FlowModelRenderer model={model} showFlowSettings={{ showBackground: true, showBorder: false }} />,
+        label: (
+          <Droppable model={model}>
+            <FlowModelRenderer
+              model={model}
+              showFlowSettings={{ showBackground: true, showBorder: false }}
+              extraToolbarItems={[
+                {
+                  key: 'drag-handler',
+                  component: DragHandler,
+                  sort: 1,
+                },
+              ]}
+            />
+          </Droppable>
+        ),
         children: model.renderChildren(),
       };
     });
@@ -66,26 +83,43 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   renderTabs() {
     return (
-      <Tabs
-        tabBarStyle={this.props.tabBarStyle}
-        items={this.mapTabs()}
-        // destroyInactiveTabPane
-        tabBarExtraContent={
-          <AddSubModelButton
-            model={this}
-            subModelKey={'tabs'}
-            items={[
-              {
-                key: 'blank',
-                label: this.context.t('Blank tab'),
-                createModelOptions: this.createPageTabModelOptions,
-              },
-            ]}
-          >
-            <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-          </AddSubModelButton>
-        }
-      />
+      <DndProvider
+        onDragEnd={(event) => {
+          const activeModel = this.flowEngine.getModel(event.active.id as string);
+          const overModel = this.flowEngine.getModel(event.over.id as string);
+
+          this.context.api.request({
+            url: `desktopRoutes:move`,
+            method: 'post',
+            params: {
+              sourceId: activeModel?.props.route.id,
+              targetId: overModel?.props.route.id,
+              sortField: 'sort',
+            },
+          });
+        }}
+      >
+        <Tabs
+          tabBarStyle={this.props.tabBarStyle}
+          items={this.mapTabs()}
+          // destroyInactiveTabPane
+          tabBarExtraContent={
+            <AddSubModelButton
+              model={this}
+              subModelKey={'tabs'}
+              items={[
+                {
+                  key: 'blank',
+                  label: this.context.t('Blank tab'),
+                  createModelOptions: this.createPageTabModelOptions,
+                },
+              ]}
+            >
+              <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+            </AddSubModelButton>
+          }
+        />
+      </DndProvider>
     );
   }
 
