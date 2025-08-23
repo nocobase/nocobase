@@ -532,13 +532,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return currentFlowEngine.executor.runFlow(this, flowKey, inputArgs, runId);
   }
 
-  dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void {
+  async dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
       return;
     }
-    currentFlowEngine.executor.dispatchEvent(this, eventName, inputArgs);
+    await currentFlowEngine.executor.dispatchEvent(this, eventName, inputArgs);
   }
 
   /**
@@ -584,36 +584,33 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }, 100);
 
   /**
-   * 在所有自动流程执行前调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义逻辑，可以通过抛出 FlowExitException 来终止流程
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在所有自动流程执行前调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义逻辑，也可以通过抛出 FlowExitException 来终止流程。
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在所有自动流程执行后调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义逻辑
-   * @param {any[]} results 所有自动流程的执行结果
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在所有自动流程执行后调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义逻辑。
+   * @param results 所有自动流程的执行结果数组
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在自动流程执行出错时调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义错误处理逻辑
-   * @param {Error} error 捕获的错误
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在自动流程执行出错时调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义错误处理逻辑。
+   * @param error 捕获的错误
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
    * 执行所有自动应用流程
@@ -774,6 +771,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   async rerender() {
     await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
+  }
+
+  /**
+   * 自动流程缓存的作用域标识；fork 实例可覆盖以区分缓存。
+   */
+  public getAutoFlowCacheScope(): string {
+    return 'autoFlow';
   }
 
   setParent(parent: FlowModel): void {
