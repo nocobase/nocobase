@@ -436,3 +436,10 @@ export interface ApplyFlowCacheEntry {
   data?: any;
   error?: any;
 }
+
+export interface PersistOptions {
+  /**
+   * 是否持久化（保存到数据库），默认为 true
+   */
+  persist?: boolean;
+}

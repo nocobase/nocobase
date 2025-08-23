@@ -20,6 +20,7 @@ import type {
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
+  PersistOptions,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -577,7 +578,7 @@ export class FlowEngine {
    * @param {any} targetId Target model UID
    * @returns {Promise<void>} No return value
    */
-  async moveModel(sourceId: any, targetId: any, options?: { persist?: boolean }): Promise<void> {
+  async moveModel(sourceId: any, targetId: any, options?: PersistOptions): Promise<void> {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {
