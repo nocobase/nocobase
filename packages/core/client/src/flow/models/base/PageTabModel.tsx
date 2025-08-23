@@ -54,16 +54,24 @@ BasePageTabModel.registerFlow({
   title: escapeT('Tab settings'),
   steps: {
     tab: {
+      title: escapeT('Edit tab'),
       preset: true,
       uiSchema: {
         title: {
-          title: escapeT('Tab title'),
+          title: escapeT('Tab name'),
           'x-component': 'Input',
           'x-decorator': 'FormItem',
+          required: true,
+        },
+        icon: {
+          title: escapeT('Icon'),
+          'x-decorator': 'FormItem',
+          'x-component': 'IconPicker',
         },
       },
       async handler(ctx, params) {
         ctx.model.setProps('title', params.title);
+        ctx.model.setProps('icon', params.icon);
       },
     },
   },
