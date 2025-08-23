@@ -13,13 +13,7 @@ import React from 'react';
 import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
 import { RecordProxy } from '../../RecordProxy';
-import type {
-  DefaultStructure,
-  FlowDefinition,
-  FlowDefinitionOptions,
-  FlowModelOptions,
-  ModelConstructor,
-} from '../../types';
+import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowExitException } from '../../utils';
 import { FlowExitAllException } from '../../utils/exceptions';
 import { FlowModel, defineFlow } from '../flowModel';
@@ -356,7 +350,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle FlowExitException correctly', async () => {
-        const exitFlow: FlowDefinition = {
+        const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
             step1: {
@@ -371,7 +365,7 @@ describe('FlowModel', () => {
           },
         };
 
-        const exitFlow2: FlowDefinition = {
+        const exitFlow2: FlowDefinitionOptions = {
           key: 'exitFlow2',
           steps: {
             step2: {
@@ -394,7 +388,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle FlowExitAllException correctly', async () => {
-        const exitFlow: FlowDefinition = {
+        const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
             step1: {
@@ -409,7 +403,7 @@ describe('FlowModel', () => {
           },
         };
 
-        const exitFlow2: FlowDefinition = {
+        const exitFlow2: FlowDefinitionOptions = {
           key: 'exitFlow2',
           steps: {
             step2: {
@@ -432,7 +426,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle FlowExitAllException correctly', async () => {
-        const exitFlow: FlowDefinition = {
+        const exitFlow: FlowDefinitionOptions = {
           key: 'exitFlow',
           steps: {
             step1: {
@@ -609,15 +603,15 @@ describe('FlowModel', () => {
           afterHookSpy = vi.fn();
           errorHookSpy = vi.fn();
           TestFlowModelWithHooks = class extends TestFlowModel {
-            protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
             }
 
-            protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };
@@ -651,16 +645,16 @@ describe('FlowModel', () => {
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
 
           const TestFlowModelWithExitHooks = class extends TestFlowModel {
-            protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
               throw new FlowExitException('autoFlows', this.uid);
             }
 
-            protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };

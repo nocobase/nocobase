@@ -780,8 +780,8 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('viewer', { value: { dialog } });
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
 
-    // do not pass stepKey, and also omit flowKey to allow aggregator path to pick the only flow
-    await flowSettings.open({ model } as any);
+    // explicitly pass flowKey to avoid interference from other tests
+    await flowSettings.open({ model, flowKey: 'tf-flow' } as any);
     expect(dialog).toHaveBeenCalledTimes(1);
   });
 

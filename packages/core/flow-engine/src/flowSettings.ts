@@ -18,7 +18,6 @@ import { openStepSettingsDialog } from './components/settings/wrappers/contextua
 import { FlowRuntimeContext } from './flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import type { FlowDefinition } from './types';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
@@ -585,8 +584,8 @@ export class FlowSettings {
         return entries[0].stepTitle;
       }
 
-      if (!multipleFlows) {
-        // 情况 B：未提供 stepKey 且仅有一个步骤 => 与情况 A 一致
+      if (!multipleFlows && entries.length > 0) {
+        // 情况 B：只有一个flow且未指定stepKey => 返回第一个步骤标题
         return entries[0].stepTitle;
       }
 
