@@ -13,6 +13,7 @@ import React, { FC, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
+import { PersistOptions } from '../../types';
 
 export * from './getMousePositionOnElement';
 export * from './moveBlock';
@@ -70,7 +71,7 @@ export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({
 };
 
 // 提供一个封装了 DragOverlay 的 DndProvider 组件，继承 DndContext 的所有 props
-export const DndProvider: FC<DndContextProps & { persist?: boolean }> = ({
+export const DndProvider: FC<DndContextProps & PersistOptions> = ({
   persist = true,
   children,
   onDragEnd,

@@ -30,6 +30,7 @@ import type {
   FlowModelOptions,
   ParamObject,
   ParentFlowModel,
+  PersistOptions,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -1242,7 +1243,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel, options?: { persist?: boolean }) {
+  moveTo(targetModel: FlowModel, options?: PersistOptions) {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
