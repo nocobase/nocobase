@@ -1,0 +1,256 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import _ from 'lodash';
+import { FlowDefinition } from '../FlowDefinition';
+import { FlowRuntimeContext } from '../flowContext';
+import type { FlowEngine } from '../flowEngine';
+import type { FlowModel } from '../models';
+import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
+import { FlowExitException, resolveDefaultParams, resolveExpressions } from '../utils';
+import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
+import { CombinedFlowRegistry } from '../flow-registry/CombinedFlowRegistry';
+
+export class FlowExecutor {
+  constructor(private readonly engine: FlowEngine) {}
+
+  /**
+   * Execute a single flow on model.
+   */
+  async runFlow(model: FlowModel, flowKey: string, inputArgs?: Record<string, any>, runId?: string): Promise<any> {
+    const registry = new CombinedFlowRegistry(model);
+    const flow = registry.getFlow(flowKey);
+
+    if (!flow) {
+      console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
+      return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
+    }
+
+    const flowContext = new FlowRuntimeContext(model, flowKey);
+
+    flowContext.defineProperty('reactView', {
+      value: model.reactView,
+    });
+    flowContext.defineProperty('inputArgs', {
+      value: {
+        ..._.pick(model.context.currentFlow?.inputArgs, [
+          'filterByTk',
+          'sourceId',
+          'collectionName',
+          'associationName',
+        ]),
+        ...inputArgs,
+      },
+    });
+    flowContext.defineProperty('runId', {
+      value: runId || `run-${Date.now()}`,
+    });
+
+    let lastResult: any;
+    const stepResults: Record<string, any> = flowContext.stepResults;
+
+    // Setup steps meta and runtime mapping
+    setupRuntimeContextSteps(flowContext, flow, model, flowKey);
+    const steps = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
+
+    for (const stepKey in flow.steps) {
+      if (!Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) continue;
+      const step: StepDefinition = (flow.steps as any)[stepKey];
+      let handler: ((ctx: FlowRuntimeContext<any>, params: any) => Promise<any> | any) | undefined;
+      let combinedParams: Record<string, any> = {};
+      let actionDefinition: ActionDefinition | undefined;
+      let useRawParams: ActionDefinition['useRawParams'] = (step as any).useRawParams;
+
+      if (step.use) {
+        // Step references a registered action
+        actionDefinition = model.getAction(step.use);
+        if (!actionDefinition) {
+          console.error(
+            `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+          );
+          continue;
+        }
+        handler = (step as any).handler || actionDefinition.handler;
+        useRawParams = useRawParams ?? actionDefinition.useRawParams;
+        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
+        const stepDefaultParams = await resolveDefaultParams((step as any).defaultParams, flowContext);
+        combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
+      } else if ((step as any).handler) {
+        handler = (step as any).handler as any;
+        const stepDefaultParams = await resolveDefaultParams((step as any).defaultParams, flowContext);
+        combinedParams = { ...stepDefaultParams };
+      } else {
+        console.error(
+          `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
+        );
+        continue;
+      }
+
+      const modelStepParams = model.getStepParams(flowKey, stepKey);
+      if (modelStepParams !== undefined) {
+        combinedParams = { ...combinedParams, ...modelStepParams };
+      }
+      if (typeof useRawParams === 'function') {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useRawParams = await useRawParams(flowContext as any);
+      }
+      if (!useRawParams) {
+        combinedParams = (await resolveExpressions(combinedParams, flowContext)) as any;
+      }
+
+      try {
+        if (!handler) {
+          console.error(
+            `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+          );
+          continue;
+        }
+        const currentStepResult = handler(flowContext as any, combinedParams);
+        const isAwait = (step as any).isAwait !== false;
+        lastResult = isAwait ? await currentStepResult : currentStepResult;
+
+        // Store step result
+        stepResults[stepKey] = lastResult;
+        // update the context
+        steps[stepKey].result = stepResults[stepKey];
+      } catch (error) {
+        if (error instanceof FlowExitException) {
+          console.log(`[FlowEngine] ${error.message}`);
+          return Promise.resolve(stepResults);
+        }
+        console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
+        return Promise.reject(error);
+      }
+    }
+    return Promise.resolve(stepResults);
+  }
+
+  /**
+   * Execute all auto-apply flows for model.
+   */
+  async runAutoFlows(model: FlowModel, inputArgs?: Record<string, any>, useCache = true): Promise<any[]> {
+    const registry = new CombinedFlowRegistry(model);
+    const autoApplyFlows = registry.getAutoFlows();
+
+    if (autoApplyFlows.length === 0) {
+      console.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
+      return [];
+    }
+
+    const cacheKey = useCache
+      ? ((): string | null => {
+          const scope = (model as any)['forkId'] ?? 'autoFlow';
+          return this.engine
+            ? (this.engine.constructor as any).generateApplyFlowCacheKey(scope, 'all', model.uid)
+            : null;
+        })()
+      : null;
+
+    if (cacheKey && this.engine) {
+      const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
+      if (cachedEntry) {
+        if (cachedEntry.status === 'resolved') {
+          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
+          return cachedEntry.data;
+        }
+        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
+        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
+      }
+    }
+
+    const executeAutoFlows = async (): Promise<any[]> => {
+      const results: any[] = [];
+      const runId = `${model.uid}-autoFlow-${Date.now()}`;
+
+      try {
+        if ((model as any).beforeApplyAutoFlows) {
+          await (model as any).beforeApplyAutoFlows(inputArgs);
+        }
+
+        if (autoApplyFlows.length === 0) {
+          console.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
+        } else {
+          for (const flow of autoApplyFlows) {
+            try {
+              const result = await this.runFlow(model, (flow as any).key, inputArgs, runId);
+              results.push(result);
+            } catch (error) {
+              console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${(flow as any).key}':`, error);
+              throw error;
+            }
+          }
+        }
+
+        if ((model as any).afterApplyAutoFlows) {
+          await (model as any).afterApplyAutoFlows(results, inputArgs);
+        }
+
+        return results;
+      } catch (error) {
+        if (error instanceof FlowExitException) {
+          console.log(`[FlowEngine.applyAutoFlows] ${error.message}`);
+          return results;
+        }
+        try {
+          if ((model as any).onApplyAutoFlowsError) {
+            await (model as any).onApplyAutoFlowsError(error, inputArgs);
+          }
+        } catch (hookError) {
+          console.error('FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:', hookError);
+        }
+        throw error;
+      }
+    };
+
+    if (!cacheKey || !this.engine) {
+      return await executeAutoFlows();
+    }
+
+    const promise = executeAutoFlows()
+      .then((result) => {
+        this.engine.applyFlowCache.set(cacheKey, {
+          status: 'resolved',
+          data: result,
+          promise: Promise.resolve(result),
+        } as ApplyFlowCacheEntry);
+        return result;
+      })
+      .catch((err) => {
+        this.engine.applyFlowCache.set(cacheKey, {
+          status: 'rejected',
+          error: err,
+          promise: Promise.reject(err),
+        } as ApplyFlowCacheEntry);
+        throw err;
+      });
+
+    this.engine.applyFlowCache.set(cacheKey, { status: 'pending', promise } as ApplyFlowCacheEntry);
+    return await promise;
+  }
+
+  /**
+   * Dispatch an event to flows bound via flow.on and execute them.
+   */
+  async dispatchEvent(model: FlowModel, eventName: string, inputArgs?: Record<string, any>): Promise<void> {
+    const registry = new CombinedFlowRegistry(model);
+    const flows = registry.getFlowsByEvent(eventName);
+    const runId = `${model.uid}-${eventName}-${Date.now()}`;
+    for (const flow of flows) {
+      console.log(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${(flow as any).key}'.`);
+      this.runFlow(model, (flow as any).key, inputArgs, runId).catch((error) => {
+        console.error(
+          `BaseModel.dispatchEvent: Error executing event-triggered flow '${
+            (flow as any).key
+          }' for event '${eventName}':`,
+          error,
+        );
+      });
+    }
+  }
+}

@@ -529,119 +529,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
       return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
-
-    const flow = this.getFlow(flowKey);
-
-    if (!flow) {
-      console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
-      return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
-    }
-
-    const flowContext = new FlowRuntimeContext(this, flowKey);
-
-    flowContext.defineProperty('reactView', {
-      value: this.reactView,
-    });
-    flowContext.defineProperty('inputArgs', {
-      value: {
-        // currentFlow 里面包含的数据相关参数要透传给下一个model上下文， 之前是解析参数时来兼容的
-        // TODO: 这里是不是应该将currentFlow的所有inputArgs透传给下一个model上下文?
-        // 1. 直接委托？ ---> 可能存在污染
-        // 2. 全部inputArgs 参数？ ---> 部分参数会不符合预期，弹窗会直接变成字页面
-        ..._.pick(this.context.currentFlow?.inputArgs, ['filterByTk', 'sourceId', 'collectionName', 'associationName']),
-        ...inputArgs,
-      },
-    });
-    flowContext.defineProperty('runId', {
-      value: runId || `run-${Date.now()}`,
-    });
-
-    let lastResult: any;
-    const stepResults: Record<string, any> = flowContext.stepResults;
-
-    // 使用 setupRuntimeContextSteps 来设置 steps 属性
-    setupRuntimeContextSteps(flowContext, flow, this, flowKey);
-    const steps = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
-
-    for (const stepKey in flow.steps) {
-      if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
-        const step: StepDefinition = flow.steps[stepKey];
-        let handler: ((ctx: FlowRuntimeContext<this>, params: any) => Promise<any> | any) | undefined;
-        let combinedParams: Record<string, any> = {};
-        let actionDefinition;
-        let useRawParams: ActionDefinition['useRawParams'] = step.useRawParams;
-
-        if (step.use) {
-          // Step references a registered action
-          actionDefinition = this.getAction(step.use);
-          if (!actionDefinition) {
-            console.error(
-              `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
-            );
-            continue;
-          }
-          // Use step's handler if provided, otherwise use action's handler
-          handler = step.handler || actionDefinition.handler;
-          useRawParams = useRawParams ?? actionDefinition.useRawParams;
-          // Merge default params: action defaults first, then step defaults
-          const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
-          combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
-        } else if (step.handler) {
-          // Step defines its own inline handler
-          handler = step.handler;
-          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
-          combinedParams = { ...stepDefaultParams };
-        } else {
-          console.error(
-            `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
-          );
-          continue;
-        }
-
-        const modelStepParams = this.getStepParams(flowKey, stepKey);
-        if (modelStepParams !== undefined) {
-          combinedParams = { ...combinedParams, ...modelStepParams };
-        }
-        if (typeof useRawParams === 'function') {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          useRawParams = await useRawParams(flowContext);
-        }
-        if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, flowContext);
-        }
-
-        try {
-          if (!handler) {
-            console.error(
-              `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
-            );
-            continue;
-          }
-          const currentStepResult = handler(flowContext, combinedParams);
-          if (step.isAwait !== false) {
-            lastResult = await currentStepResult;
-          } else {
-            lastResult = currentStepResult;
-          }
-
-          // Store step result
-          stepResults[stepKey] = lastResult;
-          // update the context
-          steps[stepKey].result = stepResults[stepKey];
-        } catch (error) {
-          // 检查是否是通过 ctx.exit() 正常退出
-          if (error instanceof FlowExitException) {
-            console.log(`[FlowEngine] ${error.message}`);
-            return Promise.resolve(stepResults);
-          }
-
-          console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
-          return Promise.reject(error);
-        }
-      }
-    }
-    return Promise.resolve(stepResults);
+    return currentFlowEngine.executor.runFlow(this, flowKey, inputArgs, runId);
   }
 
   dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void {
@@ -650,31 +538,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
       return;
     }
-
-    // 获取所有流程
-    const allFlows = this.getFlows();
-    const runId = `${this.uid}-${eventName}-${Date.now()}`;
-
-    allFlows.forEach((flow: FlowDefinition) => {
-      if (flow.on) {
-        let flowEvent = '';
-        if (typeof flow.on === 'string') {
-          flowEvent = flow.on;
-        } else if (flow.on?.eventName) {
-          flowEvent = flow.on.eventName;
-        }
-        if (flowEvent !== eventName) {
-          return; // 只处理匹配的事件
-        }
-        console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, inputArgs, runId).catch((error) => {
-          console.error(
-            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-            error,
-          );
-        });
-      }
-    });
+    currentFlowEngine.executor.dispatchEvent(this, eventName, inputArgs);
   }
 
   /**
@@ -760,111 +624,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: any[]): Promise<any[]> {
     const [inputArgs, useCache = true] = args;
-    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
-
     if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
-
-    // 存储本次执行的参数，用于后续重新执行
     this._lastAutoRunParams = args;
-
-    const autoApplyFlows = this.getAutoFlows();
-
-    if (autoApplyFlows.length === 0) {
-      console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
-      return [];
-    }
-
-    // 检查缓存
-    if (cacheKey && this.flowEngine) {
-      const cachedEntry = this.flowEngine.applyFlowCache.get(cacheKey);
-      if (cachedEntry) {
-        if (cachedEntry.status === 'resolved') {
-          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${this.uid}`);
-          return cachedEntry.data;
-        }
-        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
-        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
-      }
-    }
-
-    // 执行 autoFlows
-    const executeAutoFlows = async (): Promise<any[]> => {
-      const results: any[] = [];
-      const runId = `${this.uid}-autoFlow-${Date.now()}`;
-
-      try {
-        // 调用 beforeApplyAutoFlows 钩子
-        await this.beforeApplyAutoFlows(inputArgs);
-
-        // 如果没有自动流程，记录警告但仍然继续执行钩子
-        if (autoApplyFlows.length === 0) {
-          console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
-        } else {
-          // 执行所有自动流程
-          for (const flow of autoApplyFlows) {
-            try {
-              const result = await this.applyFlow(flow.key, inputArgs, runId);
-              results.push(result);
-            } catch (error) {
-              console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
-              throw error;
-            }
-          }
-        }
-
-        // 调用 afterApplyAutoFlows 钩子
-        await this.afterApplyAutoFlows(results, inputArgs);
-
-        return results;
-      } catch (error) {
-        // 检查是否是通过 FlowExitException 正常退出
-        if (error instanceof FlowExitException) {
-          console.log(`[FlowEngine.applyAutoFlows] ${error.message}`);
-          return results; // 返回已执行的结果
-        }
-
-        // 调用 onApplyAutoFlowsError 钩子
-        try {
-          await this.onApplyAutoFlowsError(error, inputArgs);
-        } catch (hookError) {
-          console.error('FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:', hookError);
-        }
-
-        throw error;
-      }
-    };
-
-    // 如果不使用缓存，直接执行
-    if (!cacheKey || !this.flowEngine) {
-      return await executeAutoFlows();
-    }
-
-    // 使用缓存机制
-    const promise = executeAutoFlows()
-      .then((result) => {
-        this.flowEngine.applyFlowCache.set(cacheKey, {
-          status: 'resolved',
-          data: result,
-          promise: Promise.resolve(result),
-        });
-        return result;
-      })
-      .catch((err) => {
-        this.flowEngine.applyFlowCache.set(cacheKey, {
-          status: 'rejected',
-          error: err,
-          promise: Promise.reject(err),
-        });
-        throw err;
-      });
-
-    this.flowEngine.applyFlowCache.set(cacheKey, { status: 'pending', promise });
-    return await promise;
+    return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
   }
 
   /**

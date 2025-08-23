@@ -25,6 +25,7 @@ import { isInheritedFrom } from './utils';
 import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
 import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
 import type { EventDefinition } from './types';
+import { FlowExecutor } from './executor/FlowExecutor';
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -108,6 +109,10 @@ export class FlowEngine {
    * @public
    */
   public reactView: ReactView;
+  /**
+   * Flow executor that runs flows and auto-flows.
+   */
+  public executor: FlowExecutor;
 
   /**
    * Constructor. Initializes React view, registers default model and form scopes.
@@ -129,6 +134,7 @@ export class FlowEngine {
         },
       },
     });
+    this.executor = new FlowExecutor(this);
   }
 
   /**
