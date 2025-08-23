@@ -33,6 +33,7 @@ import {
   SQLResource,
 } from './resources';
 import { extractPropertyPath, FlowExitException, resolveExpressions } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 
@@ -217,6 +218,11 @@ export class FlowContext {
     if (!this._delegates.includes(ctx)) {
       this._delegates.unshift(ctx);
     }
+  }
+
+  clearDelegates() {
+    this._delegates = [];
+    this._metaNodeCache = new WeakMap(); // 清除缓存
   }
 
   removeDelegate(ctx: FlowContext) {
@@ -1029,6 +1035,10 @@ export class FlowRuntimeContext<
 
   exit() {
     throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+
+  exitAll() {
+    throw new FlowExitAllException(this.flowKey, this.model.uid);
   }
 
   get mode() {

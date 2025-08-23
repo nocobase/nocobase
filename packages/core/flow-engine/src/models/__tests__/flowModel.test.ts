@@ -8,15 +8,16 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
-import { vi } from 'vitest';
-import React from 'react';
 import { render } from '@testing-library/react';
+import React from 'react';
+import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
+import { RecordProxy } from '../../RecordProxy';
 import type { DefaultStructure, FlowDefinition, FlowModelOptions, ModelConstructor } from '../../types';
+import { FlowExitException } from '../../utils';
+import { FlowExitAllException } from '../../utils/exceptions';
 import { FlowModel, defineFlow } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
-import { FlowExitException } from '../../utils';
-import { RecordProxy } from '../../RecordProxy';
 
 // 全局处理测试中的未处理 Promise rejection
 const originalUnhandledRejection = process.listeners('unhandledRejection');
@@ -445,6 +446,110 @@ describe('FlowModel', () => {
         const result = await model.applyFlow('exitFlow');
 
         expect(result).toEqual({});
+        expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle FlowExitException correctly', async () => {
+        const exitFlow: FlowDefinition = {
+          key: 'exitFlow',
+          steps: {
+            step1: {
+              handler: (ctx) => {
+                ctx.exit();
+                return 'should-not-reach';
+              },
+            },
+            step2: {
+              handler: vi.fn().mockReturnValue('step2-result'),
+            },
+          },
+        };
+
+        const exitFlow2: FlowDefinition = {
+          key: 'exitFlow2',
+          steps: {
+            step2: {
+              handler: vi.fn().mockReturnValue('step2-result'),
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(exitFlow);
+        TestFlowModel.registerFlow(exitFlow2);
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await model.applyAutoFlows();
+
+        expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
+        expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle FlowExitAllException correctly', async () => {
+        const exitFlow: FlowDefinition = {
+          key: 'exitFlow',
+          steps: {
+            step1: {
+              handler: (ctx) => {
+                ctx.exitAll();
+                return 'should-not-reach';
+              },
+            },
+            step2: {
+              handler: vi.fn().mockReturnValue('step2-result'),
+            },
+          },
+        };
+
+        const exitFlow2: FlowDefinition = {
+          key: 'exitFlow2',
+          steps: {
+            step2: {
+              handler: vi.fn().mockReturnValue('step2-result'),
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(exitFlow);
+        TestFlowModel.registerFlow(exitFlow2);
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await model.applyAutoFlows();
+
+        expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
+        expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+
+        consoleSpy.mockRestore();
+      });
+
+      test('should handle FlowExitAllException correctly', async () => {
+        const exitFlow: FlowDefinition = {
+          key: 'exitFlow',
+          steps: {
+            step1: {
+              handler: (ctx) => {
+                ctx.exitAll();
+                return 'should-not-reach';
+              },
+            },
+            step2: {
+              handler: vi.fn().mockReturnValue('step2-result'),
+            },
+          },
+        };
+
+        TestFlowModel.registerFlow(exitFlow);
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        const result = await model.applyFlow('exitFlow');
+
+        expect(result).toBeInstanceOf(FlowExitAllException);
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 

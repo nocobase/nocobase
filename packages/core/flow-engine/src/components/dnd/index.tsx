@@ -9,8 +9,8 @@
 
 import { DragOutlined } from '@ant-design/icons';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
-import { createPortal } from 'react-dom';
 import React, { FC, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
 
@@ -70,7 +70,12 @@ export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({
 };
 
 // 提供一个封装了 DragOverlay 的 DndProvider 组件，继承 DndContext 的所有 props
-export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restProps }) => {
+export const DndProvider: FC<DndContextProps & { persist?: boolean }> = ({
+  persist = true,
+  children,
+  onDragEnd,
+  ...restProps
+}) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const flowEngine = useFlowEngine();
   return (
@@ -84,7 +89,7 @@ export const DndProvider: FC<DndContextProps> = ({ children, onDragEnd, ...restP
         // 如果没有 onDragEnd 回调，则默认调用 flowEngine 的 moveModel 方法
         if (!onDragEnd) {
           if (event.over) {
-            flowEngine.moveModel(event.active.id, event.over.id);
+            flowEngine.moveModel(event.active.id, event.over.id, { persist });
           }
         } else {
           // 如果有 onDragEnd 回调，则调用它
