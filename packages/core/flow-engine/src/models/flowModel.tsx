@@ -42,6 +42,7 @@ import {
   resolveExpressions,
   setupRuntimeContextSteps,
 } from '../utils';
+import { FlowExitAllException } from '../utils/exceptions';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用WeakMap存储每个类的meta
@@ -632,6 +633,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             return Promise.resolve(stepResults);
           }
 
+          if (error instanceof FlowExitAllException) {
+            console.log(`[FlowEngine] ${error.message}`);
+            return Promise.resolve(error);
+          }
+
           console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
           return Promise.reject(error);
         }
@@ -833,6 +839,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           for (const flow of autoApplyFlows) {
             try {
               const result = await this.applyFlow(flow.key, inputArgs, runId);
+              if (result instanceof FlowExitAllException) {
+                console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);
+                break; // 终止后续流程执行
+              }
               results.push(result);
             } catch (error) {
               console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
