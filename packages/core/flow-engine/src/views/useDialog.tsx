@@ -73,6 +73,9 @@ export function useDialog() {
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {
+        if (config.preventClose) {
+          return;
+        }
         resolvePromise?.(result);
         dialogRef.current?.destroy();
       },

@@ -73,6 +73,9 @@ export function useDrawer() {
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any) => {
+        if (config.preventClose) {
+          return;
+        }
         resolvePromise?.(result);
         drawerRef.current?.destroy();
       },

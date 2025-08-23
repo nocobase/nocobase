@@ -199,8 +199,8 @@ FormTriggerWorkflowActionModel.registerFlow({
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.currentView && ctx.closable) {
-          ctx.currentView.close();
+        if (ctx.view) {
+          ctx.view.close();
         }
       },
     },
