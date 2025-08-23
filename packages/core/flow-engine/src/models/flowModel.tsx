@@ -54,6 +54,7 @@ let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
+  public hidden = false;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
@@ -1241,11 +1242,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel) {
+  moveTo(targetModel: FlowModel, options?: { persist?: boolean }) {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-    return this.flowEngine.moveModel(this.uid, targetModel.uid);
+    return this.flowEngine.moveModel(this.uid, targetModel.uid, options);
   }
 
   remove() {
