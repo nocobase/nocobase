@@ -64,7 +64,7 @@ export const FlowRoute = () => {
     });
     model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
-  return <div ref={layoutContentRef} />;
+  return <div id="layout-content" ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {

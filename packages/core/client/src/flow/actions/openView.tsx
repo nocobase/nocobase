@@ -21,7 +21,7 @@ export const openView = defineAction({
       enum: [
         { label: escapeT('Drawer'), value: 'drawer' },
         { label: escapeT('Dialog'), value: 'dialog' },
-        // { label: escapeT('Page'), value: 'page' },
+        { label: escapeT('Page'), value: 'embed' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -62,7 +62,7 @@ export const openView = defineAction({
       type: openMode,
       preventClose: !!params.preventClose,
       inheritContext: false,
-      target: ctx.inputArgs.target || ctx.layoutContentElement,
+      target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
       width: sizeToWidthMap[size],
       content: (currentView) => {
         return (
