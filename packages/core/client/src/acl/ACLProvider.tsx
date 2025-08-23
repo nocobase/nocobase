@@ -354,6 +354,7 @@ export const ACLActionProvider = (props) => {
 };
 export const useACLFieldWhitelist = () => {
   const params = useContext(ACLActionParamsContext);
+  console.log(params);
   const whitelist = useMemo(() => {
     return []
       .concat(params?.whitelist || [])

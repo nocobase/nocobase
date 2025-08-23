@@ -633,8 +633,7 @@ CollectionBlockModel.registerFlow({
           });
           if (!result) {
             ctx.model.hidden = true;
-            ctx.exit();
-            // ctx.exitAll(); //TODO 缺api 预期没有权限时后续所有流都不执行
+            ctx.exitAll();
           }
         }
       },
@@ -668,10 +667,6 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
-        if (ctx.model.hidden) {
-          ctx.model.resource.loading = false;
-          ctx.exit();
-        }
         const filterManager: FilterManager = ctx.model.context.filterManager;
         filterManager.bindToTarget(ctx.model.uid);
         if (ctx.model.isManualRefresh) {

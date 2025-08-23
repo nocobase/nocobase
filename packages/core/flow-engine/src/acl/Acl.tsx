@@ -80,6 +80,17 @@ export class ACL {
     return this.getStrategyActionParams(actionName);
   }
 
+  parseField(options: CheckOptions) {
+    const { fields } = options;
+    const params = this.parseAction(options);
+    const whitelist = []
+      .concat(params?.whitelist || [])
+      .concat(params?.fields || [])
+      .concat(params?.appends || []);
+    const allowed = whitelist.includes(fields[0]);
+    return allowed;
+  }
+
   async aclCheck(options: CheckOptions): Promise<boolean> {
     await this.load();
     const { data } = this.dataSources;
@@ -87,7 +98,9 @@ export class ACL {
     if (allowAll) {
       return true;
     }
-    console.log(this.parseAction(options));
+    if (options.fields) {
+      return this.parseField(options);
+    }
     return this.parseAction(options);
   }
 }

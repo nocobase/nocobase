@@ -9,8 +9,12 @@
 
 import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
+import React from 'react';
+import { FieldModel } from '../../../base/FieldModel';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
+import { FormItem } from './FormItem';
+import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 
 export class CollectionFieldFormItemModel extends FormItemModel {
   static defineChildren(ctx: FlowModelContext) {
@@ -19,11 +23,24 @@ export class CollectionFieldFormItemModel extends FormItemModel {
       fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
     });
   }
-  // onInit(options: any): void {
-  //   this.context.defineMethod('aclCheck', (params) => {
-  //     console.log(this.flowEngine.context);
-  //   });
-  // }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineMethod('aclCheck', async (params) => {
+      return await this.flowEngine.context.acl.aclCheck(params);
+    });
+  }
+
+  render() {
+    const fieldModel = this.subModels.field as FieldModel;
+    if (this.hidden) {
+      return null;
+    }
+    return (
+      <FormItem {...this.props}>
+        <FieldModelRenderer model={fieldModel} />
+      </FormItem>
+    );
+  }
 }
 
 CollectionFieldFormItemModel.define({
@@ -36,6 +53,28 @@ CollectionFieldFormItemModel.registerFlow({
   sort: 300,
   title: escapeT('Form item settings'),
   steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        {
+          console.log({
+            dataSourceKey: ctx.model.context.dataSource.key,
+            resourceName: ctx.blockModel.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+            fields: [ctx.model.collectionField.name],
+          });
+          const result = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource.key,
+            resourceName: ctx.blockModel.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+            fields: [ctx.model.collectionField.name],
+          });
+          if (!result) {
+            ctx.model.hidden = true;
+            ctx.exitAll();
+          }
+        }
+      },
+    },
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
