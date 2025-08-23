@@ -11,7 +11,19 @@ import _ from 'lodash';
 import { PageModel } from './PageModel';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
-export class RootPageModel extends PageModel {}
+export class RootPageModel extends PageModel {
+  async saveStepParams() {
+    await super.saveStepParams();
+    // 更新路由
+    this.context.api.request({
+      url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
+      method: 'post',
+      data: {
+        enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
+      },
+    });
+  }
+}
 
 RootPageModel.registerFlow({
   key: 'rootPageSettings',
