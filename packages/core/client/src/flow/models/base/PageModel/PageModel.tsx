@@ -25,6 +25,7 @@ import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { BasePageTabModel } from '../PageTabModel';
+import { DragEndEvent } from '@dnd-kit/core';
 
 type PageModelStructure = {
   subModels: {
@@ -81,26 +82,13 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return firstTab?.renderChildren();
   }
 
+  async handleDragEnd(event: DragEndEvent) {
+    throw new Error('Method not implemented.');
+  }
+
   renderTabs() {
     return (
-      <DndProvider
-        onDragEnd={async (event) => {
-          const activeModel = this.flowEngine.getModel(event.active.id as string);
-          const overModel = this.flowEngine.getModel(event.over.id as string);
-
-          await this.context.api.request({
-            url: `desktopRoutes:move`,
-            method: 'post',
-            params: {
-              sourceId: activeModel?.props.route.id,
-              targetId: overModel?.props.route.id,
-              sortField: 'sort',
-            },
-          });
-
-          this.flowEngine.moveModel(activeModel?.uid, overModel?.uid, { persist: false });
-        }}
-      >
+      <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}

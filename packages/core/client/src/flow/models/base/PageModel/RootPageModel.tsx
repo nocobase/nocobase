@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import { PageModel } from './PageModel';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { DragEndEvent } from '@dnd-kit/core';
 
 export class RootPageModel extends PageModel {
   async saveStepParams() {
@@ -22,6 +23,27 @@ export class RootPageModel extends PageModel {
         enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
       },
     });
+  }
+
+  async handleDragEnd(event: DragEndEvent) {
+    const activeModel = this.flowEngine.getModel(event.active.id as string);
+    const overModel = this.flowEngine.getModel(event.over.id as string);
+
+    if (!activeModel || !overModel) {
+      throw new Error('Invalid drag event: missing model');
+    }
+
+    await this.context.api.request({
+      url: `desktopRoutes:move`,
+      method: 'post',
+      params: {
+        sourceId: activeModel?.props.route.id,
+        targetId: overModel?.props.route.id,
+        sortField: 'sort',
+      },
+    });
+
+    this.flowEngine.moveModel(activeModel?.uid, overModel?.uid, { persist: false });
   }
 }
 
