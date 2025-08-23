@@ -56,12 +56,6 @@ CollectionFieldFormItemModel.registerFlow({
     aclCheck: {
       async handler(ctx, params) {
         {
-          console.log({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.blockModel.resource.getResourceName(),
-            actionName: ctx.model.context.actionName,
-            fields: [ctx.model.collectionField.name],
-          });
           const result = await ctx.model.context.aclCheck({
             dataSourceKey: ctx.model.context.dataSource.key,
             resourceName: ctx.blockModel.resource.getResourceName(),

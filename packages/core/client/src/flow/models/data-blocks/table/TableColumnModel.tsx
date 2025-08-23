@@ -87,7 +87,14 @@ export class TableColumnModel extends FieldModel {
         // handleSave,
       }),
       render: this.render(),
+      hidden: this.hidden,
     };
+  }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineMethod('aclCheck', async (params) => {
+      return await this.flowEngine.context.acl.aclCheck(params);
+    });
   }
 
   render() {
@@ -126,6 +133,22 @@ TableColumnModel.registerFlow({
   sort: 500,
   title: escapeT('Table column settings'),
   steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        {
+          const result = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource.key,
+            resourceName: ctx.blockModel.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+            fields: [ctx.model.collectionField.name],
+          });
+          if (!result) {
+            ctx.model.hidden = true;
+            ctx.exitAll();
+          }
+        }
+      },
+    },
     init: {
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;

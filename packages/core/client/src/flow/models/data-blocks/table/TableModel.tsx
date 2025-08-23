@@ -147,6 +147,9 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
     return this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
+      .filter((v) => {
+        return !v.hidden;
+      })
       .concat({
         key: 'empty',
       })
