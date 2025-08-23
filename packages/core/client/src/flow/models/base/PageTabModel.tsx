@@ -13,6 +13,7 @@ import React from 'react';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { RemoteFlowModelRenderer } from '../../FlowPage';
 import { BlockGridModel } from './GridModel';
+import { Icon } from '../../../icon';
 
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(
@@ -40,12 +41,21 @@ export class BasePageTabModel extends FlowModel<{
     return this.context.t(this.stepParams.pageTabSettings?.tab?.title || defaultTitle);
   }
 
+  getTabIcon() {
+    return this.stepParams.pageTabSettings?.tab?.icon;
+  }
+
   renderChildren() {
     return null;
   }
 
   render() {
-    return this.getTabTitle();
+    return (
+      <>
+        <Icon style={{ marginRight: 8 }} type={this.getTabIcon()} />
+        {this.getTabTitle()}
+      </>
+    );
   }
 }
 
