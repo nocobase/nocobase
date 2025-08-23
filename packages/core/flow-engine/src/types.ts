@@ -188,8 +188,7 @@ export type StepUIMode =
   | 'drawer'
   // | 'switch'
   // | 'select'
-  | { type: 'dialog'; props?: Record<string, any> }
-  | { type: 'drawer'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -284,7 +283,7 @@ export interface CreateModelOptions {
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
-  save(model: T): Promise<Record<string, any>>;
+  save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
 }
@@ -427,4 +426,11 @@ export interface ApplyFlowCacheEntry {
   promise: Promise<any>;
   data?: any;
   error?: any;
+}
+
+export interface PersistOptions {
+  /**
+   * 是否持久化（保存到数据库），默认为 true
+   */
+  persist?: boolean;
 }

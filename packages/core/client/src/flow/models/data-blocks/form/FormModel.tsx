@@ -51,10 +51,12 @@ export function FormComponent({
   model,
   children,
   layoutProps = {} as any,
+  initialValues,
 }: {
   model: any;
   children: React.ReactNode;
   layoutProps?: any;
+  initialValues?: any;
 }) {
   const [form] = Form.useForm();
 
@@ -66,7 +68,7 @@ export function FormComponent({
     <Form
       key={model.uid}
       form={form}
-      initialValues={model.context.record}
+      initialValues={model.context.record || initialValues}
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
     >

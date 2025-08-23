@@ -10,22 +10,22 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
+  buildWrapperFieldChildren,
+  Collection,
   DragHandler,
   Droppable,
   escapeT,
   FlowModel,
+  FlowModelContext,
   FlowsFloatContextMenu,
   useFlowSettingsContext,
-  FlowModelContext,
-  Collection,
-  buildWrapperFieldChildren,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
-import { FieldModelRenderer } from '../../fields';
 
 export class TableColumnModel extends FieldModel {
   static defineChildren(ctx: FlowModelContext) {
@@ -41,7 +41,7 @@ export class TableColumnModel extends FieldModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 7px', margin: '-11px -7px' }}
           showBorder={false}
-          settingsMenuLevel={2}
+          settingsMenuLevel={3}
           extraToolbarItems={[
             {
               key: 'drag-handler',
@@ -93,8 +93,8 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
-        {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
-          const fork = action.createFork({}, `${index}`);
+        {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
+          const fork = field.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
           });
@@ -102,7 +102,7 @@ export class TableColumnModel extends FieldModel {
             get: () => index,
           });
           return (
-            <FormItem {...this.props} value={value} noStyle={true}>
+            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
             </FormItem>
           );
@@ -160,12 +160,9 @@ TableColumnModel.registerFlow({
           },
         },
       },
-      defaultParams: (ctx) => {
-        console.log(ctx.model.collectionField?.title || ctx.model.title);
-        return {
-          title: ctx.model.collectionField?.title || ctx.model.title,
-        };
-      },
+      defaultParams: (ctx) => ({
+        title: ctx.model.collectionField?.title,
+      }),
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);

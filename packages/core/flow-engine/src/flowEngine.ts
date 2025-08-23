@@ -20,6 +20,7 @@ import type {
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
+  PersistOptions,
 } from './types';
 import { isInheritedFrom } from './utils';
 import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
@@ -500,9 +501,9 @@ export class FlowEngine {
    * @param {T} model Model instance to save
    * @returns {Promise<any>} Repository save result
    */
-  async saveModel<T extends FlowModel = FlowModel>(model: T) {
+  async saveModel<T extends FlowModel = FlowModel>(model: T, options?: { onlyStepParams?: boolean }): Promise<any> {
     if (!this.ensureModelRepository()) return;
-    return await this.#modelRepository.save(model);
+    return await this.#modelRepository.save(model, options);
   }
 
   /**
@@ -600,7 +601,7 @@ export class FlowEngine {
    * @param {any} targetId Target model UID
    * @returns {Promise<void>} No return value
    */
-  async moveModel(sourceId: any, targetId: any): Promise<void> {
+  async moveModel(sourceId: any, targetId: any, options?: PersistOptions): Promise<void> {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {
@@ -647,7 +648,7 @@ export class FlowEngine {
       return true;
     };
     move(sourceModel, targetModel);
-    if (this.ensureModelRepository()) {
+    if (options?.persist !== false && this.ensureModelRepository()) {
       const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
       await this.#modelRepository.move(sourceId, targetId, position);
     }

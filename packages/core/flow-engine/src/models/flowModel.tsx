@@ -29,6 +29,7 @@ import type {
   FlowModelOptions,
   ParamObject,
   ParentFlowModel,
+  PersistOptions,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -40,6 +41,7 @@ import {
   resolveExpressions,
   setupRuntimeContextSteps,
 } from '../utils';
+// import { FlowExitAllException } from '../utils/exceptions';
 import { ForkFlowModel } from './forkFlowModel';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
@@ -63,6 +65,7 @@ const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>(
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
+  public hidden = false;
   public props: IModelComponentProps = {};
   public stepParams: StepParams = {};
   public flowEngine: FlowEngine;
@@ -87,7 +90,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 上一次 applyAutoFlows 的执行参数
    */
   private _lastAutoRunParams: any[] | null = null;
-  private observerDispose: () => void;
+  protected observerDispose: () => void;
   #flowContext: FlowModelContext;
 
   /**
@@ -214,6 +217,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   get reactView() {
     return this.flowEngine.reactView;
+  }
+
+  get parentId() {
+    return this._options.parentId;
   }
 
   static get meta() {
@@ -794,6 +801,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
+  removeParentDelegate() {
+    if (!this.parent) {
+      return;
+    }
+    this.context.removeDelegate(this.parent.context);
+  }
+
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
     let model: T;
     if (options instanceof FlowModel) {
@@ -971,11 +985,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {FlowModel} targetModel 目标模型
    * @returns {boolean} 是否成功移动
    */
-  moveTo(targetModel: FlowModel) {
+  moveTo(targetModel: FlowModel, options?: PersistOptions) {
     if (!this.flowEngine) {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
-    return this.flowEngine.moveModel(this.uid, targetModel.uid);
+    return this.flowEngine.moveModel(this.uid, targetModel.uid, options);
   }
 
   remove() {
@@ -992,6 +1006,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     return this.flowEngine.saveModel(this);
+  }
+
+  async saveStepParams() {
+    return this.flowEngine.saveModel(this, { onlyStepParams: true });
   }
 
   async destroy() {

@@ -9,6 +9,7 @@
 
 import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
+import { AxiosRequestConfig } from 'axios';
 import { ActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { EditFormModel } from './EditFormModel';
@@ -22,6 +23,16 @@ export class FormSubmitActionModel extends FormActionModel {
     type: 'primary',
     htmlType: 'submit',
   };
+
+  /**
+   * 简化设置保存请求配置的方式
+   * @param requestConfig
+   */
+  setSaveRequestConfig(requestConfig?: AxiosRequestConfig) {
+    this.setStepParams('submitSettings', 'saveResource', {
+      requestConfig,
+    });
+  }
 }
 
 FormSubmitActionModel.define({
@@ -33,7 +44,7 @@ FormSubmitActionModel.registerFlow({
   on: 'click',
   steps: {
     saveResource: {
-      async handler(ctx) {
+      async handler(ctx, params) {
         if (!ctx?.resource) {
           throw new Error('Resource is not initialized');
         }
@@ -54,7 +65,7 @@ FormSubmitActionModel.registerFlow({
                 resource.setFilterByTk(currentFilterByTk);
               }
             }
-            await resource.save(values);
+            await resource.save(values, params.requestConfig);
             if (blockModel instanceof EditFormModel) {
               resource.isNewRecord = false;
               await resource.refresh();
@@ -67,7 +78,7 @@ FormSubmitActionModel.registerFlow({
               ctx.message.error(ctx.t('No filterByTk found for multi-record resource.'));
               return;
             }
-            await resource.update(currentFilterByTk, values);
+            await resource.update(currentFilterByTk, values, params.requestConfig);
           }
         } catch (error) {
           // 显示保存失败提示
@@ -82,8 +93,8 @@ FormSubmitActionModel.registerFlow({
         if (parentBlockModel) {
           parentBlockModel.resource.refresh();
         }
-        if (ctx.currentView && ctx.closable) {
-          ctx.currentView.close();
+        if (ctx.view) {
+          ctx.view.close();
         }
       },
     },

@@ -13,6 +13,7 @@ import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
 import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
 import { FlowExitException, resolveDefaultParams, resolveExpressions } from '../utils';
+import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 
 export class FlowExecutor {
@@ -122,6 +123,11 @@ export class FlowExecutor {
           console.log(`[FlowEngine] ${error.message}`);
           return Promise.resolve(stepResults);
         }
+        if (error instanceof FlowExitAllException) {
+          console.log(`[FlowEngine] ${error.message}`);
+          // 传递特殊控制信号，让上层可中止后续流程
+          return Promise.resolve(error);
+        }
         console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
         return Promise.reject(error);
       }
@@ -168,6 +174,10 @@ export class FlowExecutor {
           for (const flow of autoApplyFlows) {
             try {
               const result = await this.runFlow(model, flow.key, inputArgs, runId);
+              if (result instanceof FlowExitAllException) {
+                console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);
+                break; // 终止后续流程执行
+              }
               results.push(result);
             } catch (error) {
               console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);

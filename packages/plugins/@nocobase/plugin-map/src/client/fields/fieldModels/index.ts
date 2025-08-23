@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './PointEditableFieldModel';
+export * from './PointFieldModel';
 export * from './PointReadPrettyFieldModel';
-export * from './CircleEditableFieldModel';
+export * from './CircleFieldModel';
 export * from './CircleReadPrettyFieldModel';
-export * from './PolygonEditableFieldModel';
+export * from './PolygonFieldModel';
 export * from './PolygonReadPrettyFieldModel';
-export * from './LineStringEditableFieldModel';
+export * from './LineStringFieldModel';
 export * from './LineStringReadPrettyFieldModel';

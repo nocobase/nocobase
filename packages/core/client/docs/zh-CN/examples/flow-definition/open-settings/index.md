@@ -36,29 +36,27 @@ interface FlowSettingsOpenOptions {
 - 当同时提供 flowKey 与 flowKeys 时，以 flowKey 为准（只处理单个 flow）。
 - 当提供 stepKey 时，应与某个 flowKey 组合使用；仅渲染该 flow 下命中的步骤。
 - 情况 A：当外部明确指定了 flowKey + stepKey 且仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
-- 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，仍保持折叠面板的外观，以区别于上述“单步直出”样式。
-- 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。
+- 情况 B：当未提供 stepKey，但最终仅匹配到一个步骤时，采用“单步直出”表单（不使用折叠面板）。
+- 情况 C：当命中多个 flow 时，按 flow 分组并在折叠面板中渲染每个步骤组。如果每组只有一个步骤，则直接展示该步骤的表单。
 - 当 `preset: true` 时，仅渲染标记了 `preset: true` 的步骤。
-- uiMode 控制展示容器：'dialog' 或 'drawer'，由 model.context.viewer 提供具体实现。
 - 保存顺序：对每个 step 执行 submit -> setStepParams -> beforeParamsSave -> 统一 model.save() -> afterParamsSave。
-
 - 方法返回布尔值：`true` 表示已打开弹窗；`false` 表示未打开（例如没有可配置步骤），此时不会触发 `onSaved`/`onCancel` 回调。
 
 > 提示：仅包含具备 uiSchema 且未被 hideInSettings 的步骤会被渲染到配置表单中。
 
 ---
 
-## 情况 A：flowKey + stepKey 且唯一命中，单步直出（无折叠）
+## 情况 A：flowKey + stepKey 且唯一命中，单步直出
 
-当明确指定了 flowKey 和 stepKey，并且最终只命中一个步骤时，界面会直接展示该步骤的表单，不再包裹折叠面板。
+当明确指定了 flowKey 和 stepKey，并且最终只命中一个步骤时，界面会直接展示该步骤的表单。
 
 <code src="./case-a-single-step-direct.tsx"></code>
 
 ---
 
-## 情况 B：单个 flow 且仅一个步骤，但不指定 stepKey（保持折叠样式）
+## 情况 B：单个 flow 且仅一个步骤，但不指定 stepKey
 
-当只指定 flowKey 且该 flow 仅有一个步骤时，会展示折叠面板外观（默认展开），用于区分与“单步直出”的视觉差异。
+当只指定 flowKey 且该 flow 仅有一个步骤时，会展示展示该步骤的表单。
 
 <code src="./case-b-single-flow-single-step-collapse.tsx"></code>
 
@@ -66,7 +64,7 @@ interface FlowSettingsOpenOptions {
 
 ## 情况 C：多个 flow 命中，按 flow 分组渲染
 
-当命中多个 flow（例如通过 flowKeys 指定多个 key）时，会对每个 flow 生成一个折叠面板分组，分组内再以折叠面板展示各个步骤。
+当命中多个 flow（例如通过 flowKeys 指定多个 key）时，会对每个 flow 生成一个折叠面板分组，分组内再以折叠面板展示各个步骤。当只有一个步骤时，会直接展示该步骤的表单。
 
 <code src="./case-c-multi-flows-grouped.tsx"></code>
 

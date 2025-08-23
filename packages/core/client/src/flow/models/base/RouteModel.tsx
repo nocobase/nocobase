@@ -19,8 +19,9 @@ RouteModel.registerFlow({
       use: 'openView',
       defaultParams(ctx) {
         return {
-          mode: 'page',
-          pageModelClass: 'MainPageModel',
+          mode: 'embed',
+          preventClose: true,
+          pageModelClass: 'RootPageModel',
         };
       },
     },

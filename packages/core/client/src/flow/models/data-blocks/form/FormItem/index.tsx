@@ -6,7 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { FormItem } from './FormItem';
 
 export * from './FormItemModel';
 export * from './CollectionFieldFormItemModel';
-// export * from './FormItem';  // dupliated exports with nocobase/client, will break build process, hence commit it
+export { FormItem as FormItemV2 };

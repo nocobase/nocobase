@@ -8,7 +8,6 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
-import { omit } from 'lodash';
 import { FlowResource, ResourceError } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
@@ -109,6 +108,10 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     return this;
   }
 
+  getRequestOptions() {
+    return this.request;
+  }
+
   async refresh() {
     if (!this.api) {
       throw new Error('API client not set');
@@ -132,6 +135,6 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     const options = {
       ...this.request,
     };
-    return omit(options, 'params.updateAssociationValues');
+    return options;
   }
 }

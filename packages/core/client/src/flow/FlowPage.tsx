@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, useFlowEngine, useFlowModelById } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Card, Skeleton, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -62,15 +62,15 @@ export const FlowRoute = () => {
     model.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-
     model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
   return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
-  const { pageModelClass = 'SubPageModel', parentId, onModelLoaded, ...rest } = props;
+  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
+  const ctx = useFlowViewContext();
   const { loading, data } = useRequest(
     async () => {
       const options = {
@@ -79,22 +79,20 @@ export const FlowPage = (props) => {
         subKey: 'page',
         subType: 'object',
         use: pageModelClass,
-        subModels: {
+      };
+      if (pageModelClass === 'ChildPageModel') {
+        options['subModels'] = {
           tabs: [
             {
-              use: 'PageTabModel',
-              subModels: {
-                grid: {
-                  // async: true,
-                  use: 'BlockGridModel',
-                },
-              },
+              use: 'ChildPageTabModel',
             },
           ],
-        },
-      };
+        };
+      }
       const data = await flowEngine.loadOrCreateModel(options);
       if (data?.uid && onModelLoaded) {
+        data.context.addDelegate(ctx);
+        data.removeParentDelegate();
         onModelLoaded(data.uid);
       }
       return data;

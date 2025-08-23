@@ -14,5 +14,6 @@ export * from './EditActionModel';
 export * from './FilterActionModel';
 export * from './PopupRecordActionModel';
 export * from './RefreshActionModel';
+export * from './TriggerWorkflowActionModel';
 export * from './ViewActionModel';
 //

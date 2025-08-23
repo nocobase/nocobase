@@ -251,11 +251,13 @@ export class PluginClientServer extends Plugin {
     this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
 
       if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
+          filter,
         });
         return await next();
       }
@@ -271,8 +273,9 @@ export class PluginClientServer extends Plugin {
         const ids = (await Promise.all(desktopRoutesId)).flat();
         const result = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
           filter: {
+            ...filter,
             id: ids,
           },
         });

@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { ISchema } from '@nocobase/client';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
@@ -33,6 +33,7 @@ import {
   SQLResource,
 } from './resources';
 import { extractPropertyPath, FlowExitException, resolveExpressions } from './utils';
+import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 
@@ -217,6 +218,11 @@ export class FlowContext {
     if (!this._delegates.includes(ctx)) {
       this._delegates.unshift(ctx);
     }
+  }
+
+  clearDelegates() {
+    this._delegates = [];
+    this._metaNodeCache = new WeakMap(); // 清除缓存
   }
 
   removeDelegate(ctx: FlowContext) {
@@ -756,6 +762,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
+  declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
   declare view: FlowView;
@@ -936,9 +943,11 @@ export class FlowRuntimeContext<
   TModel extends FlowModel = FlowModel,
   TMode extends 'runtime' | 'settings' = any,
 > extends BaseFlowModelContext {
+  declare steps: Record<string, { params: Record<string, any>; uiSchema?: any; result?: any }>;
   stepResults: Record<string, any> = {};
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
-
+  declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare getStepResults: (stepKey: string) => any;
   constructor(
     public model: TModel,
     public flowKey: string,
@@ -947,6 +956,12 @@ export class FlowRuntimeContext<
     super();
     this.addDelegate(this.model.context);
     const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
+    this.defineMethod('getStepParams', (stepKey: string) => {
+      return model.getStepParams(flowKey, stepKey) || {};
+    });
+    this.defineMethod('getStepResults', (stepKey: string) => {
+      return _.get(this.steps, [stepKey, 'result']);
+    });
     this.defineMethod(
       'useResource',
       (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
@@ -1020,6 +1035,10 @@ export class FlowRuntimeContext<
 
   exit() {
     throw new FlowExitException(this.flowKey, this.model.uid);
+  }
+
+  exitAll() {
+    throw new FlowExitAllException(this.flowKey, this.model.uid);
   }
 
   get mode() {

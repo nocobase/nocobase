@@ -7,18 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { define, observable } from '@formily/reactive';
-import React from 'react';
-import { Collapse, Space, Button, Tabs } from 'antd';
-import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
-import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
-import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
-import type { FlowModel } from './models';
-import { FlowRuntimeContext } from './flowContext';
-import { compileUiSchema, getT, resolveDefaultParams, resolveStepUiSchema, setupRuntimeContextSteps } from './utils';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
+import { autorun, define, observable, reaction } from '@formily/reactive';
+import { Button, Collapse, Space, Tabs } from 'antd';
+import React from 'react';
+import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
+import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
+import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
+import { FlowRuntimeContext } from './flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import type { FlowModel } from './models';
+import type { FlowDefinition } from './types';
+import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import {
+  compileUiSchema,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  resolveUiMode,
+  setupRuntimeContextSteps,
+} from './utils';
+import _ from 'lodash';
 
 const Panel = Collapse.Panel;
 
@@ -40,7 +50,7 @@ export interface FlowSettingsOpenOptions {
   uiMode?:
     | 'dialog'
     | 'drawer'
-    | { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
+    | { type?: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
   /** 点击取消按钮后触发的回调（关闭后调用） */
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */
@@ -435,6 +445,7 @@ export class FlowSettings {
       beforeParamsSave?: Function;
       afterParamsSave?: Function;
       ctx: any; // FlowRuntimeContext
+      uiMode: any; // UI 模式
     };
 
     const entries: StepEntry[] = [];
@@ -455,7 +466,7 @@ export class FlowSettings {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
-        if (!step || step.hideInSettings) continue;
+        if (!preset && (!step || step.hideInSettings)) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 
@@ -508,7 +519,7 @@ export class FlowSettings {
 
         entries.push({
           flowKey: fk,
-          flowTitle: flow.title || fk,
+          flowTitle: t(flow.title) || fk,
           stepKey: sk,
           stepTitle: t(stepTitle) || sk,
           initialValues,
@@ -517,6 +528,7 @@ export class FlowSettings {
           beforeParamsSave,
           afterParamsSave,
           ctx: flowRuntimeContext,
+          uiMode: step.uiMode,
         });
       }
     }
@@ -532,9 +544,14 @@ export class FlowSettings {
     const SchemaField = createSchemaField();
     // 兼容新的 uiMode 定义：字符串或 { type, props }
     const viewer = (model as any).context.viewer;
-    const modeType: 'dialog' | 'drawer' = typeof uiMode === 'string' ? uiMode : uiMode.type;
-    const modeProps: Record<string, any> = typeof uiMode === 'object' && uiMode ? uiMode.props || {} : {};
-    const openView = viewer[modeType].bind(viewer);
+    // 解析 uiMode，支持函数式
+    const resolvedUiMode =
+      entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
+    const modeType: 'dialog' | 'drawer' =
+      typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    const modeProps: Record<string, any> =
+      typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
+    const openView = viewer[modeType || 'dialog'].bind(viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
       // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
@@ -569,20 +586,41 @@ export class FlowSettings {
       }
 
       if (!multipleFlows) {
-        const onlyFlow = grouped[flowKeysOrdered[0]];
-        // 情况 B：未提供 stepKey 且仅有一个步骤 => 返回 flow 标题
-        return onlyFlow.title;
+        // 情况 B：未提供 stepKey 且仅有一个步骤 => 与情况 A 一致
+        return entries[0].stepTitle;
       }
 
       // 情况 C：多 flow 分组渲染 => 返回空标题
       return '';
     };
 
+    const dispose = { value: () => {} };
+    // 支持 uiMode 函数中使用响应式对象
+    const autoUpdateViewProps = (step, currentDialog) => {
+      dispose.value = reaction(
+        () => {
+          return resolveUiMode(step.uiMode || uiMode, step.ctx);
+        },
+        (newValue) => {
+          newValue
+            .then((newUiMode: any) => {
+              if (_.isPlainObject(newUiMode?.props)) {
+                currentDialog.update(newUiMode.props);
+              }
+            })
+            .catch((error) => {
+              console.warn('Error resolving uiMode:', error);
+            });
+        },
+      );
+    };
+
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
-      width: modeProps.width ?? 800,
+      width: modeProps.width ?? 600,
       destroyOnClose: true,
+      onClose: () => dispose.value(),
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       content: (currentDialog) => {
@@ -609,34 +647,36 @@ export class FlowSettings {
         const renderStepPanels = (steps: StepEntry[]) =>
           steps.map((s) => React.createElement(Panel, { header: s.stepTitle, key: keyOf(s) }, renderStepForm(s)));
 
-        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板
+        // 生成 Tabs 的 items，每个 flow 一个 Tab，内容为其步骤的折叠面板（如果只有一个步骤，会显示成表单）
         const toFlowTabItem = (fk: string) => {
           const group = grouped[fk];
           return {
             key: fk,
             label: t(group.title) || fk,
-            children: React.createElement(
-              Collapse,
-              { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
-              ...renderStepPanels(group.steps),
-            ),
+            children:
+              group.steps.length > 1
+                ? React.createElement(
+                    Collapse,
+                    { defaultActiveKey: group.steps.map((s) => keyOf(s)) },
+                    ...renderStepPanels(group.steps),
+                  )
+                : renderStepForm(group.steps[0]),
           };
         };
 
         const renderStepsContainer = (): React.ReactNode => {
           // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
-            return renderStepForm(entries[0]);
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
+            return renderStepForm(step);
           }
 
           if (!multipleFlows) {
-            const onlyFlow = grouped[flowKeysOrdered[0]];
-            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 区分）
-            return React.createElement(
-              Collapse,
-              { defaultActiveKey: onlyFlow.steps.map((s) => keyOf(s)) },
-              ...renderStepPanels(onlyFlow.steps),
-            );
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
+            // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
+            return renderStepForm(entries[0]);
           }
 
           // 情况 C：多 flow 分组渲染 => 使用 Tabs（每个 flow 一个 Tab）
@@ -661,7 +701,7 @@ export class FlowSettings {
               }
             }
 
-            await (model as any).save();
+            await (model as FlowModel).saveStepParams();
             message?.success?.(t('Configuration saved'));
 
             for (const e of entries) {

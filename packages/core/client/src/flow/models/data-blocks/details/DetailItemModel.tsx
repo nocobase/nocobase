@@ -12,7 +12,7 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 import { FormItem } from '../form/FormItem/FormItem';
-import { FieldModelRenderer } from '../../fields';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 
 export class DetailItemModel extends FieldModel<{
   parent: DetailsFieldGridModel;

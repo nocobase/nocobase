@@ -1,15 +1,14 @@
-import { Application, Plugin } from '@nocobase/client';
+import {
+  Application,
+  Plugin,
+  FieldModelRenderer,
+  FormItemV2 as FormItem,
+  InputFieldModel,
+  FormComponent,
+} from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Form, Input } from 'antd';
-import React, { useEffect } from 'react';
-
-function FieldModelRenderer(props) {
-  const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, ...rest } = props;
-  useEffect(() => {
-    model.setProps({ id, value, onChange, ['aria-describedby']: ariaDescribedby });
-  }, [model, id, value, ariaDescribedby, onChange]);
-  return <FlowModelRenderer model={model} {...rest} />;
-}
+import React from 'react';
 
 function Text(props) {
   const { value } = props;
@@ -19,58 +18,48 @@ function Text(props) {
 class HelloModel extends FlowModel {
   render() {
     return (
-      <Form layout="vertical" initialValues={{ name: 'NocoBase', age: 18, obj: { a: 'a' } }}>
-        <Form.Item
+      <FormComponent
+        model={this}
+        layoutProps={{ layout: 'vertical' }}
+        initialValues={{ name: 'NocoBase', age: 18, obj: { a: 'a' } }}
+      >
+        <FormItem
           label="Name"
           name="name"
           tooltip="What do you want others to call you?"
           extra="We must make sure that your are a human."
         >
           <FieldModelRenderer model={this.subModels.field} />
-        </Form.Item>
-        <Form.Item label="Age" name="age">
+        </FormItem>
+        <FormItem label="Age" name="age">
           <Text />
-        </Form.Item>
-        <Form.Item required rules={[{ required: true }]} label="A" name={['obj', 'a']}>
+        </FormItem>
+        <FormItem required rules={[{ required: true }]} label="A" name={['obj', 'a']}>
           <Input />
+        </FormItem>
+        <Form.Item noStyle shouldUpdate>
+          {() => (
+            <div>
+              当前表单值：<pre>{JSON.stringify(this.context.form?.getFieldsValue(), null, 2)}</pre>
+            </div>
+          )}
         </Form.Item>
-      </Form>
+      </FormComponent>
     );
-  }
-}
-
-class InputModel extends FlowModel {
-  render() {
-    return <Input {...this.props} />;
-  }
-}
-
-class FormItemModel extends FlowModel {
-  setLabel(label) {
-    this.setProps({ label });
-  }
-  render() {
-    return <Form.Item {...this.props} />;
-  }
-}
-
-class CollectionFieldItemModel extends FormItemModel {
-  render() {
-    return <Form.Item {...this.props} />;
   }
 }
 
 class PluginHelloModel extends Plugin {
   async load() {
     // 注册 HelloModel 到 flowEngine
-    this.flowEngine.registerModels({ HelloModel, InputModel, FormItemModel });
+    this.flowEngine.registerModels({ HelloModel, InputFieldModel });
 
     // 创建 HelloModel 的实例（仅用于示例）
     const model = this.flowEngine.createModel({
       use: 'HelloModel',
       subModels: {
         field: {
-          use: 'InputModel',
+          use: 'InputFieldModel',
         },
       },
     });

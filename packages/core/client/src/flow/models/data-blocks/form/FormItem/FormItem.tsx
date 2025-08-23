@@ -65,7 +65,7 @@ export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExt
           }
           return child;
         });
-  const { showLabel, label, labelWrap, colon = true, labelWidth, layout } = rest;
+  const { showLabel = true, label, labelWrap, colon = true, labelWidth, layout } = rest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const renderLabel = () => {
     if (!showLabel) return null;

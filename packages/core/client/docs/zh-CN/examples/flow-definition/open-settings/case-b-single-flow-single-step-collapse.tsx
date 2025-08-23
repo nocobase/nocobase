@@ -40,7 +40,7 @@ class PluginHello extends Plugin {
     const model = this.flowEngine.createModel<MyModel>({ uid: 'm2', use: 'MyModel' });
     this.router.add('root', {
       path: '/',
-      element: <Button onClick={() => model.openFlowSettings({ flowKey: 'button' })}>打开单 Flow（折叠样式）</Button>,
+      element: <Button onClick={() => model.openFlowSettings({ flowKey: 'button' })}>打开单 Flow</Button>,
     });
   }
 }
