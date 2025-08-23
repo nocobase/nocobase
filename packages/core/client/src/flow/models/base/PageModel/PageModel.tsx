@@ -140,7 +140,7 @@ PageModel.registerFlow({
   title: escapeT('Page settings'),
   steps: {
     general: {
-      title: escapeT('General'),
+      title: escapeT('Edit page'),
       uiSchema: {
         title: {
           type: 'string',
