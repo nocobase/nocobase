@@ -84,11 +84,11 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     return (
       <DndProvider
-        onDragEnd={(event) => {
+        onDragEnd={async (event) => {
           const activeModel = this.flowEngine.getModel(event.active.id as string);
           const overModel = this.flowEngine.getModel(event.over.id as string);
 
-          this.context.api.request({
+          await this.context.api.request({
             url: `desktopRoutes:move`,
             method: 'post',
             params: {
@@ -97,6 +97,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
               sortField: 'sort',
             },
           });
+
+          this.flowEngine.moveModel(activeModel?.uid, overModel?.uid, { persist: false });
         }}
       >
         <Tabs
