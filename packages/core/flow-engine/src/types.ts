@@ -118,16 +118,7 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
-  options: FlowModelOptions & {
-    uid: string;
-    props?: IModelComponentProps;
-    stepParams?: StepParams;
-    meta?: FlowModelMeta;
-    subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
-    [key: string]: any; // Allow additional options
-  },
-) => T) & {
+export type ModelConstructor<T extends FlowModel = FlowModel> = (new (options: FlowModelOptions) => T) & {
   meta?: FlowModelMeta;
 };
 
