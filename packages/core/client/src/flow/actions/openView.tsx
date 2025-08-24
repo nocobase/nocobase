@@ -46,6 +46,7 @@ export const openView = defineAction({
   async handler(ctx, params) {
     if (!ctx.inputArgs.closeRef) {
       ctx.router.navigate(`${ctx.route.pathname}/view/${ctx.model.uid}`);
+      return;
     }
 
     const sizeToWidthMap: Record<string, number> = {
