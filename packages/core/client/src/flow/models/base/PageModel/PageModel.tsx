@@ -91,7 +91,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          activeKey={this.context.view.inputArgs?.params?.tabUid}
+          defaultActiveKey={this.context.view.inputArgs?.params?.tabUid}
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
