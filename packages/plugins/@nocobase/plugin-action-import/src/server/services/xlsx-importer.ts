@@ -13,8 +13,10 @@ import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-
 import {
   Collection as DBCollection,
   Database,
+  IntegerField,
   Model,
   MultipleRelationRepository,
+  NumberField,
   RelationRepository,
   Repository,
   UpdateGuard,
@@ -146,6 +148,10 @@ export class XlsxImporter extends EventEmitter {
     // @ts-ignore
     const autoIncrementAttribute = collection.model.autoIncrementAttribute;
     if (!autoIncrementAttribute) {
+      return;
+    }
+    const field = this.options.collection.getField(autoIncrementAttribute);
+    if (field && !(field instanceof NumberField)) {
       return;
     }
 
