@@ -13,6 +13,9 @@ import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
   CreateModelOptions,
+  DndProvider,
+  DragHandler,
+  Droppable,
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
@@ -22,6 +25,7 @@ import { Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { BasePageTabModel } from '../PageTabModel';
+import { DragEndEvent } from '@dnd-kit/core';
 
 type PageModelStructure = {
   subModels: {
@@ -53,7 +57,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return this.mapSubModels('tabs', (model) => {
       return {
         key: model.uid,
-        label: <FlowModelRenderer model={model} showFlowSettings={{ showBackground: true, showBorder: false }} />,
+        label: (
+          <Droppable model={model}>
+            <FlowModelRenderer
+              model={model}
+              showFlowSettings={{ showBackground: true, showBorder: false }}
+              extraToolbarItems={[
+                {
+                  key: 'drag-handler',
+                  component: DragHandler,
+                  sort: 1,
+                },
+              ]}
+            />
+          </Droppable>
+        ),
         children: model.renderChildren(),
       };
     });
@@ -64,28 +82,34 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return firstTab?.renderChildren();
   }
 
+  async handleDragEnd(event: DragEndEvent) {
+    throw new Error('Method not implemented.');
+  }
+
   renderTabs() {
     return (
-      <Tabs
-        tabBarStyle={this.props.tabBarStyle}
-        items={this.mapTabs()}
-        // destroyInactiveTabPane
-        tabBarExtraContent={
-          <AddSubModelButton
-            model={this}
-            subModelKey={'tabs'}
-            items={[
-              {
-                key: 'blank',
-                label: this.context.t('Blank tab'),
-                createModelOptions: this.createPageTabModelOptions,
-              },
-            ]}
-          >
-            <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-          </AddSubModelButton>
-        }
-      />
+      <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
+        <Tabs
+          tabBarStyle={this.props.tabBarStyle}
+          items={this.mapTabs()}
+          // destroyInactiveTabPane
+          tabBarExtraContent={
+            <AddSubModelButton
+              model={this}
+              subModelKey={'tabs'}
+              items={[
+                {
+                  key: 'blank',
+                  label: this.context.t('Blank tab'),
+                  createModelOptions: this.createPageTabModelOptions,
+                },
+              ]}
+            >
+              <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+            </AddSubModelButton>
+          }
+        />
+      </DndProvider>
     );
   }
 
@@ -104,7 +128,7 @@ PageModel.registerFlow({
   title: escapeT('Page settings'),
   steps: {
     general: {
-      title: escapeT('General'),
+      title: escapeT('Edit page'),
       uiSchema: {
         title: {
           type: 'string',
@@ -150,7 +174,7 @@ PageModel.registerFlow({
 
         if (ctx.model.context.closable) {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgContainer,
+            backgroundColor: ctx.themeToken.colorBgLayout,
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,

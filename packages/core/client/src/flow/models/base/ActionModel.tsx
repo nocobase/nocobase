@@ -43,7 +43,7 @@ ActionModel.registerFlow({
   title: escapeT('Button settings'),
   steps: {
     general: {
-      title: escapeT('General'),
+      title: escapeT('Edit button'),
       uiSchema(ctx) {
         return {
           title: ctx.model.enableEditTitle

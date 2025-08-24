@@ -9,8 +9,43 @@
 
 import _ from 'lodash';
 import { PageModel } from './PageModel';
+import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { DragEndEvent } from '@dnd-kit/core';
 
-export class RootPageModel extends PageModel {}
+export class RootPageModel extends PageModel {
+  async saveStepParams() {
+    await super.saveStepParams();
+    // 更新路由
+    this.context.api.request({
+      url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
+      method: 'post',
+      data: {
+        enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
+      },
+    });
+  }
+
+  async handleDragEnd(event: DragEndEvent) {
+    const activeModel = this.flowEngine.getModel(event.active.id as string);
+    const overModel = this.flowEngine.getModel(event.over.id as string);
+
+    if (!activeModel || !overModel) {
+      throw new Error('Invalid drag event: missing model');
+    }
+
+    await this.context.api.request({
+      url: `desktopRoutes:move`,
+      method: 'post',
+      params: {
+        sourceId: activeModel.props.route.id,
+        targetId: overModel.props.route.id,
+        sortField: 'sort',
+      },
+    });
+
+    this.flowEngine.moveModel(activeModel.uid, overModel.uid, { persist: false });
+  }
+}
 
 RootPageModel.registerFlow({
   key: 'rootPageSettings',
@@ -25,9 +60,14 @@ RootPageModel.registerFlow({
           url: `desktopRoutes:listAccessible?tree=true&sort=sort&filter[parent.schemaUid]=${ctx.model.parentId}`,
         });
         ctx.model.setProps('routeId', data?.data?.[0]?.id);
-        const routes = _.castArray(data?.data?.[0]?.children);
+        const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.[0]?.children);
         for (const route of routes) {
-          const model = await ctx.engine.createModel({
+          // 过滤掉隐藏的路由
+          if (route.hideInMenu) {
+            continue;
+          }
+
+          const model = ctx.engine.createModel({
             parentId: ctx.model.uid,
             uid: route.schemaUid,
             subKey: 'tabs',
@@ -40,6 +80,7 @@ RootPageModel.registerFlow({
               pageTabSettings: {
                 tab: {
                   title: route.title,
+                  icon: route.icon,
                 },
               },
             },
