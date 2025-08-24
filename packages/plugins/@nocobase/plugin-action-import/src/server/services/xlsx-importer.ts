@@ -494,37 +494,4 @@ export class XlsxImporter extends EventEmitter {
       }
     }
   }
-
-  private findConflictingRow(rows: any[], conflictFields: Record<string, any>): number {
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      let isMatch = true;
-
-      for (const [fieldName, fieldValue] of Object.entries(conflictFields)) {
-        const rowValue = row[fieldName];
-
-        const normalizedRowValue = this.normalizeFieldValue(rowValue);
-        const normalizedConflictValue = this.normalizeFieldValue(fieldValue);
-
-        if (normalizedRowValue !== normalizedConflictValue) {
-          isMatch = false;
-          break;
-        }
-      }
-
-      if (isMatch) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
-  private normalizeFieldValue(value: any): string {
-    if (value === null || value === undefined) {
-      return '';
-    }
-
-    return String(value).trim();
-  }
 }
