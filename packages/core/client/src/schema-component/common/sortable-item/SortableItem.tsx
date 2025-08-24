@@ -60,7 +60,7 @@ export const Sortable = (props: any) => {
       className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
       style: droppableStyle,
-      setNodeRef,
+      // setNodeRef,
     },
     children,
   );
