@@ -457,6 +457,24 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * 注册一个实例级别的流程定义。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string | FlowDefinitionOptions<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinitionOptions 对象。
+   * @param {FlowDefinitionOptions<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   * @returns {FlowDefinition} 注册的流程定义实例
+   */
+  public registerFlow<TModel extends FlowModel = this>(
+    keyOrDefinition: string | FlowDefinitionOptions<TModel>,
+    flowDefinition?: Omit<FlowDefinitionOptions<TModel>, 'key'> & { key?: string },
+  ): FlowDefinition {
+    if (typeof keyOrDefinition === 'string') {
+      return this.flowRegistry.addFlow(keyOrDefinition, flowDefinition);
+    } else {
+      return this.flowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
+    }
+  }
+
+  /**
    * 获取当前模型可用的所有 Actions：
    * - 包含全局（FlowEngine）注册的 Actions；
    * - 合并类级（FlowModel.registerAction(s)）注册的 Actions，并考虑继承（子类覆盖父类同名 Action）。
