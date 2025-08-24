@@ -64,7 +64,7 @@ export const FlowRoute = () => {
     });
     model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
   }, [model, params.name, params.tabUid, currentRoute]);
-  return <div ref={layoutContentRef} />;
+  return <div id="layout-content" ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
@@ -85,8 +85,24 @@ export const FlowPage = (props) => {
           tabs: [
             {
               use: 'ChildPageTabModel',
+              stepParams: {
+                pageTabSettings: {
+                  tab: {
+                    title: 'Details',
+                  },
+                },
+              },
             },
           ],
+        };
+        // 弹窗或者子页面中，默认显示 tab
+        options['stepParams'] = {
+          pageSettings: {
+            general: {
+              displayTitle: false,
+              enableTabs: true,
+            },
+          },
         };
       }
       const data = await flowEngine.loadOrCreateModel(options);
