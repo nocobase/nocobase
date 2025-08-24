@@ -66,6 +66,7 @@ export const openView = defineAction({
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
       width: sizeToWidthMap[size],
+      inputArgs: ctx.inputArgs,
       content: (currentView) => {
         if (ctx.inputArgs.closeRef) {
           ctx.inputArgs.closeRef.current = currentView.close;
