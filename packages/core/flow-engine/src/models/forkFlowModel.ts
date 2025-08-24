@@ -228,10 +228,19 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     return String(this.forkId);
   }
 
-  onUnmount() {
-    // if (this.disposed) return;
-    // this.dispose(); // 实际场景不需要fork自己dispose的， 自己dispose反而会造成很多问题
-  }
+  // onUnmount() {
+  //   // 不在此处自动 dispose（避免破坏外部 fork 管理），但应透传到 master 的 onUnmount 钩子，
+  //   // 以便用户在子类覆盖 onUnmount 时依然能在 cleanRun 场景下收到回调。
+  //   try {
+  //     const masterOnUnmount = (this.master as any)?.onUnmount;
+  //     if (typeof masterOnUnmount === 'function') {
+  //       // 使用 fork 作为 this，保持与运行/渲染一致的上下文
+  //       return masterOnUnmount.call(this);
+  //     }
+  //   } catch {
+  //     // 忽略钩子中的异常，保持卸载流程健壮
+  //   }
+  // }
 
   /**
    * 释放 fork：从 master.forks 中移除自身并断开引用

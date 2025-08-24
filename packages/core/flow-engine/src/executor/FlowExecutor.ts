@@ -164,7 +164,12 @@ export class FlowExecutor {
 
     const executeAutoFlows = async (): Promise<any[]> => {
       const results: any[] = [];
-      const runId = `${model.uid}-autoFlow-${Date.now()}`;
+      const runId = `${model.uid}-autoFlow-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      console.log(
+        `[FlowExecutor] runAutoFlows: uid=${model.uid}, isFork=${
+          (model as any)?.isFork === true
+        }, useCache=${useCache}, runId=${runId}, flows=${autoApplyFlows.map((f) => f.key).join(',')}`,
+      );
       try {
         await model.beforeApplyAutoFlows(inputArgs);
 
@@ -173,6 +178,7 @@ export class FlowExecutor {
         } else {
           for (const flow of autoApplyFlows) {
             try {
+              console.log(`[FlowExecutor] runFlow: uid=${model.uid}, flowKey=${flow.key}`);
               const result = await this.runFlow(model, flow.key, inputArgs, runId);
               if (result instanceof FlowExitAllException) {
                 console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);

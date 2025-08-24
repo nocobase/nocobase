@@ -1431,6 +1431,121 @@ describe('FlowModel', () => {
     });
   });
 
+  // ==================== CLEAN RUN (selfFork) ====================
+  describe('CleanRun (isolated selfFork)', () => {
+    class CleanRunModel extends FlowModel {
+      static {
+        (this as typeof FlowModel).registerFlow(
+          defineFlow({
+            key: 'autoCounter',
+            steps: {
+              bump: {
+                handler: (ctx) => {
+                  const props = ctx.model.getProps() as any;
+                  const prev = Number(props.count) || 0;
+                  ctx.model.setProps({ count: prev + 1, lastRunId: ctx.runId });
+                },
+              },
+            },
+          }),
+        );
+      }
+    }
+
+    const silence = () => vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    test('should create selfFork lazily and rebuild for each auto run', async () => {
+      const model = new CleanRunModel({ ...modelOptions, cleanRun: true });
+      const unlog = silence();
+      try {
+        expect(model['selfFork']).toBeUndefined();
+
+        await model.applyAutoFlows();
+        expect(model['selfFork']).toBeDefined();
+        const firstFork = model['selfFork'];
+
+        // master props should not be polluted
+        expect(model.getProps().count).toBeUndefined();
+        // fork local state reflects the run
+        expect(model['selfFork'].localProps.count).toBe(1);
+
+        await model.applyAutoFlows();
+        expect(model['selfFork']).toBeDefined();
+        const secondFork = model['selfFork'];
+        expect(secondFork).not.toBe(firstFork); // rebuilt
+
+        // master still clean; fork state starts from a clean baseline (no accumulation)
+        expect(model.getProps().count).toBeUndefined();
+        expect(model['selfFork'].localProps.count).toBe(1);
+      } finally {
+        unlog.mockRestore();
+      }
+    });
+
+    test('should accumulate in normal mode but not in cleanRun mode', async () => {
+      const modelNormal = new CleanRunModel({ ...modelOptions, uid: 'normal', cleanRun: false });
+      const modelClean = new CleanRunModel({ ...modelOptions, uid: 'clean', cleanRun: true });
+      const unlog = silence();
+      try {
+        // normal: count accumulates on master.props
+        await modelNormal.applyAutoFlows(undefined, false);
+        await modelNormal.applyAutoFlows(undefined, false);
+        expect(modelNormal.getProps().count).toBe(2);
+
+        // clean: master remains clean; each run starts from baseline on fork
+        await modelClean.applyAutoFlows();
+        expect(modelClean.getProps().count).toBeUndefined();
+        expect((modelClean['selfFork'] as any).localProps.count).toBe(1);
+
+        await modelClean.applyAutoFlows();
+        expect(modelClean.getProps().count).toBeUndefined();
+        expect(modelClean['selfFork'].localProps.count).toBe(1);
+      } finally {
+        unlog.mockRestore();
+      }
+    });
+
+    test('should switch lifecycle target from master to fork after first run', async () => {
+      const mountCalls: Array<'master' | 'fork'> = [];
+      const unmountCalls: Array<'master' | 'fork'> = [];
+
+      class LifeCycleModel extends CleanRunModel {
+        protected onMount(): void {
+          // this 是 master 或 fork（proxy）。fork 有 isFork===true
+          mountCalls.push((this as any)?.isFork ? 'fork' : 'master');
+        }
+        protected onUnmount(): void {
+          unmountCalls.push((this as any)?.isFork ? 'fork' : 'master');
+        }
+      }
+
+      const model = new LifeCycleModel({ ...modelOptions, cleanRun: true, uid: 'lifecycle' });
+      const unlog = silence();
+      try {
+        // Initial render - targets master
+        const { unmount } = render(model.render());
+        expect(mountCalls).toEqual(['master']);
+
+        // Run once: fork is created and used for rendering after re-render
+        await model.applyAutoFlows();
+
+        // Trigger a re-render so ReactiveWrapper recalculates renderTarget
+        model.setProps({ __tick: Date.now() });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // master unmounted, fork mounted
+        expect(unmountCalls).toContain('master');
+        expect(mountCalls).toContain('fork');
+
+        unmount();
+        // when React unmounts, the current target (fork) should receive unmount too
+        expect(unmountCalls).toContain('fork');
+      } finally {
+        unlog.mockRestore();
+      }
+    });
+  });
+
   // ==================== TITLE MANAGEMENT ====================
   describe('Title Management', () => {
     let model: FlowModel;

@@ -104,6 +104,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private _reactiveWrapperCache?: React.ComponentType;
 
   flowRegistry: InstanceFlowRegistry;
+  /**
+   * 自持有的运行/渲染 fork（不注册到 forks 集合，不参与 UI fork 管理）。
+   * 所有 flow 运行与 render 的 this 均指向该 fork，以避免污染 master。
+   */
+  public selfFork?: ForkFlowModel<this>;
+  /** 控制是否启用“干净运行”模式（通过 selfFork 实现），来源于 options.cleanRun */
+  private _cleanRun?: boolean;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -132,6 +139,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       props: observable,
       subModels: observable.shallow,
       stepParams: observable,
+      selfFork: observable.ref,
       // setProps: action,
       setProps: batch,
       // setStepParams: action,
@@ -171,9 +179,28 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.render = () => React.createElement('div', null, 'Render method not available');
       }
     }
+
+    // 初始化控制开关（延迟创建 selfFork，首次 auto flows 前再创建）
+    this._cleanRun = !!options['cleanRun'];
   }
 
+  /**
+   * 对外暴露的上下文：
+   * - 当 cleanRun 为 true 且存在 selfFork 时，返回 selfFork.context（运行/渲染一致）；
+   * - 否则返回 master 自身的上下文。
+   */
   get context() {
+    if (this.cleanRun && this.selfFork) {
+      return this.selfFork.context as unknown as FlowModelContext;
+    }
+    return this.baseContext;
+  }
+
+  /**
+   * 始终返回 master 自身的上下文（不受 cleanRun 影响）。
+   * 供内部（如 Fork 上下文构造时）作为委托链基底，避免递归。
+   */
+  get baseContext() {
     if (!this.#flowContext) {
       this.#flowContext = new FlowModelContext(this);
     }
@@ -357,6 +384,23 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
+   * 创建/重建 selfFork：不注册到 forks 集合，避免与 UI forks 混淆；完全隔离写入。
+   */
+  public rebuildSelfFork() {
+    console.log(`[FlowModel] rebuildSelfFork: uid=${this.uid}, cleanRun=${this.cleanRun}`);
+    try {
+      if (this.selfFork) {
+        this.selfFork.dispose?.();
+      }
+    } catch {
+      // Ignore errors during selfFork disposal
+    }
+    // 不传 sharedProperties，沿用 ForkFlowModel 默认共享配置（stepParams/sortIndex）
+    const fork = this.createFork({}, undefined, { register: false }) as ForkFlowModel<this>;
+    this.selfFork = fork;
+  }
+
+  /**
    * 设置FlowEngine实例
    * @param {FlowEngine} flowEngine FlowEngine实例
    */
@@ -536,7 +580,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
       return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
-    return currentFlowEngine.executor.runFlow(this, flowKey, inputArgs, runId);
+    const isFork = (this as any).isFork === true;
+    const target = isFork ? this : this.cleanRun ? this.selfFork || this : this;
+    console.log(
+      `[FlowModel] applyFlow: uid=${this.uid}, flowKey=${flowKey}, isFork=${isFork}, cleanRun=${
+        this.cleanRun
+      }, targetIsFork=${(target as any)?.isFork === true}`,
+    );
+    return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
   async dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
@@ -545,7 +596,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
       return;
     }
-    await currentFlowEngine.executor.dispatchEvent(this, eventName, inputArgs);
+    const isFork = (this as any).isFork === true;
+    const target = isFork ? (this as any) : this.cleanRun ? (this.selfFork as any) || this : this;
+    console.log(
+      `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
+        this.cleanRun
+      }, targetIsFork=${(target as any)?.isFork === true}`,
+    );
+    await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs);
   }
 
   /**
@@ -635,6 +693,24 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
     this._lastAutoRunParams = args;
+    const isFork = (this as any).isFork === true;
+    if (isFork) {
+      console.log(`[FlowModel] applyAutoFlows: uid=${this.uid}, onFork, useCache=${useCache}`);
+      // 普通（UI）fork：直接在该 fork 上执行，遵循传入 useCache
+      return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
+    }
+    if (this.cleanRun) {
+      // master：在自动流运行前重建 selfFork，确保干净基线；并在 selfFork 上执行（禁用缓存）
+      this.rebuildSelfFork();
+      console.log(
+        `[FlowModel] applyAutoFlows: uid=${
+          this.uid
+        }, cleanRun=true, run on selfFork, useCache=false, hasSelfFork=${!!this.selfFork}`,
+      );
+      return this.flowEngine.executor.runAutoFlows((this.selfFork as any) || this, inputArgs, false);
+    }
+    console.log(`[FlowModel] applyAutoFlows: uid=${this.uid}, cleanRun=false, run on master, useCache=${useCache}`);
+    // 传统行为：直接在 master 上执行
     return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
   }
 
@@ -699,26 +775,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 创建缓存的响应式包装器组件工厂（只创建一次）
       const createReactiveWrapper = (modelInstance: any) => {
         const ReactiveWrapper = observer(() => {
-          // 触发响应式更新的关键属性访问
-          modelInstance.props; // 确保 props 变化时触发更新
+          // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
+          const renderTarget = modelInstance.cleanRun ? modelInstance.selfFork || modelInstance : modelInstance;
+          if (renderTarget !== modelInstance && (renderTarget as any)?.localProps !== undefined) {
+            // 订阅 fork 的本地 props 变更
+            (renderTarget as any).localProps;
+          } else {
+            // 订阅 master 的 props 变更
+            modelInstance.props;
+          }
 
-          // 添加生命周期钩子
+          // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
           React.useEffect(() => {
-            // 组件挂载时调用 onMount 钩子
-            if (typeof modelInstance.onMount === 'function') {
-              modelInstance.onMount();
+            if (typeof renderTarget.onMount === 'function') {
+              renderTarget.onMount();
             }
-
-            // 返回清理函数，组件卸载时调用 onUnmount 钩子
             return () => {
-              if (typeof modelInstance.onUnmount === 'function') {
-                modelInstance.onUnmount();
+              if (typeof renderTarget.onUnmount === 'function') {
+                renderTarget.onUnmount();
               }
             };
-          }, []);
+          }, [renderTarget]);
 
           // 调用原始渲染方法
-          return originalRender.call(modelInstance);
+          return originalRender.call(renderTarget);
         });
 
         // 设置显示名称便于调试
@@ -748,11 +828,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
+  get cleanRun() {
+    return !!this._cleanRun;
+  }
+
+  setCleanRun(value: boolean) {
+    const prev = this._cleanRun;
+    this._cleanRun = !!value;
+    // 开启时不立即创建 selfFork，延迟到下次 auto flows 执行前再创建
+    if (!this._cleanRun && prev && this.selfFork) {
+      try {
+        this.selfFork.dispose?.();
+      } catch {
+        // Ignore errors during selfFork disposal
+      }
+      this.selfFork = undefined;
+    }
+  }
+
   /**
    * 组件挂载时的生命周期钩子
    * 子类可以重写此方法来添加挂载时的逻辑
    * @protected
    */
+  // eslint-disable-next-line no-empty
   protected onMount(): void {
     // 默认为空实现，子类可以重写
   }
@@ -941,7 +1040,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
    * @returns {ForkFlowModel<this>} 创建的 fork 实例
    */
-  createFork(localProps?: IModelComponentProps, key?: string): ForkFlowModel<this> {
+  createFork(
+    localProps?: IModelComponentProps,
+    key?: string,
+    options?: { sharedProperties?: string[]; register?: boolean },
+  ): ForkFlowModel<this> {
     // 如果提供了 key，尝试从缓存中获取
     if (key) {
       const cachedFork = this.forkCache.get(key);
@@ -955,10 +1058,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 创建新的 fork 实例
     const forkId = this.forks.size; // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
-    this.forks.add(fork as any);
+    if (options?.register !== false) {
+      this.forks.add(fork as any);
+    }
 
     // 如果提供了 key，将 fork 缓存起来
-    if (key) {
+    if (key && options?.register !== false) {
       this.forkCache.set(key, fork as any);
     }
 

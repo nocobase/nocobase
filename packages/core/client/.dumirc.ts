@@ -124,6 +124,10 @@ export default defineConfig({
               link: '/examples/flow-models/fork-model',
             },
             {
+              title: 'cleanRun：自动流干净运行',
+              link: '/examples/flow-models/render-in-fork',
+            },
+            {
               title: '拖拽（DND）',
               link: '/examples/flow-models/dnd',
             },

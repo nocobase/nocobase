@@ -914,7 +914,8 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate(this.master.context);
+    // 注意：这里必须使用 master.baseContext，避免当 master.cleanRun=true 时递归委托到 fork 自身
+    this.addDelegate((this.master as any).baseContext);
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
