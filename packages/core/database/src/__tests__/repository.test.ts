@@ -288,8 +288,6 @@ describe('repository.find', () => {
       },
     });
   });
-
-  it('');
 });
 
 describe('repository create with belongs to many', () => {
