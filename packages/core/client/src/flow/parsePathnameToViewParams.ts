@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-interface ViewParam {
+export interface ViewParam {
   /** 视图唯一标识符，一般为某个 Model 实例的 uid */
   viewUid: string;
   /** 标签页唯一标识符 */
