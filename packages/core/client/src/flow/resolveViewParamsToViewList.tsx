@@ -10,7 +10,7 @@
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { ViewParam } from './parsePathnameToViewParams';
 
-interface ViewItem {
+export interface ViewItem {
   params: ViewParam;
   model: FlowModel;
 }
