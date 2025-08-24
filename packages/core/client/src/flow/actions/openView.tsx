@@ -44,7 +44,9 @@ export const openView = defineAction({
     pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    // eslint-disable-next-line prefer-const
+    if (!ctx.inputArgs.closeRef) {
+      ctx.router.navigate(`${ctx.route.pathname}/view/${ctx.model.uid}`);
+    }
 
     const sizeToWidthMap: Record<string, number> = {
       small: 480,
@@ -65,6 +67,13 @@ export const openView = defineAction({
       target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
       width: sizeToWidthMap[size],
       content: (currentView) => {
+        if (ctx.inputArgs.closeRef) {
+          ctx.inputArgs.closeRef.current = currentView.close;
+        }
+        if (ctx.inputArgs.updateRef) {
+          ctx.inputArgs.updateRef.current = currentView.update;
+        }
+
         return (
           <FlowPage
             parentId={ctx.model.uid}
@@ -101,6 +110,8 @@ export const openView = defineAction({
           const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
           pageModel.invalidateAutoFlowCache(true);
         }
+
+        ctx.router.navigate(-1);
       },
     });
   },
