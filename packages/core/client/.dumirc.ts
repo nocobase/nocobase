@@ -221,6 +221,14 @@ export default defineConfig({
               title: '打开流配置表单',
               link: '/examples/flow-definition/open-settings',
             },
+            {
+              title: 'Flow Registry',
+              link: '/examples/flow-definition/flow-registry',
+            },
+            {
+              title: 'Action Registry',
+              link: '/examples/flow-definition/action-registry',
+            },
           ]
         },
         {
