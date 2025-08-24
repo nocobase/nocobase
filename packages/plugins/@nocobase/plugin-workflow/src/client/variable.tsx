@@ -240,10 +240,14 @@ function useOptions(scope, opts) {
   };
 }
 
-export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
+export function useWorkflowVariableOptions(
+  options: UseVariableOptions = {},
+  preset: VariableOption[] = [],
+): VariableOption[] {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
   const result = [
+    ...preset,
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),
