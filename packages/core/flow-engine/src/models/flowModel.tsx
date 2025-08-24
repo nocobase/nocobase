@@ -1241,6 +1241,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 移动当前模型到目标模型的位置
    * @param {FlowModel} targetModel 目标模型
+   * @param {PersistOptions} [options] 可选的持久化选项
    * @returns {boolean} 是否成功移动
    */
   moveTo(targetModel: FlowModel, options?: PersistOptions) {

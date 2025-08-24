@@ -11,6 +11,7 @@ import { PopoverProps as AntdPopoverProps } from 'antd';
 import { FlowContext } from '../flowContext';
 
 export type FlowView = {
+  inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;
   close: () => void;
@@ -33,6 +34,7 @@ type ViewProps = {
    * 阻止关闭 View
    */
   preventClose?: boolean;
+  inputArgs?: any;
   [key: string]: any;
 };
 
