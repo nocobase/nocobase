@@ -37,13 +37,13 @@ export class RootPageModel extends PageModel {
       url: `desktopRoutes:move`,
       method: 'post',
       params: {
-        sourceId: activeModel?.props.route.id,
-        targetId: overModel?.props.route.id,
+        sourceId: activeModel.props.route.id,
+        targetId: overModel.props.route.id,
         sortField: 'sort',
       },
     });
 
-    this.flowEngine.moveModel(activeModel?.uid, overModel?.uid, { persist: false });
+    this.flowEngine.moveModel(activeModel.uid, overModel.uid, { persist: false });
   }
 }
 
