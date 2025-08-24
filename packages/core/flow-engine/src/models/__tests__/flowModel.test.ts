@@ -8,7 +8,7 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';
 import { FlowEngine } from '../../flowEngine';
@@ -1531,11 +1531,15 @@ describe('FlowModel', () => {
 
         // Trigger a re-render so ReactiveWrapper recalculates renderTarget
         model.setProps({ __tick: Date.now() });
-        await new Promise((resolve) => setTimeout(resolve, 0));
 
-        // master unmounted, fork mounted
-        expect(unmountCalls).toContain('master');
-        expect(mountCalls).toContain('fork');
+        // Wait for React to complete the render cycle and lifecycle changes
+        await waitFor(
+          () => {
+            expect(unmountCalls).toContain('master');
+            expect(mountCalls).toContain('fork');
+          },
+          { timeout: 10000 },
+        );
 
         unmount();
         // when React unmounts, the current target (fork) should receive unmount too

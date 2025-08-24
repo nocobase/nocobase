@@ -32,7 +32,7 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { extractPropertyPath, FlowExitException, resolveExpressions } from './utils';
+import { extractPropertyPath, FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
@@ -949,6 +949,7 @@ export class FlowRuntimeContext<
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
   declare getStepResults: (stepKey: string) => any;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   constructor(
     public model: TModel,
     public flowKey: string,
@@ -1001,6 +1002,34 @@ export class FlowRuntimeContext<
         },
       });
       return runner.run(code);
+    });
+
+    // 动态执行已注册的 Action
+    this.defineMethod('runAction', async (actionName: string, params?: Record<string, any>) => {
+      const def = this.model.getAction(actionName);
+      if (!def) {
+        throw new Error(`Action '${actionName}' not found.`);
+      }
+
+      // 解析默认参数并与外部传入参数合并
+      const defaultParams = await resolveDefaultParams(def.defaultParams, this);
+      let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
+
+      // useRawParams 支持函数/布尔
+      let useRawParams = def.useRawParams;
+      if (typeof useRawParams === 'function') {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useRawParams = await useRawParams(this);
+      }
+      if (!useRawParams) {
+        combinedParams = await resolveExpressions(combinedParams, this);
+      }
+
+      if (!def.handler) {
+        throw new Error(`Action '${actionName}' has no handler.`);
+      }
+      // 直接调用并返回结果，让异常（含 FlowExit/FlowExitAll）向上传递
+      return def.handler(this, combinedParams);
     });
   }
 
