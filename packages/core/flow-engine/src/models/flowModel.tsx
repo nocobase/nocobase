@@ -27,6 +27,7 @@ import type {
   FlowDefinitionOptions,
   FlowModelMeta,
   FlowModelOptions,
+  ModelConstructor,
   ParamObject,
   ParentFlowModel,
   PersistOptions,
@@ -426,10 +427,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     keyOrDefinition: string | FlowDefinitionOptions<TModel>,
     flowDefinition?: Omit<FlowDefinitionOptions<TModel>, 'key'> & { key?: string },
   ): void {
+    const Cls = this as unknown as typeof FlowModel;
     if (typeof keyOrDefinition === 'string') {
-      this.globalFlowRegistry.addFlow(keyOrDefinition, flowDefinition);
+      Cls.globalFlowRegistry.addFlow(keyOrDefinition, flowDefinition);
     } else {
-      this.globalFlowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
+      Cls.globalFlowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
     }
   }
 
