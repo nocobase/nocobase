@@ -23,6 +23,7 @@ import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
+import { verifyAssociationsPermissionMiddleware } from './middlewares/verifyAssociationsPermission';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -624,6 +625,7 @@ export class PluginACLServer extends Plugin {
       },
       { after: 'dataSource', group: 'with-acl-meta' },
     );
+    this.app.resourceManager.use(verifyAssociationsPermissionMiddleware(), { after: 'acl' });
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {

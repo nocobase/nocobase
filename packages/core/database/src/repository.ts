@@ -37,7 +37,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import { ArrayField, Field, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -664,7 +664,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
     const transaction = await this.getTransaction(options);
-
     const guard = UpdateGuard.fromOptions(this.model, {
       ...options,
       action: 'create',

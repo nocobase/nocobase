@@ -119,6 +119,60 @@ describe('association test', () => {
     const postCommentsResp = await userAgent.resource('posts.userComments', post.get('id')).list({});
     expect(postCommentsResp.statusCode).toEqual(200);
   });
+
+  it('should forbid creating nested association without target permission', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          { name: 'title', type: 'string' },
+          { name: 'userComments', foreignKey: 'userId', type: 'hasMany', target: 'comments', interface: 'linkTo' },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'comments',
+        fields: [{ name: 'content', type: 'string' }],
+      },
+      context: {},
+    });
+
+    // role only has create posts permission
+    await db.getRepository('roles').create({
+      values: { name: 'limited-role' },
+      context: {},
+    });
+
+    await db.getRepository('roles.resources', 'limited-role').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.create({ values: { roles: ['limited-role'] } });
+    const userAgent = await app.agent().login(user);
+
+    const resp = await userAgent.resource('posts').create({
+      values: {
+        title: 'post with comments',
+        userComments: [{ content: 'c1' }],
+      },
+      updateAssociationValues: ['userComments'],
+    });
+
+    expect(resp.statusCode).toEqual(403);
+  });
 });
 
 describe.skip('association field acl', () => {
