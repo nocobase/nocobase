@@ -13,6 +13,7 @@ import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 import { FormItem } from '../form/FormItem/FormItem';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { FieldNotAllow } from '../form/FormItem/CollectionFieldFormItemModel';
 
 export class DetailItemModel extends FieldModel<{
   parent: DetailsFieldGridModel;
@@ -28,10 +29,6 @@ export class DetailItemModel extends FieldModel<{
     super.onInit(options);
   }
 
-  renderNoPermission() {
-    return null;
-  }
-
   renderContent() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
@@ -40,6 +37,17 @@ export class DetailItemModel extends FieldModel<{
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
+  }
+
+  renderNoPermission() {
+    if (this.flowEngine.flowSettings?.enabled) {
+      return (
+        <FormItem {...this.props}>
+          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.collectionField.title} />
+        </FormItem>
+      );
+    }
+    return null;
   }
 }
 
@@ -56,16 +64,6 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
-    init: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
-        const { collectionField } = ctx.model;
-        ctx.model.setProps(collectionField.getComponentProps());
-      },
-    },
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
@@ -91,6 +89,16 @@ DetailItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ label: params.title });
+      },
+    },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const { collectionField } = ctx.model;
+        ctx.model.setProps(collectionField.getComponentProps());
       },
     },
     showLabel: {

@@ -9,12 +9,29 @@
 
 import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
-import React from 'react';
+import { capitalize } from 'lodash';
+import { Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
+import React, { useMemo } from 'react';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
 import { FormItem } from './FormItem';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
+
+export const FieldNotAllow = ({ actionName, FieldTitle }) => {
+  const { t } = useTranslation();
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        actionName: t(capitalize(actionName)),
+        name: FieldTitle,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [FieldTitle, actionName, t]);
+  return <Alert type="warning" message={messageValue} showIcon />;
+};
 
 export class CollectionFieldFormItemModel extends FormItemModel {
   static defineChildren(ctx: FlowModelContext) {
@@ -36,6 +53,13 @@ export class CollectionFieldFormItemModel extends FormItemModel {
     );
   }
   renderNoPermission() {
+    if (this.flowEngine.flowSettings?.enabled) {
+      return (
+        <FormItem {...this.props}>
+          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.collectionField.title} />
+        </FormItem>
+      );
+    }
     return null;
   }
 }
@@ -50,21 +74,6 @@ CollectionFieldFormItemModel.registerFlow({
   sort: 300,
   title: escapeT('Form item settings'),
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
-    init: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
-        const collectionField = ctx.model.collectionField;
-        if (collectionField) {
-          ctx.model.setProps(collectionField.getComponentProps());
-        }
-        ctx.model.setProps({
-          name: ctx.model.fieldPath,
-        });
-      },
-    },
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
@@ -92,6 +101,22 @@ CollectionFieldFormItemModel.registerFlow({
         ctx.model.setProps({ label: params.label });
       },
     },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const collectionField = ctx.model.collectionField;
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
+        ctx.model.setProps({
+          name: ctx.model.fieldPath,
+        });
+      },
+    },
+
     showLabel: {
       title: escapeT('Show label'),
       uiSchema: {
