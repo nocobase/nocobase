@@ -167,7 +167,7 @@ export class SubTableColumnModel extends FieldModel {
       render: this.render(),
     };
   }
-  render() {
+  renderContent(): any {
     return (props) => {
       const { value, id, rowIdx } = props;
       return (

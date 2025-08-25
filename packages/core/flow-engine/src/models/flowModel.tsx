@@ -63,7 +63,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
   protected _title: string;
-  public hidden: boolean;
 
   /**
    * 所有 fork 实例的引用集合。
@@ -1039,20 +1038,29 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * Renders the React representation of this flow model.
    * @returns {React.ReactNode} The React node to render.
    */
-  public render(): React.ReactNode {
+  public render(): any {
     if (this.hidden) {
       return this.renderNoPermission();
     }
     return this.renderContent();
   }
 
-  // 无权限时渲染
+  /**
+   * 无权限时的渲染逻辑。
+   * 子类可以覆盖此方法，返回自定义的“无权限”提示 UI。
+   * 如果子类不覆盖，则默认显示null。
+   *
+   * @returns {React.ReactNode} 无权限时的渲染结果
+   */
   public renderNoPermission(): React.ReactNode {
     return null;
   }
 
   /**
-   * 有权限时渲染
+   * 有权限时的渲染逻辑。
+   * 这是一个抽象方法，所有子类都必须实现，用于返回自己的正常 UI。
+   *
+   * @returns {React.ReactNode} 有权限时的渲染结果
    */
   public renderContent(): React.ReactNode {
     return <div {...this.props}></div>;
