@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@formily/reactive';
 import { FlowModel } from '../models';
 import { FlowDefinition } from '../FlowDefinition';
 import { BaseFlowRegistry } from './BaseFlowRegistry';

@@ -7,22 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { FlowModel } from '../models/flowModel';
-import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 
 describe('GlobalFlowRegistry (class-level flows)', () => {
   class BaseModel extends FlowModel {}
   class ChildModel extends BaseModel {}
 
-  beforeEach(() => {
-    // 确保每个测试用例环境互不影响
-    // 清空 BaseModel/ChildModel 已注册的静态 flows
-    // 通过重新定义类来间接重置 WeakMap 中的 modelFlows 绑定
-  });
-
   it('adds and gets class-level flows via FlowDefinition', () => {
-    const gr = (ChildModel as typeof FlowModel).globalFlowRegistry as GlobalFlowRegistry;
+    const gr = ChildModel.globalFlowRegistry;
     const def = gr.addFlow('alpha', {
       key: 'alpha',
       title: 'Alpha',
@@ -47,8 +40,8 @@ describe('GlobalFlowRegistry (class-level flows)', () => {
   });
 
   it('inherits parent flows and allows child overrides (child first)', () => {
-    const parentGR = (BaseModel as typeof FlowModel).globalFlowRegistry;
-    const childGR = (ChildModel as typeof FlowModel).globalFlowRegistry;
+    const parentGR = BaseModel.globalFlowRegistry;
+    const childGR = ChildModel.globalFlowRegistry;
 
     parentGR.addFlow('common', {
       key: 'common',

@@ -46,3 +46,8 @@ step.remove();
 await step.destroy();
 ```
 
+## 实例覆盖类级同名流
+
+同一个 key 在实例与类级（全局）同时存在时，实例优先。
+
+<code src="./demos/instance-overrides-global.tsx"></code>
