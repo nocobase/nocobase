@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { ViewParam } from './parsePathnameToViewParams';
+import { FlowEngine, FlowModel, ViewParam } from '@nocobase/flow-engine';
 
 export interface ViewItem {
   params: ViewParam;

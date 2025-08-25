@@ -45,4 +45,4 @@ export { createRecordProxyContext, createCollectionContextMeta } from './createR
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
 
-export { parsePathnameToViewParams, ViewParam } from './parsePathnameToViewParams';
+export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
