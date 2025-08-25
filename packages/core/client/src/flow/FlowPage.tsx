@@ -9,6 +9,7 @@
 
 import {
   FlowModelRenderer,
+  parsePathnameToViewParams,
   reaction,
   useFlowEngine,
   useFlowModelById,
@@ -18,7 +19,6 @@ import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
-import { parsePathnameToViewParams } from './parsePathnameToViewParams';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiff } from './getViewDiff';
 
@@ -80,10 +80,10 @@ export const FlowRoute = () => {
         }
 
         // 1. 把 pathname 解析成一个数组
-        const viewParams = parsePathnameToViewParams(newRoute.pathname);
+        const viewStack = parsePathnameToViewParams(newRoute.pathname);
 
         // 2. 根据视图参数获取更多信息
-        const viewList = await resolveViewParamsToViewList(flowEngine, viewParams, routeModel);
+        const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
         // 3. 对比新旧列表，区分开需要打开和关闭的视图
         const { viewsToClose, viewsToOpen } = getViewDiff(prevViewListRef.current, viewList);
