@@ -1,14 +1,14 @@
 {
-  "Dynamic Calculation": "動的計算",
+  "Expression": "式",
+  "Dynamic expression calculation": "動的な式の計算",
   "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "計算エンジンに基づいて式を計算し、その結果として値を取得します。上流ノードの変数を式に使用できます。この式は式コレクションから動的に取得されます。",
   "Select dynamic expression": "動的式を選択",
   "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "上流ノードからクエリされた動的式を選択します。動的式コレクションからクエリする必要があります。",
   "Variable datasource": "変数データソース",
   "Dynamic expression": "動的式",
-  "An expression for calculation in each rows": "各行の計算式",
+  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "ワークフローで使用するために式を保存し、異なるデータに対して異なる式を呼び出すことができます。",
   "Unconfigured": "未構成",
   "Calculation result": "計算結果",
-  "Expression": "式",
-  "Dynamic expression calculation": "動的な式の計算",
-  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "ワークフローで使用するために式を保存し、異なるデータに対して異なる式を呼び出すことができます。"
+  "Dynamic Calculation": "動的計算",
+  "An expression for calculation in each rows": "各行の計算式"
 }

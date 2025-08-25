@@ -47,5 +47,8 @@
   "Create map block": "マップブロックを作成",
   "Start point": "開始地点",
   "End point": "終了地点",
-  "Concatenation order field": "連結順序フィールド"
+  "Concatenation order field": "連結順序フィールド",
+  "securityJsCode or serviceHost is required": "securityJsCodeまたはserviceHostは必須です",
+  "Access key is required": "アクセスキーは必須です",
+  "Api key is required": "APIキーは必須です"
 }

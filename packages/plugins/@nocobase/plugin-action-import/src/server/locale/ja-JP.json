@@ -1,0 +1,11 @@
+{
+  "Yes": "はい",
+  "No": "いいえ",
+  "can not find value": "対応する値が見つかりません",
+  "password is empty": "パスワードが空です",
+  "Incorrect time format": "時刻フォーマットが正しくありません",
+  "Incorrect date format": "日付フォーマットが正しくありません",
+  "Incorrect email format": "メールフォーマットが正しくありません",
+  "Illegal percentage format": "パーセンテージフォーマットにエラーがあります",
+  "Imported template does not match, please download again.": "インポートテンプレートが一致しません。インポートファイルのタイトル行を確認するか、インポートテンプレートを再ダウンロードしてください。"
+}

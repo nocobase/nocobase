@@ -1,0 +1,18 @@
+{
+  "Enable form": "フォームを有効化",
+  "Public forms": "公開フォーム",
+  "Add New": "新規追加",
+  "Type": "タイプ",
+  "Open form": "公開フォームを表示",
+  "Set password": "パスワードを設定",
+  "Copy link": "リンクをコピー",
+  "QR code": "QRコード",
+  "The form is not enabled and cannot be accessed": "フォームが有効化されておらず、アクセスできません",
+  "Link copied successfully": "リンクを正常にコピーしました",
+  "After successful submission": "送信成功後",
+  "Enable password": "パスワードを有効化",
+  "Prompt after successful submission": "送信成功後の情報提示",
+  "Form": "通常フォーム",
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# 送信成功!\nこれはデモテキストです。**Markdown構文をサポート**しています。",
+  "The form is not found": "フォームが見つかりません"
+}

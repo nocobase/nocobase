@@ -1,10 +1,19 @@
 {
-  "Workbench": "作業台",
+  "Action panel": "操作パネル",
   "Scan QR code": "QRコードをスキャン",
   "Album": "アルバム",
   "No camera device detected": "カメラデバイスが検出されませんでした",
   "You have not granted permission to use the camera": "カメラの使用許可がありません",
   "Unknown error": "不明なエラー",
   "The image size is too large. Please compress it to below 1MB before uploading": "画像サイズが大きすぎます。アップロード前に1MB以下に圧縮してください。",
-  "QR code recognition failed, please scan again": "QRコードの認識に失敗しました。再度スキャンしてください。"
+  "QR code recognition failed, please scan again": "QRコードの認識に失敗しました。再度スキャンしてください。",
+  "Layout": "レイアウト",
+  "Grid": "グリッド",
+  "List": "リスト",
+  "Add popup": "ポップアップを追加",
+  "Add custom request": "カスタムリクエストを追加",
+  "At least 1, up to 6": "最大6個、最小1個",
+  "Items per row": "1行あたりの表示数",
+  "Ellipsis action title": "長い操作タイトルを省略",
+  "Workbench": "ワークベンチ"
 }

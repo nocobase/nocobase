@@ -1,5 +1,7 @@
 {
   "Export warning": "システム変数の扱いに問題なし。",
   "Start export": "エクスポートを開始",
-  "another export action is running, please try again later.": "別のエクスポート処理が実行中です。後でもう一度お試しください。"
+  "another export action is running, please try again later.": "別のエクスポート処理が実行中です。後でもう一度お試しください。",
+  "True": "真",
+  "False": "偽"
 }
