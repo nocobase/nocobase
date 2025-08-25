@@ -14,6 +14,7 @@ import {
   useFlowEngine,
   useFlowModelById,
   useFlowViewContext,
+  ViewNavigation,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -87,17 +88,23 @@ export const FlowRoute = () => {
 
         // 3. 对比新旧列表，区分开需要打开和关闭的视图
         const { viewsToClose, viewsToOpen } = getViewDiff(prevViewListRef.current, viewList);
-        prevViewListRef.current = viewList;
 
         // 4. 处理需要打开的视图
-        viewsToOpen.forEach((viewItem) => {
+        viewsToOpen.forEach((viewItem, index) => {
           const closeRef = React.createRef<() => void>();
           const updateRef = React.createRef<(value: any) => void>();
+
+          prevViewListRef.current.push(viewItem);
+
           viewItem.model.dispatchEvent('click', {
             target: layoutContentRef.current,
             params: viewItem.params,
             closeRef,
             updateRef,
+            navigation: new ViewNavigation(
+              flowEngine.context,
+              prevViewListRef.current.map((item) => item.params),
+            ),
           });
           viewStateRef.current[viewItem.params.viewUid] = {
             close: () => closeRef.current?.(),
@@ -110,6 +117,7 @@ export const FlowRoute = () => {
         viewsToClose.forEach((viewItem) => {
           viewStateRef.current[viewItem.params.viewUid].close();
           delete viewStateRef.current[viewItem.params.viewUid];
+          prevViewListRef.current = viewList;
         });
       },
       {

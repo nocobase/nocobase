@@ -44,7 +44,7 @@ export const openView = defineAction({
     pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    if (!ctx.inputArgs.closeRef) {
+    if (!ctx.inputArgs.navigation) {
       ctx.view.navigation?.navigateTo({ viewUid: ctx.model.uid });
       return;
     }

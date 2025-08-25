@@ -12,8 +12,6 @@ import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
-import { ViewNavigation } from './ViewNavigation';
-import { parsePathnameToViewParams } from '../utils';
 
 let uuid = 0;
 
@@ -92,7 +90,7 @@ export function useDialog() {
         currentHeader = header;
         dialogRef.current?.setHeader(header);
       },
-      navigation: new ViewNavigation(flowContext, parsePathnameToViewParams(flowContext.route.pathname)),
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();
