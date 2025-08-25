@@ -16,7 +16,7 @@ export class DeleteActionModel extends RecordActionModel {
     type: 'link',
     title: escapeT('Delete'),
   };
-  getActionName() {
+  getAclActionName() {
     return 'destroy';
   }
 }

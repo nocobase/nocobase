@@ -120,7 +120,7 @@ export class ImportActionModel extends CollectionActionModel {
     type: 'default',
     icon: 'uploadoutlined',
   };
-  getActionName() {
+  getAclActionName() {
     return 'importXlsx';
   }
 }

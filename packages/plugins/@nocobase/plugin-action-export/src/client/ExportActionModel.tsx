@@ -28,7 +28,7 @@ export class ExportActionModel extends CollectionActionModel {
     icon: 'clouddownloadoutlined',
   };
 
-  getActionName() {
+  getAclActionName() {
     return 'export';
   }
 }

@@ -26,7 +26,7 @@ export class ActionModel extends FlowModel {
   enableEditType = true;
   enableEditDanger = true;
 
-  getActionName() {
+  getAclActionName() {
     return 'view';
   }
 
@@ -34,7 +34,7 @@ export class ActionModel extends FlowModel {
     super.onInit(options);
     this.context.defineProperty('actionName', {
       get: () => {
-        return this.getActionName();
+        return this.getAclActionName();
       },
       cache: false,
     });

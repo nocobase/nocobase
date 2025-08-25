@@ -30,7 +30,7 @@ export class CreateFormModel extends FormModel {
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
   }
-  getResourceActionName() {
+  getAclActionName() {
     return 'create';
   }
 

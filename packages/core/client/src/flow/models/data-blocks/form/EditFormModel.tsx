@@ -55,7 +55,7 @@ export class EditFormModel extends FormModel {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
   }
-  getResourceActionName() {
+  getAclActionName() {
     return 'update';
   }
   handlePageChange = async (page: number) => {

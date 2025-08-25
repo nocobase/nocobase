@@ -502,7 +502,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return this.context.association;
   }
 
-  getResourceActionName() {
+  getAclActionName() {
     return 'view';
   }
   /**
@@ -521,7 +521,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       value: this,
     });
     this.context.defineProperty('actionName', {
-      get: () => this.getResourceActionName(),
+      get: () => this.getAclActionName(),
       cache: false,
     });
     this.context.defineProperty('dataSource', {
