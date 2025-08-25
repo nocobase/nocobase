@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { Button, Input } from 'antd';
+import { Button, Input, Space } from 'antd';
 import React, { useRef, useState } from 'react';
 import { VariableSelect } from './VariableSelect';
 
@@ -54,7 +54,7 @@ export function RawTextArea(props): JSX.Element {
       `}
     >
       <Component {...others} ref={inputRef} />
-      <Button.Group
+      <Space.Compact
         className={css`
           position: absolute;
           right: 0;
@@ -82,7 +82,7 @@ export function RawTextArea(props): JSX.Element {
           changeOnSelect={changeOnSelect}
           disabled={others.disabled}
         />
-      </Button.Group>
+      </Space.Compact>
     </div>
   );
 }

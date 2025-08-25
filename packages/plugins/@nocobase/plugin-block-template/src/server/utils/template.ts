@@ -381,16 +381,10 @@ function shouldDeleteNoComponentSchema(schema: Schema) {
 
 export function cleanSchema(schema?: Schema, templateId?: string) {
   const properties = schema?.properties || {};
-  if (schema) {
-    delete schema['x-template-root-uid'];
-    delete schema['x-template-uid'];
-    delete schema['x-block-template-key'];
-    delete schema['x-virtual'];
-    delete schema['x-template-version'];
-  }
   for (const key of Object.keys(properties)) {
     if (
       schema.properties[key]['x-component'] == null &&
+      schema.properties[key]['x-template-id'] &&
       !schema.properties[key]['x-template-root-uid'] &&
       shouldDeleteNoComponentSchema(schema.properties[key])
     ) {
@@ -418,6 +412,13 @@ export function cleanSchema(schema?: Schema, templateId?: string) {
       }
     }
     cleanSchema(properties[key], templateId);
+  }
+  if (schema) {
+    delete schema['x-template-root-uid'];
+    delete schema['x-template-uid'];
+    delete schema['x-block-template-key'];
+    delete schema['x-virtual'];
+    delete schema['x-template-version'];
   }
 }
 

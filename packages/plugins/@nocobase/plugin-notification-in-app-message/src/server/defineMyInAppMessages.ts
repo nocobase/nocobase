@@ -12,19 +12,9 @@ import actions from '@nocobase/actions';
 import { ChannelsCollectionDefinition as ChannelsDefinition } from '@nocobase/plugin-notification-manager';
 import { Application } from '@nocobase/server';
 import { Op, Sequelize } from 'sequelize';
-import { PassThrough } from 'stream';
 import { InAppMessagesDefinition as MessagesDefinition } from '../types';
-export default function defineMyInAppMessages({
-  app,
-  addClient,
-  removeClient,
-  getClient,
-}: {
-  app: Application;
-  addClient: any;
-  removeClient: any;
-  getClient?: any;
-}) {
+
+export default function defineMyInAppMessages(app: Application) {
   const countTotalUnreadMessages = async (userId: string) => {
     const messagesRepo = app.db.getRepository(MessagesDefinition.name);
     const channelsCollection = app.db.getCollection(ChannelsDefinition.name);
@@ -34,7 +24,6 @@ export default function defineMyInAppMessages({
     };
 
     const count = await messagesRepo.count({
-      logging: console.log,
       // @ts-ignore
       where: {
         userId,
@@ -50,32 +39,32 @@ export default function defineMyInAppMessages({
   app.resourceManager.define({
     name: 'myInAppMessages',
     actions: {
-      sse: {
-        handler: async (ctx, next) => {
-          const userId = ctx.state.currentUser.id;
-          const clientId = ctx.action?.params?.id;
-          if (!clientId) return;
-          ctx.request.socket.setTimeout(0);
-          ctx.req.socket.setNoDelay(true);
-          ctx.req.socket.setKeepAlive(true);
-          ctx.set({
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          });
-          const stream = new PassThrough();
-          ctx.status = 200;
-          ctx.body = stream;
-          addClient(userId, clientId, stream);
-          stream.on('close', () => {
-            removeClient(userId, clientId);
-          });
-          stream.on('error', () => {
-            removeClient(userId, clientId);
-          });
-          await next();
-        },
-      },
+      // sse: {
+      //   handler: async (ctx, next) => {
+      //     const userId = ctx.state.currentUser.id;
+      //     const clientId = ctx.action?.params?.id;
+      //     if (!clientId) return;
+      //     ctx.request.socket.setTimeout(0);
+      //     ctx.req.socket.setNoDelay(true);
+      //     ctx.req.socket.setKeepAlive(true);
+      //     ctx.set({
+      //       'Content-Type': 'text/event-stream',
+      //       'Cache-Control': 'no-cache',
+      //       Connection: 'keep-alive',
+      //     });
+      //     const stream = new PassThrough();
+      //     ctx.status = 200;
+      //     ctx.body = stream;
+      //     addClient(userId, clientId, stream);
+      //     stream.on('close', () => {
+      //       removeClient(userId, clientId);
+      //     });
+      //     stream.on('error', () => {
+      //       removeClient(userId, clientId);
+      //     });
+      //     await next();
+      //   },
+      // },
       count: {
         handler: async (ctx) => {
           try {

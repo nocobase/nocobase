@@ -682,7 +682,9 @@ export default class PluginWorkflowServer extends Plugin {
           this.pending.push([execution]);
         } else {
           logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
-          this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+          if (this.ready) {
+            this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
+          }
         }
       }
     } catch (error) {
@@ -882,9 +884,8 @@ export default class PluginWorkflowServer extends Plugin {
     // 1. `ws` not works in backend test cases for now.
     // 2. `userId` here for compatibility of no user approvals (deprecated).
     if (userId) {
-      this.app.emit('ws:sendToTag', {
-        tagKey: 'userId',
-        tagValue: `${userId}`,
+      this.app.emit('ws:sendToUser', {
+        userId,
         message: { type: 'workflow:tasks:updated', payload: record.get() },
       });
     }

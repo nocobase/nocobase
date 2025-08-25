@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "1.9.0-alpha.3",
+  "version": "1.9.0-alpha.12",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.zh-CN": "授权设置",
   "description": "Instance ID and license key settings",
   "description.zh-CN": "实例 ID 和授权密钥设置",
   "devDependencies": {
-    "@nocobase/license-kit": "^0.2.12"
+    "@nocobase/license-kit": "^0.2.17"
   },
   "peerDependencies": {
     "@nocobase/client": "1.x",

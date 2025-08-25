@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-hello",
-  "version": "1.9.0-alpha.3",
+  "version": "1.9.0-alpha.12",
   "main": "./dist/server/index.js",
   "displayName": "Hello",
   "displayName.zh-CN": "Hello",

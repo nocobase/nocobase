@@ -526,6 +526,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
+    if (!_.isUndefined(opts.limit)) {
+      opts.limit = Number(opts.limit);
+    }
 
     let rows;
 
@@ -638,6 +641,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
+  private validate(options: {
+    values: Record<string, any>[];
+    context: { t: Function };
+    operation: 'create' | 'update';
+  }) {
+    this.collection.validate(options);
+  }
+
   /**
    * Save instance to database
    *
@@ -652,7 +663,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, {
@@ -662,7 +672,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-
+    this.validate({ values: values as any, context: options.context, operation: 'create' });
     const instance = await this.model.create<any>(values, {
       ...options,
       transaction,
@@ -728,13 +738,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-
+    this.validate({ values: values as any, context: options.context, operation: 'update' });
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
     // 2. strictly `false` comparing for compatibility of legacy api invoking

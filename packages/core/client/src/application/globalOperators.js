@@ -92,7 +92,8 @@ export function getOperators() {
     },
     $empty: function (a) {
       if (Array.isArray(a)) return a.length === 0;
-      return !jsonLogic.truthy(a);
+      if (typeof a === 'string') return a.length === 0;
+      return a === null || a === undefined;
     },
     $notExists: function (a) {
       return !jsonLogic.truthy(a);
@@ -144,12 +145,12 @@ export function getOperators() {
       return !b.some((item) => a.includes(item));
     },
     $notMatch: function (a, b) {
-      if (a.length !== b.length) {
+      if (a?.length !== b?.length) {
         return true;
       }
 
-      for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) {
+      for (let i = 0; i < (a?.length || 0); i++) {
+        if (a?.[i] !== b?.[i]) {
           return true;
         }
       }

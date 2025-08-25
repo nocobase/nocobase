@@ -41,7 +41,7 @@ export default {
       size: {
         type: 'number',
         title: `{{t("File size limit", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Minimum from 1 byte, maximum up to 1GB.", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Minimum from 1 byte.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'FileSizeField',
         required: true,
@@ -67,6 +67,7 @@ export default {
   paranoid: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
-    'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
+    'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
   },
 };

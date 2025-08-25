@@ -13,8 +13,10 @@ import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-
 import {
   Collection as DBCollection,
   Database,
+  IntegerField,
   Model,
   MultipleRelationRepository,
+  NumberField,
   RelationRepository,
   Repository,
   UpdateGuard,
@@ -146,6 +148,10 @@ export class XlsxImporter extends EventEmitter {
     // @ts-ignore
     const autoIncrementAttribute = collection.model.autoIncrementAttribute;
     if (!autoIncrementAttribute) {
+      return;
+    }
+    const field = this.options.collection.getField(autoIncrementAttribute);
+    if (field && !(field instanceof NumberField)) {
       return;
     }
 
@@ -438,7 +444,7 @@ export class XlsxImporter extends EventEmitter {
     const workbook = this.options.workbook;
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false }) as string[][];
 
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);

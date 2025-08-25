@@ -463,6 +463,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!WORKER_MODE) {
       return true;
     }
+    if (WORKER_MODE === '-') {
+      return false;
+    }
     const topics = WORKER_MODE.trim().split(',');
     if (key) {
       if (WORKER_MODE === '*') {

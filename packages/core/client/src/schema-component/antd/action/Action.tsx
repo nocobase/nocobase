@@ -665,7 +665,7 @@ const RenderButtonInner = observer(
     const WrapperComponent = useMemo(
       () =>
         React.forwardRef(
-          ({ component: Component = tarComponent || Button, icon, onlyIcon, children, ...restProps }: any, ref) => {
+          ({ component: Component = tarComponent || Button, icon, onlyIcon: o, children, ...restProps }: any, ref) => {
             return (
               <Component ref={ref} {...restProps}>
                 {onlyIcon ? (
@@ -682,7 +682,7 @@ const RenderButtonInner = observer(
             );
           },
         ),
-      [onlyIcon],
+      [onlyIcon, tarComponent],
     );
     if (!designable && (field?.data?.hidden || !aclCtx)) {
       return null;
@@ -708,8 +708,7 @@ const RenderButtonInner = observer(
         component={Component}
         className={classnames(componentCls, hashId, className, 'nb-action')}
         type={type === 'danger' ? undefined : type}
-        title={actionTitle}
-        onlyIcon={onlyIcon}
+        title={typeof actionTitle === 'string' ? actionTitle : null}
       >
         {!onlyIcon && actionTitle && (
           <span className={icon ? 'nb-action-title' : null} style={linkStyle}>

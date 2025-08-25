@@ -7,25 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DatePicker, Picker } from 'antd-mobile';
-import { Space, Select } from 'antd';
-import {
-  mapDatePicker,
-  DatePicker as NBDatePicker,
-  useDatePickerContext,
-  useCompile,
-  inferPickerType,
-  TimePicker as NBTimePicker,
-  mapTimeFormat,
-  useVariables,
-  isVariable,
-  useLocalVariables,
-} from '@nocobase/client';
-import { autorun } from '@formily/reactive';
-import dayjs from 'dayjs';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { autorun } from '@formily/reactive';
+import {
+  inferPickerType,
+  isVariable,
+  mapDatePicker,
+  mapTimeFormat,
+  DatePicker as NBDatePicker,
+  TimePicker as NBTimePicker,
+  useCompile,
+  useDatePickerContext,
+  useLocalVariables,
+  useVariables,
+} from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
+import { Select, Space } from 'antd';
+import { DatePicker, Picker } from 'antd-mobile';
+import dayjs from 'dayjs';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function getPrecision(timeFormat: string): 'hour' | 'minute' | 'second' {
@@ -53,6 +53,8 @@ const MobileDateTimePicker = connect(
       showTime = false,
       picker,
       disabled,
+      dateOnly,
+      utc,
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
@@ -80,10 +82,14 @@ const MobileDateTimePicker = connect(
       let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
 
       if (isVariable(props._maxDate)) {
-        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => dayjs(result.value));
+        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) =>
+          dayjs(result.value?.[0] || result.value),
+        );
       }
       if (isVariable(props._minDate)) {
-        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => dayjs(result.value));
+        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
+          return dayjs(result.value?.[0] || result.value);
+        });
       }
 
       const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
@@ -94,8 +100,17 @@ const MobileDateTimePicker = connect(
     const handleConfirm = useCallback(
       (value) => {
         setVisible(false);
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
+        if (dateOnly) {
+          onChange(dayjs(value).format('YYYY-MM-DD'));
+        } else if (!utc) {
+          if (showTime) {
+            onChange(dayjs(value).format('YYYY-MM-DD'));
+          }
+          onChange(dayjs(value).startOf(picker).format('YYYY-MM-DD'));
+        } else {
+          const selectedDateTime = new Date(value);
+          onChange(selectedDateTime);
+        }
       },
       [showTime, onChange],
     );
@@ -118,7 +133,7 @@ const MobileDateTimePicker = connect(
     }, []);
     return (
       <>
-        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <NBDatePicker
             onClick={() => setVisible(true)}
             value={value}
@@ -311,7 +326,7 @@ const MobileTimePicker: ComposedMobileTimePicker = connect(
     };
 
     return (
-      <div contentEditable="false" onClick={() => setVisible(true)}>
+      <div onClick={() => setVisible(true)}>
         <NBTimePicker {...props} style={{ pointerEvents: 'none' }} />
         <Picker onConfirm={handleTimeChange} columns={timeData} visible={visible} />
       </div>
@@ -327,4 +342,4 @@ MobileDateFilterWithPicker.displayName = 'MobileDateFilterWithPicker';
 MobileTimePicker.displayName = 'MobileTimePicker';
 
 MobileTimePicker.RangePicker = NBTimePicker.RangePicker;
-export { MobileDateTimePicker, MobileRangePicker, MobileDateFilterWithPicker, MobileTimePicker };
+export { MobileDateFilterWithPicker, MobileDateTimePicker, MobileRangePicker, MobileTimePicker };
