@@ -56,7 +56,7 @@ export class CollectionFieldFormItemModel extends FormItemModel {
     if (this.flowEngine.flowSettings?.enabled) {
       return (
         <FormItem {...this.props}>
-          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.collectionField.title} />
+          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
         </FormItem>
       );
     }

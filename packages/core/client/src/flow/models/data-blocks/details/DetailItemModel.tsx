@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
