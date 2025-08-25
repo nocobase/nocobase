@@ -21,6 +21,7 @@ import { AssociationFieldModel } from '../AssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
+import { CollectionNotAllowView } from '../../../base/BlockModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -102,6 +103,25 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
       },
     ];
   }
+
+  onInit(options) {
+    this.context.defineProperty('actionName', {
+      get: () => (this.context.blockModel instanceof EditFormModel ? 'view' : 'create'),
+      cache: false,
+    });
+  }
+
+  public renderNoPermission() {
+    if (this.flowEngine.flowSettings?.enabled) {
+      return (
+        <CollectionNotAllowView
+          collectionTitle={(this as any).collection.title}
+          actionName={this.context.actionName || 'view'}
+        />
+      );
+    }
+    return null;
+  }
 }
 
 TableAssociationFieldModel.registerFlow({
@@ -109,6 +129,21 @@ TableAssociationFieldModel.registerFlow({
   title: escapeT('Association table settings'),
   sort: 300,
   steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        {
+          const result = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource.key,
+            resourceName: ctx.model.collectionField.target,
+            actionName: ctx.model.context.actionName,
+          });
+          if (!result) {
+            ctx.model.hidden = true;
+            ctx.exitAll();
+          }
+        }
+      },
+    },
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');

@@ -247,7 +247,7 @@ export interface ResourceSettingsInitParams {
   filterByTk?: string;
 }
 
-const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
+export const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
   const { t } = useTranslation();
   const messageValue = useMemo(() => {
     return t(
