@@ -62,6 +62,14 @@ describe('ViewNavigation', () => {
         { replace: true },
       );
     });
+
+    it('should allow omitting viewUid', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+
+      viewNavigation.changeTo({ tabUid: 'new-tab' });
+
+      expect(viewNavigation.viewStack).toEqual([{ viewUid: 'view1', tabUid: 'new-tab' }]);
+    });
   });
 
   describe('navigateTo', () => {

@@ -78,7 +78,7 @@ export class ViewNavigation {
     if (this.viewStack.length === 0) {
       this.viewStack.push(viewParam);
     } else {
-      this.viewStack[this.viewStack.length - 1] = { ...viewParam };
+      this.viewStack[this.viewStack.length - 1] = { ...this.viewStack[this.viewStack.length - 1], ...viewParam };
     }
 
     // 2. 根据 viewStack 生成新的 pathname
