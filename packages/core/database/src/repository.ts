@@ -526,6 +526,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
+    if (!_.isUndefined(opts.limit)) {
+      opts.limit = Number(opts.limit);
+    }
 
     let rows;
 

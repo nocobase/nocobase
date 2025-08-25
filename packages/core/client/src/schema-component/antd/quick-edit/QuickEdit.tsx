@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { IFormItemProps } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import { useToken } from '../../../style';
@@ -30,6 +30,7 @@ export const Editable = observer(
     const fieldSchema = useFieldSchema();
     const value = field.value;
     const { token } = useToken();
+    fieldSchema.required = field.required;
     const schema: any = {
       name: fieldSchema.name,
       'x-collection-field': fieldSchema['x-collection-field'],
@@ -75,6 +76,11 @@ export const Editable = observer(
               display: none;
             }
           `}
+          onOpenChange={(open) => {
+            if (open) {
+              field.validate();
+            }
+          }}
         >
           <div
             style={{
