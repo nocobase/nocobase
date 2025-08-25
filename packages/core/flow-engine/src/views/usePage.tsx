@@ -13,6 +13,8 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { useFlowEngine } from '../provider';
 import PageComponent from './PageComponent';
 import usePatchElement from './usePatchElement';
+import { ViewNavigation } from './ViewNavigation';
+import { parsePathnameToViewParams } from '../utils';
 
 let uuid = 0;
 
@@ -44,6 +46,7 @@ export function usePage() {
         resolvePromise?.(result);
         pageRef.current?.destroy();
       },
+      navigation: new ViewNavigation(flowContext, parsePathnameToViewParams(flowContext.route.pathname)),
     };
 
     const ctx = new FlowContext();
