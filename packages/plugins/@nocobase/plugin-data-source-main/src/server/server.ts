@@ -37,6 +37,7 @@ import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import { TableInfo } from '@nocobase/database';
 import { ColumnsDescription } from 'sequelize';
+import { PRESET_FIELDS_INTERFACES } from './constants';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -556,7 +557,7 @@ export class PluginDataSourceMainServer extends Plugin {
         const fieldTypes = fieldTypeMap[this.db.options.dialect];
         if (rawFields && fieldTypes) {
           const rawField = rawFields[field.get('name')];
-          if (rawField) {
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
             const mappedType = extractTypeFromDefinition(rawField.type);
             const possibleTypes = fieldTypes[mappedType];
             field.set('possibleTypes', possibleTypes);

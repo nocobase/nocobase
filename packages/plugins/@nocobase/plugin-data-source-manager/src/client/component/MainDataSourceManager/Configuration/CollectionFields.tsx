@@ -35,6 +35,7 @@ import {
   useResourceContext,
   ViewCollectionField,
   useFieldInterfaceOptions,
+  useApp,
 } from '@nocobase/client';
 import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { createContext, useContext, useMemo, useEffect, useState } from 'react';
@@ -271,7 +272,7 @@ const isValueInOptions = (value, options) => {
   return options?.some((option) => option.children?.some?.((child) => child.name === value));
 };
 
-const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
+const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const initOptions = useFieldInterfaceOptions();
@@ -280,6 +281,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
   const targetType = record.type;
 
   useEffect(() => {
+    if (isPresetField) return;
     if (record?.possibleTypes || targetType) {
       const newOptions = getInterfaceOptions(initOptions, targetType);
       setOptions(newOptions);
@@ -290,22 +292,12 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
     if (options.length === 1 && options[0]?.children?.length === 1) {
       const targetValue = options[0]?.children?.[0]?.name;
       if (targetValue !== selectValue) {
-        const interfaceConfig = getInterface(targetValue);
         setSelectValue(targetValue);
-        updateFieldHandler(record, {
-          interface: targetValue,
-          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
-        });
       }
     } else if (selectValue && !isValueInOptions(selectValue, options)) {
       const targetValue = options[0]?.children?.[0]?.name;
       if (targetValue) {
-        const interfaceConfig = getInterface(targetValue);
         setSelectValue(targetValue);
-        updateFieldHandler(record, {
-          interface: targetValue,
-          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
-        });
       }
     }
   }, [options, selectValue]);
@@ -324,11 +316,13 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
 
   return (
     <Select
-      aria-label={`field-interface-${record?.type}`}
+      aria-label={`field-interface-${record?.interface}`}
       value={selectValue}
       style={{ width: '100%' }}
       popupMatchSelectWidth={false}
+      disabled={isPresetField}
       onChange={async (newValue) => {
+        if (isPresetField) return;
         const interfaceConfig = getInterface(newValue);
         setSelectValue(newValue);
         await updateFieldHandler(record, {
@@ -350,7 +344,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler }) => {
   );
 };
 
-const FieldTypeRenderer = ({ value, record, updateFieldHandler }) => {
+const FieldTypeRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
   const item = omit(record, ['__parent', '__collectionName']);
   return !Array.isArray(item?.possibleTypes) ? (
     <Tag>{value}</Tag>
@@ -360,12 +354,14 @@ const FieldTypeRenderer = ({ value, record, updateFieldHandler }) => {
       defaultValue={value}
       popupMatchSelectWidth={false}
       style={{ width: '100%' }}
+      disabled={isPresetField}
       options={
         item?.possibleTypes.map((v) => {
           return { label: v, value: v };
         }) || []
       }
       onChange={async (newValue) => {
+        if (isPresetField) return;
         await updateFieldHandler(record, { type: newValue });
       }}
     />
@@ -385,6 +381,12 @@ const CurrentFields = (props) => {
   const targetTemplate = getTemplate(template);
   const api = useAPIClient();
   const ctx = useContext(CollectionListContext);
+  const { collectionInfo } = props;
+  const app = useApp();
+  const mainDataSourcePlugin: any = app.pm.get('data-source-main');
+  const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
+  const collectionPresetFieldsInterfaces = collectionPresetFields.map((v) => v.value?.interface).filter((v) => v);
+
   const updateFieldHandler = async (record, values) => {
     try {
       await resource.update({
@@ -417,14 +419,24 @@ const CurrentFields = (props) => {
       dataIndex: 'interface',
       title: t('Field interface'),
       render: (value, record) => (
-        <FieldInterfaceRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
+        <FieldInterfaceRenderer
+          value={value}
+          record={record}
+          updateFieldHandler={updateFieldHandler}
+          isPresetField={collectionInfo.from === 'db2cm' && collectionPresetFieldsInterfaces.includes(record.interface)}
+        />
       ),
     },
     {
       dataIndex: 'type',
       title: t('Field type'),
       render: (value, record) => (
-        <FieldTypeRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
+        <FieldTypeRenderer
+          value={value}
+          record={record}
+          updateFieldHandler={updateFieldHandler}
+          isPresetField={collectionInfo.from === 'db2cm' && collectionPresetFieldsInterfaces.includes(record.interface)}
+        />
       ),
     },
     {
@@ -741,6 +753,7 @@ const CollectionFieldsInternal = () => {
           <div>
             <CurrentFields
               fields={allCurrentFields}
+              collectionInfo={field.record}
               collectionResource={collectionResource}
               refreshAsync={refreshAsync}
               type="all"
