@@ -248,5 +248,7 @@
 
   "Select users": "选择用户",
   "Query users": "查询用户",
-  "Add": "添加"
+  "Add": "添加",
+  "The workflow tasks page has already been created.": "工作流待办页面已创建。",
+  "No workflow tasks available. Please contact the administrator.": "没有可用的工作流待办，请联系管理员。"
 }

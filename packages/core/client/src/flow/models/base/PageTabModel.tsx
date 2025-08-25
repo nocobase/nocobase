@@ -13,6 +13,7 @@ import React from 'react';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
 import { RemoteFlowModelRenderer } from '../../FlowPage';
 import { BlockGridModel } from './GridModel';
+import { Icon } from '../../../icon';
 
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(
@@ -40,12 +41,21 @@ export class BasePageTabModel extends FlowModel<{
     return this.context.t(this.stepParams.pageTabSettings?.tab?.title || defaultTitle);
   }
 
+  getTabIcon() {
+    return this.stepParams.pageTabSettings?.tab?.icon;
+  }
+
   renderChildren() {
     return null;
   }
 
   render() {
-    return <div>{this.getTabTitle()}</div>;
+    return (
+      <>
+        <Icon style={{ marginRight: 8 }} type={this.getTabIcon()} />
+        {this.getTabTitle()}
+      </>
+    );
   }
 }
 
@@ -54,16 +64,24 @@ BasePageTabModel.registerFlow({
   title: escapeT('Tab settings'),
   steps: {
     tab: {
+      title: escapeT('Edit tab'),
       preset: true,
       uiSchema: {
         title: {
-          title: escapeT('Tab title'),
+          title: escapeT('Tab name'),
           'x-component': 'Input',
           'x-decorator': 'FormItem',
+          required: true,
+        },
+        icon: {
+          title: escapeT('Icon'),
+          'x-decorator': 'FormItem',
+          'x-component': 'IconPicker',
         },
       },
       async handler(ctx, params) {
         ctx.model.setProps('title', params.title);
+        ctx.model.setProps('icon', params.icon);
       },
     },
   },
@@ -99,6 +117,7 @@ export class RootPageTabModel extends BasePageTabModel {
       data: {
         ...this.props.route,
         title: this.getTabTitle(''),
+        icon: this.getTabIcon(),
       },
     });
   }

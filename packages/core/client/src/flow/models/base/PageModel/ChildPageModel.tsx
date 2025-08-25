@@ -9,6 +9,7 @@
 
 import { CreateModelOptions } from '@nocobase/flow-engine';
 import { PageModel } from './PageModel';
+import { DragEndEvent } from '@dnd-kit/core';
 
 export class ChildPageModel extends PageModel {
   createPageTabModelOptions = (): CreateModelOptions => {
@@ -16,4 +17,12 @@ export class ChildPageModel extends PageModel {
       use: 'ChildPageTabModel',
     };
   };
+
+  async handleDragEnd(event: DragEndEvent) {
+    if (!event.active?.id || !event.over?.id) {
+      throw new Error('Invalid drag event');
+    }
+
+    this.flowEngine.moveModel(event.active.id, event.over.id);
+  }
 }

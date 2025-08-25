@@ -70,6 +70,7 @@ export function useDialog() {
 
     // 构造 currentDialog 实例
     const currentDialog = {
+      inputArgs: config.inputArgs || {},
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {

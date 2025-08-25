@@ -61,3 +61,4 @@ export { default as fieldTypeMap } from './view/field-type-map';
 export * from './view/view-inference';
 export * from './update-guard';
 export { default as operators } from './operators';
+export { filterIncludes, mergeIncludes } from './utils/filter-include';
