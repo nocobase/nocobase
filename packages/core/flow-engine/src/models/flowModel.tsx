@@ -15,7 +15,7 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
-import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import type {
@@ -479,11 +479,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * - 包含全局（FlowEngine）注册的 Actions；
    * - 合并类级（FlowModel.registerAction(s)）注册的 Actions，并考虑继承（子类覆盖父类同名 Action）。
    */
-  public getActions<TModel extends FlowModel = this>(): Map<string, ActionDefinition<TModel>> {
+  public getActions<TModel extends FlowModel = this, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
     const ModelClass = this.constructor as typeof FlowModel;
-    const merged = ModelClass.actionRegistry.getActions();
-    const actions = new Map<string, ActionDefinition<TModel>>();
-    const globalActions = this.flowEngine?.getActions<TModel>();
+    const merged = ModelClass.actionRegistry.getActions<TModel, TCtx>();
+    const actions = new Map<string, ActionDefinition<TModel, TCtx>>();
+    const globalActions = this.flowEngine?.getActions<TModel, TCtx>();
     if (globalActions) for (const [k, v] of globalActions) actions.set(k, v);
     for (const [k, v] of merged) actions.set(k, v);
     return actions;
@@ -517,11 +520,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 获取指定名称的 Action（优先返回类级注册的，未找到则回退到全局）。
    */
-  public getAction<TModel extends FlowModel = this>(name: string): ActionDefinition<TModel> | undefined {
+  public getAction<TModel extends FlowModel = this, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
     const ModelClass = this.constructor as typeof FlowModel;
-    const own = ModelClass.actionRegistry.getAction(name) as ActionDefinition<TModel> | undefined;
+    const own = ModelClass.actionRegistry.getAction<TModel, TCtx>(name);
     if (own) return own;
-    return this.flowEngine?.getAction<TModel>(name);
+    return this.flowEngine?.getAction<TModel, TCtx>(name);
   }
 
   getFlows() {

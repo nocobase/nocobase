@@ -13,20 +13,21 @@
  */
 import type { ActionDefinition } from '../types';
 import type { FlowModel } from '../models';
+import type { FlowContext, FlowRuntimeContext } from '../flowContext';
 
-export abstract class BaseActionRegistry<TModel extends FlowModel = FlowModel> {
-  protected actions: Map<string, ActionDefinition<TModel>> = new Map();
+export abstract class BaseActionRegistry<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> {
+  protected actions: Map<string, ActionDefinition<TModel, TCtx>> = new Map();
 
   // 子类可覆盖：当动作被注册（含覆盖）时触发，可用于缓存失效等
   protected onActionRegistered(): void {}
 
-  registerActions(defs: Record<string, ActionDefinition<TModel>>): void {
+  registerActions(defs: Record<string, ActionDefinition<TModel, TCtx>>): void {
     for (const [, def] of Object.entries(defs || {})) {
       this.registerAction(def);
     }
   }
 
-  registerAction(def: ActionDefinition<TModel>): void {
+  registerAction(def: ActionDefinition<TModel, TCtx>): void {
     if (!def?.name) throw new Error('Action must have a name.');
     if (this.actions.has(def.name)) {
       console.warn(`Action '${def.name}' is already registered. It will be overwritten.`);
@@ -35,6 +36,11 @@ export abstract class BaseActionRegistry<TModel extends FlowModel = FlowModel> {
     this.onActionRegistered();
   }
 
-  abstract getAction<T extends FlowModel = FlowModel>(name: string): ActionDefinition<T>;
-  abstract getActions<T extends FlowModel = FlowModel>(): Map<string, ActionDefinition<T>>;
+  abstract getAction<T extends FlowModel = FlowModel, CTX extends FlowContext = FlowRuntimeContext<T>>(
+    name: string,
+  ): ActionDefinition<T, CTX> | undefined;
+  abstract getActions<T extends FlowModel = FlowModel, CTX extends FlowContext = FlowRuntimeContext<T>>(): Map<
+    string,
+    ActionDefinition<T, CTX>
+  >;
 }

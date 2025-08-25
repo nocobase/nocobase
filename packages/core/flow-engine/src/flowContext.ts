@@ -21,6 +21,7 @@ import type { Location } from 'react-router-dom';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
+import type { ActionDefinition } from './types';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
@@ -762,6 +763,14 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
+  declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
+    name: string,
+  ) => ActionDefinition<TModel, TCtx> | undefined;
+  declare getActions: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  >;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
@@ -778,6 +787,14 @@ class BaseFlowEngineContext extends FlowContext {
 class BaseFlowModelContext extends BaseFlowEngineContext {
   declare model: FlowModel;
   declare ref: React.RefObject<HTMLDivElement>;
+  declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
+    name: string,
+  ) => ActionDefinition<TModel, TCtx> | undefined;
+  declare getActions: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  >;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -880,6 +897,37 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
       return runner.run(code);
     });
+    this.defineMethod('getAction', function (this: BaseFlowEngineContext, name: string) {
+      return this.engine.getAction(name);
+    });
+    this.defineMethod('getActions', function (this: BaseFlowEngineContext) {
+      return this.engine.getActions();
+    });
+    this.defineMethod(
+      'runAction',
+      async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
+        const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
+        if (!def) {
+          throw new Error(`Action '${actionName}' not found.`);
+        }
+
+        const defaultParams = await resolveDefaultParams(def.defaultParams, this);
+        let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
+
+        let useRawParams = def.useRawParams;
+        if (typeof useRawParams === 'function') {
+          useRawParams = await useRawParams(this);
+        }
+        if (!useRawParams) {
+          combinedParams = await resolveExpressions(combinedParams, this);
+        }
+
+        if (!def.handler) {
+          throw new Error(`Action '${actionName}' has no handler.`);
+        }
+        return def.handler(this, combinedParams);
+      },
+    );
   }
 }
 
@@ -902,6 +950,37 @@ export class FlowModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('getAction', function (this: BaseFlowModelContext, name: string) {
+      return this.model.getAction(name);
+    });
+    this.defineMethod('getActions', function (this: BaseFlowModelContext) {
+      return this.model.getActions();
+    });
+    this.defineMethod(
+      'runAction',
+      async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
+        const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
+        if (!def) {
+          throw new Error(`Action '${actionName}' not found.`);
+        }
+
+        const defaultParams = await resolveDefaultParams(def.defaultParams, this);
+        let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
+
+        let useRawParams = def.useRawParams;
+        if (typeof useRawParams === 'function') {
+          useRawParams = await useRawParams(this);
+        }
+        if (!useRawParams) {
+          combinedParams = await resolveExpressions(combinedParams, this);
+        }
+
+        if (!def.handler) {
+          throw new Error(`Action '${actionName}' has no handler.`);
+        }
+        return def.handler(this, combinedParams);
+      },
+    );
   }
 }
 
@@ -1002,34 +1081,6 @@ export class FlowRuntimeContext<
         },
       });
       return runner.run(code);
-    });
-
-    // 动态执行已注册的 Action
-    this.defineMethod('runAction', async (actionName: string, params?: Record<string, any>) => {
-      const def = this.model.getAction(actionName);
-      if (!def) {
-        throw new Error(`Action '${actionName}' not found.`);
-      }
-
-      // 解析默认参数并与外部传入参数合并
-      const defaultParams = await resolveDefaultParams(def.defaultParams, this);
-      let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
-
-      // useRawParams 支持函数/布尔
-      let useRawParams = def.useRawParams;
-      if (typeof useRawParams === 'function') {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useRawParams = await useRawParams(this);
-      }
-      if (!useRawParams) {
-        combinedParams = await resolveExpressions(combinedParams, this);
-      }
-
-      if (!def.handler) {
-        throw new Error(`Action '${actionName}' has no handler.`);
-      }
-      // 直接调用并返回结果，让异常（含 FlowExit/FlowExitAll）向上传递
-      return def.handler(this, combinedParams);
     });
   }
 

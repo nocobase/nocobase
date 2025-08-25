@@ -9,7 +9,13 @@
 
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem, SubModelItemsType } from './components';
-import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
+import {
+  FlowContext,
+  FlowEngineContext,
+  FlowModelContext,
+  FlowRuntimeContext,
+  FlowSettingsContext,
+} from './flowContext';
 import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
@@ -125,19 +131,15 @@ export type ModelConstructor<T extends FlowModel = FlowModel> = (new (options: F
 /**
  * Defines a reusable action with generic model type support.
  */
-export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
+export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
-  uiSchema?:
-    | Record<string, ISchema>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+  handler: (ctx: TCtx, params: any) => Promise<any> | any;
+  uiSchema?: Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
+  defaultParams?: Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>);
   beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
-  useRawParams?: boolean | ((ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>);
+  useRawParams?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
 }
 
 /**
@@ -188,7 +190,7 @@ export type StepUIMode =
  * Extends ActionDefinition but makes some properties optional and adds step-specific properties
  */
 export interface StepDefinition<TModel extends FlowModel = FlowModel>
-  extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  extends Partial<Omit<ActionDefinition<TModel, FlowRuntimeContext<TModel>>, 'name'>> {
   key?: string; // Unique identifier for the step within the flow
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true

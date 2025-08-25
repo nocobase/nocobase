@@ -9,7 +9,7 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import pino from 'pino';
-import { FlowEngineContext } from './flowContext';
+import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
@@ -200,16 +200,21 @@ export class FlowEngine {
    * @param {string} name Action name
    * @returns {ActionDefinition<TModel> | undefined} Action definition, or undefined if not found
    */
-  public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
-    return this.#actionRegistry.getAction<TModel>(name);
+  public getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
+    return this.#actionRegistry.getAction<TModel, TCtx>(name);
   }
 
   /**
    * Get all registered global actions.
    * Returns a new Map to avoid external mutation of internal state.
    */
-  public getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
-    return this.#actionRegistry.getActions<TModel>();
+  public getActions<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
+    return this.#actionRegistry.getActions<TModel, TCtx>();
   }
 
   /**

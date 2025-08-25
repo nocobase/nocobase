@@ -15,9 +15,10 @@
  */
 import type { ActionDefinition } from '../types';
 import type { FlowModel } from '../models';
+import type { FlowContext } from '../flowContext';
 import { BaseActionRegistry } from './BaseActionRegistry';
 
-export class ModelActionRegistry extends BaseActionRegistry {
+export class ModelActionRegistry extends BaseActionRegistry<FlowModel, FlowContext> {
   private readonly modelClass: typeof FlowModel;
   private readonly parentRegistry: ModelActionRegistry | null;
   // 本类变更标记（变更即更新引用，用于缓存命中判断）
@@ -43,27 +44,32 @@ export class ModelActionRegistry extends BaseActionRegistry {
   /**
    * 获取“包含继承”的合并动作（父 → 子），内部带缓存。
    */
-  getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
+  getActions<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
     const parentMap = this.parentRegistry?.getActions<TModel>();
     if (
       this.mergedCache &&
       this.mergedCache.parentSnapshot === parentMap &&
       this.mergedCache.localMarker === this.changeMarker
     ) {
-      return this.mergedCache.mergedMap;
+      return this.mergedCache.mergedMap as Map<string, ActionDefinition<TModel, TCtx>>;
     }
     const mergedMap = new Map<string, ActionDefinition>(parentMap ?? []);
     for (const [k, v] of this.actions) mergedMap.set(k, v);
     this.mergedCache = { parentSnapshot: parentMap, localMarker: this.changeMarker, mergedMap };
-    return mergedMap;
+    return mergedMap as Map<string, ActionDefinition<TModel, TCtx>>;
   }
 
   /**
    * 解析指定名称的动作（优先本类，未命中递归父类）。
    */
-  getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> {
+  getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
     const own = this.actions.get(name);
-    if (own) return own;
-    return this.parentRegistry?.getAction(name);
+    if (own) return own as ActionDefinition<TModel, TCtx>;
+    return this.parentRegistry?.getAction(name) as ActionDefinition<TModel, TCtx> | undefined;
   }
 }

@@ -13,14 +13,20 @@
  */
 import type { FlowModel } from '../models';
 import type { ActionDefinition } from '../types';
+import type { FlowContext, FlowRuntimeContext } from '../flowContext';
 import { BaseActionRegistry } from './BaseActionRegistry';
 
 export class EngineActionRegistry extends BaseActionRegistry {
-  getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> {
-    return this.actions.get(name) as ActionDefinition<TModel>;
+  getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
+    return this.actions.get(name);
   }
 
-  getActions<TModel extends FlowModel = FlowModel>(): Map<string, ActionDefinition<TModel>> {
-    return new Map(this.actions);
+  getActions<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
+    return new Map(this.actions) as Map<string, ActionDefinition<TModel, TCtx>>;
   }
 }
