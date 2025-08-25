@@ -208,7 +208,7 @@ const hasActionContainerInParentChain = (schema) => {
   if (!schema) return null;
 
   if (schema['x-component'] === 'Action.Container') {
-    return schema?.parent['x-component-props']?.['openMode'] !== 'page';
+    return schema?.parent?.['x-component-props']?.['openMode'] !== 'page';
   }
   return hasActionContainerInParentChain(schema.parent);
 };
