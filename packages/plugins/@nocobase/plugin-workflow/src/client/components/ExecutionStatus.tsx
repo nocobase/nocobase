@@ -8,16 +8,16 @@
  */
 
 import React, { useCallback } from 'react';
-import { Button, Modal, Select, Tag, Tooltip, message } from 'antd';
+import { Button, Modal, Tag, Tooltip, message } from 'antd';
 import { ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-import { Action, css, useCompile, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { css, useCompile, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 
-import { EXECUTION_STATUS, ExecutionStatusOptions, ExecutionStatusOptionsMap } from '../constants';
+import { ExecutionStatusOptionsMap } from '../constants';
 import { lang } from '../locale';
 
-function LabelTag(props) {
+export function LabelTag(props) {
   const compile = useCompile();
   const label = compile(props.label);
   const { color } = ExecutionStatusOptionsMap[props.value] ?? {};
@@ -28,37 +28,13 @@ function LabelTag(props) {
   );
 }
 
-function ExecutionStatusOption(props) {
+export function ExecutionStatusOption(option) {
   const compile = useCompile();
   return (
     <>
-      <LabelTag {...props} />
-      {props.description ? <span>{compile(props.description)}</span> : null}
+      <LabelTag {...option.data} />
+      {option.data.description ? <span>{compile(option.data.description)}</span> : null}
     </>
-  );
-}
-
-export function ExecutionStatusSelect({ ...props }) {
-  const mode = props.multiple ? 'multiple' : null;
-
-  return (
-    <Select
-      // @ts-ignore
-      role="button"
-      data-testid={`select-${mode || 'single'}`}
-      {...props}
-      mode={mode}
-      optionLabelProp="label"
-      tagRender={LabelTag}
-    >
-      {ExecutionStatusOptions.filter((item) => Boolean(item.value) && item.value !== EXECUTION_STATUS.ABORTED).map(
-        (option) => (
-          <Select.Option key={option.value} {...option}>
-            <ExecutionStatusOption {...option} />
-          </Select.Option>
-        ),
-      )}
-    </Select>
   );
 }
 
