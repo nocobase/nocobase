@@ -26,7 +26,6 @@ import _ from 'lodash';
 import React from 'react';
 import { BasePageTabModel } from '../PageTabModel';
 import { DragEndEvent } from '@dnd-kit/core';
-import { setTabUidToPathname } from './setTabUidToPathname';
 
 type PageModelStructure = {
   subModels: {
@@ -95,8 +94,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
-            this.context.router.navigate(setTabUidToPathname(this.context.route.pathname, activeKey), {
-              replace: true,
+            this.context.view.navigation?.changeTo({
+              tabUid: activeKey,
             });
           }}
           // destroyInactiveTabPane

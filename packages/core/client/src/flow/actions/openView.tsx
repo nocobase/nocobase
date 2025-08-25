@@ -45,7 +45,7 @@ export const openView = defineAction({
   },
   async handler(ctx, params) {
     if (!ctx.inputArgs.closeRef) {
-      ctx.router.navigate(`${ctx.route.pathname}/view/${ctx.model.uid}`);
+      ctx.view.navigation?.navigateTo({ viewUid: ctx.model.uid });
       return;
     }
 
@@ -113,7 +113,7 @@ export const openView = defineAction({
           pageModel.invalidateAutoFlowCache(true);
         }
 
-        ctx.router.navigate(-1);
+        ctx.view.navigation?.back();
       },
     });
   },

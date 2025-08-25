@@ -9,6 +9,7 @@
 
 import { PopoverProps as AntdPopoverProps } from 'antd';
 import { FlowContext } from '../flowContext';
+import { ViewNavigation } from './ViewNavigation';
 
 export type FlowView = {
   inputArgs: any;
@@ -16,6 +17,7 @@ export type FlowView = {
   Footer: React.FC<{ children?: React.ReactNode }> | null;
   close: () => void;
   update: (newConfig: any) => void;
+  navigation?: ViewNavigation;
 };
 
 type TargetProps = {

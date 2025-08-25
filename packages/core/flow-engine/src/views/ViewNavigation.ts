@@ -11,7 +11,7 @@ import { FlowEngineContext } from '../flowContext';
 
 interface ViewParam {
   /** 视图唯一标识符，一般为某个 Model 实例的 uid */
-  viewUid: string;
+  viewUid?: string;
   /** 标签页唯一标识符 */
   tabUid?: string;
   /** 弹窗记录的 id */
