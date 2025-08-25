@@ -92,9 +92,6 @@ export class TableColumnModel extends FieldModel {
   }
   onInit(options: any): void {
     super.onInit(options);
-    this.context.defineMethod('aclCheck', async (params) => {
-      return await this.flowEngine.context.acl.aclCheck(params);
-    });
   }
 
   render() {

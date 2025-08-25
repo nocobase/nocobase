@@ -52,6 +52,22 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
+    aclCheck: {
+      async handler(ctx, params) {
+        {
+          const result = await ctx.model.context.aclCheck({
+            dataSourceKey: ctx.model.context.dataSource.key,
+            resourceName: ctx.blockModel.resource.getResourceName(),
+            actionName: ctx.model.context.actionName,
+            fields: [ctx.model.collectionField.name],
+          });
+          if (!result) {
+            ctx.model.hidden = true;
+            ctx.exitAll();
+          }
+        }
+      },
+    },
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');

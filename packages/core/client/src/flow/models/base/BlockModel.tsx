@@ -562,9 +562,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         return this.dataSource.getAssocation(params.associationName);
       },
     });
-    this.context.defineMethod('aclCheck', async (params) => {
-      return await this.flowEngine.context.acl.aclCheck(params);
-    });
   }
 
   createResource(ctx, params): SingleRecordResource | MultiRecordResource {

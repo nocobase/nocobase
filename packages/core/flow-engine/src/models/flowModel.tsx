@@ -185,6 +185,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       .catch((error) => {
         console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
       });
+    this.context.defineMethod('aclCheck', async (params) => {
+      return await this.flowEngine.context.acl.aclCheck(params);
+    });
   }
 
   get async() {
