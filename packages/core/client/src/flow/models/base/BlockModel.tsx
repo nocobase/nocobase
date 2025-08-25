@@ -621,19 +621,7 @@ CollectionBlockModel.registerFlow({
   sort: -999, //置顶，
   steps: {
     aclCheck: {
-      async handler(ctx, params) {
-        {
-          const result = await ctx.model.context.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.model.resource.getResourceName(),
-            actionName: ctx.model.context.actionName,
-          });
-          if (!result) {
-            ctx.model.hidden = true;
-            ctx.exitAll();
-          }
-        }
-      },
+      use: 'aclCheck',
     },
     init: {
       handler(ctx, params) {

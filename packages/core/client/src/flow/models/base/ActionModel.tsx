@@ -32,12 +32,8 @@ export class ActionModel extends FlowModel {
 
   onInit(options: any): void {
     super.onInit(options);
-    this.context.defineMethod('aclCheck', async (params) => {
-      return await this.flowEngine.context.acl.aclCheck(params);
-    });
     this.context.defineProperty('actionName', {
       get: () => {
-        console.log(this, this.getActionName());
         return this.getActionName();
       },
       cache: false,

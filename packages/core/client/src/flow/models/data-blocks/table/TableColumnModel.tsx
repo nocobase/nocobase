@@ -131,20 +131,7 @@ TableColumnModel.registerFlow({
   title: escapeT('Table column settings'),
   steps: {
     aclCheck: {
-      async handler(ctx, params) {
-        {
-          const result = await ctx.model.context.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.blockModel.resource.getResourceName(),
-            actionName: ctx.model.context.actionName,
-            fields: [ctx.model.collectionField.name],
-          });
-          if (!result) {
-            ctx.model.hidden = true;
-            ctx.exitAll();
-          }
-        }
-      },
+      use: 'aclCheck',
     },
     init: {
       async handler(ctx, params) {

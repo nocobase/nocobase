@@ -31,6 +31,9 @@ export class DetailItemModel extends FieldModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
+    if (this.hidden) {
+      return null;
+    }
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
@@ -53,20 +56,7 @@ DetailItemModel.registerFlow({
   title: escapeT('Detail item settings'),
   steps: {
     aclCheck: {
-      async handler(ctx, params) {
-        {
-          const result = await ctx.model.context.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.blockModel.resource.getResourceName(),
-            actionName: ctx.model.context.actionName,
-            fields: [ctx.model.collectionField.name],
-          });
-          if (!result) {
-            ctx.model.hidden = true;
-            ctx.exitAll();
-          }
-        }
-      },
+      use: 'aclCheck',
     },
     init: {
       async handler(ctx) {
