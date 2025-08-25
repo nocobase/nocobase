@@ -14,7 +14,9 @@ import { css, useCollectionRecordData } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
+import { ExecutionStatusOptions } from '../constants';
 import workflowCollection from '../../common/collections/workflows';
+import { ExecutionStatusOption, LabelTag } from '../components/ExecutionStatus';
 
 function ExecutedLink(props) {
   const record = useCollectionRecordData();
@@ -85,10 +87,13 @@ const workflowFieldset = {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
-        'x-component': 'ExecutionStatusSelect',
+        'x-component': 'Select',
         'x-component-props': {
           multiple: true,
+          optionRender: ExecutionStatusOption,
+          tagRender: LabelTag,
         },
+        enum: ExecutionStatusOptions.filter((item) => Boolean(item.value)),
       },
       stackLimit: {
         type: 'number',
