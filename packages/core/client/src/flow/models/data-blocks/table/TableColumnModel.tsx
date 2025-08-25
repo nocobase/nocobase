@@ -86,7 +86,7 @@ export class TableColumnModel extends FieldModel {
         model: this,
         // handleSave,
       }),
-      render: this.render(),
+      render: this.renderContent(),
       hidden: this.hidden,
     };
   }
@@ -94,7 +94,7 @@ export class TableColumnModel extends FieldModel {
     super.onInit(options);
   }
 
-  render() {
+  renderContent(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {

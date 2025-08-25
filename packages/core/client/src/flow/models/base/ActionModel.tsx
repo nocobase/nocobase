@@ -39,17 +39,12 @@ export class ActionModel extends FlowModel {
       cache: false,
     });
   }
-  render() {
+  renderContent() {
     const { flowSettings } = this.flowEngine || {};
     const enabled = flowSettings?.enabled;
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
-
-    // 隐藏逻辑：只有在 UI 配置未启用时才真的隐藏
-    if (this.hidden && !enabled) {
-      return null;
-    }
     const handleClick = (e) => {
       if (!this.hidden && props.onClick) {
         props.onClick(e);
@@ -70,6 +65,15 @@ export class ActionModel extends FlowModel {
         {props.children || props.title}
       </Button>
     );
+  }
+  renderNoPermission() {
+    const { flowSettings } = this.flowEngine || {};
+    const enabled = flowSettings?.enabled;
+    if (!enabled) {
+      return null;
+    } else {
+      return this.renderContent();
+    }
   }
 }
 
@@ -167,17 +171,12 @@ export class RecordActionModel extends ActionModel {
     children: escapeT('Action'),
   };
 
-  render() {
+  renderContent() {
     const props = { ...this.defaultProps, ...this.props };
     const { flowSettings } = this.flowEngine || {};
     const enabled = flowSettings?.enabled;
     const isLink = props.type === 'link';
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-
-    // 隐藏逻辑：只有在 UI 配置未启用时才真的隐藏
-    if (this.hidden && !enabled) {
-      return null;
-    }
 
     const handleClick = (e) => {
       if (!this.hidden) {

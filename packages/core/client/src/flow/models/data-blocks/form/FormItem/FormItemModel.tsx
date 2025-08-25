@@ -25,7 +25,7 @@ export class FormItemModel extends FieldModel<{
     super.onInit(options);
   }
 
-  render() {
+  renderContent() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props}>

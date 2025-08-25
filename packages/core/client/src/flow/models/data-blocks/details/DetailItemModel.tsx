@@ -28,12 +28,13 @@ export class DetailItemModel extends FieldModel<{
     super.onInit(options);
   }
 
-  render() {
+  renderNoPermission() {
+    return null;
+  }
+
+  renderContent() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
-    if (this.hidden) {
-      return null;
-    }
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />

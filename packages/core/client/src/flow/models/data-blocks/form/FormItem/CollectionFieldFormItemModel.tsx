@@ -27,16 +27,16 @@ export class CollectionFieldFormItemModel extends FormItemModel {
     super.onInit(options);
   }
 
-  render() {
+  renderContent() {
     const fieldModel = this.subModels.field as FieldModel;
-    if (this.hidden) {
-      return null;
-    }
     return (
       <FormItem {...this.props}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
+  }
+  renderNoPermission() {
+    return null;
   }
 }
 

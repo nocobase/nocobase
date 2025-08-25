@@ -1039,12 +1039,24 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * Renders the React representation of this flow model.
    * @returns {React.ReactNode} The React node to render.
    */
-  public render(): any {
-    // console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
-    // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
-    return <div {...this.props}></div>;
+  public render(): React.ReactNode {
+    if (this.hidden) {
+      return this.renderNoPermission();
+    }
+    return this.renderContent();
   }
 
+  // 无权限时渲染
+  public renderNoPermission(): React.ReactNode {
+    return null;
+  }
+
+  /**
+   * 有权限时渲染
+   */
+  public renderContent(): React.ReactNode {
+    return <div {...this.props}></div>;
+  }
   async rerender() {
     await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
   }

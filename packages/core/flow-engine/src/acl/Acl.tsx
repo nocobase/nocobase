@@ -87,6 +87,9 @@ export class ACL {
       .concat(params?.whitelist || [])
       .concat(params?.fields || [])
       .concat(params?.appends || []);
+    if (params && !Object.keys(params).length) {
+      return true;
+    }
     const allowed = whitelist.includes(fields[0]);
     return allowed;
   }
