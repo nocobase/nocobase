@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-api-doc",
-  "version": "1.8.19",
+  "version": "1.8.20",
   "displayName": "API documentation",
   "displayName.zh-CN": "API 文档",
   "description": "An OpenAPI documentation generator for NocoBase HTTP API.",
