@@ -361,7 +361,6 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   sortIndex?: number;
   /**
    * 是否启用“始终干净”的运行模式：
-   * - true：在 selfFork 上执行 flow，并且每次 autoFlows 前重建 selfFork（干净基线）。
    * - false：与传统模式一致（直接在 master 或当前 fork 上执行）。
    */
   cleanRun?: boolean;
