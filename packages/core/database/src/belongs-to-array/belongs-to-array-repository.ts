@@ -48,7 +48,7 @@ export class BelongsToArrayAssociation {
     this.foreignKey = foreignKey;
     this.targetName = target;
     this.targetKey = targetKey;
-    this.identifierField = 'undefined';
+    this.identifierField = targetKey;
     this.as = as;
   }
 
