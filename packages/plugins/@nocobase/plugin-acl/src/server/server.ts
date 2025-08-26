@@ -625,7 +625,7 @@ export class PluginACLServer extends Plugin {
       },
       { after: 'dataSource', group: 'with-acl-meta' },
     );
-    this.app.resourceManager.use(verifyAssociationsPermissionMiddleware(), { after: 'acl' });
+    this.app.dataSourceManager.use(verifyAssociationsPermissionMiddleware(), { after: 'acl' });
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {

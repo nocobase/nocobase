@@ -173,6 +173,97 @@ describe('association test', () => {
 
     expect(resp.statusCode).toEqual(403);
   });
+
+  it('should respect field visibility (whitelist) for a role', async () => {
+    // create target collection (profiles) and fields
+    await db.getRepository('collections').create({
+      values: {
+        name: 'userProfiles',
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'userProfiles').create({
+      values: { name: 'name', type: 'string' },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'userProfiles').create({
+      values: { name: 'email', type: 'string' },
+      context: {},
+    });
+
+    await db.getRepository('collections.fields', 'userProfiles').create({
+      values: { name: 'phone', type: 'string' },
+      context: {},
+    });
+
+    // create parent collection (posts) with association field to profiles
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          { name: 'title', type: 'string' },
+          { name: 'userProfiles', foreignKey: 'postId', type: 'hasMany', target: 'userProfiles', interface: 'linkTo' },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'new',
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles.resources', 'new').create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('roles.resources', 'new').create({
+      values: {
+        name: 'userProfiles',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'email'],
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.create({ values: { roles: ['new'] } });
+    const userAgent = await app.agent().login(user);
+
+    const resp = await userAgent.resource('posts').create({
+      values: {
+        title: 'Post with profiles',
+        userProfiles: [
+          {
+            name: 'Alice',
+            email: 'alice@example.com',
+            phone: '12345', // not allowed by whitelist
+          },
+        ],
+      },
+      updateAssociationValues: ['userProfiles'],
+    });
+
+    expect(resp.statusCode).toEqual(403);
+  });
 });
 
 describe.skip('association field acl', () => {
