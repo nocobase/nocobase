@@ -229,6 +229,10 @@ export default defineConfig({
               title: 'Action Registry',
               link: '/examples/flow-definition/action-registry',
             },
+            {
+              title: 'Event Registry',
+              link: '/examples/flow-definition/event-registry',
+            },
           ]
         },
         {
