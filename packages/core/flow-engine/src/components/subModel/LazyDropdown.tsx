@@ -262,14 +262,15 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
  */
 const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) => {
   const inputRef = useRef<any>(null);
+  const { visible, ...rest } = props;
 
   useEffect(() => {
-    if (inputRef.current && props.visible) {
-      inputRef.current.input.focus();
+    if (inputRef.current && visible) {
+      inputRef.current.input?.focus?.();
     }
-  }, [props.visible]);
+  }, [visible]);
 
-  return <Input ref={inputRef} {...props} />;
+  return <Input ref={inputRef} {...rest} />;
 };
 
 // ==================== Utility Functions ====================
@@ -545,7 +546,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         max-height: ${dropdownMaxHeight}px;
         overflow-y: auto;
       }
-      /* 子菜单直接可见，避免透明度切换导致的闪烁 */
       .ant-dropdown-menu-submenu-popup .ant-dropdown-menu,
       .ant-dropdown-menu-submenu-popup .ant-dropdown-menu-submenu-popup .ant-dropdown-menu {
         max-height: ${dropdownMaxHeight}px !important;
@@ -553,6 +553,9 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
     `;
   }, [dropdownMaxHeight]);
+
+  // 仅将 antd 支持的 Menu 配置传递给 Dropdown，过滤掉自定义字段
+  const { keepDropdownOpen, persistKey, stateVersion, ...dropdownMenuProps } = { ...menu };
 
   return (
     <Dropdown
@@ -562,7 +565,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       overlayClassName={overlayClassName}
       placement="bottomLeft"
       menu={{
-        ...menu,
+        ...dropdownMenuProps,
         items:
           rootLoading && rootItems.length === 0
             ? [
@@ -577,7 +580,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         style: {
           maxHeight: dropdownMaxHeight,
           overflowY: 'auto',
-          ...menu?.style,
+          ...dropdownMenuProps?.style,
         },
       }}
       onOpenChange={(visible) => {
