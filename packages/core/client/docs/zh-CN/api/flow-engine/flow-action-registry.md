@@ -4,6 +4,19 @@
 - 全局级：`EngineActionRegistry`（挂在 `FlowEngine` 上，所有模型共享）
 - 模型类级：`ModelActionRegistry`（挂在 `FlowModel` 类上，仅该类及其子类可见，支持继承与覆盖）
 
+两者共享抽象基类 `BaseActionRegistry` 的注册逻辑：统一的去重提示、批量注册与查询接口。
+
+---
+
+## BaseActionRegistry
+
+- 重复注册：相同 `name` 会 `console.warn` 并覆盖
+- 方法：
+  - `registerAction(def)`：注册单个 Action（必需 `def.name`）
+  - `registerActions(defs)`：批量注册
+  - `getAction(name)`：获取单个 Action
+  - `getActions()`：获取所有 Action
+
 ---
 
 ## EngineActionRegistry（全局）
@@ -33,7 +46,7 @@ await action?.handler(engine.context, { name: 'NocoBase' });
 
 ---
 
-## ModelActionRegistry（Model类级）
+## ModelActionRegistry（FlowModel类级）
 
 - 作用域：某个 `FlowModel` 子类的类级注册表，只对该类及其子类可用
 - 继承：子类可见父类动作；同名 `name` 子类覆盖父类
@@ -84,12 +97,12 @@ console.log(sub.getAction('dup')?.handler && (await sub.getAction('dup')!.handle
 
 - 重复注册：相同 `name` 会告警并覆盖（全局与类级相同）
 - 合并优先级：模型类级 > 全局；子类 > 父类
-- 类级变更向下可见：祖先类新增动作后，后续查询会包含该动作
+- 类级变更向下可见：祖先类新增动作后，后续查询会包含该动作（测试覆盖）
 - 子类变更不回流：子类注册的动作不会出现在父类查询结果中
 
 ---
 
 ## 与 FlowDefinition 的关系
 
-- Flow 步骤可通过 `use: 'actionName'` 引用动作；运行时解析顺序：
+- Flow 步骤可通过 `use: 'actionName'` 引用动作；运行时解析顺序与上文一致：
   - 先查模型类级动作；未命中再查全局动作
