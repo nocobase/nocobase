@@ -12,10 +12,11 @@ import React, { FC } from 'react';
 import * as hooks from './hooks';
 import { UploadActionInitializer } from './initializers';
 import attachmentsCollection from '../common/collections/attachments';
+import storagesCollection from '../common/collections/storages';
 
 export const FileManagerProvider: FC = (props) => {
   return (
-    <ExtendCollectionsProvider collections={[attachmentsCollection]}>
+    <ExtendCollectionsProvider collections={[attachmentsCollection, storagesCollection]}>
       <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
         {props.children}
       </SchemaComponentOptions>
