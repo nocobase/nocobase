@@ -26,7 +26,7 @@ export class FlowExecutor {
     const flow = model.getFlow(flowKey);
 
     if (!flow) {
-      console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
+      model.context.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
@@ -70,7 +70,7 @@ export class FlowExecutor {
         // Step references a registered action
         actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
-          console.error(
+          flowContext.logger.error(
             `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
           );
           continue;
@@ -85,7 +85,7 @@ export class FlowExecutor {
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
         combinedParams = { ...stepDefaultParams };
       } else {
-        console.error(
+        flowContext.logger.error(
           `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
         );
         continue;
@@ -105,7 +105,7 @@ export class FlowExecutor {
 
       try {
         if (!handler) {
-          console.error(
+          flowContext.logger.error(
             `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
           );
           continue;
@@ -120,15 +120,18 @@ export class FlowExecutor {
         stepsRuntime[stepKey].result = stepResults[stepKey];
       } catch (error) {
         if (error instanceof FlowExitException) {
-          console.log(`[FlowEngine] ${error.message}`);
+          flowContext.logger.info(`[FlowEngine] ${error.message}`);
           return Promise.resolve(stepResults);
         }
         if (error instanceof FlowExitAllException) {
-          console.log(`[FlowEngine] ${error.message}`);
+          flowContext.logger.info(`[FlowEngine] ${error.message}`);
           // 传递特殊控制信号，让上层可中止后续流程
           return Promise.resolve(error);
         }
-        console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
+        flowContext.logger.error(
+          { err: error },
+          `BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`,
+        );
         return Promise.reject(error);
       }
     }
@@ -142,7 +145,7 @@ export class FlowExecutor {
     const autoApplyFlows = model.getAutoFlows();
 
     if (autoApplyFlows.length === 0) {
-      console.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
+      model.context.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
       return [];
     }
 
@@ -154,7 +157,7 @@ export class FlowExecutor {
       const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
       if (cachedEntry) {
         if (cachedEntry.status === 'resolved') {
-          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
+          model.context.debug(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
           return cachedEntry.data;
         }
         if (cachedEntry.status === 'rejected') throw cachedEntry.error;
@@ -165,7 +168,8 @@ export class FlowExecutor {
     const executeAutoFlows = async (): Promise<any[]> => {
       const results: any[] = [];
       const runId = `${model.uid}-autoFlow-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      console.log(
+      const logger = model.context.logger.child({ module: 'flow-engine', component: 'FlowExecutor', runId });
+      logger.debug(
         `[FlowExecutor] runAutoFlows: uid=${model.uid}, isFork=${
           (model as any)?.isFork === true
         }, useCache=${useCache}, runId=${runId}, flows=${autoApplyFlows.map((f) => f.key).join(',')}`,
@@ -174,19 +178,19 @@ export class FlowExecutor {
         await model.beforeApplyAutoFlows(inputArgs);
 
         if (autoApplyFlows.length === 0) {
-          console.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
+          logger.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
         } else {
           for (const flow of autoApplyFlows) {
             try {
-              console.log(`[FlowExecutor] runFlow: uid=${model.uid}, flowKey=${flow.key}`);
+              logger.debug(`[FlowExecutor] runFlow: uid=${model.uid}, flowKey=${flow.key}`);
               const result = await this.runFlow(model, flow.key, inputArgs, runId);
               if (result instanceof FlowExitAllException) {
-                console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);
+                logger.debug(`[FlowEngine.applyAutoFlows] ${result.message}`);
                 break; // 终止后续流程执行
               }
               results.push(result);
             } catch (error) {
-              console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
+              logger.error({ err: error }, `FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`);
               throw error;
             }
           }
@@ -197,13 +201,13 @@ export class FlowExecutor {
         return results;
       } catch (error) {
         if (error instanceof FlowExitException) {
-          console.log(`[FlowEngine.applyAutoFlows] ${error.message}`);
+          logger.debug(`[FlowEngine.applyAutoFlows] ${error.message}`);
           return results;
         }
         try {
           await model.onApplyAutoFlowsError(error as Error, inputArgs);
         } catch (hookError) {
-          console.error('FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:', hookError);
+          logger.error({ err: hookError }, 'FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:');
         }
         throw error;
       }
@@ -247,12 +251,13 @@ export class FlowExecutor {
       return false;
     });
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
+    const logger = model.context.logger;
     const promises = flows.map((flow) => {
-      console.log(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+      logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
       return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {
-        console.error(
+        logger.error(
+          { err: error },
           `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-          error,
         );
       });
     });
