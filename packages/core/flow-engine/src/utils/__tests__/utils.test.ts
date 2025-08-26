@@ -10,7 +10,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import {
   getT,
-  mergeFlowDefinitions,
   isInheritedFrom,
   resolveDefaultParams,
   resolveStepUiSchema,
@@ -23,7 +22,7 @@ import {
 import { FlowModel } from '../../models/flowModel';
 import { FlowEngine } from '../../flowEngine';
 import type {
-  FlowDefinition,
+  FlowDefinitionOptions,
   ActionDefinition,
   DeepPartial,
   ModelConstructor,
@@ -69,31 +68,6 @@ const createMockFlowModel = (overrides: MockFlowModelOptions = {}): FlowModel =>
 
   return model;
 };
-
-const createBasicFlowDefinition = (overrides: Partial<FlowDefinition> = {}): FlowDefinition => ({
-  key: 'testFlow',
-  steps: {
-    step1: {
-      handler: vi.fn().mockResolvedValue('step1-result'),
-    },
-    step2: {
-      handler: vi.fn().mockResolvedValue('step2-result'),
-    },
-  },
-  ...overrides,
-});
-
-const createPatchFlowDefinition = (
-  overrides: Partial<DeepPartial<FlowDefinition>> = {},
-): DeepPartial<FlowDefinition> => ({
-  title: 'Patched Flow',
-  steps: {
-    step1: {
-      handler: vi.fn().mockResolvedValue('patched-step1-result'),
-    },
-  },
-  ...overrides,
-});
 
 // Test setup
 let mockModel: FlowModel;
@@ -227,124 +201,6 @@ describe('Utils', () => {
           ns: [FLOW_ENGINE_NAMESPACE, 'client'],
           nsMode: 'fallback',
         });
-      });
-    });
-  });
-
-  // ==================== mergeFlowDefinitions() FUNCTION ====================
-  describe('mergeFlowDefinitions()', () => {
-    let originalFlow: FlowDefinition;
-    let patchFlow: DeepPartial<FlowDefinition>;
-
-    beforeEach(() => {
-      originalFlow = createBasicFlowDefinition({
-        title: 'Original Flow',
-        on: { eventName: 'originalEvent' },
-      });
-      patchFlow = createPatchFlowDefinition();
-    });
-
-    describe('basic merging functionality', () => {
-      test('should merge flow definitions correctly', () => {
-        const merged = mergeFlowDefinitions(originalFlow, patchFlow);
-
-        expect(merged.title).toBe('Patched Flow');
-        expect(merged.key).toBe(originalFlow.key);
-        expect(merged.steps).toBeDefined();
-      });
-
-      test('should preserve original flow when patch is empty', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {});
-
-        expect(merged.title).toBe(originalFlow.title);
-        expect(merged.key).toBe(originalFlow.key);
-        expect(merged.steps).toEqual(originalFlow.steps);
-      });
-
-      test('should handle undefined patch properties', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {
-          title: undefined,
-          steps: undefined,
-        });
-
-        expect(merged.title).toBe(originalFlow.title);
-        expect(merged.steps).toEqual(originalFlow.steps);
-      });
-    });
-
-    describe('property override', () => {
-      test('should override title when provided in patch', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {
-          title: 'Overridden Title',
-        });
-
-        expect(merged.title).toBe('Overridden Title');
-      });
-
-      test('should override event configuration when provided', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {
-          on: { eventName: 'newEvent' },
-        });
-
-        expect(merged.on).toEqual({ eventName: 'newEvent' });
-      });
-
-      test('should preserve original properties when not in patch', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {
-          title: 'New Title',
-        });
-
-        expect(merged.key).toBe(originalFlow.key);
-        expect(merged.on).toEqual(originalFlow.on);
-      });
-
-      test('should handle null values in patch', () => {
-        const merged = mergeFlowDefinitions(originalFlow, {
-          title: null,
-        });
-
-        expect(merged.title).toBe(originalFlow.title);
-      });
-    });
-
-    describe('steps merging', () => {
-      test('should merge step definitions correctly', () => {
-        const patchWithSteps = {
-          steps: {
-            step1: { newProperty: 'value', use: 'confirm' },
-            step3: { handler: vi.fn() },
-          },
-        };
-
-        const merged = mergeFlowDefinitions(originalFlow, patchWithSteps);
-
-        expect(merged.steps.step1).toEqual(
-          expect.objectContaining({
-            handler: originalFlow.steps.step1.handler,
-            newProperty: 'value',
-          }),
-        );
-        expect(merged.steps.step2).toEqual(originalFlow.steps.step2);
-        expect(merged.steps.step3).toEqual(patchWithSteps.steps.step3);
-      });
-
-      test('should create new steps when they do not exist in original', () => {
-        const patchWithNewStep = {
-          steps: {
-            newStep: { handler: vi.fn().mockReturnValue('new-result') },
-          },
-        };
-
-        const merged = mergeFlowDefinitions(originalFlow, patchWithNewStep);
-
-        expect(merged.steps.newStep).toEqual(patchWithNewStep.steps.newStep);
-        expect(merged.steps.step1).toEqual(originalFlow.steps.step1);
-      });
-
-      test('should handle empty steps in patch', () => {
-        const merged = mergeFlowDefinitions(originalFlow, { steps: {} });
-
-        expect(merged.steps).toEqual(originalFlow.steps);
       });
     });
   });

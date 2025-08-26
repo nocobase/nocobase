@@ -9,7 +9,7 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import pino from 'pino';
-import { FlowEngineContext } from './flowContext';
+import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
@@ -23,6 +23,10 @@ import type {
   PersistOptions,
 } from './types';
 import { isInheritedFrom } from './utils';
+import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
+import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
+import type { EventDefinition } from './types';
+import { FlowExecutor } from './executor/FlowExecutor';
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -48,11 +52,14 @@ import { isInheritedFrom } from './utils';
  */
 export class FlowEngine {
   /**
-   * Registered action definitions.
-   * Key is the action name, value is ActionDefinition.
-   * @private
+   * Global action registry
    */
-  #actions: Map<string, ActionDefinition> = new Map();
+  #actionRegistry = new EngineActionRegistry();
+
+  /**
+   * Global event registry
+   */
+  #eventRegistry = new EngineEventRegistry();
 
   /**
    * Registered model classes.
@@ -103,6 +110,10 @@ export class FlowEngine {
    * @public
    */
   public reactView: ReactView;
+  /**
+   * Flow executor that runs flows and auto-flows.
+   */
+  public executor: FlowExecutor;
 
   /**
    * Constructor. Initializes React view, registers default model and form scopes.
@@ -110,7 +121,7 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
-    this.registerModels({ FlowModel });
+    this.registerModels({ FlowModel }); // 会造成循环依赖问题，移除掉
     this.logger = pino({
       level: 'trace',
       browser: {
@@ -124,6 +135,7 @@ export class FlowEngine {
         },
       },
     });
+    this.executor = new FlowExecutor(this);
   }
 
   /**
@@ -179,25 +191,7 @@ export class FlowEngine {
    * @param {Record<string, ActionDefinition>} actions Action definition object collection
    */
   registerActions(actions: Record<string, ActionDefinition>): void {
-    for (const [, definition] of Object.entries(actions)) {
-      this.#registerAction(definition);
-    }
-  }
-
-  /**
-   * Register a single action.
-   * @template TModel Specific FlowModel subclass type, defaults to FlowModel.
-   * @param {ActionDefinition<TModel>} definition Action definition object, including name and handler.
-   * @private
-   */
-  #registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
-    if (!definition.name) {
-      throw new Error('FlowEngine: Action must have a name.');
-    }
-    if (this.#actions.has(definition.name)) {
-      throw new Error(`FlowEngine: Action with name '${definition.name}' is already registered.`);
-    }
-    this.#actions.set(definition.name, definition as ActionDefinition);
+    this.#actionRegistry.registerActions(actions);
   }
 
   /**
@@ -206,8 +200,42 @@ export class FlowEngine {
    * @param {string} name Action name
    * @returns {ActionDefinition<TModel> | undefined} Action definition, or undefined if not found
    */
-  public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
-    return this.#actions.get(name) as ActionDefinition<TModel> | undefined;
+  public getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
+    return this.#actionRegistry.getAction<TModel, TCtx>(name);
+  }
+
+  /**
+   * Get all registered global actions.
+   * Returns a new Map to avoid external mutation of internal state.
+   */
+  public getActions<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
+    return this.#actionRegistry.getActions<TModel, TCtx>();
+  }
+
+  /**
+   * Register multiple events.
+   */
+  registerEvents(events: Record<string, EventDefinition>): void {
+    this.#eventRegistry.registerEvents(events);
+  }
+
+  /**
+   * Get a registered event definition.
+   */
+  public getEvent<TModel extends FlowModel = FlowModel>(name: string): EventDefinition<TModel> | undefined {
+    return this.#eventRegistry.getEvent<TModel>(name);
+  }
+
+  /**
+   * Get all registered global events.
+   */
+  public getEvents<TModel extends FlowModel = FlowModel>(): Map<string, EventDefinition<TModel>> {
+    return this.#eventRegistry.getEvents<TModel>();
   }
 
   /**

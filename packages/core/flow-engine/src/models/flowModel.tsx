@@ -15,42 +15,53 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
-import { FlowModelContext, FlowRuntimeContext } from '../flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
-import { FlowSettingsOpenOptions } from '../flowSettings';
-import { InstanceFlowRegistry } from '../InstanceFlowRegistry';
+import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import type {
   ActionDefinition,
   ArrayElementType,
   CreateModelOptions,
   CreateSubModelOptions,
   DefaultStructure,
-  FlowDefinition,
+  FlowDefinitionOptions,
   FlowModelMeta,
   FlowModelOptions,
+  ModelConstructor,
   ParamObject,
   ParentFlowModel,
   PersistOptions,
   StepDefinition,
   StepParams,
 } from '../types';
-import { ExtendedFlowDefinition, IModelComponentProps, ReadonlyModelProps } from '../types';
+import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import {
   FlowExitException,
   isInheritedFrom,
-  mergeFlowDefinitions,
   resolveDefaultParams,
   resolveExpressions,
   setupRuntimeContextSteps,
 } from '../utils';
-import { FlowExitAllException } from '../utils/exceptions';
+// import { FlowExitAllException } from '../utils/exceptions';
 import { ForkFlowModel } from './forkFlowModel';
+import { FlowSettingsOpenOptions } from '../flowSettings';
+import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
+import { FlowDefinition } from '../FlowDefinition';
+import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
+import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
+import type { EventDefinition } from '../types';
+
+// 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
+const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
+
+// 使用 WeakMap 为每个类缓存一个 ModelEventRegistry 实例
+const classEventRegistries = new WeakMap<typeof FlowModel, ModelEventRegistry>();
 
 // 使用WeakMap存储每个类的meta
 const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
-// 使用WeakMap存储每个类的flows
-let modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+// 使用WeakMap存储每个类的 GlobalFlowRegistry
+const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
@@ -94,6 +105,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private _reactiveWrapperCache?: React.ComponentType;
 
   flowRegistry: InstanceFlowRegistry;
+  private _cleanRun?: boolean;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -161,8 +173,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.render = () => React.createElement('div', null, 'Render method not available');
       }
     }
+
+    this._cleanRun = !!options['cleanRun'];
   }
 
+  /**
+   * 对外暴露的上下文：
+   */
   get context() {
     if (!this.#flowContext) {
       this.#flowContext = new FlowModelContext(this);
@@ -175,6 +192,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   onInit(options) {
+    // Dynamic flows loading is disabled. Previous logic preserved for reference:
+    /*
     this.loadDynamicFlows()
       .then((flows) => {
         if (!_.isEmpty(flows)) {
@@ -184,6 +203,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       .catch((error) => {
         console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
       });
+    */
     this.context.defineMethod('aclCheck', async (params) => {
       return await this.flowEngine.context.acl.aclCheck(params);
     });
@@ -215,6 +235,88 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   static get meta() {
     return modelMetas.get(this);
+  }
+
+  static get globalFlowRegistry(): GlobalFlowRegistry {
+    const Cls = this as unknown as typeof FlowModel;
+    let reg = modelGlobalRegistries.get(Cls);
+    if (!reg) {
+      reg = new GlobalFlowRegistry(Cls);
+      modelGlobalRegistries.set(Cls, reg);
+    }
+    return reg;
+  }
+
+  // 获取当前类的动作注册表（含父子链注入），按类缓存
+  protected static get actionRegistry(): ModelActionRegistry {
+    const ModelClass = this;
+    let registry = classActionRegistries.get(ModelClass);
+    if (!registry) {
+      let parentRegistry: ModelActionRegistry | null = null;
+      const ParentClass = Object.getPrototypeOf(ModelClass);
+      if (ParentClass && ParentClass !== Function.prototype && ParentClass !== Object.prototype) {
+        const isSubclassOfFlowModel = ParentClass === FlowModel || isInheritedFrom(ParentClass, FlowModel);
+        if (isSubclassOfFlowModel) {
+          parentRegistry = (ParentClass as typeof FlowModel).actionRegistry as ModelActionRegistry;
+        }
+      }
+      registry = new ModelActionRegistry(ModelClass, parentRegistry);
+      classActionRegistries.set(ModelClass, registry);
+    }
+    return registry;
+  }
+
+  // 获取当前类的事件注册表（含父子链注入），按类缓存
+  protected static get eventRegistry(): ModelEventRegistry {
+    const ModelClass = this;
+    let registry = classEventRegistries.get(ModelClass);
+    if (!registry) {
+      let parentRegistry: ModelEventRegistry | null = null;
+      const ParentClass = Object.getPrototypeOf(ModelClass);
+      if (ParentClass && ParentClass !== Function.prototype && ParentClass !== Object.prototype) {
+        const isSubclassOfFlowModel = ParentClass === FlowModel || isInheritedFrom(ParentClass, FlowModel);
+        if (isSubclassOfFlowModel) {
+          parentRegistry = (ParentClass as typeof FlowModel).eventRegistry as ModelEventRegistry;
+        }
+      }
+      registry = new ModelEventRegistry(ModelClass, parentRegistry);
+      classEventRegistries.set(ModelClass, registry);
+    }
+    return registry;
+  }
+
+  /**
+   * 注册仅当前 FlowModel 类及其子类可用的 Action。
+   * 该注册是类级别的，不会影响全局（FlowEngine）的 Action 注册。
+   */
+  public static registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
+    this.actionRegistry.registerAction(definition);
+  }
+
+  /**
+   * 批量注册仅当前 FlowModel 类及其子类可用的 Actions。
+   */
+  public static registerActions<TModel extends FlowModel = FlowModel>(
+    actions: Record<string, ActionDefinition<TModel>>,
+  ): void {
+    this.actionRegistry.registerActions(actions);
+  }
+
+  /**
+   * 注册仅当前 FlowModel 类及其子类可用的 Event。
+   * 该注册是类级别的，不会影响全局（FlowEngine）的 Event 注册。
+   */
+  public static registerEvent<TModel extends FlowModel = FlowModel>(definition: EventDefinition<TModel>): void {
+    this.eventRegistry.registerEvent(definition);
+  }
+
+  /**
+   * 批量注册仅当前 FlowModel 类及其子类可用的 Events。
+   */
+  public static registerEvents<TModel extends FlowModel = FlowModel>(
+    events: Record<string, EventDefinition<TModel>>,
+  ): void {
+    this.eventRegistry.registerEvents(events);
   }
 
   get title() {
@@ -277,107 +379,33 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * 注册一个流程 (Flow)。支持泛型，能够正确推导出模型类型。
+   * 注册一个 Flow。
    * @template TModel 具体的FlowModel子类类型
-   * @param {string | FlowDefinition<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinition 对象。
+   * @param {string | FlowDefinitionOptions<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinitionOptions 对象。
    *        如果为字符串，则为流程 Key，需要配合 flowDefinition 参数。
-   *        如果为对象，则为包含 key 属性的完整 FlowDefinition。
-   * @param {FlowDefinition<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   *        如果为对象，则为包含 key 属性的完整 FlowDefinitionOptions。
+   * @param {FlowDefinitionOptions<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
-  public static registerFlow<TModel extends new (...args: any[]) => FlowModel<any>>(
-    this: TModel,
-    keyOrDefinition: string | FlowDefinition<InstanceType<TModel>>,
-    flowDefinition?: Omit<FlowDefinition<InstanceType<TModel>>, 'key'> & { key?: string },
+  public static registerFlow<TClass extends ModelConstructor, TModel extends InstanceType<TClass>>(
+    this: TClass,
+    keyOrDefinition: string | FlowDefinitionOptions<TModel>,
+    flowDefinition?: Omit<FlowDefinitionOptions<TModel>, 'key'> & { key?: string },
   ): void {
-    let definition: FlowDefinition<InstanceType<TModel>>;
-    let key: string;
-
-    if (typeof keyOrDefinition === 'string' && flowDefinition) {
-      key = keyOrDefinition;
-      definition = {
-        ...flowDefinition,
-        key,
-      };
-    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
-      key = keyOrDefinition.key;
-      definition = keyOrDefinition;
+    const Cls = this as unknown as typeof FlowModel;
+    if (typeof keyOrDefinition === 'string') {
+      Cls.globalFlowRegistry.addFlow(keyOrDefinition, flowDefinition);
     } else {
-      throw new Error('Invalid arguments for registerFlow');
+      Cls.globalFlowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
     }
-
-    // 确保当前类有自己的flows Map
-    const ModelClass = this;
-    if (!modelFlows.has(ModelClass as any)) {
-      modelFlows.set(ModelClass as any, new Map<string, FlowDefinition>());
-    }
-    const flows = modelFlows.get(ModelClass as any);
-    if (!flows) {
-      throw new Error('Failed to get flows Map for model class');
-    }
-
-    if (flows.has(key)) {
-      console.warn(`FlowModel: Flow with key '${key}' is already registered and will be overwritten.`);
-    }
-    flows.set(key, definition as FlowDefinition);
   }
 
-  /**
-   * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
-   */
-  public static clearFlows(): void {
-    modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
-  }
-
-  /**
-   * 扩展已存在的流程定义。通过合并现有流程和扩展定义来创建新的流程。
-   * @template TModel 具体的FlowModel子类类型
-   * @param {string | ExtendedFlowDefinition} keyOrDefinition 流程的 Key 或 ExtendedFlowDefinition 对象。
-   *        如果为字符串，则为流程 Key，需要配合 extendDefinition 参数。
-   *        如果为对象，则为包含 key 属性的完整 ExtendedFlowDefinition。
-   * @param {Omit<ExtendedFlowDefinition, 'key'>} [extendDefinition] 当第一个参数为流程 Key 时，此参数为流程的扩展定义。
-   * @returns {void}
-   */
-  public static extendFlow<TModel extends FlowModel = FlowModel>(
-    keyOrDefinition: string | ExtendedFlowDefinition,
-    extendDefinition?: Omit<ExtendedFlowDefinition, 'key'>,
-  ): void {
-    let definition: ExtendedFlowDefinition;
-    let key: string;
-
-    if (typeof keyOrDefinition === 'string' && extendDefinition) {
-      key = keyOrDefinition;
-      definition = {
-        ...extendDefinition,
-        key,
-      };
-    } else if (typeof keyOrDefinition === 'object' && 'key' in keyOrDefinition) {
-      key = keyOrDefinition.key;
-      definition = keyOrDefinition;
-    } else {
-      throw new Error('Invalid arguments for extendFlow');
-    }
-
-    // 获取所有流程（包括从父类继承的）
-    const allFlows = this.getFlows();
-    const originalFlow = allFlows.get(key);
-
-    if (!originalFlow) {
-      console.warn(
-        `FlowModel.extendFlow: Cannot extend flow '${key}' as it does not exist in parent class. Registering as new flow.`,
-      );
-      // 移除patch标记，作为新流程注册
-      const { patch, ...newFlowDef } = definition;
-      this.registerFlow(newFlowDef as FlowDefinition<TModel>);
-      return;
-    }
-
-    // 合并流程定义
-    const mergedFlow = mergeFlowDefinitions(originalFlow, definition);
-
-    // 注册合并后的流程
-    this.registerFlow(mergedFlow as FlowDefinition<TModel>);
-  }
+  // /**
+  //  * 清空所有注册的流程定义。在测试中用来清理已注册的流，防止对其它测试产生影响。
+  //  */
+  // public static clearFlows(): void {
+  //   modelFlows = new WeakMap<typeof FlowModel, Map<string, FlowDefinition>>();
+  // }
 
   /**
    * 获取已注册的流程定义。
@@ -389,82 +417,93 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this.flowRegistry.hasFlow(key)) {
       return this.flowRegistry.getFlow(key);
     }
-    // 获取当前类的构造函数
-    const currentClass = this.constructor as typeof FlowModel;
-
-    // 遍历类继承链，查找流程
-    let cls: typeof FlowModel | null = currentClass;
-    while (cls) {
-      const flows = modelFlows.get(cls);
-      if (flows && flows.has(key)) {
-        return flows.get(key);
-      }
-
-      // 获取父类
-      const proto = Object.getPrototypeOf(cls);
-      if (proto === Function.prototype || proto === Object.prototype) {
-        break;
-      }
-      cls = proto as typeof FlowModel;
-    }
-
-    return undefined;
-  }
-
-  getFlows() {
-    // 获取当前类的构造函数
-    const currentClass = this.constructor as typeof FlowModel;
-    // 返回当前类及其父类的所有流程定义
-    const globalFlows = currentClass.getFlows();
-    const instanceFlows = this.flowRegistry.getFlows();
-    const allFlows = new Map<string, FlowDefinition>();
-
-    for (const [key, flow] of globalFlows.entries()) {
-      allFlows.set(key, flow);
-    }
-
-    for (const [key, flow] of instanceFlows.entries()) {
-      allFlows.set(key, flow as any);
-    }
-
-    return allFlows;
+    const Cls = this.constructor as typeof FlowModel;
+    return Cls.globalFlowRegistry.getFlow(key);
   }
 
   /**
-   * 获取所有已注册的流程定义，包括从父类继承的流程。
-   * @returns {Map<string, FlowDefinition>} 一个包含所有流程定义的 Map 对象，Key 为流程 Key，Value 为流程定义。
+   * 注册一个实例级别的流程定义。
+   * @template TModel 具体的FlowModel子类类型
+   * @param {string | FlowDefinitionOptions<TModel>} keyOrDefinition 流程的 Key 或 FlowDefinitionOptions 对象。
+   * @param {FlowDefinitionOptions<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
+   * @returns {FlowDefinition} 注册的流程定义实例
    */
-  public static getFlows(): Map<string, FlowDefinition> {
-    // 创建一个新的Map来存储所有流程
-    const allFlows = new Map<string, FlowDefinition>();
-
-    // 收集所有类的flows
-    const classFlows: Map<string, FlowDefinition>[] = [];
-    let cls: typeof FlowModel | null = this;
-    while (cls) {
-      const flows = modelFlows.get(cls);
-      if (flows) {
-        classFlows.push(flows);
-      }
-
-      // 获取父类
-      const proto = Object.getPrototypeOf(cls);
-      if (proto === Function.prototype || proto === Object.prototype) {
-        break;
-      }
-      cls = proto as typeof FlowModel;
+  public registerFlow<TModel extends FlowModel = this>(
+    keyOrDefinition: string | FlowDefinitionOptions<TModel>,
+    flowDefinition?: Omit<FlowDefinitionOptions<TModel>, 'key'> & { key?: string },
+  ): FlowDefinition {
+    if (typeof keyOrDefinition === 'string') {
+      return this.flowRegistry.addFlow(keyOrDefinition, flowDefinition);
+    } else {
+      return this.flowRegistry.addFlow(keyOrDefinition.key, keyOrDefinition);
     }
+  }
 
-    // 按照父类优先的顺序合并flows，但每个类内部维持原来的顺序
-    // 从最后一个（最顶层父类）开始合并到第一个（当前类）
-    // 子类的同名flow会覆盖父类的
-    for (let i = classFlows.length - 1; i >= 0; i--) {
-      const flows = classFlows[i];
-      for (const [key, flow] of flows.entries()) {
-        allFlows.set(key, flow);
+  /**
+   * 获取当前模型可用的所有 Actions：
+   * - 包含全局（FlowEngine）注册的 Actions；
+   * - 合并类级（FlowModel.registerAction(s)）注册的 Actions，并考虑继承（子类覆盖父类同名 Action）。
+   */
+  public getActions<TModel extends FlowModel = this, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const merged = ModelClass.actionRegistry.getActions<TModel, TCtx>();
+    const actions = new Map<string, ActionDefinition<TModel, TCtx>>();
+    const globalActions = this.flowEngine?.getActions<TModel, TCtx>();
+    if (globalActions) for (const [k, v] of globalActions) actions.set(k, v);
+    for (const [k, v] of merged) actions.set(k, v);
+    return actions;
+  }
+
+  /**
+   * 获取当前模型可用的所有 Events：
+   * - 包含全局（FlowEngine）注册的 Events；
+   * - 合并类级（FlowModel.registerEvent(s)）注册的 Events，并考虑继承（子类覆盖父类同名 Event）。
+   */
+  public getEvents<TModel extends FlowModel = this>(): Map<string, EventDefinition<TModel>> {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const merged = ModelClass.eventRegistry.getEvents();
+    const events = new Map<string, EventDefinition<TModel>>();
+    const globalEvents = this.flowEngine?.getEvents<TModel>();
+    if (globalEvents) for (const [k, v] of globalEvents) events.set(k, v);
+    for (const [k, v] of merged) events.set(k, v);
+    return events;
+  }
+
+  /**
+   * 获取指定名称的 Event（优先返回类级注册的，未找到则回退到全局）。
+   */
+  public getEvent<TModel extends FlowModel = this>(name: string): EventDefinition<TModel> | undefined {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const own = ModelClass.eventRegistry.getEvent(name) as EventDefinition<TModel> | undefined;
+    if (own) return own;
+    return this.flowEngine?.getEvent<TModel>(name);
+  }
+
+  /**
+   * 获取指定名称的 Action（优先返回类级注册的，未找到则回退到全局）。
+   */
+  public getAction<TModel extends FlowModel = this, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
+    const ModelClass = this.constructor as typeof FlowModel;
+    const own = ModelClass.actionRegistry.getAction<TModel, TCtx>(name);
+    if (own) return own;
+    return this.flowEngine?.getAction<TModel, TCtx>(name);
+  }
+
+  getFlows() {
+    const instanceFlows = this.flowRegistry.getFlows();
+    const allFlows = new Map<string, FlowDefinition>(instanceFlows);
+    const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
+    for (const [key, def] of staticFlows) {
+      if (!allFlows.has(key)) {
+        // 实例级流程优先于静态流程
+        allFlows.set(key, def);
       }
     }
-
     return allFlows;
   }
 
@@ -531,185 +570,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
       return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
-
-    const flow = this.getFlow(flowKey);
-
-    if (!flow) {
-      console.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
-      return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
-    }
-
-    const flowContext = new FlowRuntimeContext(this, flowKey);
-
-    flowContext.defineProperty('reactView', {
-      value: this.reactView,
-    });
-    flowContext.defineProperty('inputArgs', {
-      value: {
-        // currentFlow 里面包含的数据相关参数要透传给下一个model上下文， 之前是解析参数时来兼容的
-        // TODO: 这里是不是应该将currentFlow的所有inputArgs透传给下一个model上下文?
-        // 1. 直接委托？ ---> 可能存在污染
-        // 2. 全部inputArgs 参数？ ---> 部分参数会不符合预期，弹窗会直接变成字页面
-        ..._.pick(this.context.currentFlow?.inputArgs, ['filterByTk', 'sourceId', 'collectionName', 'associationName']),
-        ...inputArgs,
-      },
-    });
-    flowContext.defineProperty('runId', {
-      value: runId || `run-${Date.now()}`,
-    });
-
-    let lastResult: any;
-    const stepResults: Record<string, any> = flowContext.stepResults;
-
-    // 使用 setupRuntimeContextSteps 来设置 steps 属性
-    setupRuntimeContextSteps(flowContext, flow, this, flowKey);
-    const steps = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
-
-    for (const stepKey in flow.steps) {
-      if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
-        const step: StepDefinition = flow.steps[stepKey];
-        let handler: ((ctx: FlowRuntimeContext<this>, params: any) => Promise<any> | any) | undefined;
-        let combinedParams: Record<string, any> = {};
-        let actionDefinition;
-        let useRawParams: ActionDefinition['useRawParams'] = step.useRawParams;
-
-        if (step.use) {
-          // Step references a registered action
-          actionDefinition = currentFlowEngine.getAction(step.use);
-          if (!actionDefinition) {
-            console.error(
-              `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
-            );
-            continue;
-          }
-          // Use step's handler if provided, otherwise use action's handler
-          handler = step.handler || actionDefinition.handler;
-          useRawParams = useRawParams ?? actionDefinition.useRawParams;
-          // Merge default params: action defaults first, then step defaults
-          const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
-          combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
-        } else if (step.handler) {
-          // Step defines its own inline handler
-          handler = step.handler;
-          const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
-          combinedParams = { ...stepDefaultParams };
-        } else {
-          console.error(
-            `BaseModel.applyFlow: Step '${stepKey}' in flow '${flowKey}' has neither 'use' nor 'handler'. Skipping.`,
-          );
-          continue;
-        }
-
-        const modelStepParams = this.getStepParams(flowKey, stepKey);
-        if (modelStepParams !== undefined) {
-          combinedParams = { ...combinedParams, ...modelStepParams };
-        }
-        if (typeof useRawParams === 'function') {
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          useRawParams = await useRawParams(flowContext);
-        }
-        if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, flowContext);
-        }
-
-        try {
-          if (!handler) {
-            console.error(
-              `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
-            );
-            continue;
-          }
-          const currentStepResult = handler(flowContext, combinedParams);
-          if (step.isAwait !== false) {
-            lastResult = await currentStepResult;
-          } else {
-            lastResult = currentStepResult;
-          }
-
-          // Store step result
-          stepResults[stepKey] = lastResult;
-          // update the context
-          steps[stepKey].result = stepResults[stepKey];
-        } catch (error) {
-          // 检查是否是通过 ctx.exit() 正常退出
-          if (error instanceof FlowExitException) {
-            console.log(`[FlowEngine] ${error.message}`);
-            return Promise.resolve(stepResults);
-          }
-
-          if (error instanceof FlowExitAllException) {
-            console.log(`[FlowEngine] ${error.message}`);
-            return Promise.resolve(error);
-          }
-
-          console.error(`BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`, error);
-          return Promise.reject(error);
-        }
-      }
-    }
-    return Promise.resolve(stepResults);
+    const isFork = (this as any).isFork === true;
+    const target = this;
+    console.log(
+      `[FlowModel] applyFlow: uid=${this.uid}, flowKey=${flowKey}, isFork=${isFork}, cleanRun=${
+        this.cleanRun
+      }, targetIsFork=${(target as any)?.isFork === true}`,
+    );
+    return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
-  dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void {
+  async dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
       return;
     }
-
-    // 获取所有流程
-    const allFlows = this.getFlows();
-    const runId = `${this.uid}-${eventName}-${Date.now()}`;
-
-    allFlows.forEach((flow) => {
-      if (flow.on) {
-        let flowEvent = '';
-        if (typeof flow.on === 'string') {
-          flowEvent = flow.on;
-        } else if (flow.on?.eventName) {
-          flowEvent = flow.on.eventName;
-        }
-        if (flowEvent !== eventName) {
-          return; // 只处理匹配的事件
-        }
-        console.log(`BaseModel '${this.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        this.applyFlow(flow.key, inputArgs, runId).catch((error) => {
-          console.error(
-            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-            error,
-          );
-        });
-      }
-    });
-  }
-
-  /**
-   * 创建一个新的 FlowModel 子类，并预注册指定的流程。
-   * @param {ExtendedFlowDefinition[]} flows 要预注册的流程定义数组
-   *        如果flow.patch为true，则表示这是对父类同名流程的部分覆盖
-   * @returns 新创建的 FlowModel 子类
-   */
-  public static extends<T extends typeof FlowModel>(this: T, flows: ExtendedFlowDefinition[] = []): T {
-    class CustomFlowModel extends (this as unknown as typeof FlowModel) {
-      // @ts-ignore
-      static name = `CustomFlowModel_${uid()}`;
-    }
-
-    // 处理流程注册和覆盖
-    if (flows.length > 0) {
-      flows.forEach((flowDefinition) => {
-        // 如果标记为部分覆盖，则调用extendFlow方法
-        if (flowDefinition.patch === true) {
-          CustomFlowModel.extendFlow(flowDefinition);
-        } else {
-          // 完全覆盖或新增流程
-          CustomFlowModel.registerFlow(flowDefinition as FlowDefinition);
-        }
-      });
-    }
-
-    return CustomFlowModel as unknown as T;
+    const isFork = (this as any).isFork === true;
+    const target = this;
+    console.log(
+      `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
+        this.cleanRun
+      }, targetIsFork=${(target as any)?.isFork === true}`,
+    );
+    await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs);
   }
 
   /**
@@ -755,36 +639,33 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }, 100);
 
   /**
-   * 在所有自动流程执行前调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义逻辑，可以通过抛出 FlowExitException 来终止流程
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在所有自动流程执行前调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义逻辑，也可以通过抛出 FlowExitException 来终止流程。
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在所有自动流程执行后调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义逻辑
-   * @param {any[]} results 所有自动流程的执行结果
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在所有自动流程执行后调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义逻辑。
+   * @param results 所有自动流程的执行结果数组
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在自动流程执行出错时调用的钩子方法
-   * 子类可以覆盖此方法来实现自定义错误处理逻辑
-   * @param {Error} error 捕获的错误
-   * @param {Record<string, any>} [inputArgs] 输入参数
+   * 在自动流程执行出错时调用的钩子方法。
+   * 子类可以覆盖此方法来实现自定义错误处理逻辑。
+   * @param error 捕获的错误
+   * @param inputArgs 可选的输入参数
    * @protected
+   * @internal 仅限子类覆盖，外部不应该直接调用
    */
-  protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {
-    // 默认实现为空，子类可以覆盖
-  }
+  public async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
    * 执行所有自动应用流程
@@ -795,115 +676,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: any[]): Promise<any[]> {
     const [inputArgs, useCache = true] = args;
-    // 生成缓存键，包含 stepParams 的序列化版本以确保参数变化时重新执行
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
       : null;
-
     if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
-
-    // 存储本次执行的参数，用于后续重新执行
     this._lastAutoRunParams = args;
-
-    const autoApplyFlows = this.getAutoFlows();
-
-    if (autoApplyFlows.length === 0) {
-      console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
-      return [];
+    const isFork = (this as any).isFork === true;
+    if (isFork) {
+      return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
     }
-
-    // 检查缓存
-    if (cacheKey && this.flowEngine) {
-      const cachedEntry = this.flowEngine.applyFlowCache.get(cacheKey);
-      if (cachedEntry) {
-        if (cachedEntry.status === 'resolved') {
-          console.log(`[FlowEngine.applyAutoFlows] Using cached result for model: ${this.uid}`);
-          return cachedEntry.data;
-        }
-        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
-        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
-      }
-    }
-
-    // 执行 autoFlows
-    const executeAutoFlows = async (): Promise<any[]> => {
-      const results: any[] = [];
-      const runId = `${this.uid}-autoFlow-${Date.now()}`;
-
-      try {
-        // 调用 beforeApplyAutoFlows 钩子
-        await this.beforeApplyAutoFlows(inputArgs);
-
-        // 如果没有自动流程，记录警告但仍然继续执行钩子
-        if (autoApplyFlows.length === 0) {
-          console.warn(`FlowModel: No auto-apply flows found for model '${this.uid}'`);
-        } else {
-          // 执行所有自动流程
-          for (const flow of autoApplyFlows) {
-            try {
-              const result = await this.applyFlow(flow.key, inputArgs, runId);
-              if (result instanceof FlowExitAllException) {
-                console.log(`[FlowEngine.applyAutoFlows] ${result.message}`);
-                break; // 终止后续流程执行
-              }
-              results.push(result);
-            } catch (error) {
-              console.error(`FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`, error);
-              throw error;
-            }
-          }
-        }
-
-        // 调用 afterApplyAutoFlows 钩子
-        await this.afterApplyAutoFlows(results, inputArgs);
-
-        return results;
-      } catch (error) {
-        // 检查是否是通过 FlowExitException 正常退出
-        if (error instanceof FlowExitException) {
-          console.log(`[FlowEngine.applyAutoFlows] ${error.message}`);
-          return results; // 返回已执行的结果
-        }
-
-        // 调用 onApplyAutoFlowsError 钩子
-        try {
-          await this.onApplyAutoFlowsError(error, inputArgs);
-        } catch (hookError) {
-          console.error('FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:', hookError);
-        }
-
-        throw error;
-      }
-    };
-
-    // 如果不使用缓存，直接执行
-    if (!cacheKey || !this.flowEngine) {
-      return await executeAutoFlows();
-    }
-
-    // 使用缓存机制
-    const promise = executeAutoFlows()
-      .then((result) => {
-        this.flowEngine.applyFlowCache.set(cacheKey, {
-          status: 'resolved',
-          data: result,
-          promise: Promise.resolve(result),
-        });
-        return result;
-      })
-      .catch((err) => {
-        this.flowEngine.applyFlowCache.set(cacheKey, {
-          status: 'rejected',
-          error: err,
-          promise: Promise.reject(err),
-        });
-        throw err;
-      });
-
-    this.flowEngine.applyFlowCache.set(cacheKey, { status: 'pending', promise });
-    return await promise;
+    // 传统行为：直接在 master 上执行
+    return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
   }
 
   /**
@@ -967,26 +752,34 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 创建缓存的响应式包装器组件工厂（只创建一次）
       const createReactiveWrapper = (modelInstance: any) => {
         const ReactiveWrapper = observer(() => {
-          // 触发响应式更新的关键属性访问
-          modelInstance.props; // 确保 props 变化时触发更新
+          // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
+          const isForkInstance = (modelInstance as any)?.isFork === true;
+          const renderTarget = modelInstance;
+          if (renderTarget !== modelInstance && (renderTarget as any)?.localProps !== undefined) {
+            // 订阅 fork 的本地 props 变更
+            (renderTarget as any).localProps;
+            // 同时订阅原实例（master/UI fork）的 props 变更，
+            // 以捕获诸如 FormItem→FieldModelRenderer 通过 model.setProps 写到 master.props 的更新
+            modelInstance.props;
+          } else {
+            // 订阅当前实例的 props 变更
+            modelInstance.props;
+          }
 
-          // 添加生命周期钩子
+          // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
           React.useEffect(() => {
-            // 组件挂载时调用 onMount 钩子
-            if (typeof modelInstance.onMount === 'function') {
-              modelInstance.onMount();
+            if (typeof renderTarget.onMount === 'function') {
+              renderTarget.onMount();
             }
-
-            // 返回清理函数，组件卸载时调用 onUnmount 钩子
             return () => {
-              if (typeof modelInstance.onUnmount === 'function') {
-                modelInstance.onUnmount();
+              if (typeof renderTarget.onUnmount === 'function') {
+                renderTarget.onUnmount();
               }
             };
-          }, []);
+          }, [renderTarget]);
 
           // 调用原始渲染方法
-          return originalRender.call(modelInstance);
+          return originalRender.call(renderTarget);
         });
 
         // 设置显示名称便于调试
@@ -1016,11 +809,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
+  get cleanRun() {
+    return true; // 故意的设置 cleanRun 为true
+    // return !!this._cleanRun;
+  }
+
+  setCleanRun(value: boolean) {
+    const prev = this._cleanRun;
+    this._cleanRun = !!value;
+  }
+
   /**
    * 组件挂载时的生命周期钩子
    * 子类可以重写此方法来添加挂载时的逻辑
    * @protected
    */
+  // eslint-disable-next-line no-empty
   protected onMount(): void {
     // 默认为空实现，子类可以重写
   }
@@ -1067,6 +871,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
   async rerender() {
     await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
+  }
+
+  /**
+   * 自动流程缓存的作用域标识；fork 实例可覆盖以区分缓存。
+   */
+  public getAutoFlowCacheScope(): string {
+    return 'autoFlow';
   }
 
   setParent(parent: FlowModel): void {
@@ -1223,7 +1034,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
    * @returns {ForkFlowModel<this>} 创建的 fork 实例
    */
-  createFork(localProps?: IModelComponentProps, key?: string): ForkFlowModel<this> {
+  createFork(
+    localProps?: IModelComponentProps,
+    key?: string,
+    options?: { sharedProperties?: string[]; register?: boolean },
+  ): ForkFlowModel<this> {
     // 如果提供了 key，尝试从缓存中获取
     if (key) {
       const cachedFork = this.forkCache.get(key);
@@ -1237,10 +1052,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 创建新的 fork 实例
     const forkId = this.forks.size; // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
-    this.forks.add(fork as any);
+    if (options?.register !== false) {
+      this.forks.add(fork as any);
+    }
 
     // 如果提供了 key，将 fork 缓存起来
-    if (key) {
+    if (key && options?.register !== false) {
       this.forkCache.set(key, fork as any);
     }
 
@@ -1412,6 +1229,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  // =============================
+  // Dynamic flows (disabled)
+  // The following APIs are kept as comments to preserve context
+  // =============================
+  /*
   async openDynamicFlowsEditor(
     options?: Omit<FlowSettingsOpenOptions, 'model' | 'flowKey' | 'flowKeys' | 'stepKey' | 'preset'>,
   ) {
@@ -1423,28 +1245,26 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   #dynamicFlows: FlowDefinition[] = [];
 
-  // TODO：后面去除这个方法，应该默认加载动态流
   async loadDynamicFlows(): Promise<FlowDefinition[]> {
     return JSON.parse(localStorage.getItem('DYNAMIC_FLOWS') || '[]');
   }
 
   async saveDynamicFlows(): Promise<void> {
-    // TODO: 暂时的做法，后面需要改进
     localStorage.setItem('DYNAMIC_FLOWS', JSON.stringify(this.#dynamicFlows));
   }
 
   setDynamicFlows(flows: FlowDefinition[]): void {
     this.#dynamicFlows = flows;
-
     flows.forEach((flow) => {
       // @ts-ignore
       this.constructor.registerFlow(flow);
     });
   }
 
-  getDynamicFlows(): FlowDefinition[] {
+  getDynamicFlows(): FlowDefinitionOptions[] {
     return this.#dynamicFlows;
   }
+  */
 }
 
 export class ErrorFlowModel extends FlowModel {
@@ -1459,6 +1279,8 @@ export class ErrorFlowModel extends FlowModel {
   }
 }
 
-export function defineFlow<TModel extends FlowModel = FlowModel>(definition: FlowDefinition): FlowDefinition<TModel> {
-  return definition as FlowDefinition<TModel>;
+export function defineFlow<TModel extends FlowModel = FlowModel>(
+  definition: FlowDefinitionOptions,
+): FlowDefinitionOptions<TModel> {
+  return definition as FlowDefinitionOptions<TModel>;
 }

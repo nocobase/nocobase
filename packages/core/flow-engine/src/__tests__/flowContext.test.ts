@@ -9,7 +9,7 @@
 
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext } from '../flowContext';
+import { FlowContext, FlowRuntimeContext } from '../flowContext';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -716,6 +716,39 @@ describe('FlowEngine context', () => {
     engine.context.defineProperty('appName', { value: 'NocoBase' });
     expect(engine.context.appName).toBe('NocoBase');
   });
+
+  it('engine.context.runAction should resolve action from engine.getAction', async () => {
+    const engine = new FlowEngine();
+
+    engine.registerActions({
+      engineOnly: {
+        name: 'engineOnly',
+        defaultParams: { a: 1 },
+        handler: async (ctx: any, params: any) => {
+          return {
+            hasModel: !!ctx.model,
+            sum: (params.a || 0) + (params.b || 0),
+          };
+        },
+      },
+    });
+
+    const ret = await engine.context.runAction('engineOnly', { b: 2 });
+    expect(ret).toEqual({ hasModel: false, sum: 3 });
+  });
+
+  it('engine.context.getAction/getActions should expose global actions', async () => {
+    const engine = new FlowEngine();
+    const a1 = { name: 'a1', handler: () => 'ok1' };
+    const a2 = { name: 'a2', handler: () => 'ok2' };
+    engine.registerActions({ a1, a2 });
+
+    const def = engine.context.getAction('a1');
+    expect(def?.name).toBe('a1');
+    const actions = engine.context.getActions();
+    expect(actions).toBeInstanceOf(Map);
+    expect(Array.from(actions.keys())).toEqual(expect.arrayContaining(['a1', 'a2']));
+  });
 });
 
 describe('ForkFlowModel context inheritance and isolation', () => {
@@ -731,6 +764,52 @@ describe('ForkFlowModel context inheritance and isolation', () => {
   it('should inherit engine.context property in FlowModel.context', () => {
     const model = engine.createModel({ use: 'TestModel' });
     expect(model.context.appName).toBe('NocoBase');
+  });
+
+  it('model.context.runAction should resolve via model.getAction and override global', async () => {
+    // 全局注册一个同名 action
+    engine.registerActions({
+      sum: {
+        name: 'sum',
+        defaultParams: { x: 100 },
+        handler: (ctx, params) => ({ from: 'engine', x: params.x }),
+      },
+    });
+
+    // 类级别注册同名 action，应该覆盖全局
+    TestModel.registerAction({
+      name: 'sum',
+      defaultParams: { x: 1 },
+      handler: (ctx, params) => ({ from: 'model', x: params.x, hasModel: !!ctx.model }),
+    });
+
+    const model = engine.createModel({ use: 'TestModel' });
+    const ret = await model.context.runAction('sum', {});
+    expect(ret).toEqual({ from: 'model', x: 1, hasModel: true });
+  });
+
+  it('model.context.getAction/getActions should prefer model actions over global', async () => {
+    // 全局注册 foo / bar
+    const engineFoo = { name: 'foo', handler: () => 'engineFoo' };
+    const engineBar = { name: 'bar', handler: () => 'engineBar' };
+    engine.registerActions({ foo: engineFoo, bar: engineBar });
+
+    // 类级别覆盖 foo，并新增 baz
+    const modelFoo = { name: 'foo', handler: () => 'modelFoo' };
+    const modelBaz = { name: 'baz', handler: () => 'modelBaz' };
+    (TestModel as typeof FlowModel).registerActions({ foo: modelFoo, baz: modelBaz });
+
+    const model = engine.createModel({ use: 'TestModel' });
+
+    // getAction：foo 应该来自 model 级
+    const defFoo = model.context.getAction('foo');
+    expect(defFoo).toBe(modelFoo);
+
+    // getActions：应包含 foo(来自 model)、bar(来自 engine)、baz(来自 model)
+    const all = model.context.getActions();
+    expect(all.get('foo')).toBe(modelFoo);
+    expect(all.get('bar')).toBe(engineBar);
+    expect(all.get('baz')).toBe(modelBaz);
   });
 
   it('should inherit model.context property in ForkFlowModel.context', () => {
@@ -809,6 +888,27 @@ describe('ForkFlowModel context inheritance and isolation', () => {
     ctx.defineProperty('foo', { value: 1, once: true });
     ctx.defineProperty('foo', { value: 2 });
     expect(ctx.foo).toBe(1);
+  });
+});
+
+describe('runAction delegation from runtime context', () => {
+  it('ctx.runAction should delegate to model.context.runAction and use runtime ctx for expression/props', async () => {
+    const engine = new FlowEngine();
+    class M extends FlowModel {}
+    engine.registerModels({ M });
+
+    // 注册一个动作到模型类
+    M.registerAction({
+      name: 'echo',
+      handler: (ctx, params) => ({ mode: ctx.mode, x: params.x }),
+    });
+
+    const model = engine.createModel({ use: 'M' });
+    const ctx = new FlowRuntimeContext(model, 'fk');
+
+    const res = await ctx.runAction('echo', { x: '{{ ctx.model.uid }}' });
+    expect(res.mode).toBe('runtime');
+    expect(res.x).toBe(model.uid);
   });
 });
 
