@@ -104,13 +104,6 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
     ];
   }
 
-  onInit(options) {
-    this.context.defineProperty('actionName', {
-      get: () => (this.context.blockModel instanceof EditFormModel ? 'view' : 'create'),
-      cache: false,
-    });
-  }
-
   public renderNoPermission() {
     if (this.flowEngine.flowSettings?.enabled) {
       return (
