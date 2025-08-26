@@ -502,9 +502,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
       // 判断目标模型是否包含任何标记为 preset 的步骤
       const hasPresetSteps = (() => {
         try {
-          const ModelClass = (model.flowEngine as any).getModelClass(createOpts.use);
-          if (!ModelClass || typeof ModelClass.getFlows !== 'function') return false;
-          const flows: Map<string, any> = ModelClass.getFlows();
+          const flows: Map<string, any> = model.getFlows();
           for (const [, flow] of flows) {
             const steps = flow?.steps || {};
             for (const sk of Object.keys(steps)) {

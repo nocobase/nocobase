@@ -18,7 +18,6 @@ import { openStepSettingsDialog } from './components/settings/wrappers/contextua
 import { FlowRuntimeContext } from './flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import type { FlowDefinition } from './types';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
@@ -426,8 +425,7 @@ export class FlowSettings {
     const message = model.context?.message;
 
     // 聚合渲染：准备需要处理的 flow 列表（flowKey 优先其余）
-    const ModelClass = model.constructor as typeof FlowModel;
-    const allFlowsMap = ModelClass.getFlows();
+    const allFlowsMap = model.getFlows();
     const targetFlowKeys: string[] = (() => {
       if (flowKey) return [flowKey];
       if (Array.isArray(flowKeys) && flowKeys.length) return flowKeys;
@@ -586,8 +584,8 @@ export class FlowSettings {
         return entries[0].stepTitle;
       }
 
-      if (!multipleFlows) {
-        // 情况 B：未提供 stepKey 且仅有一个步骤 => 与情况 A 一致
+      if (!multipleFlows && entries.length > 0) {
+        // 情况 B：只有一个flow且未指定stepKey => 返回第一个步骤标题
         return entries[0].stepTitle;
       }
 
@@ -758,6 +756,11 @@ export class FlowSettings {
     return true;
   }
 
+  // =============================
+  // Dynamic flows editor (disabled)
+  // Kept as comments to preserve context
+  // =============================
+  /*
   public async openDynamicFlowsEditor(
     options: Pick<FlowSettingsOpenOptions, 'model' | 'uiMode' | 'onCancel'> & {
       onSaved?: (flows: FlowDefinition[]) => void | Promise<void>;
@@ -795,11 +798,9 @@ export class FlowSettings {
             try {
               await onSaved?.(plain);
             } catch (cbErr) {
-              // eslint-disable-next-line no-console
               console.error('FlowSettings.openDynamicFlowsEditor: onSaved callback error', cbErr);
             }
           } catch (err) {
-            // eslint-disable-next-line no-console
             console.error('FlowSettings.openDynamicFlowsEditor: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
@@ -819,7 +820,6 @@ export class FlowSettings {
                   try {
                     await onCancel?.();
                   } catch (cbErr) {
-                    // eslint-disable-next-line no-console
                     console.error('FlowSettings.openDynamicFlowsEditor: onCancel callback error', cbErr);
                   }
                 },
@@ -834,4 +834,5 @@ export class FlowSettings {
       },
     });
   }
+  */
 }
