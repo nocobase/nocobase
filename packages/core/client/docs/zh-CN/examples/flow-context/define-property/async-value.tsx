@@ -14,7 +14,7 @@ class AsyncValueModel extends FlowModel {
       },
     });
   }
-  async beforeApplyAutoFlows() {
+  async onBeforeAutoFlows() {
     this.asyncValue = await this.context.asyncValue;
     console.log('Async value prepared:', this.asyncValue);
   }

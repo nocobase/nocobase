@@ -603,15 +603,15 @@ describe('FlowModel', () => {
           afterHookSpy = vi.fn();
           errorHookSpy = vi.fn();
           TestFlowModelWithHooks = class extends TestFlowModel {
-            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
             }
 
-            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };
@@ -640,21 +640,21 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should allow beforeApplyAutoFlows to terminate flow via ctx.exit()', async () => {
+        test('should allow onBeforeAutoFlows to terminate flow via ctx.exit()', async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
 
           const TestFlowModelWithExitHooks = class extends TestFlowModel {
-            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
               throw new FlowExitException('autoFlows', this.uid);
             }
 
-            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };
@@ -666,7 +666,7 @@ describe('FlowModel', () => {
           const modelWithHooks = new TestFlowModelWithExitHooks(modelOptions);
           const results = await modelWithHooks.applyAutoFlows();
 
-          // Should have called beforeApplyAutoFlows but not afterApplyAutoFlows
+          // Should have called onBeforeAutoFlows but not onAfterAutoFlows
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
           expect(errorHookSpy).not.toHaveBeenCalled();
@@ -679,7 +679,7 @@ describe('FlowModel', () => {
           expect(autoFlow2.steps.autoStep.handler).not.toHaveBeenCalled();
         });
 
-        test('should call onApplyAutoFlowsError when flow execution fails', async () => {
+        test('should call onAutoFlowsError when flow execution fails', async () => {
           const errorFlow = {
             key: 'errorFlow',
 
@@ -712,7 +712,7 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should provide access to step results in afterApplyAutoFlows', async () => {
+        test('should provide access to step results in onAfterAutoFlows', async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
           TestFlowModelWithHooks.registerFlow(autoFlow1);

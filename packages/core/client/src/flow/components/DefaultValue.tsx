@@ -27,7 +27,7 @@ interface VariableFieldInputProps {
  */
 function createVariableFieldModelClass(ModelClass: any) {
   class TempVariableModel extends ModelClass {
-    async afterApplyAutoFlows() {
+    async onAfterAutoFlows() {
       this.showTitle?.(null);
       this.setDescription?.(null);
       this.setPattern?.('editable');

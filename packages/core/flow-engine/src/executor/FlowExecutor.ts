@@ -26,7 +26,7 @@ export class FlowExecutor {
     const flow = model.getFlow(flowKey);
 
     if (!flow) {
-      model.context.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
+      model.context.logger.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
@@ -145,7 +145,7 @@ export class FlowExecutor {
     const autoApplyFlows = model.getAutoFlows();
 
     if (autoApplyFlows.length === 0) {
-      model.context.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
+      model.context.logger.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
       return [];
     }
 
@@ -157,7 +157,7 @@ export class FlowExecutor {
       const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
       if (cachedEntry) {
         if (cachedEntry.status === 'resolved') {
-          model.context.debug(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
+          model.context.logger.debug(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
           return cachedEntry.data;
         }
         if (cachedEntry.status === 'rejected') throw cachedEntry.error;
@@ -175,8 +175,6 @@ export class FlowExecutor {
         }, useCache=${useCache}, runId=${runId}, flows=${autoApplyFlows.map((f) => f.key).join(',')}`,
       );
       try {
-        await model.beforeApplyAutoFlows(inputArgs);
-
         if (autoApplyFlows.length === 0) {
           logger.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
         } else {
@@ -195,19 +193,11 @@ export class FlowExecutor {
             }
           }
         }
-
-        await model.afterApplyAutoFlows(results, inputArgs);
-
         return results;
       } catch (error) {
         if (error instanceof FlowExitException) {
           logger.debug(`[FlowEngine.applyAutoFlows] ${error.message}`);
           return results;
-        }
-        try {
-          await model.onApplyAutoFlowsError(error as Error, inputArgs);
-        } catch (hookError) {
-          logger.error({ err: hookError }, 'FlowModel.applyAutoFlows: Error in onApplyAutoFlowsError hook:');
         }
         throw error;
       }
