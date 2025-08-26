@@ -196,6 +196,7 @@ CollectionFieldFormItemModel.registerFlow({
     },
 
     model: {
+      use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
         const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
@@ -213,31 +214,6 @@ CollectionFieldFormItemModel.registerFlow({
             })),
           },
         };
-      },
-      beforeParamsSave: async (ctx, params, previousParams) => {
-        if (params.use !== previousParams.use) {
-          const model = ctx.model.setSubModel('field', {
-            use: params.use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-            },
-          });
-          await model.applyAutoFlows();
-        }
-      },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.subModels.field.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-        ctx.model.setProps({ subModel: params.use });
       },
     },
     pattern: {
