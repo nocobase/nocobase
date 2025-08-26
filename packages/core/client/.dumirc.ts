@@ -665,6 +665,10 @@ export default defineConfig({
               link: '/api/flow-engine/flow-definition',
             },
             {
+              title: 'FlowRegistry',
+              link: '/api/flow-engine/flow-registry',
+            },
+            {
               title: 'FlowAction',
               link: '/api/flow-engine/flow-action',
             },
