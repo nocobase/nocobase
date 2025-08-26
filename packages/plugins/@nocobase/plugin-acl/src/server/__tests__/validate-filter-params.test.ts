@@ -37,11 +37,11 @@ describe('acl', () => {
 
     admin = await UserRepo.create({
       values: {
-        roles: ['admin'],
+        roles: ['root', 'admin'],
       },
     });
 
-    adminAgent = await app.agent().login(admin);
+    adminAgent = (await app.agent().login(admin)).set('x-role', 'root');
     uiSchemaRepository = db.getRepository('uiSchemas');
     await db.getRepository('collections').create({
       context: {},

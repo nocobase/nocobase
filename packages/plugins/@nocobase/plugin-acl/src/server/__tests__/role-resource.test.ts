@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, Model } from '@nocobase/database';
+import { Database, Model, updateAssociation } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-data-source-main';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
@@ -37,12 +37,12 @@ describe('role resource api', () => {
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['admin'],
+        roles: ['root', 'admin'],
       },
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = await app.agent().login(admin);
+    adminAgent = (await app.agent().login(admin)).set('x-role', 'root');
   });
 
   it('should grant resource by createRepository', async () => {

@@ -20,7 +20,7 @@ export function verifyAssociationsPermissionMiddleware() {
 
       const paths = updateAssociationValues;
 
-      const visit = (nodeValues: any, coll: Collection, candPaths: string[]) => {
+      const verifyPermission = (nodeValues: any, coll: Collection, candPaths: string[]) => {
         if (!nodeValues || typeof nodeValues !== 'object') return;
 
         for (const key of Object.keys(nodeValues)) {
@@ -57,15 +57,15 @@ export function verifyAssociationsPermissionMiddleware() {
           if (Array.isArray(current)) {
             for (const item of current) {
               if (item && typeof item === 'object') {
-                visit(item, targetColl, childPaths);
+                verifyPermission(item, targetColl, childPaths);
               }
             }
           } else if (typeof current === 'object') {
-            visit(current, targetColl, childPaths);
+            verifyPermission(current, targetColl, childPaths);
           }
         }
       };
-      visit(values, collection, paths);
+      verifyPermission(values, collection, paths);
     }
     await next();
   };

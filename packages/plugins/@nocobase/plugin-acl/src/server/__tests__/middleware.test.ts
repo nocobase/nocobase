@@ -46,6 +46,15 @@ describe('middleware', () => {
       },
     });
 
+    const role2 = await db.getRepository('roles').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: ['create'],
+        },
+      },
+    });
+
     const userPlugin = app.getPlugin('users') as UsersPlugin;
     adminAgent = await app.agent().login(admin);
     memberAgent = await app.agent().login(member);
@@ -160,7 +169,7 @@ describe('middleware', () => {
   });
 
   it('should limit fields on view actions', async () => {
-    await adminAgent.resource('roles.resources', role.get('name')).create({
+    const createResp = await adminAgent.resource('roles.resources', 'member').create({
       values: {
         name: 'posts',
         usingActionsConfig: true,
@@ -176,19 +185,21 @@ describe('middleware', () => {
         ],
       },
     });
+    expect(createResp.statusCode).toEqual(200);
 
-    await adminAgent.resource('posts').create({
+    const createPostResp = await memberAgent.resource('posts').create({
       values: {
         title: 'post-title',
         description: 'post-description',
       },
     });
+    expect(createPostResp.statusCode).toEqual(200);
 
     const post = await db.getRepository('posts').findOne();
     expect(post.get('title')).toEqual('post-title');
     expect(post.get('description')).toEqual('post-description');
 
-    const response = await adminAgent.resource('posts').list({});
+    const response = await memberAgent.resource('posts').list({});
     expect(response.statusCode).toEqual(200);
 
     const [data] = response.body.data;
@@ -248,7 +259,7 @@ describe('middleware', () => {
   });
 
   it('should change fields params to whitelist in create action', async () => {
-    await adminAgent.resource('roles.resources', role.get('name')).create({
+    await adminAgent.resource('roles.resources', 'member').create({
       values: {
         name: 'posts',
         usingActionsConfig: true,
@@ -261,7 +272,7 @@ describe('middleware', () => {
       },
     });
 
-    await adminAgent.resource('posts').create({
+    await memberAgent.resource('posts').create({
       values: {
         title: 'post-title',
         description: 'post-description',

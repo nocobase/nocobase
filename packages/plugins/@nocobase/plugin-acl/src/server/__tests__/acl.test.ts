@@ -38,11 +38,11 @@ describe('acl', () => {
 
     admin = await UserRepo.create({
       values: {
-        roles: ['admin'],
+        roles: ['root', 'admin'],
       },
     });
 
-    adminAgent = await app.agent().login(admin);
+    adminAgent = (await app.agent().login(admin)).set('x-role', 'root');
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
@@ -474,9 +474,7 @@ describe('acl', () => {
     });
 
     // create c1 published scope
-    const {
-      body: { data: publishedScope },
-    } = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
+    const publishedScopeResponse = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         resourceName: 'c1',
         name: 'published',
@@ -485,9 +483,14 @@ describe('acl', () => {
         },
       },
     });
+    expect(publishedScopeResponse.statusCode).toEqual(200);
+
+    const {
+      body: { data: publishedScope },
+    } = publishedScopeResponse;
 
     // set admin resources
-    await adminAgent.resource('roles.resources', 'new').create({
+    const createResponse = await adminAgent.resource('roles.resources', 'new').create({
       values: {
         name: 'c1',
         usingActionsConfig: true,
@@ -503,6 +506,7 @@ describe('acl', () => {
         ],
       },
     });
+    expect(createResponse.statusCode).toEqual(200);
 
     expect(
       acl.can({
@@ -544,7 +548,7 @@ describe('acl', () => {
     const actions = response.body.data[0].actions;
     const collectionName = response.body.data[0].name;
 
-    await adminAgent.resource('roles.resources', role.get('name')).update({
+    const resp = await adminAgent.resource('roles.resources', role.get('name')).update({
       filter: {
         name: collectionName,
         dataSourceKey: 'main',
@@ -560,6 +564,7 @@ describe('acl', () => {
         ],
       },
     });
+    expect(resp.statusCode).toEqual(200);
 
     expect(
       acl.can({
