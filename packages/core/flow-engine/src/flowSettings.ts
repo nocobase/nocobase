@@ -21,6 +21,7 @@ import type { FlowModel } from './models';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
+  FlowExitException,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
@@ -721,6 +722,10 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
+            if (err instanceof FlowExitException) {
+              currentDialog.close();
+              return;
+            }
             console.error('FlowSettings.open: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
