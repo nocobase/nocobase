@@ -165,6 +165,7 @@ export class SubTableColumnModel extends FieldModel {
         model: this,
       }),
       render: this.render(),
+      hidden: this.hidden,
     };
   }
   render() {
@@ -233,6 +234,9 @@ SubTableColumnModel.registerFlow({
   sort: 500,
   title: escapeT('Table column settings'),
   steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
     init: {
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;

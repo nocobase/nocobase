@@ -16,7 +16,7 @@ export const aclCheck = defineAction({
     {
       const result = await ctx.model.context.aclCheck({
         dataSourceKey: ctx.model.context.dataSource.key,
-        resourceName: ctx.blockModel.resource.getResourceName(),
+        resourceName: ctx.model.context.resourceName,
         actionName: ctx.model.context.actionName,
         fields: (ctx.model as FieldModel)?.collectionField && [(ctx.model as FieldModel).collectionField.name],
       });

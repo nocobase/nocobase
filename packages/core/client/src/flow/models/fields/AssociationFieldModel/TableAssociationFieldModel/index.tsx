@@ -66,9 +66,21 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
   get collection() {
     return this.collectionField.targetCollection;
   }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('resourceName', {
+      get: () => this.collectionField.target,
+      cache: false,
+    });
+  }
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
+    const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
+      (v) => {
+        return !v.hidden;
+      },
+    );
+
     return [
       enableIndexColumn && {
         key: '__index__',

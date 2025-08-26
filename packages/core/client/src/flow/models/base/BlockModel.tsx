@@ -524,6 +524,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       get: () => this.getAclActionName(),
       cache: false,
     });
+    this.context.defineProperty('resourceName', {
+      get: () => this.resource.getResourceName(),
+      cache: false,
+    });
     this.context.defineProperty('dataSource', {
       get: () => {
         const params = this.getResourceSettingsInitParams();
