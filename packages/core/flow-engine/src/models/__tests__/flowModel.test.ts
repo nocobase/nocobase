@@ -344,7 +344,7 @@ describe('FlowModel', () => {
 
         expect(result).toEqual({});
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
@@ -376,15 +376,15 @@ describe('FlowModel', () => {
 
         TestFlowModel.registerFlow(exitFlow);
         TestFlowModel.registerFlow(exitFlow2);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
         await model.applyAutoFlows();
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
 
       test('should handle FlowExitAllException correctly', async () => {
@@ -414,15 +414,15 @@ describe('FlowModel', () => {
 
         TestFlowModel.registerFlow(exitFlow);
         TestFlowModel.registerFlow(exitFlow2);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
         await model.applyAutoFlows();
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
 
       test('should handle FlowExitAllException correctly', async () => {
@@ -448,7 +448,7 @@ describe('FlowModel', () => {
 
         expect(result).toBeInstanceOf(FlowExitAllException);
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
@@ -494,7 +494,7 @@ describe('FlowModel', () => {
 
       test('should skip step when action not found', async () => {
         model.flowEngine.getAction = vi.fn().mockReturnValue(null);
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'error').mockImplementation(() => {});
 
         const actionFlow: FlowDefinitionOptions = {
           key: 'actionFlow',
@@ -510,9 +510,9 @@ describe('FlowModel', () => {
         const result = await model.applyFlow('actionFlow');
 
         expect(result).toEqual({});
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Action 'nonExistentAction' not found"));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining("Action 'nonExistentAction' not found"));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
     });
 
@@ -749,7 +749,9 @@ describe('FlowModel', () => {
           // Use a more reliable approach than arbitrary timeout
           await new Promise((resolve) => setTimeout(resolve, 0));
 
-          expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("dispatching event 'testEvent'"));
+          expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining('[FlowModel] dispatchEvent: uid=test-model-uid, event=testEvent'),
+          );
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
               inputArgs: { data: 'payload' },
