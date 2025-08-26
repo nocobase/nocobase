@@ -673,6 +673,10 @@ export default defineConfig({
               link: '/api/flow-engine/flow-action',
             },
             {
+              title: 'FlowActionRegistry',
+              link: '/api/flow-engine/flow-action-registry',
+            },
+            {
               title: 'FlowResource',
               children: [
                 {
