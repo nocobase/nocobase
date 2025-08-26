@@ -51,6 +51,9 @@ import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import type { EventDefinition } from '../types';
 
+// 绑定实例到其代理对象的内部键（不导出）
+const SELF_PROXY_KEY: unique symbol = Symbol('FlowModel.selfProxy');
+
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
 
@@ -106,6 +109,38 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   flowRegistry: InstanceFlowRegistry;
   private _cleanRun?: boolean;
+  /**
+   * 用于保存通过代理修改的临时覆盖值（运行期覆盖层）。
+   * 注意：真正的存储使用 WeakMap 绑定在代理实例上；此处仅作类型提示。
+   */
+  // @ts-ignore - runtime storage is held in a WeakMap keyed by the proxy instance
+  private __runtimeOverrides?: Record<string | symbol, any>;
+
+  /**
+   * 运行期代理黑名单：这些属性不会被代理层拦截，直接写入到原始对象。
+   * 说明：额外加入 `props` 以避免破坏响应式渲染依赖（保持 UI 可预期更新）。
+   */
+  static readonly PROPERTY_PROXY_BLACKLIST: ReadonlySet<string> = new Set([
+    'stepParams',
+    'context',
+    'sortIndex',
+    'subModels',
+    'uid',
+    'parent',
+    'collection',
+    'resource',
+    // 内部运行期字段，需写回原始实例，避免因箭头函数的 this 绑定读取不到覆盖层
+    '_lastAutoRunParams',
+    '_title',
+    // ensure props reactivity remains intact
+    'props',
+  ]);
+
+  /**
+   * 清空运行期间的覆盖层（由 FlowExecutor 在 auto flows 前调用）。
+   * 具体实现由构造函数中注入；此处仅用于类型声明与调用提示。
+   */
+  public clearRuntimeOverrides(): void {}
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -175,6 +210,151 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     this._cleanRun = !!options['cleanRun'];
+
+    // 在构造函数末尾，为实例包裹一层代理：
+    // - 记录非黑名单属性的写入，存入运行期覆盖层
+    // - 读取时优先返回覆盖层中的值
+    // - 提供清空覆盖层的方法，以便在自动流运行前清理
+    try {
+      const SELF = this as any;
+
+      // 使用 WeakMap 存储代理实例对应的覆盖层，键为代理本身
+      const RUNTIME_OVERRIDES = new WeakMap<object, Record<string | symbol, any>>();
+      // 记录 props 层面的“基线值”，用于在下次运行前回滚
+      const RUNTIME_PROPS_BASELINE = new WeakMap<object, Map<string, any>>();
+
+      const ensureOverrides = (proxyObj: object) => {
+        let store = RUNTIME_OVERRIDES.get(proxyObj);
+        if (!store) {
+          store = Object.create(null);
+          RUNTIME_OVERRIDES.set(proxyObj, store);
+        }
+        return store;
+      };
+
+      const isBlacklisted = (key: PropertyKey): boolean => {
+        if (typeof key === 'string') return (this.constructor as typeof FlowModel).PROPERTY_PROXY_BLACKLIST.has(key);
+        return false;
+      };
+
+      const proxy = new Proxy(SELF, {
+        get(target, prop, receiver) {
+          // 覆盖层命中则优先返回
+          const store = RUNTIME_OVERRIDES.get(proxy);
+          if (store && Object.prototype.hasOwnProperty.call(store, prop as any)) {
+            return store[prop as any];
+          }
+          // 拦截 setProps 以记录回滚基线
+          if (prop === 'setProps') {
+            const original = Reflect.get(target, prop) as any;
+            return function (...args: any[]) {
+              try {
+                const [arg1, arg2] = args;
+                let baseline = RUNTIME_PROPS_BASELINE.get(proxy);
+                if (!baseline) {
+                  baseline = new Map<string, any>();
+                  RUNTIME_PROPS_BASELINE.set(proxy, baseline);
+                }
+                if (typeof arg1 === 'string') {
+                  const key = arg1 as string;
+                  if (!baseline.has(key)) {
+                    baseline.set(key, (target as any).props?.[key]);
+                  }
+                } else if (arg1 && typeof arg1 === 'object') {
+                  for (const k of Object.keys(arg1)) {
+                    if (!baseline.has(k)) baseline.set(k, (target as any).props?.[k]);
+                  }
+                }
+              } catch {
+                //ignore
+              }
+              // 透传到真实实现（this 保持 proxy，以复用响应式）
+              return original.apply(proxy, args);
+            };
+          }
+          // 避免私有字段（#）访问错误：确保 getter 的 this 绑定到原始实例
+          return Reflect.get(target, prop);
+        },
+        set(target, prop, value, receiver) {
+          // 符号属性或黑名单属性：直接写入原对象
+          if (typeof prop === 'symbol' || isBlacklisted(prop)) {
+            try {
+              // 直接写回原对象，确保 reactive setter 的 this 绑定为原始实例
+              (target as any)[prop as any] = value;
+              return true;
+            } catch (e) {
+              return Reflect.set(target, prop, value);
+            }
+          }
+          const store = ensureOverrides(proxy);
+          store[prop as any] = value;
+          return true;
+        },
+        has(target, prop) {
+          // 使 in 操作符在覆盖层命中时也返回 true
+          const store = RUNTIME_OVERRIDES.get(proxy as any);
+          if (store && Object.prototype.hasOwnProperty.call(store, prop as any)) return true;
+          return Reflect.has(target, prop);
+        },
+        // Object.keys / Reflect.ownKeys 时包含覆盖层的键
+        ownKeys(target) {
+          const keys = new Set<string | symbol>(Reflect.ownKeys(target));
+          const store = RUNTIME_OVERRIDES.get(proxy as any);
+          if (store) {
+            for (const k of Reflect.ownKeys(store)) keys.add(k);
+          }
+          return Array.from(keys);
+        },
+        getOwnPropertyDescriptor(target, prop) {
+          const store = RUNTIME_OVERRIDES.get(proxy as any);
+          if (store && Object.prototype.hasOwnProperty.call(store, prop as any)) {
+            return {
+              configurable: true,
+              enumerable: true,
+              writable: true,
+              value: store[prop as any],
+            };
+          }
+          return Reflect.getOwnPropertyDescriptor(target, prop);
+        },
+      });
+
+      // 提供清空覆盖层的方法（作为实例方法，this 指向代理实例即可）
+      Object.defineProperty(SELF, 'clearRuntimeOverrides', {
+        value: function () {
+          // 1) 清空非黑名单属性的覆盖层
+          RUNTIME_OVERRIDES.set(proxy, Object.create(null));
+          // 2) 回滚 props 修改到基线
+          const baseline = RUNTIME_PROPS_BASELINE.get(proxy);
+          if (baseline && baseline.size > 0) {
+            baseline.forEach((orig, key) => {
+              try {
+                (SELF as any).props[key] = orig;
+              } catch {
+                //ignore
+              }
+            });
+            baseline.clear();
+          }
+        },
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+
+      // 反向挂载 proxy 到原始实例，便于 context 优先绑定到代理模型
+      Object.defineProperty(SELF, SELF_PROXY_KEY, {
+        value: proxy,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+
+      // 对外返回代理实例，确保后续持有的都是代理对象
+      return proxy;
+    } catch (e) {
+      console.error('FlowModel: failed to setup proxy overlay.', e);
+    }
   }
 
   /**
@@ -182,7 +362,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   get context() {
     if (!this.#flowContext) {
-      this.#flowContext = new FlowModelContext(this);
+      const selfOrProxy = (this as any)[SELF_PROXY_KEY] || this;
+      this.#flowContext = new FlowModelContext(selfOrProxy);
     }
     return this.#flowContext;
   }
@@ -807,8 +988,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   get cleanRun() {
-    return true; // 故意的设置 cleanRun 为true
-    // return !!this._cleanRun;
+    return !!this._cleanRun;
   }
 
   setCleanRun(value: boolean) {

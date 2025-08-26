@@ -171,6 +171,9 @@ export class FlowExecutor {
         }, useCache=${useCache}, runId=${runId}, flows=${autoApplyFlows.map((f) => f.key).join(',')}`,
       );
       try {
+        if ((model as any).cleanRun && typeof (model as any).clearRuntimeOverrides === 'function') {
+          (model as any).clearRuntimeOverrides();
+        }
         await model.beforeApplyAutoFlows(inputArgs);
 
         if (autoApplyFlows.length === 0) {

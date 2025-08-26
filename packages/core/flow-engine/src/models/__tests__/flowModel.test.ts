@@ -73,7 +73,10 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
-  return new FlowEngine();
+  const engine = new FlowEngine();
+  // Mock the translate method to return the input key by default
+  engine.translate = vi.fn((key?: string) => key || undefined);
+  return engine;
 };
 
 const createBasicFlowDefinition = (overrides: Partial<FlowDefinitionOptions> = {}): FlowDefinitionOptions => ({
