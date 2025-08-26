@@ -907,25 +907,26 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
         const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
+        const ctx = this.createProxy() as unknown as FlowEngineContext;
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
 
-        const defaultParams = await resolveDefaultParams(def.defaultParams, this);
+        const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
 
         let useRawParams = def.useRawParams;
         if (typeof useRawParams === 'function') {
-          useRawParams = await useRawParams(this);
+          useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, this);
+          combinedParams = await resolveExpressions(combinedParams, ctx);
         }
 
         if (!def.handler) {
           throw new Error(`Action '${actionName}' has no handler.`);
         }
-        return def.handler(this, combinedParams);
+        return def.handler(ctx, combinedParams);
       },
     );
   }
@@ -960,25 +961,26 @@ export class FlowModelContext extends BaseFlowModelContext {
       'runAction',
       async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
         const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
+        const ctx = this.createProxy() as unknown as FlowModelContext;
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
 
-        const defaultParams = await resolveDefaultParams(def.defaultParams, this);
+        const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
 
         let useRawParams = def.useRawParams;
         if (typeof useRawParams === 'function') {
-          useRawParams = await useRawParams(this);
+          useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, this);
+          combinedParams = await resolveExpressions(combinedParams, ctx);
         }
 
         if (!def.handler) {
           throw new Error(`Action '${actionName}' has no handler.`);
         }
-        return def.handler(this, combinedParams);
+        return def.handler(ctx, combinedParams);
       },
     );
   }
