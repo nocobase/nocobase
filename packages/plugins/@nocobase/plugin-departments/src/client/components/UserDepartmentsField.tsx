@@ -17,7 +17,7 @@
  */
 
 import { SchemaSettings } from '@nocobase/client';
-import { enableLink, fieldComponent, titleField } from './fieldSettings';
+import { enableLink, fieldComponent, titleField, showMainDepartmentSet } from './fieldSettings';
 
 export const UserDepartmentsFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:UserDepartmentsField',
@@ -30,6 +30,9 @@ export const UserDepartmentsFieldSettings = new SchemaSettings({
     },
     {
       ...enableLink,
+    },
+    {
+      ...showMainDepartmentSet,
     },
   ],
 });
