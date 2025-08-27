@@ -984,6 +984,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     for (const key of Object.keys(values)) {
       const field = this.collection.getField(key);
+      const targetKey = field.targetKey;
       const hasAssociation =
         Boolean(field && field instanceof RelationField) || Boolean(this.collection.model.associations[key]);
       if (!hasAssociation) continue;
@@ -992,11 +993,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
       if (!allowList) {
         if (Array.isArray(val)) {
-          const mapped = val.map((item) => (item && typeof item === 'object' ? { id: item.id } : item));
+          const mapped = val.map((item) => (item && typeof item === 'object' ? { targetKey: item[targetKey] } : item));
           const hasValid = mapped.some((item) => {
             if (item === null || item === undefined) return false;
             if (typeof item === 'object') {
-              return item.id !== undefined && item.id !== null;
+              return item[targetKey] !== undefined && item[targetKey] !== null;
             }
             return true;
           });
@@ -1006,11 +1007,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
             result[key] = mapped;
           }
         } else if (val && typeof val === 'object') {
-          const id = val.id;
-          if (id === undefined || id === null) {
+          const value = val[targetKey];
+          if (value === undefined || value === null) {
             delete result[key];
           } else {
-            result[key] = { id };
+            result[key] = { [targetKey]: value };
           }
         } else {
           result[key] = val;
@@ -1039,9 +1040,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         const filterItem = (item) => {
           if (!item || typeof item !== 'object') return item;
           const out: any = {};
-          if (item.id !== undefined) out.id = item.id;
+          if (item[targetKey] !== undefined) out[targetKey] = item[targetKey];
           for (const k of Object.keys(item)) {
-            if (k === 'id') continue;
+            if (k === targetKey) continue;
             if (targetCollection) {
               const tf = targetCollection.getField(k);
               const isRel = Boolean(tf && tf.isRelationField && tf.isRelationField());
