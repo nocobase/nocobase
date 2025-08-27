@@ -15,82 +15,88 @@ import { AppstoreAddOutlined } from '@ant-design/icons';
 import { Schema } from '@formily/react';
 import { usePlugin } from '@nocobase/client';
 import PluginAIClient from '..';
-import { ContextItem } from './types';
+import { ContextItem, WorkContextOptions } from './types';
+import { useFlowEngine } from '@nocobase/flow-engine';
+
+const walkthrough = (
+  workContexts: WorkContextOptions[],
+  callback: (parent: string, workContext: WorkContextOptions) => void,
+) => {
+  const queue = workContexts.map((workContext) => ({ parent: null, workContext }));
+  while (queue.length) {
+    const { parent, workContext } = queue.shift();
+    callback(parent, workContext);
+    if (workContext.children) {
+      queue.push(
+        ...Object.entries(workContext.children).map(([name, child]) => ({
+          parent: workContext.name,
+          workContext: { name, ...child },
+        })),
+      );
+    }
+  }
+};
 
 export const AddContextButton: React.FC<{
   onAdd: (item: ContextItem) => void;
   disabled?: boolean;
 }> = ({ onAdd, disabled }) => {
   const t = useT();
+  const flowEngine = useFlowEngine();
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
 
-  const items = useMemo(() => {
-    const context = workContext.getValues();
-    const result = Array.from(context).reduce((prev, cur) => {
-      if (!cur.menu) {
-        return prev;
+  const [items, onClick] = useMemo(() => {
+    const context = Array.from(workContext.getValues());
+
+    const menuItems: MenuProps['items'] = [];
+    const menuItemMapping = new Map<string, MenuProps['items'][0]>();
+    const contextItemMapping = new Map<string, WorkContextOptions>();
+    walkthrough(context, (parent, contextItem) => {
+      if (!contextItem.menu) {
+        return;
       }
-      const C = cur.menu.Component;
-      const item = {
-        key: cur.name,
-        label: C ? (
-          <C
-            onAdd={(contextItem) =>
-              onAdd({
-                type: cur.name,
-                ...contextItem,
-              })
-            }
-          />
-        ) : (
-          Schema.compile(cur.menu.label, { t })
-        ),
-        icon: cur.menu.icon,
+
+      const key = parent ? `${parent}.${contextItem.name}` : contextItem.name;
+      const C = contextItem.menu.Component;
+      const item: MenuProps['items'] = {
+        key,
+        label: C ? <C /> : Schema.compile(contextItem.menu.label, { t }),
+        icon: contextItem.menu.icon,
       };
-      if (!cur.children) {
-        return [...prev, item];
-      }
-      const children = Object.entries(cur.children).reduce((childPrev, [childName, childCur]) => {
-        if (!childCur.menu) {
-          return childPrev;
+
+      menuItemMapping.set(contextItem.name, item);
+      contextItemMapping.set(key, contextItem);
+      if (parent && menuItemMapping.has(parent)) {
+        const parentMenu = menuItemMapping.get(parent);
+        if (!parentMenu.children) {
+          parentMenu.children = [];
         }
-        const C = childCur.menu.Component;
-        const key = `${cur.name}.${childName}`;
-        return [
-          ...childPrev,
-          {
-            key,
-            label: C ? (
-              <C
-                onAdd={(contextItem) =>
-                  onAdd({
-                    type: key,
-                    ...contextItem,
-                  })
-                }
-              />
-            ) : (
-              Schema.compile(childCur.menu.label, { t })
-            ),
-            icon: childCur.menu.icon,
-          },
-        ];
-      }, []);
-      return [
-        ...prev,
-        {
-          ...item,
-          children,
-        },
-      ];
-    }, []);
-    return result;
+        parentMenu.children.push(item);
+      } else {
+        menuItems.push(item);
+      }
+    });
+
+    const onClick = (e) => {
+      const workContextItem = contextItemMapping.get(e.key);
+      const clickHandler = workContextItem?.menu?.clickHandler?.({
+        flowEngine,
+        onAdd: (contextItem) =>
+          onAdd({
+            type: e.key,
+            ...contextItem,
+          }),
+      });
+      clickHandler?.();
+    };
+
+    return [menuItems, onClick];
   }, [workContext]);
 
   return (
     <Dropdown
-      menu={{ items }}
+      menu={{ items, onClick }}
       placement="topLeft"
       disabled={disabled}
       overlayStyle={{
