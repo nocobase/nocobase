@@ -441,11 +441,28 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    this.server = http.createServer(this.getCallback());
+    this.server = http.createServer(async (req, res) => {
+      for (const handler of this.requestHandlers) {
+        try {
+          const result = await handler(req as IncomingRequest, res as ServerResponse);
+          if (result !== false) {
+            return;
+          }
+        } catch (error) {
+          console.error('gateway request handler error:', error);
+        }
+      }
+      this.getCallback()(req, res);
+    });
 
     this.wsServer = new WSServer();
-
-    this.server.on('upgrade', (request, socket, head) => {
+    this.server.on('upgrade', async (request, socket, head) => {
+      for (const handle of this.wsServers) {
+        const result = await handle(request, socket, head);
+        if (result !== false) {
+          return;
+        }
+      }
       const { pathname } = parse(request.url);
 
       if (pathname === process.env.WS_PATH) {
@@ -482,5 +499,26 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
+  }
+
+  // TODO
+  private requestHandlers: ((req: IncomingRequest, res: ServerResponse) => boolean | void)[] = [];
+
+  registerRequestHandler(handler: (req: IncomingRequest, res: ServerResponse) => boolean | void) {
+    this.requestHandlers.push(handler);
+  }
+
+  unregisterRequestHandler(handler: (req: IncomingRequest, res: ServerResponse) => boolean | void) {
+    this.requestHandlers = this.requestHandlers.filter((h) => h !== handler);
+  }
+
+  private wsServers: ((req: IncomingRequest, res: ServerResponse) => boolean | void)[] = [];
+
+  registerWsServer(wsServer: (req: IncomingRequest, res: ServerResponse) => boolean | void) {
+    this.wsServers.push(wsServer);
+  }
+
+  unregisterWsServer(wsServer: (req: IncomingRequest, res: ServerResponse) => boolean | void) {
+    this.wsServers = this.wsServers.filter((ws) => ws !== wsServer);
   }
 }

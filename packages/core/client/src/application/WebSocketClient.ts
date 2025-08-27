@@ -45,6 +45,13 @@ export class WebSocketClient {
       lastMessage: observable.ref,
     });
   }
+  // TODO 插件与主仓耦合了 此处代码需重新设计
+  getSubAppName = (app: Application) => {
+    const publicPath = app.getPublicPath();
+    const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
+    const match = location.pathname.match(new RegExp(pattern));
+    return match ? match[1] : null;
+  };
 
   getURL() {
     if (!this.app) {
@@ -54,8 +61,14 @@ export class WebSocketClient {
     if (!apiBaseURL) {
       return;
     }
-    const subApp = getSubAppName(this.app.getPublicPath());
-    const queryString = subApp ? `?__appName=${subApp}` : '';
+
+    let queryString = '';
+    if (this.getSubAppName(this.app)) {
+      queryString = `?_app=${this.getSubAppName(this.app)}`; // 新多应用 TODO 支持域名解析
+    } else {
+      const subApp = getSubAppName(this.app.getPublicPath());
+      queryString = subApp ? `?__appName=${subApp}` : '';
+    }
     const wsPath = this.options.basename || '/ws';
     if (this.options.url) {
       const url = new URL(this.options.url);
