@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Collection, Database, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
+import { CollectionService } from '../services/collection-service';
 
 export default {
   async ['collections:listMeta'](ctx, next) {
@@ -130,6 +131,54 @@ export default {
       throw e;
     }
 
+    await next();
+  },
+
+  async ['collections:selectable'](ctx, next) {
+    const allTables = await ctx.app.db.sequelize.getQueryInterface().showAllTables();
+    const underscored = ctx.app.db.options.underscored;
+    const existsCollections = Array.from(ctx.app.db.collections.values()).map((x: Collection) =>
+      underscored ? snakeCase(x.name) : x.name,
+    );
+
+    const tableNames = allTables.map((table) => {
+      if (typeof table === 'object' && table.tableName) {
+        return table.tableName;
+      }
+      return table;
+    });
+
+    const diffTables = tableNames.filter((tableName) => !existsCollections.includes(tableName));
+
+    ctx.body = diffTables.map((name) => ({ name }));
+    await next();
+  },
+
+  async ['collections:add'](ctx, next) {
+    const { values } = ctx.action.params;
+    const existsCollections = await ctx.app.db.getRepository('collections').find({
+      filter: { name: values },
+    });
+    const existsCollectionNames = existsCollections.map((c) => c.name);
+    const addToCollections = values.filter((table) => !existsCollectionNames.includes(table));
+    const mainDataSource = ctx.app.pm.get('data-source-main');
+    if (addToCollections.length) {
+      const collectionService = new CollectionService(ctx.app.db);
+      try {
+        (async () => {
+          mainDataSource.status = 'loading';
+          const results = await collectionService.loadCollections(addToCollections);
+          await ctx.app.db.getRepository('collections').create({ values: results });
+          mainDataSource.status = 'loaded';
+        })();
+      } catch (e) {
+        ctx.app.db.logger.error('Failed to add collections', {
+          error: e.message,
+          stack: e.stack,
+        });
+      }
+    }
+    ctx.body = true;
     await next();
   },
 };

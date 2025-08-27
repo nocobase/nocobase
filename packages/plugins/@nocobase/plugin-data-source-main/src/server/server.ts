@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import {
+  extractTypeFromDefinition,
+  fieldTypeMap,
+  Filter,
+  InheritedCollection,
+  UniqueConstraintError,
+} from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -29,11 +35,18 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { TableInfo } from '@nocobase/database';
+import { ColumnsDescription } from 'sequelize';
+import { PRESET_FIELDS_INTERFACES } from './constants';
+
+type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
 
   private db2cmCollections: string[] = [];
+
+  status: DataSourceState = 'loaded';
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
@@ -406,7 +419,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*'],
+      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
@@ -496,11 +509,26 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-
+    const plugin = this;
     this.app.resource(viewResourcer);
     this.app.actions(collectionActions);
+    this.app.resource({
+      name: 'mainDataSource',
+      actions: {
+        async refresh(ctx, next) {
+          if (plugin.status === 'loaded') {
+            await plugin.app.db.getRepository<CollectionRepository>('collections').load({
+              filter: plugin.loadFilter,
+            });
+          }
+          ctx.body = {
+            status: plugin.status,
+          };
+        },
+      },
+    });
 
-    const handleFieldSource = (fields) => {
+    const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
       for (const field of lodash.castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
@@ -526,6 +554,15 @@ export class PluginDataSourceMainServer extends Plugin {
           // set final options
           field.set('options', newOptions);
         }
+        const fieldTypes = fieldTypeMap[this.db.options.dialect];
+        if (rawFields && fieldTypes) {
+          const rawField = rawFields[field.get('name')];
+          if (rawField && !PRESET_FIELDS_INTERFACES.includes(field.get('interface'))) {
+            const mappedType = extractTypeFromDefinition(rawField.type);
+            const possibleTypes = fieldTypes[mappedType];
+            field.set('possibleTypes', possibleTypes);
+          }
+        }
       }
     };
 
@@ -548,7 +585,16 @@ export class PluginDataSourceMainServer extends Plugin {
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
+        const collectionName = ctx.action.params?.associatedIndex;
+        let rawFields: ColumnsDescription = {};
+        if (collectionName) {
+          const tableInfo: TableInfo = {
+            tableName: collectionName,
+            schema: process.env.COLLECTION_MANAGER_SCHEMA || ctx.app.db.options.schema,
+          };
+          rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(tableInfo);
+        }
+        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
       }
 
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
