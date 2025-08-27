@@ -10,7 +10,7 @@
 import React from 'react';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import PageComponent from './PageComponent';
+import { PageComponent, PageIndexContext } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import ReactDOM from 'react-dom';
 
@@ -87,8 +87,16 @@ export function usePage() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
-      return <>{elements}</>;
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+      return (
+        <>
+          {elements.map((el, index) => (
+            <PageIndexContext.Provider key={index} value={index}>
+              {el}
+            </PageIndexContext.Provider>
+          ))}
+        </>
+      );
     }),
   );
 

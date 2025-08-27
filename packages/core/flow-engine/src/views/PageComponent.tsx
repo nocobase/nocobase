@@ -7,11 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { useFlowEngine } from '../provider';
 
-const PageComponent = forwardRef((props: any, ref) => {
-  const { visible = true, afterClose, onClose, children, ...rest } = props;
+export const PageComponent = forwardRef((props: any, ref) => {
+  const { visible = true, afterClose, children } = props;
   const closedRef = useRef(false);
+  const flowEngine = useFlowEngine();
+
+  // 用于确定多个页面之间的层级顺序
+  const index = usePageIndex();
 
   // 提供 destroy 和 update 能力
   useImperativeHandle(ref, () => ({
@@ -26,9 +31,28 @@ const PageComponent = forwardRef((props: any, ref) => {
     },
   }));
 
+  const style: React.CSSProperties = useMemo(
+    () => ({
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: flowEngine.context.themeToken.colorBgLayout,
+      zIndex: index,
+    }),
+    [flowEngine.context.themeToken.colorBgLayout, index],
+  );
+
   if (!visible) return null;
 
-  return <div>{children}</div>;
+  return <div style={style}>{children}</div>;
 });
 
-export default PageComponent;
+export const PageIndexContext = React.createContext<number>(0);
+
+const usePageIndex = () => {
+  return React.useContext(PageIndexContext);
+};

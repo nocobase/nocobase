@@ -90,7 +90,7 @@ export const FlowRoute = () => {
         const { viewsToClose, viewsToOpen } = getViewDiff(prevViewListRef.current, viewList);
 
         // 4. 处理需要打开的视图
-        viewsToOpen.forEach((viewItem, index) => {
+        viewsToOpen.forEach((viewItem) => {
           const closeRef = React.createRef<() => void>();
           const updateRef = React.createRef<(value: any) => void>();
 
