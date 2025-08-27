@@ -199,7 +199,8 @@ CollectionFieldFormItemModel.registerFlow({
       use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
+        const className = ctx.model.getProps().pattern === 'readPretty' ? 'ReadPrettyFieldModel' : 'FormFieldModel';
+        const classes = [...ctx.model.collectionField.getSubclassesOf(className).keys()];
         if (classes.length === 1) {
           return null;
         }
@@ -244,32 +245,38 @@ CollectionFieldFormItemModel.registerFlow({
       defaultParams: (ctx) => ({
         pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
-      async handler(ctx, params) {
+      beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.pattern === 'readPretty') {
           const use =
             ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-          const model = ctx.model.setSubModel('field', {
+          await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
             use: use,
             stepParams: {
               fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
+                init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
               },
             },
           });
-          await model.applyAutoFlows();
         } else {
-          const { subModel } = ctx.model.getProps();
-          if (subModel !== ctx.model.subModels.field.use) {
-            const model = ctx.model.setSubModel('field', {
-              use: subModel,
+          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          if (previousParams.pattern === 'readPretty') {
+            await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
+              use: use,
               stepParams: {
                 fieldSettings: {
-                  init: ctx.model.getFieldSettingsInitParams(),
+                  init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
                 },
               },
             });
-            await model.applyAutoFlows();
           }
+        }
+      },
+      async handler(ctx, params) {
+        if (params.pattern === 'readPretty') {
+          ctx.model.setProps({
+            pattern: 'readPretty',
+          });
+        } else {
           ctx.model.setProps({
             disabled: params.pattern === 'disabled',
           });

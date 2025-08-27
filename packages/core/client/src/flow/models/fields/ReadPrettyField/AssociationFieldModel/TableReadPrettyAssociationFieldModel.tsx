@@ -50,7 +50,7 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
   ];
 
   getColumns() {
-    const { enableIndexColumn } = this.props;
+    const { enableIndexColumn = true } = this.props;
     const baseColumns = this.mapSubModels('columns', (column: TableColumnModel) => column.getColumnProps()).filter(
       (v) => {
         return !v.hidden;
@@ -63,8 +63,8 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
         width: 48,
         align: 'center',
         fixed: 'left',
-        render: (props) => {
-          return props.rowIdx + 1;
+        render: (props, record, index) => {
+          return index + 1;
         },
       },
       ...baseColumns,
