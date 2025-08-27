@@ -344,7 +344,7 @@ describe('FlowModel', () => {
 
         expect(result).toEqual({});
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
@@ -376,15 +376,15 @@ describe('FlowModel', () => {
 
         TestFlowModel.registerFlow(exitFlow);
         TestFlowModel.registerFlow(exitFlow2);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
         await model.applyAutoFlows();
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
 
       test('should handle FlowExitAllException correctly', async () => {
@@ -414,15 +414,15 @@ describe('FlowModel', () => {
 
         TestFlowModel.registerFlow(exitFlow);
         TestFlowModel.registerFlow(exitFlow2);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
         await model.applyAutoFlows();
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
 
       test('should handle FlowExitAllException correctly', async () => {
@@ -448,7 +448,7 @@ describe('FlowModel', () => {
 
         expect(result).toBeInstanceOf(FlowExitAllException);
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
@@ -494,7 +494,7 @@ describe('FlowModel', () => {
 
       test('should skip step when action not found', async () => {
         model.flowEngine.getAction = vi.fn().mockReturnValue(null);
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'error').mockImplementation(() => {});
 
         const actionFlow: FlowDefinitionOptions = {
           key: 'actionFlow',
@@ -510,9 +510,9 @@ describe('FlowModel', () => {
         const result = await model.applyFlow('actionFlow');
 
         expect(result).toEqual({});
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Action 'nonExistentAction' not found"));
+        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining("Action 'nonExistentAction' not found"));
 
-        consoleSpy.mockRestore();
+        loggerSpy.mockRestore();
       });
     });
 
@@ -603,15 +603,15 @@ describe('FlowModel', () => {
           afterHookSpy = vi.fn();
           errorHookSpy = vi.fn();
           TestFlowModelWithHooks = class extends TestFlowModel {
-            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
             }
 
-            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };
@@ -640,21 +640,21 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should allow beforeApplyAutoFlows to terminate flow via ctx.exit()', async () => {
+        test('should allow onBeforeAutoFlows to terminate flow via ctx.exit()', async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
 
           const TestFlowModelWithExitHooks = class extends TestFlowModel {
-            async beforeApplyAutoFlows(inputArgs?: Record<string, any>) {
+            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
               beforeHookSpy(inputArgs);
               throw new FlowExitException('autoFlows', this.uid);
             }
 
-            async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>) {
+            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
               afterHookSpy(results, inputArgs);
             }
 
-            async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
+            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
               errorHookSpy(error, inputArgs);
             }
           };
@@ -666,7 +666,7 @@ describe('FlowModel', () => {
           const modelWithHooks = new TestFlowModelWithExitHooks(modelOptions);
           const results = await modelWithHooks.applyAutoFlows();
 
-          // Should have called beforeApplyAutoFlows but not afterApplyAutoFlows
+          // Should have called onBeforeAutoFlows but not onAfterAutoFlows
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
           expect(errorHookSpy).not.toHaveBeenCalled();
@@ -679,7 +679,7 @@ describe('FlowModel', () => {
           expect(autoFlow2.steps.autoStep.handler).not.toHaveBeenCalled();
         });
 
-        test('should call onApplyAutoFlowsError when flow execution fails', async () => {
+        test('should call onAutoFlowsError when flow execution fails', async () => {
           const errorFlow = {
             key: 'errorFlow',
 
@@ -712,7 +712,7 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should provide access to step results in afterApplyAutoFlows', async () => {
+        test('should provide access to step results in onAfterAutoFlows', async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
           TestFlowModelWithHooks.registerFlow(autoFlow1);
@@ -749,7 +749,9 @@ describe('FlowModel', () => {
           // Use a more reliable approach than arbitrary timeout
           await new Promise((resolve) => setTimeout(resolve, 0));
 
-          expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("dispatching event 'testEvent'"));
+          expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining('[FlowModel] dispatchEvent: uid=test-model-uid, event=testEvent'),
+          );
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
               inputArgs: { data: 'payload' },

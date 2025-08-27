@@ -639,33 +639,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }, 100);
 
   /**
-   * 在所有自动流程执行前调用的钩子方法。
-   * 子类可以覆盖此方法来实现自定义逻辑，也可以通过抛出 FlowExitException 来终止流程。
-   * @param inputArgs 可选的输入参数
-   * @protected
-   * @internal 仅限子类覆盖，外部不应该直接调用
+   * 自动流程执行前钩子。
+   * 子类可覆盖；可抛出 FlowExitException 提前终止。
    */
-  public async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
+  public async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在所有自动流程执行后调用的钩子方法。
-   * 子类可以覆盖此方法来实现自定义逻辑。
-   * @param results 所有自动流程的执行结果数组
-   * @param inputArgs 可选的输入参数
-   * @protected
-   * @internal 仅限子类覆盖，外部不应该直接调用
+   * 自动流程执行后钩子。
+   * 子类可覆盖。
    */
-  public async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
+  public async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
-   * 在自动流程执行出错时调用的钩子方法。
-   * 子类可以覆盖此方法来实现自定义错误处理逻辑。
-   * @param error 捕获的错误
-   * @param inputArgs 可选的输入参数
-   * @protected
-   * @internal 仅限子类覆盖，外部不应该直接调用
+   * 自动流程错误钩子。
+   * 子类可覆盖。
    */
-  public async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
+  public async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
   /**
    * 执行所有自动应用流程
@@ -683,12 +672,49 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       this.flowEngine.applyFlowCache.delete(cacheKey);
     }
     this._lastAutoRunParams = args;
-    const isFork = (this as any).isFork === true;
-    if (isFork) {
-      return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
+
+    // 在执行自动流程前触发（无论是否命中缓存都应触发）
+    try {
+      await this.onBeforeAutoFlows(inputArgs);
+    } catch (error) {
+      if (error instanceof FlowExitException) {
+        this.context.logger?.debug(`[FlowModel.applyAutoFlows] ${error.message}`);
+        return [];
+      }
+      try {
+        await this.onAutoFlowsError(error as Error, inputArgs);
+      } catch (_) {
+        // swallow secondary hook error to avoid masking the original
+      }
+      throw error;
     }
-    // 传统行为：直接在 master 上执行
-    return this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
+
+    // 执行自动流程（内部可能命中缓存）
+    let results: any[] = [];
+    try {
+      results = await this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
+    } catch (error) {
+      try {
+        await this.onAutoFlowsError(error as Error, inputArgs);
+      } catch (_) {
+        // ignore secondary error from error hook
+      }
+      throw error;
+    }
+
+    // 执行后钩子
+    try {
+      await this.onAfterAutoFlows(results, inputArgs);
+    } catch (error) {
+      try {
+        await this.onAutoFlowsError(error as Error, inputArgs);
+      } catch (_) {
+        // ignore
+      }
+      throw error;
+    }
+
+    return results;
   }
 
   /**
