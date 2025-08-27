@@ -82,7 +82,7 @@ export function TriggerWorkflowSelect(props) {
           action: 'list',
           params: {
             filter: {
-              type: props.types,
+              ...props.filter,
               enabled: true,
               'config.collection': workflowCollection,
             },

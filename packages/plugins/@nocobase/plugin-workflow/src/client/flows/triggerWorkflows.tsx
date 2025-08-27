@@ -14,10 +14,10 @@ import { NAMESPACE } from '../locale';
 type SchemaOptions = {
   optionFilter?: (option: { key: string; type: string; config: any }) => boolean;
   usingContext?: boolean;
-  types?: string[];
+  filter?: Record<string, any>;
 };
 
-export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true, types }: SchemaOptions = {}) {
+export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true, filter }: SchemaOptions = {}) {
   return (ctx) => {
     const { collection: collectionModel } = ctx.blockModel as CollectionBlockModel;
     const workflowCollection = collectionModel
@@ -88,7 +88,7 @@ export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true
                   'x-decorator': 'FormItem',
                   'x-component': TriggerWorkflowSelect,
                   'x-component-props': {
-                    types,
+                    filter,
                     ...(usingContext
                       ? {
                           collection: collectionModel,
@@ -96,7 +96,7 @@ export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true
                       : {}),
                     scope: 'form',
                     placeholder: `{{t('Select workflow', { ns: 'workflow' })}}`,
-                    optionFilter,
+                    optionFilter: optionFilter?.bind(ctx),
                   },
                   required: true,
                 },
