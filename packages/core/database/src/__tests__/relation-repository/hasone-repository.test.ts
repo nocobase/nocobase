@@ -62,6 +62,7 @@ describe('has one repository', () => {
 
   it('should emit event after update', async () => {
     const user = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'u1',
         profile: {
@@ -88,6 +89,7 @@ describe('has one repository', () => {
 
   test('find with appends', async () => {
     const user = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'u1',
         profile: {

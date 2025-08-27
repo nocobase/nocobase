@@ -57,6 +57,7 @@ describe('create with hasMany', () => {
 
   it('should save associations with reverseField value', async () => {
     const u1 = await db.getRepository('users').create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [{ title: 't1', user: null }],
@@ -183,6 +184,7 @@ describe('create', () => {
   test('firstOrCreate by filterKeys', async () => {
     const u1 = await User.repository.firstOrCreate({
       filterKeys: ['name'],
+      updateAssociationValues: ['group'],
       values: {
         name: 'u1',
         age: 10,
@@ -216,6 +218,7 @@ describe('create', () => {
     });
 
     const u1 = await User.repository.firstOrCreate({
+      updateAssociationValues: ['roles'],
       values: {
         name: 'u1',
         roles: [{ name: 'r1' }, { name: 'r2' }],
@@ -287,6 +290,7 @@ describe('create', () => {
 
   test('create with association', async () => {
     const u1 = await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [{ title: 'u1p1' }],
@@ -419,6 +423,7 @@ describe('validation', () => {
     it('should throw validation error for invalid avatar', async () => {
       await expect(
         User.repository.create({
+          updateAssociationValues: ['profile'],
           values: {
             name: randomStr().slice(0, 2),
             profile: {
@@ -430,6 +435,7 @@ describe('validation', () => {
     });
     it('should succeed with valid profile', async () => {
       const user = await User.repository.create({
+        updateAssociationValues: ['profile'],
         values: {
           name: randomStr().slice(0, 2),
           profile: {

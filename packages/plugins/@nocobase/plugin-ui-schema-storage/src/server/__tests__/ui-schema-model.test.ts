@@ -46,6 +46,7 @@ describe('ui schema model', () => {
     const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
     await RelatedCollection.repository.create({
+      updateAssociationValues: ['uiSchema'],
       values: {
         uiSchema: {
           'x-uid': 'root-uid',
@@ -87,6 +88,7 @@ describe('ui schema model', () => {
     const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
 
     const relatedInstance = await RelatedCollection.repository.create({
+      updateAssociationValues: ['uiSchema'],
       values: {
         uiSchema: {
           'x-uid': 'root-uid',

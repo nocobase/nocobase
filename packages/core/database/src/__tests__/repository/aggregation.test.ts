@@ -85,6 +85,7 @@ describe('association aggregation', () => {
   describe('belongs to many', () => {
     beforeEach(async () => {
       await User.repository.create({
+        updateAssociationValues: ['tags'],
         values: [
           {
             name: 'u1',
@@ -180,6 +181,7 @@ describe('association aggregation', () => {
   describe('has many', () => {
     beforeEach(async () => {
       await User.repository.create({
+        updateAssociationValues: ['posts'],
         values: [
           {
             name: 'u1',

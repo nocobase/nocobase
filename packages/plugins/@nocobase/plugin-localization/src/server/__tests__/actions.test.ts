@@ -44,6 +44,7 @@ describe('actions', () => {
     describe('list', () => {
       beforeAll(async () => {
         await repo.create({
+          updateAssociationValues: ['translations'],
           values: [
             {
               module: 'test',
@@ -111,6 +112,7 @@ describe('actions', () => {
 
     it('publish', async () => {
       await repo.create({
+        updateAssociationValues: ['translations'],
         values: [
           {
             module: 'test',

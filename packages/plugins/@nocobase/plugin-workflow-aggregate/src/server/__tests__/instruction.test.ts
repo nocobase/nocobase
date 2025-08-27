@@ -354,7 +354,10 @@ describe('workflow > instructions > aggregate', () => {
 
       await CommentRepo.create({ values: [{}, {}] });
 
-      const p1 = await PostRepo.create({ values: { title: 't1', comments: [{}, { status: 1 }] } });
+      const p1 = await PostRepo.create({
+        updateAssociationValues: ['comments'],
+        values: { title: 't1', comments: [{}, { status: 1 }] },
+      });
 
       const [e1] = await workflow.getExecutions();
       const [j1, j2] = await e1.getJobs({ order: [['id', 'ASC']] });

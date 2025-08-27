@@ -83,6 +83,7 @@ describe('multi target key in association repository', () => {
       await db.sync();
 
       await Student.repository.create({
+        updateAssociationValues: ['books'],
         values: [
           {
             name: 's1',
