@@ -142,6 +142,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this._options = options;
 
     define(this, {
+      hidden: observable,
       props: observable,
       subModels: observable.shallow,
       stepParams: observable,
@@ -334,6 +335,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   setTitle(value: string) {
     this._title = value;
+  }
+
+  setHidden(value: boolean) {
+    this.hidden = !!value;
   }
 
   private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
