@@ -555,13 +555,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (!this.listenerCount('error')) this.on('error', this.onerror);
 
-    const cb = (req: IncomingMessage, res: ServerResponse) => {
-      const ctx = this.createContext(req, res);
-
-      // @ts-ignore
-      return this.handleRequest(ctx, fn);
-    };
-
     return (req: IncomingMessage, res: ServerResponse) => {
       const ctx = this.createContext(req, res);
 
