@@ -158,6 +158,7 @@ export const getMembersSchema = (department: any, user: any) => ({
             },
           },
         },
+        // Setting - Department members table
         departments: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -244,6 +245,7 @@ export const getMembersSchema = (department: any, user: any) => ({
                       'x-decorator': 'FormV2',
                       title: '{{t("Configure")}}',
                       properties: {
+                        // Setting - Config - config member departments drawer
                         departments: {
                           title: '{{t("Departments")}}',
                           'x-decorator': 'FormItem',

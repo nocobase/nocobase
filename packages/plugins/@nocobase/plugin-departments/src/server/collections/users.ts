@@ -38,7 +38,7 @@ export const departmentsField = {
       multiple: true,
       fieldNames: {
         label: 'title',
-        value: 'name',
+        value: 'id',
       },
     },
   },
