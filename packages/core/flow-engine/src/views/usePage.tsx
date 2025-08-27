@@ -10,15 +10,14 @@
 import React from 'react';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { useFlowEngine } from '../provider';
 import PageComponent from './PageComponent';
 import usePatchElement from './usePatchElement';
+import ReactDOM from 'react-dom';
 
 let uuid = 0;
 
 export function usePage() {
   const holderRef = React.useRef(null);
-  const flowEngine = useFlowEngine();
 
   const open = (config, flowContext) => {
     uuid += 1;
@@ -76,15 +75,8 @@ export function usePage() {
     );
 
     if (target && target instanceof HTMLElement) {
-      // 直接渲染到指定 target
-      target.innerHTML = '';
-      const root = flowEngine.reactView.createRoot(target);
-      root.render(page);
-      closeFunc = () => {
-        root.unmount();
-      };
+      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target));
     } else {
-      // 默认用 patchElement 方式
       closeFunc = holderRef.current?.patchElement(page);
     }
 
