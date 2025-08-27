@@ -50,6 +50,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import { processIncludes } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -292,7 +293,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (queryOptions.include?.length === 0) {
+    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
+      queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+    } else {
       delete queryOptions.include;
     }
 
