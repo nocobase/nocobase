@@ -106,17 +106,24 @@ describe('FlowSettings.open rendering behavior', () => {
   afterEach(() => {
     document.querySelectorAll('[data-testid]')?.forEach((n) => n.remove());
     vi.clearAllMocks();
-    FlowModel.clearFlows();
   });
+
+  // 创建测试特定的 FlowModel 子类，确保每个测试有独立的 globalFlowRegistry
+  const createIsolatedFlowModel = (testId: string) => {
+    // 动态创建匿名类，每个类都有独立的 globalFlowRegistry
+    return class extends FlowModel {
+      static testId = testId; // 用于调试识别
+    };
+  };
 
   it('renders single-step form directly when flowKey+stepKey provided (no Collapse)', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-1', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-1');
+    const model = new TestFlowModel({ uid: 'm-open-1', flowEngine: engine });
 
     // Register a dummy flow with one step
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'testFlow',
       steps: {
         general: {
@@ -162,10 +169,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('renders Collapse when only one step matched but no stepKey provided', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-2', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-2');
+    const model = new TestFlowModel({ uid: 'm-open-2', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'testFlow2',
       steps: {
         general: {
@@ -211,7 +218,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('shows info when there are no configurable steps (entries length 0)', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-none', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-3');
+    const model = new TestFlowModel({ uid: 'm-open-none', flowEngine: engine });
 
     // message spy
     const info = vi.fn();
@@ -234,11 +242,11 @@ describe('FlowSettings.open rendering behavior', () => {
   it('uses drawer uiMode when specified', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-drawer', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-4');
+    const model = new TestFlowModel({ uid: 'm-open-drawer', flowEngine: engine });
 
     // Register one simple flow/step
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f',
       steps: {
         s: {
@@ -271,12 +279,12 @@ describe('FlowSettings.open rendering behavior', () => {
   it('saves successfully and calls hooks, messages, and close', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-save', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-5');
+    const model = new TestFlowModel({ uid: 'm-open-save', flowEngine: engine });
 
     const beforeHook = vi.fn();
     const afterHook = vi.fn();
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'fx',
       steps: {
         general: {
@@ -333,10 +341,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('calls onSaved callback after successful save', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-6');
+    const model = new TestFlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flow',
       steps: {
         step: {
@@ -375,10 +383,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('calls onCancel callback when cancel button clicked', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-7');
+    const model = new TestFlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flow',
       steps: {
         step: {
@@ -416,10 +424,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('handles save error by showing error message and keeping dialog open', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-error', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-8');
+    const model = new TestFlowModel({ uid: 'm-open-error', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'fy',
       steps: {
         s: {
@@ -463,10 +471,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('filters steps by preset when preset=true', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-preset', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-9');
+    const model = new TestFlowModel({ uid: 'm-open-preset', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'pf',
       steps: {
         a: {
@@ -501,10 +509,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('shows info when preset=true but no step is preset', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-10');
+    const model = new TestFlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'pf2',
       steps: {
         x: { title: 'X', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
@@ -522,13 +530,119 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(dialog).not.toHaveBeenCalled();
   });
 
-  it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
+  it('shows dialog when preset=true and step has hideInSettings=true', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
+    const model = new FlowModel({ uid: 'm-open-preset-hidden', flowEngine: engine });
 
     const M = model.constructor as any;
     M.registerFlow({
+      key: 'pf3',
+      steps: {
+        hiddenStep: {
+          title: 'Hidden Step',
+          preset: true,
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+        visibleStep: {
+          title: 'Visible Step',
+          uiSchema: { field2: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({ model, flowKey: 'pf3', preset: true } as any);
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，因为 hiddenStep 有 preset=true
+  });
+
+  it('ignores hideInSettings when preset=true for individual step', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-preset-single-hidden', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf4',
+      steps: {
+        targetStep: {
+          title: 'Target Step',
+          preset: true,
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'pf4',
+      stepKey: 'targetStep',
+      preset: true,
+    } as any);
+
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，即使 hideInSettings=true
+  });
+
+  it('respects hideInSettings when preset=false', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-open-normal-hidden', flowEngine: engine });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'pf5',
+      steps: {
+        hiddenStep: {
+          title: 'Hidden Step',
+          hideInSettings: true,
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+        visibleStep: {
+          title: 'Visible Step',
+          uiSchema: { field2: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    const dialog = vi.fn(({ content }) => {
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof content === 'function') content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await flowSettings.open({ model, flowKey: 'pf5', preset: false } as any);
+    expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，但只包含 visibleStep
+  });
+
+  it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const TestFlowModel = createIsolatedFlowModel('test-11');
+    const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
       key: 'flowObj',
       steps: {
         step: {
@@ -578,10 +692,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('accepts uiMode object with type drawer and calls viewer.drawer', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-12');
+    const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'flowObj2',
       steps: {
         step: {
@@ -616,10 +730,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('sets title to step title when flowKey+stepKey are provided and only one step matches', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-step', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-13');
+    const model = new TestFlowModel({ uid: 'm-open-title-step', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'tf-step',
       steps: {
         general: {
@@ -645,10 +759,10 @@ describe('FlowSettings.open rendering behavior', () => {
   it('sets title to flow title when only one flow and no stepKey', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-14');
+    const model = new TestFlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'tf-flow',
       title: 'My Flow',
       steps: {
@@ -666,23 +780,23 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('viewer', { value: { dialog } });
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
 
-    // do not pass stepKey, and also omit flowKey to allow aggregator path to pick the only flow
-    await flowSettings.open({ model } as any);
+    // explicitly pass flowKey to avoid interference from other tests
+    await flowSettings.open({ model, flowKey: 'tf-flow' } as any);
     expect(dialog).toHaveBeenCalledTimes(1);
   });
 
   it('sets empty title when rendering multiple flows together', async () => {
     const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
-    const model = new FlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
+    const TestFlowModel = createIsolatedFlowModel('test-15');
+    const model = new TestFlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
 
-    const M = model.constructor as any;
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f1',
       title: 'Flow 1',
       steps: { s1: { title: 'S1', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
     });
-    M.registerFlow({
+    TestFlowModel.registerFlow({
       key: 'f2',
       title: 'Flow 2',
       steps: { s2: { title: 'S2', uiSchema: { b: { type: 'string', 'x-component': 'Input' } } } },
@@ -934,5 +1048,288 @@ describe('FlowSettings.open rendering behavior', () => {
 
     // Restore console.error
     console.error = originalConsoleError;
+  });
+
+  it('supports reactive objects in uiMode function and auto-updates dialog props', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-reactive-uimode', flowEngine: engine });
+
+    // Create reactive state object
+    const reactiveState = observable({
+      title: 'Initial Title',
+      width: 600,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithReactiveUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const updateSpy = vi.fn();
+    const closeSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      // Verify initial props
+      expect(opts.title).toBe('Initial Title');
+      expect(opts.width).toBe(600);
+
+      const dlg = {
+        close: closeSpy,
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithReactiveUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+
+    // Wait for autorun to be setup
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Update reactive state
+    reactiveState.title = 'Updated Title';
+    reactiveState.width = 800;
+
+    // Wait for reactive update
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Verify that dialog.update was called with new props
+    expect(updateSpy).toHaveBeenCalledWith({
+      title: 'Updated Title',
+      width: 800,
+    });
+  });
+
+  it('properly disposes reactive listener when dialog is closed', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-reactive-dispose', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Title',
+      width: 500,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithReactiveDispose',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    let onCloseFn: Function | undefined;
+    const updateSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      // Capture the onClose callback
+      onCloseFn = opts.onClose;
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithReactiveDispose', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+    expect(typeof onCloseFn).toBe('function');
+
+    // Wait for autorun to be setup
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    // Call the dispose function to simulate dialog close
+    onCloseFn?.();
+
+    // Update reactive state after disposal
+    reactiveState.title = 'Should Not Update';
+    reactiveState.width = 999;
+
+    // Wait to ensure no update occurs
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify that dialog.update was NOT called after disposal
+    expect(updateSpy).not.toHaveBeenCalled();
+  });
+
+  it('handles reactive uiMode when rendering multiple steps (should ignore step-level reactive uiMode)', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-multi-reactive', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Reactive Title',
+      width: 700,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithMultiStepsReactive',
+      steps: {
+        step1: {
+          title: 'Step1',
+          uiMode: (ctx: any) => ({
+            type: 'dialog',
+            props: {
+              title: reactiveState.title,
+              width: reactiveState.width,
+            },
+          }),
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+        step2: {
+          title: 'Step2',
+          uiSchema: { g: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const dialog = vi.fn((opts: any) => {
+      // When multiple steps, should use global uiMode, not step-level reactive uiMode
+      expect(opts.title).toBe('Global Title');
+      expect(opts.width).toBe(1000);
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: vi.fn(),
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'flowWithMultiStepsReactive',
+      uiMode: { type: 'dialog', props: { title: 'Global Title', width: 1000 } },
+    } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles async reactive uiMode function updates', async () => {
+    const { observable } = await import('@formily/reactive');
+
+    const flowSettings = new FlowSettings();
+    const engine = new FlowEngine();
+    const model = new FlowModel({ uid: 'm-async-reactive', flowEngine: engine });
+
+    const reactiveState = observable({
+      title: 'Async Title',
+      width: 650,
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'flowWithAsyncReactiveUiMode',
+      steps: {
+        step: {
+          title: 'Step',
+          uiMode: async (ctx: any) => {
+            return {
+              type: 'dialog',
+              props: {
+                title: reactiveState.title,
+                width: reactiveState.width,
+              },
+            };
+          },
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const updateSpy = vi.fn();
+    const dialog = vi.fn((opts: any) => {
+      expect(opts.title).toBe('Async Title');
+      expect(opts.width).toBe(650);
+
+      const dlg = {
+        close: vi.fn(),
+        Footer: (p: any) => null,
+        update: updateSpy,
+      } as any;
+
+      if (typeof opts.content === 'function') {
+        opts.content(dlg);
+      }
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { dialog } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({ model, flowKey: 'flowWithAsyncReactiveUiMode', stepKey: 'step' } as any);
+
+    expect(dialog).toHaveBeenCalledTimes(1);
+
+    // Wait for autorun and async uiMode resolution
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // Update reactive state
+    reactiveState.title = 'Async Updated Title';
+    reactiveState.width = 750;
+
+    // Wait for reactive update
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify that dialog.update was called with new props
+    expect(updateSpy).toHaveBeenCalledWith({
+      title: 'Async Updated Title',
+      width: 750,
+    });
   });
 });

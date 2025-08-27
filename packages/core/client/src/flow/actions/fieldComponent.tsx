@@ -34,7 +34,7 @@ export const fieldComponent = defineAction({
   beforeParamsSave: async (ctx, params, previousParams) => {
     if (params.use !== previousParams.use) {
       console.log(params.use);
-      const model = ctx.model.setSubModel('field', {
+      await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
         use: params.use,
         stepParams: {
           fieldSettings: {
@@ -42,7 +42,6 @@ export const fieldComponent = defineAction({
           },
         },
       });
-      await model.applyAutoFlows();
     }
   },
   defaultParams: (ctx) => {

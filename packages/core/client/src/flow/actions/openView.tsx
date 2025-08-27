@@ -13,7 +13,7 @@ import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('General'),
+  title: escapeT('Edit popup'),
   uiSchema: {
     mode: {
       type: 'string',
@@ -21,7 +21,7 @@ export const openView = defineAction({
       enum: [
         { label: escapeT('Drawer'), value: 'drawer' },
         { label: escapeT('Dialog'), value: 'dialog' },
-        // { label: escapeT('Page'), value: 'page' },
+        { label: escapeT('Page'), value: 'embed' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -60,8 +60,9 @@ export const openView = defineAction({
 
     await ctx.viewer.open({
       type: openMode,
-      closable: false,
-      target: ctx.inputArgs.target || ctx.layoutContentElement,
+      preventClose: !!params.preventClose,
+      inheritContext: false,
+      target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
       width: sizeToWidthMap[size],
       content: (currentView) => {
         return (

@@ -10,24 +10,27 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
+  buildWrapperFieldChildren,
+  Collection,
   DragHandler,
   Droppable,
   escapeT,
   FlowModel,
+  FlowModelContext,
   FlowsFloatContextMenu,
   useFlowSettingsContext,
-  FlowModelContext,
-  Collection,
-  buildWrapperFieldChildren,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
+import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
-import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 
 export class TableColumnModel extends FieldModel {
+  // 标记：该类的 render 返回函数， 避免错误的reactive封装
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
@@ -93,8 +96,8 @@ export class TableColumnModel extends FieldModel {
   render() {
     return (value, record, index) => (
       <>
-        {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
-          const fork = action.createFork({}, `${index}`);
+        {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
+          const fork = field.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
           });
@@ -102,7 +105,7 @@ export class TableColumnModel extends FieldModel {
             get: () => index,
           });
           return (
-            <FormItem {...this.props} value={value} noStyle={true}>
+            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
             </FormItem>
           );
@@ -225,7 +228,9 @@ TableColumnModel.registerFlow({
   },
 });
 
-export class TableCustomColumnModel extends FlowModel {}
+export class TableCustomColumnModel extends FlowModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+}
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',

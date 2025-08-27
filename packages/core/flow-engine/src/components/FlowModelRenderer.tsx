@@ -45,7 +45,7 @@
 import { observer } from '@formily/reactive-react';
 import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
-import React, { Suspense, useEffect } from 'react';
+import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
 import { FlowModel } from '../models';

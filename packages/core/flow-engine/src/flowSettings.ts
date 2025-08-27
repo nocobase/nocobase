@@ -9,7 +9,7 @@
 
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { define, observable } from '@formily/reactive';
+import { autorun, define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
 import React from 'react';
 import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
@@ -18,16 +18,17 @@ import { openStepSettingsDialog } from './components/settings/wrappers/contextua
 import { FlowRuntimeContext } from './flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import type { FlowDefinition } from './types';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
+  FlowExitException,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
+import _ from 'lodash';
 
 const Panel = Collapse.Panel;
 
@@ -425,8 +426,7 @@ export class FlowSettings {
     const message = model.context?.message;
 
     // 聚合渲染：准备需要处理的 flow 列表（flowKey 优先其余）
-    const ModelClass = model.constructor as typeof FlowModel;
-    const allFlowsMap = ModelClass.getFlows();
+    const allFlowsMap = model.getFlows();
     const targetFlowKeys: string[] = (() => {
       if (flowKey) return [flowKey];
       if (Array.isArray(flowKeys) && flowKeys.length) return flowKeys;
@@ -466,7 +466,7 @@ export class FlowSettings {
         // 如明确指定了 stepKey，则仅处理对应步骤
         if (stepKey && sk !== stepKey) continue;
         const step = (flow.steps as any)[sk];
-        if (!step || step.hideInSettings) continue;
+        if (!preset && (!step || step.hideInSettings)) continue;
         // 当指定仅打开预设步骤时，过滤掉未标记 preset 的步骤
         if (preset && !step.preset) continue;
 
@@ -585,8 +585,8 @@ export class FlowSettings {
         return entries[0].stepTitle;
       }
 
-      if (!multipleFlows) {
-        // 情况 B：未提供 stepKey 且仅有一个步骤 => 与情况 A 一致
+      if (!multipleFlows && entries.length > 0) {
+        // 情况 B：只有一个flow且未指定stepKey => 返回第一个步骤标题
         return entries[0].stepTitle;
       }
 
@@ -594,11 +594,33 @@ export class FlowSettings {
       return '';
     };
 
+    const dispose = { value: () => {} };
+    // 支持 uiMode 函数中使用响应式对象
+    const autoUpdateViewProps = (step, currentDialog) => {
+      dispose.value = reaction(
+        () => {
+          return resolveUiMode(step.uiMode || uiMode, step.ctx);
+        },
+        (newValue) => {
+          newValue
+            .then((newUiMode: any) => {
+              if (_.isPlainObject(newUiMode?.props)) {
+                currentDialog.update(newUiMode.props);
+              }
+            })
+            .catch((error) => {
+              console.warn('Error resolving uiMode:', error);
+            });
+        },
+      );
+    };
+
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
       width: modeProps.width ?? 600,
       destroyOnClose: true,
+      onClose: () => dispose.value(),
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       content: (currentDialog) => {
@@ -645,10 +667,14 @@ export class FlowSettings {
         const renderStepsContainer = (): React.ReactNode => {
           // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
-            return renderStepForm(entries[0]);
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
+            return renderStepForm(step);
           }
 
           if (!multipleFlows) {
+            const step = entries[0];
+            autoUpdateViewProps(step, currentDialog);
             // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
             return renderStepForm(entries[0]);
           }
@@ -696,6 +722,10 @@ export class FlowSettings {
               console.error('FlowSettings.open: onSaved callback error', cbErr);
             }
           } catch (err) {
+            if (err instanceof FlowExitException) {
+              currentDialog.close();
+              return;
+            }
             console.error('FlowSettings.open: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
@@ -731,6 +761,11 @@ export class FlowSettings {
     return true;
   }
 
+  // =============================
+  // Dynamic flows editor (disabled)
+  // Kept as comments to preserve context
+  // =============================
+  /*
   public async openDynamicFlowsEditor(
     options: Pick<FlowSettingsOpenOptions, 'model' | 'uiMode' | 'onCancel'> & {
       onSaved?: (flows: FlowDefinition[]) => void | Promise<void>;
@@ -768,11 +803,9 @@ export class FlowSettings {
             try {
               await onSaved?.(plain);
             } catch (cbErr) {
-              // eslint-disable-next-line no-console
               console.error('FlowSettings.openDynamicFlowsEditor: onSaved callback error', cbErr);
             }
           } catch (err) {
-            // eslint-disable-next-line no-console
             console.error('FlowSettings.openDynamicFlowsEditor: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
@@ -792,7 +825,6 @@ export class FlowSettings {
                   try {
                     await onCancel?.();
                   } catch (cbErr) {
-                    // eslint-disable-next-line no-console
                     console.error('FlowSettings.openDynamicFlowsEditor: onCancel callback error', cbErr);
                   }
                 },
@@ -807,4 +839,5 @@ export class FlowSettings {
       },
     });
   }
+  */
 }
