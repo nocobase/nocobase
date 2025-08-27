@@ -22,7 +22,13 @@ export class FlowExecutor {
   /**
    * Execute a single flow on model.
    */
-  async runFlow(model: FlowModel, flowKey: string, inputArgs?: Record<string, any>, runId?: string): Promise<any> {
+  async runFlow(
+    model: FlowModel,
+    flowKey: string,
+    inputArgs?: Record<string, any>,
+    runId?: string,
+    startGate?: { wait: Promise<void>; release: () => void },
+  ): Promise<any> {
     const flow = model.getFlow(flowKey);
 
     if (!flow) {
@@ -58,6 +64,7 @@ export class FlowExecutor {
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
     const stepDefs = flow.steps; // Record<string, StepDefinition>
+    let startGateApplied = false;
     for (const stepKey in stepDefs) {
       if (!Object.prototype.hasOwnProperty.call(stepDefs, stepKey)) continue;
       const step: StepDefinition = stepDefs[stepKey];
@@ -110,9 +117,22 @@ export class FlowExecutor {
           );
           continue;
         }
-        const currentStepResult = handler(flowContext, combinedParams);
         const isAwait = step.isAwait !== false;
-        lastResult = isAwait ? await currentStepResult : currentStepResult;
+        if (!startGateApplied && startGate) {
+          await startGate.wait; // wait our turn (pre-created in dispatchEvent to preserve trigger order)
+          startGateApplied = true;
+          let currentStepResult: any;
+          try {
+            currentStepResult = handler(flowContext, combinedParams);
+          } finally {
+            // Release immediately after handler is invoked, so the next handler can start
+            startGate.release();
+          }
+          lastResult = isAwait ? await currentStepResult : currentStepResult;
+        } else {
+          const currentStepResult = handler(flowContext, combinedParams);
+          lastResult = isAwait ? await currentStepResult : currentStepResult;
+        }
 
         // Store step result
         stepResults[stepKey] = lastResult;
@@ -231,6 +251,7 @@ export class FlowExecutor {
 
   /**
    * Dispatch an event to flows bound via flow.on and execute them.
+   * Uses a global per-event FIFO chain to ensure handler start order equals trigger order.
    */
   async dispatchEvent(model: FlowModel, eventName: string, inputArgs?: Record<string, any>): Promise<void> {
     const flows = Array.from(model.getFlows().values()).filter((flow) => {
@@ -242,15 +263,32 @@ export class FlowExecutor {
     });
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
-    const promises = flows.map((flow) => {
+    // Create per-flow gates chained to a global per-event chain to ensure start order equals trigger order
+    let prev: Promise<void> = this.#eventStartChains.get(eventName) || Promise.resolve();
+    const gates: Array<{ wait: Promise<void>; release: () => void }> = flows.map(() => {
+      let release!: () => void;
+      const token = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const gate = { wait: prev, release };
+      prev = prev.then(() => token).catch(() => token);
+      return gate;
+    });
+    // Advance global chain tail
+    this.#eventStartChains.set(eventName, prev);
+
+    const runners: Array<() => Promise<any>> = flows.map((flow, idx) => () => {
       logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-      return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {
+      return this.runFlow(model, flow.key, inputArgs, runId, gates[idx]).catch((error) => {
         logger.error(
           { err: error },
           `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
         );
       });
     });
-    await Promise.all(promises);
+    await Promise.all(runners.map((run) => run()));
   }
+
+  // Global per-event FIFO chain used to align handler start order with trigger order
+  #eventStartChains: Map<string, Promise<void>> = new Map();
 }
