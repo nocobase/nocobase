@@ -984,16 +984,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     for (const key of Object.keys(values)) {
       const field = this.collection.getField(key);
-      const targetKey = field.targetKey;
       const hasAssociation =
         Boolean(field && field instanceof RelationField) || Boolean(this.collection.model.associations[key]);
       if (!hasAssociation) continue;
 
       const val = values[key];
-
+      const targetKey = field.targetKey || field.filterTargetKey;
       if (!allowList) {
         if (Array.isArray(val)) {
-          const mapped = val.map((item) => (item && typeof item === 'object' ? { targetKey: item[targetKey] } : item));
+          const mapped = val.map((item) =>
+            item && typeof item === 'object' ? { [targetKey]: item[targetKey] } : item,
+          );
           const hasValid = mapped.some((item) => {
             if (item === null || item === undefined) return false;
             if (typeof item === 'object') {
