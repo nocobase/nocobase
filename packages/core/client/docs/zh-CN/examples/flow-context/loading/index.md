@@ -2,15 +2,15 @@
 
 ## 在 Model 内部使用
 
-建议在 `beforeApplyAutoFlows` 或 `afterbeforeApplyAutoFlows` 方法中处理异步属性，系统会自动维护 loading 状态。例如：
+建议在 `onBeforeAutoFlows` 或 `onAfterAutoFlows` 方法中处理异步属性，系统会自动维护 loading 状态。例如：
 
 ```ts
 class MyModel {
-  async beforeApplyAutoFlows() {
+  async onBeforeAutoFlows() {
     this.asyncProperty1 = await this.context.asyncProperty2;
   }
 
-  async afterbeforeApplyAutoFlows() {
+  async onAfterAutoFlows() {
     this.asyncProperty1 = await this.context.asyncProperty2;
   }
 }

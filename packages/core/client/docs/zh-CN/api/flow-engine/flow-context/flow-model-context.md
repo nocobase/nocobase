@@ -55,6 +55,15 @@ const user = model.context.getUser();
 
 ---
 
+## 常用方法
+
+| 方法                                       | 说明                                                         |
+|--------------------------------------------|--------------------------------------------------------------|
+| `model.context.getAction(name)`            | 获取 Action 定义（模型类级优先，未命中回退全局）。            |
+| `model.context.getActions()`               | 获取合并后的 Action（Map），类级覆盖同名全局项。               |
+| `model.context.runAction(name, params?)`   | 执行解析后的 Action（合并默认参数，按需解析表达式）。          |
+
+
 ## 典型用法
 
 ### 1. 父模型向子模型共享自身实例

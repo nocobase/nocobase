@@ -25,7 +25,7 @@ export { getT, escapeT } from './translation';
 export { FlowExitException } from './exceptions';
 
 // 流程定义相关
-export { mergeFlowDefinitions, defineAction } from './flow-definitions';
+export { defineAction } from './flow-definitions';
 
 // 继承检查
 export { isInheritedFrom } from './inheritance';

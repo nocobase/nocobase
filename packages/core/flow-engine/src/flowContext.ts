@@ -21,6 +21,7 @@ import type { Location } from 'react-router-dom';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
+import type { ActionDefinition } from './types';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
@@ -32,7 +33,7 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { extractPropertyPath, FlowExitException, resolveExpressions } from './utils';
+import { extractPropertyPath, FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
@@ -762,6 +763,14 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
+  declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
+    name: string,
+  ) => ActionDefinition<TModel, TCtx> | undefined;
+  declare getActions: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  >;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
@@ -778,6 +787,14 @@ class BaseFlowEngineContext extends FlowContext {
 class BaseFlowModelContext extends BaseFlowEngineContext {
   declare model: FlowModel;
   declare ref: React.RefObject<HTMLDivElement>;
+  declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
+    name: string,
+  ) => ActionDefinition<TModel, TCtx> | undefined;
+  declare getActions: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  >;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -880,6 +897,38 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
       return runner.run(code);
     });
+    this.defineMethod('getAction', function (this: BaseFlowEngineContext, name: string) {
+      return this.engine.getAction(name);
+    });
+    this.defineMethod('getActions', function (this: BaseFlowEngineContext) {
+      return this.engine.getActions();
+    });
+    this.defineMethod(
+      'runAction',
+      async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
+        const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
+        const ctx = this.createProxy() as unknown as FlowEngineContext;
+        if (!def) {
+          throw new Error(`Action '${actionName}' not found.`);
+        }
+
+        const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
+        let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
+
+        let useRawParams = def.useRawParams;
+        if (typeof useRawParams === 'function') {
+          useRawParams = await useRawParams(ctx);
+        }
+        if (!useRawParams) {
+          combinedParams = await resolveExpressions(combinedParams, ctx);
+        }
+
+        if (!def.handler) {
+          throw new Error(`Action '${actionName}' has no handler.`);
+        }
+        return def.handler(ctx, combinedParams);
+      },
+    );
   }
 }
 
@@ -902,6 +951,38 @@ export class FlowModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('getAction', function (this: BaseFlowModelContext, name: string) {
+      return this.model.getAction(name);
+    });
+    this.defineMethod('getActions', function (this: BaseFlowModelContext) {
+      return this.model.getActions();
+    });
+    this.defineMethod(
+      'runAction',
+      async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
+        const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
+        const ctx = this.createProxy() as unknown as FlowModelContext;
+        if (!def) {
+          throw new Error(`Action '${actionName}' not found.`);
+        }
+
+        const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
+        let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
+
+        let useRawParams = def.useRawParams;
+        if (typeof useRawParams === 'function') {
+          useRawParams = await useRawParams(ctx);
+        }
+        if (!useRawParams) {
+          combinedParams = await resolveExpressions(combinedParams, ctx);
+        }
+
+        if (!def.handler) {
+          throw new Error(`Action '${actionName}' has no handler.`);
+        }
+        return def.handler(ctx, combinedParams);
+      },
+    );
   }
 }
 
@@ -914,7 +995,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       throw new Error('Invalid FlowModel instance');
     }
     super();
-    this.addDelegate(this.master.context);
+    this.addDelegate((this.master as any).context);
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
@@ -948,6 +1029,7 @@ export class FlowRuntimeContext<
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
   declare getStepResults: (stepKey: string) => any;
+  declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   constructor(
     public model: TModel,
     public flowKey: string,
