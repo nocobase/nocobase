@@ -1335,5 +1335,6 @@
   "Form settings": "表单设置",
   "The field value is required": "该字段是必填字段",
   "The field value is not a email format": "该字段不是合法的邮箱格式",
-  "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for field \"{{name}}\"": "当前用户只有 UI 配置权限，但没有字段 \"{{name}}\"的 \"{{actionName}}\"权限。"
+  "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for field \"{{name}}\"": "当前用户只有 UI 配置权限，但没有字段 \"{{name}}\"的 \"{{actionName}}\"权限。",
+  "Association table settings":"关系字段设置"
 }
