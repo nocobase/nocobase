@@ -48,4 +48,18 @@ describe('list view', () => {
     expect(results.find((item) => item.name === 'test1')).toBeTruthy();
     expect(results.find((item) => item.name === 'test2')).toBeTruthy();
   });
+
+  it.only('should list view when schema passed', async () => {
+    if (!db.options.schema) {
+      return;
+    }
+
+    const viewName = 'schema_test';
+    const newViewName = db.options.schema ? `${db.options.schema}.${viewName}` : viewName;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${newViewName}`);
+    await db.sequelize.query(`CREATE VIEW ${newViewName} AS SELECT 3`);
+
+    const results = await db.queryInterface.listViews({ schema: db.options.schema });
+    expect(results.find((item) => item.name === viewName)).toBeTruthy();
+  });
 });
