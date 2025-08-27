@@ -28,7 +28,7 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <Input variant={'borderless'} value={'No permission for this field'} readOnly disabled />;
+    return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
   }
 
   onInit(options: any): void {

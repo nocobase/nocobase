@@ -34,7 +34,7 @@ export class TableColumnModel extends FieldModel {
 
   // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>No permission</span>;
+    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>{this.context.t('Permission denied')}</span>;
   }
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
@@ -238,7 +238,7 @@ export class TableCustomColumnModel extends FlowModel {
 
   // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>No permission</span>;
+    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>{this.context.t('Permission denied')}</span>;
   }
 }
 
