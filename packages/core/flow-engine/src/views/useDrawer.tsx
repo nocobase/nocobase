@@ -77,8 +77,9 @@ export function useDrawer() {
         if (config.preventClose) {
           return;
         }
-        resolvePromise?.(result);
         drawerRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -138,7 +139,7 @@ export function useDrawer() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement<(children: any) => React.ReactElement>();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
 
       // 嵌套渲染：后面的元素是前一个元素的子元素
       const renderNestedElements = () => {
