@@ -36,6 +36,14 @@ export const openView = defineAction({
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
+      'x-reactions': {
+        dependencies: ['mode'],
+        fulfill: {
+          state: {
+            hidden: '{{$deps[0] === "embed"}}',
+          },
+        },
+      },
     },
   },
   defaultParams: {
