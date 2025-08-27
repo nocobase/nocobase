@@ -9,4 +9,4 @@
 
 export * from './ReadPrettyAssociationFieldModel';
 export * from './TagReadPrettyAssociationFieldModel';
-//
+export * from './TableReadPrettyAssociationFieldModel';
