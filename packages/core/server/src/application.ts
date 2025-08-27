@@ -547,12 +547,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this;
   }
 
-  private requestProxy: (req: IncomingMessage, res: ServerResponse) => Promise<void> | void | false;
-
-  setRequestProxy(proxy: (req: IncomingMessage, res: ServerResponse) => Promise<void> | void | false) {
-    this.requestProxy = proxy;
-  }
-
   /**
    * @internal
    */
@@ -568,17 +562,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return this.handleRequest(ctx, fn);
     };
 
-    if (this.requestProxy) {
-      return async (req: IncomingMessage, res: ServerResponse) => {
-        const result = await this.requestProxy(req, res);
-        if (result !== false) {
-          return result;
-        }
-        return cb(req, res);
-      };
-    }
+    return (req: IncomingMessage, res: ServerResponse) => {
+      const ctx = this.createContext(req, res);
 
-    return cb;
+      // @ts-ignore
+      return this.handleRequest(ctx, fn);
+    };
   }
 
   /**
