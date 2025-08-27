@@ -120,17 +120,20 @@ export const FlowModelsContext: WorkContextOptions = {
   name: 'flow-model',
   menu: {
     icon: <BuildOutlined />,
-    label: 'Select block',
+    Component: () => {
+      const t = useT();
+      return <div>{t('Select Block')}</div>;
+    },
   },
   children: {
     field: {
       menu: {
         icon: <PicLeftOutlined />,
-        Component: ({ onAdd }) => {
+        Component: () => {
           const t = useT();
-          const flowEngine = useFlowEngine();
-          return <div onClick={handleSelect(flowEngine, onAdd)}>{t('Fields')}</div>;
+          return <div>{t('Fields')}</div>;
         },
+        clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
       },
       tag: {
         Component: ({ item }) => {
@@ -154,11 +157,11 @@ export const FlowModelsContext: WorkContextOptions = {
     data: {
       menu: {
         icon: <TableOutlined />,
-        Component: ({ onAdd }) => {
+        Component: () => {
           const t = useT();
-          const flowEngine = useFlowEngine();
-          return <div onClick={handleSelect(flowEngine, onAdd)}>{t('Data')}</div>;
+          return <div>{t('Data')}</div>;
         },
+        clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
       },
       tag: {
         Component: ({ item }) => {
