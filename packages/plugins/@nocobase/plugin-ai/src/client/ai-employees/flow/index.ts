@@ -9,6 +9,7 @@
 
 import { CollectionBlockModel } from '@nocobase/client';
 import { FlowModel } from '@nocobase/flow-engine';
+import _ from 'lodash';
 
 export class FlowUtils {
   static getSubModels(model: FlowModel) {

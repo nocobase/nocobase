@@ -49,7 +49,7 @@ const toSimplifyForm = (model: FormModel) => {
       result.fields.push({
         name: collectionField.name,
         type: collectionField.type,
-        title: collectionField.title,
+        // title: collectionField.title,
         enum: collectionField.enum,
         readonly: collectionField.readonly,
         defaultValue: collectionField.defaultValue,

@@ -40,7 +40,8 @@ const walkthrough = (
 export const AddContextButton: React.FC<{
   onAdd: (item: ContextItem) => void;
   disabled?: boolean;
-}> = ({ onAdd, disabled }) => {
+  ignore?: (key: string, workContext: WorkContextOptions) => boolean;
+}> = ({ onAdd, disabled, ignore }) => {
   const t = useT();
   const flowEngine = useFlowEngine();
   const plugin = usePlugin('ai') as PluginAIClient;
@@ -56,8 +57,11 @@ export const AddContextButton: React.FC<{
       if (!contextItem.menu) {
         return;
       }
-
       const key = parent ? `${parent}.${contextItem.name}` : contextItem.name;
+      if (ignore?.(key, contextItem) ?? false) {
+        return;
+      }
+
       const C = contextItem.menu.Component;
       const item: MenuProps['items'] = {
         key,

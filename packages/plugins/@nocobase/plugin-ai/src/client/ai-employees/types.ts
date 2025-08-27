@@ -154,7 +154,7 @@ export type WorkContextOptions = {
   menu?: {
     icon?: React.ReactNode;
     label?: React.ReactNode;
-    Component?: ComponentType;
+    Component?: ComponentType<{ onAdd?: (item: Omit<ContextItem, 'type'>) => void }>;
     clickHandler?: (props: { flowEngine: FlowEngine; onAdd: (item: Omit<ContextItem, 'type'>) => void }) => () => void;
   };
   tag?: {
