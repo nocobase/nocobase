@@ -182,13 +182,6 @@ interface RelatedQueryOptions {
   };
 }
 
-type AssociationNode = {
-  association: string;
-  attributes?: any[];
-  include?: AssociationNode[];
-  fromFilter?: boolean;
-};
-
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
