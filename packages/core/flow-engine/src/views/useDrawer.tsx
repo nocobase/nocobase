@@ -109,7 +109,6 @@ export function useDrawer() {
 
       return (
         <DrawerComponent
-          key={`drawer-${uuid}`}
           ref={drawerRef}
           {...config}
           footer={currentFooter}
