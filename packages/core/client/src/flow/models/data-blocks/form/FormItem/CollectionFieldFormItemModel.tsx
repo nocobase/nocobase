@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { escapeT, FlowModelContext, buildWrapperFieldChildren, jioToJoiSchema } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { capitalize } from 'lodash';
 import { Alert } from 'antd';
@@ -18,6 +18,7 @@ import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
 import { FormItem } from './FormItem';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
+import { FieldValidation } from '../../../../../collection-manager';
 
 export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -279,6 +280,51 @@ CollectionFieldFormItemModel.registerFlow({
         } else {
           ctx.model.setProps({
             disabled: params.pattern === 'disabled',
+          });
+        }
+      },
+    },
+    validation: {
+      title: escapeT('Validation'),
+      uiSchema: (ctx) => {
+        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+          ctx.model.collectionField.interface,
+        );
+        return {
+          validation: {
+            'x-decorator': 'FormItem',
+            'x-component': FieldValidation,
+            'x-component-props': {
+              type: targetInterface.validationType,
+              availableValidationOptions: [...new Set(targetInterface.availableValidationOptions)],
+              excludeValidationOptions: [...new Set(targetInterface.excludeValidationOptions)],
+              isAssociation: targetInterface.isAssociation,
+            },
+          },
+        };
+      },
+      handler(ctx, params) {
+        if (params.validation) {
+          const rules = ctx.model.getProps().rules || [];
+          const schema = jioToJoiSchema(params.validation);
+          const label = ctx.model.props.label;
+          rules.push({
+            validator: (_, value) => {
+              const { error } = schema.validate(value, {
+                context: { label },
+                abortEarly: false,
+              });
+
+              if (error) {
+                const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+                return Promise.reject(message);
+              }
+
+              return Promise.resolve();
+            },
+          });
+          ctx.model.setProps({
+            rules,
           });
         }
       },
