@@ -54,6 +54,7 @@ import { valuesToFilter } from './utils/filter-utils';
 const debug = require('debug')('noco-database');
 
 interface CreateManyOptions extends BulkCreateOptions {
+  updateAssociationValues?: AssociationKeysToBeUpdate;
   records: Values[];
 }
 
@@ -974,6 +975,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
   protected filterAssociationValues(values: any, updateAssociationValues?: AssociationKeysToBeUpdate) {
     if (['collections', 'fields'].includes(this.collection.name)) {
+      return values;
+    }
+    const isTree = this.collection.options?.tree;
+    if (isTree) {
       return values;
     }
     if (!values || typeof values !== 'object') return values;

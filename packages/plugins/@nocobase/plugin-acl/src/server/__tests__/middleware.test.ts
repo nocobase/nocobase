@@ -169,9 +169,10 @@ describe('middleware', () => {
   });
 
   it('should limit fields on view actions', async () => {
-    const createResp = await adminAgent.resource('roles.resources', 'member').create({
+    const createResp = await adminAgent.resource('roles.dataSourceResources', 'member').create({
       values: {
         name: 'posts',
+        dataSourceKey: 'main',
         usingActionsConfig: true,
         actions: [
           {
@@ -219,8 +220,9 @@ describe('middleware', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources', role.get('name')).create({
+    await adminAgent.resource('roles.dataSourceResources', role.get('name')).create({
       values: {
+        dataSourceKey: 'main',
         name: 'posts',
         usingActionsConfig: true,
         actions: [
@@ -259,8 +261,9 @@ describe('middleware', () => {
   });
 
   it('should change fields params to whitelist in create action', async () => {
-    await adminAgent.resource('roles.resources', 'member').create({
+    await adminAgent.resource('roles.dataSourceResources', 'member').create({
       values: {
+        dataSourceKey: 'main',
         name: 'posts',
         usingActionsConfig: true,
         actions: [

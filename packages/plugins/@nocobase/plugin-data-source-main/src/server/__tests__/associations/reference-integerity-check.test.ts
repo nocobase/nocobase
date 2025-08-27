@@ -53,6 +53,7 @@ describe('reference integrity check', () => {
     await db.sync();
 
     const post = await posts.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'post',
         tags: [{ name: 't1' }, { name: 't2' }],
