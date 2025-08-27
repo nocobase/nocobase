@@ -22,8 +22,8 @@ export function verifyAssociationsPermissionMiddleware() {
       const collection = repository.collection;
       const checks = buildCheckData({ node: values, collection, paths: updateAssociationValues });
       await verifyPermission(ctx, checks);
-      await next();
     }
+    await next();
   };
 
   function buildCheckData(options: { node: any; collection: Collection; paths: string[] }) {

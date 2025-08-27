@@ -64,6 +64,7 @@ describe('role resource api', () => {
     });
 
     await db.getRepository('roles').create({
+      updateAssociationValues: ['resources'],
       values: {
         name: 'testRole',
         resources: [

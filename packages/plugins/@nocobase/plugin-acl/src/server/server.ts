@@ -503,7 +503,7 @@ export class PluginACLServer extends Plugin {
         }
       }
 
-      if (actionName === 'update' && resourceName === 'roles.resources') {
+      if (['create', 'update'].includes(actionName) && resourceName === 'roles.resources') {
         ctx.action.mergeParams({
           updateAssociationValues: ['actions'],
         });

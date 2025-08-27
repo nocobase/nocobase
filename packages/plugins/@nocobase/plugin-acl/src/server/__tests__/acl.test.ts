@@ -36,13 +36,23 @@ describe('acl', () => {
 
     const UserRepo = db.getCollection('users').repository;
 
-    admin = await UserRepo.create({
+    await db.getRepository('roles').update({
+      filterByTk: 'admin',
       values: {
-        roles: ['root', 'admin'],
+        strategy: {
+          actions: ['create', 'view', 'update', 'destroy'],
+        },
+        snippets: ['pm', 'pm.*', 'ui.*'],
       },
     });
 
-    adminAgent = (await app.agent().login(admin)).set('x-role', 'root');
+    admin = await UserRepo.create({
+      values: {
+        roles: ['admin'],
+      },
+    });
+
+    adminAgent = await app.agent().login(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
@@ -94,9 +104,10 @@ describe('acl', () => {
       },
     });
 
-    const createResp = await adminAgent.resource('roles.resources', 'test-role').create({
+    const createResp = await adminAgent.resource('roles.dataSourceResources', 'test-role').create({
       values: {
         name: 'repairs',
+        dataSourceKey: 'main',
         usingActionsConfig: true,
         actions: [
           {
@@ -207,10 +218,11 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources', 'test-role').create({
+    await adminAgent.resource('roles.dataSourceResources', 'test-role').create({
       values: {
         name: 'posts',
         usingActionsConfig: true,
+        dataSourceKey: 'main',
         actions: [
           {
             name: 'view',
@@ -377,8 +389,9 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources', 'new').create({
+    await adminAgent.resource('roles.dataSourceResources', 'new').create({
       values: {
+        dataSourceKey: 'main',
         name: 'c1',
         usingActionsConfig: true,
         actions: [],
@@ -417,9 +430,10 @@ describe('acl', () => {
       context: {},
     });
 
-    await adminAgent.resource('roles.resources', 'new').create({
+    await adminAgent.resource('roles.dataSourceResources', 'new').create({
       values: {
         name: 'c1',
+        dataSourceKey: 'main',
         usingActionsConfig: true,
         actions: [
           {
@@ -490,9 +504,10 @@ describe('acl', () => {
     } = publishedScopeResponse;
 
     // set admin resources
-    const createResponse = await adminAgent.resource('roles.resources', 'new').create({
+    const createResponse = await adminAgent.resource('roles.dataSourceResources', 'new').create({
       values: {
         name: 'c1',
+        dataSourceKey: 'main',
         usingActionsConfig: true,
         actions: [
           {
@@ -548,7 +563,7 @@ describe('acl', () => {
     const actions = response.body.data[0].actions;
     const collectionName = response.body.data[0].name;
 
-    const resp = await adminAgent.resource('roles.resources', role.get('name')).update({
+    const resp = await adminAgent.resource('roles.dataSourceResources', role.get('name')).update({
       filter: {
         name: collectionName,
         dataSourceKey: 'main',
@@ -596,9 +611,10 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources').create({
+    await adminAgent.resource('roles.dataSourceResources').create({
       associatedIndex: 'new',
       values: {
+        dataSourceKey: 'main',
         name: 'posts',
         usingActionsConfig: true,
         actions: [
@@ -647,9 +663,10 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources').create({
+    const response = await adminAgent.resource('roles.dataSourceResources').create({
       associatedIndex: 'new',
       values: {
+        dataSourceKey: 'main',
         name: 'posts',
         usingActionsConfig: true,
         actions: [
@@ -659,6 +676,7 @@ describe('acl', () => {
         ],
       },
     });
+    expect(response.statusCode).toEqual(200);
 
     expect(
       acl.can({
@@ -680,7 +698,7 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources', 'new').update({
+    await db.getRepository('dataSourcesRolesResources').update({
       filterByTk: existsResource.get('id'),
       values: {
         usingActionsConfig: false,
@@ -695,7 +713,7 @@ describe('acl', () => {
       }),
     ).toBeNull();
 
-    await adminAgent.resource('roles.resources', 'new').update({
+    await db.getRepository('dataSourcesRolesResources').update({
       filterByTk: existsResource.get('id'),
       values: {
         usingActionsConfig: true,
@@ -736,9 +754,10 @@ describe('acl', () => {
       },
     });
 
-    await adminAgent.resource('roles.resources').create({
+    await adminAgent.resource('roles.dataSourceResources').create({
       associatedIndex: 'new',
       values: {
+        dataSourceKey: 'main',
         name: 'posts',
         usingActionsConfig: true,
         actions: [

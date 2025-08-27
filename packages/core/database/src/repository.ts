@@ -670,7 +670,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       underscored: this.collection.options.underscored,
     });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const sanitized = guard.sanitize(options.values || {});
+    const filtered = this.filterAssociationValues(sanitized, options.updateAssociationValues);
+    const values = (this.model as typeof Model).callSetters(filtered, options);
     this.validate({ values: values as any, context: options.context, operation: 'create' });
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -741,7 +743,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const sanitized = guard.sanitize(options.values || {});
+    const filtered = this.filterAssociationValues(sanitized, options.updateAssociationValues);
+    const values = (this.model as typeof Model).callSetters(filtered, options);
     this.validate({ values: values as any, context: options.context, operation: 'update' });
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
@@ -966,6 +970,123 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       },
     });
     return parser.toSequelizeParams();
+  }
+
+  protected filterAssociationValues(values: any, updateAssociationValues?: AssociationKeysToBeUpdate) {
+    if (['collections', 'fields'].includes(this.collection.name)) {
+      return values;
+    }
+    if (!values || typeof values !== 'object') return values;
+
+    const result: any = { ...values };
+
+    const allowList = Array.isArray(updateAssociationValues) ? updateAssociationValues : undefined;
+
+    for (const key of Object.keys(values)) {
+      const field = this.collection.getField(key);
+      const hasAssociation =
+        Boolean(field && field instanceof RelationField) || Boolean(this.collection.model.associations[key]);
+      if (!hasAssociation) continue;
+
+      const val = values[key];
+
+      if (!allowList) {
+        if (Array.isArray(val)) {
+          const mapped = val.map((item) => (item && typeof item === 'object' ? { id: item.id } : item));
+          const hasValid = mapped.some((item) => {
+            if (item === null || item === undefined) return false;
+            if (typeof item === 'object') {
+              return item.id !== undefined && item.id !== null;
+            }
+            return true;
+          });
+          if (mapped.length === 0 || !hasValid) {
+            delete result[key];
+          } else {
+            result[key] = mapped;
+          }
+        } else if (val && typeof val === 'object') {
+          const id = val.id;
+          if (id === undefined || id === null) {
+            delete result[key];
+          } else {
+            result[key] = { id };
+          }
+        } else {
+          result[key] = val;
+        }
+        continue;
+      }
+
+      const hasExact = allowList.includes(key);
+      const nestedCandidates = allowList.filter((u) => u.startsWith(`${key}.`));
+      let hasNested = false;
+      if (nestedCandidates.length > 0) {
+        for (const nc of nestedCandidates) {
+          const remainder = nc.substring(key.length + 1);
+          const immediate = remainder.split('.')[0];
+          if (allowList.includes(`${key}.${immediate}`)) {
+            hasNested = true;
+            break;
+          }
+        }
+      }
+
+      if (hasExact && !hasNested) {
+        const targetCollection =
+          (field && (field as RelationField).targetCollection && (field as RelationField).targetCollection()) || null;
+
+        const filterItem = (item) => {
+          if (!item || typeof item !== 'object') return item;
+          const out: any = {};
+          if (item.id !== undefined) out.id = item.id;
+          for (const k of Object.keys(item)) {
+            if (k === 'id') continue;
+            if (targetCollection) {
+              const tf = targetCollection.getField(k);
+              const isRel = Boolean(tf && tf.isRelationField && tf.isRelationField());
+              const assocExists = Boolean(targetCollection.model.associations[k]);
+              if (isRel || assocExists) {
+                continue;
+              }
+            }
+            const v = item[k];
+            if (v === null || typeof v !== 'object') {
+              out[k] = v;
+            } else {
+              out[k] = v;
+            }
+          }
+          return out;
+        };
+
+        if (Array.isArray(val)) {
+          result[key] = val.map(filterItem);
+        } else if (val && typeof val === 'object') {
+          result[key] = filterItem(val);
+        } else {
+          result[key] = val;
+        }
+        continue;
+      }
+
+      if (hasNested || hasExact) {
+        result[key] = val;
+        continue;
+      }
+
+      if (Array.isArray(val)) {
+        result[key] = val.map((item) =>
+          item && typeof item === 'object' ? { [field.targetKey]: item[field.targetKey] } : item,
+        );
+      } else if (val && typeof val === 'object') {
+        result[key] = { [field.targetKey]: val[field.targetKey] };
+      } else {
+        result[key] = val;
+      }
+    }
+
+    return result;
   }
 
   protected async getTransaction(options: any, autoGen = false) {
