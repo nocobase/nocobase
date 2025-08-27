@@ -25,11 +25,11 @@ export const UserDepartmentsFieldSettings = new SchemaSettings({
     // {
     //   ...fieldComponent,
     // },
-    {
-      ...titleField,
-    },
-    {
-      ...enableLink,
-    },
+    // {
+    //   ...titleField,
+    // },
+    // {
+    //   ...enableLink,
+    // },
   ],
 });

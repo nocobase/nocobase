@@ -19,7 +19,7 @@
 import React, { useEffect, useState } from 'react';
 import { Select } from 'antd';
 import { Field } from '@formily/core';
-import { connect, mapReadPretty, useField, useForm } from '@formily/react';
+import { connect, mapReadPretty, useField, useForm, useFieldSchema } from '@formily/react';
 import { ActionContextProvider, AssociationField, SchemaComponent } from '@nocobase/client';
 import { DepartmentTable } from './DepartmentTable';
 import { useDepartmentTranslation } from '../locale';
@@ -161,4 +161,18 @@ const EditableDepartmentsField: React.FC = () => {
   );
 };
 
-export const DepartmentsField = connect(EditableDepartmentsField, mapReadPretty(AssociationField.ReadPretty));
+export const DepartmentsField = connect(
+  EditableDepartmentsField,
+  mapReadPretty((props) => {
+    const fieldSchema = useFieldSchema();
+    fieldSchema['x-component-props'] = {
+      ...fieldSchema['x-component-props'],
+      fieldNames: {
+        label: 'title',
+        value: 'id',
+      },
+    };
+
+    return <AssociationField.ReadPretty {...props} />;
+  }),
+);
