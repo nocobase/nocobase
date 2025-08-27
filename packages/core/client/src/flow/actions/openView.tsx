@@ -81,7 +81,7 @@ export const openView = defineAction({
       type: openMode,
       preventClose: !!params.preventClose,
       inheritContext: false,
-      target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
+      target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[openMode][size],
       inputArgs: ctx.inputArgs,
       content: (currentView) => {

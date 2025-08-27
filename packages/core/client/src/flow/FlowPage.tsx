@@ -128,7 +128,7 @@ export const FlowRoute = () => {
     return dispose;
   }, [flowEngine, routeModel]);
 
-  return <div id="layout-content" ref={layoutContentRef} />;
+  return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {
