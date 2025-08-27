@@ -49,10 +49,18 @@ export const openView = defineAction({
       return;
     }
 
-    const sizeToWidthMap: Record<string, number> = {
-      small: 480,
-      medium: 800,
-      large: 1200,
+    const sizeToWidthMap: Record<string, any> = {
+      drawer: {
+        small: '30%',
+        medium: '50%',
+        large: '70%',
+      },
+      dialog: {
+        small: '40%',
+        medium: '50%',
+        large: '80%',
+      },
+      embed: {},
     };
 
     const pageModelClass = params.pageModelClass;
@@ -66,7 +74,7 @@ export const openView = defineAction({
       preventClose: !!params.preventClose,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
-      width: sizeToWidthMap[size],
+      width: sizeToWidthMap[openMode][size],
       inputArgs: ctx.inputArgs,
       content: (currentView) => {
         if (ctx.inputArgs.closeRef) {
