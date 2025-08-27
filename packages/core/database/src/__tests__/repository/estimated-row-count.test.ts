@@ -39,7 +39,7 @@ describe('estimated row count test', () => {
     }
 
     const repository = User.repository;
-
+    await analyzeTable(db, User);
     const emptyCount = await repository.getEstimatedRowCount();
     expect(emptyCount).toEqual(0);
   });
@@ -54,7 +54,7 @@ describe('estimated row count test', () => {
     await repository.createMany({
       records: [{ name: 'u1' }, { name: 'u2' }, { name: 'u3' }, { name: 'u4' }, { name: 'u5' }],
     });
-
+    await analyzeTable(db, User);
     const estimatedCount = await repository.getEstimatedRowCount();
     expect(estimatedCount).toBeGreaterThanOrEqual(0);
 
@@ -93,7 +93,7 @@ describe('estimated row count test', () => {
     }
 
     const repository = User.repository;
-
+    await analyzeTable(db, User);
     const count = await repository.getEstimatedRowCount();
     expect(count).toBeGreaterThanOrEqual(0);
   });
@@ -142,10 +142,12 @@ describe('estimated row count test', () => {
         { userName: 'camel3', userAge: 35 },
       ],
     });
-
+    await analyzeTable(db, SnakeCaseCollection);
+    await analyzeTable(db, CamelCaseCollection);
     const snakeCaseCount = await SnakeCaseCollection.repository.getEstimatedRowCount();
     expect(snakeCaseCount).toBeGreaterThanOrEqual(0);
 
+    await analyzeTable(db, CamelCaseCollection);
     const camelCaseCount = await CamelCaseCollection.repository.getEstimatedRowCount();
     expect(camelCaseCount).toBeGreaterThanOrEqual(0);
 
@@ -158,3 +160,11 @@ describe('estimated row count test', () => {
     await testDb.close();
   });
 });
+
+async function analyzeTable(db, collection) {
+  if (db.isMySQLCompatibleDialect()) {
+    await db.sequelize.query(`ANALYZE TABLE ${collection.getTableNameWithSchema()}`);
+  } else if (db.isPostgresCompatibleDialect()) {
+    await db.sequelize.query(`ANALYZE ${collection.getTableNameWithSchema()}`);
+  }
+}

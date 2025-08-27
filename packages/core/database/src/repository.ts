@@ -313,7 +313,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const tableName = this.collection.tableName();
     try {
       if (this.database.isMySQLCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT table_rows FROM information_schema.tables
@@ -325,7 +324,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return Number(results?.[0]?.table_rows ?? 0);
       }
       if (this.database.isPostgresCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT reltuples::BIGINT AS estimate
