@@ -50,6 +50,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import { processIncludes } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -181,6 +182,13 @@ interface RelatedQueryOptions {
   };
 }
 
+type AssociationNode = {
+  association: string;
+  attributes?: any[];
+  include?: AssociationNode[];
+  fromFilter?: boolean;
+};
+
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
@@ -294,6 +302,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     if (queryOptions.include?.length === 0) {
       delete queryOptions.include;
+    } else {
+      queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
     }
 
     // @ts-ignore
