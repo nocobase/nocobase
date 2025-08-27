@@ -19,6 +19,7 @@ import {
   useFlowEngine,
   FlowModelContext,
   buildWrapperFieldChildren,
+  ModelRenderMode,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Form } from 'antd';
 import React, { useEffect, useRef } from 'react';
@@ -97,6 +98,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 });
 
 export class SubTableColumnModel extends FieldModel {
+  static renderMode = ModelRenderMode.RenderFunction;
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'SubTableColumnModel',

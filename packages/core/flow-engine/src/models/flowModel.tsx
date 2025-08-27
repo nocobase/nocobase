@@ -63,6 +63,11 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 // 使用WeakMap存储每个类的 GlobalFlowRegistry
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
+export enum ModelRenderMode {
+  ReactElement = 'reactElement',
+  RenderFunction = 'renderFunction',
+}
+
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public readonly uid: string;
   public sortIndex: number;
@@ -106,6 +111,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   flowRegistry: InstanceFlowRegistry;
   private _cleanRun?: boolean;
+  /**
+   * 声明渲染模式：
+   * - 'element': render 返回 React 节点，框架会用 observer 包装以获得响应式；
+   * - 'renderer': render 返回渲染函数（例如表格单元格渲染器），不做包装也不预调用；
+   */
+  static renderMode: ModelRenderMode = ModelRenderMode.ReactElement;
 
   constructor(options: FlowModelOptions<Structure>) {
     if (!options.flowEngine) {
@@ -719,38 +730,20 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   /**
    * 智能检测是否应该跳过响应式包装
-   * @private
+   * 说明：
+   * - 仅基于标记判断，不会执行 render，避免出现“预调用 render”带来的副作用和双调用问题。
+   * - 当子类需要返回函数（如表格列的单元格渲染器），应在子类上设置静态属性 `renderReturnsFunction = true`。
    */
   private shouldSkipReactiveWrapping(): boolean {
-    // 1. 检查是否已经被包装过
+    // 已经包裹过则跳过
     if ((this.render as any).__isReactiveWrapped) {
       return true;
     }
-
-    // 2. 检查 render 方法的返回值类型
-    if (this.isRenderMethodReturningFunction()) {
+    // 子类显式声明渲染模式为 renderFunction，则跳过包裹
+    const Cls = this.constructor as typeof FlowModel;
+    if (Cls.renderMode === ModelRenderMode.RenderFunction) {
       return true;
     }
-
-    return false;
-  }
-
-  /**
-   * 检查 render 方法是否返回函数
-   * @private
-   */
-  private isRenderMethodReturningFunction(): boolean {
-    try {
-      // 创建一个临时的 render 调用来检测返回类型
-      const originalRender = Object.getPrototypeOf(this).render;
-      if (originalRender && originalRender !== FlowModel.prototype.render) {
-        const result = originalRender.call(this);
-        return typeof result === 'function';
-      }
-    } catch (error) {
-      // 如果调用出错，假设不返回函数
-    }
-
     return false;
   }
 

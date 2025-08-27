@@ -21,6 +21,7 @@ import {
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
+import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FieldModel } from '../../base/FieldModel';
@@ -28,6 +29,8 @@ import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFie
 import { FormItem } from '../form/FormItem/FormItem';
 
 export class TableColumnModel extends FieldModel {
+  // 标记：该类的 render 返回函数， 避免错误的reactive封装
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
@@ -232,7 +235,9 @@ TableColumnModel.registerFlow({
   },
 });
 
-export class TableCustomColumnModel extends FlowModel {}
+export class TableCustomColumnModel extends FlowModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+}
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',

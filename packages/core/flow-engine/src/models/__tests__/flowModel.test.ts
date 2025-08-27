@@ -16,7 +16,8 @@ import { RecordProxy } from '../../RecordProxy';
 import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowExitException } from '../../utils';
 import { FlowExitAllException } from '../../utils/exceptions';
-import { FlowModel, defineFlow } from '../flowModel';
+import { FlowModel, defineFlow, ModelRenderMode } from '../flowModel';
+import { FlowModelRenderer } from '../../components/FlowModelRenderer';
 import { ForkFlowModel } from '../forkFlowModel';
 
 // 全局处理测试中的未处理 Promise rejection
@@ -1366,6 +1367,59 @@ describe('FlowModel', () => {
     });
 
     describe('rendering operations', () => {
+      test('should not pre-call render for RenderFunction mode and call exactly once on render', () => {
+        const renderSpy = vi.fn(() => vi.fn());
+
+        class CallbackRenderModel extends FlowModel {
+          static renderMode = ModelRenderMode.RenderFunction;
+          public render(): any {
+            return renderSpy();
+          }
+        }
+
+        const callbackModel = new CallbackRenderModel(modelOptions);
+
+        // Constructor should not trigger any render pre-call
+        expect(renderSpy).toHaveBeenCalledTimes(0);
+
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+          const { unmount } = render(
+            React.createElement(FlowModelRenderer, { model: callbackModel, skipApplyAutoFlows: true }),
+          );
+
+          expect(renderSpy).toHaveBeenCalledTimes(1);
+          unmount();
+        } finally {
+          warnSpy.mockRestore();
+        }
+      });
+
+      test('should not pre-call render for ReactElement mode and call exactly once on actual render', () => {
+        const renderSpy = vi.fn(() => React.createElement('div', { 'data-testid': 'elt' }, 'Elt'));
+
+        class ElementRenderModel extends FlowModel {
+          public render(): any {
+            return renderSpy();
+          }
+        }
+
+        const elementModel = new ElementRenderModel(modelOptions);
+
+        // Constructor should not trigger any render pre-call
+        expect(renderSpy).toHaveBeenCalledTimes(0);
+
+        const { getByTestId, unmount } = render(
+          React.createElement(FlowModelRenderer, { model: elementModel, skipApplyAutoFlows: true }),
+        );
+
+        // Render should be called exactly once during mount
+        expect(renderSpy).toHaveBeenCalledTimes(1);
+        expect(getByTestId('elt')).toBeTruthy();
+
+        unmount();
+      });
+
       test('should render model to React element for default flowModel', () => {
         const result = model.render();
 
