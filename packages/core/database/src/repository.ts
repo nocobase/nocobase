@@ -293,10 +293,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (queryOptions.include?.length === 0) {
-      delete queryOptions.include;
-    } else {
+    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
       queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+    } else {
+      delete queryOptions.include;
     }
 
     // @ts-ignore
