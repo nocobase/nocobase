@@ -49,7 +49,7 @@ describe('list view', () => {
     expect(results.find((item) => item.name === 'test2')).toBeTruthy();
   });
 
-  it.only('should list view when schema passed', async () => {
+  it('should list view when schema passed', async () => {
     if (!db.options.schema) {
       return;
     }
