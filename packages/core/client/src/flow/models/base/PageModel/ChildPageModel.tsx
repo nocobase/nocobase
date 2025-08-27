@@ -54,6 +54,11 @@ const BackButtonUsedInSubPage = () => {
     };
   }, [token.paddingXS]);
 
+  // 只有子页面需要返回按钮
+  if (ctx.view.type !== 'embed') {
+    return null;
+  }
+
   return (
     <Button
       aria-label="back-button"

@@ -33,6 +33,7 @@ export function usePage() {
 
     // 构造 currentPage 实例
     const currentPage = {
+      type: 'embed',
       inputArgs: config.inputArgs || {},
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),

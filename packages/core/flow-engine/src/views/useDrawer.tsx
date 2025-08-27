@@ -70,6 +70,7 @@ export function useDrawer() {
 
     // 构造 currentDrawer 实例
     const currentDrawer = {
+      type: 'drawer',
       inputArgs: config.inputArgs || {},
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
