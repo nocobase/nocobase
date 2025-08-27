@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CopyOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-  MenuOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -399,7 +393,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
             items.push({
               key: uniqueKey,
-              icon: <SettingOutlined />,
               label: t(stepInfo.title),
             });
           });
@@ -438,7 +431,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 items.push({
                   key: uniqueKey,
-                  icon: <SettingOutlined />,
                   label: t(stepInfo.title),
                 });
               });
@@ -454,7 +446,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 subMenuChildren.push({
                   key: uniqueKey,
-                  icon: <SettingOutlined />,
                   label: t(stepInfo.title),
                 });
               });
@@ -489,7 +480,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       if (showCopyUidButton && model.uid) {
         items.push({
           key: 'copy-uid',
-          icon: <CopyOutlined />,
           label: t('Copy UID'),
         });
       }
@@ -498,7 +488,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       if (showDeleteButton && typeof model.destroy === 'function') {
         items.push({
           key: 'delete',
-          icon: <DeleteOutlined />,
           label: t('Delete'),
         });
       }
