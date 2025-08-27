@@ -31,6 +31,11 @@ import { FormItem } from '../form/FormItem/FormItem';
 export class TableColumnModel extends FieldModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>No permission</span>;
+  }
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
@@ -230,6 +235,11 @@ TableColumnModel.registerFlow({
 
 export class TableCustomColumnModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>No permission</span>;
+  }
 }
 
 TableCustomColumnModel.registerFlow({

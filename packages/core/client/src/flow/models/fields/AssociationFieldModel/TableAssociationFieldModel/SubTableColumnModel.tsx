@@ -99,6 +99,11 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
 export class SubTableColumnModel extends FieldModel {
   static renderMode = ModelRenderMode.RenderFunction;
+
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5, color: '#8c8c8c' }}>No permission</span>;
+  }
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'SubTableColumnModel',

@@ -69,6 +69,12 @@ export enum ModelRenderMode {
 }
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
+  /**
+   * 当 flowSettings.enabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
+   */
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return undefined;
+  }
   public readonly uid: string;
   public sortIndex: number;
   public hidden = false;
@@ -755,7 +761,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private setupReactiveRender(): void {
     // 确保 render 方法存在且是函数
-    if (typeof this.render !== 'function' || this.shouldSkipReactiveWrapping()) {
+    if (typeof this.render !== 'function') {
       return;
     }
 
@@ -770,11 +776,41 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         return;
       }
 
+      // 如果需要跳过响应式包装（例如返回渲染函数），也需要包一层以处理 hidden/config 逻辑
+      if (this.shouldSkipReactiveWrapping()) {
+        const wrappedNonReactive = function (this: any) {
+          const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
+          if (this.hidden) {
+            if (!isConfigMode) return null;
+            const Cls = this.constructor as typeof FlowModel;
+            const returnsFunction = Cls.renderMode === ModelRenderMode.RenderFunction;
+            const defaultNode = (
+              <div
+                style={{
+                  padding: 8,
+                  color: '#999',
+                  border: '1px dashed #d9d9d9',
+                  borderRadius: 4,
+                  background: '#fafafa',
+                }}
+              >
+                {this.translate?.('Hidden') || 'Hidden'}
+              </div>
+            );
+            const rendered = this.renderHiddenInConfig?.() || defaultNode;
+            return returnsFunction ? () => rendered : rendered;
+          }
+          return originalRender.call(this);
+        };
+        (wrappedNonReactive as any).__originalRender = originalRender;
+        this.render = wrappedNonReactive;
+        return;
+      }
+
       // 创建缓存的响应式包装器组件工厂（只创建一次）
       const createReactiveWrapper = (modelInstance: any) => {
         const ReactiveWrapper = observer(() => {
           // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
-          const isForkInstance = (modelInstance as any)?.isFork === true;
           const renderTarget = modelInstance;
           if (renderTarget !== modelInstance && (renderTarget as any)?.localProps !== undefined) {
             // 订阅 fork 的本地 props 变更
@@ -798,6 +834,31 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
               }
             };
           }, [renderTarget]);
+
+          // 处理 hidden 渲染逻辑：
+          const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
+          if (modelInstance.hidden) {
+            if (!isConfigMode) {
+              return null;
+            }
+            // 设置态隐藏时的渲染：优先使用实例方法 renderHiddenInConfig，否则使用默认
+            const rendered = modelInstance.renderHiddenInConfig?.();
+            if (rendered !== undefined) return rendered;
+            const defaultNode = (
+              <div
+                style={{
+                  padding: 8,
+                  color: '#999',
+                  border: '1px dashed #d9d9d9',
+                  borderRadius: 4,
+                  background: '#fafafa',
+                }}
+              >
+                {modelInstance.translate?.('Hidden') || 'Hidden'}
+              </div>
+            );
+            return defaultNode;
+          }
 
           // 调用原始渲染方法
           return originalRender.call(renderTarget);

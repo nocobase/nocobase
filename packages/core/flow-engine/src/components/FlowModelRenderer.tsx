@@ -60,9 +60,6 @@ export interface FlowModelRendererProps {
 
   fallback?: React.ReactNode; // 渲染失败时的回退内容
 
-  /** 当 model.hidden=true 且处于配置模式时的占位渲染 */
-  hiddenFallback?: React.ReactNode;
-
   key?: React.Key;
 
   /** 是否显示流程设置入口（如按钮、菜单等） */
@@ -107,7 +104,6 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
   fallback?: React.ReactNode;
-  hiddenFallback?: React.ReactNode;
 }> = observer(
   ({
     model,
@@ -120,8 +116,9 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
     fallback,
-    hiddenFallback,
   }) => {
+    // hidden 占位由模型自身处理；无需在此注入
+
     const pending = useApplyAutoFlows(model, inputArgs);
 
     if (pending) {
@@ -139,7 +136,6 @@ const FlowModelRendererWithAutoFlows: React.FC<{
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
-          hiddenFallback={hiddenFallback}
         />
       </FlowModelProvider>
     );
@@ -158,7 +154,6 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
-  hiddenFallback?: React.ReactNode;
 }> = observer(
   ({
     model,
@@ -169,8 +164,8 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
-    hiddenFallback,
   }) => {
+    // hidden 占位由模型自身处理；无需在此注入
     return (
       <FlowModelProvider model={model}>
         <FlowModelRendererCore
@@ -182,7 +177,6 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
-          hiddenFallback={hiddenFallback}
         />
       </FlowModelProvider>
     );
@@ -203,7 +197,6 @@ const FlowModelRendererCore: React.FC<{
   showErrorFallback?: boolean;
   settingsMenuLevel?: number;
   extraToolbarItems?: ToolbarItemConfig[];
-  hiddenFallback?: React.ReactNode;
 }> = observer(
   ({
     model,
@@ -214,19 +207,9 @@ const FlowModelRendererCore: React.FC<{
     showErrorFallback,
     settingsMenuLevel,
     extraToolbarItems,
-    hiddenFallback,
   }) => {
-    const isConfigMode = !!model?.flowEngine?.flowSettings?.enabled;
-
-    // 渲染模型内容或占位
-    const modelContent =
-      model.hidden && isConfigMode
-        ? hiddenFallback ?? (
-            <div style={{ padding: 8, color: '#999' }}>
-              {model.translate?.('No permission to view') || 'No permission'}
-            </div>
-          )
-        : model.render();
+    // 交由模型自身处理 hidden 与占位渲染
+    const modelContent = model.render();
 
     // 包装 ErrorBoundary 的辅助函数
     const wrapWithErrorBoundary = (children: React.ReactNode) => {
@@ -324,7 +307,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
     fallback = <Skeleton.Button size="small" />,
-    hiddenFallback,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
@@ -341,12 +323,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
-    // 当 hidden=true 且非配置模式时，直接不渲染
-    const isConfigMode = !!model?.flowEngine?.flowSettings?.enabled;
-    if (model.hidden && !isConfigMode) {
-      return null;
-    }
-
     // 根据 skipApplyAutoFlows 选择不同的内部组件
     if (skipApplyAutoFlows) {
       return (
@@ -359,7 +335,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           showErrorFallback={showErrorFallback}
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
-          hiddenFallback={hiddenFallback}
         />
       );
     } else {
@@ -375,7 +350,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
           settingsMenuLevel={settingsMenuLevel}
           extraToolbarItems={extraToolbarItems}
           fallback={fallback}
-          hiddenFallback={hiddenFallback}
         />
       );
     }

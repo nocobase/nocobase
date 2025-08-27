@@ -25,6 +25,7 @@ import {
   SubModelItem,
 } from '@nocobase/flow-engine';
 import React from 'react';
+import { Result } from 'antd';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
@@ -248,6 +249,16 @@ export interface ResourceSettingsInitParams {
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
 
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const messageValue = `The current user only has the UI configuration permission, but don't have permission for block [${this?.title}]`;
+    return (
+      <BlockItemCard>
+        <Result status="403" subTitle={messageValue} />
+      </BlockItemCard>
+    );
+  }
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
   }
@@ -356,6 +367,8 @@ BlockModel.registerFlow({
 });
 
 BlockModel.define({ hide: true, label: escapeT('Other blocks') });
+
+//
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 

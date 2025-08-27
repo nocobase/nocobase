@@ -146,18 +146,6 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
   getColumns() {
     const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     const cols = this.mapSubModels('columns', (column) => {
-      if (column.hidden) {
-        if (!isConfigMode) {
-          // 运行态完全隐藏列
-          return null;
-        }
-        // 配置态：保留列与其设置包裹，只把单元格内容替换为占位
-        const props: any = column.getColumnProps();
-        props.render = () => (
-          <span style={{ color: '#ccc' }}>{this.translate('No permission') || 'No permission'}</span>
-        );
-        return props;
-      }
       return column.getColumnProps();
     })
       .filter(Boolean)
@@ -535,7 +523,13 @@ TableModel.registerFlow({
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await Promise.all(
+          ctx.model.mapSubModels('columns', async (column) => {
+            if (!column.hidden) {
+              await column.applyAutoFlows();
+            }
+          }),
+        );
       },
     },
   },
