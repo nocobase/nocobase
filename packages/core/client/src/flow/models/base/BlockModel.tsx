@@ -167,7 +167,6 @@ function buildAssociatedRecordsItem(
                   dataSourceKey: field.collection.dataSource.key,
                   collectionName: field.target,
                   associationName: `${field.collection.name}.${field.name}`,
-                  sourceId: filterByTk,
                 },
               },
             },
@@ -239,8 +238,6 @@ export interface ResourceSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
   associationName?: string;
-  sourceId?: string;
-  filterByTk?: string;
 }
 
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
@@ -601,14 +598,12 @@ CollectionBlockModel.registerFlow({
           throw new Error('collectionName is required');
         }
         // sourceId 为运行时参数，必须放在 runtime context 中
-        if (Object.keys(params).includes('sourceId')) {
-          // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
-          ctx.resource.setSourceId(params.sourceId);
+        if (ctx.view.inputArgs.sourceId) {
+          ctx.resource.setSourceId(ctx.view.inputArgs.sourceId);
         }
         // filterByTk 为运行时参数，必须放在 runtime context 中
-        if (Object.keys(params).includes('filterByTk')) {
-          // TODO: 这里的 replace 都是为了兼容老数据，发布版本前删除掉（或者下次大的不兼容变更时删除）
-          ctx.resource.setFilterByTk(params.filterByTk);
+        if (ctx.view.inputArgs.filterByTk) {
+          ctx.resource.setFilterByTk(ctx.view.inputArgs.filterByTk);
         }
       },
     },
