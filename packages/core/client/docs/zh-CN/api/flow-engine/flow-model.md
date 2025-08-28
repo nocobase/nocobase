@@ -174,6 +174,11 @@ FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以�
 - **render(): React.ReactNode | Function**  
   渲染模型的 React 组件，默认返回空 div，建议子类重写。
 
+### 配置UI时，FlowModel为hidden状态时渲染（renderHiddenInConfig）
+
+- **protected renderHiddenInConfig(): React.ReactNode | undefined**
+  当 `flowSettings.enabled === true` 且 `model.hidden === true` 时调用，用于在“设计模式”下替代正常渲染；非设计模式下切 hidden 为 true 时直接不渲染（返回 null）。
+
 ---
 
 ## 主要示例

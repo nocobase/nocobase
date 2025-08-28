@@ -97,7 +97,7 @@ export const parseWorkContext = (app: Application, workContext: ContextItem[]) =
       parsed.push(context);
       continue;
     }
-    const contextOptions = plugin.aiManager.workContext.get(context.type);
+    const contextOptions = plugin.aiManager.getWorkContext(context.type);
     if (!(contextOptions && contextOptions.getContent)) {
       parsed.push(context);
       continue;

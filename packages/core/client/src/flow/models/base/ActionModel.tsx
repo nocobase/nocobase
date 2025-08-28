@@ -66,14 +66,24 @@ export class ActionModel extends FlowModel {
       </Button>
     );
   }
-  renderNoPermission() {
-    const { flowSettings } = this.flowEngine || {};
-    const enabled = flowSettings?.enabled;
-    if (!enabled) {
-      return null;
-    } else {
-      return this.renderContent();
-    }
+
+  // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const merged: ButtonProps = { ...this.defaultProps, ...(this.props || {}) };
+    const { onClick, style, icon, type, children, title, ...rest } = merged;
+    const btnStyle: React.CSSProperties = {
+      ...(style || {}),
+      opacity: 0.5,
+      cursor: 'default',
+    };
+    const iconNode = icon ? typeof icon === 'string' ? <Icon type={icon} /> : icon : undefined;
+    const isLink = type === 'link';
+    const linkStyle = isLink ? { padding: 0, height: 'auto' } : undefined;
+    return (
+      <Button {...rest} type={type} icon={iconNode} style={{ ...linkStyle, ...btnStyle }}>
+        {children || title}
+      </Button>
+    );
   }
 }
 
@@ -199,6 +209,25 @@ export class RecordActionModel extends ActionModel {
       </Button>
     );
   }
+
+  // 设置态隐藏时的占位渲染（行内样式，去除 onClick 并降低透明度）
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const merged: ButtonProps = { ...this.defaultProps, ...(this.props || {}) };
+    const { onClick, style, icon, type, children, title, ...rest } = merged;
+    const iconNode = icon ? typeof icon === 'string' ? <Icon type={icon} /> : icon : undefined;
+    const isLink = (type ?? 'link') === 'link';
+    const btnStyle: React.CSSProperties = {
+      ...(style || {}),
+      opacity: 0.5,
+      cursor: 'default',
+    };
+    const linkStyle = isLink ? { padding: 0, height: 'auto' } : undefined;
+    return (
+      <Button {...rest} type={type} icon={iconNode} style={{ ...linkStyle, ...btnStyle }}>
+        {children || title}
+      </Button>
+    );
+  }
 }
 
 RecordActionModel.registerFlow({
@@ -225,3 +254,5 @@ RecordActionModel.registerFlow({
     },
   },
 });
+
+//

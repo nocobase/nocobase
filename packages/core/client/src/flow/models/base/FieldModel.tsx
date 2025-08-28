@@ -8,6 +8,8 @@
  */
 
 import { CollectionField, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { Input } from 'antd';
+import React from 'react';
 import { CollectionBlockModel } from './BlockModel';
 
 // null 表示不支持任何字段接口，* 表示支持所有字段接口
@@ -23,6 +25,11 @@ export interface FieldSettingsInitParams {
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   declare field: any; // TODO: remove it after field has been refactored!! this is used to by pass build error
+
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
+  }
 
   onInit(options: any): void {
     this.context.defineProperty('collectionField', {

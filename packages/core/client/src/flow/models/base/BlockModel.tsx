@@ -268,6 +268,18 @@ export const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
 
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const messageValue = this.context.t(
+      `The current user only has the UI configuration permission, but don't have permission for viewing block [${this?.title}]`,
+    );
+    return (
+      <BlockItemCard>
+        <Result status="403" subTitle={messageValue} />
+      </BlockItemCard>
+    );
+  }
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
   }
@@ -388,6 +400,8 @@ BlockModel.registerFlow({
 });
 
 BlockModel.define({ hide: true, label: escapeT('Other blocks') });
+
+//
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
