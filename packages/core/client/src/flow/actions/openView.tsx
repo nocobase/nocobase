@@ -52,8 +52,8 @@ export const openView = defineAction({
     pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    if (!ctx.inputArgs.navigation) {
-      ctx.view.navigation?.navigateTo({
+    if (!ctx.inputArgs.navigation && ctx.view.navigation) {
+      ctx.view.navigation.navigateTo({
         viewUid: ctx.model.uid,
         filterByTk: ctx.inputArgs.filterByTk,
         sourceId: ctx.inputArgs.sourceId,
