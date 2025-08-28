@@ -16,7 +16,6 @@ import { NBColorPicker } from '../../fields/ColorFieldModel';
 export class GroupItemModel extends FormCustomFormItemModel {
   render() {
     const { color, borderColor, title, orientation, dashed } = this.props;
-    console.log(color);
     return (
       <FormItem shouldUpdate showLabel={false}>
         <Divider
