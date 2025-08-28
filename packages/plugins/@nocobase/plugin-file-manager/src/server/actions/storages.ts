@@ -14,12 +14,12 @@ export async function getBasicInfo(context, next) {
   let result;
   const { filterByTk } = context.action.params;
   if (!filterByTk) {
-    result = Array.from(storagesCache.values()).find((item) => item.default);
+    result = Object.values(storagesCache).find((item) => item.default);
   } else {
     const isNumber = /^[1-9]\d*$/.test(filterByTk);
     result = isNumber
-      ? storagesCache.get(Number.parseInt(filterByTk, 10))
-      : Array.from(storagesCache.values()).find((item) => item.name === filterByTk);
+      ? storagesCache[filterByTk]
+      : Object.values(storagesCache).find((item) => item.name === filterByTk);
   }
   if (!result) {
     return context.throw(404);
