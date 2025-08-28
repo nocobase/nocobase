@@ -40,7 +40,9 @@ export class FormFieldGridModel extends GridModel<{
           subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel']}
           model={this}
           afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
-            this.context.blockModel.addAppends(field.fieldPath, true);
+            if (field.fieldPath) {
+              this.context.blockModel.addAppends(field.fieldPath, true);
+            }
           }}
           keepDropdownOpen
         >

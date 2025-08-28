@@ -7,11 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, escapeT, ModelRenderMode } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import React from 'react';
 
-export class FormCustomFormItemModel extends FlowModel {}
+export class FormCustomFormItemModel extends FlowModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+}
+
+FormCustomFormItemModel.define({
+  hide: true,
+  label: escapeT('Other'),
+});
 
 export class AIFormItem extends FormCustomFormItemModel {
   public render() {
