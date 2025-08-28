@@ -54,10 +54,7 @@ export class UpdateGuard {
 
   setAssociationKeysToBeUpdate(associationKeysToBeUpdate: AssociationKeysToBeUpdate) {
     if (this.action == 'create') {
-      const keys = Object.keys(this.model.associations);
-      this.associationKeysToBeUpdate = associationKeysToBeUpdate
-        ? keys.filter((x) => associationKeysToBeUpdate?.includes(x))
-        : keys;
+      this.associationKeysToBeUpdate = Object.keys(this.model.associations);
     } else {
       this.associationKeysToBeUpdate = associationKeysToBeUpdate;
     }
@@ -105,18 +102,6 @@ export class UpdateGuard {
     };
 
     dfs(values, this.model);
-  }
-
-  private filterAssociationValuesByTargetKey(value, key: string) {
-    if (!lodash.isObject(value)) {
-      return value;
-    }
-    if (key && value[key]) {
-      value = lodash.pick(value, key);
-    } else {
-      delete value[key];
-    }
-    return value;
   }
 
   /**
@@ -167,19 +152,15 @@ export class UpdateGuard {
           return value;
         }
 
-        const associationKeysToBeUpdate = this.associationKeysToBeUpdate;
+        const associationKeysToBeUpdate = this.associationKeysToBeUpdate || [];
 
-        if (associationKeysToBeUpdate?.includes(association)) {
+        if (associationKeysToBeUpdate.includes(association)) {
           return value;
         }
 
         const associationKeyName = associationObj?.['options']?.targetKey
           ? associationObj['options'].targetKey
           : associationObj.target.primaryKeyAttribute;
-
-        if (associationValues && associationKeysToBeUpdate && !associationKeysToBeUpdate.includes(association)) {
-          return this.filterAssociationValuesByTargetKey(value, associationKeyName);
-        }
 
         if (value[associationKeyName]) {
           return lodash.pick(value, [associationKeyName, ...Object.keys(associationObj.target.associations)]);
