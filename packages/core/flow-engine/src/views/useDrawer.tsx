@@ -70,6 +70,7 @@ export function useDrawer() {
 
     // 构造 currentDrawer 实例
     const currentDrawer = {
+      inputArgs: config.inputArgs || {},
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -102,6 +103,10 @@ export function useDrawer() {
     // 内部组件，在 Provider 内部计算 content
     const DrawerWithContext = () => {
       const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
+
+      React.useEffect(() => {
+        config.onOpen?.(currentDrawer, ctx);
+      }, []);
 
       return (
         <DrawerComponent

@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 import { FormItem } from '../form/FormItem/FormItem';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { FieldNotAllow } from '../form/FormItem/CollectionFieldFormItemModel';
 
 export class DetailItemModel extends FieldModel<{
   parent: DetailsFieldGridModel;
@@ -37,6 +38,14 @@ export class DetailItemModel extends FieldModel<{
       </FormItem>
     );
   }
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return (
+      <FormItem {...this.props}>
+        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
+      </FormItem>
+    );
+  }
 }
 
 DetailItemModel.define({
@@ -52,13 +61,6 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
-    init: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
-        const { collectionField } = ctx.model;
-        ctx.model.setProps(collectionField.getComponentProps());
-      },
-    },
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
@@ -84,6 +86,16 @@ DetailItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ label: params.title });
+      },
+    },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const { collectionField } = ctx.model;
+        ctx.model.setProps(collectionField.getComponentProps());
       },
     },
     showLabel: {

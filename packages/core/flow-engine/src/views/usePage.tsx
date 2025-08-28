@@ -34,6 +34,7 @@ export function usePage() {
 
     // 构造 currentPage 实例
     const currentPage = {
+      inputArgs: config.inputArgs || {},
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -55,6 +56,7 @@ export function usePage() {
 
     // 支持 content 为函数，传递 currentPage
     const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+    config.onOpen?.(currentPage, ctx);
 
     const page = (
       <FlowViewContextProvider context={ctx}>

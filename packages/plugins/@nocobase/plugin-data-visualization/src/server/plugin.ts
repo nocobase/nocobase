@@ -11,7 +11,7 @@ import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
 import PluginAIServer from '@nocobase/plugin-ai';
-import { buildChartBlock } from './ai/tools/build-chart-block';
+// import { buildChartBlock } from './ai/tools/build-chart-block';
 
 export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
@@ -38,12 +38,12 @@ export class PluginDataVisualizationServer extends Plugin {
 
     const ai = this.app.pm.get('ai') as PluginAIServer;
     if (ai) {
-      ai.aiManager.toolManager.registerTools([
-        {
-          groupName: 'frontend',
-          tool: buildChartBlock,
-        },
-      ]);
+      // ai.aiManager.toolManager.registerTools([
+      //   {
+      //     groupName: 'frontend',
+      //     tool: buildChartBlock,
+      //   },
+      // ]);
     }
   }
 

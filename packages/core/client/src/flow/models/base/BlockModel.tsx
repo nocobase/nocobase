@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
+import { Result } from 'antd';
 import { Observer } from '@formily/reactive-react';
 import {
   BaseRecordResource,
@@ -19,12 +20,13 @@ import {
   FlowModel,
   FlowModelContext,
   MENU_KEYS,
-  ModelConstructor,
   MultiRecordResource,
   SingleRecordResource,
   SubModelItem,
 } from '@nocobase/flow-engine';
-import React from 'react';
+import { capitalize } from 'lodash';
+import { useTranslation } from 'react-i18next';
+import React, { useMemo } from 'react';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
@@ -245,8 +247,33 @@ export interface ResourceSettingsInitParams {
   filterByTk?: string;
 }
 
+export const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
+  const { t } = useTranslation();
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
+      {
+        actionName: t(capitalize(actionName)),
+        name: collectionTitle,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [collectionTitle, actionName, t]);
+  return (
+    <BlockItemCard>
+      <Result status="403" subTitle={messageValue} />
+    </BlockItemCard>
+  );
+};
+
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
+
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return (
+      <CollectionNotAllowView actionName={this.context.actionName} collectionTitle={(this as any).collection?.title} />
+    );
+  }
 
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
@@ -356,6 +383,8 @@ BlockModel.registerFlow({
 });
 
 BlockModel.define({ hide: true, label: escapeT('Other blocks') });
+
+//
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
@@ -470,6 +499,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return this.context.association;
   }
 
+  getAclActionName() {
+    return 'view';
+  }
   /**
    * 获取可用于筛选的字段列表
    */
@@ -484,6 +516,14 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   onInit(options) {
     this.context.defineProperty('blockModel', {
       value: this,
+    });
+    this.context.defineProperty('actionName', {
+      get: () => this.getAclActionName(),
+      cache: false,
+    });
+    this.context.defineProperty('resourceName', {
+      get: () => this.resource.getResourceName(),
+      cache: false,
     });
     this.context.defineProperty('dataSource', {
       get: () => {
@@ -579,7 +619,11 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
 CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
+  sort: -999, //置顶，
   steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
     init: {
       handler(ctx, params) {
         if (!params.dataSourceKey) {
@@ -611,7 +655,6 @@ CollectionBlockModel.registerFlow({
       async handler(ctx) {
         const filterManager: FilterManager = ctx.model.context.filterManager;
         filterManager.bindToTarget(ctx.model.uid);
-
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {

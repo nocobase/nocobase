@@ -15,12 +15,12 @@ class HelloModel extends FlowModel {
     console.log('onUnmount');
   }
 
-  async beforeApplyAutoFlows() {
-    console.log('beforeApplyAutoFlows');
+  async onBeforeAutoFlows() {
+    console.log('onBeforeAutoFlows');
   }
 
-  async afterApplyAutoFlows() {
-    console.log('afterApplyAutoFlows');
+  async onAfterAutoFlows() {
+    console.log('onAfterAutoFlows');
   }
 
   render() {

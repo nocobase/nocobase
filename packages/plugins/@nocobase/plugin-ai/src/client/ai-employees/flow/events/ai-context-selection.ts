@@ -27,7 +27,7 @@ const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutL
     for (const task of tasks) {
       const workContext = task.message.workContext || [];
       for (const context of workContext) {
-        const target = context.type === 'flow-model' && context.uid === ctx.model.uid;
+        const target = context.type.startsWith('flow-model') && context.uid === ctx.model.uid;
         if (target) {
           return true;
         }

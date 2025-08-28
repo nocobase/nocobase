@@ -70,6 +70,7 @@ export function useDialog() {
 
     // 构造 currentDialog 实例
     const currentDialog = {
+      inputArgs: config.inputArgs || {},
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -102,7 +103,9 @@ export function useDialog() {
     // 内部组件，在 Provider 内部计算 content
     const DialogWithContext = () => {
       const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
-
+      React.useEffect(() => {
+        config.onOpen?.(currentDialog, ctx);
+      }, []);
       return (
         <DialogComponent
           key={`dialog-${uuid}`}

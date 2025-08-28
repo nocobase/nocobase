@@ -123,6 +123,10 @@ export default defineConfig({
               title: 'Fork model',
               link: '/examples/flow-models/fork-model',
             },
+            // {
+            //   title: 'cleanRun：自动流干净运行',
+            //   link: '/examples/flow-models/render-in-fork',
+            // },
             {
               title: '拖拽（DND）',
               link: '/examples/flow-models/dnd',
@@ -147,12 +151,16 @@ export default defineConfig({
               title: 'CRUD',
               link: '/examples/flow-models/crud',
             },
-            {
-              title: '生命周期',
-              link: '/examples/flow-models/lifecycle',
-            },
-          ],
+        {
+          title: '生命周期',
+          link: '/examples/flow-models/lifecycle',
         },
+        {
+          title: 'hidden 属性演示',
+          link: '/examples/flow-model-hidden',
+        },
+      ],
+    },
         {
           title: 'FlowDefinition',
           type: 'group',
@@ -216,6 +224,18 @@ export default defineConfig({
             {
               title: '打开流配置表单',
               link: '/examples/flow-definition/open-settings',
+            },
+            {
+              title: 'Flow Registry',
+              link: '/examples/flow-definition/flow-registry',
+            },
+            {
+              title: 'Action Registry',
+              link: '/examples/flow-definition/action-registry',
+            },
+            {
+              title: 'Event Registry',
+              link: '/examples/flow-definition/event-registry',
             },
           ]
         },
@@ -653,8 +673,20 @@ export default defineConfig({
               link: '/api/flow-engine/flow-definition',
             },
             {
+              title: 'FlowRegistry',
+              link: '/api/flow-engine/flow-registry',
+            },
+            {
               title: 'FlowAction',
               link: '/api/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowActionRegistry',
+              link: '/api/flow-engine/flow-action-registry',
+            },
+            {
+              title: 'FlowEventRegistry',
+              link: '/api/flow-engine/flow-event-registry',
             },
             {
               title: 'FlowResource',

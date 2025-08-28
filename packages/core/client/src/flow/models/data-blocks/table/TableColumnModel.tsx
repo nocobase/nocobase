@@ -21,6 +21,7 @@ import {
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
+import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FieldModel } from '../../base/FieldModel';
@@ -28,6 +29,13 @@ import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFie
 import { FormItem } from '../form/FormItem/FormItem';
 
 export class TableColumnModel extends FieldModel {
+  // 标记：该类的 render 返回函数， 避免错误的reactive封装
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
+  }
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
@@ -87,10 +95,14 @@ export class TableColumnModel extends FieldModel {
         // handleSave,
       }),
       render: this.render(),
+      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
+  onInit(options: any): void {
+    super.onInit(options);
+  }
 
-  render() {
+  render(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
@@ -139,6 +151,9 @@ TableColumnModel.registerFlow({
           ...collectionField.getComponentProps(),
         });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     title: {
       title: escapeT('Column title'),
@@ -225,7 +240,14 @@ TableColumnModel.registerFlow({
   },
 });
 
-export class TableCustomColumnModel extends FlowModel {}
+export class TableCustomColumnModel extends FlowModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
+  }
+}
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',

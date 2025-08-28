@@ -144,18 +144,24 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
   }
 
   getColumns() {
-    return this.mapSubModels('columns', (column) => {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
+      .filter(Boolean)
       .concat({
         key: 'empty',
-      })
-      .concat({
+      });
+    if (isConfigMode) {
+      cols.push({
         key: 'addColumn',
         fixed: 'right',
         width: 200,
         title: <AddFieldColumn model={this} />,
       } as any);
+    }
+
+    return cols;
   }
 
   EditableRow = (props) => {
@@ -520,7 +526,13 @@ TableModel.registerFlow({
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await Promise.all(
+          ctx.model.mapSubModels('columns', async (column) => {
+            if (!column.hidden) {
+              await column.applyAutoFlows();
+            }
+          }),
+        );
       },
     },
   },

@@ -27,7 +27,11 @@ export const SenderFooter: React.FC<{
   return (
     <Flex justify="space-between" align="center">
       <Flex gap="small" align="center">
-        <AddContextButton onAdd={addContextItems} disabled={!currentEmployee} />
+        <AddContextButton
+          onAdd={addContextItems}
+          disabled={!currentEmployee}
+          ignore={(key) => key === 'flow-model.variable'}
+        />
         <Divider type="vertical" />
         <Upload />
       </Flex>

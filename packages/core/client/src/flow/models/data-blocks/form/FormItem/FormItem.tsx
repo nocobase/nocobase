@@ -80,6 +80,7 @@ export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExt
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            fontWeight: 600,
           }}
         >
           <span style={{ flex: 1 }}>{label}</span>
@@ -99,6 +100,7 @@ export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExt
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             verticalAlign: 'middle',
+            fontWeight: 600,
           }}
         >
           <span style={{ flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
