@@ -103,7 +103,9 @@ export function useDialog() {
     // 内部组件，在 Provider 内部计算 content
     const DialogWithContext = () => {
       const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
-
+      React.useEffect(() => {
+        config.onOpen?.(currentDialog, ctx);
+      }, []);
       return (
         <DialogComponent
           key={`dialog-${uuid}`}

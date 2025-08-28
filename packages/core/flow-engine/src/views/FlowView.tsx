@@ -35,6 +35,7 @@ type ViewProps = {
    */
   preventClose?: boolean;
   inputArgs?: any;
+  onOpen?: (view: FlowView, context: FlowContext) => void;
   [key: string]: any;
 };
 
