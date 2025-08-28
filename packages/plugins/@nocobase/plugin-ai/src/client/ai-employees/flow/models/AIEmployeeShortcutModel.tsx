@@ -163,8 +163,8 @@ AIEmployeeShortcutModel.registerFlow({
           type: 'dialog',
           props: {
             styles: {
-              mask: { zIndex: aiSelection.selectable ? -1 : 311 },
-              wrapper: { zIndex: aiSelection.selectable ? -1 : 311 },
+              mask: { zIndex: aiSelection.selectable ? -1 : 1000 },
+              wrapper: { zIndex: aiSelection.selectable ? -1 : 1000 },
             },
           },
         };
