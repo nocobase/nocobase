@@ -44,7 +44,7 @@ import { ChartCardItem } from './block/CardItem';
 import { Schema } from '@formily/react';
 import { ChartBlockModel } from './flow/models/ChartBlockModel';
 import PluginAIClient from '@nocobase/plugin-ai/client';
-import { buildChartBlockTool } from './ai/tools';
+// import { buildChartBlockTool } from './ai/tools';
 
 type fieldInterfaceConfig = {
   valueFormatter: (field: any, value: any) => any;
@@ -89,7 +89,7 @@ class PluginDataVisualiztionClient extends Plugin {
 
     const ai = this.app.pm.get('ai') as PluginAIClient;
     if (ai) {
-      ai.aiManager.registerTool(...buildChartBlockTool);
+      // ai.aiManager.registerTool(...buildChartBlockTool);
     }
 
     // 1.x
