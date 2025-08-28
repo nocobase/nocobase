@@ -12,13 +12,30 @@ import { AIEmployee } from '../types';
 
 interface ContextAwareState {
   aiEmployees: AIEmployee[];
+  showed: string[];
 
   setAIEmployees: (aiEmployees: AIEmployee[]) => void;
+  isShowed(uid: string): boolean;
+  addShowed(uid: string);
+  clearShowed();
 }
 
 export const contextAware = model<ContextAwareState>({
   aiEmployees: [],
+  showed: [],
   setAIEmployees(aiEmployees: AIEmployee[]) {
     this.aiEmployees = aiEmployees;
+  },
+
+  isShowed(uid: string) {
+    return this.showed.includes(uid);
+  },
+
+  addShowed(uid: string) {
+    this.showed.push(uid);
+  },
+
+  clearShowed() {
+    this.showed = [];
   },
 });
