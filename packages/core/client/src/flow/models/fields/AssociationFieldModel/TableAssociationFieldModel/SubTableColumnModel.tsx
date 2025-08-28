@@ -115,6 +115,16 @@ export class SubTableColumnModel extends FieldModel {
       },
     });
   }
+  onInit(options: any): void {
+    super.onInit(options);
+
+    this.context.defineProperty('resourceName', {
+      get: () => {
+        return this.collectionField.collection.name;
+      },
+      cache: false,
+    });
+  }
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -172,9 +182,10 @@ export class SubTableColumnModel extends FieldModel {
         model: this,
       }),
       render: this.render(),
+      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
-  render() {
+  render(): any {
     return (props) => {
       const { value, id, rowIdx } = props;
       return (
@@ -255,6 +266,9 @@ SubTableColumnModel.registerFlow({
           currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);
         }
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     subModel: {
       title: escapeT('Field component'),

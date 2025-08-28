@@ -21,6 +21,7 @@ import { AssociationFieldModel } from '../AssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
+import { CollectionNotAllowView } from '../../../base/BlockModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -65,9 +66,13 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
   get collection() {
     return this.collectionField.targetCollection;
   }
+
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps());
+    const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
+      Boolean,
+    );
+
     return [
       enableIndexColumn && {
         key: '__index__',
@@ -109,6 +114,9 @@ TableAssociationFieldModel.registerFlow({
   title: escapeT('Association table settings'),
   sort: 300,
   steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
