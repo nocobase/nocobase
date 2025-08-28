@@ -15,9 +15,6 @@ export const PageComponent = forwardRef((props: any, ref) => {
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
 
-  // 用于确定多个页面之间的层级顺序
-  const index = usePageIndex();
-
   // 提供 destroy 和 update 能力
   useImperativeHandle(ref, () => ({
     destroy: () => {
@@ -41,18 +38,11 @@ export const PageComponent = forwardRef((props: any, ref) => {
       width: '100%',
       height: '100%',
       backgroundColor: flowEngine.context.themeToken.colorBgLayout,
-      zIndex: index,
     }),
-    [flowEngine.context.themeToken.colorBgLayout, index],
+    [flowEngine.context.themeToken.colorBgLayout],
   );
 
   if (!visible) return null;
 
   return <div style={style}>{children}</div>;
 });
-
-export const PageIndexContext = React.createContext<number>(0);
-
-const usePageIndex = () => {
-  return React.useContext(PageIndexContext);
-};
