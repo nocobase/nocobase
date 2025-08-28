@@ -90,10 +90,11 @@ describe('acl', () => {
     });
 
     // assign scope to admin role
-    const createResp = await adminAgent.resource('roles.resources', 'admin').create({
+    const createResp = await adminAgent.resource('roles.dataSourceResources', 'admin').create({
       values: {
         name: 'posts',
         usingActionsConfig: true,
+        dataSourceKey: 'main',
         actions: [
           {
             name: 'update',

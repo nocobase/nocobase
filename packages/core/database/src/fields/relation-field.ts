@@ -33,7 +33,7 @@ export abstract class RelationField extends Field {
   }
 
   get targetKey() {
-    return this.options.targetKey || this.TargetModel.primaryKeyAttribute;
+    return this.options.targetKey || this.TargetModel?.primaryKeyAttribute;
   }
 
   /**

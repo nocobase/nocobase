@@ -46,6 +46,7 @@ export default {
           roleName,
           ...ctx.action.params.values,
         },
+        updateAssociationValues: ['actions'],
         transaction,
       });
 

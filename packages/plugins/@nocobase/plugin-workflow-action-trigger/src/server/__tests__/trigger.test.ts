@@ -346,6 +346,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('posts').create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
         triggerWorkflows: `${workflow.key}!category`,
       });
@@ -368,6 +369,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('comments').create({
+        updateAssociationValues: ['post', 'post.category'],
         values: { content: 'comment1', post: { category: { title: 'c1' } } },
         triggerWorkflows: `${workflow.key}!post.category`,
       });
@@ -431,6 +433,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const p1 = await PostRepo.create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
       });
 

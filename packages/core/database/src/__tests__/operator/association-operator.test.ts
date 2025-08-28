@@ -80,6 +80,7 @@ describe('association operator', () => {
 
   test('nested association', async () => {
     const u1 = await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [
@@ -91,6 +92,7 @@ describe('association operator', () => {
     });
 
     const u2 = await User.repository.create({
+      updateAssociationValues: ['posts', 'posts.tags'],
       values: {
         name: 'u2',
         posts: [
@@ -241,6 +243,7 @@ describe('association operator', () => {
 
   test('has many', async () => {
     const u1 = await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [

@@ -71,6 +71,7 @@ describe('role check action', () => {
     });
 
     await db.getRepository('roles').create({
+      updateAssociationValues: ['resources', 'resources.actions'],
       values: {
         name: 'test',
         resources: [
@@ -100,6 +101,7 @@ describe('role check action', () => {
 
     // update role
     await db.getRepository('roles').update({
+      updateAssociationValues: ['resources', 'resources.actions'],
       filter: {
         name: 'test',
       },

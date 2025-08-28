@@ -96,6 +96,7 @@ describe('get action', () => {
 
   test('get has many resource', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['comments'],
       values: {
         title: 'p1',
         comments: [
@@ -120,6 +121,7 @@ describe('get action', () => {
 
   test('get has one resource', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         title: 'p1',
         profile: {

@@ -31,6 +31,7 @@ export async function afterDestroy(model, options) {
       }
     });
     await AuditLog.repository.create({
+      updateAssociationValues: ['changes'],
       values: {
         type: LOG_TYPE_DESTROY,
         collectionName: model.constructor.name,

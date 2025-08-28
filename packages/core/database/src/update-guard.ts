@@ -11,6 +11,7 @@ import lodash from 'lodash';
 import { ModelStatic } from 'sequelize';
 import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
+import { Field } from './fields';
 
 type UpdateValueItem = string | number | UpdateValues;
 

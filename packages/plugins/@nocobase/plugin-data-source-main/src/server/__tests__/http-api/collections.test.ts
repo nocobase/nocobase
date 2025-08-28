@@ -238,6 +238,7 @@ describe('collections repository', () => {
 
   it('case 6', async () => {
     const response = await agent.resource('posts').create({
+      updateAssociationValues: ['tags'],
       values: {
         tags: [
           {},
@@ -254,6 +255,7 @@ describe('collections repository', () => {
 
   it('case 7', async () => {
     const response = await agent.resource('posts').create({
+      updateAssociationValues: ['tags'],
       values: {
         tags: [
           {},
@@ -274,6 +276,7 @@ describe('collections repository', () => {
 
   it('case 8', async () => {
     const response = await agent.resource('posts').create({
+      updateAssociationValues: ['tags'],
       values: {
         tags: [
           {},
@@ -297,6 +300,7 @@ describe('collections repository', () => {
 
   it('case 9', async () => {
     const response = await agent.resource('posts').create({
+      updateAssociationValues: ['tags'],
       values: {
         tags: [
           {},

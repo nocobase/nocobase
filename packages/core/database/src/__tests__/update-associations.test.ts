@@ -179,6 +179,14 @@ describe('update associations', () => {
       await db.sync();
 
       const a1 = await A.repository.create({
+        updateAssociationValues: [
+          'throughAB',
+          'throughAB.b',
+          'throughAB.b.throughBC',
+          'throughAB.b.throughBC.c',
+          'throughAB.b.throughBC.c.throughCD',
+          'throughAB.b.throughBC.c.throughCD.d',
+        ],
         values: {
           name: 'a1',
           throughAB: [
@@ -322,6 +330,7 @@ describe('update associations', () => {
 
     it('should update association values', async () => {
       const user1 = await User.repository.create({
+        updateAssociationValues: ['posts'],
         values: {
           name: 'u1',
           posts: [{ name: 'u1t1' }],
@@ -335,7 +344,7 @@ describe('update associations', () => {
           name: 'u1',
           posts: [{ id: user1.get('posts')[0].get('id'), name: 'u1t1' }],
         },
-        updateAssociationValues: ['comments'],
+        updateAssociationValues: ['posts'],
       });
 
       expect(updateRes[0].toJSON()['posts'].length).toBe(1);
@@ -535,6 +544,177 @@ describe('update associations', () => {
       });
     });
 
+    test('create single without nested associations', async () => {
+      const result = await User.repository.create({
+        values: {
+          name: 'u1',
+          posts: [
+            {
+              name: 'u1p1',
+              comments: [
+                {
+                  name: 'u1p1c1',
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(result.toJSON().posts).not.exist;
+      const post = await Post.repository.findOne({
+        filter: {
+          name: 'u1p1',
+        },
+      });
+      expect(post).not.exist;
+      const comment = await Comment.repository.findOne({
+        filter: {
+          name: 'u1p1c1',
+        },
+      });
+      expect(comment).not.exist;
+    });
+
+    test('create single with nested associations (updateAssociationValues)', async () => {
+      const result = await User.repository.create({
+        updateAssociationValues: ['posts', 'comments'],
+        values: {
+          name: 'u1',
+          posts: [
+            {
+              name: 'u1p1',
+              comments: [
+                {
+                  name: 'u1p1c1',
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(result.toJSON().posts).toHaveLength(1);
+      const post = await Post.repository.findOne({
+        filter: {
+          name: 'u1p1',
+        },
+      });
+      expect(post).exist;
+      const comment = await Comment.repository.findOne({
+        filter: {
+          name: 'u1p1c1',
+        },
+      });
+      expect(comment).not.exist;
+    });
+
+    test('create single with nested associations (posts.comments)', async () => {
+      const result = await User.repository.create({
+        updateAssociationValues: ['posts', 'posts.comments'],
+        values: {
+          name: 'u1',
+          posts: [
+            {
+              name: 'u1p1',
+              comments: [
+                {
+                  name: 'u1p1c1',
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(result.toJSON().posts).toHaveLength(1);
+      const post = await Post.repository.findOne({
+        filter: {
+          name: 'u1p1',
+        },
+      });
+      expect(post).exist;
+      const comment = await Comment.repository.findOne({
+        filter: {
+          name: 'u1p1c1',
+        },
+      });
+      expect(comment).exist;
+    });
+
+    test('update deep nested associations with filtering', async () => {
+      const User2 = db.collection({
+        name: 'users_deep',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'posts', target: 'posts_deep' },
+        ],
+      });
+
+      const Post2 = db.collection({
+        name: 'posts_deep',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsTo', name: 'user' },
+          { type: 'hasMany', name: 'comments', target: 'comments_deep' },
+        ],
+      });
+
+      const Comment2 = db.collection({
+        name: 'comments_deep',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'bigInt', name: 'postId' },
+          { type: 'belongsTo', name: 'post', foreignKey: 'postId', target: 'posts_deep' },
+          { type: 'hasOne', name: 'xxx', target: 'xxxs_deep', foreignKey: 'commentId' },
+        ],
+      });
+
+      const Xxx2 = db.collection({
+        name: 'xxxs_deep',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'bigInt', name: 'commentId' },
+          { type: 'belongsTo', name: 'comment', foreignKey: 'commentId', target: 'comments_deep' },
+        ],
+      });
+
+      await db.sync();
+
+      const u = await User2.repository.create({ values: { name: 'u_init' } });
+      const p = await Post2.repository.create({ values: { name: 'p_init', userId: u.id } });
+      const c = await Comment2.repository.create({ values: { name: 'c_init', postId: p.id } });
+      await Xxx2.repository.create({ values: { name: 'xxx_init', commentId: c.id } });
+
+      await User2.repository.update({
+        filterByTk: u.id,
+        values: {
+          name: 'u1',
+          posts: [
+            {
+              id: p.id,
+              name: 'u1p1',
+              comments: [
+                {
+                  id: c.id,
+                  name: 'should_not_override',
+                  xxx: {
+                    name: 'xxx_new',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        updateAssociationValues: ['posts', 'posts.comments.xxx'],
+      });
+
+      const pAfter = await Post2.repository.findOne({ filterByTk: p.id });
+      expect(pAfter.get('name')).toBe('u1p1');
+
+      const cAfter = await Comment2.repository.findOne({ filterByTk: c.id });
+      expect(cAfter.get('name')).toBe('c_init');
+
+      const xxx = await Xxx2.repository.findOne({ filter: { name: 'xxx_new' } });
+      expect(xxx).not.exist;
+    });
     it('nested', async () => {
       const user = await User.model.create({ name: 'user1' });
       await updateAssociations(user, {
@@ -581,7 +761,6 @@ describe('update associations', () => {
       });
     });
   });
-
   describe('belongsToMany', () => {
     let db: Database;
     let Post: Collection;
@@ -619,6 +798,7 @@ describe('update associations', () => {
     });
     test('set through value', async () => {
       const p1 = await Post.repository.create({
+        updateAssociationValues: ['tags', 'tags.posts_tags'],
         values: {
           title: 'hello',
           tags: [

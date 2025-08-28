@@ -84,6 +84,7 @@ describe('list action with acl', () => {
     });
 
     await Post.repository.create({
+      updateAssociationValues: ['comments'],
       values: [
         {
           title: 'p1',
@@ -435,6 +436,20 @@ describe('list association action with acl', () => {
     });
 
     await db.getRepository('roles.resources', 'newRole').create({
+      updateAssociationValues: ['actions'],
+      values: {
+        name: 'comments',
+        usingActionConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['content', 'post'],
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('roles.resources', 'newRole').create({
       values: {
         name: 'posts',
         usingActionConfig: true,
@@ -454,6 +469,7 @@ describe('list association action with acl', () => {
     const userAgent = await (await app.agent().login(user, 'newRole')).set('X-With-ACL-Meta', true);
 
     const createResp = await userAgent.resource('posts').create({
+      updateAssociationValues: ['comments'],
       values: {
         title: 'post1',
         comments: [{ content: 'comment1' }, { content: 'comment2' }],
@@ -469,7 +485,8 @@ describe('list association action with acl', () => {
     const commentsResponse0 = await userAgent.resource('posts.comments', 1).list({});
     expect(commentsResponse0.statusCode).toEqual(403);
 
-    await db.getRepository('roles.resources', 'newRole').create({
+    const model = await db.getRepository('roles.resources', 'newRole').create({
+      updateAssociationValues: ['actions'],
       values: {
         name: 'comments',
         usingActionConfig: true,
