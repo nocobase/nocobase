@@ -38,6 +38,14 @@ export class DetailItemModel extends FieldModel<{
       </FormItem>
     );
   }
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return (
+      <FormItem {...this.props}>
+        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
+      </FormItem>
+    );
+  }
 }
 
 DetailItemModel.define({

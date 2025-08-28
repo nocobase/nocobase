@@ -138,9 +138,6 @@ TableColumnModel.registerFlow({
   sort: 500,
   title: escapeT('Table column settings'),
   steps: {
-    aclCheck: {
-      use: 'aclCheck',
-    },
     init: {
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;
@@ -154,6 +151,9 @@ TableColumnModel.registerFlow({
           ...collectionField.getComponentProps(),
         });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     title: {
       title: escapeT('Column title'),
