@@ -16,3 +16,4 @@ export * from './QuickEditForm';
 export * from './FormItem';
 export * from './MarkdownItemModel';
 export * from './FormCustomFormItemModel';
+export * from './GroupItemModel';
