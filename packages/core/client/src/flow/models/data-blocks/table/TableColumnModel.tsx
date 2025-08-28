@@ -95,7 +95,7 @@ export class TableColumnModel extends FieldModel {
         // handleSave,
       }),
       render: this.render(),
-      hidden: this.hidden,
+      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
   onInit(options: any): void {
