@@ -14,7 +14,7 @@ export const aclCheck = defineAction({
   name: 'aclCheck',
   async handler(ctx, params) {
     {
-      const result = await ctx.model.context.aclCheck({
+      const result = await ctx.aclCheck({
         dataSourceKey: ctx.model.context.dataSource.key,
         resourceName: ctx.model.context.resourceName,
         actionName: ctx.model.context.actionName,

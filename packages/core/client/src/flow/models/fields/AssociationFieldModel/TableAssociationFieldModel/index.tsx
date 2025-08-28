@@ -137,7 +137,7 @@ TableAssociationFieldModel.registerFlow({
     aclCheck: {
       async handler(ctx, params) {
         {
-          const result = await ctx.model.context.aclCheck({
+          const result = await ctx.aclCheck({
             dataSourceKey: ctx.model.context.dataSource.key,
             resourceName: ctx.model.collectionField.target,
             actionName: ctx.model.context.actionName,

@@ -37,6 +37,13 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
   get collection() {
     return this.collectionField.targetCollection;
   }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('resourceName', {
+      get: () => this.collectionField.target,
+      cache: false,
+    });
+  }
   public static readonly supportedFieldInterfaces = [
     'm2m',
     'm2o',

@@ -88,7 +88,7 @@ ActionModel.registerFlow({
           if (!ctx.blockModel) {
             return;
           }
-          const result = await ctx.model.context.aclCheck({
+          const result = await ctx.aclCheck({
             dataSourceKey: ctx.model.context.dataSource.key,
             resourceName: ctx.blockModel.resource.getResourceName(),
             actionName: ctx.model.context.actionName,
