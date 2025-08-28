@@ -299,19 +299,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     throw new Error('renderComponent method must be implemented in subclasses of BlockModel');
   }
 
-  renderNoPermission() {
-    if (this.flowEngine.flowSettings?.enabled) {
-      return (
-        <CollectionNotAllowView
-          collectionTitle={(this as any).collection.title}
-          actionName={this.context.actionName || 'view'}
-        />
-      );
-    }
-    return null;
-  }
-
-  renderContent() {
+  render() {
     return (
       <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
         <Observer>

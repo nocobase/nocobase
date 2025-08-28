@@ -39,7 +39,7 @@ export class ActionModel extends FlowModel {
       cache: false,
     });
   }
-  renderContent() {
+  render() {
     const { flowSettings } = this.flowEngine || {};
     const enabled = flowSettings?.enabled;
     const props = { ...this.defaultProps, ...this.props };
@@ -181,7 +181,7 @@ export class RecordActionModel extends ActionModel {
     children: escapeT('Action'),
   };
 
-  renderContent() {
+  render() {
     const props = { ...this.defaultProps, ...this.props };
     const { flowSettings } = this.flowEngine || {};
     const enabled = flowSettings?.enabled;

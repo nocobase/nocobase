@@ -29,7 +29,7 @@ export class DetailItemModel extends FieldModel<{
     super.onInit(options);
   }
 
-  renderContent() {
+  render() {
     const fieldModel = this.subModels.field as FieldModel;
     const value = this.context.record?.[this.fieldPath];
     return (
@@ -37,17 +37,6 @@ export class DetailItemModel extends FieldModel<{
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
-  }
-
-  renderNoPermission() {
-    if (this.flowEngine.flowSettings?.enabled) {
-      return (
-        <FormItem {...this.props}>
-          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.collectionField.title} />
-        </FormItem>
-      );
-    }
-    return null;
   }
 }
 

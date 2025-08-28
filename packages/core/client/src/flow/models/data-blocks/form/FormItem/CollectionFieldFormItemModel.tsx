@@ -45,23 +45,13 @@ export class CollectionFieldFormItemModel extends FormItemModel {
     super.onInit(options);
   }
 
-  renderContent() {
+  render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
-  }
-  renderNoPermission() {
-    if (this.flowEngine.flowSettings?.enabled) {
-      return (
-        <FormItem {...this.props}>
-          <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
-        </FormItem>
-      );
-    }
-    return null;
   }
 }
 

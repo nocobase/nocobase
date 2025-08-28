@@ -115,18 +115,6 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
       },
     ];
   }
-
-  public renderNoPermission() {
-    if (this.flowEngine.flowSettings?.enabled) {
-      return (
-        <CollectionNotAllowView
-          collectionTitle={(this as any).collection.title}
-          actionName={this.context.actionName || 'view'}
-        />
-      );
-    }
-    return null;
-  }
 }
 
 TableAssociationFieldModel.registerFlow({

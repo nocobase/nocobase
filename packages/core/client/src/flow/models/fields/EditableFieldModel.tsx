@@ -44,7 +44,7 @@ export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> e
     };
   }
 
-  renderContent() {
+  render() {
     const [Component, props = {}] = this.component;
     return <Component {...props} {...this.getProps()} />;
   }
