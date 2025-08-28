@@ -29,6 +29,7 @@ import {
   UserMainDepartmentFieldSettings,
   DepartmentOwnersFieldSettings,
 } from './components';
+import { DepartmentOwnersField } from './departments/DepartmentOwnersField';
 
 export class PluginDepartmentsClient extends Plugin {
   async afterAdd() {
@@ -42,7 +43,7 @@ export class PluginDepartmentsClient extends Plugin {
     this.app.addComponents({
       UserDepartmentsField: ReadOnlyAssociationField,
       UserMainDepartmentField: ReadOnlyAssociationField,
-      DepartmentOwnersField: ReadOnlyAssociationField,
+      DepartmentOwnersField: DepartmentOwnersField,
     });
     this.app.schemaSettingsManager.add(UserDepartmentsFieldSettings);
     this.app.schemaSettingsManager.add(UserMainDepartmentFieldSettings);

@@ -22,19 +22,25 @@ import {
   SchemaComponent,
   useActionContext,
   useRecord,
+  AssociationField,
 } from '@nocobase/client';
 import React, { useEffect, useRef, useState } from 'react';
 import { Select } from 'antd';
 import { Field } from '@formily/core';
-import { useField } from '@formily/react';
+import { connect, mapReadPretty, useField } from '@formily/react';
 import { departmentOwnersSchema } from './schemas/departments';
+import { useDepartmentTranslation } from '../locale';
+import { useFilterActionProps } from '../hooks';
 
-export const DepartmentOwnersField: React.FC = () => {
+// Edit mode
+export const EditableDepartmentOwnersField: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const department = useRecord() as any;
   const field = useField<Field>();
   const [value, setValue] = useState([]);
   const selectedRows = useRef([]);
+  const { t } = useDepartmentTranslation();
+  const isCreate = !department?.id;
   const handleSelect = (_: number[], rows: any[]) => {
     selectedRows.current = rows;
   };
@@ -104,12 +110,25 @@ export const DepartmentOwnersField: React.FC = () => {
         value={value}
         labelInValue={true}
         onDropdownVisibleChange={(open) => setVisible(open)}
+        disabled={isCreate}
+        placeholder={isCreate ? t('Please create department first') : ''}
       />
       <SchemaComponent
         schema={departmentOwnersSchema}
         components={{ RequestProvider }}
-        scope={{ department, handleSelect, useSelectOwners }}
+        scope={{ department, handleSelect, useSelectOwners, useFilterActionProps }}
       />
     </ActionContextProvider>
   );
 };
+
+// ReadPretty Mode
+const ReadDepartmentOwnersField = (props) => {
+  const defaultFieldNames = {
+    label: 'nickname',
+    value: 'id',
+  };
+  return <AssociationField.ReadPretty {...props} fieldNames={defaultFieldNames} />;
+};
+
+export const DepartmentOwnersField = connect(EditableDepartmentOwnersField, mapReadPretty(ReadDepartmentOwnersField));

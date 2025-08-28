@@ -27,6 +27,7 @@
   "Are you sure you want to remove these departments?": "你确定要移除这些部门吗？",
   "Please select members": "请选择成员",
   "Please select departments": "请选择部门",
+  "Please create department first": "请先新建部门后再设置负责人",
   "The department has sub-departments, please delete them first": "部门下有子部门，请先删除子部门",
   "The department has members, please remove them first": "部门下有成员，请先移除",
   "Main": "主属部门",
