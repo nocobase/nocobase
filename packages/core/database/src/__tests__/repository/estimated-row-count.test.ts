@@ -165,6 +165,7 @@ async function analyzeTable(db, collection) {
   if (db.isMySQLCompatibleDialect()) {
     await db.sequelize.query(`ANALYZE TABLE ${collection.getTableNameWithSchema()}`);
   } else if (db.isPostgresCompatibleDialect()) {
+    await db.prepare();
     await db.sequelize.query(`ANALYZE ${collection.getTableNameWithSchema()}`);
   }
 }
