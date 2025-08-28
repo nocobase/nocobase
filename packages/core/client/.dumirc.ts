@@ -151,12 +151,16 @@ export default defineConfig({
               title: 'CRUD',
               link: '/examples/flow-models/crud',
             },
-            {
-              title: '生命周期',
-              link: '/examples/flow-models/lifecycle',
-            },
-          ],
+        {
+          title: '生命周期',
+          link: '/examples/flow-models/lifecycle',
         },
+        {
+          title: 'hidden 属性演示',
+          link: '/examples/flow-model-hidden',
+        },
+      ],
+    },
         {
           title: 'FlowDefinition',
           type: 'group',

@@ -117,6 +117,8 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     extraToolbarItems,
     fallback,
   }) => {
+    // hidden 占位由模型自身处理；无需在此注入
+
     const pending = useApplyAutoFlows(model, inputArgs);
 
     if (pending) {
@@ -163,6 +165,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
   }) => {
+    // hidden 占位由模型自身处理；无需在此注入
     return (
       <FlowModelProvider model={model}>
         <FlowModelRendererCore
@@ -205,7 +208,7 @@ const FlowModelRendererCore: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
   }) => {
-    // 渲染模型内容
+    // 交由模型自身处理 hidden 与占位渲染
     const modelContent = model.render();
 
     // 包装 ErrorBoundary 的辅助函数

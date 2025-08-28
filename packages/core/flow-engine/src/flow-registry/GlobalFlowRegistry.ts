@@ -45,7 +45,31 @@ export class GlobalFlowRegistry extends BaseFlowRegistry {
         }
       }
     }
-    return flows;
+
+    // 对静态流进行排序：按 sort 升序；sort 相同的情况下，父类静态流先于子类静态流
+    const getClassDepth = (klass: any): number => {
+      let depth = 0;
+      let cur = klass;
+      while (cur && cur !== FlowModel && cur !== Function.prototype && cur !== Object.prototype) {
+        cur = Object.getPrototypeOf(cur);
+        depth += 1;
+      }
+      return depth;
+    };
+
+    const sortedEntries = Array.from(flows.entries()).sort(([, a], [, b]) => {
+      const sa = a.sort ?? 0;
+      const sb = b.sort ?? 0;
+      if (sa !== sb) return sa - sb;
+      const ra = a['flowRegistry'];
+      const rb = b['flowRegistry'];
+      const da = getClassDepth(ra['target']);
+      const db = getClassDepth(rb['target']);
+      if (da !== db) return da - db; // 父类（深度更小）在前
+      return 0;
+    });
+
+    return new Map(sortedEntries);
   }
 
   saveFlow(flow: FlowDefinition): void {

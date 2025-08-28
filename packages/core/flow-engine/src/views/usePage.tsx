@@ -57,6 +57,7 @@ export function usePage() {
 
     // 支持 content 为函数，传递 currentPage
     const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+    config.onOpen?.(currentPage, ctx);
 
     const page = (
       <FlowViewContextProvider context={ctx}>

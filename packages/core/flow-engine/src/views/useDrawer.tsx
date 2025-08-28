@@ -107,6 +107,10 @@ export function useDrawer() {
     const DrawerWithContext: React.FC = (props) => {
       const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
 
+      React.useEffect(() => {
+        config.onOpen?.(currentDrawer, ctx);
+      }, []);
+
       return (
         <DrawerComponent
           ref={drawerRef}
