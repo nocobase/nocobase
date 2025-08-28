@@ -1,12 +1,14 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { CollectionField, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { CollectionField, FlowModel, FlowModelRenderer, ModelRenderMode } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
 import { FormModel } from '../form/form-model';
 import { ActionModel } from './action-model';
 
 export class TableColumnModel extends FlowModel {
+  // 标记该类 render 返回函数
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
   field: CollectionField;
   fieldPath: string;
 
@@ -67,6 +69,7 @@ export class TableColumnModel extends FlowModel {
 }
 
 export class TableColumnActionsModel extends TableColumnModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
   getColumnProps() {
     return { title: 'Actions', ...this.props, render: this.render() };
   }

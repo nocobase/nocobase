@@ -71,9 +71,10 @@ export enum ModelRenderMode {
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 当 flowSettings.enabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
+   * 基类默认仅返回一个透明度降低的占位元素
    */
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return undefined;
+    return <span style={{ opacity: 0.5 }}>{this.translate?.('Hidden') || 'Hidden'}</span>;
   }
   public readonly uid: string;
   public sortIndex: number;
@@ -119,8 +120,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private _cleanRun?: boolean;
   /**
    * 声明渲染模式：
-   * - 'element': render 返回 React 节点，框架会用 observer 包装以获得响应式；
-   * - 'renderer': render 返回渲染函数（例如表格单元格渲染器），不做包装也不预调用；
+   * - 'renderElement': render 返回 React 节点，框架会用 observer 包装以获得响应式；
+   * - 'renderFunction': render 返回渲染函数（例如表格单元格渲染器），不做包装也不预调用；
    */
   static renderMode: ModelRenderMode = ModelRenderMode.ReactElement;
 
@@ -514,16 +515,25 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   getFlows() {
+    // 分离获取：实例流（未排序）与静态流（在 GlobalFlowRegistry 中已排序）
     const instanceFlows = this.flowRegistry.getFlows();
-    const allFlows = new Map<string, FlowDefinition>(instanceFlows);
     const staticFlows = (this.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
-    for (const [key, def] of staticFlows) {
-      if (!allFlows.has(key)) {
-        // 实例级流程优先于静态流程
-        allFlows.set(key, def);
-      }
-    }
-    return allFlows;
+
+    // 跳过同名静态流（实例覆盖静态）
+    const instanceKeys = new Set(instanceFlows.keys());
+    const staticEntries = Array.from(staticFlows.entries()).filter(([key]) => !instanceKeys.has(key));
+
+    // 实例流保持原始注册顺序，统一一次排序（稳定排序）：
+    const instanceEntries = Array.from(instanceFlows.entries());
+    const allEntries = [...staticEntries, ...instanceEntries];
+    allEntries.sort(([, a], [, b]) => {
+      const sa = a.sort ?? 0;
+      const sb = b.sort ?? 0;
+      if (sa !== sb) return sa - sb;
+      return 0; // 其它情况保持稳定顺序（静态内部：父类优先；实例内部：注册顺序）
+    });
+
+    return new Map<string, FlowDefinition>(allEntries);
   }
 
   setProps(props: IModelComponentProps): void;
@@ -616,28 +626,26 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * 获取所有自动应用流程定义并按 sort 排序
-   * @returns {FlowDefinition[]} 按 sort 排序的自动应用流程定义数组
+   * 获取所有自动应用流程定义（保持 getFlows 的顺序，即按 sort 排序）
+   * @returns {FlowDefinition[]} 自动应用流程定义数组（已按 sort 排序）
    */
   public getAutoFlows(): FlowDefinition[] {
     const allFlows = this.getFlows();
 
-    // 过滤出自动流程并按 sort 排序
+    // 过滤出自动流程（保持 Map 的原有顺序）
     // 没有 on 属性且没有 manual: true 的流程默认自动执行
-    const autoFlows = Array.from(allFlows.values())
-      .filter((flow) => {
-        // 如果有 on 属性，说明是事件触发流程，不自动执行
-        if (flow.on) {
-          return false;
-        }
-        // 如果明确设置了 manual: true，不自动执行
-        if (flow.manual === true) {
-          return false;
-        }
-        // 其他情况默认自动执行
-        return true;
-      })
-      .sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    const autoFlows = Array.from(allFlows.values()).filter((flow) => {
+      // 如果有 on 属性，说明是事件触发流程，不自动执行
+      if (flow.on) {
+        return false;
+      }
+      // 如果明确设置了 manual: true，不自动执行
+      if (flow.manual === true) {
+        return false;
+      }
+      // 其他情况默认自动执行
+      return true;
+    });
 
     return autoFlows;
   }
@@ -782,23 +790,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
           if (this.hidden) {
             if (!isConfigMode) return null;
+            const rendered = this.renderHiddenInConfig?.();
             const Cls = this.constructor as typeof FlowModel;
             const returnsFunction = Cls.renderMode === ModelRenderMode.RenderFunction;
-            const defaultNode = (
-              <div
-                style={{
-                  padding: 8,
-                  color: '#999',
-                  border: '1px dashed #d9d9d9',
-                  borderRadius: 4,
-                  background: '#fafafa',
-                }}
-              >
-                {this.translate?.('Hidden') || 'Hidden'}
-              </div>
-            );
-            const rendered = this.renderHiddenInConfig?.() || defaultNode;
-            return returnsFunction ? () => rendered : rendered;
+            return returnsFunction ? (typeof rendered === 'function' ? rendered : () => rendered) : rendered;
           }
           return originalRender.call(this);
         };
@@ -841,23 +836,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             if (!isConfigMode) {
               return null;
             }
-            // 设置态隐藏时的渲染：优先使用实例方法 renderHiddenInConfig，否则使用默认
-            const rendered = modelInstance.renderHiddenInConfig?.();
-            if (rendered !== undefined) return rendered;
-            const defaultNode = (
-              <div
-                style={{
-                  padding: 8,
-                  color: '#999',
-                  border: '1px dashed #d9d9d9',
-                  borderRadius: 4,
-                  background: '#fafafa',
-                }}
-              >
-                {modelInstance.translate?.('Hidden') || 'Hidden'}
-              </div>
-            );
-            return defaultNode;
+            // 设置态隐藏时的渲染：由实例方法 renderHiddenInConfig 决定；若为渲染函数模式，则包装为函数
+            return modelInstance.renderHiddenInConfig?.();
           }
 
           // 调用原始渲染方法
