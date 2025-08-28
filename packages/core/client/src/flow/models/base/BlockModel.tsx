@@ -31,7 +31,7 @@ import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
 function resolveDefineContext(ctx: FlowModelContext) {
-  const current = ctx.view as any;
+  const current = ctx.currentFlow;
   const inputCF = current?.inputArgs || {};
   const resource: BaseRecordResource | undefined = ctx.resource;
   const inputCtx = ctx.inputArgs || {};
