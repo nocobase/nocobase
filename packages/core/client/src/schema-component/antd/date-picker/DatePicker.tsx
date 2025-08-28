@@ -98,8 +98,7 @@ export const DatePicker = (props: any) => {
       }
 
       // current 是本地时间，转成 UTC 时间
-      const currentUtc = current.utc();
-
+      const currentUtc = current;
       // 判断是不是 minDate 和 maxDate 的同一天（UTC）
       const isCurrentMinDay = minDateTime && currentUtc.isSame(minDateTime, 'day');
       const isCurrentMaxDay = maxDateTime && currentUtc.isSame(maxDateTime, 'day');
