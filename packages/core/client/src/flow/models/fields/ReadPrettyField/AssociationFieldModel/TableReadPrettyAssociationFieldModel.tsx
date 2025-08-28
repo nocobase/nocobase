@@ -44,17 +44,7 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
       cache: false,
     });
   }
-  public static readonly supportedFieldInterfaces = [
-    'm2m',
-    'm2o',
-    'o2o',
-    'o2m',
-    'oho',
-    'obo',
-    'updatedBy',
-    'createdBy',
-    'mbm',
-  ];
+  public static readonly supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
 
   getColumns() {
     const { enableIndexColumn = true } = this.props;
