@@ -104,7 +104,8 @@ export const FlowRoute = () => {
 
             viewItem.model.dispatchEvent('click', {
               target: layoutContentRef.current,
-              params: viewItem.params,
+              filterByTk: viewItem.params.filterByTk,
+              sourceId: viewItem.params.sourceId,
               closeRef,
               updateRef,
               navigation: new ViewNavigation(

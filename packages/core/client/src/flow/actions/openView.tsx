@@ -53,7 +53,11 @@ export const openView = defineAction({
   },
   async handler(ctx, params) {
     if (!ctx.inputArgs.navigation) {
-      ctx.view.navigation?.navigateTo({ viewUid: ctx.model.uid });
+      ctx.view.navigation?.navigateTo({
+        viewUid: ctx.model.uid,
+        filterByTk: ctx.inputArgs.filterByTk,
+        sourceId: ctx.inputArgs.sourceId,
+      });
       return;
     }
 
