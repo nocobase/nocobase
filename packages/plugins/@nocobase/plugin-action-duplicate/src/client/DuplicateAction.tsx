@@ -83,7 +83,7 @@ export const actionDesignerCss = css`
   }
 `;
 
-export const DuplicateAction = React.forwardRef((props: any, ref) => {
+export const DuplicateAction = React.forwardRef<HTMLDivElement, any>((props: any, ref) => {
   const { onlyIcon, ...rest } = props;
   const { children, icon, title, ...others } = props;
   const { message } = App.useApp();
