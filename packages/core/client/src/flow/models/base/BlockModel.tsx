@@ -260,7 +260,7 @@ export const CollectionNotAllowView = ({ actionName, collectionTitle }) => {
   }, [collectionTitle, actionName, t]);
   return (
     <BlockItemCard>
-      <Result status="404" subTitle={messageValue} />
+      <Result status="403" subTitle={messageValue} />
     </BlockItemCard>
   );
 };
@@ -270,13 +270,8 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    const messageValue = this.context.t(
-      `The current user only has the UI configuration permission, but don't have permission for viewing block [${this?.title}]`,
-    );
     return (
-      <BlockItemCard>
-        <Result status="403" subTitle={messageValue} />
-      </BlockItemCard>
+      <CollectionNotAllowView actionName={this.context.actionName} collectionTitle={(this as any).collection?.title} />
     );
   }
 
