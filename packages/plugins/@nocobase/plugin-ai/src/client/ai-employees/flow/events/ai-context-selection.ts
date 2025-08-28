@@ -53,7 +53,7 @@ BlockModel.registerFlow({
               return;
             }
             aiSelection.selector?.onSelect({ uid: ctx.model.uid });
-            // ctx.message.info(`Selected Block: ${ctx.model.title}(${ctx.model.uid})`);
+            aiSelection.stopSelect();
           },
           onMouseEnter: (e: Event) => {
             onMouseEnter?.(e);
