@@ -86,7 +86,6 @@ function makeCurrentRecordItem(
   modelName: string,
   targetName: string,
   dataSourceKey: string,
-  filterByTk: string,
   inputCF: any,
 ): SubModelItem {
   return {
@@ -97,11 +96,9 @@ function makeCurrentRecordItem(
       stepParams: {
         resourceSettings: {
           init: {
-            filterByTk,
             collectionName: targetName,
             dataSourceKey,
             ...(inputCF.associationName && { associationName: inputCF.associationName }),
-            ...(inputCF.sourceId && { sourceId: inputCF.sourceId }),
           },
         },
       },
@@ -425,7 +422,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         const targetName = targetCollectionNameCF || c.name;
         const targetCol = c.dataSource.getCollection(targetName) || c;
         if (!allowedSet || (targetCol && isAllowed(targetCol))) {
-          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
+          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, inputCF));
         }
       }
 
