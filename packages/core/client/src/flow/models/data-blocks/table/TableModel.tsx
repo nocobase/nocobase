@@ -144,19 +144,23 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
   }
 
   getColumns() {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
       .filter(Boolean)
       .concat({
         key: 'empty',
-      })
-      .concat({
+      });
+    if (isConfigMode) {
+      cols.push({
         key: 'addColumn',
         fixed: 'right',
         width: 200,
         title: <AddFieldColumn model={this} />,
       } as any);
+    }
+
     return cols;
   }
 
