@@ -66,19 +66,11 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
   get collection() {
     return this.collectionField.targetCollection;
   }
-  onInit(options: any): void {
-    super.onInit(options);
-    this.context.defineProperty('resourceName', {
-      get: () => this.collectionField.target,
-      cache: false,
-    });
-  }
+
   getColumns() {
     const { enableIndexColumn } = this.props;
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
-      (v) => {
-        return !v.hidden;
-      },
+      Boolean,
     );
 
     return [
@@ -123,19 +115,7 @@ TableAssociationFieldModel.registerFlow({
   sort: 300,
   steps: {
     aclCheck: {
-      async handler(ctx, params) {
-        {
-          const result = await ctx.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.model.collectionField.target,
-            actionName: ctx.model.context.actionName,
-          });
-          if (!result) {
-            ctx.model.hidden = true;
-            ctx.exitAll();
-          }
-        }
-      },
+      use: 'aclCheck',
     },
     init: {
       async handler(ctx, params) {

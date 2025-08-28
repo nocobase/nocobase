@@ -144,7 +144,6 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
   }
 
   getColumns() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })

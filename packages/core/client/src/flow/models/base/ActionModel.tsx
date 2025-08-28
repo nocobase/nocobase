@@ -92,23 +92,6 @@ ActionModel.registerFlow({
   title: escapeT('Button settings'),
   sort: -999,
   steps: {
-    aclCheck: {
-      async handler(ctx, params) {
-        {
-          if (!ctx.blockModel) {
-            return;
-          }
-          const result = await ctx.aclCheck({
-            dataSourceKey: ctx.model.context.dataSource.key,
-            resourceName: ctx.blockModel.resource.getResourceName(),
-            actionName: ctx.model.context.actionName,
-          });
-          if (!result) {
-            ctx.model.hidden = true; // 内核、激活 UI 配置是半透明不隐藏
-          }
-        }
-      },
-    },
     general: {
       title: escapeT('Edit button'),
       uiSchema(ctx) {
@@ -169,6 +152,9 @@ ActionModel.registerFlow({
           },
         });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
   },
 });
