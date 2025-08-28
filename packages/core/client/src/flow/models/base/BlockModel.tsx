@@ -100,8 +100,10 @@ function makeCurrentRecordItem(
             filterByTk: '{{ ctx.view.inputArgs.filterByTk }}',
             collectionName: targetName,
             dataSourceKey,
-            ...(inputCF.associationName && { associationName: inputCF.associationName }),
-            ...(inputCF.associationName && { sourceId: '{{ ctx.view.inputArgs.sourceId }}' }),
+            ...(inputCF.associationName && {
+              associationName: inputCF.associationName,
+              sourceId: '{{ ctx.view.inputArgs.sourceId }}',
+            }),
           },
         },
       },
