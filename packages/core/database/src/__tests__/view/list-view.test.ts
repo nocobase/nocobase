@@ -54,8 +54,13 @@ describe('list view', () => {
       return;
     }
 
+    if (db.inDialect('postgres')) {
+      await db.prepare();
+    }
+
     const viewName = 'schema_test';
-    const newViewName = db.options.schema ? `${db.options.schema}.${viewName}` : viewName;
+    const schema = db.options.schema || process.env.USER_SCHEMA || process.env.DB_COLLECTION_MANAGER_SCHEMA || 'public';
+    const newViewName = schema ? `${schema}.${viewName}` : viewName;
     await db.sequelize.query(`DROP VIEW IF EXISTS ${newViewName}`);
     await db.sequelize.query(`CREATE VIEW ${newViewName} AS SELECT 3`);
 
