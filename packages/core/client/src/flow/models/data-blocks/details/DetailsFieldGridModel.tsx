@@ -22,13 +22,17 @@ const AddDetailField = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'items'}
-      subModelBaseClasses={['DetailItemModel', 'DetailFormItemModel']}
+      subModelBaseClasses={['DetailItemModel', 'FormCustomFormItemModel']}
       afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
-        await field.applyAutoFlows();
+        if (field) {
+          await field.applyAutoFlows();
+        }
       }}
       afterSubModelAdd={async (item: DetailItemModel) => {
-        model.context.blockModel.addAppends(item.fieldPath, true);
+        if (item.fieldPath) {
+          model.context.blockModel.addAppends(item.fieldPath, true);
+        }
       }}
       keepDropdownOpen
     >
