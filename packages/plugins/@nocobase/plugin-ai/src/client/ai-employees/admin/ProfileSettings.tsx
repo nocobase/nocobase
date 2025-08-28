@@ -11,6 +11,7 @@ import { SchemaComponent, useCurrentRoleVariable, useCurrentUserVariable, useDat
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
+import { Switch } from '@formily/antd-v5';
 
 const useVariableOptions = () => {
   const t = useT();
@@ -42,7 +43,7 @@ export const ProfileSettings: React.FC<{
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect }}
+      components={{ AvatarSelect, Switch }}
       schema={{
         type: 'void',
         properties: {
@@ -59,6 +60,14 @@ export const ProfileSettings: React.FC<{
             title: '{{t("Nickname")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            required: true,
+          },
+          enabled: {
+            type: 'boolean',
+            title: '{{t("Enabled")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Switch',
+            default: true,
             required: true,
           },
           position: {

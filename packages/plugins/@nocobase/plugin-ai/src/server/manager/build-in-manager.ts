@@ -63,6 +63,7 @@ export class BuildInManager {
           enableKnowledgeBase: false,
           knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
           knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
+          enabled: false,
         },
       });
       this.plugin.log.info(`setup [${username}] ${description}`);
