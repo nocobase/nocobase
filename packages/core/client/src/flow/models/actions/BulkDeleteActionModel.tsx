@@ -16,6 +16,9 @@ export class BulkDeleteActionModel extends CollectionActionModel {
     title: escapeT('Delete'),
     icon: 'DeleteOutlined',
   };
+  getAclActionName() {
+    return 'destroy';
+  }
 }
 
 BulkDeleteActionModel.define({

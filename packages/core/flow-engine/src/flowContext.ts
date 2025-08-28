@@ -37,6 +37,7 @@ import { extractPropertyPath, FlowExitException, resolveDefaultParams, resolveEx
 import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { ACL } from './acl/Acl';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -929,6 +930,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         return def.handler(ctx, combinedParams);
       },
     );
+    this.defineProperty('acl', {
+      get: () => {
+        const acl = new ACL(this.engine);
+        return acl;
+      },
+    });
   }
 }
 

@@ -33,7 +33,6 @@ export const fieldComponent = defineAction({
   },
   beforeParamsSave: async (ctx, params, previousParams) => {
     if (params.use !== previousParams.use) {
-      console.log(params.use);
       await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
         use: params.use,
         stepParams: {
@@ -54,6 +53,5 @@ export const fieldComponent = defineAction({
     if (!params.use) {
       throw new Error('model use is a required parameter');
     }
-    ctx.model.setProps({ subModel: params.use });
   },
 });

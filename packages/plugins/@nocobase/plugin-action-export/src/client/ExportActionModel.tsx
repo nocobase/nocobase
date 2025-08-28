@@ -27,6 +27,10 @@ export class ExportActionModel extends CollectionActionModel {
     type: 'default',
     icon: 'clouddownloadoutlined',
   };
+
+  getAclActionName() {
+    return 'export';
+  }
 }
 
 ExportActionModel.define({

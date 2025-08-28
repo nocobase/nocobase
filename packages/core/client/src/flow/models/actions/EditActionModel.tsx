@@ -16,6 +16,9 @@ export class EditActionModel extends RecordActionModel {
     type: 'link',
     title: escapeT('Edit'),
   };
+  getAclActionName() {
+    return 'update';
+  }
 }
 
 EditActionModel.define({
