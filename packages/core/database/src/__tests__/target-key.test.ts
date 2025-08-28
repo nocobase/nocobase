@@ -43,6 +43,7 @@ describe('targetKey', () => {
       values: {},
     });
     await r1.create({
+      updateAssociationValues: ['b1'],
       values: {
         name: 'a1',
         b1: [b1.toJSON()],
@@ -83,6 +84,7 @@ describe('targetKey', () => {
     });
 
     await r1.create({
+      updateAssociationValues: ['b1'],
       values: {
         name: 'a1',
         b1: [b1.toJSON()],
@@ -124,6 +126,7 @@ describe('targetKey', () => {
     });
     await expect(async () => {
       await r1.create({
+        updateAssociationValues: ['b1'],
         values: {
           name: 'a1',
           b1: [b1.toJSON()],
@@ -163,6 +166,7 @@ describe('targetKey', () => {
       },
     });
     await r1.create({
+      updateAssociationValues: ['b1'],
       values: {
         name: 'a1',
         b1: [b1.toJSON()],
@@ -224,6 +228,7 @@ describe('targetKey', () => {
       },
     });
     await r1.create({
+      updateAssociationValues: ['b1'],
       values: {
         code: 'a1',
         b1: [b1.toJSON()],

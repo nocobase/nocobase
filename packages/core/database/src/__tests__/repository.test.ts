@@ -129,6 +129,7 @@ describe('repository.find', () => {
     });
 
     await User.repository.createMany({
+      updateAssociationValues: ['posts.comments', 'posts.tags'],
       records: [
         {
           name: 'user1',
@@ -349,6 +350,7 @@ describe('repository create with belongs to many', () => {
     });
 
     await Order.repository.create({
+      updateAssociationValues: ['products', 'products.orders_products'],
       values: {
         products: [
           {
@@ -402,6 +404,7 @@ describe('repository.create', () => {
 
   it('create', async () => {
     const user = await User.repository.create({
+      updateAssociationValues: ['posts', 'posts.comments'],
       values: {
         name: 'user1',
         posts: [
@@ -478,6 +481,7 @@ describe('repository.update', () => {
       name: 'user1',
     });
     await User.repository.update({
+      updateAssociationValues: ['posts'],
       filterByTk: user.id,
       values: {
         name: 'user11',
@@ -502,6 +506,7 @@ describe('repository.update', () => {
     });
 
     await User.repository.update({
+      updateAssociationValues: ['posts'],
       filterByTk: user.id,
       values: {
         posts: [{ name: 'post2' }, { name: 'post3' }],

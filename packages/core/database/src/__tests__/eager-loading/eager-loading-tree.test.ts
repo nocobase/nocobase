@@ -53,6 +53,7 @@ describe('Eager loading tree', () => {
     await target1.update({ values: { seq_number: 2 } });
 
     await Source.repository.create({
+      updateAssociationValues: ['targets'],
       values: { name: 's1', targets: [{ id: target2.get('id') }, { id: target1.get('id') }] },
     });
 
@@ -107,6 +108,7 @@ describe('Eager loading tree', () => {
     });
 
     await Source.repository.create({
+      updateAssociationValues: ['targets'],
       values: {
         name: 'source1',
         targets: [targets[2], targets[0], targets[1]],
@@ -150,6 +152,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     await A.repository.create({
+      updateAssociationValues: ['bs'],
       values: {
         name: 'a1',
         bs: [{ name: 'b1' }, { name: 'b2' }],
@@ -189,6 +192,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     const users = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: [
         {
           name: 'u1',
@@ -241,6 +245,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: [
         {
           name: 'u1',
@@ -293,6 +298,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     const users = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: [
         {
           name: 'u1',
@@ -346,6 +352,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['user'],
       values: [
         {
           title: 'p1',
@@ -403,6 +410,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['user'],
       values: [
         {
           title: 'p1',
@@ -566,6 +574,7 @@ describe('Eager loading tree', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts', 'posts.tags', 'posts.tags.tagCategory'],
       values: [
         {
           name: 'u1',

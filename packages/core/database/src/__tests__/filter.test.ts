@@ -117,6 +117,7 @@ describe('filter', () => {
     await db.sync();
 
     await OrgCollection.repository.create({
+      updateAssociationValues: ['depts'],
       values: [
         {
           name: 'org1',
@@ -158,6 +159,7 @@ describe('filter', () => {
     await db.sync();
 
     const user = await UserCollection.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'John',
         posts: [

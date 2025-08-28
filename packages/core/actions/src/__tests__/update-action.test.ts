@@ -92,6 +92,7 @@ describe('update action', () => {
 
   test('update has many resource', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['comments'],
       values: {
         title: 'p1',
         comments: [
@@ -121,6 +122,7 @@ describe('update action', () => {
 
   test('update belongs to many through value', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags', 'tags.posts_tags'],
       values: {
         title: 'p1',
         tags: [
@@ -154,6 +156,7 @@ describe('update action', () => {
 
   test('update has one', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         title: 'p1',
         profile: {
