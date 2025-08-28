@@ -131,6 +131,7 @@ export const openView = defineAction({
 
         ctx.view.navigation?.back();
       },
+      onOpen: ctx.inputArgs.onOpen,
     });
   },
 });

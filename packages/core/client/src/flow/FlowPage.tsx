@@ -90,29 +90,40 @@ export const FlowRoute = () => {
         const { viewsToClose, viewsToOpen } = getViewDiff(prevViewListRef.current, viewList);
 
         // 4. 处理需要打开的视图
-        for (const element of viewsToOpen) {
-          const viewItem = element;
-          const closeRef = React.createRef<() => void>();
-          const updateRef = React.createRef<(value: any) => void>();
+        if (viewsToOpen.length) {
+          const openView = (index: number) => {
+            if (!viewsToOpen[index]) {
+              return;
+            }
 
-          prevViewListRef.current.push(viewItem);
+            const viewItem = viewsToOpen[index];
+            const closeRef = React.createRef<() => void>();
+            const updateRef = React.createRef<(value: any) => void>();
 
-          viewItem.model.dispatchEvent('click', {
-            target: layoutContentRef.current,
-            params: viewItem.params,
-            closeRef,
-            updateRef,
-            navigation: new ViewNavigation(
-              flowEngine.context,
-              prevViewListRef.current.map((item) => item.params),
-            ),
-          });
+            prevViewListRef.current.push(viewItem);
 
-          viewStateRef.current[viewItem.params.viewUid] = {
-            close: () => closeRef.current?.(),
-            update: (value: any) => updateRef.current?.(value),
-            hidden: false,
+            viewItem.model.dispatchEvent('click', {
+              target: layoutContentRef.current,
+              params: viewItem.params,
+              closeRef,
+              updateRef,
+              navigation: new ViewNavigation(
+                flowEngine.context,
+                prevViewListRef.current.map((item) => item.params),
+              ),
+              onOpen() {
+                openView(index + 1); // 递归打开下一个视图
+              },
+            });
+
+            viewStateRef.current[viewItem.params.viewUid] = {
+              close: () => closeRef.current?.(),
+              update: (value: any) => updateRef.current?.(value),
+              hidden: false,
+            };
           };
+
+          openView(0);
         }
 
         // 5. 处理需要关闭的视图
