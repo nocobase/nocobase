@@ -31,7 +31,7 @@ import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
 function resolveDefineContext(ctx: FlowModelContext) {
-  const current = ctx.currentFlow;
+  const current = ctx.view as any;
   const inputCF = current?.inputArgs || {};
   const resource: BaseRecordResource | undefined = ctx.resource;
   const inputCtx = ctx.inputArgs || {};
@@ -87,7 +87,6 @@ function makeCurrentRecordItem(
   modelName: string,
   targetName: string,
   dataSourceKey: string,
-  filterByTk: string,
   inputCF: any,
 ): SubModelItem {
   return {
@@ -98,11 +97,11 @@ function makeCurrentRecordItem(
       stepParams: {
         resourceSettings: {
           init: {
-            filterByTk,
+            filterByTk: '{{ ctx.view.inputArgs.filterByTk }}',
             collectionName: targetName,
             dataSourceKey,
             ...(inputCF.associationName && { associationName: inputCF.associationName }),
-            ...(inputCF.sourceId && { sourceId: inputCF.sourceId }),
+            ...(inputCF.associationName && { sourceId: '{{ ctx.view.inputArgs.sourceId }}' }),
           },
         },
       },
@@ -439,7 +438,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         const targetName = targetCollectionNameCF || c.name;
         const targetCol = c.dataSource.getCollection(targetName) || c;
         if (!allowedSet || (targetCol && isAllowed(targetCol))) {
-          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
+          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, inputCF));
         }
       }
 
