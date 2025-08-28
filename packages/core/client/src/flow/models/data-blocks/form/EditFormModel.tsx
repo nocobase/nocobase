@@ -37,7 +37,7 @@ export class EditFormModel extends FormModel {
       resource.isNewRecord = false;
       return resource;
     }
-    if (Object.keys(params).includes('filterByTk')) {
+    if (_ctx.view.inputArgs.filterByTk) {
       const resource = new SingleRecordResource();
       resource.isNewRecord = false;
       return resource;
@@ -122,7 +122,7 @@ export class EditFormModel extends FormModel {
             layout={layout}
           >
           </FormLayout>
-        
+
         </FormProvider> */}
       </FormComponent>
     );
