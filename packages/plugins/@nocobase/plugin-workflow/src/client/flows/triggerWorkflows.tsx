@@ -12,12 +12,18 @@ import { TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE } from '../locale';
 
 type SchemaOptions = {
+  WorkflowSelectComponent?: React.ComponentType<any>;
   optionFilter?: (option: { key: string; type: string; config: any }) => boolean;
   usingContext?: boolean;
   filter?: Record<string, any>;
 };
 
-export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true, filter }: SchemaOptions = {}) {
+export function createTriggerWorkflowsSchema({
+  WorkflowSelectComponent = TriggerWorkflowSelect,
+  optionFilter,
+  usingContext = true,
+  filter,
+}: SchemaOptions = {}) {
   return (ctx) => {
     const { collection: collectionModel } = ctx.blockModel as CollectionBlockModel;
     const workflowCollection = collectionModel
@@ -86,7 +92,7 @@ export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true
                 workflowKey: {
                   type: 'string',
                   'x-decorator': 'FormItem',
-                  'x-component': TriggerWorkflowSelect,
+                  'x-component': WorkflowSelectComponent,
                   'x-component-props': {
                     filter,
                     ...(usingContext
@@ -96,7 +102,7 @@ export function createTriggerWorkflowsSchema({ optionFilter, usingContext = true
                       : {}),
                     scope: 'form',
                     placeholder: `{{t('Select workflow', { ns: 'workflow' })}}`,
-                    optionFilter: optionFilter?.bind(ctx),
+                    optionFilter: optionFilter,
                   },
                   required: true,
                 },
