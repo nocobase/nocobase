@@ -49,7 +49,7 @@ export async function resolveViewParamsToViewList(
     const viewItem = resolvedViewItems[i];
     const viewType = getViewType(viewItem);
 
-    if (viewType === 'embed') {
+    if (viewType === 'embed' && !hasEmbedAfter) {
       hasEmbedAfter = true;
       viewItem.hidden = false; // embed type itself is not hidden
     } else {
@@ -66,5 +66,5 @@ function getViewType(viewItem: ViewItem): string {
   }
 
   const params = viewItem.model.getStepParams('popupSettings', 'openView');
-  return params.mode || 'drawer';
+  return params?.mode || 'drawer';
 }

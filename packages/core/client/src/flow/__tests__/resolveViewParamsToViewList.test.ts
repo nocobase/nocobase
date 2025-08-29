@@ -151,7 +151,7 @@ describe('resolveViewParamsToViewList', () => {
 
       expect(result).toHaveLength(4);
       expect(result[0].hidden).toBe(true); // before first embed
-      expect(result[1].hidden).toBe(false); // first embed
+      expect(result[1].hidden).toBe(true); // first embed
       expect(result[2].hidden).toBe(true); // between embeds
       expect(result[3].hidden).toBe(false); // second embed
     });
