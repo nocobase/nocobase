@@ -22,7 +22,7 @@ export const AISelectionControl: React.FC = observer(() => {
       closeIcon: false,
       message: (
         <Flex justify="space-between" align="center">
-          <span>Selecting Block</span>
+          <span>Picking Block</span>
           <Button
             type="primary"
             danger

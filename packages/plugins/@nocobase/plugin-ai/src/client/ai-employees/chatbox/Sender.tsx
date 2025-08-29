@@ -80,7 +80,7 @@ export const Sender: React.FC = () => {
               content,
             },
           ],
-          attachments,
+          attachments: attachments.filter((x) => x.status === 'done'),
           workContext: contextItems,
           editingMessageId: isEditingMessage ? editingMessageId : undefined,
         });

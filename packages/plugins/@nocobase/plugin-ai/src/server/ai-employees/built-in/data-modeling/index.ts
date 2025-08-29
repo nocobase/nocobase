@@ -9,7 +9,28 @@
 
 import profile from './profile';
 
-export const dataModeling = {
+export default {
+  username: 'orin',
+  description: 'AI employee for data modeling',
   profile,
-  skills: ['system.data-modeling'],
+  skillSettings: {
+    skills: [
+      {
+        name: 'dataModeling-intentRouter',
+        autoCall: true,
+      },
+      {
+        name: 'dataModeling-getCollectionNames',
+        autoCall: true,
+      },
+      {
+        name: 'dataModeling-getCollectionMetadata',
+        autoCall: true,
+      },
+      {
+        name: 'dataModeling-defineCollections',
+        autoCall: false,
+      },
+    ],
+  },
 };

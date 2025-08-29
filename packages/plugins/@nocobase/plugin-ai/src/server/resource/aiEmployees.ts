@@ -15,7 +15,9 @@ export const listByUser = async (ctx: Context, next: Next) => {
   const model = ctx.db.getModel('aiEmployees');
   const sequelize = ctx.db.sequelize;
   const roles = ctx.state.currentRoles;
-  let where = {};
+  let where: any = {
+    enabled: true,
+  };
   if (!roles?.includes('root')) {
     const aiEmployees = await ctx.db.getRepository('rolesAiEmployees').find({
       filter: {
@@ -27,6 +29,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
       return next();
     }
     where = {
+      ...where,
       username: aiEmployees.map((item: { aiEmployee: string }) => item.aiEmployee),
     };
   }

@@ -159,7 +159,12 @@ ActionModel.registerFlow({
   },
 });
 
-export class CollectionActionModel extends ActionModel {}
+export class CollectionActionModel extends ActionModel {
+  onInit(options) {
+    super.onInit(options);
+    console.log('CollectionActionModel:', this.context.collection, this.context.assocation);
+  }
+}
 
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {

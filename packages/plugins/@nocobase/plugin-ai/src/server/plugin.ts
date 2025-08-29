@@ -34,12 +34,14 @@ import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { BuildInManager } from './manager/build-in-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
+  buildInManager = new BuildInManager(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
@@ -54,11 +56,16 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
+    // await this.setupBuildIn();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
     this.setPermissions();
     this.registerWorkflow();
+  }
+
+  async setupBuildIn() {
+    await this.buildInManager.createOrUpdateAIEmployee();
   }
 
   registerLLMProviders() {

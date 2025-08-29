@@ -83,5 +83,12 @@ export default {
       name: 'knowledgeBase',
       type: 'jsonb',
     },
+    {
+      name: 'enabled',
+      type: 'boolean',
+      interface: 'switch',
+      allowNull: false,
+      defaultValue: true,
+    },
   ],
 };
