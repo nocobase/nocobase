@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { MarkdownReadPretty } from '../../../internal/components/MarkdownDisplay/MarkdownReadPretty';
-import { FormItem } from './FormItem/FormItem';
-export class MarkdownItemModel extends FormCustomFormItemModel {
+import { FormItem } from '../form/FormItem/FormItem';
+import { CommonModel } from './CommonModel';
+
+export class MarkdownItemModel extends CommonModel {
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>

@@ -22,7 +22,7 @@ const AddDetailField = ({ model }) => {
     <AddSubModelButton
       model={model}
       subModelKey={'items'}
-      subModelBaseClasses={['DetailItemModel', 'FormCustomFormItemModel']}
+      subModelBaseClasses={['DetailItemModel', 'DetailCustomModel']}
       afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         if (field) {

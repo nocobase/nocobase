@@ -8,15 +8,13 @@
  */
 
 import { FlowModel, escapeT, ModelRenderMode, FlowModelContext } from '@nocobase/flow-engine';
-import { Button } from 'antd';
-import React from 'react';
 
-export class FormCustomFormItemModel extends FlowModel {
+export class DetailCustomModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
   static defineChildren(ctx: FlowModelContext) {
     const commonModels = ctx.engine.filterModelClassByParent('CommonModel');
-    const formCustomModels = ctx.engine.filterModelClassByParent('FormCustomModel');
+    const detailCustomModels = ctx.engine.filterModelClassByParent('DetailCustomModel');
 
     const toChildren = (models: Map<string, any>) =>
       Array.from(models.entries()).map(([name, ModelClass]) => ({
@@ -24,22 +22,11 @@ export class FormCustomFormItemModel extends FlowModel {
         createModelOptions: { use: name },
       }));
 
-    return [...toChildren(commonModels), ...toChildren(formCustomModels)];
+    return [...toChildren(commonModels), ...toChildren(detailCustomModels)];
   }
 }
 
-FormCustomFormItemModel.define({
+DetailCustomModel.define({
   hide: true,
   label: escapeT('Others'),
-});
-
-export class AIFormItem extends FormCustomFormItemModel {
-  public render() {
-    return <Button>AI Employee</Button>;
-  }
-}
-
-AIFormItem.define({
-  label: 'AI Employee',
-  hide: true,
 });

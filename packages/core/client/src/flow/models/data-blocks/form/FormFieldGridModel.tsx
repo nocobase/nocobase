@@ -13,7 +13,6 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
 import { CollectionFieldFormItemModel } from './FormItem/CollectionFieldFormItemModel';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { FormModel } from './FormModel';
 
 export class FormFieldGridModel extends GridModel<{

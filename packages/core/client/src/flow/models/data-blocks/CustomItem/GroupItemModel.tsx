@@ -9,11 +9,11 @@
 
 import { Divider } from 'antd';
 import React from 'react';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
-import { FormItem } from './FormItem/FormItem';
+import { FormItem } from '../form/FormItem/FormItem';
 import { NBColorPicker } from '../../fields/ColorFieldModel';
+import { CommonModel } from './CommonModel';
 
-export class GroupItemModel extends FormCustomFormItemModel {
+export class GroupItemModel extends CommonModel {
   render() {
     const { color, borderColor, title, orientation, dashed } = this.props;
     return (
