@@ -10,3 +10,4 @@
 export * from './CommonModel';
 export * from './MarkdownItemModel';
 export * from './GroupItemModel';
+export * from './AssociationFieldItemModel';

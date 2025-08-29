@@ -18,10 +18,8 @@ import {
 
 export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
-      useModel: 'CollectionFieldFormItemModel',
-      fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
-    });
+    console.log(ctx.model.context.blockModel);
+    return [];
   }
 }
 

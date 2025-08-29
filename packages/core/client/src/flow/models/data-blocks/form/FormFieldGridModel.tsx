@@ -36,7 +36,7 @@ export class FormFieldGridModel extends GridModel<{
       <>
         <AddSubModelButton
           subModelKey="items"
-          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel']}
+          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel', 'AssociationFieldItemModel']}
           model={this}
           afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
             if (field.fieldPath) {
