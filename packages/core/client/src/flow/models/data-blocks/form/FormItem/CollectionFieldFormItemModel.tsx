@@ -7,10 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { escapeT, FlowModelContext, buildWrapperFieldChildren, jioToJoiSchema } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
+import { capitalize } from 'lodash';
+import { Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
+import React, { useMemo } from 'react';
+import { FieldModel } from '../../../base/FieldModel';
 import { FormItemModel } from './FormItemModel';
 import { EditFormModel } from '../EditFormModel';
+import { FormItem } from './FormItem';
+import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
+import { FieldValidation } from '../../../../../collection-manager';
+
+export const FieldNotAllow = ({ actionName, FieldTitle }) => {
+  const { t } = useTranslation();
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        actionName: t(capitalize(actionName)),
+        name: FieldTitle,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [FieldTitle, actionName, t]);
+  return <Alert type="warning" message={messageValue} showIcon />;
+};
 
 export class CollectionFieldFormItemModel extends FormItemModel {
   static defineChildren(ctx: FlowModelContext) {
@@ -18,6 +40,26 @@ export class CollectionFieldFormItemModel extends FormItemModel {
       useModel: 'CollectionFieldFormItemModel',
       fieldUseModel: (f) => f.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel',
     });
+  }
+  onInit(options: any): void {
+    super.onInit(options);
+  }
+
+  render() {
+    const fieldModel = this.subModels.field as FieldModel;
+    return (
+      <FormItem {...this.props}>
+        <FieldModelRenderer model={fieldModel} />
+      </FormItem>
+    );
+  }
+  // 设置态隐藏时的占位渲染
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    return (
+      <FormItem {...this.props}>
+        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
+      </FormItem>
+    );
   }
 }
 
@@ -31,18 +73,6 @@ CollectionFieldFormItemModel.registerFlow({
   sort: 300,
   title: escapeT('Form item settings'),
   steps: {
-    init: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
-        const collectionField = ctx.model.collectionField;
-        if (collectionField) {
-          ctx.model.setProps(collectionField.getComponentProps());
-        }
-        ctx.model.setProps({
-          name: ctx.model.fieldPath,
-        });
-      },
-    },
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
@@ -70,6 +100,22 @@ CollectionFieldFormItemModel.registerFlow({
         ctx.model.setProps({ label: params.label });
       },
     },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const collectionField = ctx.model.collectionField;
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
+        ctx.model.setProps({
+          name: ctx.model.fieldPath,
+        });
+      },
+    },
+
     showLabel: {
       title: escapeT('Show label'),
       uiSchema: {
@@ -149,9 +195,11 @@ CollectionFieldFormItemModel.registerFlow({
     },
 
     model: {
+      use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
-        const classes = [...ctx.model.collectionField.getSubclassesOf('FormFieldModel').keys()];
+        const className = ctx.model.getProps().pattern === 'readPretty' ? 'ReadPrettyFieldModel' : 'FormFieldModel';
+        const classes = [...ctx.model.collectionField.getSubclassesOf(className).keys()];
         if (classes.length === 1) {
           return null;
         }
@@ -166,31 +214,6 @@ CollectionFieldFormItemModel.registerFlow({
             })),
           },
         };
-      },
-      beforeParamsSave: async (ctx, params, previousParams) => {
-        if (params.use !== previousParams.use) {
-          const model = ctx.model.setSubModel('field', {
-            use: params.use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-            },
-          });
-          await model.applyAutoFlows();
-        }
-      },
-      defaultParams: (ctx) => {
-        return {
-          use: ctx.model.subModels.field.use,
-        };
-      },
-      async handler(ctx, params) {
-        console.log('Sub model step1 handler');
-        if (!params.use) {
-          throw new Error('model use is a required parameter');
-        }
-        ctx.model.setProps({ subModel: params.use });
       },
     },
     pattern: {
@@ -221,34 +244,85 @@ CollectionFieldFormItemModel.registerFlow({
       defaultParams: (ctx) => ({
         pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
       }),
-      async handler(ctx, params) {
+      beforeParamsSave: async (ctx, params, previousParams) => {
         if (params.pattern === 'readPretty') {
           const use =
             ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-          const model = ctx.model.setSubModel('field', {
+          await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
             use: use,
             stepParams: {
               fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
+                init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
               },
             },
           });
-          await model.applyAutoFlows();
         } else {
-          const { subModel } = ctx.model.getProps();
-          if (subModel !== ctx.model.subModels.field.use) {
-            const model = ctx.model.setSubModel('field', {
-              use: subModel,
+          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          if (previousParams.pattern === 'readPretty') {
+            await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
+              use: use,
               stepParams: {
                 fieldSettings: {
-                  init: ctx.model.getFieldSettingsInitParams(),
+                  init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
                 },
               },
             });
-            await model.applyAutoFlows();
           }
+        }
+      },
+      async handler(ctx, params) {
+        if (params.pattern === 'readPretty') {
+          ctx.model.setProps({
+            pattern: 'readPretty',
+          });
+        } else {
           ctx.model.setProps({
             disabled: params.pattern === 'disabled',
+          });
+        }
+      },
+    },
+    validation: {
+      title: escapeT('Validation'),
+      uiSchema: (ctx) => {
+        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+          ctx.model.collectionField.interface,
+        );
+        return {
+          validation: {
+            'x-decorator': 'FormItem',
+            'x-component': FieldValidation,
+            'x-component-props': {
+              type: targetInterface.validationType,
+              availableValidationOptions: [...new Set(targetInterface.availableValidationOptions)],
+              excludeValidationOptions: [...new Set(targetInterface.excludeValidationOptions)],
+              isAssociation: targetInterface.isAssociation,
+            },
+          },
+        };
+      },
+      handler(ctx, params) {
+        if (params.validation) {
+          const rules = ctx.model.getProps().rules || [];
+          const schema = jioToJoiSchema(params.validation);
+          const label = ctx.model.props.label;
+          rules.push({
+            validator: (_, value) => {
+              const { error } = schema.validate(value, {
+                context: { label },
+                abortEarly: false,
+              });
+
+              if (error) {
+                const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+                return Promise.reject(message);
+              }
+
+              return Promise.resolve();
+            },
+          });
+          ctx.model.setProps({
+            rules,
           });
         }
       },

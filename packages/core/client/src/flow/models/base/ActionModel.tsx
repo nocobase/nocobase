@@ -26,12 +26,42 @@ export class ActionModel extends FlowModel {
   enableEditType = true;
   enableEditDanger = true;
 
+  getAclActionName() {
+    return 'view';
+  }
+
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return this.getAclActionName();
+      },
+      cache: false,
+    });
+  }
   render() {
+    const { flowSettings } = this.flowEngine || {};
+    const enabled = flowSettings?.enabled;
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
+    const handleClick = (e) => {
+      if (!this.hidden && props.onClick) {
+        props.onClick(e);
+      }
+    };
+
     return (
-      <Button {...props} icon={icon} style={{ ...linkStyle, ...props.style }}>
+      <Button
+        {...props}
+        onClick={handleClick}
+        icon={icon}
+        style={{
+          ...linkStyle,
+          ...props.style,
+          ...(this.hidden && enabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}),
+        }}
+      >
         {props.children || props.title}
       </Button>
     );
@@ -60,6 +90,7 @@ export class ActionModel extends FlowModel {
 ActionModel.registerFlow({
   key: 'buttonSettings',
   title: escapeT('Button settings'),
+  sort: -999,
   steps: {
     general: {
       title: escapeT('Edit button'),
@@ -122,6 +153,9 @@ ActionModel.registerFlow({
         });
       },
     },
+    aclCheck: {
+      use: 'aclCheck',
+    },
   },
 });
 
@@ -135,10 +169,28 @@ export class RecordActionModel extends ActionModel {
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
+    const { flowSettings } = this.flowEngine || {};
+    const enabled = flowSettings?.enabled;
     const isLink = props.type === 'link';
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
+
+    const handleClick = (e) => {
+      if (!this.hidden) {
+        props.onClick?.(e);
+      }
+    };
+
     return (
-      <Button style={isLink ? { padding: 0, height: 'auto' } : undefined} {...props} icon={icon}>
+      <Button
+        {...props}
+        onClick={handleClick}
+        icon={icon}
+        style={{
+          ...(isLink ? { padding: 0, height: 'auto' } : {}),
+          ...props.style,
+          ...(this.hidden && enabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}),
+        }}
+      >
         {props.children || props.title}
       </Button>
     );
@@ -175,7 +227,7 @@ RecordActionModel.registerFlow({
         }
         const { record } = ctx;
         if (!record) {
-          throw new Error('Current record is not set in context');
+          ctx.exit();
         }
         ctx.model.setProps('onClick', (event) => {
           const collection = ctx.collection as Collection;

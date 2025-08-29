@@ -9,6 +9,9 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import pino from 'pino';
+import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
+import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
+import { FlowExecutor } from './executor/FlowExecutor';
 import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
@@ -17,16 +20,13 @@ import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
   CreateModelOptions,
+  EventDefinition,
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
   PersistOptions,
 } from './types';
 import { isInheritedFrom } from './utils';
-import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
-import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
-import type { EventDefinition } from './types';
-import { FlowExecutor } from './executor/FlowExecutor';
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -336,7 +336,7 @@ export class FlowEngine {
       return this.#modelInstances.get(uid) as T;
     }
 
-    let modelInstance;
+    let modelInstance: T | ErrorFlowModel;
 
     if (!ModelClass) {
       modelInstance = new ErrorFlowModel({ ...options, flowEngine: this } as any);
@@ -345,15 +345,15 @@ export class FlowEngine {
       modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
     }
 
-    modelInstance.onInit(options);
-
     if (parentId && this.#modelInstances.has(parentId)) {
       modelInstance.setParent(this.#modelInstances.get(parentId));
     }
 
+    modelInstance.onInit(options);
+
     this.#modelInstances.set(modelInstance.uid, modelInstance);
 
-    return modelInstance;
+    return modelInstance as T;
   }
 
   /**

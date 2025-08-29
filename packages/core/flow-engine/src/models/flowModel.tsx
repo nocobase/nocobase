@@ -223,6 +223,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
       });
     */
+    this.context.defineMethod('aclCheck', async (params) => {
+      return await this.flowEngine.context.acl.aclCheck(params);
+    });
   }
 
   get async() {
@@ -901,12 +904,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * Renders the React representation of this flow model.
-   * @returns {React.ReactNode} The React node to render.
+   * 有权限时的渲染逻辑。
+   * 这是一个抽象方法，所有子类都必须实现，用于返回自己的正常 UI。
+   *
+   * @returns {React.ReactNode} 有权限时的渲染结果
    */
-  public render(): any {
-    // console.warn('FlowModel.render() not implemented. Override in subclass for FlowModelRenderer.');
-    // 默认返回一个空的div，子类可以覆盖这个方法来实现具体的渲染逻辑
+  public render(): React.ReactNode {
     return <div {...this.props}></div>;
   }
 

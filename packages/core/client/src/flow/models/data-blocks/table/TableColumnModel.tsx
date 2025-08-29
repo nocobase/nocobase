@@ -95,10 +95,14 @@ export class TableColumnModel extends FieldModel {
         // handleSave,
       }),
       render: this.render(),
+      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
+  onInit(options: any): void {
+    super.onInit(options);
+  }
 
-  render() {
+  render(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
@@ -147,6 +151,9 @@ TableColumnModel.registerFlow({
           ...collectionField.getComponentProps(),
         });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     title: {
       title: escapeT('Column title'),

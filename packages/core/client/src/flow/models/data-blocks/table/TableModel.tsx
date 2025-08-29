@@ -151,13 +151,16 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
       .filter(Boolean)
       .concat({
         key: 'empty',
-      })
-      .concat({
+      });
+    if (isConfigMode) {
+      cols.push({
         key: 'addColumn',
         fixed: 'right',
         width: 200,
         title: <AddFieldColumn model={this} />,
       } as any);
+    }
+
     return cols;
   }
 
