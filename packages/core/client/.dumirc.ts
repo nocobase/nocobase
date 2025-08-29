@@ -123,6 +123,10 @@ export default defineConfig({
               title: 'Fork model',
               link: '/examples/flow-models/fork-model',
             },
+            {
+              title: '执行顺序（开始/完成）',
+              link: '/examples/flow-models/execution-order',
+            },
             // {
             //   title: 'cleanRun：自动流干净运行',
             //   link: '/examples/flow-models/render-in-fork',
