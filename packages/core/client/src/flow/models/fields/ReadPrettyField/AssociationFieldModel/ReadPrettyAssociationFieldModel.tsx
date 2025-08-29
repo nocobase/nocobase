@@ -7,8 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { updateOpenViewStepParams } from '../../../../flows/openViewFlow';
 import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
 
 export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {
   public static readonly supportedFieldInterfaces = null;
+
+  onInit(options) {
+    super.onInit(options);
+
+    const sourceCollection = this.context.blockModel.collection;
+    const targetCollection = this.collectionField.targetCollection;
+
+    updateOpenViewStepParams(
+      {
+        collectionName: targetCollection.name,
+        associationName: `${sourceCollection.name}.${this.collectionField.name}`,
+      },
+      this,
+    );
+  }
 }

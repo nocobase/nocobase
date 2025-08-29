@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, escapeT } from '@nocobase/flow-engine';
+import { defineFlow, escapeT, FlowModel } from '@nocobase/flow-engine';
 
 export const openViewFlow = defineFlow({
   key: 'popupSettings',
@@ -19,3 +19,18 @@ export const openViewFlow = defineFlow({
     },
   },
 });
+
+export const updateOpenViewStepParams = async (
+  params: { collectionName: string; associationName: string },
+  model: FlowModel,
+) => {
+  const settingsParams = model.getStepParams('popupSettings', 'openView');
+
+  if (
+    settingsParams?.collectionName !== params.collectionName ||
+    settingsParams?.associationName !== params.associationName
+  ) {
+    model.setStepParams('popupSettings', 'openView', params);
+    await model.saveStepParams();
+  }
+};
