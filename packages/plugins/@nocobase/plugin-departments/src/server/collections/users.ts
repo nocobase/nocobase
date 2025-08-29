@@ -46,34 +46,42 @@ export const departmentsField = {
 
 export const mainDepartmentField = {
   collectionName: 'users',
-  interface: 'm2m',
-  type: 'belongsToMany',
+  interface: 'm2o',
+  type: 'belongsTo',
   name: 'mainDepartment',
   target: 'departments',
-  foreignKey: 'userId',
-  otherKey: 'departmentId',
-  onDelete: 'CASCADE',
+  foreignKey: 'mainDepartmentId',
+  onDelete: 'SET NULL',
   sourceKey: 'id',
   targetKey: 'id',
-  through: 'departmentsUsers',
-  throughScope: {
-    isMain: true,
-  },
   uiSchema: {
-    type: 'm2m',
+    type: 'string',
     title: '{{t("Main department")}}',
-    'x-component': 'UserMainDepartmentField',
+    'x-component': 'AssociationField',
     'x-component-props': {
       multiple: false,
       fieldNames: {
         label: 'title',
-        value: 'name',
+        value: 'id',
       },
     },
   },
 };
 
+export const mainDepartmentIdField = {
+  collectionName: 'users',
+  interface: 'inputNumber',
+  type: 'bigInt',
+  name: 'mainDepartmentId',
+  uiSchema: {
+    type: 'number',
+    title: '{{t("Main department ID")}}',
+    'x-component': 'InputNumber',
+    'x-read-pretty': true,
+  },
+};
+
 export default extendCollection({
   name: 'users',
-  fields: [departmentsField, mainDepartmentField],
+  fields: [departmentsField, mainDepartmentField, mainDepartmentIdField],
 });
