@@ -10,6 +10,7 @@
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { CollectionActionModel } from '../base/ActionModel';
+import { openViewFlow } from '../../flows/openViewFlow';
 
 export class AddNewActionModel extends CollectionActionModel {
   defaultProps: ButtonProps = {
@@ -26,17 +27,4 @@ AddNewActionModel.define({
   label: escapeT('Add new'),
 });
 
-AddNewActionModel.registerFlow({
-  key: 'popupSettings',
-  sort: 200,
-  title: escapeT('Popup settings'),
-  on: 'click',
-  steps: {
-    popup: {
-      use: 'openView',
-      defaultParams(ctx) {
-        return {};
-      },
-    },
-  },
-});
+AddNewActionModel.registerFlow(openViewFlow);

@@ -70,6 +70,7 @@ export function useDialog() {
 
     // 构造 currentDialog 实例
     const currentDialog = {
+      type: 'dialog',
       inputArgs: config.inputArgs || {},
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
@@ -79,6 +80,7 @@ export function useDialog() {
         }
         resolvePromise?.(result);
         dialogRef.current?.destroy();
+        closeFunc?.();
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -90,6 +92,7 @@ export function useDialog() {
         currentHeader = header;
         dialogRef.current?.setHeader(header);
       },
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();
@@ -138,7 +141,7 @@ export function useDialog() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
       return <>{elements}</>;
     }),
   );

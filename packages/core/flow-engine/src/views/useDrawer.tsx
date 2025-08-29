@@ -70,6 +70,7 @@ export function useDrawer() {
 
     // 构造 currentDrawer 实例
     const currentDrawer = {
+      type: 'drawer',
       inputArgs: config.inputArgs || {},
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
@@ -77,8 +78,9 @@ export function useDrawer() {
         if (config.preventClose) {
           return;
         }
-        resolvePromise?.(result);
         drawerRef.current?.destroy();
+        closeFunc?.();
+        resolvePromise?.(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -90,6 +92,7 @@ export function useDrawer() {
         currentHeader = header;
         drawerRef.current?.setHeader(header);
       },
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();
@@ -101,7 +104,7 @@ export function useDrawer() {
     }
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext = () => {
+    const DrawerWithContext: React.FC = (props) => {
       const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
 
       React.useEffect(() => {
@@ -110,7 +113,6 @@ export function useDrawer() {
 
       return (
         <DrawerComponent
-          key={`drawer-${uuid}`}
           ref={drawerRef}
           {...config}
           footer={currentFooter}
@@ -122,26 +124,40 @@ export function useDrawer() {
           }}
         >
           {content}
+          {props.children}
         </DrawerComponent>
       );
     };
 
-    const drawer = (
+    const renderDrawer = (children: any) => (
       <FlowViewContextProvider context={ctx}>
-        <DrawerWithContext />
+        <DrawerWithContext>{children}</DrawerWithContext>
       </FlowViewContextProvider>
     );
 
-    closeFunc = holderRef.current?.patchElement(drawer);
+    closeFunc = holderRef.current?.patchElement(renderDrawer);
     return Object.assign(promise, currentDrawer);
   };
 
   const api = React.useMemo(() => ({ open }), []);
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
-      return <>{elements}</>;
+      const [elements, patchElement] = usePatchElement<(children: any) => React.ReactElement>();
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+
+      // 嵌套渲染：后面的元素是前一个元素的子元素
+      const renderNestedElements = () => {
+        if (elements.length === 0) {
+          return null;
+        }
+
+        // 从最后一个元素开始，向前递归渲染
+        return elements.reduceRight((children: React.ReactNode, renderElement) => {
+          return renderElement(children);
+        }, null as React.ReactNode);
+      };
+
+      return <>{renderNestedElements()}</>;
     }),
   );
 
