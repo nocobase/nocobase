@@ -26,6 +26,7 @@ export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {
           sourceCollection?.name && this.collectionField?.name
             ? `${sourceCollection.name}.${this.collectionField.name}`
             : undefined,
+        dataSourceKey: targetCollection?.dataSourceKey,
       },
       this,
     );

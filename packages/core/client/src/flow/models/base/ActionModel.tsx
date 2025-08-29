@@ -167,6 +167,7 @@ export class CollectionActionModel extends ActionModel {
       {
         collectionName: this.context.collection?.name,
         associationName: this.context.association?.name,
+        dataSourceKey: this.context.collection?.dataSourceKey,
       },
       this,
     );
@@ -185,6 +186,7 @@ export class RecordActionModel extends ActionModel {
       {
         collectionName: this.context.collection?.name,
         associationName: this.context.association?.name,
+        dataSourceKey: this.context.collection?.dataSourceKey,
       },
       this,
     );
