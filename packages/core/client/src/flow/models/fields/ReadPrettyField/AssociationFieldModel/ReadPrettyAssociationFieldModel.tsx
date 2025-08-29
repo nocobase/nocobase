@@ -16,8 +16,8 @@ export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {
   onInit(options) {
     super.onInit(options);
 
-    const sourceCollection = this.context.blockModel.collection;
-    const targetCollection = this.collectionField.targetCollection;
+    const sourceCollection = this.context.blockModel?.collection;
+    const targetCollection = this.collectionField?.targetCollection;
 
     updateOpenViewStepParams(
       {
