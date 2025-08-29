@@ -8,6 +8,7 @@
  */
 
 import { FlowEngine, FlowModel, ViewParam } from '@nocobase/flow-engine';
+import { RouteModel } from './models';
 
 export interface ViewItem {
   params: ViewParam;
@@ -60,6 +61,10 @@ export async function resolveViewParamsToViewList(
 }
 
 function getViewType(viewItem: ViewItem): string {
+  if (viewItem.model instanceof RouteModel) {
+    return 'embed';
+  }
+
   const params = viewItem.model.getStepParams('popupSettings', 'openView');
   return params.mode || 'drawer';
 }
