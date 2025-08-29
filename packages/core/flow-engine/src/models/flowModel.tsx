@@ -1319,7 +1319,7 @@ export class ErrorFlowModel extends FlowModel {
   }
 
   public render() {
-    // throw new Error(this.errorMessage);
+    throw new Error(this.errorMessage);
   }
 }
 
