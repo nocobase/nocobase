@@ -56,7 +56,7 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
-    await this.setupBuildIn();
+    // await this.setupBuildIn();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
