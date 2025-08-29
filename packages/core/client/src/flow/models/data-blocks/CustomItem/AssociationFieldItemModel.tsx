@@ -18,8 +18,38 @@ import {
 
 export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
-    console.log(ctx.model.context.blockModel);
-    return [];
+    const toOneAssociationFields = ctx.model.context.blockModel.collection.getFields().filter((v) => {
+      return ['oho', 'obo', 'm2o'].includes(v.interface);
+    });
+    return toOneAssociationFields.map((v) => {
+      return {
+        key: v.name + v.collectionName,
+        label: ctx.t(v.title),
+        children: async () => {
+          return [
+            {
+              key: 'sub2-1',
+              label: 'Sub2-1 Block',
+              createModelOptions: {
+                use: 'DetailItemModel',
+                subModels: {
+                  field: {
+                    use: 'InputReadPrettyFieldModel',
+                  },
+                },
+              },
+            },
+            {
+              key: 'sub2-1',
+              label: 'Sub2-1 Block',
+              children: async () => {
+                return [];
+              },
+            },
+          ];
+        },
+      };
+    });
   }
 }
 
