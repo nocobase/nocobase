@@ -120,8 +120,15 @@ export class DataSource {
     return this.collectionManager.getCollection(name);
   }
 
+  /**
+   * @deprecated use getAssociation instead
+   */
   getAssocation(associationName: string): CollectionField | undefined {
-    return this.collectionManager.getAssocation(associationName);
+    return this.getAssociation(associationName);
+  }
+
+  getAssociation(associationName: string): CollectionField | undefined {
+    return this.collectionManager.getAssociation(associationName);
   }
 
   addCollection(collection: Collection | CollectionOptions) {
@@ -302,7 +309,7 @@ export class CollectionManager {
     this.collections.clear();
   }
 
-  getAssocation(associationName: string): CollectionField | undefined {
+  getAssociation(associationName: string): CollectionField | undefined {
     const [collectionName, fieldName] = associationName.split('.');
     const collection = this.getCollection(collectionName);
     if (!collection) {
