@@ -12,6 +12,7 @@ import { FlowEngine, FlowModel, ViewParam } from '@nocobase/flow-engine';
 export interface ViewItem {
   params: ViewParam;
   model: FlowModel;
+  hidden?: boolean;
 }
 
 export async function resolveViewParamsToViewList(
@@ -35,8 +36,30 @@ export async function resolveViewParamsToViewList(
     return {
       params,
       model,
+      hidden: false, // Will be calculated after all items are resolved
     };
   });
 
-  return Promise.all(viewItems);
+  const resolvedViewItems = await Promise.all(viewItems);
+
+  // Calculate hidden values based on view types and positions
+  let hasEmbedAfter = false;
+  for (let i = resolvedViewItems.length - 1; i >= 0; i--) {
+    const viewItem = resolvedViewItems[i];
+    const viewType = getViewType(viewItem);
+
+    if (viewType === 'embed') {
+      hasEmbedAfter = true;
+      viewItem.hidden = false; // embed type itself is not hidden
+    } else {
+      viewItem.hidden = hasEmbedAfter;
+    }
+  }
+
+  return resolvedViewItems;
+}
+
+function getViewType(viewItem: ViewItem): string {
+  const params = viewItem.model.getStepParams('popupSettings', 'openView');
+  return params.mode || 'drawer';
 }
