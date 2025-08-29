@@ -113,7 +113,7 @@ export const Avatar: React.FC<{
   );
 };
 
-export const AvatarSelect: React.FC = () => {
+export const AvatarSelect: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const field = useField<Field>();
   const defaultAvatar = Object.keys(avatarsMap)[0];
   const [current, setCurrent] = React.useState(defaultAvatar);
@@ -146,13 +146,17 @@ export const AvatarSelect: React.FC = () => {
       <div style={{ marginBottom: '16px' }}>
         <Avatar srcs={current ? [[avatars(current), current]] : []} />
       </div>
-      <Avatar
-        srcs={avatarList.map((a) => [a.uri, a.seed])}
-        size="small"
-        selectable
-        highlightItem={current}
-        onClick={(name) => (field.value = name)}
-      />
+      {!(disabled === true) ? (
+        <Avatar
+          srcs={avatarList.map((a) => [a.uri, a.seed])}
+          size="small"
+          selectable
+          highlightItem={current}
+          onClick={(name) => (field.value = name)}
+        />
+      ) : (
+        <></>
+      )}
     </>
   );
 };

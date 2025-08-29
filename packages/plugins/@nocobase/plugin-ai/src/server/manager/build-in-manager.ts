@@ -37,36 +37,71 @@ export class BuildInManager {
     });
     const existedUsername = existed.map((x) => x.username);
     const setups = this.buildInEmployees.filter((x) => !existedUsername.includes(x.username));
-    if (setups.length === 0) {
-      return;
+    if (setups.length) {
+      this.plugin.log.info('setup build-in employees');
+      for (const { username, description, profile, skillSettings } of setups) {
+        let p = profile[language];
+        if (!p) {
+          p = profile[DEFAULT_LANGUAGE];
+        }
+        if (!p) {
+          continue;
+        }
+        const { nickname, avatar, position, bio, greeting, about } = p;
+        await aiEmployeesRepo.create({
+          values: {
+            username,
+            nickname,
+            position,
+            avatar,
+            bio,
+            greeting,
+            about,
+            skillSettings,
+            enableKnowledgeBase: false,
+            knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
+            knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
+            enabled: false,
+            buildIn: true,
+          },
+        });
+        this.plugin.log.info(`setup [${username}] ${description}`);
+      }
     }
-    this.plugin.log.info('setup build-in employees');
-    for (const { username, description, profile, skillSettings } of setups) {
-      let p = profile[language];
-      if (!p) {
-        p = profile[DEFAULT_LANGUAGE];
+
+    const updates = this.buildInEmployees.filter((x) => existedUsername.includes(x.username));
+    if (updates.length) {
+      this.plugin.log.info('update build-in employees');
+      for (const { username, description, profile, skillSettings } of updates) {
+        let p = profile[language];
+        if (!p) {
+          p = profile[DEFAULT_LANGUAGE];
+        }
+        if (!p) {
+          continue;
+        }
+        const { nickname, avatar, position, bio, greeting, about } = p;
+        await aiEmployeesRepo.update({
+          values: {
+            nickname,
+            position,
+            avatar,
+            bio,
+            greeting,
+            about,
+            skillSettings,
+            enableKnowledgeBase: false,
+            knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
+            knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
+            enabled: false,
+            buildIn: true,
+          },
+          filter: {
+            username,
+          },
+        });
+        this.plugin.log.info(`update [${username}] ${description}`);
       }
-      if (!p) {
-        continue;
-      }
-      const { nickname, avatar, position, bio, greeting, about } = p;
-      await aiEmployeesRepo.create({
-        values: {
-          username,
-          nickname,
-          position,
-          avatar,
-          bio,
-          greeting,
-          about,
-          skillSettings,
-          enableKnowledgeBase: false,
-          knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
-          knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
-          enabled: false,
-        },
-      });
-      this.plugin.log.info(`setup [${username}] ${description}`);
     }
   }
 }

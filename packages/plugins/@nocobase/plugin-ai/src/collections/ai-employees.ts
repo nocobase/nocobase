@@ -90,5 +90,11 @@ export default {
       allowNull: false,
       defaultValue: true,
     },
+    {
+      name: 'buildIn',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
+    },
   ],
 };

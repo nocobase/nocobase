@@ -56,7 +56,6 @@ export class PluginAIServer extends Plugin {
   }
 
   async load() {
-    // await this.setupBuildIn();
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
@@ -219,6 +218,7 @@ export class PluginAIServer extends Plugin {
       return;
     }
     await this.db.getRepository('aiSettings').create({});
+    await this.setupBuildIn();
   }
 
   async afterEnable() {}
