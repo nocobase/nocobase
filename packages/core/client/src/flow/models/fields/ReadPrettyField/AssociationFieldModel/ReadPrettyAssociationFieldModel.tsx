@@ -21,8 +21,11 @@ export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {
 
     updateOpenViewStepParams(
       {
-        collectionName: targetCollection.name,
-        associationName: `${sourceCollection.name}.${this.collectionField.name}`,
+        collectionName: targetCollection?.name,
+        associationName:
+          sourceCollection?.name && this.collectionField?.name
+            ? `${sourceCollection.name}.${this.collectionField.name}`
+            : undefined,
       },
       this,
     );
