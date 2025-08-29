@@ -64,7 +64,7 @@ export function useUploadProps(props: any) {
         .then(({ data }) => {
           onSuccess(data, file);
         })
-        .catch(onError)
+        .catch((e) => onError(new Error(e.message)))
         .finally(() => {});
 
       return {
@@ -86,7 +86,10 @@ export const useUploadFiles = () => {
       setAttachments(
         fileList.map((file) => {
           if (file.status === 'done') {
-            return file?.response?.data || file;
+            if (!file?.response?.data) {
+              return file;
+            }
+            return { ...file.response.data, status: file.status };
           }
           return file;
         }),

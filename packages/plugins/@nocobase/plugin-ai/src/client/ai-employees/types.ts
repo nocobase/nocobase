@@ -164,5 +164,5 @@ export type WorkContextOptions = {
   };
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
-  getContent?: (app: Application, item: ContextItem) => string;
+  getContent?: (app: Application, item: ContextItem) => Promise<string>;
 };

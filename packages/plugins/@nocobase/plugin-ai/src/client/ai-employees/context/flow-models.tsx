@@ -26,12 +26,14 @@ type SimplifyComponentNode = {
   children?: Record<string, SimplifyComponentNode[]>;
 };
 
-const parseFlowModel = (model: FlowModel) => {
+const parseFlowModel = async (model: FlowModel) => {
   if (!model) {
     return {};
   }
   if (model instanceof FormModel) {
     return toSimplifyForm(model);
+  } else if (model instanceof CollectionBlockModel) {
+    return await toCollectionWithData(model);
   } else {
     return toSimplifyComponentTree(model);
   }
@@ -61,6 +63,17 @@ const toSimplifyForm = (model: FormModel) => {
     result['value'] = model.form.getFieldsValue();
   }
   return result;
+};
+
+const toCollectionWithData = async (model: CollectionBlockModel) => {
+  const collection = FlowUtils.getCollection(model);
+  const data = await FlowUtils.getResource(model);
+  return {
+    collection: {
+      ...collection,
+      data,
+    },
+  };
 };
 
 const toSimplifyComponentTree = (model: FlowModel) => {
@@ -122,79 +135,26 @@ export const FlowModelsContext: WorkContextOptions = {
     icon: <BuildOutlined />,
     Component: () => {
       const t = useT();
-      return <div>{t('Select Block')}</div>;
+      return <div>{t('Pick Block')}</div>;
+    },
+    clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
+  },
+  tag: {
+    Component: ({ item }) => {
+      const flowEngine = useFlowEngine();
+      const model = flowEngine.getModel(item.uid);
+      return (
+        <>
+          <PicLeftOutlined /> {model?.title || ''}
+        </>
+      );
     },
   },
-  children: {
-    field: {
-      menu: {
-        icon: <PicLeftOutlined />,
-        Component: () => {
-          const t = useT();
-          return <div>{t('Fields')}</div>;
-        },
-        clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
-      },
-      tag: {
-        Component: ({ item }) => {
-          const flowEngine = useFlowEngine();
-          const model = flowEngine.getModel(item.uid);
-          return (
-            <>
-              <PicLeftOutlined /> {model?.title || ''}
-            </>
-          );
-        },
-      },
-      getContent: (app, { uid }) => {
-        const model = app.flowEngine.getModel(uid);
-        if (!model) {
-          return '';
-        }
-        return JSON.stringify(parseFlowModel(model), undefined, 2);
-      },
-    },
-    data: {
-      menu: {
-        icon: <TableOutlined />,
-        Component: () => {
-          const t = useT();
-          return <div>{t('Data')}</div>;
-        },
-        clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
-      },
-      tag: {
-        Component: ({ item }) => {
-          const flowEngine = useFlowEngine();
-          const model = flowEngine.getModel(item.uid);
-          return (
-            <>
-              <TableOutlined /> {model?.title || ''}
-            </>
-          );
-        },
-      },
-      getContent: (app, { uid }) => {
-        const model = app.flowEngine.getModel(uid);
-        if (!model) {
-          return '';
-        }
-        if (!(model instanceof CollectionBlockModel)) {
-          return '';
-        }
-        const collection = FlowUtils.getCollection(model);
-        const data = FlowUtils.getResource(model);
-        return JSON.stringify(
-          {
-            collection: {
-              ...collection,
-              data,
-            },
-          },
-          undefined,
-          2,
-        );
-      },
-    },
+  getContent: async (app, { uid }) => {
+    const model = app.flowEngine.getModel(uid);
+    if (!model) {
+      return '';
+    }
+    return JSON.stringify(await parseFlowModel(model), undefined, 2);
   },
 };

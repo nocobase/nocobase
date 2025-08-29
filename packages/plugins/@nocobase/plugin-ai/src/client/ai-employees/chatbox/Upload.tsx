@@ -29,7 +29,7 @@ export const Upload: React.FC = () => {
     return attachments?.map((item, index) => ({
       uid: index.toString(),
       name: item.filename,
-      status: 'done' as const,
+      status: item.status ?? 'done',
       url: item.url,
       size: item.size,
       thumbUrl: item.preview,

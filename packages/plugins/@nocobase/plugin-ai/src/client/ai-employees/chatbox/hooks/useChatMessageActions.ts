@@ -187,7 +187,7 @@ export const useChatMessageActions = () => {
       setMessages((prev) => prev.slice(0, -1));
     }
 
-    const parsedWorkContext = parseWorkContext(app, workContext);
+    const parsedWorkContext = await parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
       key: uid(),
       role: 'user',

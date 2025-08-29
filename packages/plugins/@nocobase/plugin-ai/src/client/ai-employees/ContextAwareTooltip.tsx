@@ -15,6 +15,7 @@ import { contextAware } from './stores/context-aware';
 import { avatars } from './avatars';
 import { useAIEmployeesData } from './hooks/useAIEmployeesData';
 import { useToken } from '@nocobase/client';
+import { useLocation } from 'react-router-dom';
 
 export const ContextAwareTooltip: React.FC = observer(() => {
   const t = useT();
@@ -31,6 +32,11 @@ export const ContextAwareTooltip: React.FC = observer(() => {
     const timer = setTimeout(() => setShow(false), 1500);
     return () => clearTimeout(timer);
   }, [contextAware.aiEmployees.length]);
+
+  const location = useLocation();
+  useEffect(() => {
+    contextAware.clearShowed();
+  }, [location]);
 
   return show ? (
     <div

@@ -89,7 +89,7 @@ export const parseTask = async (task: { message: TaskMessage }) => {
   return { userMessage, systemMessage, attachments, workContext: message.workContext };
 };
 
-export const parseWorkContext = (app: Application, workContext: ContextItem[]) => {
+export const parseWorkContext = async (app: Application, workContext: ContextItem[]) => {
   const parsed = [];
   const plugin = app.pm.get('ai') as PluginAIClient;
   for (const context of workContext) {
@@ -102,7 +102,7 @@ export const parseWorkContext = (app: Application, workContext: ContextItem[]) =
       parsed.push(context);
       continue;
     }
-    const content = contextOptions.getContent(app, context);
+    const content = await contextOptions.getContent(app, context);
     parsed.push({
       ...context,
       content,

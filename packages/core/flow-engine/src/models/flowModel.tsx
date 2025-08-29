@@ -909,7 +909,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    *
    * @returns {React.ReactNode} 有权限时的渲染结果
    */
-  public render(): React.ReactNode {
+  public render(): any {
     return <div {...this.props}></div>;
   }
 
