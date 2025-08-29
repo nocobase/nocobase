@@ -22,6 +22,7 @@ import { useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiff } from './getViewDiff';
+import { getOpenViewStepParams } from './flows/openViewFlow';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -99,6 +100,7 @@ export const FlowRoute = () => {
             const viewItem = viewsToOpen[index];
             const closeRef = React.createRef<() => void>();
             const updateRef = React.createRef<(value: any) => void>();
+            const openViewParams = getOpenViewStepParams(viewItem.model);
 
             prevViewListRef.current.push(viewItem);
 
@@ -106,6 +108,9 @@ export const FlowRoute = () => {
               target: layoutContentRef.current,
               filterByTk: viewItem.params.filterByTk,
               sourceId: viewItem.params.sourceId,
+              collectionName: openViewParams?.collectionName,
+              associationName: openViewParams?.associationName,
+              dataSourceKey: openViewParams?.dataSourceKey,
               closeRef,
               updateRef,
               navigation: new ViewNavigation(

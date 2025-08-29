@@ -35,3 +35,15 @@ export const updateOpenViewStepParams = async (
     await model.saveStepParams();
   }
 };
+
+export const getOpenViewStepParams = (
+  model: FlowModel,
+): {
+  collectionName: string;
+  dataSourceKey: string;
+  associationName?: string;
+  mode?: string;
+  size?: string;
+} => {
+  return model.getStepParams('popupSettings', 'openView');
+};
