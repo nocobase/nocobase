@@ -52,5 +52,5 @@ MarkdownItemModel.registerFlow({
 });
 
 MarkdownItemModel.define({
-  label: '{{t("Add markdown")}}',
+  label: '{{t("Add Markdown")}}',
 });
