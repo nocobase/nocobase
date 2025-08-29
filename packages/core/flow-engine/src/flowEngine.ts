@@ -349,9 +349,11 @@ export class FlowEngine {
       modelInstance.setParent(this.#modelInstances.get(parentId));
     }
 
+    this.#modelInstances.set(modelInstance.uid, modelInstance);
+
     modelInstance.onInit(options);
 
-    this.#modelInstances.set(modelInstance.uid, modelInstance);
+    modelInstance._createSubModels(options.subModels);
 
     return modelInstance as T;
   }
