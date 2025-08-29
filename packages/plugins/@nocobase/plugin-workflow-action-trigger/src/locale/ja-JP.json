@@ -1,11 +1,4 @@
 {
-  "Form event": "フォーム イベント",
-  "Event triggers when submitted a workflow bound form action.": "ワークフローに関連付けられたフォームアクションが送信されるとイベントがトリガーされます。",
-  "Form data model": "フォーム データ モデル",
-  "Use a collection to match form data.": "コレクションを使用してフォームデータと照合します。",
-  "Associations to use": "使用する関連付け",
-  "User submitted form": "ユーザー提出フォーム",
-  "Role of user submitted form": "ユーザー提出フォームの役割",
   "Post-action event": "操作後のイベント",
   "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "アクションボタンやAPIでリクエストが完了した後、このイベントがトリガーされます。データ追加や更新が完了した後のデータ処理、通知送信などに適しています。",
   "Collection": "コレクション",
@@ -16,7 +9,16 @@
   "Select actions": "操作を選択",
   "Create record action": "レコード作成アクション",
   "Update record action": "レコード更新アクション",
+  "Associations to use": "使用する関連付け",
   "Trigger data": "トリガーデータ",
+  "User acted": "操作者",
+  "Role of user acted": "操作者役割",
+  "Form event": "フォーム イベント",
+  "Event triggers when submitted a workflow bound form action.": "ワークフローに関連付けられたフォームアクションが送信されるとイベントがトリガーされます。",
+  "Form data model": "フォーム データ モデル",
+  "Use a collection to match form data.": "コレクションを使用してフォームデータと照合します。",
+  "User submitted form": "ユーザー提出フォーム",
+  "Role of user submitted form": "ユーザー提出フォームの役割",
   "User submitted action": "ユーザーが送信したアクション",
   "Role of user submitted action": "ユーザーが送信したアクションの役割"
 }

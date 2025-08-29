@@ -20,7 +20,8 @@
   "ms": "ミリ秒",
   "Input request data": "リクエストデータを入力してください",
   "Only support standard JSON data": "標準JSONデータのみ対応しています",
-  "Content-Type only support \"application/json\", and no need to specify": "Content-Type ヘッダーは \"application/json\" のみ対応し、指定は不要です",
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "「Content-Type」ヘッダーは「application/json」のみ対応し、指定は不要です",
   "When the HTTP method is Post, Put or Patch, and this custom request inside the form, the request body will be automatically filled in with the form data": "HTTP メソッドが Post、Put、Patch の場合、このカスタムリクエストがフォーム内にあると、リクエストボディが自動的にフォームデータで埋められます",
-  "Please configure the request settings first": "まずリクエスト設定を構成してください"
+  "Please configure the request settings first": "まずリクエスト設定を構成してください",
+  "Content-Type only support \"application/json\", and no need to specify": "Content-Type ヘッダーは \"application/json\" のみ対応し、指定は不要です"
 }

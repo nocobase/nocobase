@@ -1,9 +1,24 @@
 {
   "Loop": "ループ",
   "Loop target": "ループ対象",
-  "Loop index": "ループインデックス",
+  "Loop index (starts from 0)": "ループインデックス（0から開始）",
+  "Loop sequence (starts from 1)": "ループシーケンス（1から開始）",
   "Loop length": "ループ長",
   "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "ループノードを使用することで、複数のデータセットに同じ操作を実行できます。これらのデータは、クエリノードの複数のレコードまたは単一レコードの関連レコードから得られます。ループノードは、特定回数の繰り返しや、文字列の各文字に対する繰り返しにも使用できます。ただし、過度のループはパフォーマンス問題を引き起こす可能性があるため、注意して使用してください。",
-  "Scope variables": "スコープ変数",
-  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "単一の数値はループカウントとして扱われ、単一の文字列は文字の配列として扱われます。他の非配列値は配列に変換されます。ループノードは、ループカウントに達するか、配列ループが完了した時点で終了します。ループには条件ノードを追加して終了させることもできます。"
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "単一の数値はループカウントとして扱われ、単一の文字列は文字の配列として扱われます。他の非配列値は配列に変換されます。ループノードは、ループカウントに達するか、配列ループが完了した時点で終了します。ループには条件ノードを追加して終了させることもできます。",
+  "Enable loop condition": "ループ条件を有効化",
+  "Loop condition on each item": "各項目のループ条件",
+  "When to check": "確認タイミング",
+  "Before each starts": "各ラウンド開始前",
+  "After each ends": "各ラウンド終了後",
+  "When condition is not met on item": "項目が条件を満たさない場合",
+  "Exit loop": "ループを終了",
+  "Continue on next item": "次の項目に続行",
+  "Condition": "条件",
+  "When node inside loop failed": "ループ内ノードが失敗した場合",
+  "Continue loop on next item": "次の項目でループを継続",
+  "Exit loop and continue workflow": "ループを終了してワークフローを継続",
+  "Exit workflow": "ワークフローを終了",
+  "Loop index": "ループインデックス",
+  "Scope variables": "スコープ変数"
 }

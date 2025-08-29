@@ -1,0 +1,13 @@
+{
+  "Detail": "詳細",
+  "Snapshot": "スナップショット",
+  "Add block": "ブロックを追加",
+  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "新しいレコードを追加する際、その関連レコードのスナップショットを作成し、新しいレコードに保存します。関連レコードが更新されても、スナップショットは更新されません。",
+  "View record": "レコードを表示",
+  "Allow linking to multiple records": "複数レコードへのリンクを許可",
+  "The association field to snapshot": "スナップショットする関連フィールド",
+  "Snapshot the snapshot's association fields": "スナップショットの関連フィールドをスナップショット",
+  "Please select": "選択してください",
+  "When a record is created, association data is backed up in a snapshot": "レコードが作成される際、関連データがスナップショットにバックアップされます",
+  "Snapshot data": "スナップショットデータ"
+}

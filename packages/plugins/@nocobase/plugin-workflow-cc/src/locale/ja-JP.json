@@ -1,0 +1,15 @@
+{
+  "CC": "CC",
+  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "ワークフローでCC機能を提供し、承認やその他の情報を指定されたユーザーに送信します。",
+  "Recipients": "受信者",
+  "User interface": "ユーザーインターフェース",
+  "View user interface": "ユーザーインターフェースを表示",
+  "Configure user interface": "ユーザーインターフェースを設定",
+  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "タスクセンター内の各CCアイテムのタイトル。文字列テンプレートで変数を使用できます。デフォルトはノードタイトル。",
+  "Read": "既読",
+  "Unread": "未読",
+  "Mark as read": "既読にする",
+  "Mark as unread": "未読にする",
+  "Mark all as read": "すべて既読にする",
+  "CC to me": "自分へのCC"
+}

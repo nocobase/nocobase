@@ -1,8 +1,9 @@
 {
+  "Fill": "塗りつぶし",
   "App settings": "アプリ設定",
-  "Page settings": "ページ設定",
   "Info": "情報",
   "Back": "戻る",
+  "Page settings": "ページ設定",
   "Link": "リンク",
   "Remove": "削除",
   "Add page": "ページを追加",
@@ -22,7 +23,13 @@
   "Desktop data blocks": "デスクトップデータブロック",
   "Other desktop blocks": "他のデスクトップブロック",
   "Settings": "設定",
-  "Fill": "塗りつぶし",
-  "Select time":"時間の選択",
-  "Mobile routes": "モバイルルート"
+  "Mobile menu": "モバイルメニュー",
+  "Mobile routes": "モバイルルート",
+  "No accessible pages found": "アクセス可能なページが見つかりません",
+  "This might be due to permission configuration issues": "これは権限設定の問題である可能性があります",
+  "Select time": "時間の選択",
+  "Clear": "クリア",
+  "Confirm": "確認",
+  "Cancel": "キャンセル",
+  "Display < back button": "< 戻るボタンを表示"
 }

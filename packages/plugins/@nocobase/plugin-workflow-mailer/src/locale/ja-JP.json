@@ -15,5 +15,6 @@
   "Content": "内容",
   "Content type": "内容の形式",
   "Plain text": "プレーンテキスト",
-  "Ignore failed sending and continue workflow": "送信失敗を無視してワークフローを継続"
+  "Ignore failed sending and continue workflow": "送信失敗を無視してワークフローを継続",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "通常、ポート465を使用する場合はtrueに設定し、そうでなければfalseに設定してください。"
 }

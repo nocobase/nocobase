@@ -2,5 +2,6 @@
   "Sign in via SMS": "SMSでサインイン",
   "User will be registered automatically if not exists.": "ユーザーが存在しない場合は自動的に登録されます。",
   "Sign up automatically when the user does not exist": "ユーザーが存在しない場合、自動的にサインアップされます",
-  "SMS": "短信"
+  "SMS": "SMS",
+  "Verifier": "検証器"
 }

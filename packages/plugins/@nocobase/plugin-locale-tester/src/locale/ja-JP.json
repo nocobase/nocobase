@@ -1,0 +1,5 @@
+{
+  "Translations": "翻訳",
+  "Locale tester": "翻訳テスター",
+  "Please go to <a target=\"_blank\" href=\"https://github.com/nocobase/locales\">nocobase/locales</a> to get the language file that needs translation, then paste it below and provide the translation.": "<a target=\"_blank\" href=\"https://github.com/nocobase/locales\">nocobase/locales</a>で翻訳が必要な言語ファイルを取得し、下記に貼り付けて翻訳を提供してください。"
+}

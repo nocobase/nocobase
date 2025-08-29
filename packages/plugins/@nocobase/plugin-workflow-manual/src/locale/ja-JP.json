@@ -26,8 +26,11 @@
   "Update record form": "レコード更新フォーム",
   "Filter settings": "フィルター設定",
   "Workflow todos": "ワークフローのToDo",
-  "Task": "タスク",
   "Task node": "タスクノード",
   "Unprocessed": "未処理",
-  "Please check one of your update record form, and add at least one filter condition in form settings.": "更新レコードフォームの1つを確認し、フォーム設定で少なくとも1つのフィルター条件を追加してください。"
+  "Please check one of your update record form, and add at least one filter condition in form settings.": "更新レコードフォームの1つを確認し、フォーム設定で少なくとも1つのフィルター条件を追加してください。",
+  "My manual tasks": "私の手動タスク",
+  "Task title": "タスクタイトル",
+  "Title of each task item. Default to node title.": "各タスク項目のタイトル。デフォルトはノードタイトルです。",
+  "Task": "タスク"
 }

@@ -1,5 +1,6 @@
 {
   "Sequence": "シーケンス",
+  "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "設定されたルールに基づいて自動的にコードが生成され、日付、数字、テキストの組み合わせがサポートされます。",
   "Sequence rules": "シーケンスルール",
   "Add rule": "ルールを追加",
   "Inputable": "入力可能",
@@ -8,6 +9,9 @@
   "Autoincrement": "オートインクリメント",
   "Fixed text": "固定テキスト",
   "Text content": "テキスト内容",
+  "Date": "日付",
+  "Date format": "日付フォーマット",
+  "Supports all formats of the Day.js library, such as \"YYYYMMDD\", \"YYYY-MM-DD\", etc.": "Day.jsライブラリのすべてのフォーマットに対応しています。例えば「YYYYMMDD」「YYYY-MM-DD」など。",
   "Rule content": "ルール内容",
   "{{value}} Digits": "{{value}} 桁数",
   "Digits": "桁数",
@@ -21,8 +25,13 @@
   "Yearly": "毎年",
   "Operations": "操作",
   "Customize": "カスタマイズ",
-  "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "設定されたルールに基づいて自動的にコードが生成され、日付、数字、テキストの組み合わせがサポートされます。",
-  "Date": "日付",
-  "Date format": "日付フォーマット",
-  "Supports all formats of the Day.js library, such as \"YYYYMMDD\", \"YYYY-MM-DD\", etc.": "Day.jsライブラリのすべてのフォーマットに対応しています。例えば「YYYYMMDD」「YYYY-MM-DD」など。"
+  "Random character": "ランダム文字",
+  "Length": "長さ",
+  "Will generate random characters with specified length.": "指定された長さのランダム文字を生成します。",
+  "Character sets": "文字セット",
+  "Select character sets to generate random characters.": "ランダム文字を生成する文字セットを選択します。",
+  "Number": "数字",
+  "Lowercase letters": "小文字",
+  "Uppercase letters": "大文字",
+  "Symbols": "記号"
 }
