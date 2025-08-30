@@ -54,7 +54,7 @@ function addTestCommand(name, cli) {
       const first = paths?.[0];
       if (!process.env.TEST_ENV && first) {
         const key = first.split(path.sep).join('/');
-        if (key.includes('/client/')) {
+        if (key.includes('/client/') || key.includes('/flow-engine/')) {
           process.env.TEST_ENV = 'client-side';
         } else {
           process.env.TEST_ENV = 'server-side';

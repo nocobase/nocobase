@@ -37,8 +37,8 @@ export function useStorageRules(storage) {
 
 export function useAttachmentFieldProps() {
   const field = useCollectionField();
-  const action = `${field.target}:create${
-    field.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
+  const action = `${field?.target}:create${
+    field?.storage ? `?attachmentField=${field.collectionName}.${field.name}` : ''
   }`;
   const storageUploadProps = useStorageUploadProps({ action });
   return { action, ...storageUploadProps };
