@@ -17,12 +17,11 @@ import { DetailsModel } from './DetailsModel';
 
 const AddDetailField = ({ model }) => {
   const blockModel = model.context.blockModel as DetailsModel;
-  const collection = blockModel.collection;
   return (
     <AddSubModelButton
       model={model}
       subModelKey={'items'}
-      subModelBaseClasses={['DetailItemModel', 'DetailCustomModel']}
+      subModelBaseClasses={['DetailItemModel', 'DetailCustomModel', 'AssociationFieldItemModel']}
       afterSubModelInit={async (item: DetailItemModel) => {
         const field: any = item.subModels.field;
         if (field) {

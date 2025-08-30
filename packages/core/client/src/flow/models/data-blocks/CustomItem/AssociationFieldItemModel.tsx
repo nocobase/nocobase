@@ -21,6 +21,7 @@ export class AssociationFieldItemModel extends FlowModel {
         collection: field.targetCollection,
         useModel: 'DetailItemModel',
         fieldUseModel: (f) => f.getFirstSubclassNameOf(useModel) || useModel,
+        associationName: field.name,
       });
     };
 
