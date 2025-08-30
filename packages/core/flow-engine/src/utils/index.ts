@@ -44,3 +44,6 @@ export { createRecordProxyContext, createCollectionContextMeta } from './createR
 
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
+
+// AutoFlow error storage helpers
+export { setAutoFlowError, getAutoFlowError, clearAutoFlowError, type AutoFlowError } from './autoFlowError';
