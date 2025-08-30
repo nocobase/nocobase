@@ -71,7 +71,7 @@ export const UserDepartmentsField: React.FC = () => {
 
     return data.map((department) => ({
       ...department,
-      isMain: department.departmentsUsers?.isMain,
+      isMain: department.id === user.mainDepartmentId,
       isOwner: department.departmentsUsers?.isOwner,
       title: getDepartmentTitle(department),
     }));
@@ -140,15 +140,13 @@ export const UserDepartmentsField: React.FC = () => {
   };
 
   const setMainDepartment = async (dept: any) => {
-    await api.resource('users').setMainDepartment({
-      values: {
-        userId: user.id,
-        departmentId: dept.id,
-      },
+    await api.resource('users').update({
+      filterByTk: user.id,
+      values: { mainDepartmentId: dept.id },
     });
     message.success(t('Set successfully'));
     field.setValue(
-      field.value.map((d: any) => ({
+      (field.value || []).map((d: any) => ({
         ...d,
         isMain: d.id === dept.id,
       })),

@@ -101,6 +101,28 @@ export class PluginDepartmentsServer extends Plugin {
       const cache = this.app.cache as Cache;
       await cache.del(`departments:${model.get('userId')}`);
     });
+
+    // Validate mainDepartmentId before saving user
+    this.app.db.on('users.beforeSave', async (model, { transaction }) => {
+      const mainDepartmentId = model.get('mainDepartmentId');
+      if (mainDepartmentId) {
+        const userId = model.get('id');
+        if (userId) {
+          const userDepartment = await this.app.db.getRepository('departmentsUsers').findOne({
+            filter: {
+              userId: userId,
+              departmentId: mainDepartmentId,
+            },
+            transaction,
+          });
+
+          if (!userDepartment) {
+            throw new Error(`Invalid mainDepartment, it must be one of the user's departments`);
+          }
+        }
+      }
+    });
+
     this.app.on('beforeSignOut', ({ userId }) => {
       this.app.cache.del(`departments:${userId}`);
     });
