@@ -9,9 +9,11 @@
 
 import React from 'react';
 import { FlowModel, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { TableModel } from '../table/TableModel';
 
 export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
+    const itemModel = ctx.model.context.blockModel instanceof TableModel ? 'TableColumnModel' : 'DetailItemModel';
     const filterToOneAssociationFields = (collection) => {
       return collection.getFields().filter((field) => ['oho', 'obo', 'm2o'].includes(field.interface));
     };
@@ -19,7 +21,7 @@ export class AssociationFieldItemModel extends FlowModel {
     const buildAssociationFieldChildren = (field, useModel: string) => {
       return buildWrapperFieldChildren(ctx, {
         collection: field.targetCollection,
-        useModel: 'DetailItemModel',
+        useModel: itemModel,
         fieldUseModel: (f) => f.getFirstSubclassNameOf(useModel) || useModel,
         associationName: field.name,
       });

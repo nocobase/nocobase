@@ -113,7 +113,7 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       key={'table-add-columns'}
-      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
+      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel', 'AssociationFieldItemModel']}
       afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}

@@ -114,7 +114,12 @@ export class TableColumnModel extends FieldModel {
             get: () => index,
           });
           return (
-            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
+            <FormItem
+              key={field.uid}
+              {...this.props}
+              value={value || record?.[this.associationName]?.[this.fieldPath]}
+              noStyle={true}
+            >
               <FieldModelRenderer model={fork} />
             </FormItem>
           );
