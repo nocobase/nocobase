@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PagePopups, Plugin, useCompile, lazy } from '@nocobase/client';
+import { observer } from '@formily/react';
+import { Plugin, useCompile, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import MobileManager from '@nocobase/plugin-mobile/client';
 
@@ -42,7 +43,6 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
-import { observer } from '@formily/react';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -214,3 +214,4 @@ export { Trigger, useTrigger } from './triggers';
 export * from './utils';
 export * from './variable';
 export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';
+export { createTriggerWorkflowsSchema } from './flows/triggerWorkflows';
