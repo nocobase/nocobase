@@ -95,16 +95,15 @@ describe('actions', () => {
         },
       ],
     });
-    const deptUsers = db.getRepository('departmentsUsers');
-    await deptUsers.update({
-      filter: {
-        departmentId: depts[0].id,
-        userId: 1,
-      },
+
+    const userRepo = db.getRepository('users');
+    await userRepo.update({
+      filterByTk: 1,
       values: {
-        isMain: true,
+        mainDepartmentId: depts[0].id,
       },
     });
+
     const res = await agent.resource('users').setMainDepartment({
       values: {
         userId: 1,
@@ -112,14 +111,11 @@ describe('actions', () => {
       },
     });
     expect(res.status).toBe(200);
-    const records = await deptUsers.find({
-      filter: {
-        userId: 1,
-      },
+
+    const user = await userRepo.findOne({
+      filterByTk: 1,
+      fields: ['id', 'mainDepartmentId'],
     });
-    const dept1 = records.find((record: any) => record.departmentId === depts[0].id);
-    const dept2 = records.find((record: any) => record.departmentId === depts[1].id);
-    expect(dept1.isMain).toBe(false);
-    expect(dept2.isMain).toBe(true);
+    expect(user.mainDepartmentId).toBe(depts[1].id);
   });
 });

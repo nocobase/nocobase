@@ -66,9 +66,11 @@ describe('set main department', () => {
         departmentId: dept.id,
       },
     });
-    for (const item of deptUsers) {
-      expect(item.isMain).toBe(true);
-    }
+    const userRepo = db.getRepository('users');
+    const userRecord1 = await userRepo.findOne({ filterByTk: 1 });
+    const userRecord2 = await userRepo.findOne({ filterByTk: 2 });
+    expect(userRecord1.mainDepartmentId).toBe(dept.id);
+    expect(userRecord2.mainDepartmentId).toBe(dept.id);
 
     const dept2 = await repo.create({
       values: {
@@ -84,8 +86,8 @@ describe('set main department', () => {
       },
     });
     expect(deptUsers2.length).toBe(2);
-    expect(deptUsers2.find((i: any) => i.departmentId === dept.id).isMain).toBe(true);
-    expect(deptUsers2.find((i: any) => i.departmentId === dept2.id).isMain).toBe(false);
+    const userRecord = await userRepo.findOne({ filterByTk: 2 });
+    expect(userRecord.mainDepartmentId).toBe(dept.id);
   });
 
   it('should set main department when remove department members', async () => {
@@ -112,8 +114,9 @@ describe('set main department', () => {
       },
     });
     expect(deptUsers.length).toBe(2);
-    expect(deptUsers.find((i: any) => i.departmentId === depts[0].id).isMain).toBe(true);
-    expect(deptUsers.find((i: any) => i.departmentId === depts[1].id).isMain).toBe(false);
+    const userRepo = db.getRepository('users');
+    const userRecord = await userRepo.findOne({ filterByTk: 1 });
+    expect(userRecord.mainDepartmentId).toBe(depts[0].id);
 
     await agent.resource('departments.members', depts[0].id).remove({
       values: [1],
@@ -125,7 +128,8 @@ describe('set main department', () => {
     });
     expect(deptUsers2.length).toBe(1);
     expect(deptUsers2[0].departmentId).toBe(depts[1].id);
-    expect(deptUsers2[0].isMain).toBe(true);
+    const userRecord2 = await userRepo.findOne({ filterByTk: 1 });
+    expect(userRecord2.mainDepartmentId).toBe(depts[1].id);
   });
 
   it('should set main department when add user departments', async () => {
@@ -149,8 +153,9 @@ describe('set main department', () => {
       },
     });
     expect(deptUsers.length).toBe(2);
-    expect(deptUsers.find((i: any) => i.departmentId === depts[0].id).isMain).toBe(true);
-    expect(deptUsers.find((i: any) => i.departmentId === depts[1].id).isMain).toBe(false);
+    const userRepo = db.getRepository('users');
+    const userRecord = await userRepo.findOne({ filterByTk: 1 });
+    expect(userRecord.mainDepartmentId).toBe(depts[0].id);
   });
 
   it('should set main department when remove user departments', async () => {
@@ -178,6 +183,8 @@ describe('set main department', () => {
     });
     expect(deptUsers.length).toBe(1);
     expect(deptUsers[0].departmentId).toBe(depts[1].id);
-    expect(deptUsers[0].isMain).toBe(true);
+    const userRepo = db.getRepository('users');
+    const userRecord = await userRepo.findOne({ filterByTk: 1 });
+    expect(userRecord.mainDepartmentId).toBe(depts[1].id);
   });
 });
