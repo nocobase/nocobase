@@ -26,27 +26,11 @@ export class AssociationFieldItemModel extends FlowModel {
         key: v.name + v.collectionName,
         label: ctx.t(v.title),
         children: async () => {
-          return [
-            {
-              key: 'sub2-1',
-              label: 'Sub2-1 Block',
-              createModelOptions: {
-                use: 'DetailItemModel',
-                subModels: {
-                  field: {
-                    use: 'InputReadPrettyFieldModel',
-                  },
-                },
-              },
-            },
-            {
-              key: 'sub2-1',
-              label: 'Sub2-1 Block',
-              children: async () => {
-                return [];
-              },
-            },
-          ];
+          return buildWrapperFieldChildren(ctx, {
+            collection: v.targetCollection,
+            useModel: 'DetailItemModel',
+            fieldUseModel: (f) => f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+          });
         },
       };
     });
