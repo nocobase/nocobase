@@ -13,7 +13,6 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
 import { CollectionFieldFormItemModel } from './FormItem/CollectionFieldFormItemModel';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { FormModel } from './FormModel';
 
 export class FormFieldGridModel extends GridModel<{
@@ -37,10 +36,12 @@ export class FormFieldGridModel extends GridModel<{
       <>
         <AddSubModelButton
           subModelKey="items"
-          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel']}
+          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel', 'AssociationFieldItemModel']}
           model={this}
           afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
-            this.context.blockModel.addAppends(field.fieldPath, true);
+            if (field.fieldPath) {
+              this.context.blockModel.addAppends(field.fieldPath, true);
+            }
           }}
           keepDropdownOpen
         >

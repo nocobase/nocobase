@@ -140,11 +140,13 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
 export interface BuildFieldChildrenOptions {
   useModel: string;
   fieldUseModel?: string | ((field: any) => string);
+  collection?: Collection;
+  associationName?: string;
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel } = options;
-  const collection: Collection = ctx.model['collection'] || ctx.collection;
+  const { useModel, fieldUseModel, associationName } = options;
+  const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
@@ -158,6 +160,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
       dataSourceKey: collection.dataSourceKey,
       collectionName: collection.name,
       fieldPath,
+      associationName,
     };
 
     children.push({

@@ -283,7 +283,7 @@ CollectionFieldFormItemModel.registerFlow({
       },
     },
     validation: {
-      title: escapeT('Validation'),
+      title: escapeT('Validation rule'),
       uiSchema: (ctx) => {
         const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           ctx.model.collectionField.interface,

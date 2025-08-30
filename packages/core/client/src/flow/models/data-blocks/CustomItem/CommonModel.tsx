@@ -7,11 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './CreateFormModel';
-export * from './EditFormModel';
-export * from './FormActionModel';
-export * from './FormFieldGridModel';
-export * from './FormModel';
-export * from './QuickEditForm';
-export * from './FormItem';
-export * from './FormCustomFormItemModel';
+import { FlowModel } from '@nocobase/flow-engine';
+
+export class CommonModel extends FlowModel {}

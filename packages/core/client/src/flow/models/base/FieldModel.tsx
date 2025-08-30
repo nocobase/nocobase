@@ -21,6 +21,7 @@ export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
   fieldPath: string;
+  associationName?: string;
 }
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
@@ -54,6 +55,10 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
 
   get fieldPath(): string {
     return this.getFieldSettingsInitParams().fieldPath;
+  }
+
+  get associationName(): string {
+    return this.getFieldSettingsInitParams().associationName;
   }
 
   get collectionField() {
