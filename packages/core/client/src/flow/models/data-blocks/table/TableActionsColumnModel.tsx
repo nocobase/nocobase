@@ -122,7 +122,7 @@ TableActionsColumnModel.define({
   createModelOptions: {
     stepParams: {
       tableColumnSettings: {
-        editColumTitle: {
+        title: {
           title: '{{t("Actions")}}',
         },
       },

@@ -7,17 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { autorun, observable, reaction, reactive } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';
+import { FlowModelRenderer } from '../../components/FlowModelRenderer';
 import { FlowEngine } from '../../flowEngine';
 import { RecordProxy } from '../../RecordProxy';
 import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions, ModelConstructor } from '../../types';
 import { FlowExitException } from '../../utils';
 import { FlowExitAllException } from '../../utils/exceptions';
-import { FlowModel, defineFlow, ModelRenderMode } from '../flowModel';
-import { FlowModelRenderer } from '../../components/FlowModelRenderer';
+import { defineFlow, FlowModel, ModelRenderMode } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
 
 // 全局处理测试中的未处理 Promise rejection
@@ -244,6 +245,19 @@ describe('FlowModel', () => {
         model.setProps({ user: { name: 'Jane', email: 'jane@example.com' } });
         expect(model.props.user).toEqual({ name: 'Jane', email: 'jane@example.com' });
         expect(model.props.settings).toEqual({ theme: 'dark', lang: 'en' });
+      });
+
+      test.only('should be reactive', async () => {
+        reaction(
+          () => model.props.foo, // 观察的字段
+          (newProps, oldProps) => {
+            console.log('Props changed from', oldProps, 'to', newProps);
+          },
+        );
+        model.props.foo = 'bar';
+        model.props.foo = 'baz';
+        model.setProps({ foo: 'bar' });
+        model.setProps({ foo: 'baz' });
       });
     });
 

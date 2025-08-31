@@ -39,14 +39,13 @@ export class ActionModel extends FlowModel {
       cache: false,
     });
   }
+
   render() {
-    const { flowSettings } = this.flowEngine || {};
-    const enabled = flowSettings?.enabled;
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
     const handleClick = (e) => {
-      if (!this.hidden && props.onClick) {
+      if (props.onClick) {
         props.onClick(e);
       }
     };
@@ -59,7 +58,6 @@ export class ActionModel extends FlowModel {
         style={{
           ...linkStyle,
           ...props.style,
-          ...(this.hidden && enabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}),
         }}
       >
         {props.children || props.title}
@@ -174,26 +172,17 @@ export class RecordActionModel extends ActionModel {
 
   render() {
     const props = { ...this.defaultProps, ...this.props };
-    const { flowSettings } = this.flowEngine || {};
-    const enabled = flowSettings?.enabled;
+
     const isLink = props.type === 'link';
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-
-    const handleClick = (e) => {
-      if (!this.hidden) {
-        props.onClick?.(e);
-      }
-    };
 
     return (
       <Button
         {...props}
-        onClick={handleClick}
         icon={icon}
         style={{
           ...(isLink ? { padding: 0, height: 'auto' } : {}),
           ...props.style,
-          ...(this.hidden && enabled ? { opacity: 0.3, cursor: 'not-allowed' } : {}),
         }}
       >
         {props.children || props.title}

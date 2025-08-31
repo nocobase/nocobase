@@ -8,6 +8,7 @@
  */
 
 import { defineAction, escapeT } from '@nocobase/flow-engine';
+import association from 'packages/core/database/src/operators/association';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
@@ -60,6 +61,12 @@ export const openView = defineAction({
 
     await ctx.viewer.open({
       type: openMode,
+      inputArgs: {
+        ...ctx.inputArgs,
+        dataSourceKey: ctx.collection?.dataSourceKey,
+        collectionName: ctx.collection?.name,
+        associationName: ctx.association?.name,
+      },
       preventClose: !!params.preventClose,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
