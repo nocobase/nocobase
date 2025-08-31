@@ -12,6 +12,7 @@ import { FlowContext, FlowEngineContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
+import { observer } from '..';
 
 let uuid = 0;
 
@@ -104,30 +105,45 @@ export function useDrawer() {
     }
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext: React.FC = (props) => {
-      const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
+    const DrawerWithContext: React.FC = observer(
+      (props) => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const mountedRef = React.useRef(false);
+        const content = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
 
-      React.useEffect(() => {
-        config.onOpen?.(currentDrawer, ctx);
-      }, []);
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        React.useEffect(() => {
+          config.onOpen?.(currentDrawer, ctx);
+        }, []);
 
-      return (
-        <DrawerComponent
-          ref={drawerRef}
-          {...config}
-          footer={currentFooter}
-          header={currentHeader}
-          afterClose={() => {
-            closeFunc?.();
-            config.onClose?.();
-            resolvePromise?.(config.result);
-          }}
-        >
-          {content}
-          {props.children}
-        </DrawerComponent>
-      );
-    };
+        if (config.inputArgs.hidden?.value && !mountedRef.current) {
+          return null;
+        }
+
+        mountedRef.current = true;
+
+        return (
+          <DrawerComponent
+            ref={drawerRef}
+            {...config}
+            footer={currentFooter}
+            header={currentHeader}
+            hidden={config.inputArgs.hidden?.value}
+            afterClose={() => {
+              closeFunc?.();
+              config.onClose?.();
+              resolvePromise?.(config.result);
+            }}
+          >
+            {content}
+            {props.children}
+          </DrawerComponent>
+        );
+      },
+      {
+        displayName: 'DrawerWithContext',
+      },
+    );
 
     const renderDrawer = (children: any) => (
       <FlowViewContextProvider context={ctx}>

@@ -34,6 +34,8 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   prevViewMap.forEach((viewItem, viewUid) => {
     if (!currentViewMap.has(viewUid)) {
       viewsToClose.push(viewItem);
+    } else {
+      viewItem.hidden.value = currentViewMap.get(viewUid).hidden.value; // 用于控制已经渲染的视图是否隐藏
     }
   });
 
