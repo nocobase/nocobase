@@ -88,7 +88,7 @@ export class ViewNavigation {
     this.ctx.router.navigate(newPathname, { replace: true });
   }
 
-  navigateTo(viewParam: ViewParam) {
+  navigateTo(viewParam: ViewParam, opts?: { replace?: boolean; state?: any }) {
     // 1. 基于当前 viewStack 生成一个 pathname
     // 2. 将当前传入的参数转为 path string
     const newViewPathname = generatePathnameFromViewParams([...this.viewStack, viewParam]);
@@ -102,7 +102,7 @@ export class ViewNavigation {
     }
 
     // 5. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
-    this.ctx.router.navigate(newPathname);
+    this.ctx.router.navigate(newPathname, opts);
 
     // 6. 当 viewStack 为空时，把当前参数 push 到 viewStack 中
     if (this.viewStack.length === 0) {

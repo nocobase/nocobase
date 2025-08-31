@@ -90,6 +90,32 @@ export const FlowRoute = () => {
         // 3. 对比新旧列表，区分开需要打开和关闭的视图
         const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
 
+        // 特殊处理：当通过一个多级 url 打开时，需要把这个 url 分成多步，然后逐步打开。这样做是为了能在点击返回按钮时返回到上一级
+        if (prevViewListRef.current.length === 0 && viewList.length > 1) {
+          const navigateTo = (index: number) => {
+            if (!viewList[index]) {
+              return;
+            }
+
+            if (index === 0) {
+              new ViewNavigation(flowEngine.context, []).navigateTo(viewList[index].params, { replace: true });
+            } else {
+              new ViewNavigation(
+                flowEngine.context,
+                viewList.slice(0, index).map((item) => item.params),
+              ).navigateTo(viewList[index].params);
+            }
+
+            // 需要有个延迟，才能正常触发路由的跳转
+            setTimeout(() => {
+              navigateTo(index + 1);
+            }, 20);
+          };
+
+          navigateTo(0);
+          return;
+        }
+
         // 4. 处理需要打开的视图
         if (viewsToOpen.length) {
           const openView = (index: number) => {
