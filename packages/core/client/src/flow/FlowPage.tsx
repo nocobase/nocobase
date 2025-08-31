@@ -44,7 +44,7 @@ export const FlowRoute = () => {
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
-    [uid in string]: { close: () => void; update: (value: any) => void; hidden: boolean };
+    [uid in string]: { close: () => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
 
@@ -126,7 +126,6 @@ export const FlowRoute = () => {
             viewStateRef.current[viewItem.params.viewUid] = {
               close: () => closeRef.current?.(),
               update: (value: any) => updateRef.current?.(value),
-              hidden: false,
             };
           };
 
@@ -137,7 +136,9 @@ export const FlowRoute = () => {
         viewsToClose.forEach((viewItem) => {
           viewStateRef.current[viewItem.params.viewUid].close();
           delete viewStateRef.current[viewItem.params.viewUid];
-          prevViewListRef.current = viewList;
+          prevViewListRef.current = prevViewListRef.current.filter(
+            (item) => item.params.viewUid !== viewItem.params.viewUid,
+          );
         });
       },
       {
