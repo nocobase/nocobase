@@ -12,7 +12,7 @@ import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
 import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
-import { FlowExitException, resolveDefaultParams, resolveExpressions } from '../utils';
+import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 
@@ -100,7 +100,7 @@ export class FlowExecutor {
         useRawParams = await useRawParams(flowContext);
       }
       if (!useRawParams) {
-        combinedParams = await resolveExpressions(combinedParams, flowContext);
+        combinedParams = await flowContext.resolveJsonTemplate(combinedParams);
       }
 
       try {

@@ -9,8 +9,12 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Plugin } from '@nocobase/server';
+import { GlobalContext, HttpRequestContext } from './template/contexts';
+import { resolveJsonTemplate } from './template/resolver';
+import { variables } from './variables/registry';
 
 export class PluginFlowEngineServer extends Plugin {
+  private globalContext: GlobalContext;
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -25,7 +29,10 @@ export class PluginFlowEngineServer extends Plugin {
   }
 
   async load() {
+    // Initialize a shared GlobalContext once, using server environment variables
+    this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
+    this.app.acl.allow('variables', 'resolve', 'loggedIn');
     this.app.resourceManager.registerActionHandlers({
       'flowSql:runById': async (ctx, next) => {
         const { uid, type, filter, bind, dataSourceKey = 'main' } = ctx.action.params.values;
@@ -51,6 +58,30 @@ export class PluginFlowEngineServer extends Plugin {
         const { sql, type, filter, bind, dataSourceKey } = ctx.action.params.values;
         const db = this.getDatabaseByDataSourceKey(dataSourceKey);
         ctx.body = await db.runSQL(sql, { type, filter, bind });
+        await next();
+      },
+      // Resolve context variables in a JSON payload.
+      'variables:resolve': async (ctx, next) => {
+        const values = ctx.action?.params?.values ?? {};
+        const template = typeof values?.template !== 'undefined' ? values.template : values;
+        const contextParams = values?.contextParams || {};
+        const { ok, missing } = variables.validate(template, contextParams);
+        if (!ok) {
+          ctx.status = 400;
+          ctx.body = {
+            error: {
+              code: 'INVALID_CONTEXT_PARAMS',
+              message: `Missing required parameters: ${missing?.join(', ')}`,
+              missing: missing,
+            },
+          };
+          return;
+        }
+
+        const requestCtx = new HttpRequestContext(ctx);
+        requestCtx.delegate(this.globalContext);
+        await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
+        ctx.body = await resolveJsonTemplate(template, requestCtx);
         await next();
       },
     });
