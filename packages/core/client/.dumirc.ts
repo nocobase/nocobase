@@ -147,10 +147,14 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-            {
-              title: 'CRUD',
-              link: '/examples/flow-models/crud',
-            },
+        {
+          title: 'CRUD',
+          link: '/examples/flow-models/crud',
+        },
+        {
+          title: '错误回退',
+          link: '/examples/flow-models/error-boundary',
+        },
         {
           title: '生命周期',
           link: '/examples/flow-models/lifecycle',

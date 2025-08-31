@@ -84,7 +84,7 @@ function WithExistingModel<P extends object>({
   WrappedComponent: React.ComponentType<P>;
   options?: WithFlowModelOptions;
 } & P) {
-  const pending = useApplyAutoFlows(model);
+  const { loading: pending } = useApplyAutoFlows(model);
 
   if (pending) {
     return <options.FlowSpinComponent />;
@@ -127,7 +127,7 @@ function WithCreatedModel<P extends object>({
   // 使用 useFlowModelById 创建模型
   const model = useFlowModelById(uid, use);
 
-  const pending = useApplyAutoFlows(model);
+  const { loading: pending } = useApplyAutoFlows(model);
 
   if (pending) {
     return <options.FlowSpinComponent />;
