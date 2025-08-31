@@ -133,7 +133,7 @@ export const openView = defineAction({
           pageModel.invalidateAutoFlowCache(true);
         }
 
-        ctx.view.navigation?.back();
+        ctx.inputArgs.navigation?.back();
       },
       onOpen: ctx.inputArgs.onOpen,
     });
