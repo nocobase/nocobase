@@ -103,10 +103,7 @@ describe('estimated row count test', () => {
       return;
     }
 
-    const testDb = await createMockDatabase({ underscored: false });
-    await testDb.clean({ drop: true });
-
-    const SnakeCaseCollection = testDb.collection({
+    const SnakeCaseCollection = db.collection({
       name: 'snake_case_users',
       tableName: 'snake_case_users_table',
       underscored: true,
@@ -116,7 +113,7 @@ describe('estimated row count test', () => {
       ],
     });
 
-    const CamelCaseCollection = testDb.collection({
+    const CamelCaseCollection = db.collection({
       name: 'camelCaseUsers',
       tableName: 'camelCaseUsersTable',
       underscored: false,
@@ -126,7 +123,7 @@ describe('estimated row count test', () => {
       ],
     });
 
-    await testDb.sync();
+    await db.sync();
 
     await SnakeCaseCollection.repository.createMany({
       records: [
@@ -145,19 +142,11 @@ describe('estimated row count test', () => {
     await analyzeTable(db, SnakeCaseCollection);
     await analyzeTable(db, CamelCaseCollection);
     const snakeCaseCount = await SnakeCaseCollection.repository.getEstimatedRowCount();
-    expect(snakeCaseCount).toBeGreaterThanOrEqual(0);
+    expect(snakeCaseCount).toBe(2);
 
     await analyzeTable(db, CamelCaseCollection);
     const camelCaseCount = await CamelCaseCollection.repository.getEstimatedRowCount();
-    expect(camelCaseCount).toBeGreaterThanOrEqual(0);
-
-    expect(typeof snakeCaseCount).toBe('number');
-    expect(typeof camelCaseCount).toBe('number');
-
-    expect(SnakeCaseCollection.tableName()).toBe('snake_case_users_table');
-    expect(CamelCaseCollection.tableName()).toBe('camelCaseUsersTable');
-
-    await testDb.close();
+    expect(camelCaseCount).toBe(3);
   });
 });
 
