@@ -35,6 +35,11 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
     this.context.defineProperty('collectionField', {
       get: () => {
         const params = this.getFieldSettingsInitParams();
+        if (!params || !params.dataSourceKey) {
+          // 当字段初始化参数尚未就绪时，返回 undefined，避免运行期错误
+          console.error('Invalid field step parmas!', this.uid);
+          return undefined;
+        }
         const collectionField = this.context.dataSourceManager.getCollectionField(
           `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
         ) as CollectionField;
