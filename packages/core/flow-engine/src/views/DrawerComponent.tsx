@@ -41,19 +41,13 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     [],
   );
 
-  const hiddenStyle = React.useMemo(() => {
-    return {
-      display: hidden ? 'none' : 'block',
-    };
-  }, [hidden]);
-
   return (
     <Drawer
+      rootClassName={hidden ? 'nb-hidden' : ''}
       closable={false}
       {...drawerProps}
       open={open}
       footer={footer}
-      rootStyle={hiddenStyle}
       styles={{
         ...drawerProps.styles,
         footer: { display: 'flex', justifyContent: 'flex-end', ...drawerProps.styles?.footer },

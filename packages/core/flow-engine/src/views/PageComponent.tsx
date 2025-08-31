@@ -11,7 +11,7 @@ import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { useFlowEngine } from '../provider';
 
 export const PageComponent = forwardRef((props: any, ref) => {
-  const { visible = true, afterClose, children } = props;
+  const { visible = true, afterClose, children, hidden } = props;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
 
@@ -44,5 +44,9 @@ export const PageComponent = forwardRef((props: any, ref) => {
 
   if (!visible) return null;
 
-  return <div style={style}>{children}</div>;
+  return (
+    <div style={style} className={hidden ? 'nb-hidden' : ''}>
+      {children}
+    </div>
+  );
 });

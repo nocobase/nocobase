@@ -13,6 +13,7 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import ReactDOM from 'react-dom';
+import { observer } from '..';
 
 let uuid = 0;
 
@@ -55,24 +56,48 @@ export function usePage() {
       ctx.addDelegate(flowContext);
     }
 
-    // 支持 content 为函数，传递 currentPage
-    const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
-    config.onOpen?.(currentPage, ctx);
+    const PageWithContext = observer(
+      () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const mountedRef = React.useRef(false);
+        // 支持 content 为函数，传递 currentPage
+        const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        React.useEffect(() => {
+          config.onOpen?.(currentPage, ctx);
+        }, []);
+
+        if (config.inputArgs?.hidden?.value && !mountedRef.current) {
+          return null;
+        }
+
+        mountedRef.current = true;
+
+        return (
+          <PageComponent
+            key={`page-${uuid}`}
+            ref={pageRef}
+            hidden={config.inputArgs?.hidden?.value}
+            {...restConfig}
+            afterClose={() => {
+              closeFunc?.();
+              config.onClose?.();
+              resolvePromise?.(config.result);
+            }}
+          >
+            {pageContent}
+          </PageComponent>
+        );
+      },
+      {
+        displayName: 'PageWithContext',
+      },
+    );
 
     const page = (
       <FlowViewContextProvider context={ctx}>
-        <PageComponent
-          key={`page-${uuid}`}
-          ref={pageRef}
-          {...restConfig}
-          afterClose={() => {
-            closeFunc?.();
-            config.onClose?.();
-            resolvePromise?.(config.result);
-          }}
-        >
-          {pageContent}
-        </PageComponent>
+        <PageWithContext />
       </FlowViewContextProvider>
     );
 
