@@ -140,7 +140,6 @@ describe('estimated row count test', () => {
       ],
     });
     await analyzeTable(db, SnakeCaseCollection);
-    await analyzeTable(db, CamelCaseCollection);
     const snakeCaseCount = await SnakeCaseCollection.repository.getEstimatedRowCount();
     expect(snakeCaseCount).toBe(2);
 

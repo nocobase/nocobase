@@ -321,16 +321,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       `,
           { replacements: [tableName], type: QueryTypes.SELECT },
         );
-        return Number(results?.[0]?.table_rows ?? 0);
+        return Number(results?.[0]?.TABLE_ROWS ?? 0);
       }
       if (this.database.isPostgresCompatibleDialect()) {
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT reltuples::BIGINT AS estimate
         FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = ? AND n.nspname = current_schema();
+        WHERE c.relname = ? AND n.nspname = ?;
       `,
-          { replacements: [tableName], type: QueryTypes.SELECT },
+          { replacements: [tableName, this.collection.collectionSchema()], type: QueryTypes.SELECT, logging: true },
         );
         return Number(results?.[0]?.estimate ?? 0);
       }
