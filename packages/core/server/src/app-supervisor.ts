@@ -160,6 +160,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.apps[appName];
   }
 
+  getMainApp() {
+    if (this.runningMode === 'single') {
+      return this.apps[this.singleAppName];
+    }
+    return this.apps['main'];
+  }
+
   setAppBootstrapper(appBootstrapper: AppBootstrapper) {
     this.appBootstrapper = appBootstrapper;
   }

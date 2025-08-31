@@ -26,7 +26,7 @@ export default defineCollection({
   fields: [
     {
       name: 'id',
-      type: 'bigInt',
+      type: 'snowflakeId',
       autoIncrement: true,
       primaryKey: true,
       allowNull: false,

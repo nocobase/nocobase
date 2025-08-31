@@ -81,6 +81,7 @@ import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
 import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
+import { SnowflakeIdGenerator } from './snowflake-id-generator';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];

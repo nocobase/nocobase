@@ -97,6 +97,10 @@ interface MapOf<T> {
   [key: string]: T;
 }
 
+interface SnowflakeIdGenerator {
+  getUniqueID(): BigInt;
+}
+
 export interface IDatabaseOptions extends Options {
   tablePrefix?: string;
   migrator?: any;
@@ -160,6 +164,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   interfaceManager = new InterfaceManager(this);
   collectionFactory: CollectionFactory = new CollectionFactory(this);
   dialect: BaseDialect;
+  snowflakeIdGenerator: SnowflakeIdGenerator;
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
@@ -331,6 +336,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
 
     this.registerCollectionType();
+
+    this.snowflakeIdGenerator = options.snowflakeIdGenerator;
   }
 
   _instanceId: string;
@@ -368,6 +375,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
    */
   setContext(context: any) {
     this.context = context;
+  }
+
+  setSnowflakeIdGenerator(snowflakeIdGenerator: SnowflakeIdGenerator) {
+    this.snowflakeIdGenerator = snowflakeIdGenerator;
   }
 
   /**

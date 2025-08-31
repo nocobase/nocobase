@@ -20,6 +20,7 @@ export * from './plugin-manager';
 export * from './pub-sub-manager';
 export * from './event-queue';
 export * from './background-job-manager';
+export * from './snowflake-id-generator';
 export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
 
 export {
