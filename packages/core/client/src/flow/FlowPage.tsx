@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
-import { getViewDiff } from './getViewDiff';
+import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
 
 function InternalFlowPage({ uid, ...props }) {
@@ -88,7 +88,7 @@ export const FlowRoute = () => {
         const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
         // 3. 对比新旧列表，区分开需要打开和关闭的视图
-        const { viewsToClose, viewsToOpen } = getViewDiff(prevViewListRef.current, viewList);
+        const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
 
         // 4. 处理需要打开的视图
         if (viewsToOpen.length) {
@@ -120,6 +120,7 @@ export const FlowRoute = () => {
               onOpen() {
                 openView(index + 1); // 递归打开下一个视图
               },
+              hidden: viewItem.hidden, // 是否隐藏视图
             });
 
             viewStateRef.current[viewItem.params.viewUid] = {

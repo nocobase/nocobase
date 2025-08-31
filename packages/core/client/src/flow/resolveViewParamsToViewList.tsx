@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel, ViewParam } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, observable, ViewParam } from '@nocobase/flow-engine';
 import { RouteModel } from './models';
 
 export interface ViewItem {
   params: ViewParam;
   model: FlowModel;
-  hidden?: boolean;
+  hidden: {
+    value: boolean;
+  };
 }
 
 export async function resolveViewParamsToViewList(
@@ -37,7 +39,7 @@ export async function resolveViewParamsToViewList(
     return {
       params,
       model,
-      hidden: false, // Will be calculated after all items are resolved
+      hidden: observable.ref(false), // Will be calculated after all items are resolved
     };
   });
 
@@ -51,9 +53,9 @@ export async function resolveViewParamsToViewList(
 
     if (viewType === 'embed' && !hasEmbedAfter) {
       hasEmbedAfter = true;
-      viewItem.hidden = false; // embed type itself is not hidden
+      viewItem.hidden.value = false; // embed type itself is not hidden
     } else {
-      viewItem.hidden = hasEmbedAfter;
+      viewItem.hidden.value = hasEmbedAfter;
     }
   }
 

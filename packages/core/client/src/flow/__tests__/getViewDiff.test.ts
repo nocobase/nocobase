@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, observable } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { ViewItem } from '../resolveViewParamsToViewList';
-import { getViewDiff } from '../getViewDiff';
+import { getViewDiffAndUpdateHidden } from '../getViewDiffAndUpdateHidden';
 
 // Mock FlowModel for testing
 const createMockModel = (uid: string): FlowModel => {
@@ -22,7 +22,7 @@ const createMockModel = (uid: string): FlowModel => {
 
 describe('getViewDiff', () => {
   it('should return empty arrays when both lists are empty', () => {
-    const result = getViewDiff([], []);
+    const result = getViewDiffAndUpdateHidden([], []);
     expect(result.viewsToClose).toEqual([]);
     expect(result.viewsToOpen).toEqual([]);
   });
@@ -32,14 +32,16 @@ describe('getViewDiff', () => {
       {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
+        hidden: observable.ref(false),
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
+        hidden: observable.ref(false),
       },
     ];
 
-    const result = getViewDiff([], currentViewList);
+    const result = getViewDiffAndUpdateHidden([], currentViewList);
     expect(result.viewsToClose).toEqual([]);
     expect(result.viewsToOpen).toEqual(currentViewList);
   });
@@ -49,14 +51,16 @@ describe('getViewDiff', () => {
       {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
+        hidden: observable.ref(false),
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
+        hidden: observable.ref(false),
       },
     ];
 
-    const result = getViewDiff(prevViewList, []);
+    const result = getViewDiffAndUpdateHidden(prevViewList, []);
     expect(result.viewsToClose).toEqual(prevViewList);
     expect(result.viewsToOpen).toEqual([]);
   });
@@ -65,10 +69,12 @@ describe('getViewDiff', () => {
     const view1: ViewItem = {
       params: { viewUid: 'view1' },
       model: createMockModel('view1'),
+      hidden: observable.ref(false),
     };
     const view2: ViewItem = {
       params: { viewUid: 'view2' },
       model: createMockModel('view2'),
+      hidden: observable.ref(false),
     };
 
     const prevViewList = [view1, view2];
@@ -76,14 +82,16 @@ describe('getViewDiff', () => {
       {
         params: { viewUid: 'view1' },
         model: createMockModel('view1'),
+        hidden: observable.ref(false),
       },
       {
         params: { viewUid: 'view2' },
         model: createMockModel('view2'),
+        hidden: observable.ref(false),
       },
     ];
 
-    const result = getViewDiff(prevViewList, currentViewList);
+    const result = getViewDiffAndUpdateHidden(prevViewList, currentViewList);
     expect(result.viewsToClose).toEqual([]);
     expect(result.viewsToOpen).toEqual([]);
   });
@@ -92,24 +100,28 @@ describe('getViewDiff', () => {
     const view1: ViewItem = {
       params: { viewUid: 'view1' },
       model: createMockModel('view1'),
+      hidden: observable.ref(false),
     };
     const view2: ViewItem = {
       params: { viewUid: 'view2' },
       model: createMockModel('view2'),
+      hidden: observable.ref(false),
     };
     const view3: ViewItem = {
       params: { viewUid: 'view3' },
       model: createMockModel('view3'),
+      hidden: observable.ref(false),
     };
     const view4: ViewItem = {
       params: { viewUid: 'view4' },
       model: createMockModel('view4'),
+      hidden: observable.ref(false),
     };
 
     const prevViewList = [view1, view2]; // view1, view2 were open
     const currentViewList = [view2, view3, view4]; // view2, view3, view4 should be open
 
-    const result = getViewDiff(prevViewList, currentViewList);
+    const result = getViewDiffAndUpdateHidden(prevViewList, currentViewList);
 
     // view1 should be closed (was in prev but not in current)
     expect(result.viewsToClose).toHaveLength(1);
@@ -130,6 +142,7 @@ describe('getViewDiff', () => {
         sourceId: 'source1',
       },
       model: createMockModel('view1'),
+      hidden: observable.ref(false),
     };
     const view2: ViewItem = {
       params: {
@@ -138,12 +151,13 @@ describe('getViewDiff', () => {
         filterByTk: 'filter2',
       },
       model: createMockModel('view1'),
+      hidden: observable.ref(false),
     };
 
     const prevViewList = [view1];
     const currentViewList = [view2];
 
-    const result = getViewDiff(prevViewList, currentViewList);
+    const result = getViewDiffAndUpdateHidden(prevViewList, currentViewList);
 
     // Since viewUid is the same, no views should be closed or opened
     expect(result.viewsToClose).toEqual([]);

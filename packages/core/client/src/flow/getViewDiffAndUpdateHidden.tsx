@@ -16,7 +16,7 @@ import { ViewItem } from './resolveViewParamsToViewList';
  * @param currentViewList - 当前的视图列表
  * @returns 包含需要关闭和打开的视图列表
  */
-export function getViewDiff(prevViewList: ViewItem[], currentViewList: ViewItem[]) {
+export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentViewList: ViewItem[]) {
   // 将视图列表转换为以 viewUid 为键的 Map，便于查找
   const prevViewMap = new Map<string, ViewItem>();
   const currentViewMap = new Map<string, ViewItem>();
