@@ -116,7 +116,7 @@ export function useDrawer() {
           config.onOpen?.(currentDrawer, ctx);
         }, []);
 
-        if (config.inputArgs.hidden?.value && !mountedRef.current) {
+        if (config.inputArgs?.hidden?.value && !mountedRef.current) {
           return null;
         }
 

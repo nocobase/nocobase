@@ -12,6 +12,7 @@ import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
+import { observer } from '..';
 
 let uuid = 0;
 
@@ -104,28 +105,45 @@ export function useDialog() {
     }
 
     // 内部组件，在 Provider 内部计算 content
-    const DialogWithContext = () => {
-      const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
-      React.useEffect(() => {
-        config.onOpen?.(currentDialog, ctx);
-      }, []);
-      return (
-        <DialogComponent
-          key={`dialog-${uuid}`}
-          ref={dialogRef}
-          {...config}
-          footer={currentFooter}
-          header={currentHeader}
-          afterClose={() => {
-            closeFunc?.();
-            config.onClose?.();
-            resolvePromise?.(config.result);
-          }}
-        >
-          {content}
-        </DialogComponent>
-      );
-    };
+    const DialogWithContext = observer(
+      () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const mountedRef = React.useRef(false);
+        const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        React.useEffect(() => {
+          config.onOpen?.(currentDialog, ctx);
+        }, []);
+
+        if (config.inputArgs?.hidden?.value && !mountedRef.current) {
+          return null;
+        }
+
+        mountedRef.current = true;
+
+        return (
+          <DialogComponent
+            key={`dialog-${uuid}`}
+            ref={dialogRef}
+            hidden={config.inputArgs?.hidden?.value}
+            {...config}
+            footer={currentFooter}
+            header={currentHeader}
+            afterClose={() => {
+              closeFunc?.();
+              config.onClose?.();
+              resolvePromise?.(config.result);
+            }}
+          >
+            {content}
+          </DialogComponent>
+        );
+      },
+      {
+        displayName: 'DialogWithContext',
+      },
+    );
 
     const dialog = (
       <FlowViewContextProvider context={ctx}>
