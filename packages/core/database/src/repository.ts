@@ -321,7 +321,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       `,
           { replacements: [tableName], type: QueryTypes.SELECT },
         );
-        return Number(results?.[0]?.TABLE_ROWS ?? 0);
+        return Number(results?.[0]?.[this.database.inDialect('mysql') ? 'TABLE_ROWS' : 'table_rows'] ?? 0);
       }
       if (this.database.isPostgresCompatibleDialect()) {
         const results: any[] = await this.database.sequelize.query(
