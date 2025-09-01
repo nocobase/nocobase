@@ -316,7 +316,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const tableName = this.collection.tableName();
     try {
       if (this.database.isMySQLCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT table_rows FROM information_schema.tables
@@ -325,17 +324,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       `,
           { replacements: [tableName], type: QueryTypes.SELECT },
         );
-        return Number(results?.[0]?.table_rows ?? 0);
+        return Number(results?.[0]?.[this.database.inDialect('mysql') ? 'TABLE_ROWS' : 'table_rows'] ?? 0);
       }
       if (this.database.isPostgresCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT reltuples::BIGINT AS estimate
         FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = ? AND n.nspname = current_schema();
+        WHERE c.relname = ? AND n.nspname = ?;
       `,
-          { replacements: [tableName], type: QueryTypes.SELECT },
+          { replacements: [tableName, this.collection.collectionSchema()], type: QueryTypes.SELECT, logging: true },
         );
         return Number(results?.[0]?.estimate ?? 0);
       }
