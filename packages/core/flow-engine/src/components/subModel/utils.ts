@@ -191,7 +191,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
     });
   }
 
-  const groupKey = 'addField';
+  const groupKey = `addField_${collection.name}`;
   const finalSearchPlaceholder = ctx.t('Search fields');
   return [
     {

@@ -29,9 +29,8 @@ const AddDetailField = ({ model }) => {
         }
       }}
       afterSubModelAdd={async (item: DetailItemModel) => {
-        if (item.fieldPath) {
-          model.context.blockModel.addAppends(item.fieldPath, true);
-        }
+        blockModel.addAppends(item.fieldPath, true);
+        blockModel.addAppends(item.associationPathName, true);
       }}
       keepDropdownOpen
     >
