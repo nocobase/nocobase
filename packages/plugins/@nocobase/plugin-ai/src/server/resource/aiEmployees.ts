@@ -65,6 +65,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
     userConfig: {
       prompt: row.userConfigs?.[0]?.prompt,
     },
+    skillSettings: row.skillSettings,
   }));
   await next();
 };
