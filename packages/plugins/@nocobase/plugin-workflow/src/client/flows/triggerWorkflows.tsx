@@ -8,8 +8,8 @@
  */
 
 import { AppendsTreeSelect, CollectionBlockModel, FormSubmitActionModel, joinCollectionName } from '@nocobase/client';
-import { TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE } from '../locale';
+import { TriggerWorkflowSelect } from '../components';
 
 type SchemaOptions = {
   WorkflowSelectComponent?: React.ComponentType<any>;

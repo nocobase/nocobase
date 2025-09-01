@@ -80,7 +80,9 @@ describe('ViewNavigation', () => {
 
       // viewStack 保持不变
       expect(viewNavigation.viewStack).toEqual([{ viewUid: 'current-view' }]);
-      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin/current-view/view/new-view');
+      const call = (mockCtx.router.navigate as any).mock.calls[0];
+      expect(call[0]).toBe('/admin/current-view/view/new-view');
+      expect(call[1]).toBeUndefined();
     });
 
     it('should not navigate if pathname is the same', () => {
@@ -105,9 +107,9 @@ describe('ViewNavigation', () => {
 
       // viewStack 保持不变
       expect(viewNavigation.viewStack).toEqual([{ viewUid: 'view1', tabUid: 'tab1' }]);
-      expect(mockCtx.router.navigate).toHaveBeenCalledWith(
-        '/admin/view1/tab/tab1/view/view2/tab/tab2/filterbytk/456/sourceid/source2',
-      );
+      const call = (mockCtx.router.navigate as any).mock.calls[0];
+      expect(call[0]).toBe('/admin/view1/tab/tab1/view/view2/tab/tab2/filterbytk/456/sourceid/source2');
+      expect(call[1]).toBeUndefined();
     });
 
     it('should navigate from empty viewStack', () => {
@@ -116,7 +118,9 @@ describe('ViewNavigation', () => {
       viewNavigation.navigateTo({ viewUid: 'first-view' });
 
       expect(viewNavigation.viewStack).toEqual([{ viewUid: 'first-view' }]);
-      expect(mockCtx.router.navigate).toHaveBeenCalledWith('/admin/first-view');
+      const call = (mockCtx.router.navigate as any).mock.calls[0];
+      expect(call[0]).toBe('/admin/first-view');
+      expect(call[1]).toBeUndefined();
     });
   });
 
