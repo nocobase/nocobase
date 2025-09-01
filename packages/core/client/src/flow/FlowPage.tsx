@@ -132,13 +132,12 @@ export const FlowRoute = () => {
 
             viewItem.model.dispatchEvent('click', {
               target: layoutContentRef.current,
-              filterByTk: viewItem.params.filterByTk,
-              sourceId: viewItem.params.sourceId,
               collectionName: openViewParams?.collectionName,
               associationName: openViewParams?.associationName,
               dataSourceKey: openViewParams?.dataSourceKey,
               closeRef,
               updateRef,
+              ...viewItem.params,
               navigation: new ViewNavigation(
                 flowEngine.context,
                 prevViewListRef.current.map((item) => item.params),
