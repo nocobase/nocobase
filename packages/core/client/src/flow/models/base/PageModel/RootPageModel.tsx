@@ -66,7 +66,7 @@ RootPageModel.registerFlow({
             appends: ['children'],
           },
         });
-        ctx.model.setProps('routeId', data?.data?.[0]?.id);
+        ctx.model.setProps('routeId', data?.data?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
         for (const route of routes) {
           // 过滤掉隐藏的路由
