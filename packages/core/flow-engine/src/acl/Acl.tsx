@@ -69,7 +69,7 @@ export class ACL {
       resourceName?.includes('.') &&
       this.flowEngine.context.dataSourceManager
         .getDataSource(dataSourceKey)
-        .collectionManager.getAssocation(resourceName)?.target;
+        .collectionManager.getAssociation(resourceName)?.target;
 
     if (this.inResources(targetResource)) {
       return this.getResourceActionParams(targetResource, actionName);
