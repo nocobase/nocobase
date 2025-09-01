@@ -132,11 +132,11 @@ export const useDeleteActionProps = () => {
   const t = useT();
   const record = useCollectionRecordData();
   const { onClick } = useDestroyActionProps();
-  const isBuildIn = record?.buildIn;
+  const isBuiltIn = record?.builtIn;
   const { message } = App.useApp();
   return {
     async onClick(e?, callBack?) {
-      if (isBuildIn) {
+      if (isBuiltIn) {
         message.warning(t('Cannot delete built-in ai employees'));
         return;
       }

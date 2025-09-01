@@ -15,6 +15,6 @@ export default class extends Migration {
   appVersion = '<1.9.0';
 
   async up() {
-    await (this.plugin as PluginAIServer).setupBuildIn();
+    await (this.plugin as PluginAIServer).setupBuiltIn();
   }
 }

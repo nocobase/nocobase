@@ -47,7 +47,7 @@ export const ProfileSettings: React.FC<{
   const t = useT();
   const options = useVariableOptions();
   const record = useCollectionRecordData();
-  const isBuildIn = record?.buildIn;
+  const isBuiltIn = record?.builtIn;
   return (
     <SchemaComponent
       scope={{ t }}
@@ -66,7 +66,7 @@ export const ProfileSettings: React.FC<{
           nickname: {
             type: 'string',
             title: '{{t("Nickname")}}',
-            'x-disabled': isBuildIn,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             required: true,
@@ -82,7 +82,7 @@ export const ProfileSettings: React.FC<{
           position: {
             type: 'string',
             title: '{{t("Position")}}',
-            'x-disabled': isBuildIn,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             description: t('Position description'),
@@ -96,13 +96,13 @@ export const ProfileSettings: React.FC<{
             'x-decorator': 'FormItem',
             'x-component': 'AvatarSelect',
             'x-component-props': {
-              disabled: isBuildIn,
+              disabled: isBuiltIn,
             },
           },
           bio: {
             type: 'string',
             title: '{{t("Bio")}}',
-            'x-disabled': isBuildIn,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
@@ -113,7 +113,7 @@ export const ProfileSettings: React.FC<{
             type: 'string',
             title: '{{t("About me")}}',
             required: true,
-            'x-disabled': isBuildIn,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -127,7 +127,7 @@ export const ProfileSettings: React.FC<{
           greeting: {
             type: 'string',
             title: '{{t("Greeting message")}}',
-            'x-disabled': isBuildIn,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {

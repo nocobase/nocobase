@@ -91,7 +91,7 @@ export default {
       defaultValue: true,
     },
     {
-      name: 'buildIn',
+      name: 'builtIn',
       type: 'boolean',
       allowNull: false,
       defaultValue: false,

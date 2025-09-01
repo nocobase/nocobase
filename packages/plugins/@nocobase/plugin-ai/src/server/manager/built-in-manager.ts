@@ -20,14 +20,14 @@ const DEFAULT_KNOWLEDGE_BASE = {
 const DEFAULT_KNOWLEDGE_BASE_PROMPT =
   "From knowledge base:\n{knowledgeBaseData}\nanswer user's question using this information.";
 
-export class BuildInManager {
-  private buildInEmployees = [dataModeling, formFiller];
+export class BuiltInManager {
+  private builtInEmployees = [dataModeling, formFiller];
 
   constructor(protected plugin: PluginAIServer) {}
 
   async createOrUpdateAIEmployee(language = DEFAULT_LANGUAGE) {
     const aiEmployeesRepo = this.plugin.db.getRepository('aiEmployees');
-    const employeeUsernames = this.buildInEmployees.map((employee) => employee.username);
+    const employeeUsernames = this.builtInEmployees.map((employee) => employee.username);
     const existed = await aiEmployeesRepo.find({
       filter: {
         username: {
@@ -36,9 +36,9 @@ export class BuildInManager {
       },
     });
     const existedUsername = existed.map((x) => x.username);
-    const setups = this.buildInEmployees.filter((x) => !existedUsername.includes(x.username));
+    const setups = this.builtInEmployees.filter((x) => !existedUsername.includes(x.username));
     if (setups.length) {
-      this.plugin.log.info('setup build-in employees');
+      this.plugin.log.info('setup built-in employees');
       for (const { username, description, profile, skillSettings } of setups) {
         let p = profile[language];
         if (!p) {
@@ -62,16 +62,16 @@ export class BuildInManager {
             knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
             knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
             enabled: false,
-            buildIn: true,
+            builtIn: true,
           },
         });
         this.plugin.log.info(`setup [${username}] ${description}`);
       }
     }
 
-    const updates = this.buildInEmployees.filter((x) => existedUsername.includes(x.username));
+    const updates = this.builtInEmployees.filter((x) => existedUsername.includes(x.username));
     if (updates.length) {
-      this.plugin.log.info('update build-in employees');
+      this.plugin.log.info('update built-in employees');
       for (const { username, description, profile, skillSettings } of updates) {
         let p = profile[language];
         if (!p) {
@@ -90,11 +90,7 @@ export class BuildInManager {
             greeting,
             about,
             skillSettings,
-            enableKnowledgeBase: false,
-            knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
-            knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
-            enabled: false,
-            buildIn: true,
+            builtIn: true,
           },
           filter: {
             username,
