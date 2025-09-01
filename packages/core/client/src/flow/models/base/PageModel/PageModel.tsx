@@ -23,7 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { BasePageTabModel } from '../PageTabModel';
 import { DragEndEvent } from '@dnd-kit/core';
 
@@ -34,6 +34,8 @@ type PageModelStructure = {
 };
 
 export class PageModel extends FlowModel<PageModelStructure> {
+  tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
+
   createPageTabModelOptions = (): CreateModelOptions => {
     const modeId = uid();
     return {
@@ -90,24 +92,33 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
+          defaultActiveKey={this.context.view.inputArgs?.params?.tabUid}
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
+          onChange={(activeKey) => {
+            this.context.view.navigation?.changeTo({
+              tabUid: activeKey,
+            });
+          }}
           // destroyInactiveTabPane
-          tabBarExtraContent={
-            <AddSubModelButton
-              model={this}
-              subModelKey={'tabs'}
-              items={[
-                {
-                  key: 'blank',
-                  label: this.context.t('Blank tab'),
-                  createModelOptions: this.createPageTabModelOptions,
-                },
-              ]}
-            >
-              <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-            </AddSubModelButton>
-          }
+          tabBarExtraContent={{
+            right: (
+              <AddSubModelButton
+                model={this}
+                subModelKey={'tabs'}
+                items={[
+                  {
+                    key: 'blank',
+                    label: this.context.t('Blank tab'),
+                    createModelOptions: this.createPageTabModelOptions,
+                  },
+                ]}
+              >
+                <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+              </AddSubModelButton>
+            ),
+            ...this.tabBarExtraContent,
+          }}
         />
       </DndProvider>
     );

@@ -90,6 +90,13 @@ export class FlowEngine {
   #applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
   /**
+   * Model saving state tracking.
+   * Key is the model UID, value is the save promise.
+   * @private
+   */
+  readonly #savingModels = new Map<string, Promise<any>>();
+
+  /**
    * Flow engine context object.
    * @private
    */
@@ -504,13 +511,60 @@ export class FlowEngine {
 
   /**
    * Persist and save a model instance.
+   * Prevents concurrent saves of the same model by tracking save operations.
+   * If a model is already being saved, subsequent calls will wait for the existing save to complete.
+   *
    * @template T FlowModel subclass type, defaults to FlowModel.
    * @param {T} model Model instance to save
+   * @param {object} [options] Save options
+   * @param {boolean} [options.onlyStepParams] Whether to save only step parameters
    * @returns {Promise<any>} Repository save result
    */
   async saveModel<T extends FlowModel = FlowModel>(model: T, options?: { onlyStepParams?: boolean }): Promise<any> {
     if (!this.ensureModelRepository()) return;
-    return await this.#modelRepository.save(model, options);
+
+    const modelUid = model.uid;
+
+    // 如果这个 model 正在保存中，返回现有的保存 Promise
+    if (this.#savingModels.has(modelUid)) {
+      this.logger.debug(`Model ${modelUid} is already being saved, waiting for existing save operation`);
+      return await this.#savingModels.get(modelUid);
+    }
+
+    // 创建保存 Promise 并添加到追踪 Map 中
+    const savePromise = this.#performModelSave(model, options);
+    this.#savingModels.set(modelUid, savePromise);
+
+    try {
+      const result = await savePromise;
+      return result;
+    } finally {
+      // 无论成功还是失败，都要清除保存状态
+      this.#savingModels.delete(modelUid);
+    }
+  }
+
+  /**
+   * Perform the actual model save operation.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {T} model Model instance to save
+   * @param {object} [options] Save options
+   * @returns {Promise<any>} Repository save result
+   * @private
+   */
+  async #performModelSave<T extends FlowModel = FlowModel>(
+    model: T,
+    options?: { onlyStepParams?: boolean },
+  ): Promise<any> {
+    this.logger.debug(`Starting save operation for model ${model.uid}`);
+    try {
+      const result = await this.#modelRepository.save(model, options);
+      this.logger.debug(`Successfully saved model ${model.uid}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to save model ${model.uid}:`, error);
+      throw error;
+    }
   }
 
   /**
