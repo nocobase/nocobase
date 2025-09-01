@@ -294,7 +294,6 @@ export class PluginClientServer extends Plugin {
 
       if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.findOne({
-          tree: true,
           sort: 'sort',
           ...ctx.action.params,
         });

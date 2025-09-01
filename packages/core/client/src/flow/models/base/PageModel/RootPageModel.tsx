@@ -58,7 +58,6 @@ RootPageModel.registerFlow({
         const { data } = await ctx.api.request({
           url: `desktopRoutes:getAccessible`,
           params: {
-            tree: true,
             sort: 'sort',
             filter: {
               schemaUid: ctx.model.parentId,
@@ -66,7 +65,7 @@ RootPageModel.registerFlow({
             appends: ['children'],
           },
         });
-        ctx.model.setProps('routeId', data?.data?.[0]?.id);
+        ctx.model.setProps('routeId', data?.data?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
         for (const route of routes) {
           // 过滤掉隐藏的路由
