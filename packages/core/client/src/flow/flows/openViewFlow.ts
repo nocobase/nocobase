@@ -25,14 +25,8 @@ export const updateOpenViewStepParams = async (
   model: FlowModel,
 ) => {
   const settingsParams = model.getStepParams('popupSettings', 'openView');
-
-  if (
-    settingsParams?.collectionName !== params.collectionName ||
-    settingsParams?.associationName !== params.associationName ||
-    settingsParams?.dataSourceKey !== params.dataSourceKey
-  ) {
+  if (!settingsParams?.collectionName) {
     model.setStepParams('popupSettings', 'openView', params);
-    await model.saveStepParams();
   }
 };
 
