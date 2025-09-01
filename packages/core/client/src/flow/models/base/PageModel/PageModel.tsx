@@ -81,7 +81,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   renderFirstTab() {
     const firstTab = this.subModels.tabs?.[0];
-    return firstTab?.renderChildren();
+    return firstTab?.renderChildren?.();
   }
 
   async handleDragEnd(event: DragEndEvent) {
