@@ -506,6 +506,9 @@ const AddSubModelButtonCore = function AddSubModelButton({
           await toAdd();
         },
       });
+      if (!opened) {
+        await toAdd();
+      }
     } catch (error) {
       await handleModelCreationError(error, addedModel);
     }
