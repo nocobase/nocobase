@@ -56,7 +56,7 @@ RootPageModel.registerFlow({
           return;
         }
         const { data } = await ctx.api.request({
-          url: `desktopRoutes:get`,
+          url: `desktopRoutes:getAccessible`,
           params: {
             tree: true,
             sort: 'sort',
