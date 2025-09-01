@@ -94,7 +94,7 @@ FormSubmitActionModel.registerFlow({
           parentBlockModel.resource.refresh();
         }
         if (ctx.view) {
-          ctx.view.close();
+          ctx.view.navigation.back();
         }
       },
     },

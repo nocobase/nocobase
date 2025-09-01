@@ -12,7 +12,7 @@ import { Drawer } from 'antd';
 import * as React from 'react';
 
 const DrawerComponent = React.forwardRef((props: any, ref) => {
-  const { children, footer: initialFooter, title, extra, ...drawerProps } = props;
+  const { children, footer: initialFooter, title, extra, hidden, ...drawerProps } = props;
   const [open, setOpen] = React.useState(true);
   const [footer, setFooter] = React.useState(initialFooter);
   const [header, setHeader] = React.useState({ title, extra });
@@ -43,6 +43,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
 
   return (
     <Drawer
+      rootClassName={hidden ? 'nb-hidden' : ''}
       closable={false}
       {...drawerProps}
       open={open}

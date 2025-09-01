@@ -12,6 +12,7 @@ import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
+import { updateOpenViewStepParams } from '../../flows/openViewFlow';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;
@@ -163,7 +164,14 @@ ActionModel.registerFlow({
 export class CollectionActionModel extends ActionModel {
   onInit(options) {
     super.onInit(options);
-    console.log('CollectionActionModel:', this.context.collection, this.context.association);
+    updateOpenViewStepParams(
+      {
+        collectionName: this.context.collection?.name,
+        associationName: this.context.association?.name,
+        dataSourceKey: this.context.collection?.dataSourceKey,
+      },
+      this,
+    );
   }
 }
 
@@ -172,6 +180,18 @@ export class RecordActionModel extends ActionModel {
     type: 'link',
     children: escapeT('Action'),
   };
+
+  onInit(options) {
+    super.onInit(options);
+    updateOpenViewStepParams(
+      {
+        collectionName: this.context.collection?.name,
+        associationName: this.context.association?.name,
+        dataSourceKey: this.context.collection?.dataSourceKey,
+      },
+      this,
+    );
+  }
 
   render() {
     const props = { ...this.defaultProps, ...this.props };

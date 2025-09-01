@@ -36,6 +36,14 @@ export const openView = defineAction({
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
+      'x-reactions': {
+        dependencies: ['mode'],
+        fulfill: {
+          state: {
+            hidden: '{{$deps[0] === "embed"}}',
+          },
+        },
+      },
     },
   },
   defaultParams: {
@@ -44,12 +52,29 @@ export const openView = defineAction({
     pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    // eslint-disable-next-line prefer-const
+    if (!ctx.inputArgs.navigation && ctx.view.navigation) {
+      ctx.view.navigation.navigateTo({
+        viewUid: ctx.model.uid,
+        filterByTk: ctx.inputArgs.filterByTk,
+        sourceId: ctx.inputArgs.sourceId,
+      });
+      return;
+    }
 
-    const sizeToWidthMap: Record<string, number> = {
-      small: 480,
-      medium: 800,
-      large: 1200,
+    console.log('openView: ctx.inputArgs', ctx.inputArgs);
+
+    const sizeToWidthMap: Record<string, any> = {
+      drawer: {
+        small: '30%',
+        medium: '50%',
+        large: '70%',
+      },
+      dialog: {
+        small: '40%',
+        medium: '50%',
+        large: '80%',
+      },
+      embed: {},
     };
 
     const pageModelClass = params.pageModelClass;
@@ -70,9 +95,17 @@ export const openView = defineAction({
       },
       preventClose: !!params.preventClose,
       inheritContext: false,
-      target: ctx.inputArgs.target || ctx.layoutContentElement || document.querySelector('#layout-content'),
-      width: sizeToWidthMap[size],
+      target: ctx.inputArgs.target || ctx.layoutContentElement,
+      width: sizeToWidthMap[openMode][size],
+      inputArgs: ctx.inputArgs,
       content: (currentView) => {
+        if (ctx.inputArgs.closeRef) {
+          ctx.inputArgs.closeRef.current = currentView.close;
+        }
+        if (ctx.inputArgs.updateRef) {
+          ctx.inputArgs.updateRef.current = currentView.update;
+        }
+
         return (
           <FlowPage
             parentId={ctx.model.uid}
@@ -109,7 +142,10 @@ export const openView = defineAction({
           const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
           pageModel.invalidateAutoFlowCache(true);
         }
+
+        ctx.inputArgs.navigation?.back();
       },
+      onOpen: ctx.inputArgs.onOpen,
     });
   },
 });

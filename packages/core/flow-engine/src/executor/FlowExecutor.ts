@@ -37,12 +37,6 @@ export class FlowExecutor {
     });
     flowContext.defineProperty('inputArgs', {
       value: {
-        ..._.pick(model.context.currentFlow?.inputArgs, [
-          'filterByTk',
-          'sourceId',
-          'collectionName',
-          'associationName',
-        ]),
         ...inputArgs,
       },
     });
