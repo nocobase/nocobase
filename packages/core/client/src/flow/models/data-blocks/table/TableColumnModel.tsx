@@ -231,15 +231,17 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: escapeT('Enable quick edit'),
-      uiSchema: (ctx) => ({
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-disabled': ctx.model.collectionField.readonly,
-        },
-      }),
+      uiSchema: (ctx) => {
+        return {
+          editable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
+          },
+        };
+      },
       defaultParams(ctx) {
-        if (ctx.model.collectionField.readonly) {
+        if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
             editable: false,
           };
