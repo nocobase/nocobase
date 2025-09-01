@@ -44,3 +44,6 @@ export { createRecordProxyContext, createCollectionContextMeta } from './createR
 
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
+
+export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
+export { setAutoFlowError, getAutoFlowError, clearAutoFlowError, type AutoFlowError } from './autoFlowError';

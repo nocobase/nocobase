@@ -14,6 +14,7 @@ import { castArray } from 'lodash';
 import React from 'react';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
+import { openViewFlow } from '../../../../flows/openViewFlow';
 
 const textItemClass = css`
   display: inline-block;
@@ -223,16 +224,4 @@ TagReadPrettyAssociationFieldModel.registerFlow({
   },
 });
 
-TagReadPrettyAssociationFieldModel.registerFlow({
-  key: 'popupSettings',
-  title: escapeT('Popup settings'),
-  on: 'click',
-  steps: {
-    openView: {
-      use: 'openView',
-      defaultParams(ctx) {
-        return {};
-      },
-    },
-  },
-});
+TagReadPrettyAssociationFieldModel.registerFlow(openViewFlow);

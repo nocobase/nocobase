@@ -10,15 +10,15 @@
 import React from 'react';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { useFlowEngine } from '../provider';
-import PageComponent from './PageComponent';
+import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
+import ReactDOM from 'react-dom';
+import { observer } from '..';
 
 let uuid = 0;
 
 export function usePage() {
   const holderRef = React.useRef(null);
-  const flowEngine = useFlowEngine();
 
   const open = (config, flowContext) => {
     uuid += 1;
@@ -34,6 +34,7 @@ export function usePage() {
 
     // 构造 currentPage 实例
     const currentPage = {
+      type: 'embed',
       inputArgs: config.inputArgs || {},
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
@@ -42,8 +43,9 @@ export function usePage() {
           return;
         }
         resolvePromise?.(result);
-        pageRef.current?.destroy();
+        closeFunc?.();
       },
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();
@@ -54,37 +56,54 @@ export function usePage() {
       ctx.addDelegate(flowContext);
     }
 
-    // 支持 content 为函数，传递 currentPage
-    const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
-    config.onOpen?.(currentPage, ctx);
+    const PageWithContext = observer(
+      () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const mountedRef = React.useRef(false);
+        // 支持 content 为函数，传递 currentPage
+        const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        React.useEffect(() => {
+          config.onOpen?.(currentPage, ctx);
+        }, []);
+
+        if (config.inputArgs?.hidden?.value && !mountedRef.current) {
+          return null;
+        }
+
+        mountedRef.current = true;
+
+        return (
+          <PageComponent
+            key={`page-${uuid}`}
+            ref={pageRef}
+            hidden={config.inputArgs?.hidden?.value}
+            {...restConfig}
+            afterClose={() => {
+              closeFunc?.();
+              config.onClose?.();
+              resolvePromise?.(config.result);
+            }}
+          >
+            {pageContent}
+          </PageComponent>
+        );
+      },
+      {
+        displayName: 'PageWithContext',
+      },
+    );
 
     const page = (
       <FlowViewContextProvider context={ctx}>
-        <PageComponent
-          key={`page-${uuid}`}
-          ref={pageRef}
-          {...restConfig}
-          afterClose={() => {
-            closeFunc?.();
-            config.onClose?.();
-            resolvePromise?.(config.result);
-          }}
-        >
-          {pageContent}
-        </PageComponent>
+        <PageWithContext />
       </FlowViewContextProvider>
     );
 
     if (target && target instanceof HTMLElement) {
-      // 直接渲染到指定 target
-      target.innerHTML = '';
-      const root = flowEngine.reactView.createRoot(target);
-      root.render(page);
-      closeFunc = () => {
-        root.unmount();
-      };
+      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target));
     } else {
-      // 默认用 patchElement 方式
       closeFunc = holderRef.current?.patchElement(page);
     }
 
@@ -95,7 +114,7 @@ export function usePage() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
       return <>{elements}</>;
     }),
   );

@@ -19,10 +19,13 @@ import {
   FlowModelContext,
   FlowsFloatContextMenu,
   useFlowSettingsContext,
+  FlowModelProvider,
+  FlowErrorFallback,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
@@ -71,6 +74,8 @@ export class TableColumnModel extends FieldModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
+    const cellRenderer = this.render();
+
     return {
       ...this.props,
       ellipsis: true,
@@ -94,7 +99,19 @@ export class TableColumnModel extends FieldModel {
         model: this,
         // handleSave,
       }),
-      render: this.render(),
+      render: (value, record, index) => {
+        return (
+          <FlowModelProvider model={this}>
+            <ErrorBoundary FallbackComponent={FlowErrorFallback}>
+              {(() => {
+                const err = this['__autoFlowError'];
+                if (err) throw err;
+                return cellRenderer(value, record, index);
+              })()}
+            </ErrorBoundary>
+          </FlowModelProvider>
+        );
+      },
       hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }

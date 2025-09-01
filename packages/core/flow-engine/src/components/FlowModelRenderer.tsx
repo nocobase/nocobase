@@ -48,6 +48,7 @@ import _ from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
+import { getAutoFlowError, setAutoFlowError } from '../utils';
 import { FlowModel } from '../models';
 import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
@@ -119,7 +120,9 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
 
-    const pending = useApplyAutoFlows(model, inputArgs);
+    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, { throwOnError: false });
+    // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
+    setAutoFlowError(model, autoFlowsError || null);
 
     if (pending) {
       return <>{fallback}</>;
@@ -165,7 +168,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
   }) => {
-    // hidden 占位由模型自身处理；无需在此注入
+    setAutoFlowError(model, null);
     return (
       <FlowModelProvider model={model}>
         <FlowModelRendererCore
@@ -208,10 +211,6 @@ const FlowModelRendererCore: React.FC<{
     settingsMenuLevel,
     extraToolbarItems,
   }) => {
-    // 交由模型自身处理 hidden 与占位渲染
-    const modelContent = model.render();
-
-    // 包装 ErrorBoundary 的辅助函数
     const wrapWithErrorBoundary = (children: React.ReactNode) => {
       if (showErrorFallback) {
         return <ErrorBoundary FallbackComponent={FlowErrorFallback}>{children}</ErrorBoundary>;
@@ -219,9 +218,18 @@ const FlowModelRendererCore: React.FC<{
       return children;
     };
 
+    const ContentOrError: React.FC = () => {
+      const autoError = getAutoFlowError(model);
+      if (autoError) {
+        // 把自动流的错误转化为内容区错误，由内层边界兜住
+        throw autoError;
+      }
+      return <>{model.render()}</>;
+    };
+
     // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
     if (!showFlowSettings) {
-      return wrapWithErrorBoundary(modelContent);
+      return wrapWithErrorBoundary(<ContentOrError />);
     }
 
     // 根据 flowSettingsVariant 包装相应的设置组件
@@ -239,26 +247,26 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
-            {wrapWithErrorBoundary(modelContent)}
+            {wrapWithErrorBoundary(<ContentOrError />)}
           </FlowsFloatContextMenu>
         );
 
       case 'contextMenu':
         return (
           <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
-            {wrapWithErrorBoundary(modelContent)}
+            {wrapWithErrorBoundary(<ContentOrError />)}
           </FlowsContextMenu>
         );
 
       case 'modal':
         // TODO: 实现 modal 模式的流程设置
         console.warn('FlowModelRenderer: modal variant is not implemented yet');
-        return wrapWithErrorBoundary(modelContent);
+        return wrapWithErrorBoundary(<ContentOrError />);
 
       case 'drawer':
         // TODO: 实现 drawer 模式的流程设置
         console.warn('FlowModelRenderer: drawer variant is not implemented yet');
-        return wrapWithErrorBoundary(modelContent);
+        return wrapWithErrorBoundary(<ContentOrError />);
 
       default:
         console.warn(
@@ -276,7 +284,7 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
           >
-            {wrapWithErrorBoundary(modelContent)}
+            {wrapWithErrorBoundary(<ContentOrError />)}
           </FlowsFloatContextMenu>
         );
     }
@@ -323,35 +331,43 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
-    // 根据 skipApplyAutoFlows 选择不同的内部组件
-    if (skipApplyAutoFlows) {
+    // 构建渲染内容
+    const content = skipApplyAutoFlows ? (
+      <FlowModelRendererWithoutAutoFlows
+        model={model}
+        showFlowSettings={showFlowSettings}
+        flowSettingsVariant={flowSettingsVariant}
+        hideRemoveInSettings={hideRemoveInSettings}
+        showTitle={showTitle}
+        showErrorFallback={showErrorFallback}
+        settingsMenuLevel={settingsMenuLevel}
+        extraToolbarItems={extraToolbarItems}
+      />
+    ) : (
+      <FlowModelRendererWithAutoFlows
+        model={model}
+        showFlowSettings={showFlowSettings}
+        flowSettingsVariant={flowSettingsVariant}
+        hideRemoveInSettings={hideRemoveInSettings}
+        showTitle={showTitle}
+        inputArgs={inputArgs}
+        showErrorFallback={showErrorFallback}
+        settingsMenuLevel={settingsMenuLevel}
+        extraToolbarItems={extraToolbarItems}
+        fallback={fallback}
+      />
+    );
+
+    // 当需要错误回退时，将整体包裹在 ErrorBoundary 和 FlowModelProvider 中
+    // 这样既能捕获 useApplyAutoFlows 中抛出的错误，也能在回退组件中获取 model 上下文
+    if (showErrorFallback) {
       return (
-        <FlowModelRendererWithoutAutoFlows
-          model={model}
-          showFlowSettings={showFlowSettings}
-          flowSettingsVariant={flowSettingsVariant}
-          hideRemoveInSettings={hideRemoveInSettings}
-          showTitle={showTitle}
-          showErrorFallback={showErrorFallback}
-          settingsMenuLevel={settingsMenuLevel}
-          extraToolbarItems={extraToolbarItems}
-        />
-      );
-    } else {
-      return (
-        <FlowModelRendererWithAutoFlows
-          model={model}
-          showFlowSettings={showFlowSettings}
-          flowSettingsVariant={flowSettingsVariant}
-          hideRemoveInSettings={hideRemoveInSettings}
-          showTitle={showTitle}
-          inputArgs={inputArgs}
-          showErrorFallback={showErrorFallback}
-          settingsMenuLevel={settingsMenuLevel}
-          extraToolbarItems={extraToolbarItems}
-          fallback={fallback}
-        />
+        <FlowModelProvider model={model}>
+          <ErrorBoundary FallbackComponent={FlowErrorFallback}>{content}</ErrorBoundary>
+        </FlowModelProvider>
       );
     }
+
+    return content;
   },
 );
