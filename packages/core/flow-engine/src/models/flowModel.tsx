@@ -15,9 +15,9 @@ import { uid } from 'uid/secure';
 import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
 import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
+import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
-import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import type {
   ActionDefinition,
   ArrayElementType,
@@ -43,13 +43,13 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
-import { ForkFlowModel } from './forkFlowModel';
-import { FlowSettingsOpenOptions } from '../flowSettings';
-import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
-import { FlowDefinition } from '../FlowDefinition';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
+import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
+import { FlowDefinition } from '../FlowDefinition';
+import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition } from '../types';
+import { ForkFlowModel } from './forkFlowModel';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -162,7 +162,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // queueMicrotask(() => {
     //   this.onInit(options);
     // });
-    this.createSubModels(options.subModels);
 
     this.flowRegistry = new InstanceFlowRegistry(this);
     this.flowRegistry.addFlows(options.flowRegistry);
@@ -351,7 +350,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.hidden = !!value;
   }
 
-  private createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
+  _createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
     Object.entries(subModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value
@@ -909,7 +908,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    *
    * @returns {React.ReactNode} 有权限时的渲染结果
    */
-  public render(): React.ReactNode {
+  public render(): any {
     return <div {...this.props}></div>;
   }
 
@@ -953,7 +952,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel<T>({ ...options, subKey, subType: 'array' });
+      model = this.flowEngine.createModel<T>({ ...options, parentId: this.uid, subKey, subType: 'array' });
     }
     model.setParent(this);
     const subModels = this.subModels as {
@@ -1267,6 +1266,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns A promise that resolves when the flow settings dialog is opened
    */
   async openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>) {
+    // 设置一个比较高的 zIndex，防止被覆盖
+    _.set(options, 'uiMode.props.zIndex', 9999);
+
     return this.flowEngine.flowSettings.open({
       model: this,
       ...options,

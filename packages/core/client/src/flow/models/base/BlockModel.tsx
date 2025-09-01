@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
-import { Result } from 'antd';
 import { Observer } from '@formily/reactive-react';
 import {
   BaseRecordResource,
@@ -24,9 +23,10 @@ import {
   SingleRecordResource,
   SubModelItem,
 } from '@nocobase/flow-engine';
+import { Result } from 'antd';
 import { capitalize } from 'lodash';
-import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BlockItemCard } from '../common/BlockItemCard';
 import { FilterManager } from '../filter-blocks/filter-manager/FilterManager';
 
@@ -87,7 +87,6 @@ function makeCurrentRecordItem(
   modelName: string,
   targetName: string,
   dataSourceKey: string,
-  filterByTk: string,
   inputCF: any,
 ): SubModelItem {
   return {
@@ -98,11 +97,13 @@ function makeCurrentRecordItem(
       stepParams: {
         resourceSettings: {
           init: {
-            filterByTk,
+            filterByTk: '{{ ctx.view.inputArgs.filterByTk }}',
             collectionName: targetName,
             dataSourceKey,
-            ...(inputCF.associationName && { associationName: inputCF.associationName }),
-            ...(inputCF.sourceId && { sourceId: inputCF.sourceId }),
+            ...(inputCF.associationName && {
+              associationName: inputCF.associationName,
+              sourceId: '{{ ctx.view.inputArgs.sourceId }}',
+            }),
           },
         },
       },
@@ -439,7 +440,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         const targetName = targetCollectionNameCF || c.name;
         const targetCol = c.dataSource.getCollection(targetName) || c;
         if (!allowedSet || (targetCol && isAllowed(targetCol))) {
-          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, filterByTk, inputCF));
+          items.push(makeCurrentRecordItem(modelName, targetName, c.dataSource.key, inputCF));
         }
       }
 
@@ -560,7 +561,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         if (!params.associationName) {
           return undefined;
         }
-        return this.dataSource.getAssocation(params.associationName);
+        return this.dataSource.getAssociation(params.associationName);
       },
     });
   }

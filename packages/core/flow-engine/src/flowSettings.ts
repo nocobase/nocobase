@@ -50,7 +50,7 @@ export interface FlowSettingsOpenOptions {
   uiMode?:
     | 'dialog'
     | 'drawer'
-    | { type?: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } };
+    | { type?: 'dialog' | 'drawer'; props?: { title?: string; width?: number; [key: string]: any } };
   /** 点击取消按钮后触发的回调（关闭后调用） */
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */

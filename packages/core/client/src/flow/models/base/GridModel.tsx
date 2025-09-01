@@ -107,7 +107,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.setProps('sizes', newSizes);
       }
 
-      this.save();
+      this.saveStepParams();
     });
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
@@ -159,7 +159,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       rows: this.props.rows || {},
       sizes: this.props.sizes || {},
     });
-    this.save();
+    this.saveStepParams();
   }
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {

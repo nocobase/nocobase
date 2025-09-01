@@ -127,6 +127,7 @@ export class QuickEditForm extends FlowModel {
         {this.mapSubModels('fields', (field) => {
           return (
             <FormItem
+              showLabel={false}
               name={this.fieldPath}
               key={field.uid}
               initialValue={this.context.record[this.fieldPath]}
