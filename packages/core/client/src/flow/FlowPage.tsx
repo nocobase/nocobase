@@ -7,13 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext } from '@nocobase/flow-engine';
+import {
+  FlowModelRenderer,
+  parsePathnameToViewParams,
+  reaction,
+  useFlowEngine,
+  useFlowModelById,
+  useFlowViewContext,
+  ViewNavigation,
+} from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Card, Skeleton, Spin } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
+import { useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
+import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
+import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
+import { getOpenViewStepParams } from './flows/openViewFlow';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -31,40 +40,141 @@ function InternalFlowPage({ uid, ...props }) {
 export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
-  const params = useParams();
   const currentRoute = useCurrentRoute();
   const { isMobileLayout } = useMobileLayout();
-  // console.log('FlowRoute params:', params);
-  // const { active } = useKeepAlive();
-  const model = useMemo(() => {
+  const pageUidRef = useRef(flowEngine.context.route.params.name);
+  const viewStateRef = useRef<{
+    [uid in string]: { close: () => void; update: (value: any) => void };
+  }>({});
+  const prevViewListRef = useRef<ViewItem[]>([]);
+
+  const routeModel = useMemo(() => {
     return flowEngine.createModel({
-      uid: params.name,
+      uid: pageUidRef.current,
       use: 'RouteModel',
     });
-  }, [params.name, flowEngine]);
+  }, [flowEngine]);
 
   useEffect(() => {
-    model.context.defineProperty('isMobileLayout', {
+    routeModel.context.defineProperty('isMobileLayout', {
       get: () => isMobileLayout,
     });
-  }, [isMobileLayout, model]);
+  }, [isMobileLayout, routeModel]);
 
   useEffect(() => {
-    // if (!active) {
-    //   return;
-    // }
     if (!layoutContentRef.current) {
       return;
     }
-    model.context.defineProperty('layoutContentElement', {
+    routeModel.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
-    model.context.defineProperty('currentRoute', {
+    routeModel.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-    model.dispatchEvent('click', { mode: 'embed', target: layoutContentRef.current, activeTab: params.tabUid });
-  }, [model, params.name, params.tabUid, currentRoute]);
-  return <div id="layout-content" ref={layoutContentRef} />;
+  }, [routeModel, currentRoute]);
+
+  useEffect(() => {
+    const dispose = reaction(
+      () => flowEngine.context.route,
+      async (newRoute) => {
+        if (newRoute.params.name !== pageUidRef.current) {
+          return;
+        }
+
+        // 1. 把 pathname 解析成一个数组
+        const viewStack = parsePathnameToViewParams(newRoute.pathname);
+
+        // 2. 根据视图参数获取更多信息
+        const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
+
+        // 3. 对比新旧列表，区分开需要打开和关闭的视图
+        const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
+
+        // 特殊处理：当通过一个多级 url 打开时，需要把这个 url 分成多步，然后逐步打开。这样做是为了能在点击返回按钮时返回到上一级
+        if (prevViewListRef.current.length === 0 && viewList.length > 1) {
+          const navigateTo = (index: number) => {
+            if (!viewList[index]) {
+              return;
+            }
+
+            if (index === 0) {
+              new ViewNavigation(flowEngine.context, []).navigateTo(viewList[index].params, { replace: true });
+            } else {
+              new ViewNavigation(
+                flowEngine.context,
+                viewList.slice(0, index).map((item) => item.params),
+              ).navigateTo(viewList[index].params);
+            }
+
+            // 需要有个延迟，才能正常触发路由的跳转
+            setTimeout(() => {
+              navigateTo(index + 1);
+            }, 20);
+          };
+
+          navigateTo(0);
+          return;
+        }
+
+        // 4. 处理需要打开的视图
+        if (viewsToOpen.length) {
+          const openView = (index: number) => {
+            if (!viewsToOpen[index]) {
+              return;
+            }
+
+            const viewItem = viewsToOpen[index];
+            const closeRef = React.createRef<() => void>();
+            const updateRef = React.createRef<(value: any) => void>();
+            const openViewParams = getOpenViewStepParams(viewItem.model);
+
+            prevViewListRef.current.push(viewItem);
+
+            viewItem.model.dispatchEvent('click', {
+              target: layoutContentRef.current,
+              collectionName: openViewParams?.collectionName,
+              associationName: openViewParams?.associationName,
+              dataSourceKey: openViewParams?.dataSourceKey,
+              closeRef,
+              updateRef,
+              ...viewItem.params,
+              navigation: new ViewNavigation(
+                flowEngine.context,
+                prevViewListRef.current.map((item) => item.params),
+              ),
+              onOpen() {
+                openView(index + 1); // 递归打开下一个视图
+              },
+              hidden: viewItem.hidden, // 是否隐藏视图
+            });
+
+            viewStateRef.current[viewItem.params.viewUid] = {
+              close: () => closeRef.current?.(),
+              update: (value: any) => updateRef.current?.(value),
+            };
+          };
+
+          openView(0);
+        }
+
+        // 5. 处理需要关闭的视图
+        viewsToClose.forEach((viewItem) => {
+          viewStateRef.current[viewItem.params.viewUid].close();
+          delete viewStateRef.current[viewItem.params.viewUid];
+          prevViewListRef.current = prevViewListRef.current.filter(
+            (item) => item.params.viewUid !== viewItem.params.viewUid,
+          );
+        });
+      },
+      {
+        fireImmediately: true,
+      },
+    );
+
+    return dispose;
+  }, [flowEngine, routeModel]);
+
+  return <div ref={layoutContentRef} />;
 };
 
 export const FlowPage = (props) => {

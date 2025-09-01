@@ -17,29 +17,71 @@ import { DefaultSettingsIcon } from '../settings/wrappers/contextual/DefaultSett
 import { FlowEngineProvider } from '../../provider';
 import { FlowModelRenderer } from '../FlowModelRenderer';
 
-// ---------------- Partial Mocks ----------------
-// Only intercept Dropdown (to capture menu) and Modal.confirm (auto-confirm)
+// ---------------- Pure Mocks ----------------
+// Intercept Dropdown (capture menu) and Modal.confirm (auto-confirm), stub others
 const dropdownMenus: any[] = [];
-vi.mock('antd', async (importOriginal) => {
-  const actual = await importOriginal<any>();
-  return {
-    ...actual,
-    Dropdown: (props: any) => {
-      (globalThis as any).__lastDropdownMenu = props.menu;
-      dropdownMenus.push(props.menu);
-      return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
-    },
-    Modal: {
-      ...actual.Modal,
-      confirm: (opts: any) => {
-        if (opts && typeof opts.onOk === 'function') {
-          return opts.onOk();
-        }
-        return {} as any;
-      },
-      error: vi.fn(),
-    },
+vi.mock('antd', () => {
+  const Dropdown = (props: any) => {
+    (globalThis as any).__lastDropdownMenu = props.menu;
+    dropdownMenus.push(props.menu);
+    return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
   };
+  const Modal = {
+    confirm: (opts: any) => {
+      if (opts && typeof opts.onOk === 'function') {
+        return opts.onOk();
+      }
+      return {} as any;
+    },
+    error: vi.fn(),
+  };
+  const App = Object.assign(({ children }: any) => React.createElement(React.Fragment, null, children), {
+    useApp: () => ({ message: { success: () => {}, error: () => {}, info: () => {} } }),
+  });
+  const ConfigProvider = ({ children }: any) => React.createElement(React.Fragment, null, children);
+  const Button = (props: any) => React.createElement('button', props, props.children ?? 'Button');
+  const Result = (props: any) => React.createElement('div', { 'data-testid': 'result' }, props.children ?? 'Result');
+  const Collapse = Object.assign((props: any) => React.createElement('div', null, props.children ?? 'Collapse'), {
+    Panel: (props: any) => React.createElement('div', null, props.children ?? 'Panel'),
+  });
+  const Space = ({ children }: any) => React.createElement('div', null, children);
+  const FormItem = (props: any) => React.createElement('div', null, props.children ?? 'FormItem');
+  const Form = Object.assign((props: any) => React.createElement('form', null, props.children ?? 'Form'), {
+    Item: FormItem,
+    useForm: () => [{ setFieldsValue: (_: any) => {} }],
+  });
+  const Input: any = (props: any) => React.createElement('input', props);
+  Input.TextArea = (props: any) => React.createElement('textarea', props);
+  const InputNumber = (props: any) => React.createElement('input', { ...props, type: 'number' });
+  const Select = (props: any) => React.createElement('select', props);
+  const Switch = (props: any) => React.createElement('input', { ...props, type: 'checkbox' });
+  const Alert = (props: any) => React.createElement('div', { role: 'alert' }, props.message ?? 'Alert');
+  const Skeleton: any = () => React.createElement('div', null, 'Skeleton');
+  Skeleton.Button = (props: any) => React.createElement('div', null, 'Skeleton.Button');
+  const Spin = (props: any) => React.createElement('div', null, props.children ?? 'Spin');
+  const Typography = {
+    Paragraph: ({ children }: any) => React.createElement('p', null, children ?? 'Paragraph'),
+    Text: ({ children }: any) => React.createElement('span', null, children ?? 'Text'),
+  };
+  return {
+    Dropdown,
+    Modal,
+    App,
+    ConfigProvider,
+    Button,
+    Result,
+    Typography,
+    Collapse,
+    Space,
+    Form,
+    Input,
+    InputNumber,
+    Select,
+    Switch,
+    Alert,
+    Skeleton,
+    Spin,
+  } as any;
 });
 
 // ---------------- Helpers ----------------

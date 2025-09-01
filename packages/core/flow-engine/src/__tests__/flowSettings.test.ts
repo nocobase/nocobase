@@ -65,10 +65,38 @@ vi.mock('@formily/antd-v5', () => ({
   Upload: vi.fn(() => 'Upload'),
 }));
 
-vi.mock('antd', () => ({
-  Button: vi.fn(() => 'Button'),
-  Collapse: Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' }),
-}));
+vi.mock('antd', () => {
+  const Collapse = Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' });
+  const FormItem = vi.fn(({ children }: any) => children ?? 'FormItem');
+  const Form = Object.assign(
+    vi.fn(() => 'Form'),
+    {
+      Item: FormItem,
+      useForm: () => [{ setFieldsValue: vi.fn() }],
+    },
+  );
+  const Input: any = vi.fn(() => 'Input');
+  Input.TextArea = vi.fn(() => 'TextArea');
+  const InputNumber = vi.fn(() => 'InputNumber');
+  const Select = vi.fn(() => 'Select');
+  const Switch = vi.fn(() => 'Switch');
+  const Alert = vi.fn(() => 'Alert');
+  return {
+    Button: vi.fn(() => 'Button'),
+    Collapse,
+    Result: vi.fn(() => 'Result'),
+    Form,
+    Input,
+    InputNumber,
+    Select,
+    Switch,
+    Alert,
+    Typography: {
+      Paragraph: vi.fn(({ children }: any) => children ?? 'Paragraph'),
+      Text: vi.fn(({ children }: any) => children ?? 'Text'),
+    },
+  } as any;
+});
 
 describe('FlowSettings', () => {
   let flowSettings: FlowSettings;

@@ -12,7 +12,7 @@ import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
 export class RouteModel<T = DefaultStructure> extends FlowModel<T> {}
 
 RouteModel.registerFlow({
-  key: 'routeClickSettings',
+  key: 'popupSettings',
   on: 'click',
   steps: {
     openView: {

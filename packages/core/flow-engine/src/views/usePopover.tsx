@@ -81,6 +81,7 @@ export function usePopover() {
 
     // 构造 currentPopover 实例
     const currentPopover = {
+      type: 'popover',
       destroy: () => popoverRef.current?.destroy(),
       update: (newConfig) => popoverRef.current?.update(newConfig),
       close: (result?: any) => {

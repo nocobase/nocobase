@@ -315,8 +315,11 @@ export default class extends Trigger {
     TriggerCollectionRecordSelect,
     WorkflowVariableWrapper,
   };
-  isActionTriggerable = (config, context) => {
+  isActionTriggerable_deprecated = (config, context) => {
     return !config.global && ['submit', 'customize:save', 'customize:update'].includes(context.buttonAction);
+  };
+  actionTriggerableScope = (config, scope) => {
+    return !config.global && ['form'].includes(scope);
   };
   useVariables = useVariables;
   useInitializers(config): SchemaInitializerItemType | null {
