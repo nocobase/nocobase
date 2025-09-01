@@ -21,6 +21,8 @@ import {
   useFlowSettingsContext,
   FlowModelProvider,
   FlowErrorFallback,
+  buildRecordMeta,
+  inferRecordRef,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import { ModelRenderMode } from '@nocobase/flow-engine';
@@ -126,6 +128,12 @@ export class TableColumnModel extends FieldModel {
           const fork = field.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
+            meta: () =>
+              buildRecordMeta(
+                () => (fork.context as any).collection,
+                fork.context.t('Current record'),
+                (ctx) => inferRecordRef(ctx),
+              ),
           });
           fork.context.defineProperty('recordIndex', {
             get: () => index,

@@ -33,11 +33,18 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import { extractPropertyPath, FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
+import {
+  extractPropertyPath,
+  FlowExitException,
+  resolveDefaultParams,
+  resolveExpressions,
+  extractUsedVariableNames,
+} from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import type { RecordRef } from './utils/serverContextParams';
 import { ACL } from './acl/Acl';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -63,6 +70,9 @@ export interface PropertyMeta {
   render?: (props: any) => JSX.Element; // 自定义渲染函数
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
+  // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）
+  // 例如：对 'record' 属性，返回 RecordRef（{ collection, filterByTk, dataSourceKey, ... }）
+  buildVariablesParams?: (ctx: FlowContext) => RecordRef | Promise<RecordRef> | undefined;
 }
 
 export interface PropertyOptions {
@@ -833,6 +843,56 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod(
       'resolveJsonTemplate',
       async function (this: BaseFlowEngineContext, template: any, options?: { contextParams?: any }) {
+        // 构造 contextParams：优先显式传入；否则从 Meta 收集 buildVariablesParams（仅限模板中实际使用到的变量）。
+        // no property-level fallbacks; rely purely on Meta-provided buildVariablesParams
+        const usedVars = extractUsedVariableNames(template);
+        if (!usedVars || usedVars.size === 0) {
+          // 模板未包含任何 ctx.* 变量，直接前端解析，避免无意义的服务端请求
+          return resolveExpressions(template, this);
+        }
+
+        const collectFromMeta = async (): Promise<Record<string, RecordRef>> => {
+          const out: Record<string, RecordRef> = {};
+          try {
+            const metas = this._getPropertiesMeta?.() as Record<
+              string,
+              PropertyMeta | (() => Promise<PropertyMeta | null> | PropertyMeta | null)
+            >;
+            if (!metas || typeof metas !== 'object') return out;
+            for (const [key, metaOrFactory] of Object.entries(metas)) {
+              if (out[key]) continue;
+              if (usedVars && usedVars.size && !usedVars.has(key)) continue;
+              try {
+                let meta: PropertyMeta | null;
+                if (typeof metaOrFactory === 'function') {
+                  const fn = metaOrFactory as () => Promise<PropertyMeta | null>;
+                  meta = await fn();
+                } else {
+                  meta = metaOrFactory as PropertyMeta;
+                }
+                if (!meta || typeof meta !== 'object') continue;
+                const builder = meta.buildVariablesParams;
+                if (typeof builder === 'function') {
+                  const val = await builder(this);
+                  if (val) out[key] = val;
+                }
+              } catch (_) {
+                // ignore errors
+              }
+            }
+          } catch (_) {
+            // ignore errors
+          }
+          return out;
+        };
+
+        const inputFromMeta = !options?.contextParams ? await collectFromMeta() : {};
+
+        const autoInput = { ...inputFromMeta };
+        const autoContextParams = Object.keys(autoInput).length
+          ? _buildServerContextParams(this, autoInput)
+          : undefined;
+
         let serverResolved = template;
         if (this.api) {
           try {
@@ -842,13 +902,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
               data: {
                 values: {
                   template,
-                  contextParams: options?.contextParams || {},
+                  contextParams: options?.contextParams || autoContextParams || {},
                 },
               },
             });
             serverResolved = data?.data?.data ?? data;
           } catch (e) {
-            // 后端解析失败时，回退到前端解析，不中断链路
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
           }
         }

@@ -16,6 +16,8 @@ import {
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
+  buildRecordMeta,
+  inferRecordRef,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
@@ -29,6 +31,12 @@ const Columns = observer<any>(({ record, model, index }) => {
         const fork = action.createFork({}, `${index}`);
         fork.context.defineProperty('record', {
           get: () => record,
+          meta: () =>
+            buildRecordMeta(
+              () => (fork.context as any).collection,
+              fork.context.t('Current record'),
+              (ctx) => inferRecordRef(ctx),
+            ),
         });
         fork.context.defineProperty('recordIndex', {
           get: () => index,

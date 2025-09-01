@@ -15,6 +15,8 @@ import {
   FlowModel,
   FlowModelRenderer,
   SingleRecordResource,
+  buildRecordMeta,
+  inferRecordRef,
 } from '@nocobase/flow-engine';
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
@@ -100,6 +102,12 @@ export class QuickEditForm extends FlowModel {
     });
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
+      meta: () =>
+        buildRecordMeta(
+          () => this.collection,
+          this.context.t('Current record'),
+          (ctx) => inferRecordRef(ctx),
+        ),
     });
   }
 

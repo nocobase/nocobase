@@ -56,16 +56,21 @@ export const CurrentUserProvider = (props) => {
       .then((res) => {
         app.flowEngine.context.defineProperty('user', {
           value: res?.data?.data,
-        });
-
-        app.flowEngine.context.defineProperty(
-          'userAsync',
-          createRecordProxyContext(
+          meta: createRecordProxyContext(
             () => app.flowEngine.context.user,
             () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
             app.flowEngine.translate('Current user'),
-          ),
-        );
+          ).meta,
+        });
+
+        // app.flowEngine.context.defineProperty(
+        //   'userAsync',
+        //   createRecordProxyContext(
+        //     () => app.flowEngine.context.user,
+        //     () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
+        //     app.flowEngine.translate('Current user'),
+        //   ),
+        // );
 
         return res?.data;
       }),

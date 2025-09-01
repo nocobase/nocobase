@@ -18,6 +18,8 @@ import {
   MultiRecordResource,
   SingleRecordResource,
   escapeT,
+  buildRecordMeta,
+  inferRecordRef,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
@@ -58,6 +60,12 @@ export class DetailsModel extends CollectionBlockModel<{
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
+      meta: () =>
+        buildRecordMeta(
+          () => this.collection,
+          this.context.t('Current record'),
+          (ctx) => inferRecordRef(ctx),
+        ),
     });
   }
 

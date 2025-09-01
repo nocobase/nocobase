@@ -15,7 +15,7 @@ import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { FormActionModel } from './FormActionModel';
 import { FormFieldGridModel } from './FormFieldGridModel';
-import { CollectionField } from '@nocobase/flow-engine';
+import { CollectionField, buildRecordMeta } from '@nocobase/flow-engine';
 
 export class FormModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -35,6 +35,12 @@ export class FormModel extends CollectionBlockModel<{
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
+      meta: () =>
+        buildRecordMeta(
+          () => this.collection,
+          this.context.t('Current record'),
+          (ctx) => inferRecordRef(ctx),
+        ),
     });
   }
 
