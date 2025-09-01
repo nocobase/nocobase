@@ -27,7 +27,7 @@ import { FormComponent, FormModel } from './FormModel';
 export class CreateFormModel extends FormModel {
   static type = 'toNew';
 
-  createResource() {
+  createResource(ctx, params) {
     const resource = new SingleRecordResource();
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;

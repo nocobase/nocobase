@@ -566,6 +566,14 @@ export class CollectionField {
     return this.collection.dataSourceKey;
   }
 
+  get resourceName() {
+    return `${this.collection.name}.${this.name}`;
+  }
+
+  get collectionName() {
+    return this.collection.name;
+  }
+
   get readonly() {
     return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
   }

@@ -160,7 +160,7 @@ export class CollectionActionModel extends ActionModel {
     updateOpenViewStepParams(
       {
         collectionName: this.context.collection?.name,
-        associationName: this.context.association?.name,
+        associationName: this.context.association?.resourceName,
         dataSourceKey: this.context.collection?.dataSourceKey,
       },
       this,
@@ -190,7 +190,7 @@ export class RecordActionModel extends ActionModel {
     updateOpenViewStepParams(
       {
         collectionName: this.context.collection?.name,
-        associationName: this.context.association?.name,
+        associationName: this.context.association?.resourceName,
         dataSourceKey: this.context.collection?.dataSourceKey,
       },
       this,

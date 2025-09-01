@@ -189,7 +189,6 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   static async defineChildren(ctx: FlowModelContext) {
     const children = await buildSubModelItems(this)(ctx);
     const { collectionName, filterByTk } = ctx.view.inputArgs;
-    console.log('collectionName, filterByTk', collectionName, filterByTk);
     return children.filter((item) => {
       if (collectionName && !filterByTk) {
         const M = ctx.engine.getModelClass(item.useModel);
@@ -295,7 +294,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
             const initOptions = {
               dataSourceKey,
               collectionName: field.target,
-              associationName: `${collection.name}.${field.name}`,
+              associationName: field.resourceName,
               sourceId: '{{ctx.view.inputArgs.filterByTk}}',
             };
             return {
