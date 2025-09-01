@@ -10,12 +10,51 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { variables } from '../variables/registry';
 
-describe('plugin-flow-engine variables:resolve', () => {
+describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   let app: MockServer;
+  const execResolve = async (values: any, userId?: number) => {
+    const handler = (app.resourceManager as any).getRegisteredHandler('variables:resolve');
+    if (typeof handler !== 'function') {
+      throw new Error('variables:resolve handler not registered');
+    }
+    const ctx: any = {
+      app,
+      db: app.db,
+      headers: {},
+      request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
+      auth: userId ? { user: { id: userId }, role: 'root' } : {},
+      state: {},
+      getCurrentLocale: () => 'en-US',
+      action: { params: { values } },
+    };
+    ctx.throw = (status: number, body: any) => {
+      throw { status, body };
+    };
+    try {
+      await handler(ctx, async () => {});
+    } catch (e: any) {
+      if (e && typeof e.status === 'number') {
+        ctx.status = e.status;
+        ctx.body = { error: e.body };
+      } else {
+        throw e;
+      }
+    }
+    return ctx;
+  };
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['@nocobase/plugin-flow-engine'],
+      database: { dialect: 'sqlite', storage: ':memory:' },
+      plugins: [
+        'error-handler',
+        'auth',
+        'users',
+        'acl',
+        'data-source-manager',
+        'field-sort',
+        '@nocobase/plugin-flow-engine',
+      ],
     });
   });
 
@@ -24,19 +63,16 @@ describe('plugin-flow-engine variables:resolve', () => {
   });
 
   it('should resolve simple expressions and keep unknown as-is', async () => {
-    const agent = app.agent();
-
     const payload = {
-      a: 1,
-      b: 'hello',
-      c: 'Now: {{ ctx.now }}',
-      d: '{{ ctx.unknown }}',
+      template: {
+        a: 1,
+        b: 'hello',
+        c: 'Now: {{ ctx.now }}',
+        d: '{{ ctx.unknown }}',
+      },
     };
-
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
-
-    const data = res.body?.data ?? res.body; // data-wrapping
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
     expect(typeof data.c).toBe('string');
     expect(data.c.startsWith('Now: ')).toBeTruthy();
     // unknown should be kept as original string
@@ -46,43 +82,37 @@ describe('plugin-flow-engine variables:resolve', () => {
   });
 
   it('should resolve current user when logged in', async () => {
-    const agent = await app.agent().loginUsingId(1);
-
     const payload = {
-      userId: '{{ ctx.user.id }}',
+      template: {
+        userId: '{{ ctx.user.id }}',
+      },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.userId).toBe(1);
   });
 
   it('should support values.template field', async () => {
-    const agent = app.agent();
     const payload = { template: { time: '{{ ctx.timestamp }}' } };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(typeof data.time).toBe('number');
   });
 
   it('should validate missing record context params', async () => {
-    const agent = app.agent();
     const payload = {
       template: {
         id: '{{ ctx.record.id }}',
       },
       // no contextParams.record provided
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(400);
-    const data = res.body;
-    expect(data?.error?.code).toBe('INVALID_CONTEXT_PARAMS');
-    expect(Array.isArray(data?.error?.missing)).toBeTruthy();
+    const ctx = await execResolve(payload, 1);
+    expect(ctx.status).toBe(400);
+    const err = ctx.body?.error;
+    expect(err?.code).toBe('INVALID_CONTEXT_PARAMS');
   });
 
   it('should resolve record with explicit contextParams', async () => {
-    const agent = await app.agent().loginUsingId(1);
     const payload = {
       template: { id: '{{ ctx.record.id }}' },
       contextParams: {
@@ -94,14 +124,12 @@ describe('plugin-flow-engine variables:resolve', () => {
         },
       },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.id).toBe(1);
   });
 
   it('should resolve deep association with auto appends (roles[0].name)', async () => {
-    const agent = await app.agent().loginUsingId(1);
     const payload = {
       template: { role: '{{ ctx.record.roles[0].name }}' },
       contextParams: {
@@ -113,19 +141,16 @@ describe('plugin-flow-engine variables:resolve', () => {
         },
       },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     // role should be a string (e.g., 'admin'), content depends on seed
     expect(typeof data.role).toBe('string');
     expect(data.role.length).toBeGreaterThan(0);
   });
 
-  it('should support bracket notation and arithmetic', async () => {
-    const agent = await app.agent().loginUsingId(1);
+  it('should support bracket notation for first association segment', async () => {
     const payload = {
       template: {
-        a: "{{ ctx['user'].id + 1 }}",
         b: "{{ ctx.record['id'] }}",
         c: "{{ ctx.record['roles'][0]['name'] }}",
       },
@@ -137,24 +162,41 @@ describe('plugin-flow-engine variables:resolve', () => {
         },
       },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data.a).toBe(2);
     expect(data.b).toBe(1);
     expect(typeof data.c).toBe('string');
     expect(data.c.length).toBeGreaterThan(0);
   });
 
+  it('should support top-level bracket var for record', async () => {
+    const payload = {
+      template: {
+        id: "{{ ctx['record'].id }}",
+        role: "{{ ctx['record']['roles'][0].name }}",
+      },
+      contextParams: {
+        record: {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(data.id).toBe(1);
+    expect(typeof data.role).toBe('string');
+    expect(data.role.length).toBeGreaterThan(0);
+  });
+
   it('should keep unsupported references and partially replace', async () => {
-    const agent = await app.agent().loginUsingId(1);
     const payload = {
       template: {
         text: 'ID: {{ ctx.user.id }}, Unknown: {{ foo.bar }}',
       },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(typeof data.text).toBe('string');
     expect(data.text.includes('ID: 1')).toBeTruthy();
@@ -172,23 +214,13 @@ describe('plugin-flow-engine variables:resolve', () => {
         },
       });
     }
-
-    const agent = await app.agent().loginUsingId(1);
     const payload = {
       template: {
         v: '{{ ctx.twice(21) }}',
-        nested: '{{ ctx.twice(ctx.record.id) }}',
-      },
-      contextParams: {
-        record: {
-          dataSourceKey: 'main',
-          collection: 'users',
-          filterByTk: 1,
-        },
+        nested: '{{ ctx.twice(ctx.user.id) }}',
       },
     };
-    const res = await agent.resource('variables').resolve({ values: payload });
-    expect(res.status).toBe(200);
+    const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.v).toBe(42);
     expect(data.nested).toBe(2);

@@ -14,7 +14,7 @@ import { resolveJsonTemplate } from './template/resolver';
 import { variables } from './variables/registry';
 
 export class PluginFlowEngineServer extends Plugin {
-  private globalContext: GlobalContext;
+  private globalContext!: GlobalContext;
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -63,25 +63,22 @@ export class PluginFlowEngineServer extends Plugin {
       // Resolve context variables in a JSON payload.
       'variables:resolve': async (ctx, next) => {
         const values = ctx.action?.params?.values ?? {};
-        const template = typeof values?.template !== 'undefined' ? values.template : values;
-        const contextParams = values?.contextParams || {};
+        const template = values.template || {};
+        const contextParams = values.contextParams || {};
         const { ok, missing } = variables.validate(template, contextParams);
         if (!ok) {
-          ctx.status = 400;
-          ctx.body = {
-            error: {
-              code: 'INVALID_CONTEXT_PARAMS',
-              message: `Missing required parameters: ${missing?.join(', ')}`,
-              missing: missing,
-            },
-          };
-          return;
+          ctx.throw(400, {
+            code: 'INVALID_CONTEXT_PARAMS',
+            message: `Missing required parameters: ${missing?.join(', ')}`,
+            missing,
+          });
         }
 
         const requestCtx = new HttpRequestContext(ctx);
         requestCtx.delegate(this.globalContext);
         await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-        ctx.body = await resolveJsonTemplate(template, requestCtx);
+        const resolved = await resolveJsonTemplate(template, requestCtx);
+        ctx.body = { data: resolved };
         await next();
       },
     });

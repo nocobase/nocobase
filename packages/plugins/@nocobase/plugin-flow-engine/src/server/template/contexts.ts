@@ -7,24 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Context } from '@nocobase/actions';
 import _ from 'lodash';
 import { getDateVars, toUnit } from '@nocobase/utils';
+import { ResourcerContext } from '@nocobase/resourcer';
 
 type Getter<T = any> = (ctx: ServerBaseContext) => T | Promise<T>;
 
 export interface PropertyOptions {
+  /** 固定值，优先级高于 get */
   value?: any;
+  /** 惰性求值 getter，返回值可为 Promise；默认会被缓存 */
   get?: Getter;
+  /** 是否禁用缓存，true 表示每次访问都重新计算 */
   cache?: boolean;
+  /** 仅允许首次定义，后续重复定义将被忽略 */
   once?: boolean;
 }
 
+/**
+ * 服务器端上下文基础类。
+ * - 支持以 defineProperty 定义惰性/常量属性，并可选择缓存
+ * - 支持以 defineMethod 定义方法
+ * - 支持 delegate 机制，属性与方法可回退到被委托的上游上下文
+ * - 通过 Proxy 实现按需求值与 this 绑定
+ */
 export class ServerBaseContext {
   protected _props: Record<string, PropertyOptions> = {};
   protected _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
   protected _delegates: ServerBaseContext[] = [];
+  protected _proxy?: ServerBaseContext;
   [key: string]: any;
 
   constructor() {
@@ -45,6 +57,12 @@ export class ServerBaseContext {
     return undefined;
   }
 
+  /**
+   * 定义一个可枚举属性。
+   * - value：固定值
+   * - get：惰性 getter（默认带缓存）
+   * - once：已存在时忽略重复定义
+   */
   defineProperty(key: string, options: PropertyOptions) {
     if (this._props[key] && this._props[key]?.once) return;
     this._props[key] = options;
@@ -56,6 +74,7 @@ export class ServerBaseContext {
     });
   }
 
+  /** 定义一个方法（不可枚举、不可写），访问时会自动绑定到对应实例 */
   defineMethod(name: string, fn: (...args: any[]) => any) {
     this._methods[name] = fn;
     Object.defineProperty(this, name, {
@@ -66,6 +85,10 @@ export class ServerBaseContext {
     });
   }
 
+  /**
+   * 委托到另一个 ServerBaseContext：
+   * - 访问属性/方法找不到时，会回退到被委托者进行解析
+   */
   delegate(ctx: ServerBaseContext) {
     if (!(ctx instanceof ServerBaseContext)) {
       throw new Error('Delegate must be a ServerBaseContext');
@@ -73,12 +96,15 @@ export class ServerBaseContext {
     if (!this._delegates.includes(ctx)) this._delegates.unshift(ctx);
   }
 
+  /** 清空所有委托 */
   clearDelegates() {
     this._delegates = [];
   }
 
+  /** 创建并返回代理对象（同一实例下保持稳定引用） */
   createProxy() {
-    return new Proxy(this, {
+    if (this._proxy) return this._proxy as any;
+    this._proxy = new Proxy(this, {
       get: (target, key: string, receiver) => {
         if (typeof key !== 'string') return Reflect.get(target, key, receiver);
         if (Reflect.has(target, key)) {
@@ -93,11 +119,10 @@ export class ServerBaseContext {
           return typeof fn === 'function' ? fn.bind(target) : fn;
         }
         for (const d of target._delegates) {
-          if (Object.prototype.hasOwnProperty.call(d._props, key)) {
-            return d._getOwn(key, this.createProxy());
-          }
-          if (Object.prototype.hasOwnProperty.call(d._methods, key)) {
-            const fn = d._methods[key];
+          const candidate = (d as any)._getOwn?.(key, this.createProxy());
+          if (typeof candidate !== 'undefined') return candidate;
+          if (Object.prototype.hasOwnProperty.call((d as any)._methods || {}, key)) {
+            const fn = (d as any)._methods[key];
             return typeof fn === 'function' ? fn.bind(d) : fn;
           }
         }
@@ -115,9 +140,16 @@ export class ServerBaseContext {
         );
       },
     });
+    return this._proxy as any;
   }
 }
 
+/**
+ * 全局上下文：
+ * - now/timestamp：时间值（不缓存）
+ * - env：环境变量（仅暴露白名单前缀）
+ * - date：日期快捷变量集合（包含前天等）
+ */
 export class GlobalContext extends ServerBaseContext {
   constructor(env?: Record<string, any>) {
     super();
@@ -128,27 +160,21 @@ export class GlobalContext extends ServerBaseContext {
 
     // 日期变量集合：与历史 $nDate/$date 变量保持一致（并补充 dayBeforeYesterday）
     this.defineProperty('date', {
-      get: (ctx: any) => buildDateVariables(ctx),
+      get: (_ctx) => buildDateVariables(),
       cache: false,
     });
   }
 }
 
+/**
+ * 请求级上下文：从 Koa-like 上下文中映射基础信息。
+ * - user（缓存）、roleName、locale、ip、headers、query、params
+ */
 export class HttpRequestContext extends ServerBaseContext {
-  constructor(
-    private koaCtx: Context,
-    private options?: {
-      record?: {
-        dataSourceKey?: string;
-        collection?: string; // collection/ resource name
-        filterByTk?: any;
-        fields?: string[];
-        appends?: string[];
-      };
-    },
-  ) {
+  constructor(private koaCtx: ResourcerContext) {
     super();
 
+    // TODO: user 也是一种 record，因此可以考虑复用 record 变量的注册方式，不过不需要传参
     this.defineProperty('user', { get: async () => this.koaCtx?.auth?.user, cache: true });
     this.defineProperty('roleName', { value: this.koaCtx?.auth?.role });
     this.defineProperty('locale', { value: this.koaCtx?.getCurrentLocale?.() });
@@ -156,14 +182,17 @@ export class HttpRequestContext extends ServerBaseContext {
     this.defineProperty('headers', { value: this.koaCtx?.headers });
     this.defineProperty('query', { value: this.koaCtx?.request?.query });
     this.defineProperty('params', { value: _.get(this.koaCtx, 'action.params') });
-
-    // record variable moved to variables registry; defined dynamically per usage
   }
 }
 
 // 默认只允许公开前缀的环境变量透出到模板上下文
 const DEFAULT_ENV_PREFIXES = ['PUBLIC_', 'NEXT_PUBLIC_', 'NCB_PUBLIC_'];
 
+/**
+ * 过滤环境变量，仅保留指定前缀的键。
+ * @param env 环境变量对象
+ * @param allowedPrefixes 允许的前缀列表
+ */
 function filterEnv(env: Record<string, any>, allowedPrefixes: string[] = DEFAULT_ENV_PREFIXES) {
   try {
     const out: Record<string, any> = {};
@@ -178,14 +207,17 @@ function filterEnv(env: Record<string, any>, allowedPrefixes: string[] = DEFAULT
   }
 }
 
-function buildDateVariables(ctx: any) {
+/**
+ * 构建日期快捷变量集合（依据服务端时区）。
+ */
+function buildDateVariables() {
   // 使用服务端时区
   const timezone = getServerTimezone();
   const now = new Date().toISOString();
 
   // 基于现有工具获取日期变量集合
   const base = getDateVars() as Record<string, any>;
-  // 对齐客户端：补充 "前天"
+  // 补充 "前天"
   base.dayBeforeYesterday = toUnit('day', -2);
 
   const out: Record<string, any> = {};
@@ -199,6 +231,9 @@ function buildDateVariables(ctx: any) {
   return out;
 }
 
+/**
+ * 获取服务端时区：优先读取 DB_TIMEZONE/TZ，回退到本地时区偏移。
+ */
 function getServerTimezone(): string {
   // 优先使用环境变量 DB_TIMEZONE 或 TZ
   const tzEnv = process?.env?.DB_TIMEZONE || process?.env?.TZ;

@@ -10,22 +10,29 @@
 import 'ses';
 import _ from 'lodash';
 
-// Harden with SES (best-effort)
-declare const lockdown: any;
-try {
-  if (typeof lockdown === 'function') {
-    lockdown({ errorTaming: 'unsafe', consoleTaming: 'unsafe' });
-  }
-} catch (_) {
-  // ignore
-}
+// TODO: 是否有必要lockdown?
+// // 使用 SES 进行隔离
+// declare const lockdown: any;
+// try {
+//   // 测试环境下避免执行全局 lockdown，以免冻结测试依赖（如 Vitest/Chai）
+//   const env = (typeof process !== 'undefined' && (process as any)?.env) ? (process as any).env : {} as any;
+//   if (typeof lockdown === 'function' && env.NODE_ENV !== 'test') {
+//     lockdown({ errorTaming: 'unsafe', consoleTaming: 'unsafe' });
+//   }
+// } catch (_) {
+//   // ignore
+// }
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
 /**
- * Server-side JSON template resolver for {{ ... }} placeholders.
- * Supports ctx path expressions only, e.g. {{ ctx.user.id }}, {{ ctx.record.roles[0].name }}.
- * Unsupported expressions are preserved as-is.
+ * 解析 JSON 模板中形如 {{ ... }} 的占位符（服务端解析）。
+ * 仅支持以 ctx 开头的路径与表达式（如：{{ ctx.user.id }}、{{ ctx.record.roles[0].name }}）。
+ * 无法解析或不受支持的表达式将原样保留。
+ *
+ * @param template 要解析的对象/数组/字符串模板
+ * @param ctx 变量上下文（实现了所需属性/方法的代理对象）
+ * @returns 解析后的结果，与输入结构相同
  */
 export async function resolveJsonTemplate(template: JSONValue, ctx: any): Promise<any> {
   const compile = async (source: any): Promise<any> => {
@@ -62,7 +69,7 @@ async function replacePlaceholders(input: string, ctx: any) {
   return result;
 }
 
-// Evaluate full JS expression in SES, rewriting ctx paths into await __get(var, path)
+// 在 SES 沙箱中执行完整的 JS 表达式；在此之前会将 ctx.* 访问改写为 await __get(var, path)
 async function evaluate(expr: string, ctx: any) {
   try {
     const transformed = preprocessExpression(expr.trim());
@@ -79,6 +86,7 @@ async function evaluate(expr: string, ctx: any) {
 }
 
 // __get(varName, pathString?) -> Promise<any>
+// 从 ctx 中获取指定变量并按路径取值（支持异步）。
 async function getAtPath(ctx: any, varName: string, path?: string) {
   try {
     // base may be Promise; wait once
@@ -92,7 +100,13 @@ async function getAtPath(ctx: any, varName: string, path?: string) {
   }
 }
 
-// Turn ctx.user.id + 1 into (await __get('user','.id')) + 1
+/**
+ * 将表达式中的 ctx 访问改写为内部 __get 调用。
+ * 例如：ctx.user.id + 1 => (await __get('user', '.id')) + 1
+ *
+ * @param expression 原始表达式字符串
+ * @returns 改写后的表达式字符串
+ */
 export function preprocessExpression(expression: string): string {
   let out = '';
   let i = 0;

@@ -14,11 +14,10 @@
  *
  * Dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  */
-
-import type { Context } from '@nocobase/actions';
 import _ from 'lodash';
 import { HttpRequestContext } from '../template/contexts';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { ResourcerContext } from '@nocobase/resourcer';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -34,7 +33,7 @@ export interface VariableDef {
   name: string; // e.g. 'record'
   scope: VarScope;
   requiredParams?: RequiredParamSpec[]; // for validation
-  attach: (ctx: HttpRequestContext, koaCtx: Context, params?: any, usage?: VarUsage) => Promise<void> | void;
+  attach: (ctx: HttpRequestContext, koaCtx: ResourcerContext, params?: any, usage?: VarUsage) => Promise<void> | void;
 }
 
 export type VarUsage = {
@@ -82,6 +81,9 @@ class VariableRegistry {
                 const rest = mm[3] || '';
                 usage[varName].push(`${first}${rest}`);
               }
+            } else if (after.startsWith('(')) {
+              // method call: ctx.twice(21) -> record usage to trigger attach
+              if (!usage[varName].length) usage[varName].push('');
             }
           }
           // also capture top-level bracket var: ctx["record"].roles[0].name
@@ -100,6 +102,8 @@ class VariableRegistry {
                 const rest = mm[3] || '';
                 usage[varName].push(`${first}${rest}`);
               }
+            } else if (after.startsWith('(')) {
+              if (!usage[varName].length) usage[varName].push('');
             }
           }
         }
@@ -113,10 +117,7 @@ class VariableRegistry {
     return usage;
   }
 
-  validate(
-    template: JSONValue,
-    contextParams: any,
-  ): { ok: boolean; missing?: string[] } {
+  validate(template: JSONValue, contextParams: any): { ok: boolean; missing?: string[] } {
     const usage = this.extractUsage(template);
     const missing: string[] = [];
     for (const varName of Object.keys(usage)) {
@@ -133,7 +134,12 @@ class VariableRegistry {
     return { ok: missing.length === 0, missing: missing.length ? missing : undefined };
   }
 
-  async attachUsedVariables(ctx: HttpRequestContext, koaCtx: Context, template: JSONValue, contextParams: any) {
+  async attachUsedVariables(
+    ctx: HttpRequestContext,
+    koaCtx: ResourcerContext,
+    template: JSONValue,
+    contextParams: any,
+  ) {
     const usage = this.extractUsage(template);
     for (const varName of Object.keys(usage)) {
       const def = this.get(varName);
@@ -144,103 +150,59 @@ class VariableRegistry {
   }
 }
 
+/** 变量注册表（全局单例） */
 export const variables = new VariableRegistry();
 
-// Built-ins: record
-variables.register({
-  name: 'record',
-  scope: 'request',
-  requiredParams: [
-    { name: 'collection', required: true },
-    { name: 'filterByTk', required: true },
-    { name: 'dataSourceKey', required: false, defaultValue: 'main' },
-    { name: 'fields', required: false },
-    { name: 'appends', required: false },
-  ],
-  attach: (flowCtx, koaCtx, params, usage) => {
-    // generate appends from usage if not provided: first segment after record.
-    let generatedAppends: string[] | undefined;
-    let generatedFields: string[] | undefined;
-    const paths = usage?.record || [];
-    if (!params?.appends && Array.isArray(paths) && paths.length > 0) {
-      const set = new Set<string>();
-      for (const p of paths) {
-        const seg = p.split(/\.|\[/)[0]; // 'roles[0].name' -> 'roles'
-        if (seg && seg !== 'id') set.add(seg);
-      }
-      if (set.size > 0) generatedAppends = Array.from(set);
-    }
-    if (!params?.fields && Array.isArray(paths) && paths.length > 0) {
-      const fieldSet = new Set<string>(['id']);
-      for (const p of paths) {
-        // collect top-level scalars, e.g., 'name' from 'name' (no further dot/bracket)
-        if (!p.includes('.') && !p.includes('[')) {
-          const seg = p.split(/\.|\[/)[0];
-          if (seg) fieldSet.add(seg);
-        }
-      }
-      if (fieldSet.size > 0) generatedFields = Array.from(fieldSet);
-    }
+// record 类变量的通用参数规格
+const recordRequiredParams: RequiredParamSpec[] = [
+  { name: 'collection', required: true },
+  { name: 'filterByTk', required: true },
+  { name: 'dataSourceKey', required: false, defaultValue: 'main' },
+  { name: 'fields', required: false },
+  { name: 'appends', required: false },
+];
 
-    flowCtx.defineProperty('record', {
-      get: async () => {
-        // explicit params
-        if (params?.collection && typeof params?.filterByTk !== 'undefined') {
-          const dataSourceKey = params?.dataSourceKey || 'main';
-          const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-          const cm = ds.collectionManager as SequelizeCollectionManager;
-          if (!cm?.db) return undefined;
-          const repo = cm.db.getRepository(params.collection);
-          const rec = await repo.findOne({
-            filterByTk: params.filterByTk,
-            fields: params.fields || generatedFields,
-            appends: params.appends || generatedAppends,
-          });
-          return rec ? rec.toJSON() : undefined;
-        }
-        // missing explicit params -> do not fallback; validation should block earlier
-        return undefined;
-      },
-      cache: true,
-    });
-  },
-});
+/**
+ * 从使用路径推断查询所需的 fields 与 appends。
+ * @param paths 使用到的子路径数组
+ * @param params 显式参数（仅用于兼容签名）
+ */
+function inferSelectsFromUsage(paths: string[] = [], params?: any) {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    return { generatedAppends: undefined, generatedFields: undefined };
+  }
 
-// Built-ins: parentRecord (fetch by explicit params only)
-(['parentRecord', 'popupRecord', 'parentPopupRecord'] as const).forEach((varName) => {
+  const appendSet = new Set<string>();
+  const fieldSet = new Set<string>();
+
+  for (const p of paths) {
+    const seg = p.split(/\.|\[/)[0];
+    if (!seg) continue;
+    // Nested access implies association/append (e.g. roles[0].name or author.company)
+    if (p.includes('.') || p.includes('[')) {
+      appendSet.add(seg);
+    } else {
+      // Top-level path implies base field selection
+      fieldSet.add(seg);
+    }
+  }
+
+  const generatedAppends = appendSet.size ? Array.from(appendSet) : undefined;
+  const generatedFields = fieldSet.size ? Array.from(fieldSet) : undefined;
+  return { generatedAppends, generatedFields };
+}
+
+/**
+ * 注册一种 record 类变量（record/parentRecord/popupRecord/parentPopupRecord）。
+ */
+function registerRecordLike(varName: 'record' | 'parentRecord' | 'popupRecord' | 'parentPopupRecord') {
   variables.register({
     name: varName,
     scope: 'request',
-    requiredParams: [
-      { name: 'collection', required: true },
-      { name: 'filterByTk', required: true },
-      { name: 'dataSourceKey', required: false, defaultValue: 'main' },
-      { name: 'fields', required: false },
-      { name: 'appends', required: false },
-    ],
+    requiredParams: recordRequiredParams,
     attach: (flowCtx, koaCtx, params, usage) => {
-      // generate appends from usage if not provided: first segment after varName.
-      let generatedAppends: string[] | undefined;
-      let generatedFields: string[] | undefined;
       const paths = usage?.[varName] || [];
-      if (!params?.appends && Array.isArray(paths) && paths.length > 0) {
-        const set = new Set<string>();
-        for (const p of paths) {
-          const seg = p.split(/\.|\[/)[0];
-          if (seg && seg !== 'id') set.add(seg);
-        }
-        if (set.size > 0) generatedAppends = Array.from(set);
-      }
-      if (!params?.fields && Array.isArray(paths) && paths.length > 0) {
-        const fieldSet = new Set<string>(['id']);
-        for (const p of paths) {
-          if (!p.includes('.') && !p.includes('[')) {
-            const seg = p.split(/\.|\[/)[0];
-            if (seg) fieldSet.add(seg);
-          }
-        }
-        if (fieldSet.size > 0) generatedFields = Array.from(fieldSet);
-      }
+      const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths, params);
 
       flowCtx.defineProperty(varName, {
         get: async () => {
@@ -252,8 +214,8 @@ variables.register({
             const repo = cm.db.getRepository(params.collection);
             const rec = await repo.findOne({
               filterByTk: params.filterByTk,
-              fields: params.fields || generatedFields,
-              appends: params.appends || generatedAppends,
+              fields: generatedFields,
+              appends: generatedAppends,
             });
             return rec ? rec.toJSON() : undefined;
           }
@@ -263,4 +225,6 @@ variables.register({
       });
     },
   });
-});
+}
+
+['record', 'parentRecord', 'popupRecord', 'parentPopupRecord'].forEach(registerRecordLike);
