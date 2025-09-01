@@ -171,6 +171,7 @@ export class PluginClientServer extends Plugin {
     });
 
     this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
+    this.app.acl.allow('desktopRoutes', 'getAccessible', 'loggedIn');
   }
 
   /**
@@ -281,6 +282,47 @@ export class PluginClientServer extends Plugin {
         });
 
         ctx.body = result;
+      }
+
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('desktopRoutes:getAccessible', async (ctx, next) => {
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
+
+      if (ctx.state.currentRoles.includes('root')) {
+        ctx.body = await desktopRoutesRepository.findOne({
+          tree: true,
+          sort: 'sort',
+          ...ctx.action.params,
+        });
+        return await next();
+      }
+
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
+        appends: ['desktopRoutes'],
+      });
+
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
+
+      if (desktopRoutesId && desktopRoutesId.length > 0) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+
+        // 将权限检查与用户提供的 filter 合并
+        const result = await desktopRoutesRepository.findOne({
+          filter: {
+            ...filter,
+            id: ids,
+          },
+          ...ctx.action.params,
+        });
+
+        ctx.body = result;
+      } else {
+        ctx.body = null;
       }
 
       await next();
