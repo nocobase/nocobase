@@ -63,6 +63,10 @@ const AddActionToolbarComponent = ({ model }) => {
 };
 
 export class TableActionsColumnModel extends TableCustomColumnModel {
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>

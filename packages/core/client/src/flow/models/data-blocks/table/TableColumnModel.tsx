@@ -41,6 +41,10 @@ export class TableColumnModel extends CollectionFieldItem {
     return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
   }
 
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {

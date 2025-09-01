@@ -19,14 +19,11 @@ import {
   escapeT,
   FlowModel,
   FlowModelContext,
-  MENU_KEYS,
   MultiRecordResource,
   SingleRecordResource,
-  SubModelItem,
 } from '@nocobase/flow-engine';
 import { Result } from 'antd';
 import _, { capitalize } from 'lodash';
-import dataSource from 'packages/core/client/docs/zh-CN/core/flow-models/demos/data-source';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockItemCard } from '../common/BlockItemCard';
@@ -209,10 +206,23 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   isManualRefresh = false;
 
   static async defineChildren(ctx: FlowModelContext) {
+    const createModelOptions = (options) => {
+      if (!this.meta?.createModelOptions) {
+        return options || {};
+      }
+      if (typeof this.meta.createModelOptions === 'function') {
+        const defaults = this.meta.createModelOptions(ctx);
+        return _.merge({}, defaults, options);
+      }
+      return _.merge({}, this.meta.createModelOptions, options);
+    };
+    const genKey = (key) => {
+      return this.name + key;
+    };
     const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
     const dataSources = ctx.dataSourceManager.getDataSources().map((dataSource) => {
       return {
-        key: dataSource.key,
+        key: genKey(`ds-${dataSource.key}`),
         label: dataSource.displayName,
         children: (ctx) => {
           return dataSource.getCollections().map((collection) => {
@@ -221,16 +231,16 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               collectionName: collection.name,
             };
             return {
-              key: `${dataSource.key}.${collection.name}`,
+              key: genKey(`ds-${dataSource.key}.${collection.name}`),
               label: collection.title,
               useModel: this.name,
-              createModelOptions: {
+              createModelOptions: createModelOptions({
                 stepParams: {
                   resourceSettings: {
                     init: initOptions,
                   },
                 },
-              },
+              }),
             };
           });
         },
@@ -249,7 +259,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       const initOptions = {
         dataSourceKey,
         collectionName,
-        filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+        // filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
       };
       if (associationName) {
         initOptions['associationName'] = associationName;
@@ -257,19 +267,19 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       }
       return [
         {
-          key: 'current',
+          key: genKey('current-collection'),
           label: 'Current collection',
           useModel: this.name,
-          createModelOptions: {
+          createModelOptions: createModelOptions({
             stepParams: {
               resourceSettings: {
                 init: initOptions,
               },
             },
-          },
+          }),
         },
         {
-          key: 'others',
+          key: genKey('others-collections'),
           label: 'Other collections',
           children: children(ctx),
         },
@@ -277,7 +287,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     }
     const items = [
       {
-        key: 'associated',
+        key: genKey('associated'),
         label: 'Associated records',
         children: () => {
           const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
@@ -289,22 +299,22 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               sourceId: '{{ctx.view.inputArgs.filterByTk}}',
             };
             return {
-              key: field.name,
+              key: genKey(`associated-${field.name}`),
               label: field.title,
               useModel: this.name,
-              createModelOptions: {
+              createModelOptions: createModelOptions({
                 stepParams: {
                   resourceSettings: {
                     init: initOptions,
                   },
                 },
-              },
+              }),
             };
           });
         },
       },
       {
-        key: 'others',
+        key: genKey('others-records'),
         label: 'Other records',
         children: children(ctx),
       },
@@ -319,10 +329,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
       }
       items.unshift({
-        key: 'current',
+        key: genKey('current-record'),
         label: 'Current record',
         useModel: this.name,
-        createModelOptions: {
+        createModelOptions: createModelOptions({
           stepParams: {
             resourceSettings: {
               init: {
@@ -332,7 +342,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               },
             },
           },
-        },
+        }),
       } as any);
     }
     return items;
