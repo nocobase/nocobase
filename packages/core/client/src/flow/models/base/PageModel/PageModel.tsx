@@ -20,8 +20,9 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
   escapeT,
+  useFlowContext,
 } from '@nocobase/flow-engine';
-import { Tabs } from 'antd';
+import { Switch, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { ReactNode } from 'react';
 import { BasePageTabModel } from '../PageTabModel';
@@ -165,13 +166,17 @@ PageModel.registerFlow({
           type: 'boolean',
           title: escapeT('Enable tabs'),
           'x-decorator': 'FormItem',
-          'x-component': 'Switch',
+          'x-component': (props) => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const ctx = useFlowContext();
+            return <Switch {...props} value={undefined} defaultValue={ctx.currentFlow.currentRoute.enableTabs} />;
+          },
         },
       },
       defaultParams(ctx) {
         return {
           displayTitle: true,
-          enableTabs: false,
+          enableTabs: ctx.currentFlow.currentRoute.enableTabs,
         };
       },
       async handler(ctx, params) {
@@ -181,7 +186,7 @@ PageModel.registerFlow({
         } else {
           ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
         }
-        ctx.model.setProps('enableTabs', params.enableTabs);
+        ctx.model.setProps('enableTabs', ctx.currentFlow.currentRoute.enableTabs);
 
         if (ctx.model.context.closable) {
           ctx.model.setProps('headerStyle', {

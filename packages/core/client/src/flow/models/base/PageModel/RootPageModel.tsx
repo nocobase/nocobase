@@ -16,13 +16,16 @@ export class RootPageModel extends PageModel {
   async saveStepParams() {
     await super.saveStepParams();
     // 更新路由
-    this.context.api.request({
+    await this.context.api.request({
       url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
       method: 'post',
       data: {
         enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
       },
     });
+
+    // 触发 UI 刷新
+    this.context.currentFlow.refreshDesktopRoutes();
   }
 
   async handleDragEnd(event: DragEndEvent) {

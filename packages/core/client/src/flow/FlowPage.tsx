@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useCurrentRoute, useMobileLayout } from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
@@ -41,6 +41,7 @@ export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
   const currentRoute = useCurrentRoute();
+  const { refresh } = useAllAccessDesktopRoutes();
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
@@ -71,7 +72,10 @@ export const FlowRoute = () => {
     routeModel.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-  }, [routeModel, currentRoute]);
+    routeModel.context.defineProperty('refreshDesktopRoutes', {
+      get: () => refresh,
+    });
+  }, [routeModel, currentRoute, refresh]);
 
   useEffect(() => {
     const dispose = reaction(
