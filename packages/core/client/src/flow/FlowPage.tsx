@@ -49,6 +49,7 @@ export const FlowRoute = () => {
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
   const isStepNavigatingRef = useRef(false);
+  const hasStepNavigatedRef = useRef(false);
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -93,7 +94,7 @@ export const FlowRoute = () => {
         const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
         // 特殊处理：当通过一个多级 url 打开时，需要把这个 url 分成多步，然后逐步打开。这样做是为了能在点击返回按钮时返回到上一级
-        if (prevViewListRef.current.length === 0 && viewList.length > 1) {
+        if (prevViewListRef.current.length === 0 && viewList.length > 1 && !hasStepNavigatedRef.current) {
           const navigateTo = (index: number) => {
             if (!viewList[index]) {
               return;
@@ -121,6 +122,7 @@ export const FlowRoute = () => {
 
           navigateTo(0);
           isStepNavigatingRef.current = true;
+          hasStepNavigatedRef.current = true;
           return;
         }
 
