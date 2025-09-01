@@ -141,32 +141,34 @@ export interface BuildFieldChildrenOptions {
   useModel: string;
   fieldUseModel?: string | ((field: any) => string);
   collection?: Collection;
-  associationName?: string;
+  associationPathName?: string;
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel, associationName } = options;
+  const { useModel, fieldUseModel, associationPathName } = options;
   const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
-
   for (const f of fields) {
     if (!f?.options?.interface) continue;
-    const fieldPath = f.name;
+    const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FormFieldModel';
     const stepPayload = {
       dataSourceKey: collection.dataSourceKey,
       collectionName: collection.name,
-      fieldPath,
-      associationName,
+      fieldPath: f.name,
+      associationPathName,
     };
 
     children.push({
       key: fieldPath,
       label: f.title,
-      toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
+      toggleable: (subModel) => {
+        const { associationPathName, fieldPath: fieldName } = subModel.getStepParams('fieldSettings', 'init') || {};
+        return (associationPathName ? `${associationPathName}.${fieldName}` : fieldName) === fieldPath;
+      },
       useModel: useModel,
       createModelOptions: () => ({
         use: useModel,

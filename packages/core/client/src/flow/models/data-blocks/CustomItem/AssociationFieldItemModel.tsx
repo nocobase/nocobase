@@ -7,65 +7,59 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { FlowModel, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { TableModel } from '../table/TableModel';
 
 export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = ctx.model.context.blockModel instanceof TableModel ? 'TableColumnModel' : 'DetailItemModel';
-    const filterToOneAssociationFields = (collection) => {
-      return collection.getFields().filter((field) => ['oho', 'obo', 'm2o'].includes(field.interface));
-    };
 
-    const buildAssociationFieldChildren = (field, useModel: string) => {
-      return buildWrapperFieldChildren(ctx, {
+    const getToOneFields = (collection) =>
+      collection.getFields().filter((field) => ['oho', 'obo', 'm2o'].includes(field.interface));
+
+    const buildAssociationFieldChildren = (field, useModel: string, associationPath: string) =>
+      buildWrapperFieldChildren(ctx, {
         collection: field.targetCollection,
         useModel: itemModel,
         fieldUseModel: (f) => f.getFirstSubclassNameOf(useModel) || useModel,
-        associationName: field.name,
+        associationPathName: associationPath,
       });
-    };
 
-    const processAssociationFields = (fields, level = 1) => {
-      return fields.map((field) => {
-        const key = `${field.name}-${field.collectionName}-${level}`;
+    const processAssociationFields = (fields, level = 1, pathPrefix?: string): any[] =>
+      fields.map((field) => {
+        const keyBase = `${field.name}-${field.collectionName}-${level}`;
+        const associationPath = pathPrefix ? `${pathPrefix}.${field.name}` : field.name;
 
-        const child: any[] = [];
-
-        child.push({
-          key: `${key}-collectionField`,
-          label: '',
-          type: 'group',
-          children: buildAssociationFieldChildren(field, 'ReadPrettyFieldModel'),
-        });
+        const children: any[] = [
+          {
+            key: `${keyBase}-collectionField`,
+            label: '',
+            type: 'group',
+            children: buildAssociationFieldChildren(field, 'ReadPrettyFieldModel', associationPath),
+          },
+        ];
 
         if (level < 2) {
-          const targetAssociationFields = filterToOneAssociationFields(field.targetCollection);
-
-          if (targetAssociationFields.length > 0) {
-            const associationChildren = processAssociationFields(targetAssociationFields, level + 1); // Recursion to next level
-
-            child.push({
-              key: `${key}-associationField`,
+          const nestedFields = getToOneFields(field.targetCollection);
+          if (nestedFields.length) {
+            children.push({
+              key: `${keyBase}-associationField`,
               label: ctx.t('Display association fields'),
               type: 'group',
-              children: associationChildren,
+              children: processAssociationFields(nestedFields, level + 1, associationPath),
             });
           }
         }
 
         return {
-          key,
+          key: keyBase,
           label: ctx.t(field.title),
-          children: child,
+          children,
         };
       });
-    };
 
-    // Start by processing the first level of fields
-    const toOneAssociationFields = filterToOneAssociationFields(ctx.model.context.blockModel.collection);
-    return processAssociationFields(toOneAssociationFields);
+    const rootFields = getToOneFields(ctx.model.context.blockModel.collection);
+    return processAssociationFields(rootFields);
   }
 }
 

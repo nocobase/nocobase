@@ -134,7 +134,7 @@ export class TableColumnModel extends FieldModel {
             <FormItem
               key={field.uid}
               {...this.props}
-              value={value || record?.[this.associationName]?.[this.fieldPath]}
+              value={value || record?.[this.associationPathName]?.[this.fieldPath]}
               noStyle={true}
             >
               <FieldModelRenderer model={fork} />

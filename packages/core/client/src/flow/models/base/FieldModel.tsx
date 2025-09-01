@@ -21,7 +21,7 @@ export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
   fieldPath: string;
-  associationName?: string;
+  associationPathName?: string;
 }
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
@@ -57,8 +57,8 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
     return this.getFieldSettingsInitParams().fieldPath;
   }
 
-  get associationName(): string {
-    return this.getFieldSettingsInitParams().associationName;
+  get associationPathName(): string {
+    return this.getFieldSettingsInitParams().associationPathName;
   }
 
   get collectionField() {
@@ -75,7 +75,7 @@ FieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
-        const { dataSourceKey, collectionName, fieldPath } = params;
+        const { dataSourceKey, collectionName, fieldPath, associationPathName } = params;
         if (!Object.keys(params).length) {
           return;
         }
@@ -94,6 +94,9 @@ FieldModel.registerFlow({
         }
         if (!ctx.model.parent) {
           throw new Error('FieldModel must have a parent model');
+        }
+        if (associationPathName) {
+          blockModel.addAppends(associationPathName);
         }
         blockModel.addAppends(fieldPath);
       },
