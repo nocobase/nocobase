@@ -11,6 +11,9 @@ import _ from 'lodash';
 import { PageModel } from './PageModel';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { DragEndEvent } from '@dnd-kit/core';
+import { escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { Switch } from 'antd';
+import React from 'react';
 
 export class RootPageModel extends PageModel {
   async saveStepParams() {
@@ -95,6 +98,84 @@ RootPageModel.registerFlow({
             },
           });
           ctx.model.addSubModel('tabs', model);
+        }
+      },
+    },
+  },
+});
+
+// 覆盖 PageModel 注册的流
+RootPageModel.registerFlow({
+  key: 'pageSettings',
+  title: escapeT('Page settings'),
+  steps: {
+    general: {
+      title: escapeT('Edit page'),
+      uiSchema: {
+        title: {
+          type: 'string',
+          title: escapeT('Page title'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          'x-reactions': {
+            dependencies: ['displayTitle'],
+            fulfill: {
+              state: {
+                visible: '{{$deps[0]}}',
+              },
+            },
+          },
+        },
+        displayTitle: {
+          type: 'boolean',
+          title: escapeT('Display page title'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+        },
+        enableTabs: {
+          type: 'boolean',
+          title: escapeT('Enable tabs'),
+          'x-decorator': 'FormItem',
+          'x-component': (props) => {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const ctx = useFlowContext();
+            return <Switch {...props} value={undefined} defaultValue={ctx.currentFlow.currentRoute.enableTabs} />;
+          },
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          displayTitle: true,
+          enableTabs: ctx.currentFlow.currentRoute.enableTabs,
+        };
+      },
+      async handler(ctx, params) {
+        ctx.model.setProps('displayTitle', params.displayTitle);
+        if (!ctx.model.context.closable) {
+          ctx.model.setProps('title', ctx.t(params.title || ctx.model.context.currentFlow.currentRoute?.title));
+        } else {
+          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+        }
+        ctx.model.setProps('enableTabs', ctx.currentFlow.currentRoute.enableTabs);
+
+        if (ctx.model.context.closable) {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.themeToken.colorBgLayout,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.themeToken.colorBgLayout,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
+        } else {
+          ctx.model.setProps('headerStyle', {
+            backgroundColor: ctx.themeToken.colorBgContainer,
+          });
+          ctx.model.setProps('tabBarStyle', {
+            backgroundColor: ctx.themeToken.colorBgContainer,
+            paddingInline: 16,
+            marginBottom: 0,
+          });
         }
       },
     },
