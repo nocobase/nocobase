@@ -103,5 +103,6 @@
   "invoke-status-error": "error",
   "invoke-status-success": "success",
   "Image (send via URL)": "Image (send via URL)",
-  "Image (send via Base64)": "Image (send via Base64)"
+  "Image (send via Base64)": "Image (send via Base64)",
+  "AI is thinking": "{{ nickname }} is thinking..."
 }
