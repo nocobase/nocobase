@@ -26,11 +26,11 @@ export class RootPageModel extends PageModel {
   }
 
   async handleDragEnd(event: DragEndEvent) {
-    const activeModel = this.flowEngine.getModel(event.active.id as string);
-    const overModel = this.flowEngine.getModel(event.over.id as string);
+    const activeModel = this.flowEngine.getModel(event.active?.id as string);
+    const overModel = this.flowEngine.getModel(event.over?.id as string);
 
     if (!activeModel || !overModel) {
-      throw new Error('Invalid drag event: missing model');
+      return;
     }
 
     await this.context.api.request({
