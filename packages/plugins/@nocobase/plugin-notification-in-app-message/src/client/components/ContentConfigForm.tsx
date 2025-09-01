@@ -10,7 +10,7 @@
 import React from 'react';
 import { SchemaComponent, css } from '@nocobase/client';
 import { useLocalTranslation } from '../../locale';
-import { tval } from '@nocobase/utils/client';
+import { getConfigFormCommonFieldset } from './configFormCommonFieldset';
 
 export const ContentConfigForm = ({ variableOptions }) => {
   const { t } = useLocalTranslation();
@@ -19,68 +19,7 @@ export const ContentConfigForm = ({ variableOptions }) => {
       scope={{ t }}
       schema={{
         type: 'void',
-        properties: {
-          title: {
-            type: 'string',
-            required: true,
-            title: `{{t("Message title")}}`,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.TextArea',
-            'x-component-props': {
-              scope: variableOptions,
-              useTypedConstant: ['string'],
-            },
-          },
-          content: {
-            type: 'string',
-            required: true,
-            title: `{{t("Message content")}}`,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.RawTextArea',
-            'x-component-props': {
-              scope: variableOptions,
-              placeholder: 'Hi,',
-              autoSize: {
-                minRows: 10,
-              },
-            },
-          },
-          options: {
-            type: 'object',
-            properties: {
-              url: {
-                type: 'string',
-                required: false,
-                title: `{{t("Details page for desktop")}}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Variable.TextArea',
-                'x-component-props': {
-                  scope: variableOptions,
-                  useTypedConstant: ['string'],
-                  delimiters: ['{{{', '}}}'],
-                },
-                description: tval(
-                  'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
-                ),
-              },
-              mobileUrl: {
-                type: 'string',
-                required: false,
-                title: `{{t("Details page for mobile")}}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Variable.TextArea',
-                'x-component-props': {
-                  scope: variableOptions,
-                  useTypedConstant: ['string'],
-                  delimiters: ['{{{', '}}}'],
-                },
-                description: tval(
-                  'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
-                ),
-              },
-            },
-          },
-        },
+        properties: getConfigFormCommonFieldset({ variableOptions }),
       }}
     />
   );
