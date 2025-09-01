@@ -99,10 +99,10 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
   };
 }
 
-export function buildSubModelGroups(subModelBaseClasses = []) {
+export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstructor)[] = []) {
   return async (ctx: FlowModelContext) => {
-    const items = [];
-    const exclude = [];
+    const items: SubModelItem[] = [];
+    const exclude: (string | ModelConstructor)[] = [];
     for (const subModelBaseClass of subModelBaseClasses) {
       const BaseClass =
         typeof subModelBaseClass === 'string' ? ctx.engine.getModelClass(subModelBaseClass) : subModelBaseClass;
@@ -116,11 +116,25 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
       }
       exclude.push(BaseClass);
 
-      const hasChildren =
-        typeof children === 'function' ? true : Array.isArray(children) ? children.length > 0 : !!children;
-      if (!hasChildren) {
-        continue;
+      // 若 children 为函数，则预解析一层以判断是否有子项；
+      // 这样当解析结果为空数组时，可自动跳过（隐藏）该分组。
+      let hasChildren = false;
+      if (typeof children === 'function') {
+        try {
+          // 兼容签名：我们传入 ctx，但若函数不接收也不会出问题
+          const resolved = await (children as any)(ctx);
+          hasChildren = Array.isArray(resolved) ? resolved.length > 0 : !!resolved;
+        } catch (e) {
+          // 若解析异常，视为无可用子项，跳过该分组，避免空分组
+          hasChildren = false;
+        }
+      } else if (Array.isArray(children)) {
+        hasChildren = children.length > 0;
+      } else {
+        hasChildren = !!children;
       }
+
+      if (!hasChildren) continue;
       // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
       const groupLabel =
         BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
