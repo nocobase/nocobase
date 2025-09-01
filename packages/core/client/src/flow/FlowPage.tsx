@@ -48,6 +48,7 @@ export const FlowRoute = () => {
     [uid in string]: { close: () => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
+  const isStepNavigatingRef = useRef(false);
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -81,7 +82,7 @@ export const FlowRoute = () => {
     const dispose = reaction(
       () => flowEngine.context.route,
       async (newRoute) => {
-        if (newRoute.params.name !== pageUidRef.current) {
+        if (newRoute.params.name !== pageUidRef.current || isStepNavigatingRef.current) {
           return;
         }
 
@@ -96,6 +97,11 @@ export const FlowRoute = () => {
           const navigateTo = (index: number) => {
             if (!viewList[index]) {
               return;
+            }
+
+            // 在最后一步时，确保能触发路由监听函数
+            if (index === viewList.length - 1) {
+              isStepNavigatingRef.current = false;
             }
 
             if (index === 0) {
@@ -114,6 +120,7 @@ export const FlowRoute = () => {
           };
 
           navigateTo(0);
+          isStepNavigatingRef.current = true;
           return;
         }
 
