@@ -11,7 +11,6 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   buildWrapperFieldChildren,
-  Collection,
   DragHandler,
   Droppable,
   escapeT,
@@ -22,6 +21,7 @@ import {
   FlowModelProvider,
   FlowErrorFallback,
 } from '@nocobase/flow-engine';
+import { get } from 'lodash';
 import { TableColumnProps, Tooltip } from 'antd';
 import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
@@ -130,13 +130,10 @@ export class TableColumnModel extends FieldModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          const path = this.associationPathName ? `${this.associationPathName}.${this.fieldPath}` : this.fieldPath;
+          const value = get(record, path);
           return (
-            <FormItem
-              key={field.uid}
-              {...this.props}
-              value={value || record?.[this.associationPathName]?.[this.fieldPath]}
-              noStyle={true}
-            >
+            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
             </FormItem>
           );

@@ -121,6 +121,7 @@ const AddFieldColumn = ({ model }) => {
         // Only append fields for actual table field columns
         if (column instanceof TableColumnModel) {
           model.addAppends(column.fieldPath, true);
+          model.addAppends(column.associationPathName);
         }
       }}
       keepDropdownOpen
