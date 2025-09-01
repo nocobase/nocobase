@@ -61,6 +61,8 @@ export const openView = defineAction({
       return;
     }
 
+    console.log('openView: ctx.inputArgs', ctx.inputArgs);
+
     const sizeToWidthMap: Record<string, any> = {
       drawer: {
         small: '30%',
