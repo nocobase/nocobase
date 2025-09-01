@@ -11,6 +11,7 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { DatePicker as AntdDatePicker, Space, Select } from 'antd';
 import dayjs from 'dayjs';
 import { last, first } from 'lodash';
+import type { Dayjs } from 'dayjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
