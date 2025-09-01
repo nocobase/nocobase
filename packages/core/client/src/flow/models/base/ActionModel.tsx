@@ -41,20 +41,19 @@ export class ActionModel extends FlowModel {
     });
   }
 
+  onClick(event) {
+    this.dispatchEvent('click', { event });
+  }
+
   render() {
     const props = { ...this.defaultProps, ...this.props };
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
     const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
-    const handleClick = (e) => {
-      if (props.onClick) {
-        props.onClick(e);
-      }
-    };
 
     return (
       <Button
         {...props}
-        onClick={handleClick}
+        onClick={this.onClick.bind(this)}
         icon={icon}
         style={{
           ...linkStyle,
@@ -146,12 +145,6 @@ ActionModel.registerFlow({
           icon,
           type: type,
           danger,
-          onClick: (event) => {
-            console.log('Action: ctx.inputArgs', {
-              event,
-            });
-            ctx.model.dispatchEvent('click', { event });
-          },
         });
       },
     },
@@ -173,6 +166,17 @@ export class CollectionActionModel extends ActionModel {
       this,
     );
   }
+
+  onClick(event) {
+    if (!this.context.resource) {
+      this.context.message.error(escapeT('Resource is required to perform this action'));
+      return;
+    }
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource?.getSourceId(),
+    });
+  }
 }
 
 export class RecordActionModel extends ActionModel {
@@ -193,6 +197,26 @@ export class RecordActionModel extends ActionModel {
     );
   }
 
+  onClick(event) {
+    if (!this.context.record) {
+      this.context.message.error(escapeT('Record is required to perform this action'));
+      return;
+    }
+    if (!this.context.collection) {
+      this.context.message.error(escapeT('Collection is required to perform this action'));
+      return;
+    }
+    if (!this.context.resource) {
+      this.context.message.error(escapeT('Resource is required to perform this action'));
+      return;
+    }
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource.getSourceId(),
+      filterByTk: this.context.collection.getFilterByTK(this.context.record),
+    });
+  }
+
   render() {
     const props = { ...this.defaultProps, ...this.props };
 
@@ -202,6 +226,7 @@ export class RecordActionModel extends ActionModel {
     return (
       <Button
         {...props}
+        onClick={this.onClick.bind(this)}
         icon={icon}
         style={{
           ...(isLink ? { padding: 0, height: 'auto' } : {}),
@@ -232,34 +257,3 @@ export class RecordActionModel extends ActionModel {
     );
   }
 }
-
-RecordActionModel.registerFlow({
-  key: 'recordActionSettings',
-  steps: {
-    interaction: {
-      handler(ctx, params) {
-        const blockModel = ctx.blockModel;
-        if (!blockModel) {
-          throw new Error('Current block model is not set in context');
-        }
-        const { record } = ctx;
-        if (!record) {
-          ctx.exit();
-        }
-        ctx.model.setProps('onClick', (event) => {
-          const collection = ctx.collection as Collection;
-          console.log('RecordAction: ctx.inputArgs', {
-            event,
-            filterByTk: collection.getFilterByTK(record),
-          });
-          ctx.model.dispatchEvent('click', {
-            event,
-            filterByTk: collection.getFilterByTK(record),
-          });
-        });
-      },
-    },
-  },
-});
-
-//
