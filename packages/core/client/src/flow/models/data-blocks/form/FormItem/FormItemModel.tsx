@@ -50,6 +50,7 @@ export class FormItemModel extends CollectionFieldItem {
         key: field.name,
         label: field.title,
         toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'FormItemModel',
         createModelOptions: () => ({
           use: 'FormItemModel',
           stepParams: {

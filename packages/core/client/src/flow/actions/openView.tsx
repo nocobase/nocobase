@@ -8,7 +8,6 @@
  */
 
 import { defineAction, escapeT } from '@nocobase/flow-engine';
-import association from 'packages/core/database/src/operators/association';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
@@ -58,6 +57,8 @@ export const openView = defineAction({
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
+
+    console.log('openView: ctx.inputArgs', ctx.inputArgs);
 
     await ctx.viewer.open({
       type: openMode,

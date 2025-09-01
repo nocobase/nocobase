@@ -15,13 +15,13 @@ import {
   DragHandler,
   Droppable,
   escapeT,
+  FlowErrorFallback,
   FlowModel,
   FlowModelContext,
+  FlowModelProvider,
   FlowsFloatContextMenu,
   ModelRenderMode,
   useFlowSettingsContext,
-  FlowModelProvider,
-  FlowErrorFallback,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
@@ -50,6 +50,7 @@ export class TableColumnModel extends CollectionFieldItem {
         key: field.name,
         label: field.title,
         toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'TableColumnModel',
         createModelOptions: () => ({
           use: 'TableColumnModel',
           stepParams: {

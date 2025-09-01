@@ -146,6 +146,9 @@ ActionModel.registerFlow({
           type: type,
           danger,
           onClick: (event) => {
+            console.log('Action: ctx.inputArgs', {
+              event,
+            });
             ctx.model.dispatchEvent('click', { event });
           },
         });
@@ -225,6 +228,10 @@ RecordActionModel.registerFlow({
         }
         ctx.model.setProps('onClick', (event) => {
           const collection = ctx.collection as Collection;
+          console.log('RecordAction: ctx.inputArgs', {
+            event,
+            filterByTk: collection.getFilterByTK(record),
+          });
           ctx.model.dispatchEvent('click', {
             event,
             filterByTk: collection.getFilterByTK(record),

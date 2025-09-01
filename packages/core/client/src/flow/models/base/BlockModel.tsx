@@ -192,6 +192,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
   static async defineChildren(ctx: FlowModelContext) {
     const children = await buildSubModelItems(this)(ctx);
     const { collectionName, filterByTk } = ctx.view.inputArgs;
+    console.log('collectionName, filterByTk', collectionName, filterByTk);
     return children.filter((item) => {
       if (collectionName && !filterByTk) {
         const M = ctx.engine.getModelClass(item.useModel);
@@ -208,7 +209,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   isManualRefresh = false;
 
   static async defineChildren(ctx: FlowModelContext) {
-    const { dataSourceKey, collectionName, filterByTk, sourceId } = ctx.view.inputArgs;
+    const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
     const dataSources = ctx.dataSourceManager.getDataSources().map((dataSource) => {
       return {
         key: dataSource.key,
@@ -216,14 +217,14 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         children: (ctx) => {
           return dataSource.getCollections().map((collection) => {
             const initOptions = {
-              dataSourceKey: dataSource.key,
+              dataSourceKey: collection.dataSourceKey,
               collectionName: collection.name,
             };
             return {
               key: `${dataSource.key}.${collection.name}`,
               label: collection.title,
+              useModel: this.name,
               createModelOptions: {
-                use: this.name,
                 stepParams: {
                   resourceSettings: {
                     init: initOptions,
@@ -241,50 +242,100 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       }
       return dataSources;
     };
-    if (collectionName) {
-      if (filterByTk && !this.inTypes('toNew')) {
-        const items = [
-          {
-            key: 'associated',
-            label: 'Associated records',
-            children: () => {
-              const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName); // 确保 collection 已经被正确初始化
-              return collection.getAssociationFields(this.getTypes()).map((field) => {
-                return {
-                  key: field.name,
-                  label: field.title,
-                };
-              });
+    if (!collectionName) {
+      return children(ctx);
+    }
+    if (this.inTypes('toNew')) {
+      const initOptions = {
+        dataSourceKey,
+        collectionName,
+        filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+      };
+      if (associationName) {
+        initOptions['associationName'] = associationName;
+        initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
+      }
+      return [
+        {
+          key: 'current',
+          label: 'Current collection',
+          useModel: this.name,
+          createModelOptions: {
+            stepParams: {
+              resourceSettings: {
+                init: initOptions,
+              },
             },
           },
-          {
-            key: 'others',
-            label: 'Other records',
-            children: children(ctx),
-          },
-        ];
-        if (this.inTypes('toOne')) {
-          items.unshift({
-            key: 'current',
-            label: 'Current record',
-          } as any);
-        }
-        return items;
-      } else {
-        return [
-          {
-            key: 'current',
-            label: 'Current collection',
-          },
-          {
-            key: 'others',
-            label: 'Other collections',
-            children: children(ctx),
-          },
-        ];
-      }
+        },
+        {
+          key: 'others',
+          label: 'Other collections',
+          children: children(ctx),
+        },
+      ];
     }
-    return children(ctx);
+    const items = [
+      {
+        key: 'associated',
+        label: 'Associated records',
+        children: () => {
+          const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+          return collection.getAssociationFields(this.getTypes()).map((field) => {
+            const initOptions = {
+              dataSourceKey,
+              collectionName: field.target,
+              associationName: `${collection.name}.${field.name}`,
+              sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+            };
+            return {
+              key: field.name,
+              label: field.title,
+              useModel: this.name,
+              createModelOptions: {
+                stepParams: {
+                  resourceSettings: {
+                    init: initOptions,
+                  },
+                },
+              },
+            };
+          });
+        },
+      },
+      {
+        key: 'others',
+        label: 'Other records',
+        children: children(ctx),
+      },
+    ];
+    if (this.inTypes('toOne')) {
+      const initOptions = {
+        dataSourceKey,
+        collectionName,
+      };
+      if (associationName) {
+        initOptions['associationName'] = associationName;
+        initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
+      }
+      items.unshift({
+        key: 'current',
+        label: 'Current record',
+        useModel: this.name,
+        createModelOptions: {
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey,
+                collectionName,
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        },
+      } as any);
+    }
+    return items;
   }
 
   async destroy(): Promise<boolean> {
