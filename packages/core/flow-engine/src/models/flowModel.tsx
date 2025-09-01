@@ -1266,6 +1266,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns A promise that resolves when the flow settings dialog is opened
    */
   async openFlowSettings(options?: Omit<FlowSettingsOpenOptions, 'model'>) {
+    // 设置一个比较高的 zIndex，防止被覆盖
+    _.set(options, 'uiMode.props.zIndex', 9999);
+
     return this.flowEngine.flowSettings.open({
       model: this,
       ...options,

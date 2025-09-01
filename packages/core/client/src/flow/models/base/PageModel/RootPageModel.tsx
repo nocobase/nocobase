@@ -26,11 +26,11 @@ export class RootPageModel extends PageModel {
   }
 
   async handleDragEnd(event: DragEndEvent) {
-    const activeModel = this.flowEngine.getModel(event.active.id as string);
-    const overModel = this.flowEngine.getModel(event.over.id as string);
+    const activeModel = this.flowEngine.getModel(event.active?.id as string);
+    const overModel = this.flowEngine.getModel(event.over?.id as string);
 
     if (!activeModel || !overModel) {
-      throw new Error('Invalid drag event: missing model');
+      return;
     }
 
     await this.context.api.request({
@@ -55,12 +55,19 @@ RootPageModel.registerFlow({
         if (ctx.model.hasSubModel('tabs')) {
           return;
         }
-        // TODO: 加载当前页面对应的路由及子节点
         const { data } = await ctx.api.request({
-          url: `desktopRoutes:listAccessible?tree=true&sort=sort&filter[parent.schemaUid]=${ctx.model.parentId}`,
+          url: `desktopRoutes:get`,
+          params: {
+            tree: true,
+            sort: 'sort',
+            filter: {
+              schemaUid: ctx.model.parentId,
+            },
+            appends: ['children'],
+          },
         });
         ctx.model.setProps('routeId', data?.data?.[0]?.id);
-        const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.[0]?.children);
+        const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
         for (const route of routes) {
           // 过滤掉隐藏的路由
           if (route.hideInMenu) {
