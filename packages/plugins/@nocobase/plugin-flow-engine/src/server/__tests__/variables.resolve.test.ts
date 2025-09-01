@@ -13,10 +13,7 @@ import { variables } from '../variables/registry';
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   let app: MockServer;
   const execResolve = async (values: any, userId?: number) => {
-    const handler = (app.resourceManager as any).getRegisteredHandler('variables:resolve');
-    if (typeof handler !== 'function') {
-      throw new Error('variables:resolve handler not registered');
-    }
+    const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
       app,
       db: app.db,
@@ -25,13 +22,16 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
       state: {},
       getCurrentLocale: () => 'en-US',
-      action: { params: { values } },
     };
+    ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
     ctx.throw = (status: number, body: any) => {
       throw { status, body };
     };
+    action.mergeParams({ values });
+    // 为兼容服务端中间件（依赖 ctx.action.*），显式设置 ctx.action
+    ctx.action = action;
     try {
-      await handler(ctx, async () => {});
+      await action.execute(ctx, async () => {});
     } catch (e: any) {
       if (e && typeof e.status === 'number') {
         ctx.status = e.status;

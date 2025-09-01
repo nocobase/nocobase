@@ -38,7 +38,6 @@ import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
-import { getDateVars, toUnit } from '@nocobase/utils';
 import { ACL } from './acl/Acl';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
@@ -828,19 +827,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
-    this.defineMethod('renderJson', function (template: any, options?: { serverFirst?: boolean; contextParams?: any }) {
-      return (this as any).resolveJsonTemplate(template, options);
+    this.defineMethod('renderJson', function (template: any, options?: { contextParams?: any }) {
+      return this.resolveJsonTemplate(template, options);
     });
     this.defineMethod(
       'resolveJsonTemplate',
-      async function (
-        this: BaseFlowEngineContext,
-        template: any,
-        options?: { serverFirst?: boolean; contextParams?: any },
-      ) {
-        const serverFirst = options?.serverFirst !== false; // default true
+      async function (this: BaseFlowEngineContext, template: any, options?: { contextParams?: any }) {
         let serverResolved = template;
-        if (serverFirst && this.api) {
+        if (this.api) {
           try {
             const { data } = await this.api.request({
               method: 'POST',
@@ -852,7 +846,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
                 },
               },
             });
-            serverResolved = data?.data ?? data;
+            serverResolved = data?.data?.data ?? data;
           } catch (e) {
             // 后端解析失败时，回退到前端解析，不中断链路
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
@@ -938,57 +932,57 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.engine.getActions();
     });
 
-    // Date variables (for variable selector meta tree)
-    this.defineProperty('date', {
-      get: () => {
-        const vars = getDateVars() as Record<string, any>;
-        // align with client options: add dayBeforeYesterday
-        vars.dayBeforeYesterday = toUnit('day', -2);
-        const now = new Date().toISOString();
-        const out: Record<string, any> = {};
-        for (const [k, v] of Object.entries(vars)) {
-          try {
-            out[k] = typeof v === 'function' ? v({ now }) : v;
-          } catch (e) {
-            // ignore
-          }
-        }
-        return out;
-      },
-      meta: () => {
-        const title = this.t('Date variables');
-        const mk = (t: string) => ({ type: 'any', title: this.t(t) });
-        return {
-          type: 'object',
-          title,
-          properties: {
-            now: mk('Current time'),
-            dayBeforeYesterday: mk('Day before yesterday'),
-            yesterday: mk('Yesterday'),
-            today: mk('Today'),
-            tomorrow: mk('Tomorrow'),
-            lastIsoWeek: mk('Last week'),
-            thisIsoWeek: mk('This week'),
-            nextIsoWeek: mk('Next week'),
-            lastMonth: mk('Last month'),
-            thisMonth: mk('This month'),
-            nextMonth: mk('Next month'),
-            lastQuarter: mk('Last quarter'),
-            thisQuarter: mk('This quarter'),
-            nextQuarter: mk('Next quarter'),
-            lastYear: mk('Last year'),
-            thisYear: mk('This year'),
-            nextYear: mk('Next year'),
-            last7Days: mk('Last 7 days'),
-            next7Days: mk('Next 7 days'),
-            last30Days: mk('Last 30 days'),
-            next30Days: mk('Next 30 days'),
-            last90Days: mk('Last 90 days'),
-            next90Days: mk('Next 90 days'),
-          },
-        } as PropertyMeta;
-      },
-    });
+    // // Date variables (for variable selector meta tree)
+    // this.defineProperty('date', {
+    //   get: () => {
+    //     const vars = getDateVars() as Record<string, any>;
+    //     // align with client options: add dayBeforeYesterday
+    //     vars.dayBeforeYesterday = toUnit('day', -2);
+    //     const now = new Date().toISOString();
+    //     const out: Record<string, any> = {};
+    //     for (const [k, v] of Object.entries(vars)) {
+    //       try {
+    //         out[k] = typeof v === 'function' ? v({ now }) : v;
+    //       } catch (e) {
+    //         // ignore
+    //       }
+    //     }
+    //     return out;
+    //   },
+    //   meta: () => {
+    //     const title = this.t('Date variables');
+    //     const mk = (t: string) => ({ type: 'any', title: this.t(t) });
+    //     return {
+    //       type: 'object',
+    //       title,
+    //       properties: {
+    //         now: mk('Current time'),
+    //         dayBeforeYesterday: mk('Day before yesterday'),
+    //         yesterday: mk('Yesterday'),
+    //         today: mk('Today'),
+    //         tomorrow: mk('Tomorrow'),
+    //         lastIsoWeek: mk('Last week'),
+    //         thisIsoWeek: mk('This week'),
+    //         nextIsoWeek: mk('Next week'),
+    //         lastMonth: mk('Last month'),
+    //         thisMonth: mk('This month'),
+    //         nextMonth: mk('Next month'),
+    //         lastQuarter: mk('Last quarter'),
+    //         thisQuarter: mk('This quarter'),
+    //         nextQuarter: mk('Next quarter'),
+    //         lastYear: mk('Last year'),
+    //         thisYear: mk('This year'),
+    //         nextYear: mk('Next year'),
+    //         last7Days: mk('Last 7 days'),
+    //         next7Days: mk('Next 7 days'),
+    //         last30Days: mk('Last 30 days'),
+    //         next30Days: mk('Next 30 days'),
+    //         last90Days: mk('Last 90 days'),
+    //         next90Days: mk('Next 90 days'),
+    //       },
+    //     } as PropertyMeta;
+    //   },
+    // });
     this.defineMethod(
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {

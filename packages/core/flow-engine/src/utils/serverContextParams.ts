@@ -51,7 +51,6 @@ function pickDefined<T extends object>(obj: T): T {
 
 function resolvePrimaryKey(ctx: FlowContext, dataSourceKey: string, collection: string): string | undefined {
   try {
-    // @ts-ignore dataSourceManager is defined on FlowEngineContext / FlowModelContext
     const ds = ctx.dataSourceManager?.getDataSource?.(dataSourceKey || 'main');
     const col = ds?.collectionManager?.getCollection?.(collection);
     const pk = col?.getPrimaryKey?.();
