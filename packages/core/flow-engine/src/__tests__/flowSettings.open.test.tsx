@@ -53,12 +53,37 @@ vi.mock('@formily/antd-v5', () => ({
   Submit: () => 'Submit',
   Reset: () => 'Reset',
 }));
-vi.mock('antd', () => ({
-  Button: () => 'Button',
-  Space: () => 'Space',
-  Tabs: () => 'Tabs',
-  Collapse: Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' }),
-}));
+vi.mock('antd', () => {
+  const Collapse = Object.assign((props: any) => 'Collapse', { Panel: (props: any) => 'Panel' });
+  const FormItem = ({ children }: any) => children ?? 'FormItem';
+  const Form = Object.assign((props: any) => 'Form', {
+    Item: FormItem,
+    useForm: () => [{ setFieldsValue: (_: any) => {} }],
+  });
+  const Input: any = (props: any) => 'Input';
+  Input.TextArea = (props: any) => 'TextArea';
+  const InputNumber = (props: any) => 'InputNumber';
+  const Select = (props: any) => 'Select';
+  const Switch = (props: any) => 'Switch';
+  const Alert = (props: any) => 'Alert';
+  return {
+    Button: () => 'Button',
+    Space: () => 'Space',
+    Tabs: () => 'Tabs',
+    Collapse,
+    Result: () => 'Result',
+    Form,
+    Input,
+    InputNumber,
+    Select,
+    Switch,
+    Alert,
+    Typography: {
+      Paragraph: ({ children }: any) => children ?? 'Paragraph',
+      Text: ({ children }: any) => children ?? 'Text',
+    },
+  } as any;
+});
 
 // helper to locate the primary Button element in a React element tree
 const findPrimaryButton = async (node: any) => {
