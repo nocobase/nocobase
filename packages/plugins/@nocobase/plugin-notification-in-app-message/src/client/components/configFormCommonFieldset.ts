@@ -74,7 +74,7 @@ export function getConfigFormCommonFieldset({ variableOptions }) {
         },
         duration: {
           type: 'number',
-          title: `{{t("Duration")}}`,
+          title: `{{t("Close after")}}`,
           description: tval('Unit is second. Will not close automatically when set to empty.', { ns: NAMESPACE }),
           'x-decorator': 'FormItem',
           'x-component': 'InputNumber',
