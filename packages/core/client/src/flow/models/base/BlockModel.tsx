@@ -322,6 +322,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       const initOptions = {
         dataSourceKey,
         collectionName,
+        filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
       };
       if (associationName) {
         initOptions['associationName'] = associationName;
@@ -334,11 +335,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         createModelOptions: createModelOptions({
           stepParams: {
             resourceSettings: {
-              init: {
-                dataSourceKey,
-                collectionName,
-                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-              },
+              init: initOptions,
             },
           },
         }),
