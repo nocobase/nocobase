@@ -224,7 +224,12 @@ const FlowModelRendererCore: React.FC<{
         // 把自动流的错误转化为内容区错误，由内层边界兜住
         throw autoError;
       }
-      return <>{model.render()}</>;
+      const rendered = model.render();
+      // RenderFunction 模式：render 返回函数，作为组件类型渲染，避免函数作为子节点的警告
+      if (typeof rendered === 'function') {
+        return React.createElement(rendered as any);
+      }
+      return <>{rendered}</>;
     };
 
     // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
