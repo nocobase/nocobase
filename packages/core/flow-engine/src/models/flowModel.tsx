@@ -50,6 +50,7 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import { Typography } from 'antd/lib';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -1326,7 +1327,7 @@ export class ErrorFlowModel extends FlowModel {
   }
 
   public render() {
-    throw new Error(this.errorMessage);
+    return <Typography.Text type="danger">{this.errorMessage}</Typography.Text>;
   }
 }
 

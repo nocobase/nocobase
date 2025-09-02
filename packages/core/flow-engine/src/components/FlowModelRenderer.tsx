@@ -326,7 +326,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     showTitle = false,
     skipApplyAutoFlows = false,
     inputArgs,
-    showErrorFallback = false,
+    showErrorFallback = true,
     settingsMenuLevel,
     extraToolbarItems,
   }) => {
