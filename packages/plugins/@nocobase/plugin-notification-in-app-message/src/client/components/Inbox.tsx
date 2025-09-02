@@ -111,6 +111,7 @@ const InnerInbox = (props) => {
         selectedChannelNameObs.value = detail.channelName;
         notification.destroy();
       },
+      duration: detail.options.duration,
     });
   }, []);
 

@@ -173,6 +173,7 @@ function InternalPublicForm() {
   );
   const [pwd, setPwd] = useState('');
   const ctx = useContext(SchemaComponentContext);
+
   useTitle(data);
   // 设置的移动端 meta
   useEffect(() => {
@@ -258,17 +259,15 @@ function InternalPublicForm() {
             `}
           >
             <PublicPublicFormProvider dataSource={data?.data?.dataSource}>
-              <VariablesProvider>
-                <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-                  <SchemaComponent
-                    schema={data?.data?.schema}
-                    scope={{
-                      useCreateActionProps: usePublicSubmitActionProps,
-                    }}
-                    components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
-                  />
-                </SchemaComponentContext.Provider>
-              </VariablesProvider>
+              <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+                <SchemaComponent
+                  schema={data?.data?.schema}
+                  scope={{
+                    useCreateActionProps: usePublicSubmitActionProps,
+                  }}
+                  components={{ PublicFormMessageProvider: PublicFormMessageProvider, ...components }}
+                />
+              </SchemaComponentContext.Provider>
             </PublicPublicFormProvider>
             <div style={{ marginBottom: '20px' }}>
               <PoweredBy />
@@ -292,7 +291,13 @@ export function PublicFormPage() {
         },
       }}
     >
-      <InternalPublicForm />
+      <VariablesProvider
+        filterVariables={(v) => {
+          return !['$user', '$nRole', '$nToken'].includes(v.key);
+        }}
+      >
+        <InternalPublicForm />
+      </VariablesProvider>
     </GlobalThemeProvider>
   );
 }

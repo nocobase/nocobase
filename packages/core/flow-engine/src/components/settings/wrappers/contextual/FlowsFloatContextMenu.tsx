@@ -255,7 +255,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
 
 // 悬浮右键菜单组件接口
 interface ModelProvidedProps {
-  model: FlowModel;
+  model: FlowModel<any>;
   children?: React.ReactNode;
   enabled?: boolean;
   showDeleteButton?: boolean;

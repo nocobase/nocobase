@@ -99,7 +99,7 @@ export class ViewNavigation {
     // 4. 判断新的 pathname 是否与当前 location.pathname 的结尾一致。防止出现重复路径
     //    不用 this.ctx.route.pathname 是因为它的值可能不是最新的，会导致判断失误
     if (location.pathname.endsWith(newPathname)) {
-      return;
+      return this.ctx.router.navigate(-1); // 避免点击按钮没反应的问题
     }
 
     // 5. 如果新的 pathname 与当前 ctx.route.pathname 不同，则触发一次跳转。使用 push 的方式
@@ -112,6 +112,11 @@ export class ViewNavigation {
   }
 
   back() {
-    this.ctx.router.navigate(-1);
+    const pathname = generatePathnameFromViewParams(this.viewStack);
+
+    // 防止重复触发返回操作
+    if (location.pathname.endsWith(pathname)) {
+      this.ctx.router.navigate(-1);
+    }
   }
 }

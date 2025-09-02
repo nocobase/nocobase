@@ -14,51 +14,61 @@ export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = ctx.model.context.blockModel instanceof TableModel ? 'TableColumnModel' : 'DetailItemModel';
 
-    const getToOneFields = (collection: Collection) => collection.getToOneAssociationFields();
-
-    const buildAssociationFieldChildren = (field, useModel: string, associationPath: string) =>
-      buildWrapperFieldChildren(ctx, {
-        collection: field.targetCollection,
-        useModel: itemModel,
-        fieldUseModel: (f) => f.getFirstSubclassNameOf(useModel) || useModel,
-        associationPathName: associationPath,
-      });
-
-    const processAssociationFields = (fields, level = 1, pathPrefix?: string): any[] =>
-      fields.map((field) => {
-        const keyBase = `${field.name}-${field.collectionName}-${level}`;
-        const associationPath = pathPrefix ? `${pathPrefix}.${field.name}` : field.name;
-
-        const children: any[] = [
-          {
-            key: `${keyBase}-collectionField`,
-            label: 'Display collection fields',
-            type: 'group',
-            children: buildAssociationFieldChildren(field, 'ReadPrettyFieldModel', associationPath),
-          },
-        ];
-
-        if (level < 2) {
-          const nestedFields = getToOneFields(field.targetCollection);
-          if (nestedFields.length) {
-            children.push({
-              key: `${keyBase}-associationField`,
-              label: ctx.t('Display association fields'),
-              type: 'group',
-              children: processAssociationFields(nestedFields, level + 1, associationPath),
-            });
-          }
-        }
-
+    const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
+      return targetCollection.getToOneAssociationFields().map((field) => {
+        const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
         return {
-          key: keyBase,
-          label: ctx.t(field.title),
-          children,
+          key: `${fPath}-assocationField`,
+          label: field.title,
+          children: () => {
+            return [
+              {
+                key: `${fPath}-children-collectionField`,
+                label: 'Display collection fields',
+                type: 'group',
+                children: field.targetCollection.getFields().map((f) => {
+                  const fp = `${fPath}.${f.name}`;
+                  return {
+                    key: `c-${fPath}.${f.name}`,
+                    label: f.title,
+                    useModel: itemModel,
+                    toggleable: (subModel) => {
+                      const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+                      return fieldPath === fp;
+                    },
+                    createModelOptions: {
+                      stepParams: {
+                        fieldSettings: {
+                          init: {
+                            dataSourceKey: ctx.collection.dataSourceKey,
+                            collectionName: ctx.collection.name,
+                            fieldPath: fp,
+                            associationPathName: fPath,
+                          },
+                        },
+                      },
+                      subModels: {
+                        field: {
+                          use: f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+                        },
+                      },
+                    },
+                  };
+                }),
+              },
+              {
+                key: `${fPath}-children-associationField`,
+                label: 'Display association fields',
+                type: 'group',
+                children: displayAssociationFields(field.targetCollection, fPath),
+              },
+            ];
+          },
         };
       });
+    };
 
-    const rootFields = getToOneFields(ctx.model.context.blockModel.collection);
-    return processAssociationFields(rootFields);
+    return displayAssociationFields(ctx.collection);
   }
 }
 
