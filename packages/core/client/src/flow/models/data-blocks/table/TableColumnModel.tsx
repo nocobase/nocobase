@@ -14,37 +14,68 @@ import {
   DragHandler,
   Droppable,
   escapeT,
+  FlowErrorFallback,
   FlowModel,
   FlowModelContext,
-  FlowsFloatContextMenu,
-  useFlowSettingsContext,
   FlowModelProvider,
-  FlowErrorFallback,
+  FlowsFloatContextMenu,
+  ModelRenderMode,
+  useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import { TableColumnProps, Tooltip } from 'antd';
-import { ModelRenderMode } from '@nocobase/flow-engine';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
 
-export class TableColumnModel extends FieldModel {
+export class TableColumnModel extends CollectionFieldItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
   // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
+  renderHiddenInConfig(): React.ReactNode | undefined {
     return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
   }
+
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
-      useModel: 'TableColumnModel',
-      fieldUseModel: (f) => f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+    const collection = ctx.collection as Collection;
+    return collection.getFields().map((field) => {
+      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+      const fieldPath = field.name;
+      return {
+        key: field.name,
+        label: field.title,
+        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'TableColumnModel',
+        createModelOptions: () => ({
+          use: 'TableColumnModel',
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
+            },
+          },
+          subModels: {
+            field: {
+              use: fieldModel,
+            },
+          },
+        }),
+      };
     });
   }
+
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -183,21 +214,13 @@ TableColumnModel.registerFlow({
           'x-component-props': {
             placeholder: escapeT('Column title'),
           },
-          'x-reactions': (field) => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useFlowSettingsContext<FieldModel>();
-            const originTitle = model.collectionField?.title;
-            field.decoratorProps = {
-              ...field.decoratorProps,
-              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-            };
-          },
         },
       },
       defaultParams: (ctx) => ({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
+        console.log('ctx.collectionField', ctx.collectionField);
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
@@ -263,11 +286,6 @@ TableColumnModel.registerFlow({
 
 export class TableCustomColumnModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
-
-  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
-  }
 }
 
 TableCustomColumnModel.registerFlow({

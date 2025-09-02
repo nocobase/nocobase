@@ -57,6 +57,9 @@ export function TriggerWorkflowSelect(props) {
         return props.optionFilter({ key, type, config });
       }
       const trigger = workflowPlugin.triggers.get(type);
+      if (!trigger) {
+        return false;
+      }
       if (trigger.actionTriggerableScope === true) {
         return true;
       }

@@ -58,7 +58,7 @@ export default {
 
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage } = ctx.action.params.values || {};
+      const { aiEmployee, systemMessage, skillSettings } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -71,6 +71,7 @@ export default {
           aiEmployee,
           options: {
             systemMessage,
+            skillSettings,
           },
         },
       });
@@ -292,7 +293,13 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        const aiEmployee = new AIEmployee(
+          ctx,
+          employee,
+          sessionId,
+          conversation.options?.systemMessage,
+          conversation.options?.skillSettings,
+        );
         await aiEmployee.cancelToolCall();
         await aiEmployee.processMessages(messages, editingMessageId);
       } catch (err) {
@@ -350,7 +357,13 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        const aiEmployee = new AIEmployee(
+          ctx,
+          employee,
+          sessionId,
+          conversation.options?.systemMessage,
+          conversation.options?.skillSettings,
+        );
         await aiEmployee.resendMessages(messageId);
       } catch (err) {
         ctx.log.error(err);
@@ -447,7 +460,13 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        const aiEmployee = new AIEmployee(
+          ctx,
+          employee,
+          sessionId,
+          conversation.options?.systemMessage,
+          conversation.options?.skillSettings,
+        );
         await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
         ctx.log.error(err);
@@ -499,7 +518,13 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(ctx, employee, sessionId, conversation.options?.systemMessage);
+        const aiEmployee = new AIEmployee(
+          ctx,
+          employee,
+          sessionId,
+          conversation.options?.systemMessage,
+          conversation.options?.skillSettings,
+        );
         await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
       } catch (err) {
         ctx.log.error(err);

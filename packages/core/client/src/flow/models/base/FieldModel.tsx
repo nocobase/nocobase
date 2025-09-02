@@ -17,14 +17,19 @@ export type SupportedFieldInterfaces = string[] | '*' | null;
 
 export type FilterSupportedFields = (field: CollectionField) => boolean;
 
+/**
+ * @deprecated
+ */
 export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
   fieldPath: string;
-  associationPathName?: string;
 }
 
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
+  /**
+   * @deprecated
+   */
   declare field: any; // TODO: remove it after field has been refactored!! this is used to by pass build error
 
   // 设置态隐藏时的占位渲染
@@ -32,33 +37,35 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
   }
 
+  /**
+   * @deprecated
+   */
   onInit(options: any): void {
-    this.context.defineProperty('collectionField', {
-      get: () => {
-        const params = this.getFieldSettingsInitParams();
-        if (!params || !params.dataSourceKey) {
-          // 当字段初始化参数尚未就绪时，返回 undefined，避免运行期错误
-          console.error('Invalid field step parmas!', this.uid);
-          return undefined;
-        }
-        const collectionField = this.context.dataSourceManager.getCollectionField(
-          `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
-        ) as CollectionField;
-        return collectionField;
-      },
-    });
+    // this.context.defineProperty('collectionField', {
+    //   get: () => {
+    //     const params = this.getFieldSettingsInitParams();
+    //     if (!params || !params.dataSourceKey) {
+    //       // 当字段初始化参数尚未就绪时，返回 undefined，避免运行期错误
+    //       console.error('Invalid field step parmas!', this.uid);
+    //       return undefined;
+    //     }
+    //     const collectionField = this.context.dataSourceManager.getCollectionField(
+    //       `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
+    //     ) as CollectionField;
+    //     return collectionField;
+    //   },
+    // });
   }
 
   getFieldSettingsInitParams(): FieldSettingsInitParams {
     return this.getStepParams('fieldSettings', 'init');
   }
 
+  /**
+   * @deprecated
+   */
   get fieldPath(): string {
     return this.getFieldSettingsInitParams().fieldPath;
-  }
-
-  get associationPathName(): string {
-    return this.getFieldSettingsInitParams().associationPathName;
   }
 
   get collectionField() {
@@ -75,7 +82,7 @@ FieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx, params) {
-        const { dataSourceKey, collectionName, fieldPath, associationPathName } = params;
+        const { dataSourceKey, collectionName, fieldPath } = params;
         if (!Object.keys(params).length) {
           return;
         }
@@ -94,9 +101,6 @@ FieldModel.registerFlow({
         }
         if (!ctx.model.parent) {
           throw new Error('FieldModel must have a parent model');
-        }
-        if (associationPathName) {
-          blockModel.addAppends(associationPathName);
         }
         blockModel.addAppends(fieldPath);
       },

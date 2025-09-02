@@ -38,6 +38,7 @@ export const Sender: React.FC = () => {
   const attachments = useChatMessagesStore.use.attachments();
   const contextItems = useChatMessagesStore.use.contextItems();
   const systemMessage = useChatMessagesStore.use.systemMessage();
+  const skillSettings = useChatMessagesStore.use.skillSettings();
 
   const { cancelRequest, finishEditingMessage } = useChatMessageActions();
 
@@ -83,6 +84,7 @@ export const Sender: React.FC = () => {
           attachments: attachments.filter((x) => x.status === 'done'),
           workContext: contextItems,
           editingMessageId: isEditingMessage ? editingMessageId : undefined,
+          skillSettings,
         });
 
         if (isEditingMessage) {

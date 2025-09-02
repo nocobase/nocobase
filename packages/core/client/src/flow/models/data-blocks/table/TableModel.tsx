@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
@@ -23,7 +23,6 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -132,10 +131,8 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
-  protected static override filterAssociatedFields(fields: any[]): any[] {
-    const toMany = ['o2m', 'm2m'];
-    return fields.filter((f) => toMany.includes(f.interface));
-  }
+  static type = 'toMany';
+
   get resource() {
     return super.resource as MultiRecordResource;
   }

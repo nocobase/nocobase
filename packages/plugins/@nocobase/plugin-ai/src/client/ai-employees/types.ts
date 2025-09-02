@@ -26,6 +26,13 @@ export type AIEmployee = {
   userConfig?: {
     prompt?: string;
   };
+  skillSettings?: {
+    skills?: { name: string }[];
+  };
+};
+
+export type SkillSettings = {
+  skills?: string[];
 };
 
 export type Conversation = {
@@ -93,6 +100,7 @@ export type SendOptions = {
   attachments?: Attachment[];
   workContext: ContextItem[];
   editingMessageId?: string;
+  skillSettings?: SkillSettings;
 };
 
 export type ResendOptions = {
@@ -106,6 +114,9 @@ export type TaskMessage = {
   system?: string;
   attachments?: any[];
   workContext?: ContextItem[];
+  skillSettings?: {
+    skills?: string[];
+  };
 };
 
 export type Task = {

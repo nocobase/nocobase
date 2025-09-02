@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import {
   AddSubModelButton,
   DndProvider,
@@ -19,7 +20,6 @@ import {
   SingleRecordResource,
   escapeT,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
@@ -27,16 +27,15 @@ import React from 'react';
 import { RecordActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
-import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 import { FormComponent } from '../form/FormModel';
+import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
 export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
-  static override getChildrenFilters(_ctx: FlowModelContext) {
-    return { currentRecord: true };
-  }
+  static types = ['toOne', 'toMany'];
+
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
       const resource = new SingleRecordResource();
@@ -171,7 +170,7 @@ DetailsModel.registerFlow({
     },
     layout: {
       use: 'layout',
-      title: tval('Layout'),
+      title: escapeT('Layout'),
     },
   },
 });

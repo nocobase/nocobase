@@ -491,6 +491,8 @@ const AddSubModelButtonCore = function AddSubModelButton({
             await afterSubModelAdd(addedModel);
           }
 
+          await addedModel.afterAddAsSubModel();
+
           await addedModel.save();
           // Force refresh items so toggle state recalculates while dropdown stays open
           setRefreshTick((x) => x + 1);
