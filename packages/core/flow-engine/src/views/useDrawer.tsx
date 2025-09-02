@@ -117,7 +117,7 @@ export function useDrawer() {
         }, []);
 
         if (config.inputArgs?.hidden?.value && !mountedRef.current) {
-          return null;
+          return <>{props.children}</>;
         }
 
         mountedRef.current = true;
