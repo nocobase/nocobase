@@ -3,19 +3,18 @@
  * title: 错误回退 - CreateForm 字段渲染异常
  */
 
-import React from 'react';
 import {
   Application,
-  Plugin,
   CreateFormModel,
   FormFieldGridModel,
-  CollectionFieldFormItemModel,
   FormFieldModel,
+  FormItemModel,
+  Plugin,
 } from '@nocobase/client';
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
-import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
+import React from 'react';
 import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 // 一个会在渲染时抛出错误的自定义表单项
@@ -53,7 +52,7 @@ class DemoPlugin extends Plugin {
     this.flowEngine.registerModels({
       CreateFormModel,
       FormFieldGridModel,
-      CollectionFieldFormItemModel,
+      FormItemModel,
       FormFieldModel,
       ThrowFormItem,
     });
@@ -69,7 +68,7 @@ class DemoPlugin extends Plugin {
             items: [
               // 正常字段（title）
               {
-                use: 'CollectionFieldFormItemModel',
+                use: 'FormItemModel',
                 stepParams: {
                   fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'posts', fieldPath: 'title' } },
                 },

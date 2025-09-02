@@ -95,7 +95,6 @@ export class FormItemModel extends CollectionFieldItemModel {
 }
 
 FormItemModel.define({
-  icon: 'CollectionFieldFormItemModel',
   sort: 100,
 });
 
