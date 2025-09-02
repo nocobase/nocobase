@@ -91,7 +91,7 @@ CreateFormModel.registerFlow({
 CreateFormModel.define({
   label: escapeT('Form (Add new)'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'CreateFormModel',
     subModels: {

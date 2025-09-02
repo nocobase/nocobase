@@ -544,7 +544,7 @@ TableModel.define({
   label: escapeT('Table'),
   group: escapeT('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'TableModel',
     subModels: {

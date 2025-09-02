@@ -178,7 +178,7 @@ DetailsModel.registerFlow({
 DetailsModel.define({
   label: escapeT('Details'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'DetailsModel',
     subModels: {
