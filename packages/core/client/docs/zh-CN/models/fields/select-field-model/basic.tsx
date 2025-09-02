@@ -1,11 +1,4 @@
-import {
-  Application,
-  Plugin,
-  FieldModelRenderer,
-  FormItemV2 as FormItem,
-  SelectFieldModel,
-  FormComponent,
-} from '@nocobase/client';
+import { Application, FieldModelRenderer, FormComponent, FormItem, Plugin, SelectFieldModel } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Form, Select } from 'antd';
 import React from 'react';
