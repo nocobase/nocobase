@@ -48,7 +48,6 @@ export const FlowRoute = () => {
     [uid in string]: { close: () => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
-  const isStepNavigatingRef = useRef(false);
   const hasStepNavigatedRef = useRef(false);
 
   const routeModel = useMemo(() => {
@@ -83,7 +82,7 @@ export const FlowRoute = () => {
     const dispose = reaction(
       () => flowEngine.context.route,
       async (newRoute) => {
-        if (newRoute.params.name !== pageUidRef.current || isStepNavigatingRef.current) {
+        if (newRoute.params.name !== pageUidRef.current) {
           return;
         }
 
@@ -100,11 +99,6 @@ export const FlowRoute = () => {
               return;
             }
 
-            // 在最后一步时，确保能触发路由监听函数
-            if (index === viewList.length - 1) {
-              isStepNavigatingRef.current = false;
-            }
-
             if (index === 0) {
               new ViewNavigation(flowEngine.context, []).navigateTo(viewList[index].params, { replace: true });
             } else {
@@ -114,14 +108,10 @@ export const FlowRoute = () => {
               ).navigateTo(viewList[index].params);
             }
 
-            // 需要有个延迟，才能正常触发路由的跳转
-            setTimeout(() => {
-              navigateTo(index + 1);
-            }, 100);
+            navigateTo(index + 1);
           };
 
           navigateTo(0);
-          isStepNavigatingRef.current = true;
           hasStepNavigatedRef.current = true;
           return;
         }
