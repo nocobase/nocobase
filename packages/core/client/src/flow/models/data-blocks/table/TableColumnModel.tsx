@@ -20,6 +20,7 @@ import {
   FlowModelProvider,
   FlowsFloatContextMenu,
   ModelRenderMode,
+  Collection,
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { get } from 'lodash';
