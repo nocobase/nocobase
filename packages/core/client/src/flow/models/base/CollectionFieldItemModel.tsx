@@ -17,7 +17,7 @@ export interface FieldSettingsInitParams {
   fieldPath: string;
 }
 
-export class CollectionFieldItem<T = DefaultStructure> extends FlowModel<T> {
+export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T> {
   renderHiddenInConfig(): React.ReactNode | undefined {
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
   }
@@ -48,7 +48,7 @@ export class CollectionFieldItem<T = DefaultStructure> extends FlowModel<T> {
   }
 }
 
-CollectionFieldItem.registerFlow({
+CollectionFieldItemModel.registerFlow({
   key: 'fieldSettings',
   title: escapeT('Field settings'),
   steps: {

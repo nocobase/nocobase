@@ -10,13 +10,13 @@
 import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
-import { CollectionFieldItem } from '../../base/CollectionFieldItem';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailItemModel extends CollectionFieldItem<{
+export class DetailItemModel extends CollectionFieldItemModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
 }> {

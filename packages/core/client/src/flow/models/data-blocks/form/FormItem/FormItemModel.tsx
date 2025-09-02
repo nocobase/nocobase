@@ -21,7 +21,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldValidation } from '../../../../../collection-manager';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
-import { CollectionFieldItem } from '../../../base/CollectionFieldItem';
+import { CollectionFieldItemModel } from '../../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../../base/FieldModel';
 import { EditFormModel } from '../EditFormModel';
 import { FormItem } from './FormItem';
@@ -40,7 +40,7 @@ export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   return <Alert type="warning" message={messageValue} showIcon />;
 };
 
-export class FormItemModel extends CollectionFieldItem {
+export class FormItemModel extends CollectionFieldItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {

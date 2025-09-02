@@ -27,12 +27,12 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
-import { CollectionFieldItem } from '../../base/CollectionFieldItem';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
 
-export class TableColumnModel extends CollectionFieldItem {
+export class TableColumnModel extends CollectionFieldItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
