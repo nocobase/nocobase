@@ -25,7 +25,7 @@ const AddFieldColumn = ({ model }) => {
       }}
       afterSubModelAdd={async (column: TableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
-        currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
+        currentBlockModel.addAppends(`${model.collectionField.name}.${column.fieldPath}`, true);
       }}
       keepDropdownOpen
     >

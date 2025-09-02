@@ -47,7 +47,7 @@ export class TableColumnModel extends CollectionFieldItemModel {
   }
 
   static defineChildren(ctx: FlowModelContext) {
-    const collection = ctx.collection as Collection;
+    const collection = (ctx.model as any).collection || (ctx.collection as Collection);
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
       const fieldPath = field.name;
