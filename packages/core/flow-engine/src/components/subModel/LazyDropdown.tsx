@@ -266,7 +266,13 @@ const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) 
 
   useEffect(() => {
     if (inputRef.current && visible) {
-      inputRef.current.input?.focus?.();
+      const el = inputRef.current.input || inputRef.current.resizableTextArea?.textArea || inputRef.current;
+      try {
+        // 防止聚焦导致页面滚动到顶部
+        el?.focus?.({ preventScroll: true });
+      } catch (e) {
+        el?.focus?.();
+      }
     }
   }, [visible]);
 
@@ -286,6 +292,7 @@ const createSearchItem = (
   updateSearchValue: (key: string, value: string) => void,
 ) => ({
   key: `${item.key}-search`,
+  type: 'group' as const,
   label: (
     <div>
       <SearchInputWithAutoFocus
@@ -299,6 +306,10 @@ const createSearchItem = (
           updateSearchValue(searchKey, e.target.value);
         }}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          // 防止菜单聚焦丢失或页面滚动
+          e.stopPropagation();
+        }}
         size="small"
         style={{
           width: '100%',
@@ -308,7 +319,6 @@ const createSearchItem = (
       />
     </div>
   ),
-  disabled: true,
 });
 
 const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
@@ -405,6 +415,54 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   }, [menuVisible, rootItems, handleLoadChildren]);
 
   // 递归解析 items，支持 children 为同步/异步函数
+  function buildSearchChildren(
+    children: Item[],
+    item: Item,
+    keyPath: string,
+    path: string[],
+    menuVisible: boolean,
+    resolve: (items: Item[], path?: string[]) => any[],
+  ): any[] {
+    const searchKey = keyPath;
+    const currentSearchValue = searchValues[searchKey] || '';
+
+    // 递归过滤：当 child 为分组时，会继续向下过滤其 children；
+    // 仅保留自身匹配或存在匹配子项的分组。
+    const filteredChildren = currentSearchValue
+      ? (function deepFilter(items: Item[]): Item[] {
+          const searchText = currentSearchValue.toLowerCase();
+          const tryString = (v: any) => {
+            if (!v) return '';
+            return typeof v === 'string' ? v : String(v);
+          };
+          return items
+            .map((child) => {
+              const labelStr = tryString(child.label).toLowerCase();
+              const selfMatch =
+                labelStr.includes(searchText) || (child.key && String(child.key).toLowerCase().includes(searchText));
+              if (child.type === 'group' && Array.isArray(child.children)) {
+                const nested = deepFilter(child.children);
+                if (selfMatch || nested.length > 0) {
+                  return { ...child, children: nested } as Item;
+                }
+                return null;
+              }
+              return selfMatch ? child : null;
+            })
+            .filter(Boolean) as Item[];
+        })(children)
+      : children;
+
+    const resolvedFiltered = resolve(filteredChildren, [...path, item.key]);
+    const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
+    const dividerItem = { key: `${item.key}-search-divider`, type: 'divider' as const };
+
+    if (currentSearchValue && resolvedFiltered.length === 0) {
+      return [searchItem, dividerItem, createEmptyItem(keyPath, t)];
+    }
+    return [searchItem, dividerItem, ...resolvedFiltered];
+  }
+
   const resolveItems = (items: Item[], path: string[] = []): any[] => {
     return items.map((item) => {
       const keyPath = getKeyPath(path, item.key);
@@ -443,45 +501,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
         // 如果 group 启用了搜索功能，在 children 前面添加搜索框
         if (item.searchable && children) {
-          const searchKey = keyPath;
-          const currentSearchValue = searchValues[searchKey] || '';
-
-          // 过滤原始 children
-          const filteredChildren = currentSearchValue
-            ? children.filter((child) => {
-                const searchText = currentSearchValue.toLowerCase();
-
-                // 检查 label
-                const labelText = child.label;
-                let labelMatch = false;
-                if (labelText) {
-                  try {
-                    const labelStr = typeof labelText === 'string' ? labelText : String(labelText);
-                    labelMatch = labelStr.toLowerCase().includes(searchText);
-                  } catch (e) {
-                    // 如果转换失败，忽略这个匹配
-                  }
-                }
-
-                // 检查 key（通常是字段名）
-                const keyMatch = child.key && String(child.key).toLowerCase().includes(searchText);
-
-                return labelMatch || keyMatch;
-              })
-            : children;
-
-          // 重新解析过滤后的 children
-          const resolvedFilteredChildren = resolveItems(filteredChildren, [...path, item.key]);
-
-          const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
-          const dividerItem = { key: `${item.key}-search-divider`, type: 'divider' as const };
-
-          if (currentSearchValue && resolvedFilteredChildren.length === 0) {
-            const emptyItem = createEmptyItem(item.key, t);
-            groupChildren = [searchItem, dividerItem, emptyItem];
-          } else {
-            groupChildren = [searchItem, dividerItem, ...resolvedFilteredChildren];
-          }
+          groupChildren = buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems);
         }
 
         return {
@@ -494,6 +514,24 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
       if (item.type === 'divider') {
         return { type: 'divider', key: item.key };
+      }
+
+      // 非 group 的“子菜单”也支持本层级搜索：当 item.searchable = true 且存在 children 时
+      if (item.searchable && children) {
+        return {
+          key: item.key,
+          label: typeof item.label === 'string' ? t(item.label) : item.label,
+          onClick: (info: any) => {},
+          onMouseEnter: () => {
+            setOpenKeys((prev) => {
+              if (prev.has(keyPath)) return prev;
+              const next = new Set(prev);
+              next.add(keyPath);
+              return next;
+            });
+          },
+          children: buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems),
+        };
       }
 
       return {

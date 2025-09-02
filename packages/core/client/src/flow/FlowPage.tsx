@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useCurrentRoute, useMobileLayout } from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
@@ -41,12 +41,15 @@ export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
   const currentRoute = useCurrentRoute();
+  const { refresh } = useAllAccessDesktopRoutes();
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
     [uid in string]: { close: () => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
+  const isStepNavigatingRef = useRef(false);
+  const hasStepNavigatedRef = useRef(false);
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -71,13 +74,16 @@ export const FlowRoute = () => {
     routeModel.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
-  }, [routeModel, currentRoute]);
+    routeModel.context.defineProperty('refreshDesktopRoutes', {
+      get: () => refresh,
+    });
+  }, [routeModel, currentRoute, refresh]);
 
   useEffect(() => {
     const dispose = reaction(
       () => flowEngine.context.route,
       async (newRoute) => {
-        if (newRoute.params.name !== pageUidRef.current) {
+        if (newRoute.params.name !== pageUidRef.current || isStepNavigatingRef.current) {
           return;
         }
 
@@ -87,14 +93,16 @@ export const FlowRoute = () => {
         // 2. 根据视图参数获取更多信息
         const viewList = await resolveViewParamsToViewList(flowEngine, viewStack, routeModel);
 
-        // 3. 对比新旧列表，区分开需要打开和关闭的视图
-        const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
-
         // 特殊处理：当通过一个多级 url 打开时，需要把这个 url 分成多步，然后逐步打开。这样做是为了能在点击返回按钮时返回到上一级
-        if (prevViewListRef.current.length === 0 && viewList.length > 1) {
+        if (prevViewListRef.current.length === 0 && viewList.length > 1 && !hasStepNavigatedRef.current) {
           const navigateTo = (index: number) => {
             if (!viewList[index]) {
               return;
+            }
+
+            // 在最后一步时，确保能触发路由监听函数
+            if (index === viewList.length - 1) {
+              isStepNavigatingRef.current = false;
             }
 
             if (index === 0) {
@@ -113,8 +121,13 @@ export const FlowRoute = () => {
           };
 
           navigateTo(0);
+          isStepNavigatingRef.current = true;
+          hasStepNavigatedRef.current = true;
           return;
         }
+
+        // 3. 对比新旧列表，区分开需要打开和关闭的视图
+        const { viewsToClose, viewsToOpen } = getViewDiffAndUpdateHidden(prevViewListRef.current, viewList);
 
         // 4. 处理需要打开的视图
         if (viewsToOpen.length) {

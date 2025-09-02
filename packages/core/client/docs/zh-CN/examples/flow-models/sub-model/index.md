@@ -138,5 +138,12 @@ interface SubModelItem {
 
 <code src="./demos/add-sub-model-group-children.tsx"></code>
 
+### 在子菜单中启用搜索
+
+<code src="./demos/add-sub-model-submenu-search.tsx"></code>
+
+- 任何包含 `children` 的菜单项只要设置 `searchable: true`，即会在该层级显示搜索框
+- 支持同级存在 group 与非 group 的混合结构，搜索仅作用于当前层级
+
 <!-- ### 通过 CollectionBlockModel.getChildrenFilters() 限制可用Collections -->
 <!-- <code src="./demos/collection-comments-define-children.tsx"></code> -->

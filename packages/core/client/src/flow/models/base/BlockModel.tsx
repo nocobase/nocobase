@@ -128,7 +128,13 @@ function pushGroupOrFlatten(
   alwaysKeep = false,
 ) {
   if (alwaysKeep || items.length > 0) {
-    items.push({ key: `${modelName}.${menuKey}`, label, children });
+    const menuItem: SubModelItem = { key: `${modelName}.${menuKey}`, label, children };
+    // 为“选择 Collection”的子菜单开启搜索
+    if (menuKey === MENU_KEYS.OTHER_COLLECTIONS) {
+      menuItem.searchable = true;
+      menuItem.searchPlaceholder = escapeT('Search');
+    }
+    items.push(menuItem);
   } else {
     items.push(...children);
   }
@@ -235,7 +241,10 @@ function buildCollectionsMenuGroups(
 
   return groups.map((g) => ({
     key: `ds:${g.ds.key}`,
+    type: 'group' as const,
     label: g.ds.displayName || g.ds.key,
+    searchable: true,
+    searchPlaceholder: escapeT('Search'),
     children: g.cols.map((c) => makeItem(g.ds, c)),
   }));
 }
