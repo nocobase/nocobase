@@ -11,6 +11,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   buildWrapperFieldChildren,
+  Collection,
   DragHandler,
   Droppable,
   escapeT,
@@ -20,11 +21,10 @@ import {
   FlowModelProvider,
   FlowsFloatContextMenu,
   ModelRenderMode,
-  Collection,
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
-import { get } from 'lodash';
 import { TableColumnProps, Tooltip } from 'antd';
+import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
@@ -162,8 +162,7 @@ export class TableColumnModel extends CollectionFieldItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
-          const path = this.associationPathName ? `${this.associationPathName}.${this.fieldPath}` : this.fieldPath;
-          const value = get(record, path);
+          const value = get(record, this.fieldPath);
           return (
             <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />

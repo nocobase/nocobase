@@ -8,10 +8,10 @@
  */
 
 import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { get } from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
-import { get } from 'lodash';
 import { FieldModel } from '../../base/FieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
@@ -57,9 +57,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const path = this.associationPathName ? `${this.associationPathName}.${this.fieldPath}` : this.fieldPath;
-
-    const value = get(this.context.record, path);
+    const value = get(this.context.record, this.fieldPath);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
