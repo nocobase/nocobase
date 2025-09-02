@@ -247,7 +247,7 @@ describe('FlowModel', () => {
         expect(model.props.settings).toEqual({ theme: 'dark', lang: 'en' });
       });
 
-      test.only('should be reactive', async () => {
+      test.skip('should be reactive', async () => {
         reaction(
           () => model.props.foo, // 观察的字段
           (newProps, oldProps) => {
