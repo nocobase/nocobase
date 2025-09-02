@@ -418,6 +418,10 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
+  getToOneAssociationFields(): CollectionField[] {
+    return this.getAssociationFields(['toOne']);
+  }
+
   getAssociationFields(types = []): CollectionField[] {
     if (types.includes('toNew')) {
       return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));

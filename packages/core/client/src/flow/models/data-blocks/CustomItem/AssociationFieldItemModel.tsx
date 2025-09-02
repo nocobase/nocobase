@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { Collection, FlowModel, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
 import { TableModel } from '../table/TableModel';
 
 export class AssociationFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
     const itemModel = ctx.model.context.blockModel instanceof TableModel ? 'TableColumnModel' : 'DetailItemModel';
 
-    const getToOneFields = (collection) =>
-      collection.getFields().filter((field) => ['oho', 'obo', 'm2o'].includes(field.interface));
+    const getToOneFields = (collection: Collection) => collection.getToOneAssociationFields();
 
     const buildAssociationFieldChildren = (field, useModel: string, associationPath: string) =>
       buildWrapperFieldChildren(ctx, {
@@ -33,7 +32,7 @@ export class AssociationFieldItemModel extends FlowModel {
         const children: any[] = [
           {
             key: `${keyBase}-collectionField`,
-            label: '',
+            label: 'Display collection fields',
             type: 'group',
             children: buildAssociationFieldChildren(field, 'ReadPrettyFieldModel', associationPath),
           },
