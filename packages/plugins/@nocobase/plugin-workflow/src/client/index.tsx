@@ -147,7 +147,7 @@ export default class PluginWorkflowClient extends Plugin {
     });
 
     this.router.add('admin.workflow.tasks', {
-      path: '/admin/workflow/tasks/:taskType/:status/:popupId?',
+      path: '/admin/workflow/tasks/:taskType?/:status?/:popupId?',
       Component: WorkflowTasks,
     });
 
@@ -156,12 +156,12 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.addComponents({ MobileTabBarWorkflowTasksItem });
     if (mobileManager.mobileRouter) {
       const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
-      mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
-        path: '/page/workflow-tasks',
-        Component: MobileComponent,
-      });
+      // mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
+      //   path: '/page/workflow-tasks',
+      //   Component: MobileComponent,
+      // });
       mobileManager.mobileRouter.add('mobile.page.workflow.tasks.list', {
-        path: '/page/workflow-tasks/:taskType/:status/:popupId?',
+        path: '/page/workflow-tasks/:taskType?/:status?/:popupId?',
         Component: MobileComponent,
       });
     }

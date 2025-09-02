@@ -28,6 +28,7 @@ import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { FormItem } from '../../../data-blocks/form/FormItem/FormItem';
+import { TableAssociationFieldModel } from '.';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -97,7 +98,16 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   );
 });
 
-export class SubTableColumnModel extends FieldModel {
+export interface SubTableColumnModelStructor {
+  parent: TableAssociationFieldModel;
+  subModels: {
+    field: FormFieldModel;
+  };
+}
+
+export class SubTableColumnModel<
+  T extends SubTableColumnModelStructor = SubTableColumnModelStructor,
+> extends FieldModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
 
   // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
@@ -115,8 +125,24 @@ export class SubTableColumnModel extends FieldModel {
       },
     });
   }
+  // 让子表列使用父级关联模型的目标集合
+  get collection() {
+    return this.parent.collection;
+  }
+
   onInit(options: any): void {
     super.onInit(options);
+
+    // 为列级模型补充 collectionField（基于 fieldSettings.init 参数解析）
+    this.context.defineProperty('collectionField', {
+      get: () => {
+        const params = this.getFieldSettingsInitParams?.();
+        if (!params || !params.dataSourceKey) return undefined;
+        return this.context.dataSourceManager.getCollectionField(
+          `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
+        );
+      },
+    });
 
     this.context.defineProperty('resourceName', {
       get: () => {

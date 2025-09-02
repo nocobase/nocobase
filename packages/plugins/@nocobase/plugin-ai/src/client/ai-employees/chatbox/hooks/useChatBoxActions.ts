@@ -42,6 +42,7 @@ export const useChatBoxActions = () => {
   const setAttachments = useChatMessagesStore.use.setAttachments();
   const setContextItems = useChatMessagesStore.use.setContextItems();
   const setMessages = useChatMessagesStore.use.setMessages();
+  const setSkillSettings = useChatMessagesStore.use.setSkillSettings();
 
   const setOpenToolModal = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
@@ -59,6 +60,7 @@ export const useChatBoxActions = () => {
     setOpenToolModal(false);
     setActiveTool(null);
     setActiveMessageId('');
+    setSkillSettings(undefined);
   };
 
   const send = (options: SendOptions) => {
@@ -150,7 +152,7 @@ export const useChatBoxActions = () => {
       if (tasks.length === 1) {
         setMessages(msgs);
         const task = tasks[0];
-        const { userMessage, systemMessage, attachments, workContext } = await parseTask(task);
+        const { userMessage, systemMessage, attachments, workContext, skillSettings } = await parseTask(task);
         if (userMessage && userMessage.type === 'text') {
           setSenderValue(userMessage.content);
         } else {
@@ -165,6 +167,9 @@ export const useChatBoxActions = () => {
         if (systemMessage) {
           setSystemMessage(systemMessage);
         }
+        if (skillSettings) {
+          setSkillSettings(skillSettings);
+        }
         if (task.autoSend) {
           send({
             aiEmployee,
@@ -172,6 +177,7 @@ export const useChatBoxActions = () => {
             messages: [userMessage],
             attachments,
             workContext,
+            skillSettings,
           });
         }
         return;

@@ -11,6 +11,7 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { DatePicker as AntdDatePicker, Space, Select } from 'antd';
 import dayjs from 'dayjs';
 import { last, first } from 'lodash';
+import type { Dayjs } from 'dayjs';
 import React, { useState, useEffect, useRef } from 'react';
 import { getPickerFormat, getDateTimeFormat } from '@nocobase/utils/client';
 import { useTranslation } from 'react-i18next';
@@ -66,7 +67,6 @@ export const DatePicker = (props: any) => {
 
     if (isVariable(props._maxDate)) {
       maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) => {
-        console.log(dayjs(Array.isArray(result.value) ? last(result.value) : result.value));
         return dayjs(Array.isArray(result.value) ? last(result.value) : result.value);
       });
     }
@@ -81,15 +81,20 @@ export const DatePicker = (props: any) => {
     const fullTimeArr = Array.from({ length: 60 }, (_, i) => i);
 
     // disabledDate 只禁用日期，不要管时间部分
-    const disabledDate = (current) => {
+    const disabledDate = (current: Dayjs) => {
       if (!dayjs.isDayjs(current)) return false;
 
-      // 把 current 转成本地时间（不加 .utc()，因为 current 就是本地时间）
-      // 然后和 maxDateTime（同为本地时间）做比较
       const min = minDateTime ? minDateTime.startOf('day') : null;
       const max = maxDateTime ? maxDateTime.endOf('day') : null;
 
-      return (min && current.isBefore(min, 'day')) || (max && current.isAfter(max, 'day'));
+      // 只比较年月日，不管时间
+      if (min && current.startOf('day').isBefore(min)) {
+        return true;
+      }
+      if (max && current.startOf('day').isAfter(max)) {
+        return true;
+      }
+      return false;
     };
 
     const disabledTime = (current) => {
@@ -98,8 +103,7 @@ export const DatePicker = (props: any) => {
       }
 
       // current 是本地时间，转成 UTC 时间
-      const currentUtc = current.utc();
-
+      const currentUtc = current;
       // 判断是不是 minDate 和 maxDate 的同一天（UTC）
       const isCurrentMinDay = minDateTime && currentUtc.isSame(minDateTime, 'day');
       const isCurrentMaxDay = maxDateTime && currentUtc.isSame(maxDateTime, 'day');

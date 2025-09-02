@@ -1,11 +1,11 @@
 import {
   Application,
-  Plugin,
   FieldModelRenderer,
-  FormItemV2 as FormItem,
-  JsonFieldModel,
   FormComponent,
+  FormItem,
+  JsonFieldModel,
   JsonInput,
+  Plugin,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Form } from 'antd';

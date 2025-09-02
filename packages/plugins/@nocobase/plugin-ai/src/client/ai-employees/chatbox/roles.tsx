@@ -8,12 +8,15 @@
  */
 
 import React from 'react';
-import { GetProp, Popover, Avatar } from 'antd';
+import { GetProp, Popover, Avatar, Space, Spin } from 'antd';
 import { Bubble } from '@ant-design/x';
 import { AIMessage, ErrorMessage, TaskMessage, UserMessage } from './MessageRenderer';
 import { AIEmployee } from '../types';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
+import { LoadingOutlined } from '@ant-design/icons';
+import { useT } from '../../locale';
+import { AIThinking } from './AIThinking';
 
 export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
   user: {
@@ -61,4 +64,5 @@ export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
   messageRender: (msg: any) => {
     return <AIMessage msg={msg} />;
   },
+  loadingRender: () => <AIThinking nickname={aiEmployee.nickname} />,
 });

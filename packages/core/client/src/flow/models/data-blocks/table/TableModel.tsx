@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
@@ -23,7 +23,6 @@ import {
   MultiRecordResource,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
@@ -113,7 +112,7 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       key={'table-add-columns'}
-      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
+      subModelBaseClasses={['TableColumnModel', 'AssociationFieldItemModel', 'TableCustomColumnModel']}
       afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
@@ -121,6 +120,7 @@ const AddFieldColumn = ({ model }) => {
         // Only append fields for actual table field columns
         if (column instanceof TableColumnModel) {
           model.addAppends(column.fieldPath, true);
+          model.addAppends(column.associationPathName, true);
         }
       }}
       keepDropdownOpen
@@ -131,10 +131,8 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
-  protected static override filterAssociatedFields(fields: any[]): any[] {
-    const toMany = ['o2m', 'm2m'];
-    return fields.filter((f) => toMany.includes(f.interface));
-  }
+  static type = 'toMany';
+
   get resource() {
     return super.resource as MultiRecordResource;
   }
@@ -545,6 +543,8 @@ TableModel.registerFlow({
 TableModel.define({
   label: escapeT('Table'),
   group: escapeT('Content'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'TableModel',
     subModels: {

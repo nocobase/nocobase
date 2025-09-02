@@ -128,3 +128,28 @@ export function isStringOrNumber(value: any) {
 export function getKeysByPrefix(keys: string[], prefix: string) {
   return keys.filter((key) => key.startsWith(`${prefix}.`)).map((key) => key.substring(prefix.length + 1));
 }
+
+export function processIncludes(includes: any[], model: any, parentAs = '') {
+  includes.forEach((include: { association: string; include?: any[] }, index: number) => {
+    // Process current level
+    const association = model.associations[include.association];
+    if (association?.generateInclude) {
+      includes[index] = {
+        ...include,
+        ...association.generateInclude(parentAs),
+      };
+    }
+
+    // Recursively process nested includes if they exist
+    if (include.include && Array.isArray(include.include) && include.include.length > 0) {
+      // Get the associated model for the next level
+      const nextModel = association?.target;
+      if (!nextModel) {
+        return;
+      }
+      processIncludes(include.include, nextModel, parentAs ? `${parentAs}->${association.as}` : association.as);
+    }
+  });
+
+  return includes;
+}

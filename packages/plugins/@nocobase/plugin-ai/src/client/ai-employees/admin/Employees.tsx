@@ -26,6 +26,7 @@ import {
   useCancelActionProps,
   useCreateActionProps,
   useEditActionProps,
+  useDeleteActionProps,
 } from './hooks';
 import { KnowledgeBaseSettings } from './KnowledgeBaseSettings';
 
@@ -111,6 +112,7 @@ export const Employees: React.FC = () => {
           useCancelActionProps,
           useCreateActionProps,
           useEditActionProps,
+          useDeleteActionProps,
         }}
         schema={{
           type: 'void',
@@ -355,7 +357,7 @@ export const Employees: React.FC = () => {
                               title: '{{ t("Delete") }}',
                               'x-action': 'destroy',
                               'x-component': 'Action.Link',
-                              'x-use-component-props': 'useDestroyActionProps',
+                              'x-use-component-props': 'useDeleteActionProps',
                               'x-component-props': {
                                 confirm: {
                                   title: "{{t('Delete AI employee')}}",

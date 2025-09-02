@@ -46,8 +46,15 @@ export class AIEmployee {
   private ctx: Context;
   private systemMessage: string;
   private aiChatConversation: AIChatConversation;
+  private skillSettings?: Record<string, any>;
 
-  constructor(ctx: Context, employee: Model, sessionId: string, systemMessage?: string) {
+  constructor(
+    ctx: Context,
+    employee: Model,
+    sessionId: string,
+    systemMessage?: string,
+    skillSettings?: Record<string, any>,
+  ) {
     this.employee = employee;
     this.ctx = ctx;
     this.plugin = ctx.app.pm.get('ai') as PluginAIServer;
@@ -55,6 +62,7 @@ export class AIEmployee {
     this.sessionId = sessionId;
     this.systemMessage = systemMessage;
     this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
+    this.skillSettings = skillSettings;
   }
 
   async getLLMService() {
@@ -824,10 +832,17 @@ export class AIEmployee {
   }
 
   private async getTools() {
-    this.getSkills();
     const toolMap = await this.getToolMap();
     const tools = [];
-    const skills = this.getSkills();
+    let skills = this.getSkills();
+    const skillFilter = this.skillSettings?.skills;
+    if (skillFilter) {
+      if (skillFilter.length) {
+        skills = skills.filter((skill) => skillFilter.includes(skill.name));
+      } else {
+        skills = [];
+      }
+    }
     if (skills?.length) {
       for (const skill of skills) {
         const tool = toolMap.get(skill.name);

@@ -18,10 +18,10 @@ import _ from 'lodash';
 import pino from 'pino';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
+import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
-import type { ActionDefinition } from './types';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
 import { FlowModel, ForkFlowModel } from './models';
@@ -33,6 +33,7 @@ import {
   SingleRecordResource,
   SQLResource,
 } from './resources';
+import type { ActionDefinition, EventDefinition } from './types';
 import {
   extractPropertyPath,
   FlowExitException,
@@ -45,7 +46,6 @@ import { JSONValue } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import type { RecordRef } from './utils/serverContextParams';
-import { ACL } from './acl/Acl';
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -782,6 +782,10 @@ class BaseFlowEngineContext extends FlowContext {
     string,
     ActionDefinition<TModel, TCtx>
   >;
+  declare getEvents: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    EventDefinition<TModel>
+  >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
   declare api: APIClient;
@@ -805,6 +809,10 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
   declare getActions: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
     string,
     ActionDefinition<TModel, TCtx>
+  >;
+  declare getEvents: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
+    string,
+    EventDefinition<TModel>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
 }
@@ -990,6 +998,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('getActions', function (this: BaseFlowEngineContext) {
       return this.engine.getActions();
     });
+    this.defineMethod('getEvents', function (this: BaseFlowEngineContext) {
+      return this.engine.getEvents();
+    });
 
     // // Date variables (for variable selector meta tree)
     // this.defineProperty('date', {
@@ -1096,6 +1107,9 @@ export class FlowModelContext extends BaseFlowModelContext {
         this.model['_refCreated'] = true;
         return createRef<HTMLDivElement>();
       },
+    });
+    this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
+      return this.model.getEvents();
     });
     this.defineMethod('getAction', function (this: BaseFlowModelContext, name: string) {
       return this.model.getAction(name);

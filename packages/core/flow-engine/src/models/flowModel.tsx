@@ -50,6 +50,7 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import { Typography } from 'antd/lib';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -226,6 +227,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return await this.flowEngine.context.acl.aclCheck(params);
     });
   }
+
+  /**
+   * 通过 AddSubModelButton 添加为子模型后调用（子类可覆盖）
+   */
+  async afterAddAsSubModel() {}
 
   get async() {
     return this._options.async || false;
@@ -1321,7 +1327,7 @@ export class ErrorFlowModel extends FlowModel {
   }
 
   public render() {
-    throw new Error(this.errorMessage);
+    return <Typography.Text type="danger">{this.errorMessage}</Typography.Text>;
   }
 }
 

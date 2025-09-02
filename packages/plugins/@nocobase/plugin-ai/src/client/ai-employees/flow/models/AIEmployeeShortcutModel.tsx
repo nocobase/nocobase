@@ -7,22 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, Button, Spin, Popover, Card, Tag, Tooltip } from 'antd';
-import { FlowModel, defineFlow, escapeT, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import React, { useMemo, useState } from 'react';
+import { Avatar, Spin, Popover, Card, Tag } from 'antd';
+import { FlowModel, escapeT, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
-import { AIEmployee, Task, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
+import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
-import { useToken } from '@nocobase/client';
+import { RemoteSelect, useToken } from '@nocobase/client';
 import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
-import { useT } from '../../../locale';
 import { AddContextButton } from '../../AddContextButton';
 import { useField } from '@formily/react';
-import { ArrayField } from '@formily/core';
+import { ArrayField, ObjectField } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
 import { aiSelection } from '../../stores/ai-selection';
-import { AIEmployeeShortcutListModel } from './AIEmployeeShortcutListModel';
 
 const { Meta } = Card;
 
@@ -152,6 +150,48 @@ const WorkContext: React.FC = () => {
   );
 };
 
+const SkillSettings: React.FC<{
+  aiEmployeesMap: {
+    [username: string]: AIEmployee;
+  };
+}> = ({ aiEmployeesMap = {} }) => {
+  const field = useField<ObjectField>();
+  const ctx = useFlowSettingsContext();
+  const username = ctx.model.props.aiEmployee?.username;
+  const aiEmployee = aiEmployeesMap[username];
+  const defaultSkills = aiEmployee?.skillSettings?.skills?.map(({ name }) => name) ?? [];
+
+  if (field.value?.skills?.length) {
+    field.addProperty(
+      'skills',
+      field.value.skills.filter((skill) => defaultSkills.includes(skill)),
+    );
+  }
+  const handleChange = (value: string[]) => {
+    field.addProperty('skills', value);
+  };
+
+  return (
+    <RemoteSelect
+      defaultValue={field.value?.skills ?? defaultSkills}
+      onChange={handleChange}
+      manual={false}
+      multiple={true}
+      fieldNames={{
+        label: 'title',
+        value: 'name',
+      }}
+      service={{
+        resource: 'aiTools',
+        action: 'listBinding',
+        params: {
+          username,
+        },
+      }}
+    />
+  );
+};
+
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
   title: escapeT('Task settings'),
@@ -221,6 +261,13 @@ AIEmployeeShortcutModel.registerFlow({
                       type: 'array',
                       'x-decorator': 'FormItem',
                       'x-component': WorkContext,
+                    },
+                    skillSettings: {
+                      title: '{{t("Skills")}}',
+                      type: 'object',
+                      nullable: true,
+                      'x-decorator': 'FormItem',
+                      'x-component': () => <SkillSettings aiEmployeesMap={aiEmployeesMap} />,
                     },
                   },
                 },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, useLocalVariables, useVariables } from '@nocobase/client';
+import { Application } from '@nocobase/client';
 import { ContextItem, TaskMessage } from '../types';
 import PluginAIClient from '../..';
 
@@ -86,7 +86,13 @@ export const parseTask = async (task: { message: TaskMessage }) => {
       }
     }
   }
-  return { userMessage, systemMessage, attachments, workContext: message.workContext };
+  return {
+    userMessage,
+    systemMessage,
+    attachments,
+    workContext: message.workContext,
+    skillSettings: message.skillSettings,
+  };
 };
 
 export const parseWorkContext = async (app: Application, workContext: ContextItem[]) => {

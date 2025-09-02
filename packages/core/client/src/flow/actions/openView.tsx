@@ -61,8 +61,6 @@ export const openView = defineAction({
       return;
     }
 
-    console.log('openView: ctx.inputArgs', ctx.inputArgs);
-
     const sizeToWidthMap: Record<string, any> = {
       drawer: {
         small: '30%',
@@ -85,11 +83,16 @@ export const openView = defineAction({
 
     await ctx.viewer.open({
       type: openMode,
+      inputArgs: {
+        ...ctx.inputArgs,
+        dataSourceKey: params.dataSourceKey,
+        collectionName: params.collectionName,
+        associationName: params.associationName,
+      },
       preventClose: !!params.preventClose,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
       width: sizeToWidthMap[openMode][size],
-      inputArgs: ctx.inputArgs,
       content: (currentView) => {
         if (ctx.inputArgs.closeRef) {
           ctx.inputArgs.closeRef.current = currentView.close;

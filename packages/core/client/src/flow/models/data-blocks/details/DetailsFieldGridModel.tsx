@@ -7,35 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
 import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
-
-const AddDetailField = ({ model }) => {
-  const blockModel = model.context.blockModel as DetailsModel;
-  const collection = blockModel.collection;
-  return (
-    <AddSubModelButton
-      model={model}
-      subModelKey={'items'}
-      subModelBaseClasses={['DetailItemModel', 'DetailFormItemModel']}
-      afterSubModelInit={async (item: DetailItemModel) => {
-        const field: any = item.subModels.field;
-        await field.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (item: DetailItemModel) => {
-        model.context.blockModel.addAppends(item.fieldPath, true);
-      }}
-      keepDropdownOpen
-    >
-      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
-    </AddSubModelButton>
-  );
-};
 
 export class DetailsFieldGridModel extends GridModel<{
   parent: DetailsModel;
@@ -52,17 +30,27 @@ export class DetailsFieldGridModel extends GridModel<{
     },
   };
   renderAddSubModelButton() {
+    const blockModel = this.context.blockModel as DetailsModel;
+
     return (
-      <>
-        <AddDetailField model={this} />
-        {/* <FlowSettingsButton
-          onClick={() => {
-            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
-          }}
-        >
-          {t('Configure rows')}
-        </FlowSettingsButton> */}
-      </>
+      <AddSubModelButton
+        model={this}
+        subModelKey={'items'}
+        subModelBaseClasses={['DetailItemModel', 'AssociationFieldItemModel', 'DetailCustomModel']}
+        afterSubModelInit={async (item: DetailItemModel) => {
+          const field: any = item.subModels.field;
+          if (field) {
+            await field.applyAutoFlows();
+          }
+        }}
+        afterSubModelAdd={async (item: DetailItemModel) => {
+          blockModel.addAppends(item.fieldPath, true);
+          blockModel.addAppends(item.associationPathName, true);
+        }}
+        keepDropdownOpen
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+      </AddSubModelButton>
     );
   }
 }
@@ -70,11 +58,6 @@ export class DetailsFieldGridModel extends GridModel<{
 DetailsFieldGridModel.registerFlow({
   key: 'detailFieldGridSettings',
   steps: {
-    init: {
-      async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('items');
-      },
-    },
     grid: {
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);

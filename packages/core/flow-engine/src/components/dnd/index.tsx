@@ -41,7 +41,7 @@ export const DragHandler: FC<{ model: FlowModel; children: React.ReactNode }> = 
 };
 
 // 通用 Droppable 组件
-export const Droppable: FC<{ model: FlowModel; children: React.ReactNode }> = ({ model, children }) => {
+export const Droppable: FC<{ model: FlowModel<any>; children: React.ReactNode }> = ({ model, children }) => {
   const { setNodeRef, isOver, active } = useDroppable({ id: model.uid });
   const isActiveDroppable = active?.id === model.uid;
   return (

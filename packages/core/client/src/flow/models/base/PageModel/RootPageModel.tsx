@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
-import { PageModel } from './PageModel';
-import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { DragEndEvent } from '@dnd-kit/core';
+import _ from 'lodash';
+import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { PageModel } from './PageModel';
 
 export class RootPageModel extends PageModel {
   async saveStepParams() {
@@ -56,9 +56,8 @@ RootPageModel.registerFlow({
           return;
         }
         const { data } = await ctx.api.request({
-          url: `desktopRoutes:get`,
+          url: `desktopRoutes:getAccessible`,
           params: {
-            tree: true,
             sort: 'sort',
             filter: {
               schemaUid: ctx.model.parentId,
@@ -66,7 +65,7 @@ RootPageModel.registerFlow({
             appends: ['children'],
           },
         });
-        ctx.model.setProps('routeId', data?.data?.[0]?.id);
+        ctx.model.setProps('routeId', data?.data?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
         for (const route of routes) {
           // 过滤掉隐藏的路由

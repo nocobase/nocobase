@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
-import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
-import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 import { TableColumnModel } from '../../../data-blocks/table/TableColumnModel';
+import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -25,7 +25,7 @@ const AddFieldColumn = ({ model }) => {
       }}
       afterSubModelAdd={async (column: TableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
-        currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
+        currentBlockModel.addAppends(`${model.collectionField.name}.${column.fieldPath}`, true);
       }}
       keepDropdownOpen
     >
@@ -35,12 +35,12 @@ const AddFieldColumn = ({ model }) => {
 };
 export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationFieldModel {
   get collection() {
-    return this.collectionField.targetCollection;
+    return this.context.collectionField.targetCollection;
   }
   onInit(options: any): void {
     super.onInit(options);
     this.context.defineProperty('resourceName', {
-      get: () => this.collectionField.target,
+      get: () => this.context.collectionField.target,
       cache: false,
     });
   }
@@ -94,7 +94,7 @@ TableReadPrettyAssociationFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        // await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },
