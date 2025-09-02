@@ -117,7 +117,7 @@ export const FlowRoute = () => {
             // 需要有个延迟，才能正常触发路由的跳转
             setTimeout(() => {
               navigateTo(index + 1);
-            }, 20);
+            }, 100);
           };
 
           navigateTo(0);
