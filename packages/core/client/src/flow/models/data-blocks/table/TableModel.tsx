@@ -542,6 +542,8 @@ TableModel.registerFlow({
 TableModel.define({
   label: escapeT('Table'),
   group: escapeT('Content'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search collections'),
   createModelOptions: {
     use: 'TableModel',
     subModels: {

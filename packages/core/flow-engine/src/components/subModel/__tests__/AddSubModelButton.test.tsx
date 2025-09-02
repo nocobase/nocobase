@@ -11,6 +11,7 @@ import React from 'react';
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { vi } from 'vitest';
 import { AddSubModelButton, FlowEngine, FlowEngineProvider, FlowModel } from '@nocobase/flow-engine';
+import { transformItems } from '../AddSubModelButton';
 import { App, ConfigProvider } from 'antd';
 
 describe('AddSubModelButton - preset settings open on add', () => {
@@ -88,5 +89,36 @@ describe('AddSubModelButton - preset settings open on add', () => {
 
     await waitFor(() => expect(openSpy).toHaveBeenCalled());
     expect(openSpy).toHaveBeenCalledWith(expect.objectContaining({ preset: true }));
+  });
+});
+
+describe('transformItems - searchable flags', () => {
+  it('preserves searchable + placeholder on non-group submenu items', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'submenu',
+        label: 'Pick',
+        searchable: true,
+        searchPlaceholder: 'Search blocks',
+        children: [
+          { key: 'a', label: 'Alpha', createModelOptions: { use: 'Parent' } },
+          { key: 'b', label: 'Beta', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const factory = transformItems(items as any, parent, 'items', 'array');
+    const resolved = await (typeof factory === 'function' ? factory() : factory);
+    expect(resolved).toHaveLength(1);
+    const submenu = resolved[0] as any;
+    expect(submenu.searchable).toBe(true);
+    expect(submenu.searchPlaceholder).toBe('Search blocks');
+    expect(Array.isArray(submenu.children)).toBe(true);
   });
 });

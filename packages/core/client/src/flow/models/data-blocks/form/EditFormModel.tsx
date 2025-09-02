@@ -161,6 +161,8 @@ EditFormModel.registerFlow({
 
 EditFormModel.define({
   label: escapeT('Form (Edit)'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search collections'),
   createModelOptions: {
     use: 'EditFormModel',
     subModels: {

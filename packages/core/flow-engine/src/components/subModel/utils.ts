@@ -9,20 +9,23 @@
 
 import { FlowModelContext } from '../../flowContext';
 import type { Collection } from '../../data-source';
-import { FlowEngine } from '../../flowEngine';
-import { ModelConstructor } from '../../types';
+import { ModelConstructor, FlowModelMeta } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
 import * as _ from 'lodash';
 
 function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModelItem {
-  const meta = M.meta || {};
+  const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
   if (meta.hide) {
     return;
   }
+  // 判断是否为 CollectionBlockModel 的子类（用于集合选择层开启搜索）
   const item: SubModelItem = {
     key: M.name,
     label: meta.label || M.name,
+    // 子菜单级搜索：仅尊重模型 meta 显式配置，避免在工具层做类型耦合判断
+    searchable: !!meta.searchable,
+    searchPlaceholder: meta.searchPlaceholder,
     // Ensure toggleable models can be detected and toggled in menus
     // Meta.toggleable indicates the item should behave like a switch (unique per parent)
     // Add corresponding flags so AddSubModelButton can compute toggle state and removal
@@ -39,7 +42,7 @@ function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModel
 }
 
 function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
-  const meta = (M as any).meta || {};
+  const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
   let children: any;
   if (M['defineChildren']) {
     children = M['defineChildren'].bind(M);
@@ -76,19 +79,21 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
 
 export function buildSubModelItems(subModelBaseClass: string | ModelConstructor, exclude = []) {
   return async (ctx: FlowModelContext) => {
-    const SubModelClasses = (ctx.engine as FlowEngine).getSubclassesOf(subModelBaseClass);
+    const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);
     // Collect and sort subclasses by meta.sort (ascending), excluding hidden or inherited ones in `exclude`
     const candidates = Array.from(SubModelClasses.values())
-      .filter((M) => !(M as any).meta?.hide)
-      .filter((M) => {
-        for (const P of exclude) {
-          if (M === P || (M as any).name === (P as any).name || isInheritedFrom(M, P)) {
+      .filter((C) => !C.meta?.hide)
+      .filter((C) => {
+        for (const P of exclude as (string | ModelConstructor)[]) {
+          if (typeof P === 'string') {
+            if (C.name === P) return false;
+          } else if (C === P || isInheritedFrom(C, P)) {
             return false;
           }
         }
         return true;
       })
-      .sort((A, B) => ((A as any).meta?.sort || 0) - ((B as any).meta?.sort || 0));
+      .sort((A, B) => (A.meta?.sort ?? 0) - (B.meta?.sort ?? 0));
 
     const items: SubModelItem[] = [];
     for (const M of candidates) {
@@ -99,10 +104,10 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
   };
 }
 
-export function buildSubModelGroups(subModelBaseClasses = []) {
+export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstructor)[] = []) {
   return async (ctx: FlowModelContext) => {
-    const items = [];
-    const exclude = [];
+    const items: SubModelItem[] = [];
+    const exclude: (string | ModelConstructor)[] = [];
     for (const subModelBaseClass of subModelBaseClasses) {
       const BaseClass =
         typeof subModelBaseClass === 'string' ? ctx.engine.getModelClass(subModelBaseClass) : subModelBaseClass;
@@ -116,11 +121,25 @@ export function buildSubModelGroups(subModelBaseClasses = []) {
       }
       exclude.push(BaseClass);
 
-      const hasChildren =
-        typeof children === 'function' ? true : Array.isArray(children) ? children.length > 0 : !!children;
-      if (!hasChildren) {
-        continue;
+      // 若 children 为函数，则预解析一层以判断是否有子项；
+      // 这样当解析结果为空数组时，可自动跳过（隐藏）该分组。
+      let hasChildren = false;
+      if (typeof children === 'function') {
+        try {
+          // 兼容签名：我们传入 ctx，但若函数不接收也不会出问题
+          const resolved = await children(ctx as FlowModelContext);
+          hasChildren = Array.isArray(resolved) ? resolved.length > 0 : !!resolved;
+        } catch (e) {
+          // 若解析异常，视为无可用子项，跳过该分组，避免空分组
+          hasChildren = false;
+        }
+      } else if (Array.isArray(children)) {
+        hasChildren = children.length > 0;
+      } else {
+        hasChildren = !!children;
       }
+
+      if (!hasChildren) continue;
       // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
       const groupLabel =
         BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
