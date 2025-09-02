@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
-import { PageModel } from './PageModel';
-import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { DragEndEvent } from '@dnd-kit/core';
+import _ from 'lodash';
+import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import { PageModel } from './PageModel';
 
 export class RootPageModel extends PageModel {
   async saveStepParams() {

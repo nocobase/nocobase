@@ -99,4 +99,26 @@ describe('subModel/utils', () => {
       expect(groups[0].children).toBeTruthy();
     });
   });
+
+  it('buildSubModelItems respects meta.searchable and searchPlaceholder', async () => {
+    const engine = new FlowEngine();
+
+    class SearchableChild extends FlowModel {}
+    // Define meta with searchable flags
+    SearchableChild.define({ label: 'Searchable Child', searchable: true, searchPlaceholder: 'Search children' });
+
+    engine.registerModels({ SearchableChild });
+
+    const model = engine.createModel({ use: 'FlowModel' });
+    const ctx = model.context;
+
+    // Build items from base class FlowModel so our subclass is included
+    const itemsFactory = (await import('../utils')).buildSubModelItems('FlowModel');
+    const items = await itemsFactory(ctx);
+
+    const found = items.find((it) => it.key === 'SearchableChild');
+    expect(found).toBeTruthy();
+    expect(found?.searchable).toBe(true);
+    expect(found?.searchPlaceholder).toBe('Search children');
+  });
 });

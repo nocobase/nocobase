@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import { FormButtonGroup } from '@formily/antd-v5';
 import {
   AddSubModelButton,
@@ -20,16 +21,14 @@ import {
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
-import { Pagination } from 'antd';
+import { Pagination, Space } from 'antd';
 import React from 'react';
-import { FormModel, FormComponent } from './FormModel';
 import { FormActionModel } from './FormActionModel';
+import { FormComponent, FormModel } from './FormModel';
 
 export class EditFormModel extends FormModel {
-  static override getChildrenFilters(_ctx: FlowModelContext) {
-    return { currentRecord: true };
-  }
+  static types = ['toOne', 'toMany'];
+
   createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
@@ -74,7 +73,7 @@ export class EditFormModel extends FormModel {
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <FormButtonGroup>
+          <Space>
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
                 <FlowModelRenderer
@@ -94,7 +93,7 @@ export class EditFormModel extends FormModel {
             <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>
-          </FormButtonGroup>
+          </Space>
         </DndProvider>
         {this.isMultiRecordResource() && (
           <div
@@ -114,18 +113,6 @@ export class EditFormModel extends FormModel {
             />
           </div>
         )}
-
-        {/* <FormProvider form={this.form}>
-          <FormLayout
-            colon={colon}
-            labelAlign={labelAlign}
-            labelWidth={labelWidth}
-            labelWrap={labelWrap}
-            layout={layout}
-          >
-          </FormLayout>
-        
-        </FormProvider> */}
       </FormComponent>
     );
   }
@@ -167,10 +154,6 @@ EditFormModel.registerFlow({
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
-        // 1. 先初始化字段网格，确保所有字段都创建完成
-        await ctx.model.applySubModelsAutoFlows('grid');
-        // 2. 加载数据
-        // await ctx.resource.refresh();
       },
     },
   },
@@ -178,6 +161,8 @@ EditFormModel.registerFlow({
 
 EditFormModel.define({
   label: escapeT('Form (Edit)'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search collections'),
   createModelOptions: {
     use: 'EditFormModel',
     subModels: {

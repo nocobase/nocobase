@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import {
   AddSubModelButton,
   DndProvider,
@@ -17,15 +18,16 @@ import {
   FlowSettingsButton,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
-import { FormModel, FormComponent } from './FormModel';
-import { FormButtonGroup } from '@formily/antd-v5';
+import { Space } from 'antd';
 import React from 'react';
 import { FormActionModel } from './FormActionModel';
+import { FormComponent, FormModel } from './FormModel';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
-  createResource() {
+  static type = 'toNew';
+
+  createResource(ctx, params) {
     const resource = new SingleRecordResource();
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
@@ -40,7 +42,7 @@ export class CreateFormModel extends FormModel {
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <FormButtonGroup>
+          <Space>
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
                 <FlowModelRenderer
@@ -60,19 +62,8 @@ export class CreateFormModel extends FormModel {
             <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>
-          </FormButtonGroup>
+          </Space>
         </DndProvider>
-        {/* <FormProvider form={this.form}> */}
-        {/* <FormLayout
-            colon={colon}
-            labelAlign={labelAlign}
-            labelWidth={labelWidth}
-            labelWrap={labelWrap}
-            layout={layout}
-          >
-          </FormLayout>
-         
-        </FormProvider> */}
       </FormComponent>
     );
   }
@@ -93,16 +84,14 @@ CreateFormModel.registerFlow({
         // 新增表单不需要监听refresh事件，因为没有现有数据
       },
     },
-    refresh: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('grid');
-      },
-    },
+    refresh: {},
   },
 });
 
 CreateFormModel.define({
   label: escapeT('Form (Add new)'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search collections'),
   createModelOptions: {
     use: 'CreateFormModel',
     subModels: {

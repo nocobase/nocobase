@@ -7,25 +7,50 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelContext, buildWrapperFieldChildren } from '@nocobase/flow-engine';
+import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { FieldModel } from '../../base/FieldModel';
-import { DetailsFieldGridModel } from './DetailsFieldGridModel';
-import { FormItem } from '../form/FormItem/FormItem';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
-import { FieldNotAllow } from '../form/FormItem/CollectionFieldFormItemModel';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
+import { FieldModel } from '../../base/FieldModel';
+import { FormItem } from '../form/FormItem/FormItem';
+import { FieldNotAllow } from '../form/FormItem/FormItemModel';
+import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailItemModel extends FieldModel<{
+export class DetailItemModel extends CollectionFieldItemModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
 }> {
   static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
-      useModel: 'DetailItemModel',
-      fieldUseModel: (f) => f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
+    const collection = ctx.collection as Collection;
+    return collection.getFields().map((field) => {
+      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+      const fieldPath = field.name;
+      return {
+        key: field.name,
+        label: field.title,
+        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        createModelOptions: () => ({
+          use: 'DetailItemModel',
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
+            },
+          },
+          subModels: {
+            field: {
+              use: fieldModel,
+            },
+          },
+        }),
+      };
     });
   }
-  onInit(options: any): void {
+
+  onInit(options: any) {
     super.onInit(options);
   }
 
@@ -38,8 +63,8 @@ export class DetailItemModel extends FieldModel<{
       </FormItem>
     );
   }
-  // 设置态隐藏时的占位渲染
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
+
+  renderHiddenInConfig(): React.ReactNode | undefined {
     return (
       <FormItem {...this.props}>
         <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
@@ -49,7 +74,6 @@ export class DetailItemModel extends FieldModel<{
 }
 
 DetailItemModel.define({
-  icon: 'DetailFormItem',
   createModelOptions: {
     use: 'DetailItemModel',
   },

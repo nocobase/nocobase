@@ -20,6 +20,9 @@
 <code src="./demos/global-and-instance-flows.tsx"></code>
 
 ```ts
+const actions = ctx.getActions();
+const events = ctx.getEvents();
+
 const flows = flowRegistry.getFlows();
 const flow = flowRegistry.getFlow(flowKey);
 
