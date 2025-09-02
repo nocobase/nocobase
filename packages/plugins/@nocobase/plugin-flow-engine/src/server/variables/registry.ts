@@ -228,3 +228,38 @@ function registerRecordLike(varName: 'record' | 'parentRecord' | 'popupRecord' |
 }
 
 ['record', 'parentRecord', 'popupRecord', 'parentPopupRecord'].forEach(registerRecordLike);
+
+/**
+ * Register `user` variable:
+ * - No contextParams required or expected from client.
+ * - Infers fields/appends from usage paths (e.g. ctx.user.roles[0].name -> appends: ['roles']).
+ * - Loads current user from DB by primary key in koaCtx.auth.user.id.
+ */
+variables.register({
+  name: 'user',
+  scope: 'request',
+  // no requiredParams: frontend will not pass context params for user
+  attach: (flowCtx, koaCtx, _params, usage) => {
+    const paths = usage?.['user'] || [];
+    const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
+
+    flowCtx.defineProperty('user', {
+      get: async () => {
+        const uid = (koaCtx as any)?.auth?.user?.id;
+        if (typeof uid === 'undefined' || uid === null) return undefined;
+
+        const ds = koaCtx.app.dataSourceManager.get('main');
+        const cm = ds.collectionManager as SequelizeCollectionManager;
+        if (!cm?.db) return undefined;
+        const repo = cm.db.getRepository('users');
+        const rec = await repo.findOne({
+          filterByTk: uid,
+          fields: generatedFields,
+          appends: generatedAppends,
+        });
+        return rec ? rec.toJSON() : undefined;
+      },
+      cache: true,
+    });
+  },
+});
