@@ -223,6 +223,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       return {
         key: genKey(`ds-${dataSource.key}`),
         label: dataSource.displayName,
+        searchable: true,
+        searchPlaceholder: 'Search blocks',
         children: (ctx) => {
           return dataSource.getCollections().map((collection) => {
             const initOptions = {
