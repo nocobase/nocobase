@@ -63,6 +63,10 @@ const AddActionToolbarComponent = ({ model }) => {
 };
 
 export class TableActionsColumnModel extends TableCustomColumnModel {
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>
@@ -122,7 +126,7 @@ TableActionsColumnModel.define({
   createModelOptions: {
     stepParams: {
       tableColumnSettings: {
-        editColumTitle: {
+        title: {
           title: '{{t("Actions")}}',
         },
       },

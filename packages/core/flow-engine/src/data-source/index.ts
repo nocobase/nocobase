@@ -418,6 +418,22 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
+  getAssociationFields(types = []): CollectionField[] {
+    if (types.includes('toNew')) {
+      return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
+    }
+    if (types.includes('toMany') && types.includes('toOne')) {
+      return this.getFields().filter((field) => field.isAssociationField());
+    }
+    if (types.includes('toMany')) {
+      return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
+    }
+    if (types.includes('toOne')) {
+      return this.getFields().filter((field) => ['hasOne', 'belongsTo'].includes(field.type));
+    }
+    return this.getFields().filter((field) => field.isAssociationField());
+  }
+
   mapFields(callback: (field: CollectionField) => any): any[] {
     return this.getFields().map(callback);
   }
@@ -548,6 +564,14 @@ export class CollectionField {
 
   get dataSourceKey() {
     return this.collection.dataSourceKey;
+  }
+
+  get resourceName() {
+    return `${this.collection.name}.${this.name}`;
+  }
+
+  get collectionName() {
+    return this.collection.name;
   }
 
   get readonly() {

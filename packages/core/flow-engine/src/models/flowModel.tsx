@@ -227,6 +227,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
+  /**
+   * 通过 AddSubModelButton 添加为子模型后调用（子类可覆盖）
+   */
+  async afterAddAsSubModel() {}
+
   get async() {
     return this._options.async || false;
   }

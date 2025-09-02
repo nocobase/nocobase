@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
+import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
-import { CollectionFieldFormItemModel } from './FormItem/CollectionFieldFormItemModel';
-import { FormCustomFormItemModel } from './FormCustomFormItemModel';
 import { FormModel } from './FormModel';
 
 export class FormFieldGridModel extends GridModel<{
@@ -31,29 +29,10 @@ export class FormFieldGridModel extends GridModel<{
     },
   };
   renderAddSubModelButton() {
-    const formModelInstance = this.context.blockModel as FormModel;
-
     return (
-      <>
-        <AddSubModelButton
-          subModelKey="items"
-          subModelBaseClasses={['CollectionFieldFormItemModel', 'FormCustomFormItemModel']}
-          model={this}
-          afterSubModelAdd={async (field: CollectionFieldFormItemModel) => {
-            this.context.blockModel.addAppends(field.fieldPath, true);
-          }}
-          keepDropdownOpen
-        >
-          <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
-        </AddSubModelButton>
-        {/* <FlowSettingsButton
-          onClick={() => {
-            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
-          }}
-        >
-          {t('Configure rows')}
-        </FlowSettingsButton> */}
-      </>
+      <AddSubModelButton subModelKey="items" subModelBaseClasses={['FormItemModel']} model={this} keepDropdownOpen>
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+      </AddSubModelButton>
     );
   }
 }
@@ -61,11 +40,6 @@ export class FormFieldGridModel extends GridModel<{
 FormFieldGridModel.registerFlow({
   key: 'formFieldGridSettings',
   steps: {
-    init: {
-      async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('items');
-      },
-    },
     grid: {
       handler(ctx, params) {
         ctx.model.setProps('rowGap', 0);

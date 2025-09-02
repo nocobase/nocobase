@@ -21,7 +21,7 @@ export class ReadPrettyFieldModel extends FieldModel {
   // @reactive
   public render() {
     const { prefix, suffix, value } = this.props;
-    const dataType = this.collectionField?.dataType;
+    const dataType = this.context.collectionField?.dataType;
     let content = '';
     if (value === null || value === undefined) {
       content = ''; // null/undefined 显示为空
