@@ -183,7 +183,7 @@ PageModel.registerFlow({
         }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.model.context.closable) {
+        if (ctx.view.type !== 'embed') {
           ctx.model.setProps('headerStyle', {
             backgroundColor: ctx.themeToken.colorBgLayout,
           });
