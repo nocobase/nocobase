@@ -160,6 +160,7 @@ export const FlowRoute = () => {
                 openView(index + 1); // 递归打开下一个视图
               },
               hidden: viewItem.hidden, // 是否隐藏视图
+              isMobileLayout,
             });
 
             viewStateRef.current[viewItem.params.viewUid] = {
@@ -186,7 +187,7 @@ export const FlowRoute = () => {
     );
 
     return dispose;
-  }, [flowEngine, routeModel]);
+  }, [flowEngine, isMobileLayout, routeModel]);
 
   return <div ref={layoutContentRef} />;
 };
