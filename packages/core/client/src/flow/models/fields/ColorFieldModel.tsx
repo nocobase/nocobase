@@ -12,7 +12,7 @@ import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
-const ColorPicker = (props) => {
+export const NBColorPicker = (props) => {
   const componentProps = {
     ...props,
     trigger: 'hover',
@@ -49,6 +49,6 @@ export class ColorFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['color'];
 
   get component() {
-    return [ColorPicker, {}];
+    return [NBColorPicker, {}];
   }
 }

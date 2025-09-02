@@ -16,9 +16,8 @@ export * from './base/PageTabModel';
 export * from './base/RouteModel';
 export * from './base/FieldModel';
 // export * from './data-blocks/calendar/CalendarBlockModel';
-export * from './data-blocks/details/DetailItemModel';
-export * from './data-blocks/details/DetailsFieldGridModel';
-export * from './data-blocks/details/DetailsModel';
+
+export * from './data-blocks/details';
 export * from './data-blocks/form';
 export * from './data-blocks/table/TableActionsColumnModel';
 export * from './data-blocks/table/TableColumnModel';
@@ -35,4 +34,4 @@ export * from './filter-blocks/form-v2/fields';
 export * from './filter-blocks/form-v2/actions';
 export * from './other-blocks/html/HtmlBlockModel';
 export * from './common/JsonInput';
-//
+export * from './data-blocks/CustomItem';

@@ -11,7 +11,6 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   buildWrapperFieldChildren,
-  Collection,
   DragHandler,
   Droppable,
   escapeT,
@@ -21,8 +20,10 @@ import {
   FlowModelProvider,
   FlowsFloatContextMenu,
   ModelRenderMode,
+  Collection,
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
+import { get } from 'lodash';
 import { TableColumnProps, Tooltip } from 'antd';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -161,6 +162,8 @@ export class TableColumnModel extends CollectionFieldItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          const path = this.associationPathName ? `${this.associationPathName}.${this.fieldPath}` : this.fieldPath;
+          const value = get(record, path);
           return (
             <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
@@ -252,15 +255,17 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: escapeT('Enable quick edit'),
-      uiSchema: (ctx) => ({
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-disabled': ctx.model.collectionField.readonly,
-        },
-      }),
+      uiSchema: (ctx) => {
+        return {
+          editable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
+          },
+        };
+      },
       defaultParams(ctx) {
-        if (ctx.model.collectionField.readonly) {
+        if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
             editable: false,
           };

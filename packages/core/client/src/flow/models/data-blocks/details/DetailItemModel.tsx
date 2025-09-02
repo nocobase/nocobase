@@ -11,6 +11,7 @@ import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
+import { get } from 'lodash';
 import { FieldModel } from '../../base/FieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
@@ -56,7 +57,9 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = this.context.record?.[this.fieldPath];
+    const path = this.associationPathName ? `${this.associationPathName}.${this.fieldPath}` : this.fieldPath;
+
+    const value = get(this.context.record, path);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
@@ -119,7 +122,9 @@ DetailItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         const { collectionField } = ctx.model;
-        ctx.model.setProps(collectionField.getComponentProps());
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
       },
     },
     showLabel: {

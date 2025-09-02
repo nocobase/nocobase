@@ -68,9 +68,6 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
     return this.getFieldSettingsInitParams().fieldPath;
   }
 
-  /**
-   * @deprecated
-   */
   get collectionField() {
     return this.context.collectionField as CollectionField;
   }

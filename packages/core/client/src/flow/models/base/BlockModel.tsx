@@ -459,6 +459,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   addAppends(fieldPath: string, refresh = false) {
+    if (!fieldPath) {
+      return;
+    }
     if (fieldPath.includes('.')) {
       // 关系数据
       const [field1, field2] = fieldPath.split('.');

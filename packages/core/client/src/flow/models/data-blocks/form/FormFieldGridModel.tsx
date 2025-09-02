@@ -30,7 +30,12 @@ export class FormFieldGridModel extends GridModel<{
   };
   renderAddSubModelButton() {
     return (
-      <AddSubModelButton subModelKey="items" subModelBaseClasses={['FormItemModel']} model={this} keepDropdownOpen>
+      <AddSubModelButton
+        subModelKey="items"
+        subModelBaseClasses={['FormItemModel', 'FormCustomFormItemModel']}
+        model={this}
+        keepDropdownOpen
+      >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
       </AddSubModelButton>
     );
