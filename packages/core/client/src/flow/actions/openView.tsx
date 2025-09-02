@@ -81,13 +81,6 @@ export const openView = defineAction({
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
 
-    console.log('openView: ctx.inputArgs', {
-      ...ctx.inputArgs,
-      dataSourceKey: params.dataSourceKey,
-      collectionName: params.collectionName,
-      associationName: params.associationName,
-    });
-
     await ctx.viewer.open({
       type: openMode,
       inputArgs: {
