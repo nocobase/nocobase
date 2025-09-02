@@ -40,41 +40,54 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
 }
 
 describe('variables registry - extractUsage and attachUsedVariables', () => {
-  it('extractUsage: dot and bracket notations, multiple occurrences, nested objects', () => {
+  it('extractUsage: dot and bracket notations, multiple occurrences, nested objects (dynamic view.record)', () => {
     const tpl = {
-      a: '{{ ctx.record.roles[0].name }}',
-      b: "{{ ctx['record']['company'].title }}",
-      c: ['x', '{{ ctx.record.name }}'],
+      a: '{{ ctx.view.record.roles[0].name }}',
+      b: "{{ ctx['view']['record'].company.title }}",
+      c: ['x', '{{ ctx.view.record.name }}'],
       d: { y: '{{ ctx.user.id }}' },
-      e: 'mixed: {{ ctx.record["roles"][0]["name"] }} and {{ ctx["record"].id }}',
-      f: '{{ ctx.record[0].name }}', // numeric bracket after var should not contribute path
+      e: 'mixed: {{ ctx.view.record["roles"][0]["name"] }} and {{ ctx["view"].record.id }}',
+      f: '{{ ctx.view.record[0].name }}', // numeric bracket after var should not contribute path
     };
     const usage = variables.extractUsage(tpl as any);
-    expect(usage.record).toBeTruthy();
+    expect(usage.view).toBeTruthy();
     // Should include roles path
-    expect(usage.record.some((p) => p.startsWith('roles'))).toBeTruthy();
+    expect(usage.view.some((p) => p.startsWith('record'))).toBeTruthy();
     // Should include name scalar
-    expect(usage.record.includes('name')).toBeTruthy();
+    expect(usage.view.some((p) => p.includes('name'))).toBeTruthy();
     // Should include company from bracket var
-    expect(usage.record.some((p) => p.startsWith('company'))).toBeTruthy();
+    expect(usage.view.some((p) => p.includes('company'))).toBeTruthy();
     // Numeric leading bracket after var should not add new path
-    expect(usage.record.some((p) => p.startsWith('[0]'))).toBeFalsy();
+    // numeric bracket after nested segment is preserved under the segment (record[0]) but not as top-level path
+    expect(usage.view.some((p) => p.startsWith('[0]'))).toBeFalsy();
     // user var not registered, but extracted
     expect(usage.user).toBeTruthy();
   });
 
-  it('attachUsedVariables(record): auto-generate appends and fields from usage', async () => {
+  it('extractUsage: top-level array index under varName (list[0].name, list[1].roles[0].name)', () => {
+    const tpl = {
+      a: '{{ ctx.list[0].name }}',
+      b: '{{ ctx.list[1].roles[0].name }}',
+    } as any;
+    const usage = variables.extractUsage(tpl as any);
+    expect(usage.list).toBeTruthy();
+    expect(usage.list.some((p) => p.startsWith('[0]'))).toBeTruthy();
+    expect(usage.list.some((p) => p.startsWith('[1]'))).toBeTruthy();
+    expect(usage.list.some((p) => p.includes('roles'))).toBeTruthy();
+  });
+
+  it('attachUsedVariables(dynamic: view.record): auto-generate appends and fields from usage', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      role: '{{ ctx.record.roles[0].name }}',
-      username: '{{ ctx.record.name }}',
+      role: '{{ ctx.view.record.roles[0].name }}',
+      username: '{{ ctx.view.record.name }}',
     } as any;
-    const contextParams = { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } };
+    const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    // Trigger getter
-    const _ = await (ctx as any).record;
+    // Trigger getter via nested path
+    const _ = await ((ctx as any).view as any).record;
 
     expect(spyCalls.length).toBe(1);
     const call = spyCalls[0];
@@ -85,51 +98,51 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(call.filterByTk).toBe(1);
   });
 
-  it('attachUsedVariables(record): bracket top-level field is inferred into fields', async () => {
+  it('attachUsedVariables(dynamic: view.record): bracket top-level field is inferred into fields', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      username: '{{ ctx.record["name"] }}',
+      username: '{{ ctx.view.record["name"] }}',
     } as any;
-    const contextParams = { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } };
+    const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).record;
+    const _ = await ((ctx as any).view as any).record;
 
     const call = spyCalls[0];
     expect(call.fields).toEqual(expect.arrayContaining(['name']));
   });
 
-  it('attachUsedVariables(record): property getter is cached (single query on multiple access)', async () => {
+  it('attachUsedVariables(dynamic: view.record): property getter is cached (single query on multiple access)', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
-    const template = { v: '{{ ctx.record.name }}' } as any;
-    const contextParams = { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } };
+    const template = { v: '{{ ctx.view.record.name }}' } as any;
+    const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
 
-    const r1 = await (ctx as any).record;
-    const r2 = await (ctx as any).record;
+    const r1 = await ((ctx as any).view as any).record;
+    const r2 = await ((ctx as any).view as any).record;
     expect(r1).toBeTruthy();
     expect(r2).toBeTruthy();
     expect(spyCalls.length).toBe(1);
   });
 
-  it('attachUsedVariables: multiple variables attach independently (record + parentRecord)', async () => {
+  it('attachUsedVariables: multiple dynamic variables attach independently (view.record + panel.entry)', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push({ ...opts }));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      a: '{{ ctx.record.name }}',
-      b: '{{ ctx.parentRecord.roles[0].name }}',
+      a: '{{ ctx.view.record.name }}',
+      b: '{{ ctx.panel.entry.roles[0].name }}',
     } as any;
     const contextParams = {
-      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
-      parentRecord: { dataSourceKey: 'main', collection: 'users', filterByTk: 2 },
-    };
+      'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+      'panel.entry': { dataSourceKey: 'main', collection: 'users', filterByTk: 2 },
+    } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _1 = await (ctx as any).record;
-    const _2 = await (ctx as any).parentRecord;
+    const _1 = await ((ctx as any).view as any).record;
+    const _2 = await ((ctx as any).panel as any).entry;
 
     // two separate calls
     expect(spyCalls.length).toBe(2);
@@ -138,16 +151,16 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(tks).toEqual([1, 2]);
   });
 
-  it('dedup: multiple references to same variable in one evaluation triggers single query', async () => {
+  it('dedup: multiple references to same dynamic variable triggers single query', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push({ ...opts }));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      a: '{{ ctx.record.id }}',
-      b: '{{ ctx.record.name }}',
-      c: '{{ ctx.record.roles[0].name }}',
+      a: '{{ ctx.view.record.id }}',
+      b: '{{ ctx.view.record.name }}',
+      c: '{{ ctx.view.record.roles[0].name }}',
     } as any;
-    const contextParams = { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 10 } };
+    const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 10 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
 
     const out = await resolveJsonTemplate(template, ctx as any);
@@ -163,100 +176,60 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(spyCalls[0].appends).toEqual(expect.arrayContaining(['roles']));
   });
 
-  it('attachUsedVariables(record): respects explicit params and does not auto-generate when provided', async () => {
+  it('attachUsedVariables(dynamic: view.record): respects explicit params and does not auto-generate when provided', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      role: '{{ ctx.record.roles[0].name }}',
-      username: '{{ ctx.record.name }}',
+      role: '{{ ctx.view.record.roles[0].name }}',
+      username: '{{ ctx.view.record.name }}',
     } as any;
     const contextParams = {
-      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1, fields: ['id'], appends: ['author'] },
-    };
+      'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1, fields: ['id'], appends: ['author'] },
+    } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).record;
+    const _ = await ((ctx as any).view as any).record;
 
     const call = spyCalls[0];
     expect(call.appends).toEqual(['author']);
     expect(call.fields).toEqual(['id']);
   });
 
-  it('attachUsedVariables(record): no auto fields/appends when usage path not inferable (numeric leading bracket)', async () => {
+  it('attachUsedVariables(dynamic: view.record): allows fields inference with numeric index after segment', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      bad: '{{ ctx.record[0].name }}',
+      onlyName: '{{ ctx.view.record[0].name }}',
     } as any;
-    const contextParams = { record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } };
+    const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).record;
+    const _ = await ((ctx as any).view as any).record;
 
     const call = spyCalls[0];
     expect(call.appends).toBeUndefined();
-    expect(call.fields).toBeUndefined();
+    expect(call.fields).toEqual(expect.arrayContaining(['name']));
   });
 
-  it('attachUsedVariables(parentRecord): inference works for sibling variables', async () => {
+  it('attachUsedVariables(dynamic arrays): list[0].name infers fields; list[0].roles[0].name infers appends', async () => {
     const spyCalls: any[] = [];
     const koa = makeKoaCtx((opts) => spyCalls.push(opts));
     const ctx = new HttpRequestContext(koa);
     const template = {
-      role: '{{ ctx.parentRecord.roles[0].name }}',
-      username: '{{ ctx.parentRecord.name }}',
+      username: '{{ ctx.list[0].name }}',
+      role: '{{ ctx.list[0].roles[0].name }}',
     } as any;
-    const contextParams = { parentRecord: { dataSourceKey: 'main', collection: 'users', filterByTk: 2 } };
+    const contextParams = { 'list.0': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).parentRecord;
+    // Trigger queries via resolver to walk through lodash.get path resolution
+    await resolveJsonTemplate(template, ctx as any);
 
+    expect(spyCalls.length).toBe(1);
     const call = spyCalls[0];
-    expect(call.filterByTk).toBe(2);
+    expect(call.fields).toEqual(expect.arrayContaining(['name']));
     expect(call.appends).toEqual(expect.arrayContaining(['roles']));
-    expect(call.fields).toEqual(expect.arrayContaining(['id', 'name']));
+    expect(call.filterByTk).toBe(1);
   });
 
-  it('attachUsedVariables(popupRecord): inference works for sibling variables', async () => {
-    const spyCalls: any[] = [];
-    const koa = makeKoaCtx((opts) => spyCalls.push(opts));
-    const ctx = new HttpRequestContext(koa);
-    const template = {
-      role: '{{ ctx.popupRecord.roles[0].name }}',
-      username: '{{ ctx.popupRecord.name }}',
-    } as any;
-    const contextParams = { popupRecord: { dataSourceKey: 'main', collection: 'users', filterByTk: 3 } };
-    await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).popupRecord;
-
-    const call = spyCalls[0];
-    expect(call.filterByTk).toBe(3);
-    expect(call.appends).toEqual(expect.arrayContaining(['roles']));
-    expect(call.fields).toEqual(expect.arrayContaining(['id', 'name']));
-  });
-
-  it('attachUsedVariables(parentPopupRecord): respects explicit params override', async () => {
-    const spyCalls: any[] = [];
-    const koa = makeKoaCtx((opts) => spyCalls.push(opts));
-    const ctx = new HttpRequestContext(koa);
-    const template = {
-      role: '{{ ctx.parentPopupRecord.roles[0].name }}',
-      username: '{{ ctx.parentPopupRecord.name }}',
-    } as any;
-    const contextParams = {
-      parentPopupRecord: {
-        dataSourceKey: 'main',
-        collection: 'users',
-        filterByTk: 4,
-        fields: ['id', 'email'],
-        appends: ['author'],
-      },
-    };
-    await variables.attachUsedVariables(ctx, koa, template, contextParams);
-    const _ = await (ctx as any).parentPopupRecord;
-
-    const call = spyCalls[0];
-    expect(call.filterByTk).toBe(4);
-    expect(call.appends).toEqual(['author']);
-    expect(call.fields).toEqual(['id', 'email']);
-  });
+  // Legacy sibling variables tests removed (parentRecord/popupRecord/parentPopupRecord) since generic dynamic keys are supported.
 });

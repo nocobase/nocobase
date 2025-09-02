@@ -99,24 +99,11 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(typeof data.time).toBe('number');
   });
 
-  it('should validate missing record context params', async () => {
+  it('should resolve dynamic record via flattened key (e.g., view.record)', async () => {
     const payload = {
-      template: {
-        id: '{{ ctx.record.id }}',
-      },
-      // no contextParams.record provided
-    };
-    const ctx = await execResolve(payload, 1);
-    expect(ctx.status).toBe(400);
-    const err = ctx.body?.error;
-    expect(err?.code).toBe('INVALID_CONTEXT_PARAMS');
-  });
-
-  it('should resolve record with explicit contextParams', async () => {
-    const payload = {
-      template: { id: '{{ ctx.record.id }}' },
+      template: { id: '{{ ctx.view.record.id }}' },
       contextParams: {
-        record: {
+        'view.record': {
           dataSourceKey: 'main',
           collection: 'users',
           filterByTk: 1,
@@ -131,9 +118,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
   it('should resolve deep association with auto appends (roles[0].name)', async () => {
     const payload = {
-      template: { role: '{{ ctx.record.roles[0].name }}' },
+      template: { role: '{{ ctx.view.record.roles[0].name }}' },
       contextParams: {
-        record: {
+        'view.record': {
           dataSourceKey: 'main',
           collection: 'users',
           filterByTk: 1,
@@ -151,11 +138,11 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   it('should support bracket notation for first association segment', async () => {
     const payload = {
       template: {
-        b: "{{ ctx.record['id'] }}",
-        c: "{{ ctx.record['roles'][0]['name'] }}",
+        b: "{{ ctx.view.record['id'] }}",
+        c: "{{ ctx.view.record['roles'][0]['name'] }}",
       },
       contextParams: {
-        record: {
+        'view.record': {
           dataSourceKey: 'main',
           collection: 'users',
           filterByTk: 1,
@@ -172,11 +159,11 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   it('should support top-level bracket var for record', async () => {
     const payload = {
       template: {
-        id: "{{ ctx['record'].id }}",
-        role: "{{ ctx['record']['roles'][0].name }}",
+        id: "{{ ctx['view'].record.id }}",
+        role: "{{ ctx['view']['record']['roles'][0].name }}",
       },
       contextParams: {
-        record: {
+        'view.record': {
           dataSourceKey: 'main',
           collection: 'users',
           filterByTk: 1,
@@ -188,6 +175,26 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.id).toBe(1);
     expect(typeof data.role).toBe('string');
     expect(data.role.length).toBeGreaterThan(0);
+  });
+
+  it('should resolve array-indexed dynamic record via flattened key (list.0)', async () => {
+    const payload = {
+      template: {
+        username: '{{ ctx.list[0].name }}',
+      },
+      contextParams: {
+        'list.0': {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+          fields: ['name'],
+        },
+      },
+    };
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(typeof data.username).toBe('string');
+    expect(data.username.length).toBeGreaterThan(0);
   });
 
   it('should keep unsupported references and partially replace', async () => {

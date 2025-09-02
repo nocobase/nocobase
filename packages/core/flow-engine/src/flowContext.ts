@@ -70,9 +70,11 @@ export interface PropertyMeta {
   render?: (props: any) => JSX.Element; // 自定义渲染函数
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
-  // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）
-  // 例如：对 'record' 属性，返回 RecordRef（{ collection, filterByTk, dataSourceKey, ... }）
-  buildVariablesParams?: (ctx: FlowContext) => RecordRef | Promise<RecordRef> | undefined;
+  // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
+  // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
+  buildVariablesParams?: (
+    ctx: FlowContext,
+  ) => RecordRef | Record<string, any> | Promise<RecordRef | Record<string, any> | undefined> | undefined;
 }
 
 export interface PropertyOptions {
@@ -859,8 +861,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           return resolveExpressions(template, this);
         }
 
-        const collectFromMeta = async (): Promise<Record<string, RecordRef>> => {
-          const out: Record<string, RecordRef> = {};
+        const collectFromMeta = async (): Promise<Record<string, any>> => {
+          const out: Record<string, any> = {};
           try {
             const metas = this._getPropertiesMeta?.() as Record<
               string,
@@ -914,7 +916,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
                 },
               },
             });
-            serverResolved = data?.data?.data ?? data;
+            // Use original template as fallback if server doesn't return resolved value
+            serverResolved = data?.data?.data ?? template;
           } catch (e) {
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
           }

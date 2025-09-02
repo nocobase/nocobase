@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
+import { createViewMeta } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 import { observer } from '..';
@@ -73,6 +74,7 @@ export function useDrawer() {
     const currentDrawer = {
       type: 'drawer',
       inputArgs: config.inputArgs || {},
+      preventClose: !!config.preventClose,
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -99,6 +101,7 @@ export function useDrawer() {
     const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentDrawer,
+      meta: createViewMeta(ctx, () => currentDrawer),
     });
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);

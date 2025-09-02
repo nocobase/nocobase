@@ -15,7 +15,7 @@
  * Dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  */
 import _ from 'lodash';
-import { HttpRequestContext } from '../template/contexts';
+import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { ResourcerContext } from '@nocobase/resourcer';
 
@@ -80,6 +80,14 @@ class VariableRegistry {
                 const first = mm[2];
                 const rest = mm[3] || '';
                 usage[varName].push(`${first}${rest}`);
+              } else {
+                // Numeric index: ctx.list[0].name -> [0].name
+                const mn = after.match(/^\[(\d+)\](.*)$/);
+                if (mn) {
+                  const idx = mn[1];
+                  const rest = mn[2] || '';
+                  usage[varName].push(`[${idx}]${rest}`);
+                }
               }
             } else if (after.startsWith('(')) {
               // method call: ctx.twice(21) -> record usage to trigger attach
@@ -101,6 +109,13 @@ class VariableRegistry {
                 const first = mm[2];
                 const rest = mm[3] || '';
                 usage[varName].push(`${first}${rest}`);
+              } else {
+                const mn = after.match(/^\[(\d+)\](.*)$/);
+                if (mn) {
+                  const idx = mn[1];
+                  const rest = mn[2] || '';
+                  usage[varName].push(`[${idx}]${rest}`);
+                }
               }
             } else if (after.startsWith('(')) {
               if (!usage[varName].length) usage[varName].push('');
@@ -143,24 +158,19 @@ class VariableRegistry {
     const usage = this.extractUsage(template);
     for (const varName of Object.keys(usage)) {
       const def = this.get(varName);
-      if (!def) continue;
       const params = _.get(contextParams, varName);
-      await def.attach(ctx, koaCtx, params, { [varName]: usage[varName] });
+      if (def) {
+        await def.attach(ctx, koaCtx, params, { [varName]: usage[varName] });
+      }
     }
+
+    // After running explicit variable defs, attach generic record-like variables based on contextParams shape.
+    attachGenericRecordVariables(ctx, koaCtx, usage, contextParams);
   }
 }
 
 /** 变量注册表（全局单例） */
 export const variables = new VariableRegistry();
-
-// record 类变量的通用参数规格
-const recordRequiredParams: RequiredParamSpec[] = [
-  { name: 'collection', required: true },
-  { name: 'filterByTk', required: true },
-  { name: 'dataSourceKey', required: false, defaultValue: 'main' },
-  { name: 'fields', required: false },
-  { name: 'appends', required: false },
-];
 
 /**
  * 从使用路径推断查询所需的 fields 与 appends。
@@ -192,42 +202,115 @@ function inferSelectsFromUsage(paths: string[] = [], params?: any) {
   return { generatedAppends, generatedFields };
 }
 
-/**
- * 注册一种 record 类变量（record/parentRecord/popupRecord/parentPopupRecord）。
- */
-function registerRecordLike(varName: 'record' | 'parentRecord' | 'popupRecord' | 'parentPopupRecord') {
-  variables.register({
-    name: varName,
-    scope: 'request',
-    requiredParams: recordRequiredParams,
-    attach: (flowCtx, koaCtx, params, usage) => {
-      const paths = usage?.[varName] || [];
-      const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths, params);
+function isRecordParams(val: any): val is { collection: string; filterByTk: any; dataSourceKey?: string } {
+  return val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val;
+}
 
+/**
+ * Attach record-like variables dynamically for any varName based on contextParams shape.
+ * Supports:
+ * - Top-level: contextParams[varName] is record params -> define ctx[varName]
+ * - Nested: contextParams[varName][seg] is record params and template uses ctx[varName].seg.* -> define nested record
+ */
+function attachGenericRecordVariables(
+  flowCtx: HttpRequestContext,
+  koaCtx: ResourcerContext,
+  usage: VarUsage,
+  contextParams: any,
+) {
+  const parseIndexSeg = (seg: string): string | undefined => {
+    const m = seg.match(/^\[(\d+)\]$/);
+    return m ? m[1] : undefined;
+  };
+  for (const varName of Object.keys(usage)) {
+    const usedPaths = usage[varName] || [];
+    const topParams = _.get(contextParams, varName);
+
+    // Top-level record-like
+    if (isRecordParams(topParams)) {
+      const { generatedAppends, generatedFields } = inferSelectsFromUsage(usedPaths, topParams);
       flowCtx.defineProperty(varName, {
         get: async () => {
-          if (params?.collection && typeof params?.filterByTk !== 'undefined') {
-            const dataSourceKey = params?.dataSourceKey || 'main';
-            const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-            const cm = ds.collectionManager as SequelizeCollectionManager;
-            if (!cm?.db) return undefined;
-            const repo = cm.db.getRepository(params.collection);
-            const rec = await repo.findOne({
-              filterByTk: params.filterByTk,
-              fields: generatedFields,
-              appends: generatedAppends,
-            });
-            return rec ? rec.toJSON() : undefined;
-          }
-          return undefined;
+          const dataSourceKey = topParams?.dataSourceKey || 'main';
+          const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
+          const cm = ds.collectionManager as SequelizeCollectionManager;
+          if (!cm?.db) return undefined;
+          const repo = cm.db.getRepository(topParams.collection);
+          const rec = await repo.findOne({
+            filterByTk: topParams.filterByTk,
+            fields: generatedFields,
+            appends: generatedAppends,
+          });
+          return rec ? rec.toJSON() : undefined;
         },
         cache: true,
       });
-    },
-  });
-}
+      continue; // If top-level is record, nested processing under same varName is unnecessary
+    }
 
-['record', 'parentRecord', 'popupRecord', 'parentPopupRecord'].forEach(registerRecordLike);
+    // Nested record-like under varName
+    // Group paths by first segment
+    const segMap = new Map<string, string[]>();
+    for (const p of usedPaths) {
+      if (!p) continue;
+      const [seg, ...rest] = p.split('.');
+      if (!seg) continue;
+      const remainder = rest.join('.') || '';
+      const arr = segMap.get(seg) || [];
+      arr.push(remainder);
+      segMap.set(seg, arr);
+    }
+
+    // Build a container sub-context lazily only if any child is record-like
+    const segEntries = Array.from(segMap.entries());
+    const recordChildren = segEntries.filter(([seg]) => {
+      const idx = parseIndexSeg(seg);
+      const nestedObj =
+        _.get(contextParams, [varName, seg]) ?? (idx ? _.get(contextParams, [varName, idx]) : undefined);
+      const dotted =
+        (contextParams || {})[`${varName}.${seg}`] ?? (idx ? (contextParams || {})[`${varName}.${idx}`] : undefined);
+      return isRecordParams(nestedObj) || isRecordParams(dotted);
+    });
+    if (!recordChildren.length) continue;
+
+    flowCtx.defineProperty(varName, {
+      get: () => {
+        const sub = new ServerBaseContext();
+        for (const [seg, remainders] of recordChildren) {
+          const idx = parseIndexSeg(seg);
+          const rp =
+            _.get(contextParams, [varName, seg]) ??
+            (idx ? _.get(contextParams, [varName, idx]) : undefined) ??
+            (contextParams || {})[`${varName}.${seg}`] ??
+            (idx ? (contextParams || {})[`${varName}.${idx}`] : undefined);
+          const { generatedAppends, generatedFields } = inferSelectsFromUsage(
+            remainders.filter((r) => !!r), // use sub-paths under seg
+            rp,
+          );
+          const defKey = idx ?? seg; // define numeric index for [0] so lodash.get '[0]' resolves to '0'
+          sub.defineProperty(defKey, {
+            get: async () => {
+              const dataSourceKey = rp?.dataSourceKey || 'main';
+              const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
+              const cm = ds.collectionManager as SequelizeCollectionManager;
+              if (!cm?.db) return undefined;
+              const repo = cm.db.getRepository(rp.collection);
+              const rec = await repo.findOne({
+                filterByTk: rp.filterByTk,
+                fields: generatedFields,
+                appends: generatedAppends,
+              });
+              return rec ? rec.toJSON() : undefined;
+            },
+            cache: true,
+          });
+        }
+        return sub.createProxy();
+      },
+      cache: true,
+    });
+  }
+}
 
 /**
  * Register `user` variable:

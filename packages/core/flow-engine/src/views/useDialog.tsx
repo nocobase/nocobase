@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
+import { createViewMeta } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
 import { observer } from '..';
@@ -73,6 +74,7 @@ export function useDialog() {
     const currentDialog = {
       type: 'dialog',
       inputArgs: config.inputArgs || {},
+      preventClose: !!config.preventClose,
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -99,6 +101,7 @@ export function useDialog() {
     const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentDialog,
+      meta: createViewMeta(ctx, () => currentDialog),
     });
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);

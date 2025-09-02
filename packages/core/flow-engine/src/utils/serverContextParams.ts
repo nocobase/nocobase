@@ -19,19 +19,9 @@ export type RecordRef = {
   record?: any; // full record object (try to infer pk from it)
 };
 
-export type BuildServerContextParamsInput = {
-  record?: RecordRef;
-  parentRecord?: RecordRef;
-  popupRecord?: RecordRef;
-  parentPopupRecord?: RecordRef;
-};
-
-export type ServerContextParams = {
-  record?: NormalizedRecordParams;
-  parentRecord?: NormalizedRecordParams;
-  popupRecord?: NormalizedRecordParams;
-  parentPopupRecord?: NormalizedRecordParams;
-};
+// Arbitrary key input and flattened output (dot-joined keys)
+export type BuildServerContextParamsInput = Record<string, any>;
+export type ServerContextParams = Record<string, NormalizedRecordParams>;
 
 export type NormalizedRecordParams = {
   collection: string;
@@ -82,14 +72,40 @@ export function buildServerContextParams(
   ctx: FlowContext,
   input: BuildServerContextParamsInput = {},
 ): ServerContextParams | undefined {
-  const out: ServerContextParams = {};
-  const r = normalizeOne(ctx, input.record);
-  if (r) out.record = r;
-  const pr = normalizeOne(ctx, input.parentRecord);
-  if (pr) out.parentRecord = pr;
-  const pop = normalizeOne(ctx, input.popupRecord);
-  if (pop) out.popupRecord = pop;
-  const ppop = normalizeOne(ctx, input.parentPopupRecord);
-  if (ppop) out.parentPopupRecord = ppop;
+  // Helper: detect a record-like object
+  const isRecordRef = (val: any) => {
+    if (!val || typeof val !== 'object') return false;
+    return (
+      typeof (val as any).collection === 'string' &&
+      (typeof (val as any).filterByTk !== 'undefined' || typeof (val as any).id !== 'undefined' || (val as any).record)
+    );
+  };
+
+  const out: Record<string, NormalizedRecordParams> = {};
+
+  const visit = (src: any, path: string[]) => {
+    if (isRecordRef(src)) {
+      const norm = normalizeOne(ctx, src as RecordRef);
+      if (norm) {
+        const key = path.join('.');
+        out[key] = norm;
+      }
+      return;
+    }
+    if (Array.isArray(src)) {
+      for (let i = 0; i < src.length; i++) {
+        visit(src[i], [...path, String(i)]);
+      }
+      return;
+    }
+    if (src && typeof src === 'object') {
+      for (const [k, v] of Object.entries(src)) {
+        visit(v, [...path, k]);
+      }
+      return;
+    }
+  };
+
+  visit(input, []);
   return Object.keys(out).length ? out : undefined;
 }

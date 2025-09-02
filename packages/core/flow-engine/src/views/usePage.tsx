@@ -14,6 +14,7 @@ import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import ReactDOM from 'react-dom';
 import { observer } from '..';
+import { createViewMeta } from './createViewMeta';
 
 let uuid = 0;
 
@@ -36,6 +37,7 @@ export function usePage() {
     const currentPage = {
       type: 'embed',
       inputArgs: config.inputArgs || {},
+      preventClose: !!config.preventClose,
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -51,6 +53,7 @@ export function usePage() {
     const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentPage,
+      meta: createViewMeta(ctx, () => currentPage),
     });
     if (inheritContext) {
       ctx.addDelegate(flowContext);

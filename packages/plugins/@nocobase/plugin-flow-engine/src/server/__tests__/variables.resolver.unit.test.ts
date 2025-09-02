@@ -58,11 +58,11 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.b.startsWith('Now: ')).toBeTruthy();
   });
 
-  it('resolves record with explicit contextParams (auto appends)', async () => {
+  it('resolves dynamic record (view.record) with explicit contextParams (auto appends)', async () => {
     const { koa, req } = makeCtx(1);
-    const template = { role: '{{ ctx.record.roles[0].name }}' } as any;
+    const template = { role: '{{ ctx.view.record.roles[0].name }}' } as any;
     await variables.attachUsedVariables(req, koa, template, {
-      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+      'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } as any,
     });
     const out = await resolveJsonTemplate(template, req);
     expect(typeof out.role).toBe('string');
