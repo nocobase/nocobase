@@ -118,3 +118,86 @@ export function extractUsedVariableNames(template: JSONValue): Set<string> {
   visit(template);
   return result;
 }
+
+/**
+ * Extract used top-level ctx variables with their subpaths.
+ * Returns a map: varName -> string[] subPaths
+ * Examples:
+ *  - {{ ctx.user.id }}        => { user: ['id'] }
+ *  - {{ ctx['user'].roles[0].name }} => { user: ['roles[0].name'] }
+ *  - {{ ctx.view.record.id }} => { view: ['record.id'] }
+ *  - {{ ctx.twice(21) }}      => { twice: [''] } // method call -> empty subPath
+ */
+export function extractUsedVariablePaths(template: JSONValue): Record<string, string[]> {
+  const usage: Record<string, string[]> = {};
+  const visit = (src: any) => {
+    if (typeof src === 'string') {
+      const regex = /\{\{\s*([^}]+?)\s*\}\}/g;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(src)) !== null) {
+        const expr = m[1];
+        // Dot notation: ctx.varName[...]
+        const pathRegex = /ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)([^\s)]*)/g;
+        let pm: RegExpExecArray | null;
+        while ((pm = pathRegex.exec(expr)) !== null) {
+          const varName = pm[1];
+          const after = pm[2] || '';
+          usage[varName] = usage[varName] || [];
+          if (after.startsWith('.')) {
+            usage[varName].push(after.slice(1));
+          } else if (after.startsWith('[')) {
+            // bracket first segment, normalize
+            const mm = after.match(/^\[\s*(["'])\s*([^'"\]]+)\s*\1\s*\](.*)$/);
+            if (mm) {
+              const first = mm[2];
+              const rest = mm[3] || '';
+              usage[varName].push(`${first}${rest}`);
+            } else {
+              const mn = after.match(/^\[(\d+)\](.*)$/);
+              if (mn) {
+                const idx = mn[1];
+                const rest = mn[2] || '';
+                usage[varName].push(`[${idx}]${rest}`);
+              }
+            }
+          } else if (after.startsWith('(')) {
+            if (!usage[varName].length) usage[varName].push('');
+          }
+        }
+        // Bracket var: ctx["varName"]...
+        const bracketVarRegex = /ctx\[\s*(["'])\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\1\s*\]([^\s)]*)/g;
+        let bm: RegExpExecArray | null;
+        while ((bm = bracketVarRegex.exec(expr)) !== null) {
+          const varName = bm[2];
+          const after = bm[3] || '';
+          usage[varName] = usage[varName] || [];
+          if (after.startsWith('.')) {
+            usage[varName].push(after.slice(1));
+          } else if (after.startsWith('[')) {
+            const mm = after.match(/^\[\s*(["'])\s*([^'"\]]+)\s*\1\s*\](.*)$/);
+            if (mm) {
+              const first = mm[2];
+              const rest = mm[3] || '';
+              usage[varName].push(`${first}${rest}`);
+            } else {
+              const mn = after.match(/^\[(\d+)\](.*)$/);
+              if (mn) {
+                const idx = mn[1];
+                const rest = mn[2] || '';
+                usage[varName].push(`[${idx}]${rest}`);
+              }
+            }
+          } else if (after.startsWith('(')) {
+            if (!usage[varName].length) usage[varName].push('');
+          }
+        }
+      }
+    } else if (Array.isArray(src)) {
+      src.forEach(visit);
+    } else if (src && typeof src === 'object') {
+      Object.values(src).forEach(visit);
+    }
+  };
+  visit(template);
+  return usage;
+}
