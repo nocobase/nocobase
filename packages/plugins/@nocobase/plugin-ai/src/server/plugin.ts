@@ -35,6 +35,8 @@ import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { BuiltInManager } from './manager/built-in-manager';
+import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
+import { aiContextDatasources } from './resource/aiContextDatasources';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -42,6 +44,7 @@ export class PluginAIServer extends Plugin {
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   builtInManager = new BuiltInManager(this);
+  aiContextDatasourceManager = new AIContextDatasourceManager(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
@@ -133,6 +136,7 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
     this.app.resourceManager.define(aiSettings);
+    this.app.resourceManager.define(aiContextDatasources);
 
     this.app.resourceManager.use(
       async (ctx, next) => {
@@ -226,6 +230,16 @@ export class PluginAIServer extends Plugin {
   async afterDisable() {}
 
   async remove() {}
+
+  get repositories() {
+    return {
+      aiContextDatasources: this.repository('aiContextDatasources'),
+    };
+  }
+
+  private repository(collectionName: string) {
+    return this.app.db.getRepository(collectionName);
+  }
 }
 
 export default PluginAIServer;
