@@ -15,7 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { AssociationFieldModel } from './AssociationFieldModel';
-import { FormComponent } from '../../data-blocks/form/FormModel';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
 import { each } from '@formily/shared';
 import { action } from '@formily/reactive';
@@ -67,20 +67,19 @@ ObjectFormAssociationFieldModel.define({
   },
 });
 
-const ArrayNester = ({ name }: { name: string }) => {
+const ArrayNester = ({ name, value }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
   return (
-    <Form.List name={name} initialValue={[{}]}>
+    <Form.List name={name} initialValue={value || [{}]}>
       {(fields, { add, remove }) => (
         <>
-          {fields.map(({ key, name, ...restField }) => {
-            // 给每个子项生成一个 fork model
-            const fork = gridModel.createFork({});
+          {fields.map(({ key, name: index, ...restField }) => {
+            const fork = gridModel.createFork({}, `${index}`);
             return (
               <Card
-                key={key}
+                key={index}
                 bordered={true}
                 style={{ position: 'relative' }}
                 className={css`
@@ -91,11 +90,10 @@ const ArrayNester = ({ name }: { name: string }) => {
               >
                 <div style={{ textAlign: 'right' }}>
                   <Tooltip key={'remove'} title={t('Remove')}>
-                    <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(name)} />
+                    <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(index)} />
                   </Tooltip>
                 </div>
-                {/* 渲染 fork model */}
-                <FlowModelRenderer model={fork} showFlowSettings={false} />
+                <FlowModelRenderer model={fork} showFlowSettings={false} key={index} />
               </Card>
             );
           })}

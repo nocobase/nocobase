@@ -21,7 +21,6 @@ import { AssociationFieldModel } from '../AssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
-import { CollectionNotAllowView } from '../../../base/BlockModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
