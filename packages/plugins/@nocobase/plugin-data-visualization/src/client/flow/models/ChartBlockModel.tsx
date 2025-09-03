@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel, FlowPage, SubPageModel } from '@nocobase/client';
+import { BlockModel, DataBlockModel, FlowPage, SubPageModel } from '@nocobase/client';
 import { SQLResource, escapeT } from '@nocobase/flow-engine';
 import { EChartsType } from 'echarts';
 import React from 'react';
@@ -28,7 +28,7 @@ type ChartProps = {
   chart: ChartOptions;
 };
 
-export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
+export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
   get resource() {

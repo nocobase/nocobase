@@ -186,9 +186,13 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
     const scenes = this._getScene();
     return scenes.includes(scene);
   }
+}
 
-  static async defineChildren(ctx: FlowModelContext) {
-    const children = await buildSubModelItems(this)(ctx);
+DataBlockModel.define({
+  hide: true,
+  label: escapeT('Data blocks'),
+  async children(ctx) {
+    const children = await buildSubModelItems(DataBlockModel)(ctx);
     const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
     return children.filter((item) => {
       const M = ctx.engine.getModelClass(item.useModel) as typeof DataBlockModel;
@@ -200,10 +204,8 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
       }
       return !M._isScene('select');
     });
-  }
-}
-
-DataBlockModel.define({ hide: true, label: escapeT('Data blocks') });
+  },
+});
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
