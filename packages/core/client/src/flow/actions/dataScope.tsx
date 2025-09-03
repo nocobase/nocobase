@@ -11,7 +11,7 @@ import { defineAction, MultiRecordResource, useFlowSettingsContext } from '@noco
 import { isEmptyFilter, removeNullCondition, tval } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React from 'react';
-import { FilterGroup, FilterItem, transformFilter } from '../components/filter';
+import { FilterGroup, VariableFilterItem, transformFilter } from '../components/filter';
 import { FieldModel } from '../models/base/FieldModel';
 
 export const dataScope = defineAction({
@@ -26,7 +26,7 @@ export const dataScope = defineAction({
         return (
           <FilterGroup
             value={props.value}
-            FilterItem={(props) => <FilterItem {...props} model={flowContext.model} noIgnore />}
+            FilterItem={(p) => <VariableFilterItem {...p} model={flowContext.model} rightAsVariable />}
           />
         );
       },

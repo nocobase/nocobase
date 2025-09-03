@@ -9,7 +9,7 @@ import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { observer } from '@formily/reactive-react';
 import { observable } from '@formily/reactive';
 import { Card, Typography } from 'antd';
-import { ContextFilterItem, transformFilter } from '@nocobase/client';
+import { VariableFilterItem, transformFilter } from '@nocobase/client';
 
 const { Text, Paragraph } = Typography;
 
@@ -200,7 +200,7 @@ class VariableFilterModel extends FlowModel {
       return (
         <div style={{ padding: 16 }}>
           <Card size="small" title="变量筛选项组件示例">
-            <ContextFilterItem value={filterValue} model={self} />
+            <VariableFilterItem value={filterValue} model={self} />
 
             <div style={{ marginTop: 24 }}>
               <Text strong>当前筛选条件：</Text>
