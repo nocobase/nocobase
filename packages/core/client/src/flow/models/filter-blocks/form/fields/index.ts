@@ -11,7 +11,7 @@ export * from './InputFilterFieldModel';
 export * from './FilterFormFieldModel';
 export * from './CheckboxFilterFieldModel';
 export * from './CheckboxGroupFilterFieldModel';
-export * from './SelectFilterFormEditableFieldModel';
+export * from './SelectFilterFieldModel';
 export * from './TimeFilterFormEditableFieldModel';
 export * from './RadioGroupFilterFieldModel';
 export * from './NumberFilterFieldModel';
