@@ -16,6 +16,5 @@ export * from './TimeFilterFieldModel';
 export * from './RadioGroupFilterFieldModel';
 export * from './NumberFilterFieldModel';
 export * from './PercentFilterFieldModel';
-export * from './UploadFilterFormEditableFieldModel';
 export * from './association';
 export * from './date-time';
