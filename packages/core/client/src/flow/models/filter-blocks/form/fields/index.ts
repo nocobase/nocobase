@@ -14,7 +14,7 @@ export * from './CheckboxGroupFilterFieldModel';
 export * from './SelectFilterFormEditableFieldModel';
 export * from './TimeFilterFormEditableFieldModel';
 export * from './RadioGroupFilterFormEditableFieldModel';
-export * from './NumberFilterFormEditableFieldModel';
+export * from './NumberFilterFieldModel';
 export * from './PercentFilterFormEditableFieldModel';
 export * from './UploadFilterFormEditableFieldModel';
 export * from './association';
