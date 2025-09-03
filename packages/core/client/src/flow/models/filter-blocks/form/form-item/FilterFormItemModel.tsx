@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, reaction } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
-import { capitalize } from 'lodash';
+import { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../../base/FieldModel';
 import { FormItem } from '../../../data-blocks/form/FormItem';
+import { FilterManager } from '../../filter-manager/FilterManager';
 
 export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -63,14 +64,74 @@ export class FilterFormItemModel extends CollectionFieldItemModel {
     });
   }
 
-  onInit(options: any) {
+  operator: string;
+
+  private debouncedDoFilter: ReturnType<typeof debounce>;
+
+  onInit(options) {
     super.onInit(options);
+    // 创建防抖的 doFilter 方法，延迟 300ms
+    this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
+  }
+
+  onUnmount() {
+    super.onUnmount();
+    // 取消防抖函数的执行
+    this.debouncedDoFilter.cancel();
+  }
+
+  async destroy(): Promise<boolean> {
+    const result = await super.destroy();
+
+    // 清理筛选配置
+    const filterManager: FilterManager = this.context.filterManager;
+    await filterManager.removeFilterConfig({ filterId: this.uid });
+
+    return result;
+  }
+
+  doFilter() {
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
+  }
+
+  doReset() {
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
+  }
+
+  /**
+   * 获取用于显示在筛选条件中的字段值
+   * @returns
+   */
+  getFilterValue() {
+    return this.context.form?.getFieldValue(this.props.name);
+  }
+
+  /**
+   * 处理回车事件
+   * 当用户在输入框中按下回车键时触发筛选
+   */
+  handleEnterPress = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+      event.preventDefault(); // 防止表单提交等默认行为
+      this.doFilter(); // 立即执行筛选
+    }
+  };
+
+  getValueProps(value) {
+    if (this.context.blockModel.autoTriggerFilter) {
+      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+    }
+
+    return {
+      value,
+      onKeyDown: this.handleEnterPress.bind(this), // 添加回车事件监听
+    };
   }
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
-      <FormItem {...this.props}>
+      <FormItem {...this.props} getValueProps={this.getValueProps}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -132,7 +193,7 @@ FilterFormItemModel.registerFlow({
           ctx.model.setProps(collectionField.getComponentProps());
         }
         ctx.model.setProps({
-          name: ctx.model.fieldPath,
+          name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
         });
       },
     },
@@ -216,6 +277,13 @@ FilterFormItemModel.registerFlow({
           },
         };
       },
+    },
+
+    connectFields: {
+      use: 'connectFields',
+    },
+    defaultOperator: {
+      use: 'defaultOperator',
     },
   },
 });
