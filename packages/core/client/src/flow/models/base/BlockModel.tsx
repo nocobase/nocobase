@@ -19,6 +19,7 @@ import {
   escapeT,
   FlowModel,
   FlowModelContext,
+  ModelConstructor,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
@@ -177,24 +178,27 @@ BlockModel.define({ hide: true, label: escapeT('Other blocks') });
 //
 
 export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
-  static inTypes(type: string) {
-    const types = this.getTypes();
-    return types.includes(type);
+  static _getScene() {
+    return _.castArray(this['scene'] || []);
   }
 
-  static getTypes() {
-    return _.castArray(this['types'] || this['type'] || []);
+  static _isScene(scene: string) {
+    const scenes = this._getScene();
+    return scenes.includes(scene);
   }
 
   static async defineChildren(ctx: FlowModelContext) {
     const children = await buildSubModelItems(this)(ctx);
-    const { collectionName, filterByTk } = ctx.view.inputArgs;
+    const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
     return children.filter((item) => {
-      if (collectionName && !filterByTk) {
-        const M = ctx.engine.getModelClass(item.useModel);
-        return M?.['inTypes']('toNew');
+      const M = ctx.engine.getModelClass(item.useModel) as typeof DataBlockModel;
+      if (scene === 'select') {
+        return M._isScene('select');
       }
-      return true;
+      if (scene === 'new' || (collectionName && !filterByTk)) {
+        return M._isScene('new');
+      }
+      return !M._isScene('select');
     });
   }
 }
@@ -256,7 +260,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     if (!collectionName) {
       return children(ctx);
     }
-    if (this.inTypes('toNew')) {
+    if (this._isScene('new') || this._isScene('select')) {
       const initOptions = {
         dataSourceKey,
         collectionName,
@@ -292,7 +296,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         label: 'Associated records',
         children: () => {
           const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-          return collection.getAssociationFields(this.getTypes()).map((field) => {
+          return collection.getAssociationFields(this._getScene()).map((field) => {
             const initOptions = {
               dataSourceKey,
               collectionName: field.target,
@@ -320,7 +324,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         children: children(ctx),
       },
     ];
-    if (this.inTypes('toOne')) {
+    if (this._isScene('one')) {
       const initOptions = {
         dataSourceKey,
         collectionName,

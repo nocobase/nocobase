@@ -25,7 +25,7 @@ import { FormComponent, FormModel } from './FormModel';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
-  static type = 'toNew';
+  static scene = 'new';
 
   createResource(ctx, params) {
     const resource = new SingleRecordResource();
