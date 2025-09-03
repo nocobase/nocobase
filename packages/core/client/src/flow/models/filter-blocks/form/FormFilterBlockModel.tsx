@@ -92,7 +92,7 @@ export class FormFilterBlockModel extends FilterBlockModel<{
               </Droppable>
             ))}
             <AddSubModelButton
-              key="filter-form-v2-actions-add"
+              key="filter-form-actions-add"
               model={this}
               subModelKey="actions"
               subModelBaseClass={'FilterFormActionModel'}
