@@ -335,7 +335,10 @@ export class FlowEngine {
    * @param {CreateModelOptions} options Model creation options
    * @returns {T} Created model instance
    */
-  public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
+  public createModel<T extends FlowModel = FlowModel>(
+    options: CreateModelOptions,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
@@ -352,8 +355,15 @@ export class FlowEngine {
       modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
     }
 
+    if (extra?.delegate) {
+      modelInstance.context.addDelegate(extra.delegate);
+    }
+
     if (parentId && this.#modelInstances.has(parentId)) {
       modelInstance.setParent(this.#modelInstances.get(parentId));
+      if (extra?.delegateToParent === false) {
+        modelInstance.removeParentDelegate();
+      }
     }
 
     this.#modelInstances.set(modelInstance.uid, modelInstance);
@@ -475,7 +485,13 @@ export class FlowEngine {
    * @param {any} options Load or create options
    * @returns {Promise<T | null>} Model instance or null
    */
-  async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
+  async loadOrCreateModel<T extends FlowModel = FlowModel>(
+    options,
+    extra?: {
+      delegateToParent?: boolean;
+      delegate?: FlowContext;
+    },
+  ): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
     if (uid && this.#modelInstances.has(uid)) {
@@ -488,9 +504,9 @@ export class FlowEngine {
     const data = await this.#modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
-      model = this.createModel<T>(data as any);
+      model = this.createModel<T>(data as any, extra);
     } else {
-      model = this.createModel<T>(options);
+      model = this.createModel<T>(options, extra);
       await model.save();
     }
     if (model.parent) {

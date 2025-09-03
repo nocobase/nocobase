@@ -27,7 +27,7 @@ import { FormActionModel } from './FormActionModel';
 import { FormComponent, FormModel } from './FormModel';
 
 export class EditFormModel extends FormModel {
-  static types = ['toOne', 'toMany'];
+  static scene = ['one', 'many'];
 
   createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑

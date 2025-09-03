@@ -43,6 +43,7 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
+import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
@@ -50,7 +51,6 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
-import { Typography } from 'antd/lib';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -357,7 +357,21 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   _createSubModels(subModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>) {
-    Object.entries(subModels || {}).forEach(([key, value]) => {
+    // Merge default subModels declared in meta.createModelOptions (object form) with provided subModels.
+    // Provided subModels take precedence over defaults.
+    let mergedSubModels: Record<string, CreateSubModelOptions | CreateSubModelOptions[]> = subModels || {};
+    try {
+      const Cls = this.constructor as typeof FlowModel;
+      const meta = Cls.meta as any;
+      const metaCreate = meta?.createModelOptions;
+      if (metaCreate && typeof metaCreate === 'object' && metaCreate.subModels) {
+        mergedSubModels = _.merge({}, _.cloneDeep(metaCreate.subModels || {}), _.cloneDeep(subModels || {}));
+      }
+    } catch (e) {
+      // Fallback silently if meta defaults resolution fails
+    }
+
+    Object.entries(mergedSubModels || {}).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value
           .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))

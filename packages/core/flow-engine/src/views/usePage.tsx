@@ -8,12 +8,12 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
+import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
-import ReactDOM from 'react-dom';
-import { observer } from '..';
 import { createViewMeta } from './createViewMeta';
 
 let uuid = 0;
@@ -58,6 +58,8 @@ export function usePage() {
     });
     if (inheritContext) {
       ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
     }
 
     const PageWithContext = observer(
