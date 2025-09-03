@@ -77,18 +77,18 @@ function RecordPickerField(props) {
   return (
     <Select
       open={false}
-      value={props.value}
+      value={
+        toOne
+          ? props.value
+            ? { label: props.value[props.fieldNames.label], value: props.value[props.fieldNames.value] }
+            : undefined
+          : (props.value || []).map((v) => ({
+              label: v[props.fieldNames.label],
+              value: v[props.fieldNames.value],
+            }))
+      }
       labelRender={(item) => {
-        if (Array.isArray(props.value)) {
-          return props.value.map((v, index) => {
-            return (
-              <span key={index}>
-                <LabelByField option={v} fieldNames={props.fieldNames} />
-              </span>
-            );
-          });
-        }
-        return <LabelByField option={props.value} fieldNames={props.fieldNames} />;
+        return <LabelByField option={item} fieldNames={props.fieldNames} />;
       }}
       labelInValue
       mode={toOne ? undefined : 'multiple'}

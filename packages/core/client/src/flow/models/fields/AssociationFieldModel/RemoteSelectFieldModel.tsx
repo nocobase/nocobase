@@ -43,11 +43,11 @@ export function LabelByField(props) {
   fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.setProps({ value: option?.[fieldNames.label] });
-  console.log(fieldModel.render());
+  const labelValue = option?.[fieldNames.label] || option.label;
+  fieldModel.setProps({ value: labelValue });
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>
-      {option[fieldNames.label] ? fieldModel.render() : tval('N/A')}
+      {labelValue ? fieldModel.render() : tval('N/A')}
     </span>
   );
 }
