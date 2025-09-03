@@ -619,6 +619,7 @@ describe('workflow > Plugin', () => {
 
       const w1 = await WorkflowRepo.create({
         values: {
+          id: 10001,
           enabled: true,
           type: 'syncTrigger',
           key: 'abc',

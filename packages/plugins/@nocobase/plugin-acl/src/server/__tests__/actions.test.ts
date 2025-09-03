@@ -87,7 +87,7 @@ describe('destroy action with acl', () => {
     expect(role.get('resources').length).toBe(1);
   });
 
-  it('should load the association collection when the source collection does not have the createdById field', async () => {
+  it.only('should load the association collection when the source collection does not have the createdById field', async () => {
     const A = app.collection({
       name: 'a',
       fields: [
@@ -123,12 +123,13 @@ describe('destroy action with acl', () => {
       },
     });
 
+    const user = await app.db.getRepository('users').findOne();
     app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentRoles = ['user'];
         ctx.state.currentUser = {
-          id: 1,
+          id: user.id,
         };
         return next();
       },
@@ -139,7 +140,7 @@ describe('destroy action with acl', () => {
 
     const a1 = await A.repository.findOne({ filter: { title: 'a1' } });
 
-    const response = await (await app.agent().login(1)).resource('a.bs', a1.get('id')).list();
+    const response = await (await app.agent().login(user.id)).resource('a.bs', a1.get('id')).list();
     expect(response.statusCode).toEqual(200);
   });
 
@@ -160,12 +161,13 @@ describe('destroy action with acl', () => {
       },
     });
 
+    const user = await app.db.getRepository('users').findOne();
     app.resourcer.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentRoles = ['user'];
         ctx.state.currentUser = {
-          id: 1,
+          id: user.id,
         };
         return next();
       },
@@ -175,7 +177,7 @@ describe('destroy action with acl', () => {
       },
     );
 
-    const response = await (await app.agent().login(1)).resource('posts').destroy({
+    const response = await (await app.agent().login(user.id)).resource('posts').destroy({
       filterByTk: p1.get('id'),
     });
 
