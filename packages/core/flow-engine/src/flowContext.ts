@@ -39,7 +39,6 @@ import {
   FlowExitException,
   resolveDefaultParams,
   resolveExpressions,
-  extractUsedVariableNames,
   extractUsedVariablePaths,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
@@ -800,8 +799,8 @@ class BaseFlowEngineContext extends FlowContext {
   /**
    * @deprecated use `resolveJsonTemplate` instead
    */
-  declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
-  declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
+  declare renderJson: (template: JSONValue) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -873,109 +872,106 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
-    this.defineMethod('renderJson', function (template: any, options?: { contextParams?: any }) {
-      return this.resolveJsonTemplate(template, options);
+    this.defineMethod('renderJson', function (template: any) {
+      return this.resolveJsonTemplate(template);
     });
-    this.defineMethod(
-      'resolveJsonTemplate',
-      async function (this: BaseFlowEngineContext, template: any, options?: { contextParams?: any }) {
-        // 提取模板使用到的变量及其子路径
-        const used = extractUsedVariablePaths(template);
-        const usedVarNames = Object.keys(used || {});
-        if (!usedVarNames.length) {
-          // 模板未包含任何 ctx.* 变量，直接前端解析
-          return resolveExpressions(template, this);
-        }
+    this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+      // 提取模板使用到的变量及其子路径
+      const used = extractUsedVariablePaths(template);
+      const usedVarNames = Object.keys(used || {});
+      if (!usedVarNames.length) {
+        // 模板未包含任何 ctx.* 变量，直接前端解析
+        return resolveExpressions(template, this);
+      }
 
-        // 分流：根据 resolveOnServer 标记与子路径判断哪些交给后端
-        const serverVarPaths: Record<string, string[]> = {};
-        for (const varName of usedVarNames) {
-          const paths = used[varName] || [];
-          const opt = this._props?.[varName] as PropertyOptions | undefined;
-          const mark = opt?.resolveOnServer;
-          if (mark === true) {
-            serverVarPaths[varName] = paths;
-          } else if (typeof mark === 'function') {
-            const filtered = paths.filter((p) => {
-              try {
-                return !!mark(p);
-              } catch (_) {
-                return false;
-              }
-            });
-            if (filtered.length) serverVarPaths[varName] = filtered;
-          }
-        }
-
-        const needServer = Object.keys(serverVarPaths).length > 0;
-        let serverResolved = template;
-        if (needServer) {
-          const collectFromMeta = async (): Promise<Record<string, any>> => {
-            const out: Record<string, any> = {};
+      // 分流：根据 resolveOnServer 标记与子路径判断哪些交给后端
+      const serverVarPaths: Record<string, string[]> = {};
+      for (const varName of usedVarNames) {
+        const paths = used[varName] || [];
+        const opt = this._props?.[varName] as PropertyOptions | undefined;
+        const mark = opt?.resolveOnServer;
+        if (mark === true) {
+          serverVarPaths[varName] = paths;
+        } else if (typeof mark === 'function') {
+          const filtered = paths.filter((p) => {
             try {
-              const metas = this._getPropertiesMeta?.() as Record<
-                string,
-                PropertyMeta | (() => Promise<PropertyMeta | null> | PropertyMeta | null)
-              >;
-              if (!metas || typeof metas !== 'object') return out;
-              for (const [key, metaOrFactory] of Object.entries(metas)) {
-                if (!serverVarPaths[key]) continue; // 仅处理需要后端解析的变量
-                try {
-                  let meta: PropertyMeta | null;
-                  if (typeof metaOrFactory === 'function') {
-                    const fn = metaOrFactory as () => Promise<PropertyMeta | null>;
-                    meta = await fn();
-                  } else {
-                    meta = metaOrFactory as PropertyMeta;
-                  }
-                  if (!meta || typeof meta !== 'object') continue;
-                  const builder = meta.buildVariablesParams;
-                  if (typeof builder !== 'function') continue;
-                  const built = await builder(this);
-                  if (!built) continue;
-                  const neededPaths = serverVarPaths[key] || [];
-                  const filtered = filterBuilderOutputByPaths(built, neededPaths);
-                  if (filtered && (typeof filtered !== 'object' || Object.keys(filtered).length)) {
-                    out[key] = filtered;
-                  }
-                } catch (_) {
-                  // 忽略单个属性的错误
-                }
-              }
+              return !!mark(p);
             } catch (_) {
-              // ignore
+              return false;
             }
-            return out;
-          };
+          });
+          if (filtered.length) serverVarPaths[varName] = filtered;
+        }
+      }
 
-          const inputFromMeta = !options?.contextParams ? await collectFromMeta() : {};
-          const autoInput = { ...inputFromMeta };
-          const autoContextParams = Object.keys(autoInput).length
-            ? _buildServerContextParams(this, autoInput)
-            : undefined;
+      const needServer = Object.keys(serverVarPaths).length > 0;
+      let serverResolved = template;
+      if (needServer) {
+        const collectFromMeta = async (): Promise<Record<string, any>> => {
+          const out: Record<string, any> = {};
+          try {
+            const metas = this._getPropertiesMeta?.() as Record<
+              string,
+              PropertyMeta | (() => Promise<PropertyMeta | null> | PropertyMeta | null)
+            >;
+            if (!metas || typeof metas !== 'object') return out;
+            for (const [key, metaOrFactory] of Object.entries(metas)) {
+              if (!serverVarPaths[key]) continue; // 仅处理需要后端解析的变量
+              try {
+                let meta: PropertyMeta | null;
+                if (typeof metaOrFactory === 'function') {
+                  const fn = metaOrFactory as () => Promise<PropertyMeta | null>;
+                  meta = await fn();
+                } else {
+                  meta = metaOrFactory as PropertyMeta;
+                }
+                if (!meta || typeof meta !== 'object') continue;
+                const builder = meta.buildVariablesParams;
+                if (typeof builder !== 'function') continue;
+                const built = await builder(this);
+                if (!built) continue;
+                const neededPaths = serverVarPaths[key] || [];
+                const filtered = filterBuilderOutputByPaths(built, neededPaths);
+                if (filtered && (typeof filtered !== 'object' || Object.keys(filtered).length)) {
+                  out[key] = filtered;
+                }
+              } catch (_) {
+                // 忽略单个属性的错误
+              }
+            }
+          } catch (_) {
+            // ignore
+          }
+          return out;
+        };
 
-          if (this.api) {
-            try {
-              const { data } = await this.api.request({
-                method: 'POST',
-                url: 'variables:resolve',
-                data: {
-                  values: {
-                    template,
-                    contextParams: options?.contextParams || autoContextParams || {},
-                  },
+        const inputFromMeta = await collectFromMeta();
+        const autoInput = { ...inputFromMeta };
+        const autoContextParams = Object.keys(autoInput).length
+          ? _buildServerContextParams(this, autoInput)
+          : undefined;
+
+        if (this.api) {
+          try {
+            const { data } = await this.api.request({
+              method: 'POST',
+              url: 'variables:resolve',
+              data: {
+                values: {
+                  template,
+                  contextParams: autoContextParams || {},
                 },
-              });
-              serverResolved = data?.data?.data ?? template;
-            } catch (e) {
-              this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
-            }
+              },
+            });
+            serverResolved = data?.data?.data ?? template;
+          } catch (e) {
+            this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
           }
         }
+      }
 
-        return resolveExpressions(serverResolved, this);
-      },
-    );
+      return resolveExpressions(serverResolved, this);
+    });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
     });

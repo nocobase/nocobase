@@ -1048,6 +1048,145 @@ describe('FlowContext delayed meta loading', () => {
   });
 });
 
+describe('FlowContext resolveOnServer selective server resolution', () => {
+  it('does not call server by default (no resolveOnServer set)', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ record: { id: 2 }, type: 'dialog' }),
+      // default resolveOnServer = false
+    });
+
+    const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ id: 2, type: 'dialog' });
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('calls server only for subpaths that match resolveOnServer function', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        // Only 'view.record' should be present
+        expect(Object.keys(cp)).toContain('view.record');
+        return { data: { data: { id: 1 } } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ type: 'dialog' }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'users', filterByTk: 1, dataSourceKey: 'main' } }),
+      }),
+    });
+
+    const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out.type).toBe('dialog');
+    expect(api.request).toHaveBeenCalledTimes(1);
+    const [{ url }] = api.request.mock.calls[0];
+    expect(url).toBe('variables:resolve');
+  });
+
+  it('calls server for whole variable when resolveOnServer is true', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        expect(Object.keys(cp)).toContain('user');
+        return { data: { data: { userId: 1 } } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('user', {
+      value: { id: 1, name: 'tester' },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 1, dataSourceKey: 'main' }),
+      }),
+    });
+
+    const tpl = { uid: '{{ ctx.user.id }}' } as any;
+    await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('x', {
+      value: { a: 1 },
+      resolveOnServer: true,
+      // no meta / no buildVariablesParams
+    });
+
+    const tpl = { a: '{{ ctx.x.a }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ a: 1 });
+    // based on resolveOnServer, still calls server with empty contextParams
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('mixes server and client variables correctly in one pass', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
+        return { data: { data: { ok: true } } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('user', {
+      value: { id: 7, name: 'u' },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 7, dataSourceKey: 'main' }),
+      }),
+    });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ type: 'dialog' }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'posts', filterByTk: 11, dataSourceKey: 'main' } }),
+      }),
+    });
+
+    engine.context.defineProperty('role', { value: 'admin' });
+
+    const tpl = {
+      a: '{{ ctx.user.id }}',
+      b: '{{ ctx.view.record.id }}',
+      c: '{{ ctx.view.type }}',
+      d: '{{ ctx.role }}',
+    } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    // client-resolved fields
+    expect(out.c).toBe('dialog');
+    expect(out.d).toBe('admin');
+    // server was called
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('FlowContext getPropertyMetaTree with value parameter', () => {
   it('should return full tree when no value parameter is provided', () => {
     const ctx = new FlowContext();

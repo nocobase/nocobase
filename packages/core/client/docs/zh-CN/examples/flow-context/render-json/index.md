@@ -16,11 +16,10 @@
 
 ```ts
 type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
-declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
+declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
 ```
 
 - `template` *(JSONValue)*：需要解析的 JSON 模板，可以是对象、数组、字符串。
-- `options` *(可选)*：额外的解析选项，用于自定义解析逻辑。
 
 ## 返回值
 
