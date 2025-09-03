@@ -12,7 +12,7 @@ import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { AssociationFilterFormEditableFieldModel } from './AssociationFilterFormEditableFieldModel';
+import { AssociationFilterFieldModel } from './AssociationFilterFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
@@ -136,7 +136,7 @@ const AssociationSelect = connect(
   }),
 );
 
-export class SelectAssociationFilterFormEditableFieldModel extends AssociationFilterFormEditableFieldModel {
+export class SelectAssociationFilterFieldModel extends AssociationFilterFieldModel {
   static readonly supportedFieldInterfaces = [
     'm2m',
     'm2o',
@@ -191,7 +191,7 @@ const paginationState = {
 };
 
 // 事件绑定
-SelectAssociationFilterFormEditableFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 300,
   steps: {
@@ -231,7 +231,7 @@ SelectAssociationFilterFormEditableFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-SelectAssociationFilterFormEditableFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -261,7 +261,7 @@ SelectAssociationFilterFormEditableFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-SelectAssociationFilterFormEditableFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -301,7 +301,7 @@ SelectAssociationFilterFormEditableFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-SelectAssociationFilterFormEditableFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -349,7 +349,7 @@ SelectAssociationFilterFormEditableFieldModel.registerFlow({
 });
 
 //专有配置项
-SelectAssociationFilterFormEditableFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
   sort: 200,

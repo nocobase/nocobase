@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AssociationFilterFormEditableFieldModel';
-export * from './SelectAssociationFilterFormEditableFieldModel';
+export * from './AssociationFilterFieldModel';
+export * from './SelectAssociationFilterFieldModel';
 //

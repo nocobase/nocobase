@@ -9,6 +9,6 @@
 
 import { FilterFormFieldModel } from '../FilterFormFieldModel';
 
-export class AssociationFilterFormEditableFieldModel extends FilterFormFieldModel {
+export class AssociationFilterFieldModel extends FilterFormFieldModel {
   public static readonly supportedFieldInterfaces = null;
 }
