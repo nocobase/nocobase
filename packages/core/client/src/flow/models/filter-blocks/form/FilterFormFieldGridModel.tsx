@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AddSubModelButton, FlowModel, FlowModelOptions, FlowSettingsButton, observable } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { CreateFormModel } from '../..';
