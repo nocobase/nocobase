@@ -10,7 +10,7 @@
 import { Input } from '@formily/antd-v5';
 import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class InputFilterFormEditableFieldModel extends FilterFormFieldModel {
+export class InputFilterFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = [
     'input',
     'email',

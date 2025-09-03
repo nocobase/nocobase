@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './InputFilterFormEditableFieldModel';
+export * from './InputFilterFieldModel';
 export * from './FilterFormFieldModel';
 export * from './CheckboxFilterFormEditableFieldModel';
 export * from './CheckboxGroupFilterFormEditableFieldModel';
