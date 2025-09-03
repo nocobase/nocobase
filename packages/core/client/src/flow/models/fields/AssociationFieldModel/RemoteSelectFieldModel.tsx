@@ -33,7 +33,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
   return convert(record);
 }
 
-function LabelByField(props) {
+export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any =
@@ -44,7 +44,12 @@ function LabelByField(props) {
     get: () => option,
   });
   fieldModel.setProps({ value: option?.[fieldNames.label] });
-  return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
+  console.log(fieldModel.render());
+  return (
+    <span style={{ pointerEvents: 'none' }} key={key}>
+      {option[fieldNames.label] ? fieldModel.render() : tval('N/A')}
+    </span>
+  );
 }
 
 export function LazySelect(props) {

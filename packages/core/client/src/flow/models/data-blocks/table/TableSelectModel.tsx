@@ -16,7 +16,7 @@ export class TableSelectModel extends TableModel {
   onInit(options: any) {
     super.onInit(options);
     this.resource.addFilterGroup(`${this.uid}-select`, {
-      [this.collection.filterTargetKey]: ['root'],
+      // [this.collection.filterTargetKey]: ['root'],
     });
     Object.assign(this.rowSelectionProps, this.context.view.inputArgs.rowSelectionProps || {});
     console.log('inputArgs', this.context.view.inputArgs);

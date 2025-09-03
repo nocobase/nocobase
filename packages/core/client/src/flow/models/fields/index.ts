@@ -22,7 +22,6 @@ export * from './NumberFieldModel';
 export * from './PasswordFieldModel';
 export * from './PercentFieldModel';
 export * from './RadioGroupFieldModel';
-export * from './RecordPickerFieldModel';
 export * from './RichTextFieldModel';
 export * from './SelectFieldModel';
 export * from './TextareaFieldModel';
