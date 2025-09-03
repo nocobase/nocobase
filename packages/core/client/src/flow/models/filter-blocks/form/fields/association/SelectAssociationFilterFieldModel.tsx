@@ -6,18 +6,16 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
-import { castArray } from 'lodash';
 import React from 'react';
 import { AssociationFilterFieldModel } from './AssociationFilterFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
 
-  const { label: labelKey, value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null) return undefined;
@@ -38,15 +36,14 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
-  const field = currentModel.subModels.field as FlowModel;
+  const field: any =
+    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.context.defineProperty('fieldValue', {
-    get: () => option?.[fieldNames.label],
-  });
+  fieldModel.setProps({ value: option?.[fieldNames.label] });
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
@@ -75,111 +72,28 @@ function LazySelect(props) {
   );
 }
 
-const AssociationSelect = connect(
-  (props: any) => {
-    return <LazySelect {...props} />;
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-      };
-    },
-  ),
-  mapReadPretty((props) => {
-    const currentModel: any = useFlowModel();
-
-    const { fieldNames, value } = props;
-    if (!value) {
-      return;
-    }
-    const field = currentModel.subModels.field as FlowModel;
-    const key = value?.[fieldNames.value];
-    const fieldModel = field.createFork({}, key);
-    fieldModel.context.defineProperty('record', {
-      get: () => value,
-    });
-    fieldModel.context.defineProperty('fieldValue', {
-      get: () => value?.[fieldNames.label],
-    });
-
-    const arrayValue = castArray(value);
-
-    return (
-      <>
-        {arrayValue.map((v, index) => {
-          const key = `${index}`;
-          const fieldModel = field.createFork({}, key);
-          fieldModel.context.defineProperty('record', {
-            get: () => v,
-          });
-          fieldModel.context.defineProperty('fieldValue', {
-            get: () => v?.[fieldNames.label],
-          });
-          fieldModel.context.defineProperty('recordIndex', {
-            get: () => index,
-          });
-
-          const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');
-          return (
-            <React.Fragment key={index}>
-              {index > 0 && ', '}
-              {content}
-            </React.Fragment>
-          );
-        })}
-      </>
-    );
-  }),
-);
-
 export class SelectAssociationFilterFieldModel extends AssociationFilterFieldModel {
-  static readonly supportedFieldInterfaces = [
-    'm2m',
-    'm2o',
-    'o2o',
-    'o2m',
-    'oho',
-    'obo',
-    'updatedBy',
-    'createdBy',
-    'mbm',
-  ];
-  dataSource;
+  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
 
   set onPopupScroll(fn) {
-    this.field.setComponentProps({ onPopupScroll: fn });
+    this.setProps({ onPopupScroll: fn });
   }
-
   set onDropdownVisibleChange(fn) {
-    this.field.setComponentProps({ onDropdownVisibleChange: fn });
+    this.setProps({ onDropdownVisibleChange: fn });
   }
-
   set onSearch(fn) {
-    this.field.setComponentProps({ onSearch: fn });
-  }
-
-  get component() {
-    return [AssociationSelect, {}];
+    this.setProps({ onSearch: fn });
   }
 
   setDataSource(dataSource) {
-    this.field.dataSource = dataSource;
+    this.setProps({ options: dataSource });
   }
-
   getDataSource() {
-    return this.field.dataSource;
+    return this.props.options;
   }
-
-  getFilterValue() {
-    const fieldNames = this.field.componentProps.fieldNames || { label: 'label', value: 'value' };
-    return Array.isArray(this.field.value)
-      ? this.field.value.map((item) => item[fieldNames.value])
-      : this.field.value?.[fieldNames.value];
+  get component() {
+    return [LazySelect, {}];
   }
 }
 
@@ -197,13 +111,12 @@ SelectAssociationFilterFieldModel.registerFlow({
   steps: {
     bindEvent: {
       handler(ctx, params) {
-        const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
+        const labelFieldName = ctx.model.props.fieldNames.label;
 
         ctx.model.onDropdownVisibleChange = (open) => {
           if (open) {
             ctx.model.dispatchEvent('dropdownOpen', {
               apiClient: ctx.app.apiClient,
-              field: ctx.model.field,
               form: ctx.model.form,
             });
           } else {
@@ -215,14 +128,12 @@ SelectAssociationFilterFieldModel.registerFlow({
           ctx.model.dispatchEvent('popupScroll', {
             event: e,
             apiClient: ctx.app.apiClient,
-            field: ctx.model.field,
           });
         };
         ctx.model.onSearch = (searchText) => {
           ctx.model.dispatchEvent('search', {
             searchText,
             apiClient: ctx.app.apiClient,
-            field: ctx.model.field,
           });
         };
       },
@@ -237,15 +148,15 @@ SelectAssociationFilterFieldModel.registerFlow({
   steps: {
     setScope: {
       async handler(ctx, params) {
-        const labelFieldValue = ctx.model.field.componentProps.fieldNames.value;
+        const labelFieldValue = ctx.model.props.fieldNames.value;
         const resource = ctx.model.resource;
-        const dataSource = ctx.model.field.dataSource;
+        const options = ctx.model.getDataSource();
         resource.setPage(1);
         await resource.refresh();
         const { count } = resource.getMeta();
         const data = resource.getData();
         //已经全部加载
-        if (dataSource && count === dataSource.length && data[0][labelFieldValue] === dataSource[0][labelFieldValue]) {
+        if (options && count === options.length && data[0][labelFieldValue] === options[0][labelFieldValue]) {
           return;
         }
         ctx.model.setDataSource(data);
@@ -309,7 +220,7 @@ SelectAssociationFilterFieldModel.registerFlow({
       async handler(ctx, params) {
         try {
           const targetCollection = ctx.model.collectionField.targetCollection;
-          const labelFieldName = ctx.model.field.componentProps.fieldNames.label;
+          const labelFieldName = ctx.model.props.fieldNames.label;
           const targetLabelField = targetCollection.getField(labelFieldName);
 
           const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
