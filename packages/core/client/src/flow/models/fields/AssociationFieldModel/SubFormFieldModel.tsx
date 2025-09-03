@@ -20,6 +20,53 @@ import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
 import { each } from '@formily/shared';
 import { action } from '@formily/reactive';
 
+class FormAssociationFieldModel extends AssociationFieldModel {
+  onInit(options) {
+    super.onInit(options);
+    this.context.defineProperty('collection', {
+      get: () => this.collectionField.targetCollection,
+    });
+    this.context.defineProperty('prefixFieldPath', {
+      get: () => {
+        return (this.parent as FormItemModel).fieldPath;
+      },
+    });
+  }
+}
+const ObjectNester = (props) => {
+  const model: any = useFlowModel();
+  return (
+    <Card>
+      <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
+    </Card>
+  );
+};
+export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
+  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
+  onInit(options) {
+    super.onInit(options);
+  }
+  get component() {
+    return [
+      ObjectNester,
+      {
+        type: this.collectionField.type,
+      },
+    ];
+  }
+}
+
+ObjectFormAssociationFieldModel.define({
+  createModelOptions: {
+    use: 'ObjectFormAssociationFieldModel',
+    subModels: {
+      grid: {
+        use: 'FormFieldGridModel',
+      },
+    },
+  },
+});
+
 const ArrayNester = ({ name }: { name: string }) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
@@ -60,55 +107,6 @@ const ArrayNester = ({ name }: { name: string }) => {
     </Form.List>
   );
 };
-
-const ObjectNester = (props) => {
-  const model: any = useFlowModel();
-  return (
-    <Card>
-      <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
-    </Card>
-  );
-};
-
-class FormAssociationFieldModel extends AssociationFieldModel {
-  onInit(options) {
-    super.onInit(options);
-    this.context.defineProperty('collection', {
-      get: () => this.collectionField.targetCollection,
-    });
-    this.context.defineProperty('prefixFieldPath', {
-      get: () => {
-        return (this.parent as FormItemModel).fieldPath;
-      },
-    });
-  }
-}
-
-export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
-  onInit(options) {
-    super.onInit(options);
-  }
-  get component() {
-    return [
-      ObjectNester,
-      {
-        type: this.collectionField.type,
-      },
-    ];
-  }
-}
-
-ObjectFormAssociationFieldModel.define({
-  createModelOptions: {
-    use: 'ObjectFormAssociationFieldModel',
-    subModels: {
-      grid: {
-        use: 'FormFieldGridModel',
-      },
-    },
-  },
-});
 
 export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
