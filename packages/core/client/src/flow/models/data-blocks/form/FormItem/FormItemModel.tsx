@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  buildWrapperFieldChildren,
-  Collection,
-  escapeT,
-  FlowModelContext,
-  jioToJoiSchema,
-} from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, jioToJoiSchema } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';

@@ -8,7 +8,7 @@
  */
 
 import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
-import { FilterFormEditableFieldModel } from '../../form-v2/fields';
+import { FilterFormEditableFieldModel } from '../../form/fields';
 
 export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
   name: 'defaultOperator',

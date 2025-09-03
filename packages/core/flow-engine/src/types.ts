@@ -435,3 +435,5 @@ export interface PersistOptions {
    */
   persist?: boolean;
 }
+
+export type ResourceType<T = any> = string | { new (...args: any[]): T };
