@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, observable, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Form, Select } from 'antd';
 import React from 'react';
@@ -31,7 +31,7 @@ function RemoteModelRenderer({ options }) {
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-function RecordPickerContent() {
+function RecordPickerContent({ model }) {
   const ctx = useFlowContext();
   const { Header, Footer } = ctx.view;
   return (
@@ -49,7 +49,15 @@ function RecordPickerContent() {
         }}
       />
       <Footer>
-        <Button type="primary">提交</Button>
+        <Button
+          type="primary"
+          onClick={() => {
+            model.change();
+            ctx.view.close();
+          }}
+        >
+          提交
+        </Button>
       </Footer>
     </div>
   );
@@ -57,9 +65,18 @@ function RecordPickerContent() {
 
 function RecordPickerField(props) {
   const ctx = useFlowContext();
+  console.log('ctx.model.props.value', ctx.model.props.value?.slice?.());
   return (
     <Select
       open={false}
+      value={ctx.model.props.value?.slice?.()}
+      labelRender={(item) => {
+        console.log('labelRender item', item);
+        return 'aa';
+      }} // use labelInValue to avoid warning
+      labelInValue
+      mode="multiple"
+      fieldNames={{ label: 'name', value: 'name' }}
       onClick={() => {
         ctx.viewer.open({
           type: 'drawer',
@@ -74,14 +91,14 @@ function RecordPickerField(props) {
               type: 'radio',
               renderCell: undefined,
               selectedRowKeys: undefined,
-              defaultSelectedRowKeys: undefined,
-              onChange: (selectedRowKeys) => {
-                console.log('selectedRowKeys', selectedRowKeys);
+              defaultSelectedRows: ctx.model.props.value,
+              onChange: (_, selectedRows) => {
+                ctx.model.selectedRows.value = selectedRows;
               },
             },
           },
           content: (view) => {
-            return <RecordPickerContent />;
+            return <RecordPickerContent model={ctx.model} />;
           },
         });
       }}
@@ -90,8 +107,16 @@ function RecordPickerField(props) {
 }
 
 export class RecordPickerFieldModel extends FormFieldModel {
+  selectedRows = observable.ref([]);
+
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
+
   render() {
+    console.log('RecordPickerFieldModel render', this.props);
     return <RecordPickerField />;
+  }
+
+  change() {
+    this.props.onChange(this.selectedRows.value);
   }
 }
