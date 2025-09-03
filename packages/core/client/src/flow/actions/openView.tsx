@@ -82,7 +82,7 @@ export const openView = defineAction({
     let pageModelUid: string | null = null;
 
     await ctx.viewer.open({
-      type: openMode,
+      type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
       inputArgs: {
         ...ctx.inputArgs,
         dataSourceKey: params.dataSourceKey,
