@@ -789,6 +789,22 @@ export class FlowContext {
     }
     return false;
   }
+
+  /**
+   * 获取属性定义选项（包含代理链）。
+   *
+   * - 优先查找当前上下文自身通过 defineProperty 注册的属性定义
+   * - 若自身不存在，则沿委托链（delegates）向上查找第一个命中的定义
+   *
+   * @param key 顶层属性名（例如 'user'、'view'）
+   * @returns 属性定义选项，或 undefined（未定义）
+   */
+  getPropertyOptions(key: string): PropertyOptions | undefined {
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      return this._props[key];
+    }
+    return this._findPropertyInDelegates(this._delegates, key);
+  }
 }
 
 class BaseFlowEngineContext extends FlowContext {
@@ -888,7 +904,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const serverVarPaths: Record<string, string[]> = {};
       for (const varName of usedVarNames) {
         const paths = used[varName] || [];
-        const opt = this._props?.[varName] as PropertyOptions | undefined;
+        const opt = this.getPropertyOptions(varName);
         const mark = opt?.resolveOnServer;
         if (mark === true) {
           serverVarPaths[varName] = paths;
