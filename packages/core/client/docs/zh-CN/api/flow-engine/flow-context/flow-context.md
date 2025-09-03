@@ -54,6 +54,17 @@
 
 ---
 
+### 属性工具方法
+
+#### `getPropertyOptions(key: string): PropertyOptions | undefined`
+
+获取属性定义选项（包含代理链）。
+
+- 先查找当前上下文通过 `defineProperty` 注册的属性；若不存在，则沿委托链向上查找第一个命中的定义
+- 返回 `PropertyOptions` 或 `undefined`
+
+---
+
 ### 代理机制
 
 #### `addDelegate(ctx: FlowContext): void`

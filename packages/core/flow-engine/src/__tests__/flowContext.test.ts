@@ -1121,6 +1121,34 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     expect(api.request).toHaveBeenCalledTimes(1);
   });
 
+  it('reads resolveOnServer from delegated context properties (e.g., engine.context -> model.context)', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => ({ data: { data: { ok: true } } })),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    // Define 'user' on engine.context only
+    engine.context.defineProperty('user', {
+      value: { id: 3 },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        // purposefully omit builder to test empty contextParams path
+      }),
+    });
+
+    // Create a model and call resolveJsonTemplate on model.context (delegates to engine.context)
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ use: 'M' });
+
+    const tpl = { uid: '{{ ctx.user.id }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
   it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
     const engine = new FlowEngine();
     const api = { request: vi.fn() } as any;
@@ -1184,6 +1212,40 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     expect(out.d).toBe('admin');
     // server was called
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('FlowContext.getPropertyOptions()', () => {
+  it('returns own property options when defined locally', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('alpha', { value: 1, cache: true });
+    const opt = ctx.getPropertyOptions('alpha');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(1);
+    expect(opt.cache).toBe(true);
+  });
+
+  it('returns delegated property options when not defined locally', () => {
+    const base = new FlowContext();
+    base.defineProperty('beta', { value: 2, resolveOnServer: true });
+    const ctx = new FlowContext();
+    ctx.addDelegate(base);
+    const opt = ctx.getPropertyOptions('beta');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(2);
+    expect(opt.resolveOnServer).toBe(true);
+  });
+
+  it('prefers own property options over delegated ones', () => {
+    const base = new FlowContext();
+    base.defineProperty('gamma', { value: 10, resolveOnServer: true });
+    const ctx = new FlowContext();
+    ctx.addDelegate(base);
+    ctx.defineProperty('gamma', { value: 99, resolveOnServer: false });
+    const opt = ctx.getPropertyOptions('gamma');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(99);
+    expect(opt.resolveOnServer).toBe(false);
   });
 });
 
