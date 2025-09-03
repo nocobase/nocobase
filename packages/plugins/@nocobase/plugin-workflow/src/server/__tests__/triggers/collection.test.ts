@@ -366,6 +366,11 @@ describe('workflow > triggers > collection', () => {
     });
 
     it('password changed in users', async () => {
+      const user = await app.db.getRepository('users').findOne({
+        filter: {
+          username: 'nocobase',
+        },
+      });
       const workflow = await WorkflowModel.create({
         enabled: true,
         sync: true,
@@ -377,7 +382,7 @@ describe('workflow > triggers > collection', () => {
         },
       });
 
-      const res = await (await app.agent().login(1)).resource('auth').changePassword({
+      const res = await (await app.agent().login(user.id)).resource('auth').changePassword({
         values: {
           oldPassword: 'admin123',
           newPassword: 'abc123',

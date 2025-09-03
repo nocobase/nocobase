@@ -32,6 +32,10 @@ export default class extends Migration {
 
   async up() {
     const repo = this.db.getRepository('fields');
+    if (!repo) {
+      return;
+    }
+
     const queryInterface = this.db.sequelize.getQueryInterface();
     for (const collectionName of collections) {
       const collection = this.db.getCollection(collectionName);
@@ -59,6 +63,21 @@ export default class extends Migration {
             interface: 'snowflakeId',
             options,
           },
+        });
+      }
+    }
+
+    const treeCollections = [...this.db.collections.values()].filter((collection) => collection.options.tree);
+    for (const collection of treeCollections) {
+      const pathCollection = this.db.getCollection(`main_${collection.name}_path`);
+      if (pathCollection) {
+        const nodePk = pathCollection.getField('nodePk').columnName();
+        await queryInterface.changeColumn(pathCollection.getTableNameWithSchema(), nodePk, {
+          type: DataTypes.BIGINT,
+        });
+        const rootPk = pathCollection.getField('rootPk').columnName();
+        await queryInterface.changeColumn(pathCollection.getTableNameWithSchema(), rootPk, {
+          type: DataTypes.BIGINT,
         });
       }
     }

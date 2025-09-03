@@ -50,8 +50,10 @@ describe('set departments info', () => {
   });
 
   it('should set departments roles', async () => {
+    const user = await db.getRepository('users').findOne();
+
     ctx.state.currentUser = await db.getRepository('users').findOne({
-      filterByTk: 1,
+      filterByTk: user.id,
     });
     const role = await db.getRepository('roles').create({
       values: {
@@ -63,7 +65,7 @@ describe('set departments info', () => {
       values: {
         title: 'Department',
         roles: [role.name],
-        members: [1],
+        members: [user.id],
       },
     });
     await setDepartmentsInfo(ctx, () => {});

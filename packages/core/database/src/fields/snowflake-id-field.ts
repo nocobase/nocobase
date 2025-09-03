@@ -26,14 +26,22 @@ export class SnowflakeIdField extends Field {
     return DataTypes.BIGINT;
   }
 
+  private setId(name: string, instance: Model) {
+    const value = instance.get(name);
+
+    if (!value) {
+      instance.set(name, SnowflakeIdField.snowflakeIdGenerator.getUniqueID().toString());
+    }
+  }
+
   init() {
     const { name } = this.options;
 
-    this.listener = async (instance: Model) => {
-      const value = instance.get(name);
+    this.listener = (instance: Model) => this.setId(name, instance);
 
-      if (!value) {
-        instance.set(name, SnowflakeIdField.snowflakeIdGenerator.getUniqueID().toString());
+    this.bulkListener = async (instances: Model[]) => {
+      for (const instance of instances) {
+        this.setId(name, instance);
       }
     };
   }
@@ -42,12 +50,14 @@ export class SnowflakeIdField extends Field {
     super.bind();
     this.on('beforeValidate', this.listener);
     this.on('beforeSave', this.listener);
+    this.on('beforeBulkCreate', this.bulkListener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeValidate', this.listener);
     this.off('beforeSave', this.listener);
+    this.off('beforeBulkCreate', this.bulkListener);
   }
 }
 

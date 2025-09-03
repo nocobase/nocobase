@@ -589,12 +589,14 @@ describe('workflow > Plugin', () => {
 
       const w1 = await WModel.create(
         {
+          id: 10000,
           enabled: true,
           type: 'syncTrigger',
           key: 'abc',
           current: true,
         },
         {
+          // Can't generate id automatically when disabling hooks
           hooks: false,
         },
       );
