@@ -991,6 +991,18 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
     });
+    // Expose API token and current role as top-level variables for VariableInput.
+    // Front-end only: no resolveOnServer flag. Mark cache: false to reflect runtime changes.
+    this.defineProperty('token', {
+      get: () => this.api?.auth?.token,
+      cache: false,
+      meta: { type: 'string', title: this.t('API Token') },
+    });
+    this.defineProperty('role', {
+      get: () => this.api?.auth?.role,
+      cache: false,
+      meta: { type: 'string', title: this.t('Current role') },
+    });
     this.defineProperty('logger', {
       get: () => {
         return this.engine.logger.child({ module: 'flow-engine' });
