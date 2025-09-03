@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps } from '@formily/react';
-import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
 import { FilterFormFieldModel } from './FilterFormFieldModel';
+import React from 'react';
+import _ from 'lodash';
 
-const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
+const isNumberLike = (index: any): index is number => _.isNumber(index) || /^-?\d+(\.\d+)?$/.test(index);
 
 const toValue = (value: any, callback: (v: number) => number) => {
   if (isNumberLike(value)) {
@@ -22,22 +22,18 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-const PercentInput = connect(
-  InputNumber,
-  mapProps((props, field: any) => {
-    const v = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
-    return {
-      ...props,
-      value: v,
-      addonAfter: '%',
-      onChange: (v) => {
-        field.setValue(toValue(v, (v) => v / 100));
-      },
-      style: { width: '100%' },
-    };
-  }),
-);
-export class PercentFilterFormEditableFieldModel extends FilterFormFieldModel {
+const PercentInput = (props) => {
+  const v = useMemo(() => toValue(props.value, (v) => v * 100), [props.value]);
+  const newProps = {
+    ...props,
+    value: v,
+    addonAfter: '%',
+    style: { width: '100%' },
+  };
+  return <InputNumber {...newProps} />;
+};
+
+export class PercentFilterFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['percent'];
 
   get component() {
