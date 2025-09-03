@@ -9,33 +9,50 @@
 
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Card, Form, Button } from 'antd';
+import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
+import { Card, Form, Button, Tooltip } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { FormComponent } from '../../data-blocks/form/FormModel';
 import { FormItem } from '../../data-blocks/form/FormItem/FormItem';
 import { each } from '@formily/shared';
 import { action } from '@formily/reactive';
 
-const ArrayNester = ({ name, gridModel }: { name: string; gridModel: FlowModel }) => {
+const ArrayNester = ({ name }: { name: string }) => {
+  const model: any = useFlowModel();
+  const gridModel = model.subModels.grid;
+  const { t } = useTranslation();
   return (
-    <Form.List name={name}>
+    <Form.List name={name} initialValue={[{}]}>
       {(fields, { add, remove }) => (
         <>
           {fields.map(({ key, name, ...restField }) => {
             // 给每个子项生成一个 fork model
-            const fork = gridModel.createFork({}, `${name}`);
+            const fork = gridModel.createFork({});
             return (
-              <Card key={key} style={{ marginBottom: 12 }}>
+              <Card
+                key={key}
+                bordered={true}
+                style={{ position: 'relative' }}
+                className={css`
+                  > .ant-card-body > .ant-divider:last-child {
+                    display: none;
+                  }
+                `}
+              >
+                <div style={{ textAlign: 'right' }}>
+                  <Tooltip key={'remove'} title={t('Remove')}>
+                    <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(name)} />
+                  </Tooltip>
+                </div>
                 {/* 渲染 fork model */}
                 <FlowModelRenderer model={fork} showFlowSettings={false} />
-                <Button type="link" danger onClick={() => remove(name)}>
-                  删除
-                </Button>
               </Card>
             );
           })}
-          <Button type="dashed" onClick={() => add({})} block>
+          <Button type="dashed" onClick={() => add()} block>
             添加一项
           </Button>
         </>
@@ -47,6 +64,7 @@ const ArrayNester = ({ name, gridModel }: { name: string; gridModel: FlowModel }
 const ObjectNester = (props) => {
   const model: any = useFlowModel();
   console.log(model);
+  model.collection = model.collectionField.targetCollection;
   return (
     <Card>
       <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
@@ -57,8 +75,8 @@ const ObjectNester = (props) => {
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
     super.onInit(options);
-    this.context.defineProperty('currentCollection', {
-      value: this.collectionField.targetCollection,
+    this.context.defineProperty('collection', {
+      get: () => this.collectionField.targetCollection,
     });
   }
 }
@@ -96,6 +114,7 @@ export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
       ArrayNester,
       {
         type: this.collectionField.type,
+        name: this.collectionField.name,
       },
     ];
   }
