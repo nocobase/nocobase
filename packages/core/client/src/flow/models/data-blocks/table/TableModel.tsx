@@ -21,6 +21,7 @@ import {
   FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
+  observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
@@ -131,7 +132,9 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
-  static type = 'toMany';
+  static scene = 'many';
+
+  rowSelectionProps = observable.deep({});
 
   get resource() {
     return super.resource as MultiRecordResource;
@@ -381,6 +384,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
             },
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
             renderCell: this.renderCell,
+            ...this.rowSelectionProps,
           }}
           loading={this.resource.loading}
           virtual={this.props.virtual}

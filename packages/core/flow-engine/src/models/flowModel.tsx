@@ -43,6 +43,7 @@ import {
   setupRuntimeContextSteps,
 } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
+import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
@@ -50,7 +51,6 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
-import { Typography } from 'antd/lib';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
