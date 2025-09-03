@@ -9,8 +9,8 @@
 
 export * from './InputFilterFieldModel';
 export * from './FilterFormFieldModel';
-export * from './CheckboxFilterFormEditableFieldModel';
-export * from './CheckboxGroupFilterFormEditableFieldModel';
+export * from './CheckboxFilterFieldModel';
+export * from './CheckboxGroupFilterFieldModel';
 export * from './SelectFilterFormEditableFieldModel';
 export * from './TimeFilterFormEditableFieldModel';
 export * from './RadioGroupFilterFormEditableFieldModel';

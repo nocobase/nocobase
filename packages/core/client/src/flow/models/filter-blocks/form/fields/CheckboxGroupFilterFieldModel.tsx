@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Select } from '@formily/antd-v5';
+import { Select } from 'antd';
 import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class CheckboxGroupFilterFormEditableFieldModel extends FilterFormFieldModel {
+export class CheckboxGroupFilterFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['checkboxGroup'];
 
   get component() {
