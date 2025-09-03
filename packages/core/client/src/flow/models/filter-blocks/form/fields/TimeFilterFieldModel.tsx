@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { TimePicker } from '@formily/antd-v5';
+import { TimePicker } from 'antd';
 import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class TimeFilterFormEditableFieldModel extends FilterFormFieldModel {
+export class TimeFilterFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['time'];
 
   get component() {

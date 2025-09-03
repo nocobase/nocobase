@@ -12,7 +12,7 @@ export * from './FilterFormFieldModel';
 export * from './CheckboxFilterFieldModel';
 export * from './CheckboxGroupFilterFieldModel';
 export * from './SelectFilterFieldModel';
-export * from './TimeFilterFormEditableFieldModel';
+export * from './TimeFilterFieldModel';
 export * from './RadioGroupFilterFieldModel';
 export * from './NumberFilterFieldModel';
 export * from './PercentFilterFieldModel';
