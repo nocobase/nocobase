@@ -31,6 +31,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         const fork = action.createFork({}, `${index}`);
         fork.context.defineProperty('record', {
           get: () => record,
+          resolveOnServer: true,
           meta: () =>
             buildRecordMeta(
               () => (fork.context as any).collection,

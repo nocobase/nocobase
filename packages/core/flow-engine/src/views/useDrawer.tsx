@@ -102,6 +102,7 @@ export function useDrawer() {
     ctx.defineProperty('view', {
       get: () => currentDrawer,
       meta: createViewMeta(ctx, () => currentDrawer),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);

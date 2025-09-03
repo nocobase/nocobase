@@ -102,6 +102,7 @@ export class QuickEditForm extends FlowModel {
     });
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
+      resolveOnServer: true,
       meta: () =>
         buildRecordMeta(
           () => this.collection,

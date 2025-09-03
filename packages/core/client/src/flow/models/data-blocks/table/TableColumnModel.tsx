@@ -160,6 +160,7 @@ export class TableColumnModel extends CollectionFieldItemModel {
           const fork = field.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
+            resolveOnServer: true,
             meta: () =>
               buildRecordMeta(
                 () => (fork.context as any).collection,

@@ -56,6 +56,7 @@ export const CurrentUserProvider = (props) => {
       .then((res) => {
         app.flowEngine.context.defineProperty('user', {
           value: res?.data?.data,
+          resolveOnServer: true,
           meta: createRecordProxyContext(
             () => app.flowEngine.context.user,
             () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),

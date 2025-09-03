@@ -102,6 +102,7 @@ export function useDialog() {
     ctx.defineProperty('view', {
       get: () => currentDialog,
       meta: createViewMeta(ctx, () => currentDialog),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);

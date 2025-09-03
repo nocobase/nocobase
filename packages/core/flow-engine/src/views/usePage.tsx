@@ -54,6 +54,7 @@ export function usePage() {
     ctx.defineProperty('view', {
       get: () => currentPage,
       meta: createViewMeta(ctx, () => currentPage),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
     if (inheritContext) {
       ctx.addDelegate(flowContext);

@@ -59,6 +59,7 @@ export class DetailsModel extends CollectionBlockModel<{
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
+      resolveOnServer: true,
       meta: () =>
         buildRecordMeta(
           () => this.collection,
