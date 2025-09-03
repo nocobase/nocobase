@@ -8,6 +8,7 @@
  */
 
 import { APIClient } from '@nocobase/sdk';
+import { FlowContext } from '../flowContext';
 import { FlowResource, ResourceError } from './flowResource';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
@@ -23,6 +24,13 @@ export class APIResource<TData = any> extends FlowResource<TData> {
   };
 
   protected api: APIClient;
+
+  constructor(context?: FlowContext) {
+    super(context);
+    if (context) {
+      this.api = context.api;
+    }
+  }
 
   setAPIClient(api: APIClient) {
     this.api = api;

@@ -8,12 +8,18 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FlowEngine } from '../../flowEngine';
 import { APIResource } from '../apiResource';
 import { ResourceError } from '../flowResource';
 
+function createAPIResource<T = any>() {
+  const engine = new FlowEngine();
+  return engine.createResource(APIResource);
+}
+
 describe('APIResource - request configuration', () => {
   it('should get/set URL', () => {
-    const r = new APIResource();
+    const r = createAPIResource();
 
     expect(r.getURL()).toBeUndefined();
 
@@ -23,7 +29,7 @@ describe('APIResource - request configuration', () => {
   });
 
   it('should set method, headers, params, body and custom options', () => {
-    const r = new APIResource();
+    const r = createAPIResource();
 
     // method
     const r1 = r.setRequestMethod('post');
@@ -70,7 +76,7 @@ describe('APIResource - request configuration', () => {
   });
 
   it('setAPIClient should be chainable', () => {
-    const r = new APIResource();
+    const r = createAPIResource();
     const api = { request: vi.fn() };
     const ret = r.setAPIClient(api as any);
     expect(ret).toBe(r);
@@ -79,7 +85,7 @@ describe('APIResource - request configuration', () => {
 
 describe('APIResource - loading meta', () => {
   it('should read and write loading via meta', () => {
-    const r = new APIResource();
+    const r = createAPIResource();
 
     expect(r.loading).toBe(false);
 
@@ -95,7 +101,7 @@ describe('APIResource - loading meta', () => {
 
 describe('APIResource - refresh', () => {
   it('should fetch data successfully and emit refresh event', async () => {
-    const r = new APIResource<any>();
+    const r = createAPIResource();
     const api = {
       request: vi.fn().mockResolvedValue({ data: { ok: 1 } }),
     };
@@ -131,7 +137,7 @@ describe('APIResource - refresh', () => {
   });
 
   it('should set ResourceError and rethrow on failure', async () => {
-    const r = new APIResource<any>();
+    const r = createAPIResource();
     const api = {
       request: vi.fn().mockRejectedValue({
         response: { data: { error: { message: 'boom', code: 'X' } } },
@@ -156,7 +162,7 @@ describe('APIResource - refresh', () => {
   });
 
   it('should throw if API client not set', async () => {
-    const r = new APIResource<any>();
+    const r = createAPIResource();
     r.setURL('/no-api');
     await expect(r.refresh()).rejects.toThrowError('API client not set');
   });
@@ -164,7 +170,7 @@ describe('APIResource - refresh', () => {
 
 describe('APIResource - getRequestOptions', () => {
   it('should return current request options and reflect updates (same reference)', () => {
-    const r = new APIResource();
+    const r = createAPIResource();
 
     r.setURL('/api/x')
       .setRequestMethod('post')

@@ -141,7 +141,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
   }
 
   createResource(ctx, params) {
-    return new MultiRecordResource();
+    return this.context.createResource(MultiRecordResource);
   }
 
   getColumns() {

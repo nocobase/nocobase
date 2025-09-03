@@ -425,7 +425,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       get: () => {
         const params = this.getResourceSettingsInitParams();
         const resource = this.createResource(this.context, params);
-        resource.setAPIClient(this.context.api);
+        // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
         resource.on('refresh', () => {
