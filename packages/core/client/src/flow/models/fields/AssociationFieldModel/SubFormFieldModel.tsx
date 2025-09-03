@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { FormComponent } from '../../data-blocks/form/FormModel';
-import { FormItem } from '../../data-blocks/form/FormItem/FormItem';
+import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
 import { each } from '@formily/shared';
 import { action } from '@formily/reactive';
 
@@ -63,8 +63,6 @@ const ArrayNester = ({ name }: { name: string }) => {
 
 const ObjectNester = (props) => {
   const model: any = useFlowModel();
-  console.log(model);
-  model.collection = model.collectionField.targetCollection;
   return (
     <Card>
       <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
@@ -77,6 +75,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
     super.onInit(options);
     this.context.defineProperty('collection', {
       get: () => this.collectionField.targetCollection,
+    });
+    this.context.defineProperty('prefixFieldPath', {
+      get: () => {
+        return (this.parent as FormItemModel).fieldPath;
+      },
     });
   }
 }

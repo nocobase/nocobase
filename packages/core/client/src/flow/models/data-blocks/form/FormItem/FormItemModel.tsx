@@ -45,11 +45,14 @@ export class FormItemModel extends CollectionFieldItemModel {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-      const fieldPath = field.name;
+      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
       return {
-        key: field.name,
+        key: fullName,
         label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        toggleable: (subModel) => {
+          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+          return fieldPath === fullName;
+        },
         useModel: 'FormItemModel',
         createModelOptions: () => ({
           use: 'FormItemModel',
@@ -57,8 +60,8 @@ export class FormItemModel extends CollectionFieldItemModel {
             fieldSettings: {
               init: {
                 dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
+                collectionName: ctx.model.context.blockModel.collection.name,
+                fieldPath: fullName,
               },
             },
           },
@@ -140,8 +143,11 @@ FormItemModel.registerFlow({
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
+        const fieldPath = ctx.model.fieldPath;
+        const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
+        // console.log(fullName);
         ctx.model.setProps({
-          name: ctx.model.fieldPath,
+          name: fullName,
         });
       },
     },

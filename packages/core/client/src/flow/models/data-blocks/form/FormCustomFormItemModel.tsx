@@ -22,6 +22,7 @@ export class FormCustomFormItemModel extends FlowModel {
       Array.from(models.entries()).map(([name, ModelClass]) => ({
         label: ctx.t(ModelClass.meta.label),
         createModelOptions: { use: name },
+        key: name,
       }));
 
     return [...toChildren(commonModels), ...toChildren(formCustomModels)];
