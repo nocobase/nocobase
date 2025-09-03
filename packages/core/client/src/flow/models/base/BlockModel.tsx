@@ -198,7 +198,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
       if (scene === 'new' || (collectionName && !filterByTk)) {
         return M._isScene('new');
       }
-      return true;
+      return !M._isScene('select');
     });
   }
 }

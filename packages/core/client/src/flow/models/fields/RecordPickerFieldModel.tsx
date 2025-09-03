@@ -19,8 +19,6 @@ function RemoteModelRenderer({ options }) {
   const { data, loading } = useRequest(
     async () => {
       const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
-      console.log('inputArgs', ctx.view.inputArgs);
-      console.log('inputArgs', model.context.view.inputArgs);
       return model;
     },
     {
