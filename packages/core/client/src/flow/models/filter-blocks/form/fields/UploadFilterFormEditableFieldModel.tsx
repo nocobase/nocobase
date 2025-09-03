@@ -12,7 +12,7 @@ import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { castArray } from 'lodash';
 import React, { useState } from 'react';
-import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 const CardUpload = (props) => {
   const outerField: any = useField();

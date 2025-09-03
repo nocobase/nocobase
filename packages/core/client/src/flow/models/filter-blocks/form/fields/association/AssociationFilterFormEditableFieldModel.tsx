@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterFormFieldModel } from '../FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from '../FilterFormFieldModel';
 
 export class AssociationFilterFormEditableFieldModel extends FilterFormFieldModel {
   public static readonly supportedFieldInterfaces = null;

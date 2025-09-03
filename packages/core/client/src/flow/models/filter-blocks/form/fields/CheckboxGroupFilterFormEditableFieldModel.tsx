@@ -8,7 +8,7 @@
  */
 
 import { Select } from '@formily/antd-v5';
-import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 export class CheckboxGroupFilterFormEditableFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['checkboxGroup'];

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { escapeT } from '@nocobase/flow-engine';
-import { FilterFormFieldModel } from '../FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from '../FilterFormFieldModel';
 import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
 export class DateTimeFilterFormFieldModel extends FilterFormFieldModel {

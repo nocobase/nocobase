@@ -12,7 +12,7 @@ import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
-import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 

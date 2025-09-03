@@ -8,7 +8,7 @@
  */
 
 import { Input } from '@formily/antd-v5';
-import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 export class InputFilterFormEditableFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = [

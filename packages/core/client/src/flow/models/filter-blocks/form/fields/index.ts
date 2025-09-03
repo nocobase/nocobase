@@ -8,7 +8,7 @@
  */
 
 export * from './InputFilterFormEditableFieldModel';
-export * from './FilterFormEditableFieldModel';
+export * from './FilterFormFieldModel';
 export * from './CheckboxFilterFormEditableFieldModel';
 export * from './CheckboxGroupFilterFormEditableFieldModel';
 export * from './SelectFilterFormEditableFieldModel';

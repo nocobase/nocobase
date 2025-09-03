@@ -14,7 +14,7 @@ import { InputNumberProps as AntdInputNumberProps } from 'antd';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
-import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
