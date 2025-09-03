@@ -10,7 +10,5 @@
 import { FilterFormFieldModel } from '../FilterFormEditableFieldModel';
 
 export class AssociationFilterFormEditableFieldModel extends FilterFormFieldModel {
-  enableOperator = false;
-
   public static readonly supportedFieldInterfaces = null;
 }

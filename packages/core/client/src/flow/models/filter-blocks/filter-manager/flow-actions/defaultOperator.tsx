@@ -16,10 +16,6 @@ export const defaultOperator = defineAction<FilterFormFieldModel>({
   uiSchema(ctx: FlowContext) {
     const operatorOptions = getOperatorOptions(ctx.model);
 
-    if (!ctx.model.enableOperator) {
-      return;
-    }
-
     return {
       value: {
         type: 'string',

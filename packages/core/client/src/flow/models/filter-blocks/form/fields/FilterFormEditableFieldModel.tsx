@@ -15,10 +15,6 @@ import { FilterManager } from '../../filter-manager/FilterManager';
 export class FilterFormFieldModel extends EditableFieldModel {
   declare decorator: any;
 
-  enableOperator = true;
-  enableRequired = false;
-  enableDisplayMode = false;
-
   operator: string;
 
   private dispose: Function;
