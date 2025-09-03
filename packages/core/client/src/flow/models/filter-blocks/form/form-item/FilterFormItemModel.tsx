@@ -125,6 +125,7 @@ export class FilterFormItemModel extends CollectionFieldItemModel {
     return {
       value,
       onKeyDown: this.handleEnterPress.bind(this), // 添加回车事件监听
+      isRange: this.operator === '$dateBetween',
     };
   }
 
