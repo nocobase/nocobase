@@ -139,9 +139,13 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 当启用右侧变量输入时，构造 VariableInput 的 converters，使其在未选择变量时渲染与 mergedSchema 对应的静态输入
     const rightConverters = useMemo<Converters>(() => {
       return {
-        renderInputComponent: () => staticInputRenderer,
+        renderInputComponent: () => {
+          const isVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
+          if (isVariable) return null;
+          return staticInputRenderer;
+        },
       };
-    }, [staticInputRenderer]);
+    }, [staticInputRenderer, rightValue]);
 
     return (
       <Space>
