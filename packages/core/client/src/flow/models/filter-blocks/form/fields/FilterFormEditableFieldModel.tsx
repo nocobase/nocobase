@@ -12,7 +12,7 @@ import { debounce } from 'lodash';
 import { EditableFieldModel } from '../../../fields/EditableFieldModel';
 import { FilterManager } from '../../filter-manager/FilterManager';
 
-export class FilterFormEditableFieldModel extends EditableFieldModel {
+export class FilterFormFieldModel extends EditableFieldModel {
   declare decorator: any;
 
   enableOperator = true;
@@ -97,7 +97,7 @@ export class FilterFormEditableFieldModel extends EditableFieldModel {
   };
 }
 
-FilterFormEditableFieldModel.registerFlow({
+FilterFormFieldModel.registerFlow({
   key: 'filterFormItemSettings',
   title: 'Filter form item settings',
   steps: {

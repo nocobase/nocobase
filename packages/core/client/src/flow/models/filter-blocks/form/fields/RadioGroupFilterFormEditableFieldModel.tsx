@@ -8,9 +8,9 @@
  */
 
 import { Select } from '@formily/antd-v5';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
 
-export class RadioGroupFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+export class RadioGroupFilterFormEditableFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['radioGroup'];
 
   get component() {

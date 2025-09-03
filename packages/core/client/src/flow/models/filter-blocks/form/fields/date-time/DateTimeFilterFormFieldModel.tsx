@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { escapeT } from '@nocobase/flow-engine';
-import { FilterFormEditableFieldModel } from '../FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from '../FilterFormEditableFieldModel';
 import { DateFilterDynamicComponent } from '../../../../../../schema-component';
 
-export class DateTimeFilterFormFieldModel extends FilterFormEditableFieldModel {
+export class DateTimeFilterFormFieldModel extends FilterFormFieldModel {
   declare decorator: any;
   enableDisplayMode = false;
 

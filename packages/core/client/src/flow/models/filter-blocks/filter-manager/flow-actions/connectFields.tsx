@@ -14,7 +14,7 @@ import { Button, Dropdown, Select, Segmented, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
-import { FilterFormEditableFieldModel } from '../../form/fields';
+import { FilterFormFieldModel } from '../../form/fields';
 import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
 
@@ -82,7 +82,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
 function ConnectFields(
   props: Readonly<{ value: ConnectFieldsConfig; onChange?: (value: ConnectFieldsConfig) => void }>,
 ) {
-  const ctx = useFlowSettingsContext<FilterFormEditableFieldModel>();
+  const ctx = useFlowSettingsContext<FilterFormFieldModel>();
   const allDataModels = useMemo(() => getAllDataModels(ctx.blockGridModel), [ctx.blockGridModel]);
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
   const [modelFields, setModelFields] = useState<Record<string, any[]>>({});

@@ -12,7 +12,7 @@ import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
@@ -37,7 +37,7 @@ const PercentInput = connect(
     };
   }),
 );
-export class PercentFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+export class PercentFilterFormEditableFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['percent'];
 
   get component() {

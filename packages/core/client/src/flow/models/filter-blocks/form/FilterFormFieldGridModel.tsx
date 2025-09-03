@@ -15,7 +15,7 @@ import { FilterBlockModel } from '../../base/BlockModel';
 import { GridModel } from '../../base/GridModel';
 import { getAllDataModels } from '../utils';
 import { buildFieldMenuItems } from './buildFieldMenuItems';
-import { FilterFormEditableFieldModel } from './fields';
+import { FilterFormFieldModel } from './fields';
 
 export class FilterFormFieldGridModel extends GridModel {
   itemFlowSettings = {
@@ -113,7 +113,7 @@ export class FilterFormFieldGridModel extends GridModel {
     return menuItems;
   }
 
-  async onModelCreated(subModel: FilterFormEditableFieldModel) {
+  async onModelCreated(subModel: FilterFormFieldModel) {
     const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 

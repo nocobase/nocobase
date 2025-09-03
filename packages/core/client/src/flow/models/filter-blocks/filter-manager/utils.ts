@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterFormEditableFieldModel } from '../form/fields';
+import { FilterFormFieldModel } from '../form/fields';
 
-export function getDefaultOperator(model: FilterFormEditableFieldModel) {
+export function getDefaultOperator(model: FilterFormFieldModel) {
   return model.operator || model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;
 }
 

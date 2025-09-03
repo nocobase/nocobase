@@ -8,9 +8,9 @@
  */
 
 import { Select } from '@formily/antd-v5';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
 
-export class SelectFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+export class SelectFilterFormEditableFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {

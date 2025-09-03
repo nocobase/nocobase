@@ -12,7 +12,7 @@ import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
 import { castArray } from 'lodash';
 import React, { useState } from 'react';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormEditableFieldModel';
 
 const CardUpload = (props) => {
   const outerField: any = useField();
@@ -44,7 +44,7 @@ const CardUpload = (props) => {
     </FieldContext.Provider>
   );
 };
-export class UploadFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+export class UploadFilterFormEditableFieldModel extends FilterFormFieldModel {
   declare setComponentProps: any; //TODO: this should be removed after field refactored
   static readonly supportedFieldInterfaces = [
     'attachment',

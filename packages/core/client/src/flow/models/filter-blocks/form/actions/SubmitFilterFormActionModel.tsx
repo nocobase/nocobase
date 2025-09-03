@@ -10,7 +10,7 @@
 import type { ButtonProps } from 'antd/es/button';
 import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { FilterFormEditableFieldModel } from '../fields';
+import { FilterFormFieldModel } from '../fields';
 
 export class SubmitFilterFormActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
@@ -39,7 +39,7 @@ SubmitFilterFormActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.model.context.blockModel;
         const gridModel = blockModel.subModels.grid;
-        const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
+        const fieldModels: FilterFormFieldModel[] = gridModel.subModels.items;
 
         fieldModels.forEach((fieldModel) => {
           fieldModel.doFilter();

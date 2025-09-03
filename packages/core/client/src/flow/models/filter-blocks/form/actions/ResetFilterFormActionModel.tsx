@@ -8,7 +8,7 @@
  */
 
 import { ButtonProps } from 'antd';
-import { FilterFormEditableFieldModel } from '../fields';
+import { FilterFormFieldModel } from '../fields';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class ResetFilterFormActionModel extends FilterFormActionModel {
@@ -27,7 +27,7 @@ ResetFilterFormActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.model.context.blockModel;
         const gridModel = blockModel.subModels.grid;
-        const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
+        const fieldModels: FilterFormFieldModel[] = gridModel.subModels.items;
 
         fieldModels.forEach((fieldModel) => {
           fieldModel.field.reset();
