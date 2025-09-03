@@ -8,53 +8,25 @@
  */
 
 import Redis from 'ioredis';
-import { AppSupervisor } from './app-supervisor';
-import Application from './application';
+import { Logger } from '@nocobase/logger';
 
-interface RedisConfig {
+export interface RedisConfig {
   connectionString: string;
 }
 
 export class RedisConnectionManager {
-  private static instance: RedisConnectionManager;
-  private mainApp: Application;
+  private logger: Logger;
   private config: RedisConfig;
   private connections: Map<string, Redis> = new Map();
 
-  private constructor(redisConfig: RedisConfig) {
-    this.config = redisConfig;
-    this.mainApp = AppSupervisor.getInstance().getMainApp();
+  constructor(config: { redisConfig: RedisConfig; logger: Logger }) {
+    this.config = config.redisConfig;
+    this.logger = config.logger;
   }
 
-  public static getInstance(): RedisConnectionManager {
-    const connectionString = process.env.REDIS_URL;
-    if (!this.instance) {
-      this.instance = new RedisConnectionManager({
-        connectionString,
-      });
-      this.instance.onAfterMainAppStop();
-    }
-
-    return this.instance;
-  }
-
-  public static getConnection(key = 'default', config?: RedisConfig): Redis | null {
-    const instance = this.getInstance();
-    let conn = instance.connections.get(key);
-    if (conn) {
-      return conn;
-    }
-    config = config || instance.config;
-    const connectionString = config.connectionString;
-    if (!connectionString) {
-      return null;
-    }
-    conn = new Redis(connectionString);
-    instance.connections.set(key, conn);
-
+  private bindEvents(conn: Redis, key: string, config?: RedisConfig) {
     conn.on('connect', () => {
-      instance.mainApp?.log.info(`Redis connected`, {
-        module: 'redis-connection-manager',
+      this.logger.info(`Redis connected`, {
         method: 'getConnection',
         key,
         config,
@@ -62,9 +34,8 @@ export class RedisConnectionManager {
     });
 
     conn.on('error', (err) => {
-      instance.mainApp?.log.error(err.message, {
+      this.logger.error(err.message, {
         err,
-        module: 'redis-connection-manager',
         method: 'getConnection',
         key,
         config,
@@ -72,15 +43,45 @@ export class RedisConnectionManager {
     });
 
     conn.on('close', () => {
-      instance.mainApp?.log.trace(`Redis closed`, {
-        module: 'redis-connection-manager',
+      this.logger.trace(`Redis closed`, {
         method: 'getConnection',
         key,
         config,
       });
     });
+  }
 
+  private getClient(key = 'default', config?: RedisConfig): Redis | null {
+    let conn = this.connections.get(key);
+    if (conn) {
+      return conn;
+    }
+
+    const cfg = config || this.config;
+    if (!cfg.connectionString) {
+      return null;
+    }
+
+    conn = new Redis(cfg.connectionString);
+    this.connections.set(key, conn);
+    this.bindEvents(conn, key, cfg);
     return conn;
+  }
+
+  getConnection(key = 'default', config?: RedisConfig): Redis | null {
+    return this.getClient(key, config);
+  }
+
+  async getConnectionSync(key = 'default', config?: RedisConfig): Promise<Redis> {
+    return new Promise((resolve, reject) => {
+      const conn = this.getClient(key, config);
+      if (!conn) {
+        return reject(new Error('Redis connect string is missing'));
+      }
+
+      conn.once('connect', () => resolve(conn));
+      conn.once('error', reject);
+    });
   }
 
   async close() {
@@ -89,14 +90,6 @@ export class RedisConnectionManager {
         continue;
       }
       await conn.quit();
-    }
-  }
-
-  private onAfterMainAppStop() {
-    if (this.mainApp) {
-      this.mainApp.on('afterStop', async () => {
-        await this.close();
-      });
     }
   }
 }

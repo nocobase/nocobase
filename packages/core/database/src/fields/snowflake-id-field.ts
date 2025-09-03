@@ -11,7 +11,17 @@ import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { Model } from '../model';
 
+interface SnowflakeIdGenerator {
+  getUniqueID(): BigInt;
+}
+
 export class SnowflakeIdField extends Field {
+  private static snowflakeIdGenerator: SnowflakeIdGenerator;
+
+  static setSnowflakeIdGenerator(snowflakeIdGenerator: SnowflakeIdGenerator) {
+    this.snowflakeIdGenerator = snowflakeIdGenerator;
+  }
+
   get dataType() {
     return DataTypes.BIGINT;
   }
@@ -23,7 +33,7 @@ export class SnowflakeIdField extends Field {
       const value = instance.get(name);
 
       if (!value) {
-        instance.set(name, this.database.snowflakeIdGenerator.getUniqueID());
+        instance.set(name, SnowflakeIdField.snowflakeIdGenerator.getUniqueID().toString());
       }
     };
   }

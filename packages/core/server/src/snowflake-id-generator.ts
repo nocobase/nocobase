@@ -7,67 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SnowflakeIdField } from '@nocobase/database';
 import { Snowflake } from 'nodejs-snowflake';
-import { WorkerIdManager } from './worker-id-manager';
-import Application from './application';
-import { AppSupervisor } from './app-supervisor';
 
 export class SnowflakeIdGenerator {
-  private static instance: SnowflakeIdGenerator;
-  private mainApp: Application;
-  private snowflake: Snowflake | null;
-  // 2025-08-31 00:00:00
-  private epoch = 1756569600000;
+  private snowflake: Snowflake;
+  // 2020-11-11 00:00:00 The date of the first commit of NocoBase.
+  private epoch = 1605024000000;
 
-  constructor() {
-    this.mainApp = AppSupervisor.getInstance().getMainApp();
-    this.onAfterMainAppStop();
-    this.init();
-  }
-
-  public static getInstance(): SnowflakeIdGenerator {
-    if (!this.instance) {
-      this.instance = new SnowflakeIdGenerator();
-    }
-
-    return this.instance;
-  }
-
-  private init() {
-    if (this.snowflake) {
-      return;
-    }
-    WorkerIdManager.getWorkerId()
-      .then((workerId) => {
-        this.snowflake = new Snowflake({
-          custom_epoch: this.epoch,
-          instance_id: workerId,
-        });
-      })
-      .catch((err) => {
-        this.mainApp?.log.error(err, {
-          module: 'snowflake-id-generator',
-          method: 'init',
-        });
-      });
+  constructor(workerId: number) {
+    this.snowflake = new Snowflake({
+      instance_id: workerId,
+      custom_epoch: this.epoch,
+    });
   }
 
   getUniqueID() {
-    if (!this.snowflake) {
-      throw new Error('Can not generate snowflake id');
-    }
     return this.snowflake.getUniqueID();
-  }
-
-  private onAfterMainAppStop() {
-    if (this.mainApp) {
-      this.mainApp.on('afterStop', async () => {
-        this.snowflake = null;
-      });
-    }
   }
 }
 
-AppSupervisor.getInstance().on('afterAppAdded', (app: Application) => {
-  app.db.setSnowflakeIdGenerator(SnowflakeIdGenerator.getInstance());
-});
+export function setupSnowflakeIdField(workerId: number) {
+  const generator = new SnowflakeIdGenerator(workerId);
+  SnowflakeIdField.setSnowflakeIdGenerator(generator);
+}

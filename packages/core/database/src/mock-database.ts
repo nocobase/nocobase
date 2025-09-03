@@ -13,7 +13,6 @@ import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
 import path from 'path';
-import { Snowflake } from 'nodejs-snowflake';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
@@ -72,6 +71,8 @@ export async function createMockDatabase(options: IDatabaseOptions = {}) {
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   const dbOptions = merge(getConfigByEnv(), options) as any;
+  // eslint-disable-next-line prefer-const
+  let db: any;
 
   if (process.env['DB_TEST_PREFIX']) {
     let configKey = 'database';
@@ -112,8 +113,6 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
     }
   }
 
-  const db = new MockDatabase(dbOptions);
-  db.setSnowflakeIdGenerator(new Snowflake());
-
-  return db;
+  db = new MockDatabase(dbOptions);
+  return db as MockDatabase;
 }

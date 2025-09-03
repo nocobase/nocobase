@@ -14,6 +14,12 @@ export default {
   shared: true,
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       type: 'string',
       name: 'title',
       interface: 'input',

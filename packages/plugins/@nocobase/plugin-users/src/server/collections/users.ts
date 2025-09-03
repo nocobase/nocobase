@@ -27,7 +27,6 @@ export default defineCollection({
     {
       name: 'id',
       type: 'snowflakeId',
-      autoIncrement: true,
       primaryKey: true,
       allowNull: false,
       uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },

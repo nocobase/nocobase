@@ -81,7 +81,9 @@ import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
 import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
-import { SnowflakeIdGenerator } from './snowflake-id-generator';
+import { setupSnowflakeIdField, SnowflakeIdGenerator } from './snowflake-id-generator';
+import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
+import { WorkerIdAllocator } from './worker-id-allocator';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -110,6 +112,7 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 export interface ApplicationOptions {
   instanceId?: string;
   database?: IDatabaseOptions | Database;
+  redisConfig?: RedisConfig;
   cacheManager?: CacheManagerOptions;
   /**
    * this property is deprecated and should not be used.
@@ -210,7 +213,7 @@ export type MaintainingCommandStatus = {
 };
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public readonly instanceId: string;
+  private _instanceId: number;
   /**
    * @internal
    */
@@ -245,6 +248,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
+  public redisConnectionManager: RedisConnectionManager;
+  public workerIdAllocator: WorkerIdAllocator;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -263,7 +268,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
-    this.instanceId = options.instanceId || nanoid();
     this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
@@ -280,6 +284,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private _sqlLogger: Logger;
+
+  get instanceId() {
+    return this._instanceId;
+  }
 
   get sqlLogger() {
     return this._sqlLogger;
@@ -602,6 +610,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
+  private async disposeServices() {
+    if (this.redisConnectionManager) {
+      await this.redisConnectionManager.close();
+    }
+
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.pubSubManager) {
+      await this.pubSubManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
+    }
+
+    await this.workerIdAllocator.release();
+  }
+
   /**
    * @internal
    */
@@ -616,17 +644,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStop');
     await this.emitAsync('afterStop');
 
-    if (this.cacheManager) {
-      await this.cacheManager.close();
-    }
-
-    if (this.pubSubManager) {
-      await this.pubSubManager.close();
-    }
-
-    if (this.telemetry.started) {
-      await this.telemetry.shutdown();
-    }
+    await this.disposeServices();
 
     this.closeLogger();
 
@@ -657,13 +675,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
 
-      if (this.cacheManager) {
-        await this.cacheManager.close();
-      }
-
-      if (this.telemetry.started) {
-        await this.telemetry.shutdown();
-      }
+      await this.disposeServices();
 
       const oldDb = this.db;
 
@@ -679,7 +691,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
-
     this._cacheManager = await this.createCacheManager();
 
     this.log.debug('init plugins');
@@ -693,6 +704,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.hooks !== false) {
       await this.emitAsync('beforeLoad', this, options);
     }
+
+    this._instanceId = await this.workerIdAllocator.getWorkerId();
+    this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
+
+    setupSnowflakeIdField(this._instanceId);
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
@@ -986,13 +1002,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       log.error(e.message, { method: 'stop', err: e.stack });
     }
 
-    if (this.cacheManager) {
-      await this.cacheManager.close();
-    }
-
-    if (this.telemetry.started) {
-      await this.telemetry.shutdown();
-    }
+    await this.disposeServices();
 
     await this.emitAsync('afterStop', this, options);
     this.emit('__stopped', this, options);
@@ -1242,6 +1252,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.createMainDataSource(options);
+
+    this.redisConnectionManager = new RedisConnectionManager({
+      redisConfig: options.redisConfig,
+      logger: this._logger.child({ module: 'redis-connection-manager' }),
+    });
+
+    this.workerIdAllocator = new WorkerIdAllocator();
 
     this._cronJobManager = new CronJobManager(this);
     this._env = new Environment();
