@@ -60,7 +60,7 @@ export default class extends Migration {
         await repo.update({
           filter: { key: field.key },
           values: {
-            interface: 'snowflakeId',
+            type: 'snowflakeId',
             options,
           },
         });
