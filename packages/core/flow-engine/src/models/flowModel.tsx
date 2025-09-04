@@ -969,7 +969,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     let model: T;
     if (options instanceof FlowModel) {
-      if (options.parent && options.parent !== this && options.parent !== actualParent) {
+      // Compare by uid to tolerate fork wrappers and contextThis bindings
+      const hasParent = !!options.parent;
+      const parentUid = options.parent?.uid;
+      if (hasParent && parentUid && parentUid !== actualParent.uid) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
@@ -1000,7 +1003,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     let model: FlowModel;
     if (options instanceof FlowModel) {
-      if (options.parent && options.parent !== this && options.parent !== actualParent) {
+      // Compare by uid to tolerate fork wrappers and contextThis bindings
+      const hasParent = !!options.parent;
+      const parentUid = options.parent?.uid;
+      if (hasParent && parentUid && parentUid !== actualParent.uid) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
