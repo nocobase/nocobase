@@ -89,6 +89,8 @@ export interface PropertyMeta {
   interface?: string;
   uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
   render?: (props: any) => JSX.Element; // 自定义渲染函数
+  // 用于 VariableInput 的排序：数值越大，显示越靠前；相同值保持稳定顺序
+  sort?: number;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
@@ -98,13 +100,23 @@ export interface PropertyMeta {
   ) => RecordRef | Record<string, any> | Promise<RecordRef | Record<string, any> | undefined> | undefined;
 }
 
+// A factory function that lazily produces PropertyMeta, and may carry
+// hint fields like `title` and `sort` for UI building before resolution.
+export type PropertyMetaFactory = {
+  (): PropertyMeta | Promise<PropertyMeta | null> | null;
+  title?: string;
+  sort?: number;
+};
+
+export type PropertyMetaOrFactory = PropertyMeta | PropertyMetaFactory;
+
 export interface PropertyOptions {
   value?: any;
   once?: boolean; // 是否只定义一次
   get?: Getter;
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
-  meta?: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>); // 支持静态、函数和异步函数
+  meta?: PropertyMetaOrFactory; // 支持静态、函数和异步函数（工厂函数可带 title/sort）
   // 标记该属性是否在服务端解析：
   // - boolean: true 表示整个顶层变量交给服务端；false 表示仅前端解析
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
@@ -127,8 +139,7 @@ export class FlowContext {
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
   #proxy: FlowContext | null = null;
-  private _metaNodeCache: WeakMap<PropertyMeta | (() => Promise<PropertyMeta> | PropertyMeta), MetaTreeNode> =
-    new WeakMap();
+  private _metaNodeCache: WeakMap<PropertyMetaOrFactory, MetaTreeNode> = new WeakMap();
 
   createProxy() {
     if (this.#proxy) {
@@ -279,7 +290,7 @@ export class FlowContext {
   /**
    * 清除特定 meta 对象的缓存
    */
-  private _clearMetaNodeCacheFor(meta: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>)): void {
+  private _clearMetaNodeCacheFor(meta: PropertyMetaOrFactory): void {
     this._metaNodeCache.delete(meta);
   }
 
@@ -372,7 +383,13 @@ export class FlowContext {
       }
     }
 
-    return Object.entries(metaMap).map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
+    // 根级节点按 meta.sort 降序排列（未设置默认为 0）
+    const sorted = (Object.entries(metaMap) as [string, PropertyMetaOrFactory][]).sort(([, a], [, b]) => {
+      const sa = (typeof a === 'function' ? a.sort : a?.sort) ?? 0;
+      const sb = (typeof b === 'function' ? b.sort : b?.sort) ?? 0;
+      return sb - sa;
+    });
+    return sorted.map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
   }
 
   #createChildNodes(
@@ -388,13 +405,13 @@ export class FlowContext {
           if (parentMeta) {
             parentMeta.properties = resolved;
           }
-          return Object.entries(resolved).map(([name, meta]) =>
-            this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
-          );
+          const entries = Object.entries(resolved) as [string, PropertyMeta][];
+          entries.sort(([, a], [, b]) => (b?.sort ?? 0) - (a?.sort ?? 0));
+          return entries.map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles));
         }
-      : Object.entries(properties).map(([name, meta]) =>
-          this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
-        );
+      : (Object.entries(properties) as [string, PropertyMeta][])
+          .sort(([, a], [, b]) => (b?.sort ?? 0) - (a?.sort ?? 0))
+          .map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles));
   }
 
   /**
@@ -402,7 +419,7 @@ export class FlowContext {
    * @param propertyPath 属性路径数组，例如 ["aaa", "bbb"]
    * @returns [finalKey, metaOrFactory, fullPath] 或 null
    */
-  #findMetaByPath(propertyPath: string[]): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+  #findMetaByPath(propertyPath: string[]): [string, PropertyMetaOrFactory, string[]] | null {
     if (propertyPath.length === 0) return null;
 
     const [firstKey, ...remainingPath] = propertyPath;
@@ -430,10 +447,10 @@ export class FlowContext {
    */
   #findMetaInProperty(
     currentKey: string,
-    metaOrFactory: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>),
+    metaOrFactory: PropertyMetaOrFactory,
     remainingPath: string[],
     currentPath: string[],
-  ): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+  ): [string, PropertyMetaOrFactory, string[]] | null {
     // 如果已经到了最后一层，直接返回当前的 meta
     if (remainingPath.length === 0) {
       return [currentKey, metaOrFactory as any, currentPath];
@@ -590,7 +607,7 @@ export class FlowContext {
 
   #toTreeNode(
     name: string,
-    metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>),
+    metaOrFactory: PropertyMetaOrFactory,
     paths: string[] = [name],
     parentTitles: string[] = [],
   ): MetaTreeNode {
@@ -609,7 +626,7 @@ export class FlowContext {
       const initialTitle = name;
       node = {
         name,
-        title: metaOrFactory['title'] || initialTitle, // 初始使用 name 作为 title
+        title: metaOrFactory.title || initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
         uiSchema: undefined,
@@ -663,8 +680,8 @@ export class FlowContext {
     return node;
   }
 
-  _getPropertiesMeta(): Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> {
-    const metaMap: Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> = {};
+  _getPropertiesMeta(): Record<string, PropertyMetaOrFactory> {
+    const metaMap: Record<string, PropertyMetaOrFactory> = {};
 
     // 先处理委托链（委托链的 meta 优先级较低）
     for (const delegate of this._delegates) {
@@ -674,8 +691,7 @@ export class FlowContext {
     // 处理自身属性（自身属性优先级较高）
     for (const [key, options] of Object.entries(this._props)) {
       if (options.meta) {
-        metaMap[key] =
-          typeof options.meta === 'function' ? (options.meta as () => Promise<PropertyMeta>) : options.meta;
+        metaMap[key] = typeof options.meta === 'function' ? (options.meta as PropertyMetaFactory) : options.meta;
       }
     }
 
@@ -996,12 +1012,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineProperty('token', {
       get: () => this.api?.auth?.token,
       cache: false,
-      meta: { type: 'string', title: this.t('API Token') },
+      meta: { type: 'string', title: this.t('API Token'), sort: 980 },
     });
     this.defineProperty('role', {
       get: () => this.api?.auth?.role,
       cache: false,
-      meta: { type: 'string', title: this.t('Current role') },
+      meta: { type: 'string', title: this.t('Current role'), sort: 990 },
     });
     this.defineProperty('logger', {
       get: () => {

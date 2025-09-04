@@ -54,15 +54,20 @@ export const CurrentUserProvider = (props) => {
         skipAuth: true,
       })
       .then((res) => {
-        app.flowEngine.context.defineProperty('user', {
-          value: res?.data?.data,
-          resolveOnServer: true,
-          meta: createRecordProxyContext(
+        {
+          const userMeta = createRecordProxyContext(
             () => app.flowEngine.context.user,
             () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
             app.flowEngine.translate('Current user'),
-          ).meta,
-        });
+          ).meta;
+          // 排序：用户优先显示
+          userMeta.sort = 1000;
+          app.flowEngine.context.defineProperty('user', {
+            value: res?.data?.data,
+            resolveOnServer: true,
+            meta: userMeta,
+          });
+        }
 
         // app.flowEngine.context.defineProperty(
         //   'userAsync',

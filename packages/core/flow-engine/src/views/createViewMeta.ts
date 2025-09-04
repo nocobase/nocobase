@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowContext, PropertyMeta } from '../flowContext';
+import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import { inferRecordRef, buildRecordMeta } from '../utils/variablesParams';
 
 function makeMetaFromValue(value: any, title?: string): any {
@@ -84,9 +84,9 @@ function buildNavigationMeta(ctx: FlowContext, getView: () => any): any {
  * - properties.record: full collection meta via buildRecordMeta
  * - type/preventClose/inputArgs/navigation fields for better variable selection UX
  */
-export function createViewMeta(ctx: FlowContext, getView: () => any): () => Promise<PropertyMeta> {
+export function createViewMeta(ctx: FlowContext, getView: () => any): PropertyMetaFactory {
   const viewTitle = (ctx as any)?.t?.('当前视图') || '当前视图';
-  const factory = async () => {
+  const factory: PropertyMetaFactory = async () => {
     const recordMeta = await buildRecordMeta(
       () => {
         try {
@@ -122,6 +122,6 @@ export function createViewMeta(ctx: FlowContext, getView: () => any): () => Prom
     } as PropertyMeta;
   };
   // 设置工厂函数的 title，让未加载前的占位标题就是“当前视图”
-  (factory as any).title = viewTitle;
+  factory.title = viewTitle;
   return factory;
 }

@@ -1565,6 +1565,79 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
   });
 });
 
+describe('FlowContext meta sort and factory title', () => {
+  it('should sort root nodes by meta.sort (including factory.sort)', async () => {
+    const ctx = new FlowContext();
+
+    // Static metas with sort
+    ctx.defineProperty('b', { meta: { type: 'string', title: 'B', sort: 10 } });
+    ctx.defineProperty('a', { meta: { type: 'string', title: 'A', sort: 5 } });
+    ctx.defineProperty('c', { meta: { type: 'string', title: 'C' } }); // sort defaults to 0
+
+    // Factory meta with title/sort on the function itself
+    const fFactory: any = async () => ({ type: 'object', title: 'F-resolved', properties: {} });
+    fFactory.title = 'F-initial';
+    fFactory.sort = 15;
+    ctx.defineProperty('f', { meta: fFactory });
+
+    const tree = ctx.getPropertyMetaTree();
+    expect(tree.map((n) => n.name)).toEqual(['f', 'b', 'a', 'c']);
+
+    // factory node uses its function.title before resolve
+    const fNode = tree[0];
+    expect(fNode.name).toBe('f');
+    expect(fNode.title).toBe('F-initial');
+
+    // After resolving children, title should update to resolved meta.title
+    if (typeof fNode.children === 'function') {
+      await (fNode.children as () => Promise<any>)();
+      expect(fNode.title).toBe('F-resolved');
+    }
+  });
+
+  it('should sort child nodes by meta.sort (sync properties)', () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('parent', {
+      meta: {
+        type: 'object',
+        title: 'Parent',
+        properties: {
+          c: { type: 'string', title: 'C', sort: 1 },
+          a: { type: 'string', title: 'A', sort: 3 },
+          b: { type: 'string', title: 'B', sort: 2 },
+        },
+      },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.parent }}');
+    expect(Array.isArray(subTree)).toBe(true);
+    const names = (subTree as any[]).map((n) => n.name);
+    expect(names).toEqual(['a', 'b', 'c']); // desc by sort
+  });
+
+  it('should sort child nodes by meta.sort (async properties)', async () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('asyncParent', {
+      meta: {
+        type: 'object',
+        title: 'AsyncParent',
+        properties: async () => ({
+          c: { type: 'string', title: 'C', sort: 1 },
+          a: { type: 'string', title: 'A', sort: 3 },
+          b: { type: 'string', title: 'B', sort: 2 },
+        }),
+      },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.asyncParent }}');
+    const nodes = typeof subTree === 'function' ? await (subTree as any)() : subTree;
+    const names = (nodes as any[]).map((n) => n.name);
+    expect(names).toEqual(['a', 'b', 'c']);
+  });
+});
+
 describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenarios', () => {
   it('should handle async meta factory with async properties', async () => {
     const ctx = new FlowContext();
