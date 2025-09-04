@@ -45,7 +45,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.context.defineProperty('filterFormFieldGridModel', {
+    this.context.defineProperty('filterFormGridModel', {
       value: this.subModels.grid,
     });
   }

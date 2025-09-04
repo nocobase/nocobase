@@ -115,7 +115,7 @@ export class FilterFormGridModel extends GridModel {
 }
 
 FilterFormGridModel.registerFlow({
-  key: 'filterFormFieldGridSettings',
+  key: 'filterFormGridSettings',
   steps: {
     grid: {
       handler(ctx, params) {

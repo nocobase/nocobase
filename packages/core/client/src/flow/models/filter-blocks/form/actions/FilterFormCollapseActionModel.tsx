@@ -56,7 +56,7 @@ export class FilterFormCollapseActionModel extends FilterFormActionModel {
     const defaultCollapsed = this.getStepParams('collapseSettings', 'defaultCollapsed')?.value || false;
     const collapsedRows = this.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
     collapseState.collapsed = defaultCollapsed;
-    this.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+    this.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
   }
 
   render() {
@@ -87,7 +87,7 @@ FilterFormCollapseActionModel.registerFlow({
       async handler(ctx, params) {
         const collapsedRows = params.collapsedRows || 1;
         collapseState.collapsed = !collapseState.collapsed;
-        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+        ctx.model.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
       },
     },
     defaultCollapsed: {
@@ -103,7 +103,7 @@ FilterFormCollapseActionModel.registerFlow({
         const defaultCollapsed = params.value || false;
         collapseState.collapsed = defaultCollapsed;
         const collapsedRows = ctx.model.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
-        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+        ctx.model.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
       },
       handler(ctx, params) {},
     },
