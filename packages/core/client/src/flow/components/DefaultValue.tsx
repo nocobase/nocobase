@@ -9,7 +9,13 @@
 
 import { connect } from '@formily/react';
 import { uid } from '@formily/shared';
-import { FlowModelRenderer, MetaTreeNode, useFlowContext, VariableInput } from '@nocobase/flow-engine';
+import {
+  FlowModelRenderer,
+  MetaTreeNode,
+  useFlowContext,
+  VariableInput,
+  isVariableExpression,
+} from '@nocobase/flow-engine';
 import React, { useMemo } from 'react';
 import { EditableFieldModel } from '../models';
 import { Input } from 'antd';
@@ -191,6 +197,8 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
       converters={{
         // 选择 Constant 时，输入框显示空字符串而不是 CTX.constant
         resolveValueFromPath: (item) => (item?.paths?.[0] === 'constant' ? '' : undefined),
+        // 当传入值不是变量表达式时，默认选中 constant，使右侧直接展示字段组件供输入
+        resolvePathFromValue: (val) => (isVariableExpression(val) ? undefined : ['constant']),
       }}
     />
   );
