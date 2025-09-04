@@ -111,5 +111,7 @@ FilterFormCollapseActionModel.registerFlow({
 });
 
 FilterFormCollapseActionModel.define({
-  label: tval('Collapse/Expand'),
+  label: tval('Collapse / Expand'),
+  toggleable: true,
+  sort: 300,
 });

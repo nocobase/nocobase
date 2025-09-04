@@ -41,4 +41,6 @@ FilterFormResetActionModel.registerFlow({
 
 FilterFormResetActionModel.define({
   label: 'Reset',
+  toggleable: true,
+  sort: 200,
 });

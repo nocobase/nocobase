@@ -51,4 +51,6 @@ FilterFormSubmitActionModel.registerFlow({
 
 FilterFormSubmitActionModel.define({
   label: tval('Filter'),
+  toggleable: true,
+  sort: 100,
 });
