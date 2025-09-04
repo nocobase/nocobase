@@ -7,54 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
-import { dayjs } from '@nocobase/utils/client';
 import React from 'react';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
-
-function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  if (dayjs.isDayjs(value)) return value.toDate();
-
-  const trimmed = String(value).trim();
-  if (!trimmed) return undefined;
-
-  if (format) {
-    const parsed = dayjs(trimmed, format, true); // strict parse
-    return parsed.isValid() ? parsed.toDate() : undefined;
-  }
-  const autoParsed = dayjs(trimmed);
-  return autoParsed.isValid() ? autoParsed.toDate() : undefined;
-}
-
-function parseInitialValue(value: string | Date | undefined, format?: string): dayjs.Dayjs | null {
-  if (!value) return null;
-  if (value instanceof Date) return dayjs(value);
-  const trimmed = String(value).trim();
-  const isIso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$/.test(trimmed);
-  if (isIso) {
-    const d = dayjs.utc(trimmed).local();
-    return d.isValid() ? d : null;
-  }
-  if (format) {
-    const d = dayjs.utc(trimmed, format, true).local();
-    return d.isValid() ? d : null;
-  }
-  const d = dayjs(trimmed);
-  return d.isValid() ? d : null;
-}
 
 const DateTimeTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
   const componentProps = {
     ...rest,
-    value: parseInitialValue(value, format),
+    value,
     format,
     picker,
     showTime,
     onChange: (val: any) => {
-      const result = parseToDate(val, format);
-      rest.onChange(result);
+      rest.onChange(val);
     },
   };
   return <DateFilterDynamicComponent {...componentProps} />;

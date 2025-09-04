@@ -7,30 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
-import dayjs from 'dayjs';
 import React from 'react';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateTimeNoTzPicker = (props) => {
-  const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', onChange, ...rest } = props;
-  const parsedValue = value ? dayjs(value) : null;
-  return (
-    <DateFilterDynamicComponent
-      {...rest}
-      value={parsedValue}
-      format={format}
-      picker={picker}
-      showTime={showTime}
-      onChange={(val: any) => {
-        const outputFormat = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-        if (showTime) {
-          onChange(dayjs(val, format).format(outputFormat));
-        } else {
-          onChange(dayjs(val, format).startOf(picker).format(outputFormat));
-        }
-      }}
-    />
-  );
+  const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', ...rest } = props;
+  return <DateFilterDynamicComponent {...rest} value={value} format={format} picker={picker} showTime={showTime} />;
 };
 
 export class DateTimeNoTzFilterFieldModel extends DateTimeFilterFieldModel {

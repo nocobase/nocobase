@@ -7,32 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
-import dayjs from 'dayjs';
 import React from 'react';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateOnlyPicker = (props) => {
   const { value, format = 'YYYY-MM-DD', picker = 'date', showTime, ...rest } = props;
-  const parsedValue = value && dayjs(value).isValid() ? dayjs(value) : null;
 
   const componentProps = {
     ...rest,
-    value: parsedValue,
+    value,
     format,
     picker,
     showTime,
-    onChange: (val: any) => {
-      const outputFormat = 'YYYY-MM-DD';
-      if (!val) {
-        props.onChange(undefined);
-        return;
-      }
-      if (picker === 'date') {
-        props.onChange(val.format(outputFormat));
-      } else {
-        props.onChange(val.startOf(picker).format(outputFormat));
-      }
-    },
   };
   return <DateFilterDynamicComponent {...componentProps} />;
 };
