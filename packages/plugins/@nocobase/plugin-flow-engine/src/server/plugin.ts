@@ -60,7 +60,7 @@ export class PluginFlowEngineServer extends Plugin {
           requestCtx.delegate(this.globalContext);
           await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
           const resolved = await resolveJsonTemplate(template, requestCtx);
-          ctx.body = { data: resolved };
+          ctx.body = resolved;
           await next();
         },
       },

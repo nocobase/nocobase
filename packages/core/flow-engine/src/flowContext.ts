@@ -995,7 +995,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
                 },
               },
             });
-            serverResolved = data?.data?.data ?? template;
+            serverResolved = data?.data ?? template;
           } catch (e) {
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
           }

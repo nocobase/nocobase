@@ -1072,7 +1072,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
         const cp = config?.data?.values?.contextParams || {};
         // Only 'view.record' should be present
         expect(Object.keys(cp)).toContain('view.record');
-        return { data: { data: { id: 1 } } } as any;
+        return { data: { id: 1 } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
@@ -1101,7 +1101,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
       request: vi.fn(async (config: any) => {
         const cp = config?.data?.values?.contextParams || {};
         expect(Object.keys(cp)).toContain('user');
-        return { data: { data: { userId: 1 } } } as any;
+        return { data: { userId: 1 } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
@@ -1124,7 +1124,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
   it('reads resolveOnServer from delegated context properties (e.g., engine.context -> model.context)', async () => {
     const engine = new FlowEngine();
     const api = {
-      request: vi.fn(async (config: any) => ({ data: { data: { ok: true } } })),
+      request: vi.fn(async (config: any) => ({ data: { ok: true } })),
     } as any;
     engine.context.defineProperty('api', { value: api });
 
@@ -1173,7 +1173,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
       request: vi.fn(async (config: any) => {
         const cp = config?.data?.values?.contextParams || {};
         expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
-        return { data: { data: { ok: true } } } as any;
+        return { data: { ok: true } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
