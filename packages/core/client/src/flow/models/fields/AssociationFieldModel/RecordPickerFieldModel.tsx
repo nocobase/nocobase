@@ -198,11 +198,29 @@ RecordPickerFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',
-              defaultSelectedRows: ctx.model.props.value,
+              defaultSelectedRows: () => {
+                return ctx.model.props.value;
+              },
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
-                ctx.model.selectedRows.value = toOne ? selectedRows?.[0] : selectedRows;
+                if (toOne) {
+                  // 单选
+                  ctx.model.selectedRows.value = selectedRows?.[0];
+                } else {
+                  // 多选：追加
+                  const prev = ctx.model.selectedRows.value || [];
+                  const merged = [...prev, ...selectedRows];
+
+                  // 去重，防止同一个值重复
+                  const unique = merged.filter(
+                    (row, index, self) =>
+                      index ===
+                      self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                  );
+
+                  ctx.model.selectedRows.value = unique;
+                }
               },
             },
           },

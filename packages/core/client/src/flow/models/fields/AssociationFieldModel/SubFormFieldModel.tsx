@@ -15,10 +15,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { AssociationFieldModel } from './AssociationFieldModel';
-import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
-import { each } from '@formily/shared';
-import { action } from '@formily/reactive';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -77,6 +74,11 @@ const ArrayNester = ({ name, value }: any) => {
         <>
           {fields.map(({ key, name: index, ...restField }) => {
             const fork = gridModel.createFork({}, `${index}`);
+            fork.context.defineProperty('fieldIndex', {
+              get: () => {
+                return index;
+              },
+            });
             return (
               <Card
                 key={index}
@@ -97,8 +99,9 @@ const ArrayNester = ({ name, value }: any) => {
               </Card>
             );
           })}
-          <Button type="dashed" onClick={() => add()} block>
-            添加一项
+          <Button type="link" onClick={() => add()}>
+            <PlusOutlined />
+            {t('Add new')}
           </Button>
         </>
       )}
@@ -108,11 +111,13 @@ const ArrayNester = ({ name, value }: any) => {
 
 export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+  onInit(options) {
+    super.onInit(options);
+  }
   get component() {
     return [
       ArrayNester,
       {
-        type: this.collectionField.type,
         name: this.collectionField.name,
       },
     ];
