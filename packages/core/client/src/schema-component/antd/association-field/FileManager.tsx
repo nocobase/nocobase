@@ -280,9 +280,7 @@ const FileManageReadPretty = connect((props) => {
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  return (
-    <EllipsisWithTooltip ellipsis>{collectionField ? <Upload.ReadPretty {...props} /> : null}</EllipsisWithTooltip>
-  );
+  return collectionField ? <Upload.ReadPretty {...props} /> : null;
 });
 
 export { FileManageReadPretty, FileSelector, InternalFileManager };
