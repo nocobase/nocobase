@@ -11,7 +11,7 @@ import { escapeT, FlowModel, MultiRecordResource, useFlowModel, FlowModelRendere
 import { tval } from '@nocobase/utils/client';
 import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { Card, Form, Button, Tooltip, Divider } from 'antd';
-import React from 'react';
+import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -68,6 +68,10 @@ const ArrayNester = ({ name, value }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
+
+  // 用来缓存每行的 fork，保证每行只创建一次
+  const forksRef = useRef<Record<string, any>>({});
+
   return (
     <Card
       bordered={true}
@@ -78,26 +82,36 @@ const ArrayNester = ({ name, value }: any) => {
         }
       `}
     >
-      <Form.List name={name} initialValue={value || [{}]}>
+      <Form.List name={name}>
         {(fields, { add, remove }) => (
           <>
-            {fields.map(({ key, name: index, ...restField }) => {
-              const fork = gridModel.createFork({}, `${index}`);
-              fork.context.defineProperty('fieldIndex', {
-                get: () => {
-                  return index;
-                },
-              });
+            {fields.map(({ key, name: index }) => {
+              // 每行只创建一次 fork
+              if (!forksRef.current[key]) {
+                const fork = gridModel.createFork();
+                fork.context.defineProperty('fieldIndex', {
+                  get: () => index,
+                });
+                forksRef.current[key] = fork;
+              }
+
               return (
-                <>
+                <div key={key} style={{ marginBottom: 12 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <Tooltip key={'remove'} title={t('Remove')}>
-                      <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(index)} />
+                    <Tooltip title={t('Remove')}>
+                      <CloseOutlined
+                        style={{ zIndex: 1000, color: '#a8a3a3' }}
+                        onClick={() => {
+                          remove(index);
+                          // 删除 fork 缓存
+                          delete forksRef.current[key];
+                        }}
+                      />
                     </Tooltip>
                   </div>
-                  <FlowModelRenderer model={fork} showFlowSettings={false} key={index} />
+                  <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
-                </>
+                </div>
               );
             })}
             <Button type="link" onClick={() => add()}>

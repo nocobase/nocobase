@@ -75,8 +75,14 @@ export class FormItemModel extends CollectionFieldItemModel {
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
+    const namePath = this.props.name;
+    // if (this.props.fieldIndex !== undefined) {
+    //   namePath[0] = this.props.fieldIndex;
+    // }
+    // console.log(namePath);
+
     return (
-      <FormItem {...this.props}>
+      <FormItem {...this.props} name={namePath}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -139,7 +145,6 @@ FormItemModel.registerFlow({
         }
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
-        // console.log(fullName);
         ctx.model.setProps({
           name: fullName,
         });
