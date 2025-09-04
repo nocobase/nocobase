@@ -10,7 +10,7 @@
 import { CollectionField, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { buildFieldMenuItems, flattenFieldMenuItems, findFieldByPath } from '../buildFieldMenuItems';
-import { FilterFormFieldGridModel } from '../FilterFormFieldGridModel';
+import { FilterFormGridModel } from '../FilterFormFieldGridModel';
 
 // Mock types
 interface MockFlowModel extends FlowModel {
@@ -103,7 +103,7 @@ const mockFields: MockCollectionField[] = [
 
 describe('buildFieldMenuItems', () => {
   let mockDataModels: MockFlowModel[];
-  let mockGridModel: FilterFormFieldGridModel;
+  let mockGridModel: FilterFormGridModel;
   let mockFlowEngine: FlowEngine;
   let buildCreateModelOptions: any;
 
@@ -137,7 +137,7 @@ describe('buildFieldMenuItems', () => {
     // Setup mock grid model
     mockGridModel = {
       flowEngine: mockFlowEngine,
-    } as FilterFormFieldGridModel;
+    } as FilterFormGridModel;
 
     // Setup mock buildCreateModelOptions
     buildCreateModelOptions = vi.fn().mockImplementation((options) => ({

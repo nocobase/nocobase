@@ -17,7 +17,7 @@ import { getAllDataModels } from '../utils';
 import { buildFieldMenuItems } from './buildFieldMenuItems';
 import { FilterFormFieldModel } from './fields';
 
-export class FilterFormFieldGridModel extends GridModel {
+export class FilterFormGridModel extends GridModel {
   itemFlowSettings = {
     showBackground: true,
     style: {
@@ -162,7 +162,7 @@ export class FilterFormFieldGridModel extends GridModel {
   }
 }
 
-FilterFormFieldGridModel.registerFlow({
+FilterFormGridModel.registerFlow({
   key: 'filterFormFieldGridSettings',
   steps: {
     grid: {

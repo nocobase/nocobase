@@ -107,7 +107,7 @@ FilterFormBlockModel.define({
     use: 'FilterFormBlockModel',
     subModels: {
       grid: {
-        use: 'FilterFormFieldGridModel',
+        use: 'FilterFormGridModel',
       },
     },
   },

@@ -10,7 +10,7 @@
 // ==================== 字段菜单构建器 ====================
 
 import { CollectionField, ModelConstructor, FlowModel } from '@nocobase/flow-engine';
-import { FilterFormFieldGridModel } from './FilterFormFieldGridModel';
+import { FilterFormGridModel } from './FilterFormFieldGridModel';
 
 interface FieldMenuItem {
   key: string;
@@ -37,7 +37,7 @@ interface FieldMenuItem {
  */
 export async function buildFieldMenuItems(
   dataModels: FlowModel[],
-  gridModel: FilterFormFieldGridModel,
+  gridModel: FilterFormGridModel,
   subModelBaseClass: string | ModelConstructor,
   buildCreateModelOptions: (options: any) => any,
   options?: {
