@@ -18,6 +18,7 @@ import { FieldModel } from '../../../base/FieldModel';
 import { FormItem } from '../../../data-blocks/form/FormItem';
 import { FilterManager } from '../../filter-manager/FilterManager';
 import { getAllDataModels } from '../../utils';
+import { FilterFormFieldModel } from '../fields';
 
 const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -64,7 +65,11 @@ const getModelFields = (model: FlowModel) => {
   });
 };
 
-export class FilterFormItemModel extends CollectionFieldItemModel {
+export class FilterFormItemModel extends CollectionFieldItemModel<{
+  subModels: {
+    field: FilterFormFieldModel & { getFilterValue?: () => any };
+  };
+}> {
   static defineChildren(ctx: FlowModelContext) {
     // 1. 找到当前页面的 GridModel 实例
     const gridModelInstance = ctx.blockGridModel;
@@ -132,6 +137,10 @@ export class FilterFormItemModel extends CollectionFieldItemModel {
    * @returns
    */
   getFilterValue() {
+    if (this.subModels.field.getFilterValue) {
+      return this.subModels.field.getFilterValue();
+    }
+
     return this.context.form?.getFieldValue(this.props.name);
   }
 

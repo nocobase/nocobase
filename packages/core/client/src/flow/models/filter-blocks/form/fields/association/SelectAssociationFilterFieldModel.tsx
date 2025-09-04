@@ -62,9 +62,8 @@ function LazySelect(props) {
       options={realOptions}
       value={toValue(value, fieldNames, multiple)}
       mode={multiple ? 'multiple' : undefined}
-      onChange={(value) => {
-        const v = Array.isArray(value) ? value.map((item) => item.value) : value?.value;
-        onChange(v);
+      onChange={(value, options) => {
+        onChange(options);
       }}
       optionRender={({ data }) => {
         return <LabelByField option={data} fieldNames={fieldNames} />;
@@ -93,6 +92,14 @@ export class SelectAssociationFilterFieldModel extends AssociationFilterFieldMod
   getDataSource() {
     return this.props.options;
   }
+
+  getFilterValue() {
+    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.props.value)
+      ? this.props.value.map((item) => item[fieldNames.value])
+      : this.props.value?.[fieldNames.value];
+  }
+
   get component() {
     return [LazySelect, {}];
   }
