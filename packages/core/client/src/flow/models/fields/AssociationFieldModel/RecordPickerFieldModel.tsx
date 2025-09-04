@@ -45,7 +45,6 @@ function RecordPickerContent({ model }) {
   return (
     <div>
       <Header title={ctx.t('Select record')} />
-      {/* <pre>{JSON.stringify(ctx.view, null, 2)}</pre> */}
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
@@ -90,31 +89,10 @@ function RecordPickerField(props) {
       value: v[fieldNames.value],
     }));
   };
-  const handleOpenDrawer = () => {
-    ctx.viewer.open({
-      type: 'drawer',
-      width: '50%',
-      inheritContext: false,
-      inputArgs: {
-        parentId: ctx.model.uid,
-        scene: 'select',
-        dataSourceKey: ctx.collection.dataSourceKey,
-        collectionName: ctx.collectionField?.target,
-        rowSelectionProps: {
-          type: toOne ? 'radio' : 'checkbox',
-          defaultSelectedRows: ctx.model.props.value,
-          renderCell: undefined,
-          selectedRowKeys: undefined,
-          onChange: (_, selectedRows) => {
-            ctx.model.selectedRows.value = toOne ? selectedRows?.[0] : selectedRows;
-          },
-        },
-      },
-      content: () => <RecordPickerContent model={ctx.model} />,
-    });
-  };
+
   return (
     <Select
+      {...props}
       open={false}
       value={normalizeValue(props.value, fieldNames, toOne)}
       labelRender={(item) => {
@@ -122,8 +100,6 @@ function RecordPickerField(props) {
       }}
       labelInValue
       mode={toOne ? undefined : 'multiple'}
-      fieldNames={fieldNames}
-      onClick={handleOpenDrawer}
       options={props.value}
       allowClear
       onChange={(newValue, option) => {
@@ -142,12 +118,100 @@ export class RecordPickerFieldModel extends FormFieldModel {
   render() {
     return <RecordPickerField {...this.props} />;
   }
+  onInit(option) {
+    super.onInit(option);
+    this.onClick = (e) => {
+      this.dispatchEvent('openView', {
+        event: e,
+      });
+    };
+  }
+  set onClick(fn) {
+    this.setProps({ onClick: fn });
+  }
 
   change() {
     this.props.onChange(this.selectedRows.value);
   }
 }
 
+RecordPickerFieldModel.registerFlow({
+  key: 'popupSettings',
+  on: {
+    eventName: 'openView',
+  },
+  steps: {
+    openView: {
+      title: escapeT('Edit popup'),
+      uiSchema: {
+        mode: {
+          type: 'string',
+          title: escapeT('Open mode'),
+          enum: [
+            { label: escapeT('Drawer'), value: 'drawer' },
+            { label: escapeT('Dialog'), value: 'dialog' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+        size: {
+          type: 'string',
+          title: escapeT('Popup size'),
+          enum: [
+            { label: escapeT('Small'), value: 'small' },
+            { label: escapeT('Medium'), value: 'medium' },
+            { label: escapeT('Large'), value: 'large' },
+          ],
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+        },
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'select',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            rowSelectionProps: {
+              type: toOne ? 'radio' : 'checkbox',
+              defaultSelectedRows: ctx.model.props.value,
+              renderCell: undefined,
+              selectedRowKeys: undefined,
+              onChange: (_, selectedRows) => {
+                ctx.model.selectedRows.value = toOne ? selectedRows?.[0] : selectedRows;
+              },
+            },
+          },
+          content: () => <RecordPickerContent model={ctx.model} />,
+        });
+      },
+    },
+  },
+});
 //专有配置项
 RecordPickerFieldModel.registerFlow({
   key: 'recordPickerSettings',
