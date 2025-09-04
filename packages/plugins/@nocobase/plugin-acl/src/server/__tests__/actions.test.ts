@@ -87,7 +87,7 @@ describe('destroy action with acl', () => {
     expect(role.get('resources').length).toBe(1);
   });
 
-  it.only('should load the association collection when the source collection does not have the createdById field', async () => {
+  it('should load the association collection when the source collection does not have the createdById field', async () => {
     const A = app.collection({
       name: 'a',
       fields: [
