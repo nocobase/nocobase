@@ -8,6 +8,7 @@
  */
 
 import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { get } from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
@@ -56,7 +57,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = this.context.record?.[this.fieldPath];
+    const value = get(this.context.record, this.fieldPath);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={fieldModel} />
@@ -119,7 +120,9 @@ DetailItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         const { collectionField } = ctx.model;
-        ctx.model.setProps(collectionField.getComponentProps());
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
       },
     },
     showLabel: {

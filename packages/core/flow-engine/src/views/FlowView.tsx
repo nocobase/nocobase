@@ -12,6 +12,7 @@ import { FlowContext } from '../flowContext';
 import { ViewNavigation } from './ViewNavigation';
 
 export type FlowView = {
+  type: 'drawer' | 'popover' | 'dialog' | 'embed';
   inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;

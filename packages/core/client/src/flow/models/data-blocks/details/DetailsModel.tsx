@@ -34,20 +34,20 @@ export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
-  static types = ['toOne', 'toMany'];
+  static scene = ['one', 'many'];
 
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
     if (Object.keys(params).includes('filterByTk')) {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
-    const resource = new MultiRecordResource();
+    const resource = this.context.createResource(MultiRecordResource);
     resource.setPageSize(1);
     return resource;
   }
@@ -178,7 +178,7 @@ DetailsModel.registerFlow({
 DetailsModel.define({
   label: escapeT('Details'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'DetailsModel',
     subModels: {

@@ -3,18 +3,18 @@
  * title: 错误回退 - CreateForm 自动流异常
  */
 
-import React from 'react';
 import {
   Application,
-  Plugin,
   CreateFormModel,
   FormFieldGridModel,
-  CollectionFieldFormItemModel,
   FormFieldModel,
+  FormItemModel,
+  Plugin,
 } from '@nocobase/client';
-import { APIClient } from '@nocobase/sdk';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
+import React from 'react';
 import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
@@ -44,7 +44,7 @@ class DemoPlugin extends Plugin {
     this.flowEngine.registerModels({
       CreateFormModel,
       FormFieldGridModel,
-      CollectionFieldFormItemModel,
+      FormItemModel,
       FormFieldModel,
     });
 
@@ -57,7 +57,7 @@ class DemoPlugin extends Plugin {
           subModels: {
             items: [
               {
-                use: 'CollectionFieldFormItemModel',
+                use: 'FormItemModel',
                 stepParams: {
                   fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'posts', fieldPath: 'title' } },
                 },

@@ -3,24 +3,24 @@
  * title: CreateFormModel - hidden 简明示例
  */
 
-import React from 'react';
 import {
   Application,
-  Plugin,
   CreateFormModel,
   FormFieldGridModel,
-  CollectionFieldFormItemModel,
   FormFieldModel,
+  FormItemModel,
   FormSubmitActionModel,
+  Plugin,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Card, Space, Switch } from 'antd';
-import { FilterManager } from '../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 import { APIClient } from '@nocobase/sdk';
+import { Card, Space, Switch } from 'antd';
+import React from 'react';
+import { FilterManager } from '../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
   form!: CreateFormModel;
-  field!: CollectionFieldFormItemModel;
+  field!: FormItemModel;
   action!: FormSubmitActionModel;
 
   async load() {
@@ -45,7 +45,7 @@ class DemoPlugin extends Plugin {
     this.flowEngine.registerModels({
       CreateFormModel,
       FormFieldGridModel,
-      CollectionFieldFormItemModel,
+      FormItemModel,
       FormFieldModel,
       FormSubmitActionModel,
     });
@@ -59,7 +59,7 @@ class DemoPlugin extends Plugin {
           subModels: {
             items: [
               {
-                use: 'CollectionFieldFormItemModel',
+                use: 'FormItemModel',
                 stepParams: {
                   fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'username' } },
                 },
@@ -81,7 +81,7 @@ class DemoPlugin extends Plugin {
       },
     });
 
-    this.field = this.form.subModels.grid.subModels.items[0] as CollectionFieldFormItemModel;
+    this.field = this.form.subModels.grid.subModels.items[0] as unknown as FormItemModel;
     this.action = this.form.subModels.actions[0] as FormSubmitActionModel;
 
     // 简单提供 filterManager，避免刷新流程绑定时报错

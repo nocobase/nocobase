@@ -152,7 +152,7 @@ export default class extends Instruction {
           },
           {
             value: 'allSettled',
-            label: `{{t('Run all branch (ignore failures)', { ns: "${NAMESPACE}" })}}`,
+            label: `{{t('Run all branches (ignore failures)', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Always continue after all branches end, regardless of success or failure.', { ns: "${NAMESPACE}" })}}`,
           },
         ],

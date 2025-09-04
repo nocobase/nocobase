@@ -12,6 +12,7 @@ import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
+import { DetailItemModel } from './DetailItemModel';
 import { DetailsModel } from './DetailsModel';
 
 export class DetailsFieldGridModel extends GridModel<{
@@ -29,8 +30,25 @@ export class DetailsFieldGridModel extends GridModel<{
     },
   };
   renderAddSubModelButton() {
+    const blockModel = this.context.blockModel as DetailsModel;
+
     return (
-      <AddSubModelButton model={this} subModelKey={'items'} subModelBaseClasses={['DetailItemModel']} keepDropdownOpen>
+      <AddSubModelButton
+        model={this}
+        subModelKey={'items'}
+        subModelBaseClasses={['DetailItemModel', 'AssociationFieldItemModel', 'DetailCustomModel']}
+        afterSubModelInit={async (item: DetailItemModel) => {
+          const field: any = item.subModels.field;
+          if (field) {
+            await field.applyAutoFlows();
+          }
+        }}
+        afterSubModelAdd={async (item: DetailItemModel) => {
+          blockModel.addAppends(item.fieldPath, true);
+          blockModel.addAppends(item.associationPathName, true);
+        }}
+        keepDropdownOpen
+      >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
       </AddSubModelButton>
     );

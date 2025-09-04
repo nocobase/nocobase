@@ -8,17 +8,23 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FlowEngine } from '../../flowEngine';
 import { FlowResource, ResourceError } from '../flowResource';
+
+function createFlowResource<T = any>() {
+  const engine = new FlowEngine();
+  return engine.createResource(FlowResource);
+}
 
 describe('FlowResource - data handling', () => {
   it('should initialize with null data and hasData() false', () => {
-    const r = new FlowResource();
+    const r = createFlowResource();
     expect(r.getData()).toBeNull();
     expect(r.hasData()).toBe(false);
   });
 
   it('should detect arrays and objects correctly in hasData()', () => {
-    const r = new FlowResource<any>();
+    const r = createFlowResource();
 
     r.setData([]);
     expect(r.hasData()).toBe(false);
@@ -34,7 +40,7 @@ describe('FlowResource - data handling', () => {
   });
 
   it('setData should be chainable', () => {
-    const r = new FlowResource<number>();
+    const r = createFlowResource();
     const ret = r.setData(123);
     expect(ret).toBe(r);
     expect(r.getData()).toBe(123);
@@ -43,7 +49,7 @@ describe('FlowResource - data handling', () => {
 
 describe('FlowResource - meta handling', () => {
   it('should get and set meta, including specific keys', () => {
-    const r = new FlowResource();
+    const r = createFlowResource();
 
     expect(r.getMeta()).toEqual({});
     expect(r.getMeta('x')).toBeUndefined();
@@ -58,7 +64,7 @@ describe('FlowResource - meta handling', () => {
   });
 
   it('setMeta should be chainable', () => {
-    const r = new FlowResource();
+    const r = createFlowResource();
     const ret = r.setMeta({ k: 'v' });
     expect(ret).toBe(r);
     expect(r.getMeta()).toEqual({ k: 'v' });
@@ -67,7 +73,7 @@ describe('FlowResource - meta handling', () => {
 
 describe('FlowResource - error handling', () => {
   it('should get/set/clear error correctly', () => {
-    const r = new FlowResource();
+    const r = createFlowResource();
 
     expect(r.error).toBeNull();
     expect(r.getError()).toBeNull();
@@ -91,7 +97,7 @@ describe('FlowResource - error handling', () => {
 
 describe('FlowResource - events', () => {
   it('should register, emit, and remove event handlers', () => {
-    const r = new FlowResource();
+    const r = createFlowResource();
 
     const fn1 = vi.fn();
     const fn2 = vi.fn();

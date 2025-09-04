@@ -8,11 +8,11 @@
  */
 
 import * as React from 'react';
+import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
-import { observer } from '..';
 
 let uuid = 0;
 
@@ -102,6 +102,8 @@ export function useDialog() {
     });
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
     }
 
     // 内部组件，在 Provider 内部计算 content

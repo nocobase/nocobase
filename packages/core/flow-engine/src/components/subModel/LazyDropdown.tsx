@@ -291,7 +291,7 @@ const createSearchItem = (
   t: (key: string) => string,
   updateSearchValue: (key: string, value: string) => void,
 ) => ({
-  key: `${item.key}-search`,
+  key: `${searchKey}-search`,
   type: 'group' as const,
   label: (
     <div>
@@ -455,7 +455,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
     const resolvedFiltered = resolve(filteredChildren, [...path, item.key]);
     const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
-    const dividerItem = { key: `${item.key}-search-divider`, type: 'divider' as const };
+    const dividerItem = { key: `${keyPath}-search-divider`, type: 'divider' as const };
 
     if (currentSearchValue && resolvedFiltered.length === 0) {
       return [searchItem, dividerItem, createEmptyItem(keyPath, t)];
@@ -506,14 +506,14 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
         return {
           type: 'group',
-          key: item.key,
+          key: keyPath,
           label: typeof item.label === 'string' ? t(item.label) : item.label,
           children: groupChildren,
         };
       }
 
       if (item.type === 'divider') {
-        return { type: 'divider', key: item.key };
+        return { type: 'divider', key: keyPath };
       }
 
       // 非 group 的“子菜单”也支持本层级搜索：当 item.searchable = true 且存在 children 时
@@ -535,7 +535,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
 
       return {
-        key: item.key,
+        key: keyPath,
         label: typeof item.label === 'string' ? t(item.label) : item.label,
         onClick: (info: any) => {
           if (children) {

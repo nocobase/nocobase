@@ -370,7 +370,7 @@ export type FlowModelMeta =
   // 从 SubModelItem 选取的属性，保持原始类型
   Pick<
     SubModelItem,
-    'key' | 'label' | 'icon' | 'createModelOptions' | 'toggleable' | 'searchable' | 'searchPlaceholder'
+    'key' | 'label' | 'icon' | 'children' | 'createModelOptions' | 'toggleable' | 'searchable' | 'searchPlaceholder'
   > & {
     // FlowModelMeta 独有的属性
     group?: string;
@@ -435,3 +435,5 @@ export interface PersistOptions {
    */
   persist?: boolean;
 }
+
+export type ResourceType<T = any> = string | { new (...args: any[]): T };

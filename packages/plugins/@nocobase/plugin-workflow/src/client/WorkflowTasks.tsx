@@ -280,12 +280,9 @@ function TaskPageContent() {
 
   useEffect(() => {
     if (!taskType) {
-      navigate(
-        mobilePage
-          ? `/page/workflow-tasks/${items[0].key}/${status}`
-          : `/admin/workflow/tasks/${items[0].key}/${status}`,
-        { replace: true },
-      );
+      navigate(`${items[0].key}/${status}`, {
+        replace: true,
+      });
     }
   }, [items, mobilePage, navigate, status, taskType]);
 
@@ -530,7 +527,7 @@ function WorkflowTasksLink() {
   return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>

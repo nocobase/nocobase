@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel } from '../../base/ActionModel';
+import { FlowModel } from '@nocobase/flow-engine';
 
-export class FilterFormActionModel extends ActionModel {}
+export class CommonModel extends FlowModel {}

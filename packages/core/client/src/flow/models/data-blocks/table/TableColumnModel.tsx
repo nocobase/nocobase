@@ -24,6 +24,7 @@ import {
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
+import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
@@ -46,7 +47,7 @@ export class TableColumnModel extends CollectionFieldItemModel {
   }
 
   static defineChildren(ctx: FlowModelContext) {
-    const collection = ctx.collection as Collection;
+    const collection = (ctx.model as any).collection || (ctx.collection as Collection);
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
       const fieldPath = field.name;
@@ -161,6 +162,7 @@ export class TableColumnModel extends CollectionFieldItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
+          const value = get(record, this.fieldPath);
           return (
             <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
@@ -252,15 +254,17 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: escapeT('Enable quick edit'),
-      uiSchema: (ctx) => ({
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-disabled': ctx.model.collectionField.readonly,
-        },
-      }),
+      uiSchema: (ctx) => {
+        return {
+          editable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
+          },
+        };
+      },
       defaultParams(ctx) {
-        if (ctx.model.collectionField.readonly) {
+        if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
             editable: false,
           };

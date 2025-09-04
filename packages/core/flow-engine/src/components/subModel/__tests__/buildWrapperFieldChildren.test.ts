@@ -38,7 +38,7 @@ describe('buildWrapperFieldChildren', () => {
 
     expect(groups).toHaveLength(1);
     const group = groups[0];
-    expect(group.key).toBe('addField');
+    expect(group.key).toBe(`addField_${collection.name}`);
     expect(group.type).toBe('group');
     expect(group.searchable).toBe(true);
     expect(group.searchPlaceholder).toBe('Search fields');

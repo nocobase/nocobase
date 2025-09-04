@@ -22,7 +22,7 @@ import {
   UpdateGuard,
   updateAssociations,
 } from '@nocobase/database';
-import { MultiAssociationAccessors, Transaction } from 'sequelize';
+import { MultiAssociationAccessors, Transaction, ValidationError } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
@@ -295,7 +295,6 @@ export class XlsxImporter extends EventEmitter {
     const rows = [];
     for (const row of chunkRows) {
       const rowValues = {};
-      handingRowIndex += 1;
       await this.handleRowValuesWithColumns(row, rowValues, runOptions);
       rows.push(rowValues);
     }
@@ -311,7 +310,16 @@ export class XlsxImporter extends EventEmitter {
         'Record insertion completed in {time}ms',
       );
       await new Promise((resolve) => setTimeout(resolve, 5));
+      handingRowIndex += chunkRows.length;
     } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        throw new Error(
+          `${options.context?.t('Unique constraint error, fields:', { ns: 'action-import' })} ${JSON.stringify(
+            error.fields,
+          )}`,
+        );
+      }
+
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
         rowIndex: handingRowIndex,
         rowData: rows[handingRowIndex],

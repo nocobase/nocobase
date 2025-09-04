@@ -94,4 +94,33 @@ export default class extends Instruction {
   async resume(node: FlowNodeModel, job, processor: Processor) {
     return job;
   }
+
+  async test(config) {
+    const sendParams = {
+      channelName: config.channelName,
+      message: config,
+      triggerFrom: 'workflow',
+      data: {},
+    };
+    const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
+    try {
+      const result = await notificationServer.send(sendParams);
+      if (result.status === 'success') {
+        return {
+          status: JOB_STATUS.RESOLVED,
+          result,
+        };
+      } else {
+        return {
+          status: JOB_STATUS.FAILED,
+          result,
+        };
+      }
+    } catch (error) {
+      return {
+        status: JOB_STATUS.FAILED,
+        result: error,
+      };
+    }
+  }
 }
