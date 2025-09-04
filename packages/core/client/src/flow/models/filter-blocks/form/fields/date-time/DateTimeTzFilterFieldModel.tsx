@@ -9,7 +9,7 @@
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
 import { dayjs } from '@nocobase/utils/client';
 import React from 'react';
-import { DateFilterDynamicComponent } from '../../../../../../schema-component';
+import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
   if (!value) return undefined;

@@ -8,7 +8,7 @@
  */
 import { escapeT } from '@nocobase/flow-engine';
 import { FilterFormFieldModel } from '../FilterFormFieldModel';
-import { DateFilterDynamicComponent } from '../../../../../../schema-component';
+import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 export class DateTimeFilterFieldModel extends FilterFormFieldModel {
   get component() {

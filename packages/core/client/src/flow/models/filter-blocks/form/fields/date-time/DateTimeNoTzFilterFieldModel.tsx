@@ -9,7 +9,7 @@
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
 import dayjs from 'dayjs';
 import React from 'react';
-import { DateFilterDynamicComponent } from '../../../../../../schema-component';
+import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateTimeNoTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', onChange, ...rest } = props;
