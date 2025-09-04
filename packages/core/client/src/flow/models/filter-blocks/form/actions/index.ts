@@ -10,4 +10,4 @@
 export * from './FilterFormActionModel';
 export * from './FilterFormResetActionModel';
 export * from './FilterFormSubmitActionModel';
-export * from './CollapseFilterFormActionModel';
+export * from './FilterFormCollapseActionModel';

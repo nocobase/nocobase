@@ -43,7 +43,7 @@ const CollapseButton = observer(() => {
   );
 });
 
-export class CollapseFilterFormActionModel extends FilterFormActionModel {
+export class FilterFormCollapseActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
   };
@@ -64,7 +64,7 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
   }
 }
 
-CollapseFilterFormActionModel.registerFlow({
+FilterFormCollapseActionModel.registerFlow({
   key: 'collapseSettings',
   title: tval('Collapse settings'),
   on: 'collapseToggle',
@@ -110,6 +110,6 @@ CollapseFilterFormActionModel.registerFlow({
   },
 });
 
-CollapseFilterFormActionModel.define({
+FilterFormCollapseActionModel.define({
   label: tval('Collapse/Expand'),
 });
