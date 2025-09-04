@@ -9,11 +9,11 @@
 
 import { useFlowModelContext } from '@nocobase/flow-engine';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
-import { DatePicker, Select, Space } from 'antd';
+import { DatePicker as AntdDatePicker, Select, Space } from 'antd';
 import React, { useState } from 'react';
 import { inferPickerType } from '../../../../../../../schema-component';
 
-export const FilterWithPicker = (props: any) => {
+export const FilterDatePicker = (props: any) => {
   const { picker = 'date', format, showTime, timeFormat } = props;
   const ctx = useFlowModelContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
@@ -72,7 +72,7 @@ export const FilterWithPicker = (props: any) => {
           setStateProps(newProps);
         }}
       />
-      <DatePicker
+      <AntdDatePicker
         {...stateProps}
         value={toLocalNaiveISOString(value, getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat))}
       />
