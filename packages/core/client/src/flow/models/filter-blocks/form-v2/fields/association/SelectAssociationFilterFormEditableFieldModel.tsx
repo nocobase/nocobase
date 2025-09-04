@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowModel,
+  MultiRecordResource,
+  useFlowModel,
+  createCurrentRecordMetaFactory,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import { castArray } from 'lodash';
@@ -43,6 +49,7 @@ function LabelByField(props) {
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
   });
   fieldModel.context.defineProperty('fieldValue', {
     get: () => option?.[fieldNames.label],
@@ -101,6 +108,7 @@ const AssociationSelect = connect(
     const fieldModel = field.createFork({}, key);
     fieldModel.context.defineProperty('record', {
       get: () => value,
+      meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
     });
     fieldModel.context.defineProperty('fieldValue', {
       get: () => value?.[fieldNames.label],
@@ -115,12 +123,14 @@ const AssociationSelect = connect(
           const fieldModel = field.createFork({}, key);
           fieldModel.context.defineProperty('record', {
             get: () => v,
+            meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
           });
           fieldModel.context.defineProperty('fieldValue', {
             get: () => v?.[fieldNames.label],
           });
           fieldModel.context.defineProperty('recordIndex', {
             get: () => index,
+            meta: { type: 'number', title: fieldModel.context.t('Current row') },
           });
 
           const content = v?.[fieldNames.label] ? fieldModel.render() : tval('N/A');

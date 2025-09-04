@@ -19,6 +19,8 @@ import {
   buildRecordMeta,
   inferRecordRef,
 } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
 import { ActionModel, RecordActionModel } from '../../base/ActionModel';
@@ -29,18 +31,18 @@ const Columns = observer<any>(({ record, model, index }) => {
     <Space size={'middle'}>
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
+        const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(
+          fork.context,
+          () => (fork.context as any).collection,
+        );
         fork.context.defineProperty('record', {
           get: () => record,
           resolveOnServer: true,
-          meta: () =>
-            buildRecordMeta(
-              () => (fork.context as any).collection,
-              fork.context.t('Current record'),
-              (ctx) => inferRecordRef(ctx),
-            ),
+          meta: recordMeta,
         });
         fork.context.defineProperty('recordIndex', {
           get: () => index,
+          meta: { type: 'number', title: fork.context.t('Current row') },
         });
         return (
           <FlowModelRenderer

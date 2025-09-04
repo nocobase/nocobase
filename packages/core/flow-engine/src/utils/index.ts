@@ -43,6 +43,8 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 export { createRecordProxyContext, createCollectionContextMeta } from './createRecordProxyContext';
 export {
   buildRecordMeta,
+  createRecordMetaFactory,
+  createCurrentRecordMetaFactory,
   inferRecordRef,
   inferParentRecordRef,
   extractUsedVariableNames,

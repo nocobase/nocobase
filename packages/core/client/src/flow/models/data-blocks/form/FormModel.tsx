@@ -9,6 +9,8 @@
 
 // import { createForm, Form } from '@formily/core';
 import { CollectionField, inferRecordRef } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
@@ -29,16 +31,12 @@ export class FormModel extends CollectionBlockModel<{
   onInit(options) {
     super.onInit(options);
 
+    const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
       resolveOnServer: true,
-      meta: () =>
-        buildRecordMeta(
-          () => this.collection,
-          this.context.t('Current record'),
-          (ctx) => inferRecordRef(ctx),
-        ),
+      meta: recordMeta,
     });
   }
 

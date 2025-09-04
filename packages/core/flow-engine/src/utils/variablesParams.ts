@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowContext, PropertyMeta } from '../flowContext';
+import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import type { JSONValue } from './params-resolvers';
 import type { Collection } from '../data-source';
 import { createCollectionContextMeta } from './createRecordProxyContext';
@@ -82,6 +82,33 @@ export async function buildRecordMeta(
     ...base,
     buildVariablesParams: (ctx: FlowContext) => (paramsBuilder ? paramsBuilder(ctx) : inferRecordRef(ctx)),
   } as PropertyMeta;
+}
+
+/**
+ * Convenience helper to create a PropertyMetaFactory for a record-like variable.
+ * It sets the factory.title so UI can display an immediate label before lazy resolution.
+ */
+export function createRecordMetaFactory(
+  collectionAccessor: () => Collection | null,
+  title: string,
+  paramsBuilder?: RecordParamsBuilder,
+): PropertyMetaFactory {
+  const factory: PropertyMetaFactory = async () => buildRecordMeta(collectionAccessor, title, paramsBuilder);
+  factory.title = title;
+  return factory;
+}
+
+/**
+ * Sugar for the most common case: a current record meta bound to FlowContext.
+ * - Title: t('Current record')
+ * - Params: inferRecordRef(ctx)
+ */
+export function createCurrentRecordMetaFactory(
+  ctx: FlowContext,
+  collectionAccessor: () => Collection | null,
+): PropertyMetaFactory {
+  const title = (ctx as any)?.t?.('Current record') || 'Current record';
+  return createRecordMetaFactory(collectionAccessor, title, (c) => inferRecordRef(c));
 }
 
 /**
