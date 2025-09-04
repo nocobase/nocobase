@@ -33,6 +33,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
           const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
           return fieldPath === fullName;
         },
+        useModel: 'DetailItemModel',
         createModelOptions: () => ({
           use: 'DetailItemModel',
           stepParams: {
