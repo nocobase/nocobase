@@ -9,5 +9,5 @@
 
 export * from './FilterFormActionModel';
 export * from './ResetFilterFormActionModel';
-export * from './SubmitFilterFormActionModel';
+export * from './FilterFormSubmitActionModel';
 export * from './CollapseFilterFormActionModel';
