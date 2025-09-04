@@ -48,7 +48,7 @@ function LabelByField(props) {
 }
 
 function LazySelect(props) {
-  const { fieldNames, value, multiple, options, ...others } = props;
+  const { fieldNames, value, multiple, options, onChange, ...others } = props;
   const realOptions =
     options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
   return (
@@ -62,8 +62,9 @@ function LazySelect(props) {
       options={realOptions}
       value={toValue(value, fieldNames, multiple)}
       mode={multiple ? 'multiple' : undefined}
-      onChange={(value, option) => {
-        props.onChange(option);
+      onChange={(value) => {
+        const v = Array.isArray(value) ? value.map((item) => item.value) : value?.value;
+        onChange(v);
       }}
       optionRender={({ data }) => {
         return <LabelByField option={data} fieldNames={fieldNames} />;
