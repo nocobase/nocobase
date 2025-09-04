@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
@@ -17,6 +17,7 @@ import { CollectionFieldItemModel } from '../../../base/CollectionFieldItemModel
 import { FieldModel } from '../../../base/FieldModel';
 import { FormItem } from '../../../data-blocks/form/FormItem';
 import { FilterManager } from '../../filter-manager/FilterManager';
+import { getAllDataModels } from '../../utils';
 
 const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -32,34 +33,62 @@ const FieldNotAllow = ({ actionName, FieldTitle }) => {
   return <Alert type="warning" message={messageValue} showIcon />;
 };
 
+const getModelFields = (model: FlowModel) => {
+  const collection = model.context.collection as Collection;
+  return collection.getFields().map((field) => {
+    const fieldModel = field.getFirstSubclassNameOf('FilterFormFieldModel') || 'FilterFormFieldModel';
+    const fieldPath = field.name;
+    return {
+      key: field.name,
+      label: field.title,
+      toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+      useModel: 'FilterFormItemModel',
+      createModelOptions: () => ({
+        use: 'FilterFormItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: collection.dataSourceKey,
+              collectionName: collection.name,
+              fieldPath,
+            },
+          },
+        },
+        subModels: {
+          field: {
+            use: fieldModel,
+          },
+        },
+      }),
+    };
+  });
+};
+
 export class FilterFormItemModel extends CollectionFieldItemModel {
   static defineChildren(ctx: FlowModelContext) {
-    const collection = ctx.collection as Collection;
-    return collection.getFields().map((field) => {
-      const fieldModel = field.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-      const fieldPath = field.name;
+    // 1. 找到当前页面的 GridModel 实例
+    const gridModelInstance = ctx.blockGridModel;
+    if (!gridModelInstance) {
+      return [];
+    }
+
+    // 2. 获取所有的数据区块的实例
+    const allModelInstances = getAllDataModels(gridModelInstance);
+
+    return allModelInstances.map((model) => {
       return {
-        key: field.name,
-        label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-        useModel: 'FormItemModel',
-        createModelOptions: () => ({
-          use: 'FormItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
-              },
-            },
+        key: model.uid,
+        label: `${model.title} #${model.uid.substring(0, 4)}`,
+        children: [
+          {
+            key: 'fields',
+            label: 'Fields',
+            type: 'group' as const,
+            searchable: true,
+            searchPlaceholder: 'Search fields',
+            children: getModelFields(model),
           },
-          subModels: {
-            field: {
-              use: fieldModel,
-            },
-          },
-        }),
+        ],
       };
     });
   }
@@ -148,7 +177,7 @@ export class FilterFormItemModel extends CollectionFieldItemModel {
 }
 
 FilterFormItemModel.define({
-  sort: 100,
+  label: 'Block list',
 });
 
 FilterFormItemModel.registerFlow({
