@@ -7,119 +7,121 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterBlockModel } from '../../base/BlockModel';
-import React from 'react';
-import { FormButtonGroup } from '@formily/antd-v5';
-import {
-  AddSubModelButton,
-  DndProvider,
-  DragHandler,
-  Droppable,
-  FlowModelRenderer,
-  FlowSettingsButton,
-} from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { tval } from '@nocobase/utils/client';
-import { FilterManager } from '../filter-manager/FilterManager';
-import { FormComponent } from '../../data-blocks/form/FormModel';
+import React from 'react';
+import { GridModel } from '../../base/GridModel';
+import { getAllDataModels } from '../utils';
+import { FilterFormItemModel } from './form-item';
 
-export class FilterFormBlockModel extends FilterBlockModel<{
-  subModels: {
-    grid: any; // Replace with actual type if available
-    actions?: any[]; // Replace with actual type if available
+export class FilterFormGridModel extends GridModel {
+  itemFlowSettings = {
+    showBackground: true,
+    style: {
+      top: -6,
+      left: -6,
+      right: -6,
+      bottom: -6,
+    },
   };
-}> {
-  /**
-   * 是否需要自动触发筛选，当字段值变更时自动执行筛选
-   */
-  autoTriggerFilter = true;
 
-  get form() {
-    return this.context.form;
+  private hiddenRows: any = {};
+  readonly loading = observable.ref(false);
+
+  toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
+    const gridRows = this.props.rows || {};
+
+    if (!collapse) {
+      // 展开：恢复所有隐藏的行
+      const restoredRows = { ...gridRows, ...this.hiddenRows };
+      this.setProps('rows', restoredRows);
+      this.hiddenRows = {};
+    } else {
+      // 折叠：只保留指定数量的行，其余行保存到 hiddenRows 中
+      const rowKeys = Object.keys(gridRows);
+
+      if (rowKeys.length > visibleRows) {
+        const visibleRowKeys = rowKeys.slice(0, visibleRows);
+        const hiddenRowKeys = rowKeys.slice(visibleRows);
+
+        // 保存要隐藏的行
+        this.hiddenRows = {};
+        hiddenRowKeys.forEach((key) => {
+          this.hiddenRows[key] = gridRows[key];
+        });
+
+        // 只保留可见的行
+        const visibleRowsData = {};
+        visibleRowKeys.forEach((key) => {
+          visibleRowsData[key] = gridRows[key];
+        });
+
+        this.setProps('rows', visibleRowsData);
+      }
+    }
   }
 
-  addAppends() {}
+  async onModelCreated(subModel: FilterFormItemModel) {
+    if (!(subModel instanceof FilterFormItemModel)) {
+      return;
+    }
 
-  onInit(options) {
-    super.onInit(options);
-    this.context.defineProperty('blockModel', {
-      value: this,
+    const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
+    const allDataModels = getAllDataModels(subModel.context.blockGridModel);
+
+    // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
+    const matchingModels = allDataModels.filter((model: any) => {
+      if (!model.resource?.supportsFilter) {
+        return false;
+      }
+
+      // @ts-ignore
+      const collection = model.collection;
+      return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
     });
-    this.context.defineProperty('filterFormFieldGridModel', {
-      value: this.subModels.grid,
-    });
+
+    // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
+    if (matchingModels.length > 0) {
+      const targets = matchingModels.map((model) => ({
+        targetId: model.uid,
+        filterPaths: [fieldPath],
+      }));
+
+      // 存到数据库中
+      await this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
+        targets,
+      });
+    }
   }
 
-  async destroy(): Promise<boolean> {
-    const result = await super.destroy();
+  renderAddSubModelButton() {
+    if (this.loading.value) {
+      return null;
+    }
 
-    // 清理所有子模型的筛选配置
-    const filterManager: FilterManager = this.context.filterManager;
-    const promises = this.subModels.grid.subModels.items.map(async (item) => {
-      await filterManager.removeFilterConfig({ filterId: item.uid });
-    });
-
-    await Promise.all(promises);
-    return result;
-  }
-
-  renderComponent() {
-    const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    // 向筛选表单区块添加字段 model
     return (
-      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        <DndProvider>
-          <FormButtonGroup align="right">
-            {this.mapSubModels('actions', (action) => (
-              <Droppable model={action} key={action.uid}>
-                <FlowModelRenderer
-                  key={action.uid}
-                  model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
-                  extraToolbarItems={[
-                    {
-                      key: 'drag-handler',
-                      component: DragHandler,
-                      sort: 1,
-                    },
-                  ]}
-                />
-              </Droppable>
-            ))}
-            <AddSubModelButton
-              key="filter-form-actions-add"
-              model={this}
-              subModelKey="actions"
-              subModelBaseClass={'FilterFormActionModel'}
-            >
-              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-            </AddSubModelButton>
-          </FormButtonGroup>
-        </DndProvider>
-      </FormComponent>
+      <AddSubModelButton
+        subModelKey="items"
+        model={this}
+        afterSubModelInit={this.onModelCreated.bind(this)}
+        keepDropdownOpen
+        subModelBaseClasses={['FilterFormItemModel', 'FormCustomFormItemModel']}
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
+      </AddSubModelButton>
     );
   }
 }
 
-FilterFormBlockModel.define({
-  label: tval('Form'),
-  createModelOptions: {
-    use: 'FilterFormBlockModel',
-    subModels: {
-      grid: {
-        use: 'FilterFormGridModel',
-      },
-    },
-  },
-});
-
-FilterFormBlockModel.registerFlow({
-  key: 'formFilterBlockModelSettings',
-  title: tval('Form settings'),
+FilterFormGridModel.registerFlow({
+  key: 'filterFormFieldGridSettings',
   steps: {
-    layout: {
-      use: 'layout',
-      title: tval('Layout'),
+    grid: {
+      handler(ctx, params) {
+        ctx.model.setProps('rowGap', 0);
+        ctx.model.setProps('colGap', 16);
+      },
     },
   },
 });

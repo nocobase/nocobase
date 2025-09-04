@@ -27,8 +27,8 @@ export * from './common/JsonInput';
 export * from './data-blocks/CustomItem';
 export * from './filter-blocks/form/actions';
 export * from './filter-blocks/form/fields';
-export * from './filter-blocks/form/FilterFormFieldGridModel';
 export * from './filter-blocks/form/FilterFormGridModel';
+export * from './filter-blocks/form/FilterFormBlockModel';
 export * from './filter-blocks/form/form-item';
 export * from './other-blocks/html/HtmlBlockModel';
 //
