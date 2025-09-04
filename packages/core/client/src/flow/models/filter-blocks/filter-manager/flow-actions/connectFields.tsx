@@ -54,6 +54,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
         key: currentPath,
         fullLabel: fullLabel,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
+        field, // 保留字段信息以便后续使用
       };
 
       // 如果任一选中的路径包含当前路径，且当前字段有关系目标，则预加载子节点
