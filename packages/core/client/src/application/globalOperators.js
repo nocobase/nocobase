@@ -88,7 +88,7 @@ export function getOperators() {
       return jsonLogic.truthy(a);
     },
     $notEmpty: function (a) {
-      return jsonLogic.truthy(a);
+      return a === 0 || jsonLogic.truthy(a);
     },
     $empty: function (a) {
       if (Array.isArray(a)) return a.length === 0;
