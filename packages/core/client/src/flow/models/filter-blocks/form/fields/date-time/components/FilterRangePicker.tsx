@@ -13,7 +13,7 @@ import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/clien
 import { DatePicker } from 'antd';
 import React from 'react';
 
-export const RangePicker = (props: any) => {
+export const FilterRangePicker = (props: any) => {
   const { value, picker = 'date', format, showTime, timeFormat } = props;
   const flowEngine = useFlowEngine();
   const t = flowEngine.translate;
