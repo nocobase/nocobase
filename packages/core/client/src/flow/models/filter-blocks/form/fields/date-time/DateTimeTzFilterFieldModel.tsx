@@ -18,9 +18,6 @@ const DateTimeTzPicker = (props) => {
     format,
     picker,
     showTime,
-    onChange: (val: any) => {
-      rest.onChange(val);
-    },
   };
   return <DateFilterDynamicComponent {...componentProps} />;
 };
