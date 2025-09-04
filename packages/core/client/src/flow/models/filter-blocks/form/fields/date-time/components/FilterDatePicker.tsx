@@ -72,18 +72,7 @@ export const FilterDatePicker = (props: any) => {
           setStateProps(newProps);
         }}
       />
-      <AntdDatePicker
-        {...stateProps}
-        value={toLocalNaiveISOString(value, getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat))}
-      />
+      <AntdDatePicker {...stateProps} value={value} />
     </Space.Compact>
   );
 };
-
-function toLocalNaiveISOString(dateString: string, format): string {
-  if (dateString?.endsWith('Z')) {
-    const date = dayjs(dateString);
-    return date.format(format);
-  }
-  return dateString;
-}
