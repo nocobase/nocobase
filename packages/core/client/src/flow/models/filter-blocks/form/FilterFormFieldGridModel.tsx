@@ -12,7 +12,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
 import { GridModel } from '../../base/GridModel';
 import { getAllDataModels } from '../utils';
-import { FilterFormFieldModel } from './fields';
+import { FilterFormItemModel } from './form-item';
 
 export class FilterFormGridModel extends GridModel {
   itemFlowSettings = {
@@ -61,7 +61,11 @@ export class FilterFormGridModel extends GridModel {
     }
   }
 
-  async onModelCreated(subModel: FilterFormFieldModel) {
+  async onModelCreated(subModel: FilterFormItemModel) {
+    if (!(subModel instanceof FilterFormItemModel)) {
+      return;
+    }
+
     const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 
@@ -102,7 +106,7 @@ export class FilterFormGridModel extends GridModel {
         model={this}
         afterSubModelInit={this.onModelCreated.bind(this)}
         keepDropdownOpen
-        subModelBaseClasses={['FilterFormItemModel']}
+        subModelBaseClasses={['FilterFormItemModel', 'FormCustomFormItemModel']}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
       </AddSubModelButton>
