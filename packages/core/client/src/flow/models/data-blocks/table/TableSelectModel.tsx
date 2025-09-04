@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@nocobase/flow-engine';
+import { observable, escapeT } from '@nocobase/flow-engine';
 import { TableModel } from './TableModel';
 
 export class TableSelectModel extends TableModel {
@@ -23,7 +23,18 @@ export class TableSelectModel extends TableModel {
   }
 }
 
+TableSelectModel.registerFlow({
+  key: 'selectTableSetting',
+  steps: {
+    filter: {
+      handler(ctx, params) {
+        console.log(8888, ctx.model.context.view.inputArgs);
+      },
+    },
+  },
+});
+
 TableSelectModel.define({
-  label: 'Table',
+  label: escapeT('Table'),
   children: false,
 });
