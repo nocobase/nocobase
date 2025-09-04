@@ -23,7 +23,7 @@ import { tval } from '@nocobase/utils/client';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FormComponent } from '../../data-blocks/form/FormModel';
 
-export class FormFilterBlockModel extends FilterBlockModel<{
+export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
     grid: any; // Replace with actual type if available
     actions?: any[]; // Replace with actual type if available
@@ -101,10 +101,10 @@ export class FormFilterBlockModel extends FilterBlockModel<{
   }
 }
 
-FormFilterBlockModel.define({
+FilterFormBlockModel.define({
   label: tval('Form'),
   createModelOptions: {
-    use: 'FormFilterBlockModel',
+    use: 'FilterFormBlockModel',
     subModels: {
       grid: {
         use: 'FilterFormFieldGridModel',
@@ -113,7 +113,7 @@ FormFilterBlockModel.define({
   },
 });
 
-FormFilterBlockModel.registerFlow({
+FilterFormBlockModel.registerFlow({
   key: 'formFilterBlockModelSettings',
   title: tval('Form settings'),
   steps: {
