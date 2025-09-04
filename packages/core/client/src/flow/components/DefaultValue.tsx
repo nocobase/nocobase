@@ -42,7 +42,7 @@ function createVariableFieldModelClass(ModelClass: any) {
           this.context.defineProperty('collectionField', { get: () => cf });
         }
       } catch (err) {
-        // silent fallback; default value editor should not break on context
+        /* noop */
       }
     }
 
@@ -73,7 +73,14 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
   const newModel = useMemo(() => {
     const hostModel: any = model as any;
     const originalFieldModel: any = hostModel?.subModels?.field;
-    const TargetFieldClass: any = originalFieldModel?.constructor || (model.constructor as any);
+    let TargetFieldClass: any = originalFieldModel?.constructor || (model.constructor as any);
+    // 避免使用实验性的 RecordPicker，在 DefaultValue 常量场景改用 SelectAssociationFieldModel
+    if (TargetFieldClass?.name === 'RecordPickerFieldModel') {
+      const alt = model.context.engine.getModelClass('SelectAssociationFieldModel');
+      if (alt) {
+        TargetFieldClass = alt as any;
+      }
+    }
     const TempVariableModel = createVariableFieldModelClass(TargetFieldClass);
     const tempClassName = `Var${model.uid}`;
 
@@ -112,6 +119,18 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
     };
 
     const created = model.context.engine.createModel(options as any);
+    // 为关联字段等流程补齐最小上下文：dataSource 与 collection
+    try {
+      const dsm = model.context.dataSourceManager;
+      if (initParams?.dataSourceKey && initParams?.collectionName) {
+        const ds = dsm?.getDataSource?.(initParams.dataSourceKey);
+        const col = dsm?.getCollection?.(initParams.dataSourceKey, initParams.collectionName);
+        if (ds) created.context?.defineProperty?.('dataSource', { get: () => ds });
+        if (col) created.context?.defineProperty?.('collection', { get: () => col });
+      }
+    } catch (_) {
+      /* noop */
+    }
     return created;
   }, [model]);
 
@@ -124,7 +143,7 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
         </div>
       );
     },
-    [],
+    [newModel],
   );
   const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
   const metaTree = useMemo<MetaTreeNode[]>(() => {
@@ -146,7 +165,7 @@ export const DefaultValue = connect((props: VariableFieldInputProps) => {
       },
       ...ctxMetaTree,
     ];
-  }, [model]);
+  }, [model, ctx, InputComponent, NullComponent]);
   React.useEffect(() => {
     const fieldModel = newModel.subModels.fields?.[0] as any;
     if (fieldModel) {
