@@ -30,6 +30,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
         key: field.name,
         label: field.title,
         toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'DetailItemModel',
         createModelOptions: () => ({
           use: 'DetailItemModel',
           stepParams: {
