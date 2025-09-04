@@ -33,11 +33,15 @@ describe('20250320223415-stats', () => {
       WorkflowVersionStatsRepo = app.db.getRepository('workflowVersionStats');
     });
 
-    afterEach(() => app.destroy());
+    afterEach(async () => {
+      await app.db.getRepository('workflows').destroy({ truncate: true });
+      await app.destroy();
+    });
 
     test('only one version', async () => {
       workflow = await WorkflowRepo.create({
         values: {
+          id: 10000,
           type: 'syncTrigger',
           executed: 1,
           allExecuted: 1,
@@ -65,6 +69,7 @@ describe('20250320223415-stats', () => {
     test('multiple versions', async () => {
       const w1 = await WorkflowRepo.create({
         values: {
+          id: 10000,
           enabled: true,
           type: 'syncTrigger',
           executed: 1,
@@ -76,6 +81,7 @@ describe('20250320223415-stats', () => {
 
       const w2 = await WorkflowRepo.create({
         values: {
+          id: 10001,
           enabled: true,
           type: 'syncTrigger',
           executed: 1,
@@ -118,6 +124,7 @@ describe('20250320223415-stats', () => {
       const WorkflowRepo = app.db.getRepository('workflows');
       workflow = await WorkflowRepo.create({
         values: {
+          id: 10000,
           type: 'syncTrigger',
           key: 'abc',
         },

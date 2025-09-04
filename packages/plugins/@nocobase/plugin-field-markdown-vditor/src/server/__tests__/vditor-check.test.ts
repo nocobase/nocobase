@@ -14,6 +14,9 @@ describe('vditor:check', () => {
   let app;
   let db;
   let agent;
+  let storage1;
+  let storage2;
+  let storage3;
 
   beforeEach(async () => {
     app = mockServer({
@@ -38,7 +41,7 @@ describe('vditor:check', () => {
     await db.sync();
 
     // 创建测试所需的存储和文件集合
-    await db.getRepository('storages').create({
+    storage1 = await db.getRepository('storages').create({
       values: {
         name: 'default-storage',
         type: 'local',
@@ -46,7 +49,7 @@ describe('vditor:check', () => {
       },
     });
 
-    await db.getRepository('storages').create({
+    storage2 = await db.getRepository('storages').create({
       values: {
         name: 's3-storage',
         type: 's3-compatible',
@@ -54,7 +57,7 @@ describe('vditor:check', () => {
       },
     });
 
-    await db.getRepository('storages').create({
+    storage3 = await db.getRepository('storages').create({
       values: {
         name: 's3-storage-with-baseurl',
         type: 's3-compatible',
@@ -113,7 +116,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 1,
+        "id": "${storage1.id}",
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -131,7 +134,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 1,
+        "id": "${storage1.id}",
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -149,7 +152,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 2,
+        "id": "${storage2.id}",
         "name": "s3-storage",
         "rules": {},
         "title": null,
@@ -167,7 +170,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 3,
+        "id": "${storage3.id}",
         "name": "s3-storage-with-baseurl",
         "rules": {},
         "title": null,
@@ -185,7 +188,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 1,
+        "id": "${storage1.id}",
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -196,7 +199,7 @@ describe('vditor:check', () => {
 
   it('should handle s3 storage with baseUrl but not public attribute', async () => {
     // 创建测试所需的非公开 s3 存储
-    await db.getRepository('storages').create({
+    const storage = await db.getRepository('storages').create({
       values: {
         name: 's3-storage-with-baseurl-not-public',
         type: 's3-compatible',
@@ -230,7 +233,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 4,
+        "id": "${storage.id}",
         "name": "s3-storage-with-baseurl-not-public",
         "rules": {},
         "title": null,
@@ -241,7 +244,7 @@ describe('vditor:check', () => {
 
   it('should handle non-s3 storage types correctly', async () => {
     // 创建一个非 s3 类型的存储
-    await db.getRepository('storages').create({
+    const storage = await db.getRepository('storages').create({
       values: {
         name: 'other-storage-type',
         type: 'oss',
@@ -271,7 +274,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": 4,
+        "id": "${storage.id}",
         "name": "other-storage-type",
         "rules": {},
         "title": null,

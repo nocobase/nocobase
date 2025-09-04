@@ -114,6 +114,5 @@ export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
   }
 
   db = new MockDatabase(dbOptions);
-
   return db as MockDatabase;
 }

@@ -375,6 +375,7 @@ export class PluginACLServer extends Plugin {
         return;
       }
       const User = this.db.getCollection('users');
+      const user = await User.repository.findOne();
       await User.repository.update({
         values: {
           roles: ['root', 'admin', 'member'],
@@ -385,7 +386,7 @@ export class PluginACLServer extends Plugin {
       const RolesUsers = this.db.getCollection('rolesUsers');
       await RolesUsers.repository.update({
         filter: {
-          userId: 1,
+          userId: user.id,
           roleName: 'root',
         },
         values: {

@@ -177,12 +177,7 @@ describe('workflow > cluster', () => {
         expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
         expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
-        const appIds = e2s.map((item) =>
-          item.jobs
-            .find((job) => job.nodeId === n2.id)
-            .result.split('_')
-            .pop(),
-        );
+        const appIds = e2s.map((item) => item.jobs.find((job) => job.nodeId === n2.id).result);
         const appIdsSet = new Set(appIds);
         expect(appIdsSet.size).toBe(3);
         // expect(appNameJobs[0].result).toBe(app1.instanceId);

@@ -14,6 +14,12 @@ export default {
   shared: true,
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       title: '存储引擎名称',
       comment: '存储引擎名称',
       type: 'string',

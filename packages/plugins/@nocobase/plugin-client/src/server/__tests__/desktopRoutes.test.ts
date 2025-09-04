@@ -87,12 +87,13 @@ describe('desktopRoutes:listAccessible', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
 
+    const routes = await db.getRepository('desktopRoutes').find();
     // 更新 member 角色的可访问路由
     await rootAgent.resource('roles.desktopRoutes', 'member').remove({
-      values: [1, 2, 3, 4, 5, 6], // 移除所有路由的访问权限
+      values: routes.map((route: { id: string }) => route.id), // 移除所有路由的访问权限
     });
     await rootAgent.resource('roles.desktopRoutes', 'member').add({
-      values: [1, 2], // 再加上 page1 和 tab1 的访问权限
+      values: routes.slice(0, 2).map((route: { id: string }) => route.id), // 再加上 page1 和 tab1 的访问权限
     });
 
     // 使用 member 用户测试
@@ -115,9 +116,10 @@ describe('desktopRoutes:listAccessible', () => {
     });
     const rootAgent = await app.agent().login(rootUser);
 
+    const routes = await db.getRepository('desktopRoutes').find();
     // 更新 member 角色的可访问路由
     await rootAgent.resource('roles.desktopRoutes', 'member').remove({
-      values: [1, 2, 3, 4, 5, 6], // 移除所有路由的访问权限
+      values: routes.map((route: { id: string }) => route.id), // 移除所有路由的访问权限
     });
 
     // 使用 member 用户测试
@@ -148,12 +150,13 @@ describe('desktopRoutes:listAccessible', () => {
     });
 
     // 配置 member 角色只能访问 page4
+    const routes = await db.getRepository('desktopRoutes').find({ limit: 6 });
     const rootUser = await db.getRepository('users').create({
       values: { roles: ['root'] },
     });
     const rootAgent = await app.agent().login(rootUser);
     await rootAgent.resource('roles.desktopRoutes', 'member').remove({
-      values: [1, 2, 3, 4, 5, 6],
+      values: routes.map((route: { id: string }) => route.id),
     });
 
     // 验证返回结果包含子路由

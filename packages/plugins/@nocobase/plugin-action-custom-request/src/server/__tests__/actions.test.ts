@@ -17,6 +17,7 @@ describe('actions', () => {
   let repo: Repository;
   let agent: ReturnType<MockServer['agent']>;
   let resource: ReturnType<ReturnType<MockServer['agent']>['resource']>;
+  let user;
 
   beforeAll(async () => {
     app = await createMockServer({
@@ -37,7 +38,8 @@ describe('actions', () => {
     repo = db.getRepository('customRequests');
     agent = app.agent();
     resource = (agent.set('X-Role', 'admin') as any).resource('customRequests');
-    await agent.login(1);
+    user = await db.getRepository('users').findOne();
+    await agent.login(user.id);
   });
 
   describe('send', () => {
@@ -136,7 +138,7 @@ describe('actions', () => {
         },
       });
 
-      const userId = 1;
+      const userId = user.id;
       const res = await resource.send({
         filterByTk: 'test2',
         values: {
@@ -172,7 +174,7 @@ describe('actions', () => {
       expect(res.status).toBe(200);
       expect(expect.arrayContaining(params.a)).toMatchObject(['root', 'member', 'admin']);
       expect(expect.arrayContaining(params.b)).toMatchObject(['{{t("Member")}}', '{{t("Root")}}', '{{t("Admin")}}']);
-      expect(expect.arrayContaining(params.c)).toMatchObject([1, 1, 1]);
+      expect(expect.arrayContaining(params.c)).toMatchObject([user.id, user.id, user.id]);
     });
   });
 });

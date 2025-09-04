@@ -17,8 +17,16 @@ export async function getBasicInfo(context, next) {
     result = Array.from(storagesCache.values()).find((item) => item.default);
   } else {
     const isNumber = /^[1-9]\d*$/.test(filterByTk);
+    let key: string | number = filterByTk;
+    if (isNumber) {
+      const bigIntVal = BigInt(filterByTk);
+      // 在 JS 安全整数范围内，才转成 Number
+      if (bigIntVal <= BigInt(Number.MAX_SAFE_INTEGER)) {
+        key = Number(filterByTk);
+      }
+    }
     result = isNumber
-      ? storagesCache.get(Number.parseInt(filterByTk, 10))
+      ? storagesCache.get(key)
       : Array.from(storagesCache.values()).find((item) => item.name === filterByTk);
   }
   if (!result) {

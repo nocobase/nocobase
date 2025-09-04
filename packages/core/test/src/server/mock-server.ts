@@ -129,7 +129,7 @@ export class MockServer extends Application {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
           return async (userOrId: any, roleName?: string) => {
-            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
+            const userId = userOrId?.id ? userOrId.id : userOrId;
             const tokenInfo = await authManager.tokenController.add({ userId });
             const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
 
@@ -316,7 +316,7 @@ export async function createMockCluster({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      instanceId: `${clusterName}_${appName}_${i}`,
+      instanceId: i,
       pubSubManager: {
         channelPrefix: clusterName,
       },
