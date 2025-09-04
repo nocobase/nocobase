@@ -89,6 +89,7 @@ export class FormItemModel extends CollectionFieldItemModel {
 }
 
 FormItemModel.define({
+  label: escapeT('Display collection fields'),
   sort: 100,
 });
 

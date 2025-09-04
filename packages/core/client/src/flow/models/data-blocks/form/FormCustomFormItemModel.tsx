@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT, ModelRenderMode, FlowModelContext } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, FlowModelContext, ModelRenderMode } from '@nocobase/flow-engine';
 import { Button } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 
 export class FormCustomFormItemModel extends FlowModel {
@@ -20,11 +21,13 @@ export class FormCustomFormItemModel extends FlowModel {
 
     const toChildren = (models: Map<string, any>) =>
       Array.from(models.entries()).map(([name, ModelClass]) => ({
+        key: name,
         label: ctx.t(ModelClass.meta.label),
         createModelOptions: { use: name },
+        sort: (ModelClass.meta.sort ?? 999) as number,
       }));
 
-    return [...toChildren(commonModels), ...toChildren(formCustomModels)];
+    return _.sortBy([...toChildren(commonModels), ...toChildren(formCustomModels)], 'sort');
   }
 }
 

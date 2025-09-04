@@ -100,3 +100,10 @@ FormSubmitActionModel.registerFlow({
     },
   },
 });
+
+export class FormJSActionModel extends FormActionModel {}
+
+FormJSActionModel.define({
+  label: escapeT('JS action'),
+  sort: 9999,
+});
