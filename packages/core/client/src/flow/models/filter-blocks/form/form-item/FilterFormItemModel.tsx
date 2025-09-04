@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, reaction } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
@@ -18,7 +18,7 @@ import { FieldModel } from '../../../base/FieldModel';
 import { FormItem } from '../../../data-blocks/form/FormItem';
 import { FilterManager } from '../../filter-manager/FilterManager';
 
-export const FieldNotAllow = ({ actionName, FieldTitle }) => {
+const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
   const messageValue = useMemo(() => {
     return t(
