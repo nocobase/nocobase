@@ -10,7 +10,7 @@
 import { escapeT, FlowModel, MultiRecordResource, useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Card, Form, Button, Tooltip } from 'antd';
+import { Card, Form, Button, Tooltip, Divider } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
@@ -69,43 +69,45 @@ const ArrayNester = ({ name, value }: any) => {
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
   return (
-    <Form.List name={name} initialValue={value || [{}]}>
-      {(fields, { add, remove }) => (
-        <>
-          {fields.map(({ key, name: index, ...restField }) => {
-            const fork = gridModel.createFork({}, `${index}`);
-            fork.context.defineProperty('fieldIndex', {
-              get: () => {
-                return index;
-              },
-            });
-            return (
-              <Card
-                key={index}
-                bordered={true}
-                style={{ position: 'relative' }}
-                className={css`
-                  > .ant-card-body > .ant-divider:last-child {
-                    display: none;
-                  }
-                `}
-              >
-                <div style={{ textAlign: 'right' }}>
-                  <Tooltip key={'remove'} title={t('Remove')}>
-                    <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(index)} />
-                  </Tooltip>
-                </div>
-                <FlowModelRenderer model={fork} showFlowSettings={false} key={index} />
-              </Card>
-            );
-          })}
-          <Button type="link" onClick={() => add()}>
-            <PlusOutlined />
-            {t('Add new')}
-          </Button>
-        </>
-      )}
-    </Form.List>
+    <Card
+      bordered={true}
+      style={{ position: 'relative' }}
+      className={css`
+        > .ant-card-body > .ant-divider:last-child {
+          display: none;
+        }
+      `}
+    >
+      <Form.List name={name} initialValue={value || [{}]}>
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name: index, ...restField }) => {
+              const fork = gridModel.createFork({}, `${index}`);
+              fork.context.defineProperty('fieldIndex', {
+                get: () => {
+                  return index;
+                },
+              });
+              return (
+                <>
+                  <div style={{ textAlign: 'right' }}>
+                    <Tooltip key={'remove'} title={t('Remove')}>
+                      <CloseOutlined style={{ zIndex: 1000, color: '#a8a3a3' }} onClick={() => remove(index)} />
+                    </Tooltip>
+                  </div>
+                  <FlowModelRenderer model={fork} showFlowSettings={false} key={index} />
+                  <Divider />
+                </>
+              );
+            })}
+            <Button type="link" onClick={() => add()}>
+              <PlusOutlined />
+              {t('Add new')}
+            </Button>
+          </>
+        )}
+      </Form.List>
+    </Card>
   );
 };
 
