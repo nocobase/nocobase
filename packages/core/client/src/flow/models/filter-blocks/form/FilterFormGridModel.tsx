@@ -13,6 +13,7 @@ import React from 'react';
 import { GridModel } from '../../base/GridModel';
 import { getAllDataModels } from '../utils';
 import { FilterFormItemModel } from './form-item';
+import { CollectionBlockModel } from '../../base/BlockModel';
 
 export class FilterFormGridModel extends GridModel {
   itemFlowSettings = {
@@ -70,22 +71,33 @@ export class FilterFormGridModel extends GridModel {
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 
     // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
-    const matchingModels = allDataModels.filter((model: any) => {
+    const matchingModels = allDataModels.filter((model: CollectionBlockModel) => {
       if (!model.resource?.supportsFilter) {
         return false;
       }
 
-      // @ts-ignore
       const collection = model.collection;
       return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
     });
 
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
-      const targets = matchingModels.map((model) => ({
-        targetId: model.uid,
-        filterPaths: [fieldPath],
-      }));
+      const targets = matchingModels.map((model: CollectionBlockModel) => {
+        const field = model.collection.getField(fieldPath);
+
+        // 如果是关系字段，需要把 targetKey 拼上，不然筛选时会报错
+        if (field.target) {
+          return {
+            targetId: model.uid,
+            filterPaths: [`${fieldPath}.${field.targetKey}`],
+          };
+        }
+
+        return {
+          targetId: model.uid,
+          filterPaths: [fieldPath],
+        };
+      });
 
       // 存到数据库中
       await this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
