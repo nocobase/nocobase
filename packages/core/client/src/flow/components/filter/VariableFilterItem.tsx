@@ -11,7 +11,13 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Select, Space } from 'antd';
 import merge from 'lodash/merge';
 import { observer } from '@formily/reactive-react';
-import { VariableInput, type MetaTreeNode, type Converters, FlowModel } from '@nocobase/flow-engine';
+import {
+  VariableInput,
+  type MetaTreeNode,
+  type Converters,
+  FlowModel,
+  useFlowViewContext,
+} from '@nocobase/flow-engine';
 import { createStaticInputRenderer } from './utils';
 import _ from 'lodash';
 
@@ -42,6 +48,8 @@ export interface VariableFilterItemProps {
  */
 export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
   ({ value, model, rightAsVariable, rightMetaTree }) => {
+    // 使用 View 上下文，确保可访问 ctx.view 的异步子树
+    const ctx = useFlowViewContext();
     const t = model.translate;
     const { leftValue, operator, rightValue } = value;
 
@@ -178,7 +186,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
             <VariableInput
               value={rightValue}
               onChange={(v) => (value.rightValue = v)}
-              metaTree={rightMetaTree || (() => model.context.getPropertyMetaTree())}
+              metaTree={rightMetaTree || (() => ctx.getPropertyMetaTree())}
               converters={rightConverters}
               showValueComponent
               style={{ width: 260 }}

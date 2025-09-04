@@ -7,197 +7,167 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * This file is part of the NocoBase (R) project.
+ */
+
 import { connect } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   FlowModelRenderer,
   MetaTreeNode,
-  useFlowContext,
   VariableInput,
   isVariableExpression,
+  useFlowContext,
+  useFlowSettingsContext,
+  extractPropertyPath,
 } from '@nocobase/flow-engine';
-import React, { useMemo } from 'react';
-import { EditableFieldModel } from '../models';
+import { get, isEqual } from 'lodash';
+import React, { useMemo, useRef } from 'react';
 import { Input } from 'antd';
+import { EditableFieldModel } from '../models';
 
-interface VariableFieldInputProps {
-  value: any; // 任意类型，表示当前值
-  onChange: (value: any) => void; // 表示值改变的回调
-  metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>); // 表示元数据树，可能是异步函数
-  model: EditableFieldModel; // EditableFieldModel 及其子类的实例
+interface Props {
+  value: any;
+  onChange: (value: any) => void;
+  metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
+  model: EditableFieldModel;
 }
 
-/**
- * 创建变量字段模型类的工厂函数
- */
-function createVariableFieldModelClass(ModelClass: any) {
-  class TempVariableModel extends ModelClass {
-    async onBeforeAutoFlows(): Promise<void> {
-      try {
-        const params = this.getStepParams?.('fieldSettings', 'init') || {};
-        let cf: any = undefined;
-        if (params?.dataSourceKey && params?.collectionName && params?.fieldPath) {
-          const key = `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`;
-          cf = this.context?.dataSourceManager?.getCollectionField?.(key);
-        }
-        // fallback kept for compatibility if upstream passes originalModel in props
-        if (!cf && this.props?.originalModel?.collectionField) {
-          cf = this.props.originalModel.collectionField;
-        }
-        if (cf) {
-          this.context.defineProperty('collectionField', { get: () => cf });
-        }
-      } catch (err) {
-        /* noop */
-      }
+function createTempFieldClass(Base: any) {
+  return class Temp extends Base {
+    async onBeforeAutoFlows() {
+      const p = this.getStepParams?.('fieldSettings', 'init') || {};
+      const k =
+        p?.dataSourceKey &&
+        p?.collectionName &&
+        p?.fieldPath &&
+        `${p.dataSourceKey}.${p.collectionName}.${p.fieldPath}`;
+      const cf = k && this.context?.dataSourceManager?.getCollectionField?.(k);
+      const fb = this.props?.originalModel?.collectionField;
+      if (cf || fb) this.context.defineProperty('collectionField', { get: () => cf || fb });
     }
-
     async onAfterAutoFlows() {
       this.showTitle?.(null);
       this.setDescription?.(null);
       this.setPattern?.('editable');
-      if (this.props.onChange) {
-        this.setProps({ onChange: this.props.onChange });
-      }
-      const initialValueParams = this.getStepParams('formItemSettings', 'initialValue');
-      const initVal = initialValueParams?.defaultValue;
-      if (typeof initVal !== 'undefined') {
-        this.setProps({ value: initVal });
-      }
+      if (this.props.onChange) this.setProps({ onChange: this.props.onChange });
+      const v = this.getStepParams('formItemSettings', 'initialValue')?.defaultValue;
+      if (typeof v !== 'undefined') this.setProps({ value: v });
     }
-
-    // 使用原字段模型的默认渲染（不覆写 render），以便遵循 FieldModel + FormItem 的正常渲染链路
-  }
-
-  return TempVariableModel;
+  };
 }
 
-export const DefaultValue = connect((props: VariableFieldInputProps) => {
+export const DefaultValue = connect((props: Props) => {
   const { value, onChange } = props;
-  const ctx = useFlowContext();
-  const model = ctx.model;
-  const newModel = useMemo(() => {
-    const hostModel: any = model as any;
-    const originalFieldModel: any = hostModel?.subModels?.field;
-    let TargetFieldClass: any = originalFieldModel?.constructor || (model.constructor as any);
-    // 避免使用实验性的 RecordPicker，在 DefaultValue 常量场景改用 SelectAssociationFieldModel
-    if (TargetFieldClass?.name === 'RecordPickerFieldModel') {
-      const alt = model.context.engine.getModelClass('SelectAssociationFieldModel');
-      if (alt) {
-        TargetFieldClass = alt as any;
-      }
+  const { model } = useFlowContext();
+  const settings = useFlowSettingsContext();
+
+  // Build a temporary field model (isolated), using collectionField's recommended editable subclass
+  const tempRoot = useMemo(() => {
+    const host: any = model as any;
+    const origin: any = host?.subModels?.field;
+    const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
+    let Target = origin?.constructor || (model.constructor as any);
+    if (init?.dataSourceKey && init?.collectionName && init?.fieldPath) {
+      const dsm = model.context.dataSourceManager;
+      const cf = dsm?.getCollectionField?.(`${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`);
+      const use = cf?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+      Target = model.context.engine.getModelClass(use) || Target;
     }
-    const TempVariableModel = createVariableFieldModelClass(TargetFieldClass);
-    const tempClassName = `Var${model.uid}`;
-
-    // 将上面的临时的类注册进 flowEngine, name可以为`Var${model.uid}`
-    const engine = model.context.engine;
-    engine.registerModels({ [tempClassName]: TempVariableModel });
-
-    const initParams =
-      (hostModel as any)?.getStepParams?.('fieldSettings', 'init') ||
-      originalFieldModel?.getStepParams?.('fieldSettings', 'init');
-
-    // 方案A：直接渲染临时 FieldModel（不再包 FormItemModel）
-    const fieldSubModel = {
-      use: tempClassName, // 按原字段模型渲染，但与外部完全隔离
+    const Temp = createTempFieldClass(Target);
+    const tempName = `Var${model.uid}`;
+    model.context.engine.registerModels({ [tempName]: Temp });
+    const fieldSub = {
+      use: tempName,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
-      stepParams: initParams
-        ? {
-            fieldSettings: {
-              init: initParams,
-            },
-          }
-        : undefined,
-      props: {
-        disabled: false,
-      },
+      stepParams: init ? { fieldSettings: { init } } : undefined,
+      props: { disabled: false },
     } as any;
-
-    const options = {
+    const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
-      subModels: {
-        fields: [fieldSubModel],
-      },
-    };
-
-    const created = model.context.engine.createModel(options as any);
-    // 为关联字段等流程补齐最小上下文：dataSource 与 collection
-    try {
+      subModels: { fields: [fieldSub] },
+    } as any);
+    if (init?.dataSourceKey && init?.collectionName) {
       const dsm = model.context.dataSourceManager;
-      if (initParams?.dataSourceKey && initParams?.collectionName) {
-        const ds = dsm?.getDataSource?.(initParams.dataSourceKey);
-        const col = dsm?.getCollection?.(initParams.dataSourceKey, initParams.collectionName);
-        if (ds) created.context?.defineProperty?.('dataSource', { get: () => ds });
-        if (col) created.context?.defineProperty?.('collection', { get: () => col });
-      }
-    } catch (_) {
-      /* noop */
+      const ds = dsm?.getDataSource?.(init.dataSourceKey);
+      const col = dsm?.getCollection?.(init.dataSourceKey, init.collectionName);
+      if (ds) created.context?.defineProperty?.('dataSource', { get: () => ds });
+      if (col) created.context?.defineProperty?.('collection', { get: () => col });
     }
     return created;
   }, [model]);
 
+  // Right-side editor (the field component itself)
   const InputComponent = useMemo(
-    () => (props) => {
-      newModel.setProps({ ...props });
-      return (
-        <div style={{ flexGrow: 1 }}>
-          <FlowModelRenderer model={newModel} showFlowSettings={false} />
-        </div>
-      );
-    },
-    [newModel],
+    () => (p) => (
+      <div style={{ flexGrow: 1 }}>
+        {tempRoot.setProps({ ...p })}
+        <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
+      </div>
+    ),
+    [tempRoot],
   );
   const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
   const metaTree = useMemo<MetaTreeNode[]>(() => {
-    const ctxMetaTree = ctx.getPropertyMetaTree();
+    const tree = (useFlowContext().getPropertyMetaTree?.() || []) as MetaTreeNode[];
     return [
-      {
-        title: 'Constant',
-        name: 'constant',
-        type: 'string',
-        paths: ['constant'],
-        render: InputComponent,
-      },
-      {
-        title: 'Null',
-        name: 'null',
-        type: 'object',
-        paths: ['null'],
-        render: NullComponent,
-      },
-      ...ctxMetaTree,
+      { title: 'Constant', name: 'constant', type: 'string', paths: ['constant'], render: InputComponent },
+      { title: 'Null', name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+      ...tree,
     ];
-  }, [model, ctx, InputComponent, NullComponent]);
+  }, [InputComponent]);
+
+  // Pass value/handler to the temp field
   React.useEffect(() => {
-    const fieldModel = newModel.subModels.fields?.[0] as any;
-    if (fieldModel) {
-      // 仅传递值与事件（完全隔离）
-      fieldModel.setProps({
-        disabled: false,
-        value: props.value,
-        onChange: (eventOrValue) => {
-          let actualValue = eventOrValue;
-          if (eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue) {
-            actualValue = eventOrValue.target.value;
+    const fm = tempRoot.subModels.fields?.[0] as any;
+    fm?.setProps({
+      disabled: false,
+      value,
+      onChange: (ev: any) => onChange?.(ev && typeof ev === 'object' && 'target' in ev ? ev.target.value : ev),
+    });
+  }, [tempRoot, onChange, value]);
+
+  // Apply on OK: if params changed and field untouched (by value snapshot), set new default to current form
+  const startRef = useRef<any>(undefined);
+  const namePathRef = useRef<any[]>([]);
+  React.useEffect(() => {
+    const stepKey = 'initialValue';
+    const initial = settings.getStepParams?.(stepKey) || {};
+    const form: any = settings.model?.context?.form;
+    const raw: any = (settings.model as any)?.props?.name || (settings.model as any)?.fieldPath;
+    const namePath = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split('.') : [raw].filter(Boolean);
+    namePathRef.current = namePath as any[];
+    if (form?.getFieldValue) startRef.current = form.getFieldValue(namePathRef.current as any);
+    return () => {
+      setTimeout(() => {
+        const latest = settings.getStepParams?.(stepKey) || {};
+        if (!isEqual(initial, latest)) {
+          const f: any = settings.model?.context?.form;
+          if (!f || !namePathRef.current.length) return;
+          const cur = f.getFieldValue?.(namePathRef.current as any);
+          if (!isEqual(cur, startRef.current)) return;
+          let v = latest?.defaultValue;
+          if (isVariableExpression(v)) {
+            const p = extractPropertyPath(String(v));
+            if (p) v = get(settings.model.context as any, p.join('.'));
           }
-          onChange?.(actualValue);
-        },
-      });
-    }
-  }, [newModel, onChange, props.value]);
+          if (f.setFieldValue) f.setFieldValue(namePathRef.current as any, v);
+          else if (f.setFieldsValue) f.setFieldsValue({ [namePathRef.current.join('.')]: v });
+        }
+      }, 0);
+    };
+  }, [settings]);
 
   return (
     <VariableInput
       metaTree={metaTree}
       {...props}
       converters={{
-        // 选择 Constant 时，输入框显示空字符串而不是 CTX.constant
         resolveValueFromPath: (item) => (item?.paths?.[0] === 'constant' ? '' : undefined),
-        // 当传入值不是变量表达式时，默认选中 constant，使右侧直接展示字段组件供输入
         resolvePathFromValue: (val) => (isVariableExpression(val) ? undefined : ['constant']),
       }}
     />
