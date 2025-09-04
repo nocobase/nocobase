@@ -16,7 +16,7 @@ import {
   escapeT,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Form, Select } from 'antd';
+import { Button, Select } from 'antd';
 import React from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FormFieldModel } from '../FormFieldModel';
@@ -72,57 +72,63 @@ function RecordPickerContent({ model }) {
 }
 
 function RecordPickerField(props) {
+  const { fieldNames } = props;
   const ctx = useFlowContext();
   const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+  const normalizeValue = (value, fieldNames, toOne) => {
+    if (!value) return toOne ? undefined : [];
+    if (toOne) {
+      return {
+        ...value,
+        label: value[fieldNames.label],
+        value: value[fieldNames.value],
+      };
+    }
+    return value.map((v) => ({
+      ...v,
+      label: v[fieldNames.label],
+      value: v[fieldNames.value],
+    }));
+  };
+  const handleOpenDrawer = () => {
+    ctx.viewer.open({
+      type: 'drawer',
+      width: '50%',
+      inheritContext: false,
+      inputArgs: {
+        parentId: ctx.model.uid,
+        scene: 'select',
+        dataSourceKey: ctx.collection.dataSourceKey,
+        collectionName: ctx.collectionField?.target,
+        rowSelectionProps: {
+          type: toOne ? 'radio' : 'checkbox',
+          defaultSelectedRows: ctx.model.props.value,
+          renderCell: undefined,
+          selectedRowKeys: undefined,
+          onChange: (_, selectedRows) => {
+            ctx.model.selectedRows.value = toOne ? selectedRows?.[0] : selectedRows;
+          },
+        },
+      },
+      content: () => <RecordPickerContent model={ctx.model} />,
+    });
+  };
   return (
     <Select
       open={false}
-      value={
-        toOne
-          ? props.value
-            ? { label: props.value[props.fieldNames.label], value: props.value[props.fieldNames.value] }
-            : undefined
-          : (props.value || []).map((v) => ({
-              label: v[props.fieldNames.label],
-              value: v[props.fieldNames.value],
-            }))
-      }
+      value={normalizeValue(props.value, fieldNames, toOne)}
       labelRender={(item) => {
-        return <LabelByField option={item} fieldNames={props.fieldNames} />;
+        return <LabelByField option={item} fieldNames={fieldNames} />;
       }}
       labelInValue
       mode={toOne ? undefined : 'multiple'}
-      fieldNames={{ label: 'name', value: 'name' }}
-      onClick={() => {
-        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
-        ctx.viewer.open({
-          type: 'drawer',
-          width: '50%',
-          inheritContext: false,
-          inputArgs: {
-            parentId: ctx.model.uid,
-            scene: 'select',
-            dataSourceKey: ctx.collection.dataSourceKey,
-            collectionName: ctx.collectionField?.target,
-            rowSelectionProps: {
-              type: toOne ? 'radio' : 'checkbox',
-              renderCell: undefined,
-              selectedRowKeys: undefined,
-              defaultSelectedRows: ctx.model.props.value,
-              onChange: (_, selectedRows) => {
-                console.log(selectedRows);
-                if (toOne) {
-                  ctx.model.selectedRows.value = selectedRows?.[0];
-                } else {
-                  ctx.model.selectedRows.value = selectedRows;
-                }
-              },
-            },
-          },
-          content: (view) => {
-            return <RecordPickerContent model={ctx.model} />;
-          },
-        });
+      fieldNames={fieldNames}
+      onClick={handleOpenDrawer}
+      options={props.value}
+      allowClear
+      onChange={(newValue, option) => {
+        ctx.model.selectedRows.value = option;
+        ctx.model.change();
       }}
     />
   );
