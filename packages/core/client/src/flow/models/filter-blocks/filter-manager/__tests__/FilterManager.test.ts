@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { BlockGridModel } from '@nocobase/client';
+import { FlowEngine } from '@nocobase/flow-engine';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FILTER_CONFIGS_STEP_KEY, FILTER_MANAGER_FLOW_KEY, FilterManager } from '../FilterManager';
 
@@ -203,6 +205,29 @@ describe('FilterManager', () => {
           filterPaths: ['newField'],
         },
       ]);
+    });
+  });
+
+  describe('model.serialize', () => {
+    it('should return correct serialized object', async () => {
+      const engine = new FlowEngine();
+      engine.registerModels({ BlockGridModel });
+      const filterConfig1 = {
+        filterId: 'filter-1',
+        targetId: 'target-1',
+        filterPaths: ['name'],
+        operator: '$eq',
+      };
+      const model = engine.createModel<BlockGridModel>({ use: 'BlockGridModel', filterManager: [filterConfig1] });
+      const filterConfig2 = {
+        filterId: 'filter-2',
+        targetId: 'target-2',
+        filterPaths: ['name'],
+        operator: '$eq',
+      };
+      await model.filterManager.addFilterConfig(filterConfig2);
+      const data = model.serialize();
+      expect(data.filterManager).toEqual([filterConfig1, filterConfig2]);
     });
   });
 

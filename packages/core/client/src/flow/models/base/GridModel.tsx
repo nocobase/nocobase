@@ -390,6 +390,12 @@ export class BlockGridModel extends GridModel {
     return this.context.filterManager;
   }
 
+  serialize() {
+    const data = super.serialize();
+    data['filterManager'] = this.filterManager.getFilterConfigs();
+    return data;
+  }
+
   renderAddSubModelButton() {
     const t = this.translate;
     return (
