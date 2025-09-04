@@ -148,9 +148,6 @@ ActionModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
   },
 });
 
@@ -257,3 +254,21 @@ export class RecordActionModel extends ActionModel {
     );
   }
 }
+
+CollectionActionModel.registerFlow({
+  key: 'acl',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
+  },
+});
+
+RecordActionModel.registerFlow({
+  key: 'acl',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
+  },
+});

@@ -378,6 +378,16 @@ export class BlockGridModel extends GridModel {
     this.context.defineProperty('blockGridModel', {
       value: this,
     });
+    this.context.defineProperty('filterManager', {
+      once: true,
+      get: () => {
+        return new FilterManager(this, options['filterManager']);
+      },
+    });
+  }
+
+  get filterManager(): FilterManager {
+    return this.context.filterManager;
   }
 
   renderAddSubModelButton() {
@@ -400,22 +410,6 @@ export class BlockGridModel extends GridModel {
     return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
   }
 }
-
-BlockGridModel.registerFlow({
-  key: FILTER_MANAGER_FLOW_KEY,
-  steps: {
-    [FILTER_CONFIGS_STEP_KEY]: {
-      handler(ctx) {
-        ctx.model.context.defineProperty('filterManager', {
-          once: true,
-          get: () => {
-            return new FilterManager(ctx.model);
-          },
-        });
-      },
-    },
-  },
-});
 
 BlockGridModel.registerFlow({
   key: 'blockGridSettings',
