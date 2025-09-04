@@ -8,6 +8,6 @@
  */
 
 export * from './FilterFormActionModel';
-export * from './ResetFilterFormActionModel';
+export * from './FilterFormResetActionModel';
 export * from './FilterFormSubmitActionModel';
 export * from './CollapseFilterFormActionModel';
