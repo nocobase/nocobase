@@ -161,7 +161,7 @@ export class FilterFormItemModel extends CollectionFieldItemModel {
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
-      <FormItem {...this.props} getValueProps={this.getValueProps}>
+      <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -212,9 +212,9 @@ FilterFormItemModel.registerFlow({
         ctx.model.setProps({ label: params.label });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
+    // aclCheck: {
+    //   use: 'aclCheck',
+    // },
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
