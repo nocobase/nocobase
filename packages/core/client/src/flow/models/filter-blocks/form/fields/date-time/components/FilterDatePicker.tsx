@@ -30,12 +30,6 @@ export const FilterDatePicker = (props: any) => {
     showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
     format: getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat),
     picker: targetPicker,
-    onChange: (val) => {
-      props.onChange(undefined);
-      setTimeout(() => {
-        props.onChange(val);
-      });
-    },
   };
   const [stateProps, setStateProps] = useState(newProps);
   return (
