@@ -110,7 +110,7 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 }
 
 export interface ApplicationOptions {
-  instanceId?: string;
+  instanceId?: number;
   database?: IDatabaseOptions | Database;
   redisConfig?: RedisConfig;
   cacheManager?: CacheManagerOptions;
@@ -705,8 +705,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this.emitAsync('beforeLoad', this, options);
     }
 
-    this._instanceId = await this.workerIdAllocator.getWorkerId();
-    this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
+    if (!this._instanceId) {
+      this._instanceId = await this.workerIdAllocator.getWorkerId();
+      this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
+    }
 
     setupSnowflakeIdField(this._instanceId);
 
@@ -1239,6 +1241,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+    this._instanceId = options.instanceId;
 
     this.initLogger(options.logger);
 
