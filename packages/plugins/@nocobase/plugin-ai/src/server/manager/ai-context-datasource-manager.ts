@@ -12,6 +12,9 @@ import PluginAIServer from '../plugin';
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
+  async preview(options: PreviewOptions): Promise<QueryResult | null> {
+    return await this.innerQuery(options);
+  }
 
   async query({ id }: QueryOptions): Promise<QueryResult | null> {
     const model = await this.plugin.repositories.aiContextDatasources.findById(id);
@@ -20,20 +23,24 @@ export class AIContextDatasourceManager {
       return null;
     }
     const metadata = model.toJSON() as AIContextDatasource;
-    const { datasource, collectionName, fields, filter, sort, limit } = metadata;
+    return await this.innerQuery(metadata);
+  }
+
+  private async innerQuery(options: InnerQueryOptions): Promise<QueryResult | null> {
+    const { datasource, collectionName, fields, filter, sort, limit } = options;
     const ds = this.plugin.app.dataSourceManager.get(datasource);
     if (!ds) {
-      this.plugin.log.warn(`Datasource ${datasource} not found`, { id });
+      this.plugin.log.warn(`Datasource ${datasource} not found`);
       return {
-        metadata,
+        options,
         records: [],
       };
     }
     const collection = ds.collectionManager.getCollection(collectionName);
     if (!collection) {
-      this.plugin.log.warn(`Collection ${collectionName} not found`, { id });
+      this.plugin.log.warn(`Collection ${collectionName} not found`);
       return {
-        metadata,
+        options,
         records: [],
       };
     }
@@ -60,21 +67,28 @@ export class AIContextDatasourceManager {
     );
 
     return {
-      metadata,
+      options,
       records,
     };
   }
 }
+
+export type PreviewOptions = InnerQueryOptions;
 
 export type QueryOptions = {
   id: string;
 };
 
 export type QueryResult = {
-  metadata: AIContextDatasource;
+  options: InnerQueryOptions;
   records: {
     name: string;
     type: string;
     value: unknown;
   }[][];
 };
+
+type InnerQueryOptions = Pick<
+  AIContextDatasource,
+  'datasource' | 'collectionName' | 'fields' | 'filter' | 'sort' | 'limit'
+>;

@@ -28,6 +28,7 @@ import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+import { DatasourceSettingPage } from './ai-employees/admin/datasource';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -86,6 +87,13 @@ export class PluginAIClient extends Plugin {
       title: tval('LLM services', { ns: namespace }),
       aclSnippet: 'pm.ai.llm-services',
       Component: LLMServices,
+    });
+    this.app.pluginSettingsManager.add('ai.datasource', {
+      sort: 99,
+      icon: 'LinkOutlined',
+      title: tval('Datasource', { ns: namespace }),
+      aclSnippet: 'pm.ai.datasource',
+      Component: DatasourceSettingPage,
     });
     this.app.pluginSettingsManager.add('ai.settings', {
       sort: 100,

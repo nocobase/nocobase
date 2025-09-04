@@ -15,6 +15,11 @@ export const aiContextDatasources: ResourceOptions = {
   actions: {
     preview: async (ctx, next) => {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      ctx.body = await plugin.aiContextDatasourceManager.preview(ctx.action.params.values);
+      next();
+    },
+    query: async (ctx, next) => {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const { id } = ctx.action.params;
       ctx.body = await plugin.aiContextDatasourceManager.query({ id });
       next();
