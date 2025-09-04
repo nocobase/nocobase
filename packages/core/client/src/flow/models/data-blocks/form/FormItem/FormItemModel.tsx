@@ -75,15 +75,27 @@ export class FormItemModel extends CollectionFieldItemModel {
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const namePath = this.props.name;
-    // if (this.props.fieldIndex !== undefined) {
-    //   namePath[0] = this.props.fieldIndex;
-    // }
-    // console.log(namePath);
+    // 行索引（来自数组子表单）
+    const idx = this.context.fieldIndex;
+
+    // 根据行索引把绝对路径 name 转为相对路径 [index, ...]
+    let dynamicName: any = this.props.name;
+    if (idx != null) {
+      if (Array.isArray(dynamicName)) {
+        const parts = [...dynamicName];
+        dynamicName = [idx, ...parts.slice(1)];
+      } else if (typeof dynamicName === 'string') {
+        const parts = dynamicName.split('.');
+        dynamicName = [idx, ...parts.slice(1)];
+      }
+    }
+
+    // 针对每一行，为字段子模型创建 fork
+    const modelForRender = idx != null ? fieldModel.createFork({}, `${idx}`) : fieldModel;
 
     return (
-      <FormItem {...this.props} name={namePath}>
-        <FieldModelRenderer model={fieldModel} />
+      <FormItem {...this.props} name={dynamicName}>
+        <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
   }
