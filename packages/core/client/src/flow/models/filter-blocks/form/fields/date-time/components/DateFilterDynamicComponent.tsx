@@ -60,7 +60,7 @@ const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
 export const DateFilterDynamicComponent = (props) => {
   const { value, onChange } = props;
   const flowEngine = useFlowEngine();
-  const t = flowEngine.translate;
+  const t = flowEngine.translate.bind(flowEngine);
   const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
   const options = useMemo(() => getOptions(t), [t]);

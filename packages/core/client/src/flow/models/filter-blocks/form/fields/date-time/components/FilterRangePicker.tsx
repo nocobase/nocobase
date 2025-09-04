@@ -16,7 +16,7 @@ import React from 'react';
 export const FilterRangePicker = (props: any) => {
   const { value, picker = 'date', format, showTime, timeFormat } = props;
   const flowEngine = useFlowEngine();
-  const t = flowEngine.translate;
+  const t = flowEngine.translate.bind(flowEngine);
   const rangesValue = getDateRanges();
   const presets = [
     { label: t('Today'), value: rangesValue.today },
