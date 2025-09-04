@@ -88,6 +88,7 @@ describe('hidden field options', () => {
     await db.sync();
     const repo = db.getRepository('posts');
     await repo.create({
+      updateAssociationValues: ['user'],
       values: {
         title: 'post1',
         user: {
@@ -138,6 +139,7 @@ describe('hidden field options', () => {
     await db.sync();
     const repo = db.getRepository('posts');
     await repo.create({
+      updateAssociationValues: ['user'],
       values: {
         title: 'post1',
         user: {
@@ -189,6 +191,7 @@ describe('hidden field options', () => {
     await db.sync();
     const repo = db.getRepository('posts');
     await repo.create({
+      updateAssociationValues: ['user'],
       values: {
         title: 'post1',
         user: {
@@ -240,6 +243,7 @@ describe('hidden field options', () => {
     await db.sync();
     const repo = db.getRepository('posts');
     await repo.create({
+      updateAssociationValues: ['users'],
       values: {
         title: 'post1',
         users: [
@@ -292,6 +296,7 @@ describe('hidden field options', () => {
     await db.sync();
     const repo = db.getRepository('posts');
     await repo.create({
+      updateAssociationValues: ['users'],
       values: {
         title: 'post1',
         users: [

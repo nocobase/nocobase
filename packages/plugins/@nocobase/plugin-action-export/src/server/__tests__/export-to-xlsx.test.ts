@@ -366,6 +366,7 @@ describe('export to xlsx with preset', () => {
     await app.db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['attachment1'],
       values: {
         title: 'p1',
         attachment1: [
@@ -440,6 +441,7 @@ describe('export to xlsx with preset', () => {
     await app.db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['region'],
       values: {
         title: 'post0',
         region: [{ code: '14' }, { code: '1404' }, { code: '140406' }],
@@ -1051,6 +1053,7 @@ describe('export to xlsx', () => {
 
     await User.repository.create({
       values,
+      updateAssociationValues: ['posts'],
     });
 
     const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
@@ -1247,6 +1250,7 @@ describe('export to xlsx', () => {
     });
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values,
     });
 

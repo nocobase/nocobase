@@ -102,6 +102,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['qualifications'],
       values: [
         {
           name: 'u1',
@@ -179,6 +180,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: [
         {
           name: 'u1',
@@ -272,6 +274,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await Group.repository.create({
+      updateAssociationValues: ['users', 'users.posts'],
       values: [
         {
           name: 'g1',
@@ -378,6 +381,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: [
         {
           name: 'u1',
@@ -456,6 +460,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await Post.repository.create({
+      updateAssociationValues: ['user', 'user.organization', 'user.department', 'category'],
       values: [
         {
           title: 'p1',
@@ -519,6 +524,7 @@ describe('find with associations', () => {
     await db.sync();
 
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: [
         {
           name: 'u1',
@@ -646,6 +652,7 @@ describe('repository find', () => {
     const repository = User.repository;
 
     await repository.createMany({
+      updateAssociationValues: ['posts', 'posts.comments', 'posts.abc1', 'a1', 'a2', 'profile'],
       records: [
         {
           name: 'u1',

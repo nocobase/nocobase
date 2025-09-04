@@ -131,7 +131,10 @@ describe('workflow > triggers > collection', () => {
         },
       });
 
-      const post = await PostRepo.create({ values: { title: 't1', category: { title: 'c1' } } });
+      const post = await PostRepo.create({
+        updateAssociationValues: ['category'],
+        values: { title: 't1', category: { title: 'c1' } },
+      });
 
       await sleep(500);
 
@@ -151,7 +154,10 @@ describe('workflow > triggers > collection', () => {
         },
       });
 
-      const post = await PostRepo.create({ values: { title: 't1', category: {} } });
+      const post = await PostRepo.create({
+        updateAssociationValues: ['category'],
+        values: { title: 't1', category: {} },
+      });
       const CategoryRepo = db.getRepository<BelongsToRepository>('posts.category', post.id);
       await CategoryRepo.update({ values: { title: 'c1' } });
 
@@ -788,6 +794,7 @@ describe('workflow > triggers > collection', () => {
         const tagIds = tags.map((item) => item.id);
 
         const category = await CategoryRepo.create({
+          updateAssociationValues: ['posts', 'posts.tags'],
           values: {
             title: 't1',
             posts: [
