@@ -25,19 +25,22 @@ export class DetailItemModel extends CollectionFieldItemModel<{
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      const fieldPath = field.name;
+      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
       return {
-        key: field.name,
+        key: fullName,
         label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        toggleable: (subModel) => {
+          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+          return fieldPath === fullName;
+        },
         createModelOptions: () => ({
           use: 'DetailItemModel',
           stepParams: {
             fieldSettings: {
               init: {
                 dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
+                collectionName: ctx.model.context.blockModel.collection.name,
+                fieldPath: fullName,
               },
             },
           },
