@@ -965,17 +965,27 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
+    const actualParent: FlowModel = (this['master'] as FlowModel) || this;
+
     let model: T;
     if (options instanceof FlowModel) {
-      if (options.parent && options.parent !== this) {
+      // Compare by uid to tolerate fork wrappers and contextThis bindings
+      const hasParent = !!options.parent;
+      const parentUid = options.parent?.uid;
+      if (hasParent && parentUid && parentUid !== actualParent.uid) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel<T>({ ...options, parentId: this.uid, subKey, subType: 'array' });
+      model = actualParent.flowEngine.createModel<T>({
+        ...options,
+        parentId: actualParent.uid,
+        subKey,
+        subType: 'array',
+      });
     }
-    model.setParent(this);
-    const subModels = this.subModels as {
+    model.setParent(actualParent);
+    const subModels = actualParent.subModels as {
       [subKey: string]: FlowModel[];
     };
     if (!Array.isArray(subModels[subKey])) {
@@ -984,23 +994,33 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
-    this.emitter.emit('onSubModelAdded', model);
+    actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }
 
   setSubModel(subKey: string, options: CreateModelOptions | FlowModel) {
+    const actualParent: FlowModel = (this['master'] as FlowModel) || this;
+
     let model: FlowModel;
     if (options instanceof FlowModel) {
-      if (options.parent && options.parent !== this) {
+      // Compare by uid to tolerate fork wrappers and contextThis bindings
+      const hasParent = !!options.parent;
+      const parentUid = options.parent?.uid;
+      if (hasParent && parentUid && parentUid !== actualParent.uid) {
         throw new Error('Sub model already has a parent.');
       }
       model = options;
     } else {
-      model = this.flowEngine.createModel({ ...options, parentId: this.uid, subKey, subType: 'object' });
+      model = actualParent.flowEngine.createModel({
+        ...options,
+        parentId: actualParent.uid,
+        subKey,
+        subType: 'object',
+      });
     }
-    model.setParent(this);
-    (this.subModels as any)[subKey] = model;
-    this.emitter.emit('onSubModelAdded', model);
+    model.setParent(actualParent);
+    (actualParent.subModels as any)[subKey] = model;
+    actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }
 

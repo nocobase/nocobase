@@ -23,6 +23,10 @@ export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T>
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
   }
 
+  get title() {
+    return undefined;
+  }
+
   onInit(options: any): void {
     this.context.defineProperty('collectionField', {
       get: () => {

@@ -303,16 +303,19 @@ export const TaskMessage: React.FC<{
 
   const { triggerTask } = useChatBoxActions();
 
+  const tasksItems = tasks
+    .map((task, index) => ({ ...task, title: task.title || `${t('Task')} ${index + 1}` }))
+    .sort((a, b) => (b.title?.length ?? 0) - (a.title?.length ?? 0));
+
   return (
     <Flex align="flex-start" gap="middle" wrap={true}>
-      {tasks.map((task, index) => (
+      {tasksItems.map((task, index) => (
         <Button
           key={index}
           style={{
             whiteSpace: 'normal',
             textAlign: 'left',
             height: 'auto',
-            width: '180px',
           }}
           variant="outlined"
           onClick={() =>
@@ -323,7 +326,7 @@ export const TaskMessage: React.FC<{
             })
           }
         >
-          <div>{task.title || `${t('Task')} ${index + 1}`}</div>
+          <div>{task.title}</div>
         </Button>
       ))}
     </Flex>

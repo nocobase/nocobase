@@ -160,3 +160,5 @@ export const removeNullCondition = (filter, customFlat = flat) => {
 
   return _.isEmpty(result) ? undefined : result;
 };
+
+export * from './transformFilter';
