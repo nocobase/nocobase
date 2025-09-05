@@ -55,11 +55,11 @@ export interface FilterCondition {
 /**
  * 过滤器分组接口
  */
-export interface FilterGroup {
+export interface FilterGroupType {
   /** 逻辑操作符 */
   logic: '$and' | '$or';
   /** 条件项数组 */
-  items: (FilterCondition | FilterGroup)[];
+  items: (FilterCondition | FilterGroupType)[];
 }
 
 /**
@@ -86,7 +86,7 @@ export type QueryObject =
  * @param item - 待判断的项
  * @returns 是否为条件项
  */
-function isFilterCondition(item: FilterCondition | FilterGroup): item is FilterCondition {
+function isFilterCondition(item: FilterCondition | FilterGroupType): item is FilterCondition {
   return 'leftValue' in item && 'operator' in item && 'rightValue' in item;
 }
 
@@ -96,7 +96,7 @@ function isFilterCondition(item: FilterCondition | FilterGroup): item is FilterC
  * @param item - 待判断的项
  * @returns 是否为分组
  */
-function isFilterGroup(item: FilterCondition | FilterGroup): item is FilterGroup {
+function isFilterGroup(item: FilterCondition | FilterGroupType): item is FilterGroupType {
   return 'logic' in item && 'items' in item;
 }
 
@@ -122,7 +122,7 @@ function transformCondition(condition: FilterCondition): QueryCondition {
  * @param group - 过滤器分组
  * @returns 查询对象
  */
-function transformGroup(group: FilterGroup): QueryObject {
+function transformGroup(group: FilterGroupType): QueryObject {
   const { logic, items } = group;
 
   const transformedItems = items.map((item) => {
@@ -198,7 +198,7 @@ function transformGroup(group: FilterGroup): QueryObject {
  * // 输出: {"$or":[{"isAdmin":{"$eq":true}},{"$and":[{"name":{"$includes":"NocoBase"}},{"age":{"$gt":18}}]}]}
  * ```
  */
-export function transformFilter(filter: FilterGroup): QueryObject {
+export function transformFilter(filter: FilterGroupType): QueryObject {
   if (!filter || typeof filter !== 'object') {
     throw new Error('Invalid filter: filter must be an object');
   }
