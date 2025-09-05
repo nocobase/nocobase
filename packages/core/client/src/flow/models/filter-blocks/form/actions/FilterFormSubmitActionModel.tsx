@@ -10,9 +10,9 @@
 import type { ButtonProps } from 'antd/es/button';
 import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { FilterFormEditableFieldModel } from '../fields';
+import { FilterFormItemModel } from '../form-item';
 
-export class SubmitFilterFormActionModel extends FilterFormActionModel {
+export class FilterFormSubmitActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
     title: tval('Filter'),
     type: 'primary',
@@ -29,7 +29,7 @@ export class SubmitFilterFormActionModel extends FilterFormActionModel {
   }
 }
 
-SubmitFilterFormActionModel.registerFlow({
+FilterFormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: {
     eventName: 'click',
@@ -39,7 +39,7 @@ SubmitFilterFormActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.model.context.blockModel;
         const gridModel = blockModel.subModels.grid;
-        const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
+        const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
 
         fieldModels.forEach((fieldModel) => {
           fieldModel.doFilter();
@@ -49,6 +49,8 @@ SubmitFilterFormActionModel.registerFlow({
   },
 });
 
-SubmitFilterFormActionModel.define({
+FilterFormSubmitActionModel.define({
   label: tval('Filter'),
+  toggleable: true,
+  sort: 100,
 });

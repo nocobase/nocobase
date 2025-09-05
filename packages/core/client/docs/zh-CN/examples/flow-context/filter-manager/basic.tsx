@@ -193,26 +193,20 @@ class PluginHelloModel extends Plugin {
 
     const model = this.flowEngine.createModel({
       use: 'GridModel',
-      stepParams: {
-        filterManagerSettings: {
-          filterConfigs: {
-            value: [
-              {
-                filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
-                targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
-                filterPaths: ['name'], // 筛选字段路径
-                operator: '$includes',
-              },
-              {
-                filterId: 'my-filter2', // 提供筛选条件的 FilterModel 的 UID
-                targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
-                filterPaths: ['telephone'], // 筛选字段路径
-                operator: '$includes',
-              },
-            ],
-          },
+      filterManager: [
+        {
+          filterId: 'my-filter1', // 提供筛选条件的 FilterModel 的 UID
+          targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
+          filterPaths: ['name'], // 筛选字段路径
+          operator: '$includes',
         },
-      },
+        {
+          filterId: 'my-filter2', // 提供筛选条件的 FilterModel 的 UID
+          targetId: 'my-target1', // 被筛选的 TargetModel 的 UID
+          filterPaths: ['telephone'], // 筛选字段路径
+          operator: '$includes',
+        },
+      ],
       subModels: {
         items: [
           { uid: 'my-filter1', use: 'Filter1Model', key: 'Filter1Model' },

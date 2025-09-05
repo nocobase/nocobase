@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AssociationFilterFieldModel';
-export * from './SelectAssociationFilterFieldModel';
-//
+import { EditableFieldModel } from '../../../fields/EditableFieldModel';
+
+export class FilterFormFieldModel extends EditableFieldModel {}

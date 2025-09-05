@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
 import { FilterBlockModel } from '../../base/BlockModel';
 import React from 'react';
-import { FormProvider } from '@formily/react';
-import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
+import { FormButtonGroup } from '@formily/antd-v5';
 import {
   AddSubModelButton,
   DndProvider,
@@ -23,8 +21,9 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { tval } from '@nocobase/utils/client';
 import { FilterManager } from '../filter-manager/FilterManager';
+import { FormComponent } from '../../data-blocks/form/FormModel';
 
-export class FormFilterBlockModel extends FilterBlockModel<{
+export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
     grid: any; // Replace with actual type if available
     actions?: any[]; // Replace with actual type if available
@@ -43,13 +42,14 @@ export class FormFilterBlockModel extends FilterBlockModel<{
 
   onInit(options) {
     super.onInit(options);
-    this.context.defineProperty('form', {
-      get: () => createForm(),
-    });
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    this.context.defineProperty('filterFormFieldGridModel', {
+  }
+
+  onMount() {
+    super.onMount();
+    this.context.defineProperty('filterFormGridModel', {
       value: this.subModels.grid,
     });
   }
@@ -68,11 +68,10 @@ export class FormFilterBlockModel extends FilterBlockModel<{
   }
 
   renderComponent() {
+    const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
-      <FormProvider form={this.form}>
-        <FormLayout layout={'vertical'}>
-          <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <FormButtonGroup align="right">
             {this.mapSubModels('actions', (action) => (
@@ -92,7 +91,7 @@ export class FormFilterBlockModel extends FilterBlockModel<{
               </Droppable>
             ))}
             <AddSubModelButton
-              key="filter-form-v2-actions-add"
+              key="filter-form-actions-add"
               model={this}
               subModelKey="actions"
               subModelBaseClass={'FilterFormActionModel'}
@@ -101,19 +100,30 @@ export class FormFilterBlockModel extends FilterBlockModel<{
             </AddSubModelButton>
           </FormButtonGroup>
         </DndProvider>
-      </FormProvider>
+      </FormComponent>
     );
   }
 }
 
-FormFilterBlockModel.define({
+FilterFormBlockModel.define({
   label: tval('Form'),
   createModelOptions: {
-    use: 'FormFilterBlockModel',
+    use: 'FilterFormBlockModel',
     subModels: {
       grid: {
-        use: 'FilterFormFieldGridModel',
+        use: 'FilterFormGridModel',
       },
+    },
+  },
+});
+
+FilterFormBlockModel.registerFlow({
+  key: 'formFilterBlockModelSettings',
+  title: tval('Form settings'),
+  steps: {
+    layout: {
+      use: 'layout',
+      title: tval('Layout'),
     },
   },
 });

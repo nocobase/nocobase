@@ -8,16 +8,16 @@
  */
 
 import { ButtonProps } from 'antd';
-import { FilterFormEditableFieldModel } from '../fields';
 import { FilterFormActionModel } from './FilterFormActionModel';
+import { FilterFormItemModel } from '../form-item';
 
-export class ResetFilterFormActionModel extends FilterFormActionModel {
+export class FilterFormResetActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
     children: 'Reset',
   };
 }
 
-ResetFilterFormActionModel.registerFlow({
+FilterFormResetActionModel.registerFlow({
   key: 'resetSettings',
   on: {
     eventName: 'click',
@@ -27,17 +27,20 @@ ResetFilterFormActionModel.registerFlow({
       async handler(ctx, params) {
         const blockModel = ctx.model.context.blockModel;
         const gridModel = blockModel.subModels.grid;
-        const fieldModels: FilterFormEditableFieldModel[] = gridModel.subModels.items;
+        const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
 
         fieldModels.forEach((fieldModel) => {
-          fieldModel.field.reset();
           fieldModel.doReset();
         });
+
+        ctx.form.resetFields();
       },
     },
   },
 });
 
-ResetFilterFormActionModel.define({
+FilterFormResetActionModel.define({
   label: 'Reset',
+  toggleable: true,
+  sort: 200,
 });
