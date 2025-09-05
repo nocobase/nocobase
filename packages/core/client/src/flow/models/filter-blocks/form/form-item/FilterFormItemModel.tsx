@@ -8,7 +8,7 @@
  */
 
 import { Collection, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
-import { Alert } from 'antd';
+import { Alert, Empty } from 'antd';
 import { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -79,6 +79,22 @@ export class FilterFormItemModel extends CollectionFieldItemModel<{
 
     // 2. 获取所有的数据区块的实例
     const allModelInstances = getAllDataModels(gridModelInstance);
+
+    if (allModelInstances.length === 0) {
+      return [
+        {
+          key: 'no-data-blocks',
+          label: (
+            <Empty
+              style={{ width: 140 }}
+              description={ctx.t('Please add a data block on the page first')}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          ),
+          disabled: true,
+        },
+      ];
+    }
 
     return allModelInstances.map((model) => {
       return {
