@@ -90,11 +90,19 @@ async function evaluate(expr: string, ctx: any) {
 async function getAtPath(ctx: any, varName: string, path?: string) {
   try {
     // base may be Promise; wait once
-    // @ts-ignore ctx is in Compartment endowments via closure
-    const base = await (ctx as any)[varName];
-    if (!path) return base;
-    const norm = path.replace(/^\./, '');
-    return _.get(base, norm);
+    let current = await ctx[varName];
+    if (!path) return current;
+    const norm = String(path || '').replace(/^\./, '');
+    const segments = _.toPath(norm);
+    for (const seg of segments) {
+      if (current == null) return undefined;
+      let val = current[seg];
+      if (val && typeof val['then'] === 'function') {
+        val = await val;
+      }
+      current = val;
+    }
+    return current;
   } catch (_) {
     return undefined;
   }
