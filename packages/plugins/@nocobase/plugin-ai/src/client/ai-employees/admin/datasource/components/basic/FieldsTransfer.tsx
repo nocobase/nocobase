@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
-import { Flex, Table, Transfer } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Button, Flex, Radio, Space, Table, Transfer } from 'antd';
 import type { GetProp, TableColumnsType, TableProps, TransferProps } from 'antd';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useCollectionContext } from '../../context';
@@ -19,6 +19,7 @@ type TableRowSelection<T extends object> = TableProps<T>['rowSelection'];
 interface DataType {
   key: string;
   title?: string;
+  [key: string]: any;
 }
 
 interface TableTransferProps extends TransferProps<TransferItem> {
@@ -119,6 +120,160 @@ export const FieldsTransfer: React.FC<{
         filterOption={filterOption}
         leftColumns={columns}
         rightColumns={columns}
+      />
+    </Flex>
+  );
+};
+
+export const SortFieldsTransfer: React.FC<{
+  value?: string[];
+  onChange?: (targetKeys: string[]) => void;
+}> = ({ value, onChange }) => {
+  const ctx = useFlowContext();
+  const ds = ctx.dataSourceManager;
+  const currentCollection = useCollectionContext();
+  const [dataSource, setDataSource] = useState<DataType[]>([]);
+  const [targetKeys, setTargetKeys] = useState<string[]>(value?.map((v) => (v.startsWith('-') ? v.slice(1) : v)) ?? []);
+
+  const handleTransferTargetChange = useCallback(
+    (targetKeys: string[]) => {
+      setTargetKeys(targetKeys);
+      onChange?.(
+        targetKeys.map((key) => {
+          const record = dataSource.find((item) => item.key === key);
+          console.log(key, record);
+          if (record?.direction === 'desc') {
+            return `-${key}`;
+          } else {
+            return key;
+          }
+        }),
+      );
+    },
+    [onChange, setTargetKeys, dataSource],
+  );
+
+  const leftColumns: TableColumnsType<DataType> = [
+    {
+      dataIndex: 'title',
+      title: ctx.t('Field display name'),
+    },
+  ];
+
+  const rightColumns: TableColumnsType<DataType> = [
+    {
+      dataIndex: 'title',
+      title: ctx.t('Field display name'),
+    },
+    {
+      title: ctx.t('Direction'),
+      render: (_value, record) => {
+        return (
+          <>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Radio.Group
+                defaultValue="asc"
+                value={record.direction}
+                options={[
+                  { value: 'asc', label: 'Asc' },
+                  { value: 'desc', label: 'Desc' },
+                ]}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  record.direction = e.target.value;
+                  handleTransferTargetChange(targetKeys);
+                }}
+              />
+            </div>
+          </>
+        );
+      },
+    },
+    {
+      title: ctx.t('Actions'),
+      render: (_value, record) => {
+        return (
+          <>
+            <Space direction="horizontal">
+              <Button
+                type="link"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const sortingIndex = targetKeys.indexOf(record.key);
+                  if (sortingIndex > 0) {
+                    const newSortingKeys = [...targetKeys];
+                    newSortingKeys[sortingIndex] = newSortingKeys[sortingIndex - 1];
+                    newSortingKeys[sortingIndex - 1] = record.key;
+                    handleTransferTargetChange(newSortingKeys);
+                  }
+                }}
+              >
+                {ctx.t('Up')}
+              </Button>
+              <Button
+                type="link"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const sortingIndex = targetKeys.indexOf(record.key);
+                  if (sortingIndex !== -1 && sortingIndex < targetKeys.length - 1) {
+                    const newSortingKeys = [...targetKeys];
+                    newSortingKeys[sortingIndex] = newSortingKeys[sortingIndex + 1];
+                    newSortingKeys[sortingIndex + 1] = record.key;
+                    handleTransferTargetChange(newSortingKeys);
+                  }
+                }}
+              >
+                {ctx.t('Down')}
+              </Button>
+            </Space>
+          </>
+        );
+      },
+    },
+  ];
+
+  useEffect(() => {
+    const collection = currentCollection.collection;
+    if (!collection) {
+      setDataSource([]);
+      return;
+    }
+    const dataSource: DataType[] = collection
+      .getFields()
+      .filter((field) => field.options.interface && !field.options.hidden)
+      .map((field) => ({
+        key: field.name,
+        title: field.title,
+      }));
+
+    const directions =
+      value?.reduce((acc, cur) => {
+        if (cur.startsWith('-')) {
+          acc[cur.slice(1)] = 'desc';
+        } else {
+          acc[cur] = 'asc';
+        }
+        return acc;
+      }, {}) ?? {};
+
+    for (const ds of dataSource) {
+      ds.direction = directions[ds.key];
+    }
+
+    setDataSource(dataSource);
+  }, [ds, currentCollection]);
+
+  return (
+    <Flex align="start" gap="middle" vertical>
+      <TableTransfer
+        dataSource={dataSource}
+        targetKeys={targetKeys}
+        showSearch
+        showSelectAll={false}
+        onChange={handleTransferTargetChange}
+        filterOption={filterOption}
+        leftColumns={leftColumns}
+        rightColumns={rightColumns}
       />
     </Flex>
   );

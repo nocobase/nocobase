@@ -8,8 +8,10 @@
  */
 
 import React from 'react';
-import { Form, FormInstance } from 'antd';
+import { Button, Form, FormInstance, Input } from 'antd';
 import { FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
+import { useCollectionContext } from '../../context';
+import { SortFieldsTransfer } from '../basic';
 
 export const SortSetting: React.FC<{
   form: FormInstance;
@@ -17,10 +19,16 @@ export const SortSetting: React.FC<{
   show: boolean;
 }> = ({ form, name, show }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+  const currentCollection = useCollectionContext();
 
   return (
     <Form form={form} name={name} layout="vertical" colon={true} style={!show && { display: 'none' }}>
-      <span>SortSetting</span>
+      <Form.Item label={ctx.t('Collection')}>
+        <Input value={currentCollection.displayName} disabled />
+      </Form.Item>
+      <Form.Item label={ctx.t('Sort Fields')} name="sort">
+        <SortFieldsTransfer />
+      </Form.Item>
     </Form>
   );
 };

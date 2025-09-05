@@ -52,6 +52,7 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
     collectionForm.setFieldsValue(record);
     collectionForm.setFieldValue('collection', [datasource, collectionName]);
     fieldsForm.setFieldValue('fields', record.fields);
+    sortForm.setFieldValue('sort', record.sort);
     dataScope.items = record.filter?.items || [];
   }, [record]);
 
@@ -129,7 +130,19 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
       <CollectionContext.Provider value={new CurrentCollection(collection)}>
         <Header title={ctx.t('Edit datasource')} />
 
-        <Tabs defaultActiveKey="Tab-0" items={items} />
+        <Tabs
+          defaultActiveKey="Tab-0"
+          items={items}
+          onChange={() => {
+            let data = {};
+            for (const form of allForms) {
+              const { collection, datasource, collectionName, ...rest } = form.getFieldsValue();
+              data = { ...data, ...rest };
+            }
+            data['filter'] = dataScope;
+            setFormData((prev) => ({ ...prev, ...data }));
+          }}
+        />
 
         <Footer>
           <Flex justify="flex-end" align="end">
