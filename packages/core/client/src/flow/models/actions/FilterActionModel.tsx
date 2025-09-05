@@ -8,11 +8,11 @@
  */
 
 import { escapeT, MultiRecordResource, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
+import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { CollectionActionModel } from '../base/ActionModel';
-import { ContextFilterItem, FilterGroup, FilterItem, transformFilter } from '../../components/filter';
+import { ContextFilterItem, FilterGroup, FilterItem } from '../../components/filter';
 
 export class FilterActionModel extends CollectionActionModel {
   declare props: ButtonProps & {

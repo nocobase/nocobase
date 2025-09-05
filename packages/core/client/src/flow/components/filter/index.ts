@@ -16,5 +16,3 @@ export type {
   VariableFilterItemProps as ContextFilterItemProps,
   VariableFilterItemValue as ContextFilterItemValue,
 } from './VariableFilterItem';
-export { default as transformFilter } from './transformFilter';
-export type { FilterCondition, FilterGroup as FilterGroupType, QueryCondition, QueryObject } from './transformFilter';
