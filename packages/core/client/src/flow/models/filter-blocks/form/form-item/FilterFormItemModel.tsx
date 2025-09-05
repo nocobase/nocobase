@@ -61,6 +61,7 @@ const getModelFields = async (model: CollectionBlockModel) => {
             },
             init: {
               filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
+              defaultTargetUid: model.uid,
             },
           },
         },
@@ -128,6 +129,10 @@ export class FilterFormItemModel extends CollectionFieldItemModel<{
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
+
+  get defaultTargetUid(): string {
+    return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
+  }
 
   onInit(options) {
     super.onInit(options);

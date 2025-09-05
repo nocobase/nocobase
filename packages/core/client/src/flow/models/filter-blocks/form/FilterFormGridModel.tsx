@@ -76,6 +76,10 @@ export class FilterFormGridModel extends GridModel {
         return false;
       }
 
+      if (!dataSourceKey || !collectionName) {
+        return model.uid === subModel.defaultTargetUid;
+      }
+
       const collection = model.collection;
       return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
     });
@@ -83,14 +87,16 @@ export class FilterFormGridModel extends GridModel {
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
       const targets = matchingModels.map((model: CollectionBlockModel) => {
-        const field = model.collection.getField(fieldPath);
+        if (model.collection) {
+          const field = model.collection.getField(fieldPath);
 
-        // 如果是关系字段，需要把 targetKey 拼上，不然筛选时会报错
-        if (field.target) {
-          return {
-            targetId: model.uid,
-            filterPaths: [`${fieldPath}.${field.targetKey}`],
-          };
+          // 如果是关系字段，需要把 targetKey 拼上，不然筛选时会报错
+          if (field.target) {
+            return {
+              targetId: model.uid,
+              filterPaths: [`${fieldPath}.${field.targetKey}`],
+            };
+          }
         }
 
         return {
