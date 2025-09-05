@@ -86,6 +86,34 @@ class PluginHelloModel extends Plugin {
             ];
           },
         },
+        // 新增：异步 group 示例（含嵌套异步 group）
+        {
+          key: 'async-group',
+          label: 'Async Group',
+          type: 'group' as const,
+          children: async () => {
+            await sleep(800);
+            return [
+              {
+                key: 'g-sub1',
+                label: 'G-Sub1 Block',
+                createModelOptions: { use: 'Sub1BlockModel' },
+              },
+              {
+                key: 'g-nested-group',
+                label: 'Nested Group',
+                type: 'group' as const,
+                children: async () => {
+                  await sleep(500);
+                  return [
+                    { key: 'g-sub2-1', label: 'G-Sub2-1 Block', createModelOptions: { use: 'Sub2BlockModel' } },
+                    { key: 'g-sub2-2', label: 'G-Sub2-2 Block', createModelOptions: { use: 'Sub2BlockModel' } },
+                  ];
+                },
+              },
+            ];
+          },
+        },
       ];
     });
     this.flowEngine.registerModels({ HelloBlockModel, Sub1BlockModel, Sub2BlockModel });

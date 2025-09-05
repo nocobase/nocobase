@@ -92,6 +92,66 @@ describe('AddSubModelButton - preset settings open on add', () => {
   });
 });
 
+describe('AddSubModelButton - async group children (nested)', () => {
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  it('renders group and nested async group leaf items', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p1' });
+
+    const items = async () => [
+      {
+        key: 'async-group',
+        label: 'Async Group',
+        type: 'group' as const,
+        searchable: true,
+        children: async () => {
+          await sleep(30);
+          return [
+            { key: 'g-leaf-1', label: 'G-Leaf-1', createModelOptions: { use: 'Parent' } },
+            {
+              key: 'nested-group',
+              label: 'Nested Group',
+              type: 'group' as const,
+              children: async () => {
+                await sleep(30);
+                return [
+                  { key: 'nested-leaf-1', label: 'Nested-Leaf-1', createModelOptions: { use: 'Parent' } },
+                  { key: 'nested-leaf-2', label: 'Nested-Leaf-2', createModelOptions: { use: 'Parent' } },
+                ];
+              },
+            },
+          ];
+        },
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open Menu
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Open Menu'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Async Group')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('G-Leaf-1')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Nested-Leaf-1')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Nested-Leaf-2')).toBeInTheDocument());
+  });
+});
+
 describe('transformItems - searchable flags', () => {
   it('preserves searchable + placeholder on non-group submenu items', async () => {
     const engine = new FlowEngine();
