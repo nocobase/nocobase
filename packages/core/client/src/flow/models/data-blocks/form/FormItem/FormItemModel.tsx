@@ -33,27 +33,28 @@ export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   }, [FieldTitle, actionName, t]);
   return <Alert type="warning" message={messageValue} showIcon />;
 };
+
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
-  if (!fieldIndex) {
+  if (!fieldIndex?.length) {
     return nameParts;
   }
-  const result: (string | number)[] = [];
-  let idxPtr = 0;
 
-  for (const part of nameParts) {
-    if (idxPtr < fieldIndex.length) {
-      const [fieldName, indexStr] = fieldIndex[idxPtr].split(':');
-      if (fieldName === part) {
-        result.push(Number(indexStr)); // 替换为 index
-        idxPtr++;
-        continue;
-      }
-    }
-    result.push(part); // 普通字段保持
+  // 取最后一个索引
+  const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
+  const idx = Number(indexStr);
+
+  // 找到 lastField 在 nameParts 的位置
+  const lastIndex = nameParts.indexOf(lastField);
+
+  if (lastIndex === -1) {
+    // 找不到对应字段，直接返回原始 nameParts
+    return nameParts;
   }
 
-  return result;
+  // 结果 = [索引, ...lastField 后面的字段]
+  return [idx, ...nameParts.slice(lastIndex + 1)];
 }
+
 export class FormItemModel extends CollectionFieldItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;

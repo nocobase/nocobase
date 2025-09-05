@@ -23,12 +23,31 @@ import { DetailsFieldGridModel } from './DetailsFieldGridModel';
  * @param fieldPath 字段路径 (如 "o2m_aa.oho_bb.name")
  * @param idx Form.List 的索引
  */
-export function getValueWithIndex(record: any, fieldPath: string, idx?: number) {
+export function getValueWithIndex(record: any, fieldPath: string, fieldIndex?: string[]) {
   const path = fieldPath.split('.');
 
-  if (idx != null) {
-    // 在第一级集合名后插入索引
-    return get(record, [path[0], idx, ...path.slice(1)]);
+  if (fieldIndex?.length) {
+    const fullPath: (string | number)[] = [];
+    let pathPtr = 0;
+    let idxPtr = 0;
+
+    while (pathPtr < path.length) {
+      const current = path[pathPtr];
+      fullPath.push(current);
+
+      // 检查当前集合是否有索引
+      if (idxPtr < fieldIndex.length) {
+        const [listName, indexStr] = fieldIndex[idxPtr].split(':');
+        if (listName === current) {
+          fullPath.push(Number(indexStr));
+          idxPtr++;
+        }
+      }
+
+      pathPtr++;
+    }
+
+    return get(record, fullPath);
   }
 
   return get(record, path);
