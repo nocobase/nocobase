@@ -10,14 +10,12 @@
 import { AddSubModelButton, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import React from 'react';
-import { CreateFormModel } from '../..';
-import { FilterBlockModel } from '../../base/BlockModel';
 import { GridModel } from '../../base/GridModel';
 import { getAllDataModels } from '../utils';
-import { buildFieldMenuItems } from './buildFieldMenuItems';
-import { FilterFormEditableFieldModel } from './fields';
+import { FilterFormItemModel } from './form-item';
+import { CollectionBlockModel } from '../../base/BlockModel';
 
-export class FilterFormFieldGridModel extends GridModel {
+export class FilterFormGridModel extends GridModel {
   itemFlowSettings = {
     showBackground: true,
     style: {
@@ -29,24 +27,7 @@ export class FilterFormFieldGridModel extends GridModel {
   };
 
   private hiddenRows: any = {};
-  private menuItems: any[] = [];
   readonly loading = observable.ref(false);
-
-  async onMount() {
-    super.onMount();
-    await this.loadMenuItems();
-  }
-
-  async loadMenuItems() {
-    try {
-      this.loading.value = true;
-      this.menuItems = await this.getFieldMenuItems();
-    } catch (error) {
-      console.error('Failed to load menu items:', error);
-    } finally {
-      this.loading.value = false;
-    }
-  }
 
   toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
     const gridRows = this.props.rows || {};
@@ -81,59 +62,48 @@ export class FilterFormFieldGridModel extends GridModel {
     }
   }
 
-  async getFieldMenuItems(): Promise<any[]> {
-    // 1. 找到当前页面的 GridModel 实例
-    const gridModelInstance = this.context.blockGridModel;
-    if (!gridModelInstance) {
-      return [];
+  async onModelCreated(subModel: FilterFormItemModel) {
+    if (!(subModel instanceof FilterFormItemModel)) {
+      return;
     }
 
-    // 2. 获取所有的数据区块的实例
-    const allModelInstances = getAllDataModels(gridModelInstance);
-
-    // 3. 根据区块列表中字段的信息构建菜单项
-    const menuItems = await buildFieldMenuItems(
-      allModelInstances,
-      this,
-      'FilterFormEditableFieldModel',
-      ({ defaultOptions, fieldPath, model }) => ({
-        use: defaultOptions.use,
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: model.collection?.dataSourceKey,
-              collectionName: model.collection?.name,
-              fieldPath,
-            },
-          },
-        },
-      }),
-    );
-
-    return menuItems;
-  }
-
-  async onModelCreated(subModel: FilterFormEditableFieldModel) {
     const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 
     // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
-    const matchingModels = allDataModels.filter((model) => {
-      if (model instanceof FilterBlockModel || model instanceof CreateFormModel) {
+    const matchingModels = allDataModels.filter((model: CollectionBlockModel) => {
+      if (!model.resource?.supportsFilter) {
         return false;
       }
 
-      // @ts-ignore
+      if (!dataSourceKey || !collectionName) {
+        return model.uid === subModel.defaultTargetUid;
+      }
+
       const collection = model.collection;
       return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
     });
 
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
-      const targets = matchingModels.map((model) => ({
-        targetId: model.uid,
-        filterPaths: [fieldPath],
-      }));
+      const targets = matchingModels.map((model: CollectionBlockModel) => {
+        if (model.collection) {
+          const field = model.collection.getField(fieldPath);
+
+          // 如果是关系字段，需要把 targetKey 拼上，不然筛选时会报错
+          if (field.target) {
+            return {
+              targetId: model.uid,
+              filterPaths: [`${fieldPath}.${field.targetKey}`],
+            };
+          }
+        }
+
+        return {
+          targetId: model.uid,
+          filterPaths: [fieldPath],
+        };
+      });
 
       // 存到数据库中
       await this.context.filterManager.saveConnectFieldsConfig(subModel.uid, {
@@ -150,11 +120,11 @@ export class FilterFormFieldGridModel extends GridModel {
     // 向筛选表单区块添加字段 model
     return (
       <AddSubModelButton
-        items={this.menuItems}
         subModelKey="items"
         model={this}
         afterSubModelInit={this.onModelCreated.bind(this)}
         keepDropdownOpen
+        subModelBaseClasses={['FilterFormItemModel', 'FormCustomFormItemModel']}
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
       </AddSubModelButton>
@@ -162,8 +132,8 @@ export class FilterFormFieldGridModel extends GridModel {
   }
 }
 
-FilterFormFieldGridModel.registerFlow({
-  key: 'filterFormFieldGridSettings',
+FilterFormGridModel.registerFlow({
+  key: 'filterFormGridSettings',
   steps: {
     grid: {
       handler(ctx, params) {

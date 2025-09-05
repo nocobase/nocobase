@@ -43,7 +43,7 @@ const CollapseButton = observer(() => {
   );
 });
 
-export class CollapseFilterFormActionModel extends FilterFormActionModel {
+export class FilterFormCollapseActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
   };
@@ -56,7 +56,7 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
     const defaultCollapsed = this.getStepParams('collapseSettings', 'defaultCollapsed')?.value || false;
     const collapsedRows = this.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
     collapseState.collapsed = defaultCollapsed;
-    this.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+    this.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
   }
 
   render() {
@@ -64,7 +64,7 @@ export class CollapseFilterFormActionModel extends FilterFormActionModel {
   }
 }
 
-CollapseFilterFormActionModel.registerFlow({
+FilterFormCollapseActionModel.registerFlow({
   key: 'collapseSettings',
   title: tval('Collapse settings'),
   on: 'collapseToggle',
@@ -87,7 +87,7 @@ CollapseFilterFormActionModel.registerFlow({
       async handler(ctx, params) {
         const collapsedRows = params.collapsedRows || 1;
         collapseState.collapsed = !collapseState.collapsed;
-        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+        ctx.model.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
       },
     },
     defaultCollapsed: {
@@ -103,13 +103,15 @@ CollapseFilterFormActionModel.registerFlow({
         const defaultCollapsed = params.value || false;
         collapseState.collapsed = defaultCollapsed;
         const collapsedRows = ctx.model.getStepParams('collapseSettings', 'toggle')?.collapsedRows || 1;
-        ctx.model.context.filterFormFieldGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
+        ctx.model.context.filterFormGridModel.toggleFormFieldsCollapse(collapseState.collapsed, collapsedRows);
       },
       handler(ctx, params) {},
     },
   },
 });
 
-CollapseFilterFormActionModel.define({
-  label: tval('Collapse/Expand'),
+FilterFormCollapseActionModel.define({
+  label: tval('Collapse / Expand'),
+  toggleable: true,
+  sort: 300,
 });

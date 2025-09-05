@@ -38,15 +38,17 @@ export class FilterManager {
   private filterConfigs: FilterConfig[];
   private readonly gridModel: FlowModel;
 
-  constructor(gridModel: FlowModel) {
+  constructor(gridModel: FlowModel, filterConfigs?: FilterConfig[]) {
     this.gridModel = gridModel;
-    const stepValue = this.gridModel.getStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY);
-    this.filterConfigs = stepValue?.value || [];
+    this.filterConfigs = filterConfigs || [];
   }
 
   async saveFilterConfigs() {
-    this.gridModel.setStepParams(FILTER_MANAGER_FLOW_KEY, FILTER_CONFIGS_STEP_KEY, { value: this.filterConfigs });
-    await this.gridModel.save();
+    await this.gridModel.saveStepParams();
+  }
+
+  getFilterConfigs() {
+    return this.filterConfigs;
   }
 
   getConnectFieldsConfig(filterModelUid: string): ConnectFieldsConfig | undefined {
