@@ -74,10 +74,11 @@ const ArrayNester = ({ name, value }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
-
+  const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
-
+  const collectionName = model.collectionField.name;
+  console.log(name);
   return (
     <Card
       bordered={true}
@@ -92,17 +93,18 @@ const ArrayNester = ({ name, value }: any) => {
         {(fields, { add, remove }) => (
           <>
             {fields.map(({ key, name: index }) => {
+              const uid = `${key}.${name}`;
               // 每行只创建一次 fork
-              if (!forksRef.current[key]) {
+              if (!forksRef.current[uid]) {
                 const fork = gridModel.createFork();
                 fork.context.defineProperty('fieldIndex', {
-                  get: () => index,
+                  get: () => [...rowIndex, `${collectionName}:${index}`],
                 });
-                forksRef.current[key] = fork;
+                forksRef.current[uid] = fork;
               }
 
               return (
-                <div key={key} style={{ marginBottom: 12 }}>
+                <div key={uid} style={{ marginBottom: 12 }}>
                   <div style={{ textAlign: 'right' }}>
                     <Tooltip title={t('Remove')}>
                       <CloseOutlined
@@ -110,12 +112,12 @@ const ArrayNester = ({ name, value }: any) => {
                         onClick={() => {
                           remove(index);
                           // 删除 fork 缓存
-                          delete forksRef.current[key];
+                          delete forksRef.current[uid];
                         }}
                       />
                     </Tooltip>
                   </div>
-                  <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
+                  <FlowModelRenderer model={forksRef.current[uid]} showFlowSettings={false} />
                   <Divider />
                 </div>
               );
@@ -138,12 +140,7 @@ export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
     super.onInit(options);
   }
   get component() {
-    return [
-      ArrayNester,
-      {
-        name: this.collectionField.name,
-      },
-    ];
+    return [ArrayNester, {}];
   }
 }
 

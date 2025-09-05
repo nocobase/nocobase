@@ -33,7 +33,27 @@ export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   }, [FieldTitle, actionName, t]);
   return <Alert type="warning" message={messageValue} showIcon />;
 };
+function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
+  if (!fieldIndex) {
+    return nameParts;
+  }
+  const result: (string | number)[] = [];
+  let idxPtr = 0;
 
+  for (const part of nameParts) {
+    if (idxPtr < fieldIndex.length) {
+      const [fieldName, indexStr] = fieldIndex[idxPtr].split(':');
+      if (fieldName === part) {
+        result.push(Number(indexStr)); // 替换为 index
+        idxPtr++;
+        continue;
+      }
+    }
+    result.push(part); // 普通字段保持
+  }
+
+  return result;
+}
 export class FormItemModel extends CollectionFieldItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
@@ -78,18 +98,6 @@ export class FormItemModel extends CollectionFieldItemModel {
     // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;
 
-    // 根据行索引把绝对路径 name 转为相对路径 [index, ...]
-    let dynamicName: any = this.props.name;
-    if (idx != null) {
-      if (Array.isArray(dynamicName)) {
-        const parts = [...dynamicName];
-        dynamicName = [idx, ...parts.slice(1)];
-      } else if (typeof dynamicName === 'string') {
-        const parts = dynamicName.split('.');
-        dynamicName = [idx, ...parts.slice(1)];
-      }
-    }
-
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
@@ -101,9 +109,10 @@ export class FormItemModel extends CollectionFieldItemModel {
             return fork;
           })()
         : fieldModel;
+    const namePath = buildDynamicName(this.props.name, idx);
     return (
-      <FormItem {...this.props} name={dynamicName}>
-        <FieldModelRenderer model={modelForRender} />
+      <FormItem {...this.props} name={namePath}>
+        <FieldModelRenderer model={modelForRender} name={namePath} />
       </FormItem>
     );
   }
