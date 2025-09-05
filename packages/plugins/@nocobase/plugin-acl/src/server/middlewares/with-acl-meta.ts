@@ -8,7 +8,7 @@
  */
 
 import { NoPermissionError } from '@nocobase/acl';
-import { snakeCase } from '@nocobase/database';
+import { filterIncludes, mergeIncludes, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
 
 function createWithACLMetaMiddleware() {
@@ -170,6 +170,10 @@ function createWithACLMetaMiddleware() {
         context: actionCtx,
       });
 
+      const include = filterIncludes(queryParams.where, queryParams.include || [], {
+        underscored: db.options.underscored,
+      });
+
       const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
         Model.getTableName(),
         {
@@ -246,7 +250,7 @@ function createWithACLMetaMiddleware() {
         conditions.push({
           whereCase: '1=1',
           action,
-          include: queryParams.include,
+          include: [],
         });
       } else {
         const whereCase = actionSql.match(/WHERE (.*?);/)[1];
@@ -254,10 +258,11 @@ function createWithACLMetaMiddleware() {
         conditions.push({
           whereCase,
           action,
-          include: queryParams.include,
+          include: include,
         });
       }
     }
+    const finalIncludes = mergeIncludes(conditions.map((condition) => condition.include || []).flat());
 
     const results = await collection.model.findAll({
       where: {
@@ -269,7 +274,7 @@ function createWithACLMetaMiddleware() {
           return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
         }),
       ],
-      include: conditions.map((condition) => condition.include).flat(),
+      include: finalIncludes,
       raw: true,
     });
 

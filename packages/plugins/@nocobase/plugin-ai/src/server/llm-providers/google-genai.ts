@@ -7,18 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { LLMProvider } from './provider';
+import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { EmbeddingProvider, LLMProvider } from './provider';
 import axios from 'axios';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { EmbeddingsInterface } from '@langchain/core/embeddings';
+
+const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
 
 export class GoogleGenAIProvider extends LLMProvider {
   declare chatModel: ChatGoogleGenerativeAI;
 
   get baseURL() {
-    return 'https://generativelanguage.googleapis.com/v1beta/';
+    return GOOGLE_GEN_AI_URL;
   }
 
   createModel() {
@@ -112,7 +116,35 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 }
 
-export const googleGenAIProviderOptions = {
+export class GoogleGenAIEmbeddingProvider extends EmbeddingProvider {
+  protected getDefaultUrl(): string {
+    return GOOGLE_GEN_AI_URL;
+  }
+
+  createEmbedding(): EmbeddingsInterface {
+    return new GoogleGenerativeAIEmbeddings({
+      apiKey: this.apiKey,
+      baseUrl: this.baseUrl,
+      model: this.model,
+    });
+  }
+}
+
+export const googleGenAIProviderOptions: LLMProviderMeta = {
   title: 'Google generative AI',
+  supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
+  models: {
+    [SupportedModel.LLM]: [
+      'models/gemini-2.5-pro',
+      'models/gemini-2.5-flash',
+      'models/gemini-2.5-flash-lite',
+      'models/gemini-2.0-flash',
+      'models/gemini-2.0-flash-lite',
+      'models/gemini-1.5-pro',
+      'models/gemini-1.5-flash',
+    ],
+    [SupportedModel.EMBEDDING]: ['gemini-embedding-001', 'models/text-embedding-004'],
+  },
   provider: GoogleGenAIProvider,
+  embedding: GoogleGenAIEmbeddingProvider,
 };

@@ -100,7 +100,7 @@ export default {
         });
 
         processor.options.plugin.resume(job);
-      }, 100);
+      }, node.config.duration ?? 100);
 
       return null;
     },

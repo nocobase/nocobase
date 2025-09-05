@@ -263,6 +263,11 @@ function NodeMenu() {
       items={groups}
       onClick={onClick}
       className={css`
+        .ant-menu-item-group-list {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
         &.ant-menu-root.ant-menu-vertical {
           border-inline-end: none;
         }

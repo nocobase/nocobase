@@ -13,14 +13,16 @@ import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-
 import {
   Collection as DBCollection,
   Database,
+  IntegerField,
   Model,
   MultipleRelationRepository,
+  NumberField,
   RelationRepository,
   Repository,
   UpdateGuard,
   updateAssociations,
 } from '@nocobase/database';
-import { MultiAssociationAccessors, Transaction } from 'sequelize';
+import { MultiAssociationAccessors, Transaction, ValidationError } from 'sequelize';
 import EventEmitter from 'events';
 import { ImportValidationError, ImportError } from '../errors';
 import { Context } from '@nocobase/actions';
@@ -146,6 +148,10 @@ export class XlsxImporter extends EventEmitter {
     // @ts-ignore
     const autoIncrementAttribute = collection.model.autoIncrementAttribute;
     if (!autoIncrementAttribute) {
+      return;
+    }
+    const field = this.options.collection.getField(autoIncrementAttribute);
+    if (field && !(field instanceof NumberField)) {
       return;
     }
 
@@ -289,7 +295,6 @@ export class XlsxImporter extends EventEmitter {
     const rows = [];
     for (const row of chunkRows) {
       const rowValues = {};
-      handingRowIndex += 1;
       await this.handleRowValuesWithColumns(row, rowValues, runOptions);
       rows.push(rowValues);
     }
@@ -305,7 +310,16 @@ export class XlsxImporter extends EventEmitter {
         'Record insertion completed in {time}ms',
       );
       await new Promise((resolve) => setTimeout(resolve, 5));
+      handingRowIndex += chunkRows.length;
     } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        throw new Error(
+          `${options.context?.t('Unique constraint error, fields:', { ns: 'action-import' })} ${JSON.stringify(
+            error.fields,
+          )}`,
+        );
+      }
+
       this.logger?.error(`Import error at row ${handingRowIndex}: ${error.message}`, {
         rowIndex: handingRowIndex,
         rowData: rows[handingRowIndex],
@@ -438,7 +452,7 @@ export class XlsxImporter extends EventEmitter {
     const workbook = this.options.workbook;
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }) as string[][];
+    let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false }) as string[][];
 
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);

@@ -37,7 +37,7 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <Select
             disabled={disabled}
             value={value}

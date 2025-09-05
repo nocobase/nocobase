@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
-import { Button, Space, Dropdown, Alert } from 'antd';
-import { SettingOutlined, DownOutlined } from '@ant-design/icons';
-import { FlowModel } from '../../../../models';
-import { useFlowModelById } from '../../../../hooks';
+import { DownOutlined, SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { openStepSettings } from '../../wrappers/contextual';
+import { Alert, Button, Dropdown, Space } from 'antd';
+import React, { useCallback } from 'react';
+import { useFlowModelById } from '../../../../hooks';
+import { FlowModel } from '../../../../models';
 
 // 支持两种使用方式的接口定义
 interface ModelProvidedProps {
@@ -92,8 +91,7 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
         const [flowKey, stepKey] = key.split(':');
 
         try {
-          openStepSettings({
-            model,
+          model.openFlowSettings({
             flowKey,
             stepKey,
           });
@@ -112,8 +110,8 @@ const FlowsDropdownButtonWithModel: React.FC<ModelProvidedProps> = observer(
     // 获取可配置的flows和steps
     const getConfigurableFlowsAndSteps = useCallback(() => {
       try {
-        const ModelClass = model.constructor as typeof FlowModel;
-        const flows = ModelClass.getFlows();
+        // const ModelClass = model.constructor as typeof FlowModel;
+        const flows = model.getFlows();
 
         const flowsArray = Array.from(flows.values());
 

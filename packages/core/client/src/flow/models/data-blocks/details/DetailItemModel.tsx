@@ -7,57 +7,76 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseItem } from '@formily/antd-v5';
-import { observable } from '@formily/reactive';
-import { escapeT, reactive } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { get } from 'lodash';
 import React from 'react';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
+import { FormItem } from '../form/FormItem/FormItem';
+import { FieldNotAllow } from '../form/FormItem/FormItemModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
-export class DetailItemModel extends FieldModel<{
+export class DetailItemModel extends CollectionFieldItemModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
 }> {
-  decoratorProps = observable({} as any);
-
-  setDecoratorProps(props) {
-    Object.assign(this.decoratorProps, props);
-  }
-
-  showTitle(showTitle: boolean) {
-    this.setDecoratorProps({
-      labelStyle: { display: showTitle ? 'flex' : 'none' },
+  static defineChildren(ctx: FlowModelContext) {
+    const collection = ctx.collection as Collection;
+    return collection.getFields().map((field) => {
+      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+      const fieldPath = field.name;
+      return {
+        key: field.name,
+        label: field.title,
+        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'DetailItemModel',
+        createModelOptions: () => ({
+          use: 'DetailItemModel',
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
+            },
+          },
+          subModels: {
+            field: {
+              use: fieldModel,
+            },
+          },
+        }),
+      };
     });
   }
 
-  onInit(options: any): void {
+  onInit(options: any) {
     super.onInit(options);
-    this.context.defineProperty('fieldValue', {
-      get: () => this.context.record?.[this.fieldPath],
-      cache: false,
-    });
   }
 
-  // @reactive
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = this.context.record?.[this.fieldPath]; // values[0] ? values[0][this.fieldPath] : null;
-    fieldModel.context.defineProperty('value', {
-      get: () => value,
-    });
+    const value = get(this.context.record, this.fieldPath);
     return (
-      <BaseItem {...this.decoratorProps} extra={this.decoratorProps?.description} label={this.decoratorProps.title}>
-        {fieldModel.render()}
-      </BaseItem>
+      <FormItem {...this.props} value={value}>
+        <FieldModelRenderer model={fieldModel} />
+      </FormItem>
+    );
+  }
+
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    return (
+      <FormItem {...this.props}>
+        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
+      </FormItem>
     );
   }
 }
 
 DetailItemModel.define({
-  icon: 'DetailFormItem',
-  defaultOptions: {
-    use: 'DetailItemModel',
-  },
+  label: escapeT('Display collection fields'),
   sort: 100,
 });
 
@@ -66,11 +85,6 @@ DetailItemModel.registerFlow({
   sort: 300,
   title: escapeT('Detail item settings'),
   steps: {
-    init: {
-      async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
-      },
-    },
     label: {
       title: escapeT('Label'),
       uiSchema: (ctx) => {
@@ -95,7 +109,19 @@ DetailItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ title: params.title });
+        ctx.model.setProps({ label: params.title });
+      },
+    },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const { collectionField } = ctx.model;
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
       },
     },
     showLabel: {
@@ -114,7 +140,7 @@ DetailItemModel.registerFlow({
         showLabel: true,
       },
       handler(ctx, params) {
-        ctx.model.showTitle(params.showLabel);
+        ctx.model.setProps({ showLabel: params.showLabel });
       },
     },
     tooltip: {
@@ -126,7 +152,7 @@ DetailItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ tooltip: params.tooltip });
+        ctx.model.setProps({ tooltip: params.tooltip });
       },
     },
     description: {
@@ -138,8 +164,12 @@ DetailItemModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setDecoratorProps({ description: params.description });
+        ctx.model.setProps({ extra: params.description });
       },
+    },
+    model: {
+      title: escapeT('Field component'),
+      use: 'fieldComponent',
     },
   },
 });

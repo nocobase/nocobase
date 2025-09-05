@@ -8,6 +8,7 @@
  */
 
 import * as React from 'react';
+import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import DialogComponent from './DialogComponent';
@@ -70,11 +71,17 @@ export function useDialog() {
 
     // 构造 currentDialog 实例
     const currentDialog = {
+      type: 'dialog',
+      inputArgs: config.inputArgs || {},
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
       close: (result?: any) => {
+        if (config.preventClose) {
+          return;
+        }
         resolvePromise?.(result);
         dialogRef.current?.destroy();
+        closeFunc?.();
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -86,35 +93,59 @@ export function useDialog() {
         currentHeader = header;
         dialogRef.current?.setHeader(header);
       },
-    };
-
-    // 内部组件，在 Provider 内部计算 content
-    const DialogWithContext = () => {
-      const content = typeof config.content === 'function' ? config.content(currentDialog) : config.content;
-
-      return (
-        <DialogComponent
-          key={`dialog-${uuid}`}
-          ref={dialogRef}
-          {...config}
-          footer={currentFooter}
-          header={currentHeader}
-          afterClose={() => {
-            closeFunc?.();
-            config.onClose?.();
-            resolvePromise?.(config.result);
-          }}
-        >
-          {content}
-        </DialogComponent>
-      );
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentDialog,
     });
-    ctx.delegate(flowContext);
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
+    }
+
+    // 内部组件，在 Provider 内部计算 content
+    const DialogWithContext = observer(
+      () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const mountedRef = React.useRef(false);
+        const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
+
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        React.useEffect(() => {
+          config.onOpen?.(currentDialog, ctx);
+        }, []);
+
+        if (config.inputArgs?.hidden?.value && !mountedRef.current) {
+          return null;
+        }
+
+        mountedRef.current = true;
+
+        return (
+          <DialogComponent
+            key={`dialog-${uuid}`}
+            ref={dialogRef}
+            hidden={config.inputArgs?.hidden?.value}
+            {...config}
+            footer={currentFooter}
+            header={currentHeader}
+            afterClose={() => {
+              closeFunc?.();
+              config.onClose?.();
+              resolvePromise?.(config.result);
+            }}
+          >
+            {content}
+          </DialogComponent>
+        );
+      },
+      {
+        displayName: 'DialogWithContext',
+      },
+    );
 
     const dialog = (
       <FlowViewContextProvider context={ctx}>
@@ -130,7 +161,7 @@ export function useDialog() {
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
       const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), []);
+      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
       return <>{elements}</>;
     }),
   );

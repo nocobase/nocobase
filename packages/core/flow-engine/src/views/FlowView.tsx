@@ -9,12 +9,16 @@
 
 import { PopoverProps as AntdPopoverProps } from 'antd';
 import { FlowContext } from '../flowContext';
+import { ViewNavigation } from './ViewNavigation';
 
 export type FlowView = {
+  type: 'drawer' | 'popover' | 'dialog' | 'embed';
+  inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;
   close: () => void;
   update: (newConfig: any) => void;
+  navigation?: ViewNavigation;
 };
 
 type TargetProps = {
@@ -24,6 +28,17 @@ type ViewType = 'drawer' | 'popover' | 'dialog' | 'embed';
 type ViewProps = {
   content: React.ReactNode | ((view: FlowView) => React.ReactNode);
   width?: number | string;
+  /**
+   * 是否继承父类上下文
+   * @default true
+   */
+  inheritContext?: boolean;
+  /**
+   * 阻止关闭 View
+   */
+  preventClose?: boolean;
+  inputArgs?: any;
+  onOpen?: (view: FlowView, context: FlowContext) => void;
   [key: string]: any;
 };
 

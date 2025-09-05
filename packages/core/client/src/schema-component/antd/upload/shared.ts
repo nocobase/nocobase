@@ -100,7 +100,15 @@ const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[]
 
 export function getThumbnailPlaceholderURL(file, options: any = {}) {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
+    const url = file.url
+      ? new URL(
+          file.url.startsWith('http://') || file.url.startsWith('https://')
+            ? file.url
+            : `${location.origin}/${file.url.replace(/^\//, '')}`,
+        )
+      : { pathname: file.filename };
+
+    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || url.pathname || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
       } else {

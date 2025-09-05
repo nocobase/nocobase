@@ -270,7 +270,7 @@ export function CategoryTabs() {
         ),
       };
     });
-  }, [data?.data, key]);
+  }, [compile, data?.data, key, onEdit, onRemove, tableSchema.properties.main]);
 
   const onChange = useCallback(
     (key: string) => {
@@ -341,7 +341,7 @@ export function CategoryTabs() {
             useEditSubmit,
           }}
           schema={{
-            name: `modal`,
+            name: uid(),
             type: 'void',
             'x-decorator': 'FormV2',
             'x-decorator-props': {

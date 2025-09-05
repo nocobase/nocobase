@@ -9,7 +9,6 @@
 
 import { useMemo } from 'react';
 import { FlowModel } from '../models';
-// import { useApp } from '@nocobase/client'; // 移除 useApp
 import { useFlowEngine } from '../provider';
 import { StepParams } from '../types';
 

@@ -14,7 +14,7 @@ import { Button, Dropdown, Select, Segmented, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
-import { FilterFormEditableFieldModel } from '../../form-v2/fields';
+import { FilterFormFieldModel } from '../../form/fields';
 import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
 
@@ -54,6 +54,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
         key: currentPath,
         fullLabel: fullLabel,
         isLeaf: !field.target, // 如果没有 target，则为叶子节点
+        field, // 保留字段信息以便后续使用
       };
 
       // 如果任一选中的路径包含当前路径，且当前字段有关系目标，则预加载子节点
@@ -82,7 +83,7 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
 function ConnectFields(
   props: Readonly<{ value: ConnectFieldsConfig; onChange?: (value: ConnectFieldsConfig) => void }>,
 ) {
-  const ctx = useFlowSettingsContext<FilterFormEditableFieldModel>();
+  const ctx = useFlowSettingsContext<FilterFormFieldModel>();
   const allDataModels = useMemo(() => getAllDataModels(ctx.blockGridModel), [ctx.blockGridModel]);
   const [value, setValue] = useState(() => ctx.model.context.filterManager.getConnectFieldsConfig(ctx.model.uid));
   const [modelFields, setModelFields] = useState<Record<string, any[]>>({});

@@ -18,7 +18,11 @@ import { useRequest } from 'ahooks';
  * @param context Optional user context
  * @returns true if the request is pending
  */
-export function useApplyAutoFlows(modelOrUid: FlowModel | string, inputArgs?: Record<string, any>) {
+export function useApplyAutoFlows(
+  modelOrUid: FlowModel | string,
+  inputArgs?: Record<string, any>,
+  options?: { throwOnError?: boolean },
+) {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
     if (typeof modelOrUid === 'string') {
@@ -27,7 +31,7 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, inputArgs?: Re
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
 
-  const { loading } = useRequest(
+  const { loading, error } = useRequest(
     async () => {
       await model.applyAutoFlows(inputArgs);
     },
@@ -36,5 +40,10 @@ export function useApplyAutoFlows(modelOrUid: FlowModel | string, inputArgs?: Re
     },
   );
 
-  return loading;
+  // 默认行为：保持抛错以便 ErrorBoundary 捕获
+  if (options?.throwOnError !== false && error) {
+    throw error;
+  }
+
+  return { loading, error } as const;
 }

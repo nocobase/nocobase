@@ -55,5 +55,6 @@
   "Failed to destroy model after creation error": "Failed to destroy model after creation error",
   "Add": "Add",
   "Name": "Name",
-  "Model with ID {{uid}} not found": "Model with ID {{uid}} not found"
+  "Model with ID {{uid}} not found": "Model with ID {{uid}} not found",
+  "Common actions": "Common actions"
 }

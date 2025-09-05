@@ -11,21 +11,27 @@ import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DragHandler,
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  buildActionItems,
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, RecordActionModel } from '../../base/ActionModel';
 import { TableCustomColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
-    <Space size={'middle'}>
+    <Space
+      size={'middle'}
+      className={css`
+        button {
+          padding: 0;
+        }
+      `}
+    >
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         fork.context.defineProperty('record', {
@@ -49,23 +55,25 @@ const Columns = observer<any>(({ record, model, index }) => {
 
 const AddActionToolbarComponent = ({ model }) => {
   return (
-    <AddActionButton
+    <AddSubModelButton
+      key="table-row-actions-add"
       model={model}
-      items={buildActionItems(model, 'RecordActionModel')}
+      subModelBaseClass={RecordActionModel}
       subModelKey="actions"
-      onModelCreated={async (actionModel) => {
+      afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
       }}
-      // onSubModelAdded={async (model) => {
-      //   await model.applyAutoFlows();
-      // }}
     >
       <PlusOutlined />
-    </AddActionButton>
+    </AddSubModelButton>
   );
 };
 
 export class TableActionsColumnModel extends TableCustomColumnModel {
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>
@@ -121,11 +129,11 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
 }
 
 TableActionsColumnModel.define({
-  title: '{{t("Actions")}}',
-  defaultOptions: {
+  label: '{{t("Actions")}}',
+  createModelOptions: {
     stepParams: {
       tableColumnSettings: {
-        editColumTitle: {
+        title: {
           title: '{{t("Actions")}}',
         },
       },

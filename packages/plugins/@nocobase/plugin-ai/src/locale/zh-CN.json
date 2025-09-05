@@ -30,6 +30,12 @@
   "Profile": "员工资料",
   "Model settings": "模型设置",
   "Skills": "技能",
+  "KnowledgeBase": "知识库",
+  "Enable Knowledge Base": "启用",
+  "Knowledge Base Prompt": "提示词（引用知识库）",
+  "knowledge Base Prompt default": "从知识库检索到的已知信息如下：\n{knowledgeBaseData}\n请参考上述已知信回答用户提问。",
+  "Knowledge Base Prompt placeholder": "",
+  "Knowledge Base": "知识库",
   "Position": "职位",
   "Position description": "AI 员工职责的简短描述",
   "Position placeholder": "例如：翻译员等",
@@ -98,5 +104,6 @@
   "invoke-status-error": "执行失败",
   "invoke-status-success": "执行成功",
   "Image (send via URL)": "图片 (通过 URL 发送)",
-  "Image (send via Base64)": "图片 (通过 Base64 发送)"
+  "Image (send via Base64)": "图片 (通过 Base64 发送)",
+  "AI is thinking": "{{ nickname }}正在思考..."
 }

@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { BlockModel, FlowPage, SubPageModel } from '@nocobase/client';
+import { DataBlockModel, SubPageModel } from '@nocobase/client';
 import { SQLResource, escapeT } from '@nocobase/flow-engine';
-import { ConfigPanel } from './ConfigPanel';
-import { Chart, ChartOptions } from './Chart';
-import { EChartsType } from 'echarts';
+import React from 'react';
 import { convertDatasetFormats } from '../utils';
+import { Chart, ChartOptions } from './Chart';
+import { ConfigPanel } from './ConfigPanel';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -28,7 +27,7 @@ type ChartProps = {
   chart: ChartOptions;
 };
 
-export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
+export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
   get resource() {
@@ -38,8 +37,8 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
   onInit() {
     this.context.defineProperty('resource', {
       get: () => {
-        const resource = new SQLResource();
-        resource.setAPIClient(this.context.api);
+        const resource = this.context.createResource(SQLResource);
+        // resource.setAPIClient(this.context.api);
         resource.setSQLType('selectRows');
         resource.setFilterByTk(this.uid);
         return resource;
@@ -76,6 +75,9 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
         title: field,
         type: fieldType,
         interface: fieldType === 'number' ? 'number' : 'input',
+        getFirstSubclassNameOf() {
+          return fieldType === 'number' ? 'NumberFilterFieldModel' : 'InputFilterFieldModel';
+        },
       };
     });
     return fields;
@@ -83,7 +85,7 @@ export class ChartBlockModel extends BlockModel<ChartBlockModelStructure> {
 }
 
 ChartBlockModel.define({
-  title: escapeT('Charts'),
+  label: escapeT('Charts'),
 });
 
 ChartBlockModel.registerFlow({

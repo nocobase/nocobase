@@ -13,12 +13,14 @@ export function getSystemPrompt({
   task,
   environment,
   dataSources,
+  knowledgeBase,
 }: {
   aiEmployee: { nickname: string; about: string };
   personal?: string;
   task: { background: string; context?: string };
   environment: { database: string; locale: string };
   dataSources?: string;
+  knowledgeBase?: string;
 }) {
   // Helper function to get database-specific identifier quoting rules
   const getDatabaseQuotingRules = (): string => {
@@ -120,5 +122,8 @@ ${task.context ? `<context>\n${task.context}\n</context>` : ''}
 <environment>
 <main_database>${environment.database}</main_database>
 <locale>${environment.locale}</locale>
-</environment>`;
+</environment>
+
+${knowledgeBase ? `<knowledgeBase>${knowledgeBase}</knowledgeBase>` : ''}
+`;
 }

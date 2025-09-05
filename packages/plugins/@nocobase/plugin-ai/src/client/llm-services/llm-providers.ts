@@ -19,6 +19,7 @@ export const LLMProvidersContext = createContext<{
     key: string;
     label: string;
     value: string;
+    supportedModel: string[];
   }[];
 }>({ providers: [] });
 LLMProvidersContext.displayName = 'LLMProviderssContext';

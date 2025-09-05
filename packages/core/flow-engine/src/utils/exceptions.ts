@@ -22,3 +22,15 @@ export class FlowExitException extends Error {
     this.modelUid = modelUid;
   }
 }
+
+export class FlowExitAllException extends Error {
+  public readonly flowKey: string;
+  public readonly modelUid: string;
+
+  constructor(flowKey: string, modelUid: string, message?: string) {
+    super(message || `Flow '${flowKey}' on model '${modelUid}' exited via ctx.exitAll().`);
+    this.name = 'FlowExitAllException';
+    this.flowKey = flowKey;
+    this.modelUid = modelUid;
+  }
+}

@@ -26,6 +26,8 @@ import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
+import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -40,6 +42,7 @@ const { AIResourceContextCollector } = lazy(
 );
 
 export class PluginAIClient extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager();
 
   async afterAdd() {
@@ -85,6 +88,7 @@ export class PluginAIClient extends Plugin {
       Component: LLMServices,
     });
     this.app.pluginSettingsManager.add('ai.settings', {
+      sort: 100,
       icon: 'SettingOutlined',
       title: tval('Settings'),
       aclSnippet: 'pm.ai.settings',
@@ -104,6 +108,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
@@ -132,3 +137,4 @@ export default PluginAIClient;
 export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
 export type { ToolCall } from './ai-employees/types';
+export * from './features';

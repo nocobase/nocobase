@@ -11,7 +11,7 @@ import { promisify } from 'util';
 
 import nodemailer from 'nodemailer';
 
-import { FlowNodeModel, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import { FlowNodeModel, IJob, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
@@ -73,41 +73,37 @@ export default class extends Instruction {
       }
     }
 
-    const job = processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
-    // eslint-disable-next-line promise/catch-or-return
-    send(payload)
-      .then((response) => {
-        processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
+    await processor.exit();
 
-        job.set({
-          status: JOB_STATUS.RESOLVED,
-          result: response,
-        });
-      })
-      .catch((error) => {
-        processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
 
-        job.set({
-          status: JOB_STATUS.FAILED,
-          result: error,
-        });
-      })
-      .finally(() => {
-        processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
-        setImmediate(() => {
-          this.workflow.resume(job);
-        });
+    try {
+      const response = await send(payload);
+      processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = response;
+    } catch (error) {
+      processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = error;
+    } finally {
+      processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
+      // At this point, the job is guaranteed to be in the database.
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
 
-    processor.logger.info(`smtp-mailer (#${node.id}) sent, waiting for response...`);
-
-    return processor.exit();
+      job.set(jobDone);
+      this.workflow.resume(job);
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

@@ -130,7 +130,7 @@ const openStepSettingsDialog = async ({
     initialValues: compileUiSchema(scopes, initialValues),
   });
 
-  const currentDialog = openView({
+  openView({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
@@ -141,7 +141,7 @@ const openStepSettingsDialog = async ({
       }
     },
     content: (currentDialog) => {
-      const DialogContent = observer(() => {
+      const FlowStepSettings = observer(() => {
         useEffect(() => {
           return autorun(() => {
             const dynamicProps = toJS(uiModeProps);
@@ -184,7 +184,7 @@ const openStepSettingsDialog = async ({
                         }
 
                         currentDialog.close();
-                        await model.save();
+                        await model.saveStepParams();
                         message.success(t('Configuration saved'));
                         // Call afterParamsSave callback if it exists
                         if (afterParamsSave) {
@@ -209,7 +209,7 @@ const openStepSettingsDialog = async ({
         );
       });
 
-      return <DialogContent />;
+      return <FlowStepSettings />;
     },
   });
 };

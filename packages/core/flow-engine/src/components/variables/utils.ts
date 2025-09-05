@@ -11,6 +11,7 @@ import React from 'react';
 import { Input } from 'antd';
 import type { MetaTreeNode } from '../../flowContext';
 import type { ContextSelectorItem, Converters } from './types';
+import { isVariableExpression } from '../../utils';
 
 export const parseValueToPath = (value: string): string[] | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -27,8 +28,8 @@ export const parseValueToPath = (value: string): string[] | undefined => {
   return pathString.split('.');
 };
 
-export const formatPathToValue = (item: ContextSelectorItem): string => {
-  const path = item?.fullPath || [];
+export const formatPathToValue = (item: MetaTreeNode): string => {
+  const path = item?.paths || [];
   if (path.length === 0) return '{{ ctx }}';
   return `{{ ctx.${path.join('.')} }}`;
 };
@@ -80,42 +81,69 @@ export const searchInLoadedNodes = (
   return results;
 };
 
-export const buildContextSelectorItems = (
-  metaTree: MetaTreeNode[],
-  parentPaths: string[] = [],
-): ContextSelectorItem[] => {
+export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSelectorItem[] => {
   if (!metaTree || !Array.isArray(metaTree)) {
     console.warn('buildContextSelectorItems received invalid metaTree:', metaTree);
     return [];
   }
 
-  const convertNode = (node: MetaTreeNode, currentPath: string[]): ContextSelectorItem => {
+  const convertNode = (node: MetaTreeNode): ContextSelectorItem => {
     const hasChildren = node.children;
-    const fullPath = [...currentPath, node.name];
     const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
       isLeaf: !hasChildren,
       meta: node,
-      fullPath: fullPath,
+      paths: node.paths,
     };
 
     if (hasChildren && Array.isArray(node.children)) {
-      option.children = node.children.map((child) => convertNode(child, fullPath));
+      option.children = node.children.map((child) => convertNode(child));
     }
 
     return option;
   };
 
-  return metaTree.map((node) => convertNode(node, parentPaths));
+  return metaTree.map((node) => convertNode(node));
+};
+
+/**
+ * 预加载：根据路径逐级加载 ContextSelectorItem 的 children，保证打开时已展开对应层级。
+ */
+export const preloadContextSelectorPath = async (
+  options: ContextSelectorItem[] | undefined,
+  pathSegments: (string | number)[],
+  triggerUpdate?: () => void,
+) => {
+  if (!options || !Array.isArray(options) || !pathSegments || pathSegments.length === 0) return;
+  let list: ContextSelectorItem[] | undefined = options;
+  for (let i = 0; i < pathSegments.length && list; i++) {
+    const seg = String(pathSegments[i]);
+    const opt = list.find((o) => String(o.value) === seg);
+    if (!opt) break;
+    const meta = opt.meta as MetaTreeNode | undefined;
+    const hasLoaded = !!opt.children && Array.isArray(opt.children);
+    if (i < pathSegments.length - 1 && !hasLoaded && meta && typeof meta.children === 'function') {
+      opt.loading = true;
+      try {
+        const childNodes = await loadMetaTreeChildren(meta);
+        meta.children = childNodes;
+        const childOptions = buildContextSelectorItems(childNodes);
+        opt.children = childOptions;
+        opt.isLeaf = !childOptions || childOptions.length === 0;
+        Promise.resolve()
+          .then(() => triggerUpdate?.())
+          .catch(() => {});
+      } finally {
+        opt.loading = false;
+      }
+    }
+    list = Array.isArray(opt.children) ? opt.children : undefined;
+  }
 };
 
 export const isVariableValue = (value: any): boolean => {
-  if (typeof value !== 'string') return false;
-
-  const trimmed = value.trim();
-  const variableRegex = /^\{\{\s*ctx(?:\..+?)?\s*\}\}$/;
-  return variableRegex.test(trimmed);
+  return isVariableExpression(value);
 };
 
 export const createDefaultConverters = (): Converters => {
@@ -124,7 +152,7 @@ export const createDefaultConverters = (): Converters => {
       return parseValueToPath(value);
     },
 
-    resolveValueFromPath: (item: ContextSelectorItem) => {
+    resolveValueFromPath: (item: MetaTreeNode) => {
       return formatPathToValue(item);
     },
   };
@@ -139,7 +167,7 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
     const customResolveValueFromPath = propConverters.resolveValueFromPath;
     return {
       ...mergedConverters,
-      resolveValueFromPath: (item: ContextSelectorItem) => {
+      resolveValueFromPath: (item: MetaTreeNode) => {
         const ret = customResolveValueFromPath(item);
         return ret === undefined ? formatPathToValue(item) : ret;
       },
@@ -147,120 +175,4 @@ export const createFinalConverters = (propConverters?: Converters): Converters =
   }
 
   return mergedConverters;
-};
-
-// 根据ContextSelectorItem的fullPath和metaTree构建完整的标题路径
-export const buildFullTagTitle = async (
-  contextSelectorItem: ContextSelectorItem,
-  metaTree?: MetaTreeNode[],
-): Promise<string> => {
-  if (!contextSelectorItem?.fullPath || contextSelectorItem.fullPath.length === 0) {
-    return contextSelectorItem?.label || '';
-  }
-
-  if (!metaTree) {
-    return contextSelectorItem.fullPath.join('/');
-  }
-
-  // 递归查找路径中每个节点的 title
-  const titlePath: string[] = [];
-  let currentNodes: MetaTreeNode[] = metaTree;
-
-  for (const segment of contextSelectorItem.fullPath) {
-    const node = currentNodes.find((n) => n.name === segment);
-    if (!node) {
-      // 如果找不到节点，使用原始名称
-      titlePath.push(segment);
-      break;
-    }
-
-    // 使用 title 或 name
-    titlePath.push(node.title || node.name);
-
-    if (typeof node.children === 'function') {
-      node.children = await node.children();
-    }
-
-    // 准备下一级节点
-    if (Array.isArray(node.children)) {
-      currentNodes = node.children;
-    } else {
-      break;
-    }
-  }
-
-  return titlePath.join('/');
-};
-
-// 根据路径从metaTree中构建对应的ContextSelectorItem
-export const buildContextSelectorItemFromPath = (
-  path: string[],
-  metaTree: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>) | undefined,
-  parentPaths: string[] = [],
-): ContextSelectorItem | null => {
-  // 如果没有路径或metaTree，返回null
-  if (!path || path.length === 0 || !metaTree) return null;
-
-  const fullPath = [...parentPaths, ...path];
-
-  // 如果metaTree是函数，现在无法同步获取，返回基本信息
-  if (typeof metaTree === 'function') {
-    return {
-      label: path[path.length - 1], // 使用最后一个路径段作为label
-      value: path[path.length - 1],
-      isLeaf: true,
-      meta: {
-        name: path[path.length - 1],
-        title: path[path.length - 1],
-        type: 'string',
-      },
-      fullPath: fullPath,
-    };
-  }
-
-  // 递归查找路径对应的节点
-  let currentNodes: MetaTreeNode[] = metaTree;
-  let targetMeta: MetaTreeNode | null = null;
-
-  for (let i = 0; i < path.length; i++) {
-    const segment = path[i];
-    const node = currentNodes.find((n) => n.name === segment);
-    if (!node) {
-      // 如果找不到节点，返回基本信息
-      return {
-        label: segment,
-        value: segment,
-        isLeaf: true,
-        meta: {
-          name: segment,
-          title: segment,
-          type: 'string',
-        },
-        fullPath: [...parentPaths, ...path.slice(0, i + 1)],
-      };
-    }
-
-    targetMeta = node;
-
-    // 如果还有下一级路径，且当前节点有子节点
-    if (i < path.length - 1) {
-      if (Array.isArray(node.children)) {
-        currentNodes = node.children;
-      } else {
-        // 异步子节点，无法继续查找
-        break;
-      }
-    }
-  }
-
-  if (!targetMeta) return null;
-
-  // 构建ContextSelectorItem
-  return {
-    label: targetMeta.title || targetMeta.name,
-    value: targetMeta.name,
-    isLeaf: !targetMeta.children || (Array.isArray(targetMeta.children) && targetMeta.children.length === 0),
-    meta: targetMeta,
-    fullPath: fullPath,
-  };
 };

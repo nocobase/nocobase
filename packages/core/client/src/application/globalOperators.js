@@ -88,11 +88,12 @@ export function getOperators() {
       return jsonLogic.truthy(a);
     },
     $notEmpty: function (a) {
-      return jsonLogic.truthy(a);
+      return a === 0 || jsonLogic.truthy(a);
     },
     $empty: function (a) {
       if (Array.isArray(a)) return a.length === 0;
-      return !jsonLogic.truthy(a);
+      if (typeof a === 'string') return a.length === 0;
+      return a === null || a === undefined;
     },
     $notExists: function (a) {
       return !jsonLogic.truthy(a);

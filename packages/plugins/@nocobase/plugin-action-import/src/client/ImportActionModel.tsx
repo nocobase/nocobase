@@ -120,10 +120,13 @@ export class ImportActionModel extends CollectionActionModel {
     type: 'default',
     icon: 'uploadoutlined',
   };
+  getAclActionName() {
+    return 'importXlsx';
+  }
 }
 
 ImportActionModel.define({
-  title: escapeT('Import'),
+  label: escapeT('Import'),
 });
 const toArr = (v: any) => {
   if (!v || !Array.isArray(v)) {

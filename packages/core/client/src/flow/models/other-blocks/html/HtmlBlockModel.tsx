@@ -35,10 +35,10 @@ export class HtmlBlockModel extends BlockModel {
 }
 
 HtmlBlockModel.define({
-  title: tval('HTML'),
+  label: tval('HTML'),
   group: tval('Content'),
   hide: true,
-  defaultOptions: {
+  createModelOptions: {
     use: 'HtmlBlockModel',
     stepParams: {
       default: {

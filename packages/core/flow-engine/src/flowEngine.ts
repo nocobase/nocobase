@@ -8,17 +8,25 @@
  */
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
-import { FlowEngineContext } from './flowContext';
+import pino from 'pino';
+import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
+import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
+import { FlowExecutor } from './executor/FlowExecutor';
+import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContext';
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
+import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
   CreateModelOptions,
+  EventDefinition,
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
+  PersistOptions,
+  ResourceType,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -46,11 +54,14 @@ import { isInheritedFrom } from './utils';
  */
 export class FlowEngine {
   /**
-   * Registered action definitions.
-   * Key is the action name, value is ActionDefinition.
-   * @private
+   * Global action registry
    */
-  #actions: Map<string, ActionDefinition> = new Map();
+  #actionRegistry = new EngineActionRegistry();
+
+  /**
+   * Global event registry
+   */
+  #eventRegistry = new EngineEventRegistry();
 
   /**
    * Registered model classes.
@@ -81,10 +92,21 @@ export class FlowEngine {
   #applyFlowCache = new Map<string, ApplyFlowCacheEntry>();
 
   /**
+   * Model saving state tracking.
+   * Key is the model UID, value is the save promise.
+   * @private
+   */
+  readonly #savingModels = new Map<string, Promise<any>>();
+
+  /**
    * Flow engine context object.
    * @private
    */
   #flowContext: FlowEngineContext;
+
+  #resources = new Map<string, typeof FlowResource>();
+
+  logger: pino.Logger;
 
   /**
    * Flow settings, including components and form scopes.
@@ -99,6 +121,10 @@ export class FlowEngine {
    * @public
    */
   public reactView: ReactView;
+  /**
+   * Flow executor that runs flows and auto-flows.
+   */
+  public executor: FlowExecutor;
 
   /**
    * Constructor. Initializes React view, registers default model and form scopes.
@@ -106,7 +132,28 @@ export class FlowEngine {
   constructor() {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
-    this.registerModels({ FlowModel });
+    this.registerModels({ FlowModel }); // 会造成循环依赖问题，移除掉
+    this.registerResources({
+      FlowResource,
+      SQLResource,
+      APIResource,
+      SingleRecordResource,
+      MultiRecordResource,
+    });
+    this.logger = pino({
+      level: 'trace',
+      browser: {
+        write: {
+          fatal: (o) => console.trace(o),
+          error: (o) => console.error(o),
+          warn: (o) => console.warn(o),
+          info: (o) => console.info(o),
+          debug: (o) => console.debug(o),
+          trace: (o) => console.trace(o),
+        },
+      },
+    });
+    this.executor = new FlowExecutor(this);
   }
 
   /**
@@ -162,25 +209,7 @@ export class FlowEngine {
    * @param {Record<string, ActionDefinition>} actions Action definition object collection
    */
   registerActions(actions: Record<string, ActionDefinition>): void {
-    for (const [, definition] of Object.entries(actions)) {
-      this.#registerAction(definition);
-    }
-  }
-
-  /**
-   * Register a single action.
-   * @template TModel Specific FlowModel subclass type, defaults to FlowModel.
-   * @param {ActionDefinition<TModel>} definition Action definition object, including name and handler.
-   * @private
-   */
-  #registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
-    if (!definition.name) {
-      throw new Error('FlowEngine: Action must have a name.');
-    }
-    if (this.#actions.has(definition.name)) {
-      throw new Error(`FlowEngine: Action with name '${definition.name}' is already registered.`);
-    }
-    this.#actions.set(definition.name, definition as ActionDefinition);
+    this.#actionRegistry.registerActions(actions);
   }
 
   /**
@@ -189,8 +218,42 @@ export class FlowEngine {
    * @param {string} name Action name
    * @returns {ActionDefinition<TModel> | undefined} Action definition, or undefined if not found
    */
-  public getAction<TModel extends FlowModel = FlowModel>(name: string): ActionDefinition<TModel> | undefined {
-    return this.#actions.get(name) as ActionDefinition<TModel> | undefined;
+  public getAction<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(
+    name: string,
+  ): ActionDefinition<TModel, TCtx> | undefined {
+    return this.#actionRegistry.getAction<TModel, TCtx>(name);
+  }
+
+  /**
+   * Get all registered global actions.
+   * Returns a new Map to avoid external mutation of internal state.
+   */
+  public getActions<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowRuntimeContext<TModel>>(): Map<
+    string,
+    ActionDefinition<TModel, TCtx>
+  > {
+    return this.#actionRegistry.getActions<TModel, TCtx>();
+  }
+
+  /**
+   * Register multiple events.
+   */
+  registerEvents(events: Record<string, EventDefinition>): void {
+    this.#eventRegistry.registerEvents(events);
+  }
+
+  /**
+   * Get a registered event definition.
+   */
+  public getEvent<TModel extends FlowModel = FlowModel>(name: string): EventDefinition<TModel> | undefined {
+    return this.#eventRegistry.getEvent<TModel>(name);
+  }
+
+  /**
+   * Get all registered global events.
+   */
+  public getEvents<TModel extends FlowModel = FlowModel>(): Map<string, EventDefinition<TModel>> {
+    return this.#eventRegistry.getEvents<TModel>();
   }
 
   /**
@@ -218,6 +281,24 @@ export class FlowEngine {
     for (const [name, modelClass] of Object.entries(models)) {
       this.#registerModel(name, modelClass);
     }
+  }
+
+  registerResources(resources: Record<string, any>) {
+    for (const [name, resourceClass] of Object.entries(resources)) {
+      this.#resources.set(name, resourceClass);
+    }
+  }
+
+  createResource<T = FlowResource>(resourceType: ResourceType<T>, options?: { context?: FlowContext }): T {
+    if (typeof resourceType === 'string') {
+      const ResourceClass = this.#resources.get(resourceType);
+      if (!ResourceClass) {
+        throw new Error(`Resource class '${resourceType}' not found. Please register it first.`);
+      }
+      return new ResourceClass(options?.context || this.context) as T;
+    }
+    const R = resourceType;
+    return new R(options?.context || this.context) as T;
   }
 
   /**
@@ -283,7 +364,10 @@ export class FlowEngine {
    * @param {CreateModelOptions} options Model creation options
    * @returns {T} Created model instance
    */
-  public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
+  public createModel<T extends FlowModel = FlowModel>(
+    options: CreateModelOptions,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
@@ -291,7 +375,7 @@ export class FlowEngine {
       return this.#modelInstances.get(uid) as T;
     }
 
-    let modelInstance;
+    let modelInstance: T | ErrorFlowModel;
 
     if (!ModelClass) {
       modelInstance = new ErrorFlowModel({ ...options, flowEngine: this } as any);
@@ -300,15 +384,24 @@ export class FlowEngine {
       modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
     }
 
-    modelInstance.onInit(options);
+    if (extra?.delegate) {
+      modelInstance.context.addDelegate(extra.delegate);
+    }
 
     if (parentId && this.#modelInstances.has(parentId)) {
       modelInstance.setParent(this.#modelInstances.get(parentId));
+      if (extra?.delegateToParent === false) {
+        modelInstance.removeParentDelegate();
+      }
     }
 
     this.#modelInstances.set(modelInstance.uid, modelInstance);
 
-    return modelInstance;
+    modelInstance.onInit(options);
+
+    modelInstance._createSubModels(options.subModels);
+
+    return modelInstance as T;
   }
 
   /**
@@ -362,7 +455,7 @@ export class FlowEngine {
       }
     }
     this.#modelInstances.delete(uid);
-    return false;
+    return true;
   }
 
   /**
@@ -421,7 +514,13 @@ export class FlowEngine {
    * @param {any} options Load or create options
    * @returns {Promise<T | null>} Model instance or null
    */
-  async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
+  async loadOrCreateModel<T extends FlowModel = FlowModel>(
+    options,
+    extra?: {
+      delegateToParent?: boolean;
+      delegate?: FlowContext;
+    },
+  ): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
     if (uid && this.#modelInstances.has(uid)) {
@@ -434,9 +533,9 @@ export class FlowEngine {
     const data = await this.#modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
-      model = this.createModel<T>(data as any);
+      model = this.createModel<T>(data as any, extra);
     } else {
-      model = this.createModel<T>(options);
+      model = this.createModel<T>(options, extra);
       await model.save();
     }
     if (model.parent) {
@@ -457,13 +556,60 @@ export class FlowEngine {
 
   /**
    * Persist and save a model instance.
+   * Prevents concurrent saves of the same model by tracking save operations.
+   * If a model is already being saved, subsequent calls will wait for the existing save to complete.
+   *
    * @template T FlowModel subclass type, defaults to FlowModel.
    * @param {T} model Model instance to save
+   * @param {object} [options] Save options
+   * @param {boolean} [options.onlyStepParams] Whether to save only step parameters
    * @returns {Promise<any>} Repository save result
    */
-  async saveModel<T extends FlowModel = FlowModel>(model: T) {
+  async saveModel<T extends FlowModel = FlowModel>(model: T, options?: { onlyStepParams?: boolean }): Promise<any> {
     if (!this.ensureModelRepository()) return;
-    return await this.#modelRepository.save(model);
+
+    const modelUid = model.uid;
+
+    // 如果这个 model 正在保存中，返回现有的保存 Promise
+    if (this.#savingModels.has(modelUid)) {
+      this.logger.debug(`Model ${modelUid} is already being saved, waiting for existing save operation`);
+      return await this.#savingModels.get(modelUid);
+    }
+
+    // 创建保存 Promise 并添加到追踪 Map 中
+    const savePromise = this.#performModelSave(model, options);
+    this.#savingModels.set(modelUid, savePromise);
+
+    try {
+      const result = await savePromise;
+      return result;
+    } finally {
+      // 无论成功还是失败，都要清除保存状态
+      this.#savingModels.delete(modelUid);
+    }
+  }
+
+  /**
+   * Perform the actual model save operation.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {T} model Model instance to save
+   * @param {object} [options] Save options
+   * @returns {Promise<any>} Repository save result
+   * @private
+   */
+  async #performModelSave<T extends FlowModel = FlowModel>(
+    model: T,
+    options?: { onlyStepParams?: boolean },
+  ): Promise<any> {
+    this.logger.debug(`Starting save operation for model ${model.uid}`);
+    try {
+      const result = await this.#modelRepository.save(model, options);
+      this.logger.debug(`Successfully saved model ${model.uid}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to save model ${model.uid}:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -509,7 +655,7 @@ export class FlowEngine {
 
     if (typeof optionsOrFn === 'function') {
       // 函数模式：传入当前options，获取新的options
-      userOptions = optionsOrFn(oldModel);
+      userOptions = optionsOrFn(oldModel as any);
     } else {
       // 对象模式：直接使用提供的options替换
       userOptions = optionsOrFn || {};
@@ -561,7 +707,7 @@ export class FlowEngine {
    * @param {any} targetId Target model UID
    * @returns {Promise<void>} No return value
    */
-  async moveModel(sourceId: any, targetId: any): Promise<void> {
+  async moveModel(sourceId: any, targetId: any, options?: PersistOptions): Promise<void> {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {
@@ -608,7 +754,7 @@ export class FlowEngine {
       return true;
     };
     move(sourceModel, targetModel);
-    if (this.ensureModelRepository()) {
+    if (options?.persist !== false && this.ensureModelRepository()) {
       const position = sourceModel.sortIndex - targetModel.sortIndex > 0 ? 'after' : 'before';
       await this.#modelRepository.move(sourceId, targetId, position);
     }

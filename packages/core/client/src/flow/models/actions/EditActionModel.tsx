@@ -10,25 +10,20 @@
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { RecordActionModel } from '../base/ActionModel';
+import { openViewFlow } from '../../flows/openViewFlow';
 
 export class EditActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {
     type: 'link',
     title: escapeT('Edit'),
   };
+  getAclActionName() {
+    return 'update';
+  }
 }
 
 EditActionModel.define({
-  title: escapeT('Edit'),
+  label: escapeT('Edit'),
 });
 
-EditActionModel.registerFlow({
-  key: 'popupSettings',
-  title: escapeT('Popup settings'),
-  on: 'click',
-  steps: {
-    openView: {
-      use: 'openView',
-    },
-  },
-});
+EditActionModel.registerFlow(openViewFlow);

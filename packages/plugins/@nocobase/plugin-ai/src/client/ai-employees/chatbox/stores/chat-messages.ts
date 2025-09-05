@@ -8,7 +8,7 @@
  */
 
 import { create } from 'zustand';
-import { Message, Attachment, ContextItem } from '../../types';
+import { Message, Attachment, ContextItem, SkillSettings } from '../../types';
 import { createSelectors } from './create-selectors';
 
 type ChatMessagesState = {
@@ -18,6 +18,7 @@ type ChatMessagesState = {
   systemMessage: string;
   responseLoading: boolean;
   abortController?: AbortController;
+  skillSettings?: SkillSettings;
 };
 
 export interface ChatMessagesActions {
@@ -38,6 +39,8 @@ export interface ChatMessagesActions {
   removeContextItem: (type: string, uid: string) => void;
 
   setAbortController: (controller: AbortController | undefined) => void;
+
+  setSkillSettings: (settings: SkillSettings | undefined) => void;
 }
 
 const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
@@ -47,6 +50,7 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   systemMessage: '',
   responseLoading: false,
   abortController: null,
+  skillSettings: null,
 
   setMessages: (messages) => {
     set((state) => {
@@ -126,6 +130,8 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
     })),
 
   setAbortController: (controller) => set({ abortController: controller }),
+
+  setSkillSettings: (settings) => set({ skillSettings: settings }),
 }));
 
 export const useChatMessagesStore = createSelectors(store);

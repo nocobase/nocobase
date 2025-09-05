@@ -12,13 +12,52 @@ import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/cl
 import { Card, Typography, Spin, message, Input, Button } from 'antd';
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
+import { CopyOutlined } from '@ant-design/icons';
 
-const { Paragraph } = Typography;
+const copyTextToClipboard = ({
+  text,
+  onSuccess,
+  onError,
+}: {
+  text: string;
+  onSuccess?: () => void;
+  onError?: () => void;
+}) => {
+  if (!navigator.clipboard) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    // Avoid scrolling to bottom
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      onSuccess?.();
+    } catch (err) {
+      onError?.();
+    }
+    document.body.removeChild(textArea);
+    return;
+  }
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      onSuccess?.();
+    })
+    .catch((e) => {
+      console.error(e);
+      onError?.();
+    });
+};
 
 function InstanceId() {
   const api = useAPIClient();
   const [loading, setLoading] = useState(false);
   const [instanceId, setInstanceId] = useState('');
+  const t = useT();
 
   const getInstanceId = async () => {
     setLoading(true);
@@ -32,17 +71,27 @@ function InstanceId() {
         setLoading(false);
       });
   };
-  useAsyncEffect(async () => {
-    const id = await getInstanceId();
-    setInstanceId(id);
-  }, []);
 
   return (
-    <Spin spinning={loading}>
-      <Paragraph copyable ellipsis>
-        {instanceId}
-      </Paragraph>
-    </Spin>
+    <Button
+      onClick={async () => {
+        const id = await getInstanceId();
+        copyTextToClipboard({
+          text: id,
+          onSuccess: () => {
+            message.success(t('Copied'));
+          },
+          onError: () => {
+            message.error(t('Failed to copy, please open ./storage/.license/instance-id and copy it'));
+          },
+        });
+      }}
+      loading={loading}
+      icon={<CopyOutlined />}
+      type="link"
+    >
+      {t('Copy')}
+    </Button>
   );
 }
 

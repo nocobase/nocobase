@@ -177,6 +177,7 @@ export const useChatMessageActions = () => {
     workContext,
     editingMessageId,
     onConversationCreate,
+    skillSettings,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
@@ -187,7 +188,7 @@ export const useChatMessageActions = () => {
       setMessages((prev) => prev.slice(0, -1));
     }
 
-    const parsedWorkContext = parseWorkContext(app, workContext);
+    const parsedWorkContext = await parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
       key: uid(),
       role: 'user',
@@ -209,7 +210,7 @@ export const useChatMessageActions = () => {
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage },
+        values: { aiEmployee, systemMessage, skillSettings },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;
@@ -232,7 +233,13 @@ export const useChatMessageActions = () => {
         url: 'aiConversations:sendMessages',
         method: 'POST',
         headers: { Accept: 'text/event-stream' },
-        data: { aiEmployee: aiEmployee.username, sessionId, messages: msgs, systemMessage, editingMessageId },
+        data: {
+          aiEmployee: aiEmployee.username,
+          sessionId,
+          messages: msgs,
+          systemMessage,
+          editingMessageId,
+        },
         responseType: 'stream',
         adapter: 'fetch',
         signal: controller?.signal,

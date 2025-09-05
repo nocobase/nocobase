@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormLayout } from '@formily/antd-v5';
+import { SettingOutlined } from '@ant-design/icons';
 import {
-  AddActionButton,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
+  FlowModelContext,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
-  buildActionItems,
   escapeT,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
@@ -26,24 +27,27 @@ import React from 'react';
 import { RecordActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
+import { FormComponent } from '../form/FormModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
 export class DetailsModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsFieldGridModel; actions?: RecordActionModel[] };
 }> {
+  static scene = ['one', 'many'];
+
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
     if (Object.keys(params).includes('filterByTk')) {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
-    const resource = new MultiRecordResource();
+    const resource = this.context.createResource(MultiRecordResource);
     resource.setPageSize(1);
     return resource;
   }
@@ -104,7 +108,6 @@ export class DetailsModel extends CollectionBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-
     return (
       <>
         <DndProvider>
@@ -128,19 +131,23 @@ export class DetailsModel extends CollectionBlockModel<{
                 );
               })}
 
-              <AddActionButton
+              <AddSubModelButton
+                key="details-actions-add"
                 model={this}
-                items={buildActionItems(this, 'RecordActionModel')}
-                onModelCreated={async (actionModel) => {
+                subModelKey="actions"
+                subModelBaseClass={RecordActionModel}
+                afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
-        <FormLayout colon={colon} labelAlign={labelAlign} labelWidth={labelWidth} labelWrap={labelWrap} layout={layout}>
+        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-        </FormLayout>
+        </FormComponent>
         {this.renderPagination()}
       </>
     );
@@ -152,16 +159,27 @@ DetailsModel.registerFlow({
   title: escapeT('Details settings'),
   sort: 150,
   steps: {
+    refresh: {
+      async handler(ctx) {
+        if (!ctx.resource) {
+          throw new Error('Resource is not initialized');
+        }
+        // 1. 先初始化字段网格，确保所有字段都创建完成
+        await ctx.model.applySubModelsAutoFlows('grid');
+      },
+    },
     layout: {
       use: 'layout',
-      title: tval('Layout'),
+      title: escapeT('Layout'),
     },
   },
 });
 
 DetailsModel.define({
-  title: escapeT('Details'),
-  defaultOptions: {
+  label: escapeT('Details'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search'),
+  createModelOptions: {
     use: 'DetailsModel',
     subModels: {
       grid: {

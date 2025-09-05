@@ -8,5 +8,6 @@
  */
 
 export * from './ReadPrettyAssociationFieldModel';
+export * from './TableReadPrettyAssociationFieldModel';
 export * from './TagReadPrettyAssociationFieldModel';
 //

@@ -42,6 +42,16 @@ export type ItemsType = Item[] | (() => Item[] | Promise<Item[]>);
 interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
   items: ItemsType;
   keepDropdownOpen?: boolean;
+  /**
+   * 在父节点短暂重建（卸载/重挂载）时用于恢复打开状态的持久键。
+   * 不需要手动传入，调用方（如 AddSubModelButton）会自动生成。
+   */
+  persistKey?: string;
+  /**
+   * 仅用于“状态刷新”的版本号。变化时会重新计算根 items，
+   * 但不会清空已加载的 children，避免 UI 闪烁。
+   */
+  stateVersion?: number;
 }
 
 interface ExtendedMenuInfo {
@@ -72,8 +82,8 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
   const [loadedChildren, setLoadedChildren] = useState<Record<string, Item[]>>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
 
-  const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>) => {
-    if (loadedChildren[keyPath] || loadingKeys.has(keyPath)) return;
+  const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>, force = false) => {
+    if (!force && (loadedChildren[keyPath] || loadingKeys.has(keyPath))) return;
 
     setLoadingKeys((prev) => new Set(prev).add(keyPath));
     try {
@@ -106,13 +116,18 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
     return result;
   };
 
-  // 自动加载所有 group 的异步 children
+  // 自动加载所有 group 的异步 children；不清空缓存，避免闪烁。
+  // 已加载的分支使用 handleLoadChildren(..., true) 原位刷新，界面继续显示旧内容，
+  // 待新数据返回后再无感替换。
   useEffect(() => {
     if (!menuVisible || !rootItems.length) return;
     const asyncGroups = collectAsyncGroups(rootItems);
     for (const [keyPath, loader] of asyncGroups) {
-      if (!loadedChildren[keyPath] && !loadingKeys.has(keyPath)) {
-        handleLoadChildren(keyPath, loader);
+      // 强制加载，但不清空缓存；若已有数据则后台刷新
+      try {
+        handleLoadChildren(keyPath, loader, true);
+      } catch (e) {
+        // 忽略刷新错误，保持已有内容
       }
     }
   }, [menuVisible, rootItems]);
@@ -205,7 +220,7 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
                   const container = menuContainer as HTMLElement;
                   container.style.maxHeight = `${dropdownMaxHeight}px`;
                   container.style.overflowY = 'auto';
-                  container.classList.add('submenu-ready');
+                  // 移除 ready/opacity 切换，避免可见的淡入闪烁
                 }
               });
             }
@@ -225,10 +240,10 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
         const container = menu as HTMLElement;
         const rect = container.getBoundingClientRect();
 
-        if (rect.width > 0 && rect.height > 0 && !container.classList.contains('submenu-ready')) {
+        if (rect.width > 0 && rect.height > 0) {
           container.style.maxHeight = `${dropdownMaxHeight}px`;
           container.style.overflowY = 'auto';
-          container.classList.add('submenu-ready');
+          // 无需额外的 class 标记
         }
       });
     }, 200);
@@ -247,14 +262,21 @@ const useSubmenuStyles = (menuVisible: boolean, dropdownMaxHeight: number) => {
  */
 const SearchInputWithAutoFocus: FC<InputProps & { visible: boolean }> = (props) => {
   const inputRef = useRef<any>(null);
+  const { visible, ...rest } = props;
 
   useEffect(() => {
-    if (inputRef.current && props.visible) {
-      inputRef.current.input.focus();
+    if (inputRef.current && visible) {
+      const el = inputRef.current.input || inputRef.current.resizableTextArea?.textArea || inputRef.current;
+      try {
+        // 防止聚焦导致页面滚动到顶部
+        el?.focus?.({ preventScroll: true });
+      } catch (e) {
+        el?.focus?.();
+      }
     }
-  }, [props.visible]);
+  }, [visible]);
 
-  return <Input ref={inputRef} {...props} />;
+  return <Input ref={inputRef} {...rest} />;
 };
 
 // ==================== Utility Functions ====================
@@ -269,7 +291,8 @@ const createSearchItem = (
   t: (key: string) => string,
   updateSearchValue: (key: string, value: string) => void,
 ) => ({
-  key: `${item.key}-search`,
+  key: `${searchKey}-search`,
+  type: 'group' as const,
   label: (
     <div>
       <SearchInputWithAutoFocus
@@ -283,6 +306,10 @@ const createSearchItem = (
           updateSearchValue(searchKey, e.target.value);
         }}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          // 防止菜单聚焦丢失或页面滚动
+          e.stopPropagation();
+        }}
         size="small"
         style={{
           width: '100%',
@@ -292,7 +319,6 @@ const createSearchItem = (
       />
     </div>
   ),
-  disabled: true,
 });
 
 const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
@@ -306,6 +332,10 @@ const createEmptyItem = (itemKey: string, t: (key: string) => string) => ({
 });
 
 // ==================== Main Component ====================
+
+// 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
+const DROPDOWN_PERSIST_TTL_MS = 350;
+const dropdownPersistRegistry: Map<string, number> = new Map();
 
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
   const engine = useFlowEngine();
@@ -321,6 +351,30 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
+
+  // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
+  useEffect(() => {
+    if (!menu.persistKey) return;
+    const until = dropdownPersistRegistry.get(menu.persistKey) || 0;
+    if (until > Date.now()) {
+      setMenuVisible(true);
+    }
+  }, [menu.persistKey]);
+
+  // 在卸载时，若当前是打开状态，记录一个短暂的保持时间窗，供下次重挂载时恢复
+  useEffect(() => {
+    return () => {
+      if (menu.persistKey && menuVisible) {
+        const until = Date.now() + DROPDOWN_PERSIST_TTL_MS;
+        dropdownPersistRegistry.set(menu.persistKey, until);
+        // 定时清理
+        setTimeout(() => {
+          const v = dropdownPersistRegistry.get(menu.persistKey) || 0;
+          if (v <= Date.now()) dropdownPersistRegistry.delete(menu.persistKey);
+        }, DROPDOWN_PERSIST_TTL_MS + 100);
+      }
+    };
+  }, [menu.persistKey, menuVisible]);
 
   // 加载根 items，支持同步/异步函数
   useEffect(() => {
@@ -343,9 +397,72 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
     if (menuVisible) {
       loadRootItems();
     }
-  }, [menu.items, menuVisible]);
+  }, [menu.items, menuVisible, menu.stateVersion]);
+
+  // 预取根层的异步 children（非 group），减少首次展开时的加载闪烁
+  useEffect(() => {
+    if (!menuVisible || !rootItems.length) return;
+    rootItems.forEach((item) => {
+      const hasAsyncChildren = typeof item.children === 'function';
+      if (hasAsyncChildren && item.type !== 'group') {
+        try {
+          handleLoadChildren(item.key, item.children as () => Item[] | Promise<Item[]>);
+        } catch (e) {
+          // 忽略预取错误，按需加载
+        }
+      }
+    });
+  }, [menuVisible, rootItems, handleLoadChildren]);
 
   // 递归解析 items，支持 children 为同步/异步函数
+  function buildSearchChildren(
+    children: Item[],
+    item: Item,
+    keyPath: string,
+    path: string[],
+    menuVisible: boolean,
+    resolve: (items: Item[], path?: string[]) => any[],
+  ): any[] {
+    const searchKey = keyPath;
+    const currentSearchValue = searchValues[searchKey] || '';
+
+    // 递归过滤：当 child 为分组时，会继续向下过滤其 children；
+    // 仅保留自身匹配或存在匹配子项的分组。
+    const filteredChildren = currentSearchValue
+      ? (function deepFilter(items: Item[]): Item[] {
+          const searchText = currentSearchValue.toLowerCase();
+          const tryString = (v: any) => {
+            if (!v) return '';
+            return typeof v === 'string' ? v : String(v);
+          };
+          return items
+            .map((child) => {
+              const labelStr = tryString(child.label).toLowerCase();
+              const selfMatch =
+                labelStr.includes(searchText) || (child.key && String(child.key).toLowerCase().includes(searchText));
+              if (child.type === 'group' && Array.isArray(child.children)) {
+                const nested = deepFilter(child.children);
+                if (selfMatch || nested.length > 0) {
+                  return { ...child, children: nested } as Item;
+                }
+                return null;
+              }
+              return selfMatch ? child : null;
+            })
+            .filter(Boolean) as Item[];
+        })(children)
+      : children;
+
+    const resolvedFiltered = resolve(filteredChildren, [...path, item.key]);
+    const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
+    const dividerItem = { key: `${keyPath}-search-divider`, type: 'divider' as const };
+
+    if (currentSearchValue && resolvedFiltered.length === 0) {
+      return [searchItem, dividerItem, createEmptyItem(keyPath, t)];
+    }
+    return [searchItem, dividerItem, ...resolvedFiltered];
+  }
+
   const resolveItems = (items: Item[], path: string[] = []): any[] => {
     return items.map((item) => {
       const keyPath = getKeyPath(path, item.key);
@@ -380,65 +497,50 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
 
       if (isGroup) {
+        // 对于 group 的异步 children，若尚未加载则在解析阶段直接触发加载，
+        // 以支持“嵌套分组”的按需预取（上层 effect 仅能捕获到初始根层分组）。
+        if (hasAsyncChildren && !loaded && menuVisible) {
+          handleLoadChildren(keyPath, item.children as () => Item[] | Promise<Item[]>);
+        }
         let groupChildren = children ? resolveItems(children, [...path, item.key]) : [];
 
         // 如果 group 启用了搜索功能，在 children 前面添加搜索框
         if (item.searchable && children) {
-          const searchKey = keyPath;
-          const currentSearchValue = searchValues[searchKey] || '';
-
-          // 过滤原始 children
-          const filteredChildren = currentSearchValue
-            ? children.filter((child) => {
-                const searchText = currentSearchValue.toLowerCase();
-
-                // 检查 label
-                const labelText = child.label;
-                let labelMatch = false;
-                if (labelText) {
-                  try {
-                    const labelStr = typeof labelText === 'string' ? labelText : String(labelText);
-                    labelMatch = labelStr.toLowerCase().includes(searchText);
-                  } catch (e) {
-                    // 如果转换失败，忽略这个匹配
-                  }
-                }
-
-                // 检查 key（通常是字段名）
-                const keyMatch = child.key && String(child.key).toLowerCase().includes(searchText);
-
-                return labelMatch || keyMatch;
-              })
-            : children;
-
-          // 重新解析过滤后的 children
-          const resolvedFilteredChildren = resolveItems(filteredChildren, [...path, item.key]);
-
-          const searchItem = createSearchItem(item, searchKey, currentSearchValue, menuVisible, t, updateSearchValue);
-          const dividerItem = { key: `${item.key}-search-divider`, type: 'divider' as const };
-
-          if (currentSearchValue && resolvedFilteredChildren.length === 0) {
-            const emptyItem = createEmptyItem(item.key, t);
-            groupChildren = [searchItem, dividerItem, emptyItem];
-          } else {
-            groupChildren = [searchItem, dividerItem, ...resolvedFilteredChildren];
-          }
+          groupChildren = buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems);
         }
 
         return {
           type: 'group',
-          key: item.key,
+          key: keyPath,
           label: typeof item.label === 'string' ? t(item.label) : item.label,
           children: groupChildren,
         };
       }
 
       if (item.type === 'divider') {
-        return { type: 'divider', key: item.key };
+        return { type: 'divider', key: keyPath };
+      }
+
+      // 非 group 的“子菜单”也支持本层级搜索：当 item.searchable = true 且存在 children 时
+      if (item.searchable && children) {
+        return {
+          key: item.key,
+          label: typeof item.label === 'string' ? t(item.label) : item.label,
+          onClick: (info: any) => {},
+          onMouseEnter: () => {
+            setOpenKeys((prev) => {
+              if (prev.has(keyPath)) return prev;
+              const next = new Set(prev);
+              next.add(keyPath);
+              return next;
+            });
+          },
+          children: buildSearchChildren(children, item, keyPath, path, menuVisible, resolveItems),
+        };
       }
 
       return {
-        key: item.key,
+        key: keyPath,
         label: typeof item.label === 'string' ? t(item.label) : item.label,
         onClick: (info: any) => {
           if (children) {
@@ -487,33 +589,16 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         max-height: ${dropdownMaxHeight}px;
         overflow-y: auto;
       }
-
-      /* 子菜单初始状态：透明且准备好样式 */
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu {
-        opacity: 0;
-        max-height: ${dropdownMaxHeight}px !important;
-        overflow-y: auto !important;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      /* 样式设置完成后显示 */
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu.submenu-ready {
-        opacity: 1;
-      }
-
-      /* 针对动态加载的深层菜单 */
+      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu,
       .ant-dropdown-menu-submenu-popup .ant-dropdown-menu-submenu-popup .ant-dropdown-menu {
-        opacity: 0;
         max-height: ${dropdownMaxHeight}px !important;
         overflow-y: auto !important;
-        transition: opacity 0.15s ease-in-out;
-      }
-
-      .ant-dropdown-menu-submenu-popup .ant-dropdown-menu-submenu-popup .ant-dropdown-menu.submenu-ready {
-        opacity: 1;
       }
     `;
   }, [dropdownMaxHeight]);
+
+  // 仅将 antd 支持的 Menu 配置传递给 Dropdown，过滤掉自定义字段
+  const { keepDropdownOpen, persistKey, stateVersion, ...dropdownMenuProps } = { ...menu };
 
   return (
     <Dropdown
@@ -523,7 +608,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       overlayClassName={overlayClassName}
       placement="bottomLeft"
       menu={{
-        ...menu,
+        ...dropdownMenuProps,
         items:
           rootLoading && rootItems.length === 0
             ? [
@@ -538,7 +623,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
         style: {
           maxHeight: dropdownMaxHeight,
           overflowY: 'auto',
-          ...menu?.style,
+          ...dropdownMenuProps?.style,
         },
       }}
       onOpenChange={(visible) => {

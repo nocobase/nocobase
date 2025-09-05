@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
-import { Dropdown, Alert, Modal } from 'antd';
-import type { MenuProps } from 'antd';
-import { SettingOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ExclamationCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
-import { FlowModel } from '../../../../models';
-import { useFlowModelById } from '../../../../hooks';
-import { openStepSettingsDialog } from './StepSettingsDialog';
-import { getT, setupRuntimeContextSteps } from '../../../../utils';
+import type { MenuProps } from 'antd';
+import { Alert, Dropdown, Modal } from 'antd';
+import React, { useCallback } from 'react';
 import { FlowRuntimeContext } from '../../../../flowContext';
+import { useFlowModelById } from '../../../../hooks';
+import { FlowModel } from '../../../../models';
+import { getT, setupRuntimeContextSteps } from '../../../../utils';
+import { openStepSettingsDialog } from './StepSettingsDialog';
 
 // 右键菜单组件接口
 interface ModelProvidedProps {
@@ -140,8 +140,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     // 获取可配置的flows和steps
     const getConfigurableFlowsAndSteps = useCallback(() => {
       try {
-        const ModelClass = model.constructor as typeof FlowModel;
-        const flows = ModelClass.getFlows();
+        const flows = (model as FlowModel).getFlows();
 
         const flowsArray = Array.from(flows.values());
 

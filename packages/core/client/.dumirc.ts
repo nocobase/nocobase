@@ -47,6 +47,10 @@ export default defineConfig({
         link: '/models',
       },
       {
+        title: 'Components',
+        link: '/components',
+      },
+      {
         title: 'Examples',
         link: '/examples/flow-models/hello-world',
       },
@@ -64,6 +68,40 @@ export default defineConfig({
       // },
     ],
     sidebarEnhance: {
+      '/components': [
+        {
+          title: 'Filter',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/filter' },
+            { title: 'FilterGroup', link: '/components/filter/filter-group' },
+            { title: '自定义 FilterItem', link: '/components/filter/custom-filter-item' },
+            { title: '变量筛选项组件', link: '/components/filter/variable-filter-item' },
+          ],
+        },
+        {
+          title: 'Variables',
+          type: 'group',
+          children: [
+            { title: '概览', link: '/components/variables' },
+            {
+              title: 'FlowContextSelector',
+              link: '/components/variables/flow-context-selector',
+            },
+            { 
+              title: 'VariableInput', 
+              children: [
+                { title: '基础用法', link: '/components/variables/variable-input' },
+                { title: '筛选条件', link: '/components/variables/variable-input/scenarios/filter' },
+                { title: '联动规则', link: '/components/variables/variable-input/scenarios/linkage-rule' },
+                { title: '字段赋值', link: '/components/variables/variable-input/scenarios/assign-fields-value' },
+                { title: '数据范围', link: '/components/variables/variable-input/scenarios/data-scope' },
+              ],
+            },
+            { title: 'SlateVariableEditor', link: '/components/variables/slate-variable-editor' },
+          ],
+        },
+      ],
       '/examples': [
         {
           title: 'FlowModel',
@@ -85,6 +123,10 @@ export default defineConfig({
               title: 'Fork model',
               link: '/examples/flow-models/fork-model',
             },
+            // {
+            //   title: 'cleanRun：自动流干净运行',
+            //   link: '/examples/flow-models/render-in-fork',
+            // },
             {
               title: '拖拽（DND）',
               link: '/examples/flow-models/dnd',
@@ -105,16 +147,24 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-            {
-              title: 'CRUD',
-              link: '/examples/flow-models/crud',
-            },
-            {
-              title: '生命周期',
-              link: '/examples/flow-models/lifecycle',
-            },
-          ],
+        {
+          title: 'CRUD',
+          link: '/examples/flow-models/crud',
         },
+        {
+          title: '错误回退',
+          link: '/examples/flow-models/error-boundary',
+        },
+        {
+          title: '生命周期',
+          link: '/examples/flow-models/lifecycle',
+        },
+        {
+          title: 'hidden 属性演示',
+          link: '/examples/flow-model-hidden',
+        },
+      ],
+    },
         {
           title: 'FlowDefinition',
           type: 'group',
@@ -176,20 +226,22 @@ export default defineConfig({
               link: '/examples/flow-definition/open-preset-step-settings-dialog',
             },
             {
-              title: '打开某流某步骤的配置表单',
-              link: '/examples/flow-definition/open-step-settings-dialog',
+              title: '打开流配置表单',
+              link: '/examples/flow-definition/open-settings',
+            },
+            {
+              title: 'Flow Registry',
+              link: '/examples/flow-definition/flow-registry',
+            },
+            {
+              title: 'Action Registry',
+              link: '/examples/flow-definition/action-registry',
+            },
+            {
+              title: 'Event Registry',
+              link: '/examples/flow-definition/event-registry',
             },
           ]
-        },
-        {
-          title: 'Variables',
-          type: 'group',
-          children: [
-            {
-              title: 'VariableInput 示例',
-              link: '/examples/variables',
-            },
-          ],
         },
         {
           title: 'FlowAction',
@@ -496,6 +548,14 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'SubFormFieldModel',
+              link: '/models/fields/sub-form-field-model',
+            },
+            {
+              title: 'SubTableFieldModel',
+              link: '/models/fields/sub-table-field-model',
+            },
+            {
               title: 'DisplayFieldModel',
               link: '/models/fields/display-field-model',
             },
@@ -516,8 +576,20 @@ export default defineConfig({
               link: '/models/fields/input-number-field-model',
             },
             {
-              title: 'PreviewFieldModel',
-              link: '/models/fields/preview-field-model',
+              title: 'PercentFieldModel',
+              link: '/models/fields/percent-field-model',
+            },
+            {
+              title: 'SelectFieldModel',
+              link: '/models/fields/select-field-model',
+            },
+            {
+              title: 'JSONFieldModel',
+              link: '/models/fields/json-field-model',
+            },
+            {
+              title: 'DateFieldModel',
+              link: '/models/fields/date-field-model',
             },
             {
               title: 'UploadFieldModel',
@@ -605,8 +677,20 @@ export default defineConfig({
               link: '/api/flow-engine/flow-definition',
             },
             {
+              title: 'FlowRegistry',
+              link: '/api/flow-engine/flow-registry',
+            },
+            {
               title: 'FlowAction',
               link: '/api/flow-engine/flow-action',
+            },
+            {
+              title: 'FlowActionRegistry',
+              link: '/api/flow-engine/flow-action-registry',
+            },
+            {
+              title: 'FlowEventRegistry',
+              link: '/api/flow-engine/flow-event-registry',
             },
             {
               title: 'FlowResource',

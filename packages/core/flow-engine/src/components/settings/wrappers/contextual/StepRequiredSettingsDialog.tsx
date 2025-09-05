@@ -91,7 +91,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
  * 分步表单对话框的属性接口
  */
 export interface StepFormDialogProps {
-  model: any;
+  model: FlowModel;
   dialogWidth?: number | string;
   dialogTitle?: string;
 }
@@ -121,8 +121,7 @@ const openRequiredParamsStepFormDialog = async ({
     (async () => {
       try {
         // 获取所有流程
-        const constructor = model.constructor as typeof FlowModel;
-        const allFlows = constructor.getFlows();
+        const allFlows = (model as FlowModel).getFlows();
 
         // 收集所有需要配置参数的步骤
         const requiredSteps: Array<{
@@ -278,7 +277,7 @@ const openRequiredParamsStepFormDialog = async ({
         // 创建分步表单实例（只有多个步骤时才需要）
         const formStep = requiredSteps.length > 1 ? FormStep.createFormStep(0) : null;
 
-        const flowEngine = model.flowEngine || {};
+        const flowEngine = model.flowEngine;
         const scopes = {
           formStep,
           totalSteps: requiredSteps.length,
@@ -309,7 +308,7 @@ const openRequiredParamsStepFormDialog = async ({
                   }
                 });
 
-                await model.save();
+                await model.saveStepParams();
                 // message.success('所有步骤参数配置已保存');
                 resolve(currentValues);
                 formDialog.close();

@@ -10,19 +10,70 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
+  buildWrapperFieldChildren,
+  Collection,
   DragHandler,
   Droppable,
   escapeT,
+  FlowErrorFallback,
   FlowModel,
+  FlowModelContext,
+  FlowModelProvider,
   FlowsFloatContextMenu,
-  useFlowSettingsContext,
+  ModelRenderMode,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
+import { get } from 'lodash';
 import React from 'react';
-import { FieldModel } from '../../base/FieldModel';
+import { ErrorBoundary } from 'react-error-boundary';
+import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
+import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
+import { FormItem } from '../form/FormItem/FormItem';
+export class TableColumnModel extends CollectionFieldItemModel {
+  // 标记：该类的 render 返回函数， 避免错误的reactive封装
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-export class TableColumnModel extends FieldModel {
+  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
+  }
+
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
+  static defineChildren(ctx: FlowModelContext) {
+    const collection = (ctx.model as any).collection || (ctx.collection as Collection);
+    return collection.getFields().map((field) => {
+      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+      const fieldPath = field.name;
+      return {
+        key: field.name,
+        label: field.title,
+        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'TableColumnModel',
+        createModelOptions: () => ({
+          use: 'TableColumnModel',
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection.dataSourceKey,
+                collectionName: collection.name,
+                fieldPath,
+              },
+            },
+          },
+          subModels: {
+            field: {
+              use: fieldModel,
+            },
+          },
+        }),
+      };
+    });
+  }
+
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -30,7 +81,7 @@ export class TableColumnModel extends FieldModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 7px', margin: '-11px -7px' }}
           showBorder={false}
-          settingsMenuLevel={2}
+          settingsMenuLevel={3}
           extraToolbarItems={[
             {
               key: 'drag-handler',
@@ -52,6 +103,8 @@ export class TableColumnModel extends FieldModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
+    const cellRenderer = this.render();
+
     return {
       ...this.props,
       ellipsis: true,
@@ -75,25 +128,43 @@ export class TableColumnModel extends FieldModel {
         model: this,
         // handleSave,
       }),
-      render: this.render(),
+      render: (value, record, index) => {
+        return (
+          <FlowModelProvider model={this}>
+            <ErrorBoundary FallbackComponent={FlowErrorFallback}>
+              {(() => {
+                const err = this['__autoFlowError'];
+                if (err) throw err;
+                return cellRenderer(value, record, index);
+              })()}
+            </ErrorBoundary>
+          </FlowModelProvider>
+        );
+      },
+      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
+  onInit(options: any): void {
+    super.onInit(options);
+  }
 
-  render() {
+  render(): any {
     return (value, record, index) => (
       <>
-        {this.mapSubModels('field', (action: ReadPrettyFieldModel) => {
-          const fork = action.createFork({}, `${index}`);
+        {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
+          const fork = field.createFork({}, `${index}`);
           fork.context.defineProperty('record', {
             get: () => record,
-          });
-          fork.context.defineProperty('fieldValue', {
-            get: () => value,
           });
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
-          return <React.Fragment key={index}>{fork.render()}</React.Fragment>;
+          const value = get(record, this.fieldPath);
+          return (
+            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
+              <FieldModelRenderer model={fork} />
+            </FormItem>
+          );
         })}
       </>
     );
@@ -101,9 +172,9 @@ export class TableColumnModel extends FieldModel {
 }
 
 TableColumnModel.define({
-  title: escapeT('Table column'),
+  label: escapeT('Table column'),
   icon: 'TableColumn',
-  defaultOptions: {
+  createModelOptions: {
     use: 'TableColumnModel',
   },
   sort: 0,
@@ -116,14 +187,20 @@ TableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const field = ctx.model.collectionField;
-        if (!field) {
+        const collectionField = ctx.model.collectionField;
+        if (!collectionField) {
           return;
         }
-        ctx.model.setProps('title', field.title);
-        ctx.model.setProps('dataIndex', field.name);
+        ctx.model.setProps('title', collectionField.title);
+        ctx.model.setProps('dataIndex', collectionField.name);
         await ctx.model.applySubModelsAutoFlows('field');
+        ctx.model.setProps({
+          ...collectionField.getComponentProps(),
+        });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     title: {
       title: escapeT('Column title'),
@@ -134,21 +211,13 @@ TableColumnModel.registerFlow({
           'x-component-props': {
             placeholder: escapeT('Column title'),
           },
-          'x-reactions': (field) => {
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const { model } = useFlowSettingsContext<FieldModel>();
-            const originTitle = model.collectionField?.title;
-            field.decoratorProps = {
-              ...field.decoratorProps,
-              extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
-            };
-          },
         },
       },
       defaultParams: (ctx) => ({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
+        console.log('ctx.collectionField', ctx.collectionField);
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
         ctx.model.setProps('title', title);
       },
@@ -182,15 +251,17 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: escapeT('Enable quick edit'),
-      uiSchema: (ctx) => ({
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-disabled': ctx.model.collectionField.readonly,
-        },
-      }),
+      uiSchema: (ctx) => {
+        return {
+          editable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
+          },
+        };
+      },
       defaultParams(ctx) {
-        if (ctx.model.collectionField.readonly) {
+        if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
             editable: false,
           };
@@ -203,10 +274,16 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('editable', params.editable);
       },
     },
+    model: {
+      title: escapeT('Field component'),
+      use: 'fieldComponent',
+    },
   },
 });
 
-export class TableCustomColumnModel extends FlowModel {}
+export class TableCustomColumnModel extends FlowModel {
+  static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
+}
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',
@@ -226,6 +303,7 @@ TableCustomColumnModel.registerFlow({
       defaultParams: (ctx) => {
         return {
           title:
+            ctx.model.title ||
             ctx.model.constructor['meta']?.title ||
             ctx.model.flowEngine.findModelClass((_, ModelClass) => {
               return ModelClass === ctx.model.constructor;
@@ -269,4 +347,65 @@ TableCustomColumnModel.registerFlow({
 
 TableCustomColumnModel.define({
   hide: true,
+  label: escapeT('Other columns'),
+});
+
+export class TableJSColumnModel extends TableCustomColumnModel {
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
+  getColumnProps() {
+    const titleContent = (
+      <Droppable model={this}>
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          showBorder={false}
+          extraToolbarItems={[
+            {
+              key: 'drag-handler',
+              component: DragHandler,
+              sort: 1,
+            },
+          ]}
+        >
+          <div
+            className={css`
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              width: calc(${this.props.width}px - 16px);
+            `}
+          >
+            {this.props.title || 'JS column'}
+          </div>
+        </FlowsFloatContextMenu>
+      </Droppable>
+    );
+    return {
+      ...this.props,
+      width: 100,
+      title: this.props.tooltip ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {titleContent}
+          <Tooltip title={this.props.tooltip}>
+            <QuestionCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </span>
+      ) : (
+        titleContent
+      ),
+      render: this.render(),
+    };
+  }
+
+  render() {
+    return (value, record, index) => <span>js column</span>;
+  }
+}
+
+TableJSColumnModel.define({
+  label: 'JS column',
+  sort: 9999,
 });

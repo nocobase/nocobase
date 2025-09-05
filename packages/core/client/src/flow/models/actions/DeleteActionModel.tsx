@@ -16,10 +16,13 @@ export class DeleteActionModel extends RecordActionModel {
     type: 'link',
     title: escapeT('Delete'),
   };
+  getAclActionName() {
+    return 'destroy';
+  }
 }
 
 DeleteActionModel.define({
-  title: escapeT('Delete'),
+  label: escapeT('Delete'),
 });
 
 DeleteActionModel.registerFlow({

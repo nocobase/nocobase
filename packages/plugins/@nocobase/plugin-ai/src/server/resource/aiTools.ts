@@ -19,6 +19,30 @@ export const aiTools: ResourceOptions = {
       ctx.body = tools;
       await next();
     },
+    listBinding: async (ctx, next) => {
+      const { username } = ctx.action.params;
+      const aiEmployee = await ctx.app.db.getRepository('aiEmployees').findOne({
+        filter: {
+          username,
+        },
+      });
+      if (!aiEmployee) {
+        return [];
+      }
+      if (!aiEmployee.skillSettings?.skills?.length) {
+        return [];
+      }
+      const bindingSkillNames = aiEmployee.skillSettings.skills.map((skill) => skill.name);
+
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const tools = await plugin.aiManager.toolManager.listTools();
+      const result = tools
+        .flatMap(({ group, tools }) => tools.map((tool) => ({ ...tool, group })))
+        .filter((tool) => bindingSkillNames.includes(tool.name));
+
+      ctx.body = result;
+      await next();
+    },
   },
 };
 

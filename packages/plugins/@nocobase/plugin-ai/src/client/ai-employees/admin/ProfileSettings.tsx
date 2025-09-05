@@ -7,10 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponent, useCurrentRoleVariable, useCurrentUserVariable, useDatetimeVariable } from '@nocobase/client';
+import {
+  SchemaComponent,
+  useCollectionRecordData,
+  useCurrentRoleVariable,
+  useCurrentUserVariable,
+  useDatetimeVariable,
+} from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
+import { Switch } from '@formily/antd-v5';
 
 const useVariableOptions = () => {
   const t = useT();
@@ -39,10 +46,12 @@ export const ProfileSettings: React.FC<{
 }> = ({ edit }) => {
   const t = useT();
   const options = useVariableOptions();
+  const record = useCollectionRecordData();
+  const isBuiltIn = record?.builtIn;
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect }}
+      components={{ AvatarSelect, Switch }}
       schema={{
         type: 'void',
         properties: {
@@ -57,13 +66,23 @@ export const ProfileSettings: React.FC<{
           nickname: {
             type: 'string',
             title: '{{t("Nickname")}}',
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
+            required: true,
+          },
+          enabled: {
+            type: 'boolean',
+            title: '{{t("Enabled")}}',
+            'x-decorator': 'FormItem',
+            'x-component': 'Switch',
+            default: true,
             required: true,
           },
           position: {
             type: 'string',
             title: '{{t("Position")}}',
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             description: t('Position description'),
@@ -76,10 +95,14 @@ export const ProfileSettings: React.FC<{
             title: '{{t("Avatar")}}',
             'x-decorator': 'FormItem',
             'x-component': 'AvatarSelect',
+            'x-component-props': {
+              disabled: isBuiltIn,
+            },
           },
           bio: {
             type: 'string',
             title: '{{t("Bio")}}',
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
@@ -90,6 +113,7 @@ export const ProfileSettings: React.FC<{
             type: 'string',
             title: '{{t("About me")}}',
             required: true,
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Variable.RawTextArea',
             'x-component-props': {
@@ -103,6 +127,7 @@ export const ProfileSettings: React.FC<{
           greeting: {
             type: 'string',
             title: '{{t("Greeting message")}}',
+            'x-disabled': isBuiltIn,
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {

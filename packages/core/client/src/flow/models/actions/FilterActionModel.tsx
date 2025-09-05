@@ -8,11 +8,11 @@
  */
 
 import { escapeT, MultiRecordResource, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, removeNullCondition } from '@nocobase/utils/client';
+import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
 import { CollectionActionModel } from '../base/ActionModel';
-import { FilterGroup, FilterItem, transformFilter } from '../../components/filter';
+import { ContextFilterItem, FilterGroup, FilterItem } from '../../components/filter';
 
 export class FilterActionModel extends CollectionActionModel {
   declare props: ButtonProps & {
@@ -37,7 +37,7 @@ export class FilterActionModel extends CollectionActionModel {
           <FilterContainer
             value={this.props.filterValue}
             ctx={this.context}
-            FilterItem={(props) => <FilterItem {...props} model={this} />}
+            FilterItem={(props) => <ContextFilterItem {...props} model={this} />}
           />
         }
         trigger="click"
@@ -56,23 +56,8 @@ export class FilterActionModel extends CollectionActionModel {
 }
 
 FilterActionModel.define({
-  title: escapeT('Filter'),
-  toggleDetector: ({ model }) => {
-    let ret = false;
-    model.findSubModel('actions', (action) => {
-      if (action.constructor === FilterActionModel) {
-        ret = true;
-      }
-    });
-    return ret;
-  },
-  customRemove: async ({ model }, item) => {
-    model.findSubModel('actions', (action) => {
-      if (action instanceof FilterActionModel) {
-        action.destroy();
-      }
-    });
-  },
+  label: escapeT('Filter'),
+  toggleable: true,
 });
 
 FilterActionModel.registerFlow({

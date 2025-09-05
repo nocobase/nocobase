@@ -13,7 +13,7 @@ import { FlowPage } from '../FlowPage';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('General'),
+  title: escapeT('Edit popup'),
   uiSchema: {
     mode: {
       type: 'string',
@@ -21,7 +21,7 @@ export const openView = defineAction({
       enum: [
         { label: escapeT('Drawer'), value: 'drawer' },
         { label: escapeT('Dialog'), value: 'dialog' },
-        // { label: escapeT('Page'), value: 'page' },
+        { label: escapeT('Page'), value: 'embed' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -36,20 +36,43 @@ export const openView = defineAction({
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
+      'x-reactions': {
+        dependencies: ['mode'],
+        fulfill: {
+          state: {
+            hidden: '{{$deps[0] === "embed"}}',
+          },
+        },
+      },
     },
   },
   defaultParams: {
     mode: 'drawer',
     size: 'medium',
-    pageModelClass: 'SubPageModel',
+    pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    // eslint-disable-next-line prefer-const
+    if (!ctx.inputArgs.navigation && ctx.view.navigation) {
+      ctx.view.navigation.navigateTo({
+        viewUid: ctx.model.uid,
+        filterByTk: ctx.inputArgs.filterByTk,
+        sourceId: ctx.inputArgs.sourceId,
+      });
+      return;
+    }
 
-    const sizeToWidthMap: Record<string, number> = {
-      small: 480,
-      medium: 800,
-      large: 1200,
+    const sizeToWidthMap: Record<string, any> = {
+      drawer: {
+        small: '30%',
+        medium: '50%',
+        large: '70%',
+      },
+      dialog: {
+        small: '40%',
+        medium: '50%',
+        large: '80%',
+      },
+      embed: {},
     };
 
     const pageModelClass = params.pageModelClass;
@@ -59,11 +82,25 @@ export const openView = defineAction({
     let pageModelUid: string | null = null;
 
     await ctx.viewer.open({
-      type: openMode,
-      closable: false,
+      type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
+      inputArgs: {
+        ...ctx.inputArgs,
+        dataSourceKey: params.dataSourceKey,
+        collectionName: params.collectionName,
+        associationName: params.associationName,
+      },
+      preventClose: !!params.preventClose,
+      inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
-      width: sizeToWidthMap[size],
+      width: sizeToWidthMap[openMode][size],
       content: (currentView) => {
+        if (ctx.inputArgs.closeRef) {
+          ctx.inputArgs.closeRef.current = currentView.close;
+        }
+        if (ctx.inputArgs.updateRef) {
+          ctx.inputArgs.updateRef.current = currentView.update;
+        }
+
         return (
           <FlowPage
             parentId={ctx.model.uid}
@@ -100,7 +137,10 @@ export const openView = defineAction({
           const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
           pageModel.invalidateAutoFlowCache(true);
         }
+
+        ctx.inputArgs.navigation?.back();
       },
+      onOpen: ctx.inputArgs.onOpen,
     });
   },
 });

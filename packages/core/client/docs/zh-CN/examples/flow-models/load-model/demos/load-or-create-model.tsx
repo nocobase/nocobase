@@ -59,7 +59,7 @@ class HelloModel extends FlowModel {
             <AddSubModelButton
               model={this}
               subModelKey="subs"
-              onSubModelAdded={async (subModel) => {
+              afterSubModelAdd={async (subModel) => {
                 // 如果是新模型，可能需要进行一些初始化操作
                 if (this.isNewModel) {
                   await this.save();

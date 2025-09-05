@@ -87,7 +87,7 @@
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
 
-- **static getFlows(): Map\<string, FlowDefinition\>**  
+- **getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
 - **getAutoFlows(): FlowDefinition[]**  
@@ -97,16 +97,16 @@
 
 ### 自动流执行生命周期钩子
 
-FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以重写这些 protected 方法来实现自定义逻辑：
+FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以重写这些方法来实现自定义逻辑：
 
-- **protected async beforeApplyAutoFlows(inputArgs?: Record<string, any>): Promise\<void\>**
-  在所有自动流执行前调用。可以通过抛出 `FlowExitException` 来终止流程执行。
+- **async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise\<void\>**
+  在所有自动流执行前调用。可以通过抛出 `FlowExitException` 来终止后续流程执行。
 
-- **protected async afterApplyAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise\<void\>**
+- **async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise\<void\>**
   在所有自动流执行后调用。可以访问所有自动流的执行结果。
 
-- **protected async onApplyAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise\<void\>**
-  在自动流执行出错时调用。可以进行自定义错误处理。
+- **async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise\<void\>**
+  在自动流执行或生命周期钩子出错时调用。可进行自定义错误处理。
 
 ---
 

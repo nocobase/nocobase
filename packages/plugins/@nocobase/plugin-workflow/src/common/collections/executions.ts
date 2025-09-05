@@ -81,6 +81,11 @@ export default {
       },
     },
     {
+      type: 'boolean',
+      name: 'dispatched',
+      defaultValue: false,
+    },
+    {
       type: 'json',
       name: 'stack',
     },
@@ -101,4 +106,5 @@ export default {
       },
     },
   ],
+  indexes: [{ fields: ['dispatched', 'id'] }],
 };

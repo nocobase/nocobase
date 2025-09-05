@@ -11,8 +11,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
-  AddBlockButton,
-  buildBlockItems,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
@@ -108,7 +107,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.setProps('sizes', newSizes);
       }
 
-      this.save();
+      this.saveStepParams();
     });
     this.emitter.on('onSubModelMoved', () => {
       this.resetRows(true);
@@ -160,7 +159,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       rows: this.props.rows || {},
       sizes: this.props.sizes || {},
     });
-    this.save();
+    this.saveStepParams();
   }
 
   mergeRowsWithItems(rows: Record<string, string[][]>) {
@@ -379,22 +378,36 @@ export class BlockGridModel extends GridModel {
     this.context.defineProperty('blockGridModel', {
       value: this,
     });
+    this.context.defineProperty('filterManager', {
+      once: true,
+      get: () => {
+        return new FilterManager(this, options['filterManager']);
+      },
+    });
+  }
+
+  get filterManager(): FilterManager {
+    return this.context.filterManager;
+  }
+
+  serialize() {
+    const data = super.serialize();
+    data['filterManager'] = this.filterManager.getFilterConfigs();
+    return data;
   }
 
   renderAddSubModelButton() {
     const t = this.translate;
     return (
       <>
-        <AddBlockButton model={this} items={buildBlockItems(this)} subModelKey="items">
-          <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-        </AddBlockButton>
-        {/* <FlowSettingsButton
-          onClick={() => {
-            this.openStepSettingsDialog(GRID_FLOW_KEY, GRID_STEP);
-          }}
+        <AddSubModelButton
+          model={this}
+          subModelKey="items"
+          // subModelBaseClass={"DataBlockModel"}
+          subModelBaseClasses={['DataBlockModel', 'FilterBlockModel', 'BlockModel']}
         >
-          {t('Configure rows')}
-        </FlowSettingsButton> */}
+          <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
+        </AddSubModelButton>
       </>
     );
   }
@@ -403,22 +416,6 @@ export class BlockGridModel extends GridModel {
     return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
   }
 }
-
-BlockGridModel.registerFlow({
-  key: FILTER_MANAGER_FLOW_KEY,
-  steps: {
-    [FILTER_CONFIGS_STEP_KEY]: {
-      handler(ctx) {
-        ctx.model.context.defineProperty('filterManager', {
-          once: true,
-          get: () => {
-            return new FilterManager(ctx.model);
-          },
-        });
-      },
-    },
-  },
-});
 
 BlockGridModel.registerFlow({
   key: 'blockGridSettings',

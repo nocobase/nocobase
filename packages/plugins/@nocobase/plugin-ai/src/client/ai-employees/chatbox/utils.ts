@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, useLocalVariables, useVariables } from '@nocobase/client';
+import { Application } from '@nocobase/client';
 import { ContextItem, TaskMessage } from '../types';
 import PluginAIClient from '../..';
 
@@ -86,10 +86,16 @@ export const parseTask = async (task: { message: TaskMessage }) => {
       }
     }
   }
-  return { userMessage, systemMessage, attachments, workContext: message.workContext };
+  return {
+    userMessage,
+    systemMessage,
+    attachments,
+    workContext: message.workContext,
+    skillSettings: message.skillSettings,
+  };
 };
 
-export const parseWorkContext = (app: Application, workContext: ContextItem[]) => {
+export const parseWorkContext = async (app: Application, workContext: ContextItem[]) => {
   const parsed = [];
   const plugin = app.pm.get('ai') as PluginAIClient;
   for (const context of workContext) {
@@ -97,12 +103,12 @@ export const parseWorkContext = (app: Application, workContext: ContextItem[]) =
       parsed.push(context);
       continue;
     }
-    const contextOptions = plugin.aiManager.workContext.get(context.type);
+    const contextOptions = plugin.aiManager.getWorkContext(context.type);
     if (!(contextOptions && contextOptions.getContent)) {
       parsed.push(context);
       continue;
     }
-    const content = contextOptions.getContent(app, context);
+    const content = await contextOptions.getContent(app, context);
     parsed.push({
       ...context,
       content,

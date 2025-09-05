@@ -7,13 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AxiosRequestConfig } from 'axios';
+import _ from 'lodash';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
   isNewRecord = false;
+  protected saveActionOptions = {};
 
   get supportsFilter() {
     return !this.isNewRecord;
+  }
+
+  setSaveActionOptions(options: AxiosRequestConfig) {
+    this.saveActionOptions = options;
+    return this;
   }
 
   setFilterByTk(filterByTk: any) {
@@ -21,36 +29,34 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     return super.setFilterByTk(filterByTk);
   }
 
-  async save(data: TData, config: { refresh?: boolean } = {}): Promise<void> {
-    const options: any = {
-      headers: this.request.headers,
-      params: {},
-    };
+  async save(data: TData, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
+    const config = this.mergeRequestConfig(this.saveActionOptions, _.omit(options, ['refresh']));
     let actionName = 'create';
     // 如果有 filterByTk，则表示是更新操作
     if (!this.isNewRecord) {
-      options.params.filterByTk = this.getFilterByTk();
+      config.params = config.params || {};
+      config.params.filterByTk = this.getFilterByTk();
       actionName = 'update';
-      options.params.updateAssociationValues = this.getUpdateAssociationValues();
     }
     await this.runAction(actionName, {
-      ...options,
+      ...config,
       data,
     });
-    if (config.refresh !== false) {
+    if (options?.refresh !== false) {
       await this.refresh();
     }
   }
 
-  async destroy(): Promise<void> {
-    const options = {
-      params: {
-        filterByTk: this.request.params.filterByTk,
+  async destroy(options?: AxiosRequestConfig): Promise<void> {
+    const config = this.mergeRequestConfig(
+      {
+        params: {
+          filterByTk: this.request.params.filterByTk,
+        },
       },
-    };
-    await this.runAction('destroy', {
-      ...options,
-    });
+      options,
+    );
+    await this.runAction('destroy', config);
     this.setData(null);
   }
 

@@ -8,11 +8,11 @@
  */
 
 import { defineAction, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
-import React from 'react';
-import { isEmptyFilter, removeNullCondition, tval } from '@nocobase/utils/client';
+import { isEmptyFilter, removeNullCondition, transformFilter, tval } from '@nocobase/utils/client';
 import _ from 'lodash';
+import React from 'react';
+import { FilterGroup, FilterItem } from '../components/filter';
 import { FieldModel } from '../models/base/FieldModel';
-import { FilterGroup, FilterItem, transformFilter } from '../components/filter';
 
 export const dataScope = defineAction({
   name: 'dataScope',

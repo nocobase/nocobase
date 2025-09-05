@@ -24,14 +24,22 @@ describe('list view', () => {
   });
 
   it('should list view', async () => {
-    const dropViewSQL1 = `DROP VIEW IF EXISTS test1`;
+    if (db.inDialect('postgres')) {
+      await db.prepare();
+    }
+
+    const viewName1 = 'test1';
+    const newViewName1 = db.options.schema ? `${db.options.schema}.${viewName1}` : viewName1;
+    const dropViewSQL1 = `DROP VIEW IF EXISTS ${newViewName1}`;
     await db.sequelize.query(dropViewSQL1);
 
-    const dropViewSQL2 = `DROP VIEW IF EXISTS test2`;
+    const viewName2 = 'test2';
+    const newViewName2 = db.options.schema ? `${db.options.schema}.${viewName2}` : viewName2;
+    const dropViewSQL2 = `DROP VIEW IF EXISTS ${newViewName2}`;
     await db.sequelize.query(dropViewSQL2);
 
-    const sql1 = `CREATE VIEW test1 AS SELECT 1`;
-    const sql2 = `CREATE VIEW test2 AS SELECT 2`;
+    const sql1 = `CREATE VIEW ${newViewName1} AS SELECT 1`;
+    const sql2 = `CREATE VIEW ${newViewName2} AS SELECT 2`;
 
     await db.sequelize.query(sql1);
     await db.sequelize.query(sql2);
@@ -39,5 +47,24 @@ describe('list view', () => {
     const results = await db.queryInterface.listViews();
     expect(results.find((item) => item.name === 'test1')).toBeTruthy();
     expect(results.find((item) => item.name === 'test2')).toBeTruthy();
+  });
+
+  it('should list view when schema passed', async () => {
+    if (!db.options.schema) {
+      return;
+    }
+
+    if (db.inDialect('postgres')) {
+      await db.prepare();
+    }
+
+    const viewName = 'schema_test';
+    const schema = db.options.schema || process.env.USER_SCHEMA || process.env.DB_COLLECTION_MANAGER_SCHEMA || 'public';
+    const newViewName = schema ? `${schema}.${viewName}` : viewName;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${newViewName}`);
+    await db.sequelize.query(`CREATE VIEW ${newViewName} AS SELECT 3`);
+
+    const results = await db.queryInterface.listViews({ schema: db.options.schema });
+    expect(results.find((item) => item.name === viewName)).toBeTruthy();
   });
 });

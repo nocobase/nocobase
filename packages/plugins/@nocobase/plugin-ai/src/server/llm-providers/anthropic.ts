@@ -13,6 +13,8 @@ import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import axios from 'axios';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
+import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { LLM } from '@langchain/core/language_models/llms';
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
@@ -128,7 +130,17 @@ export class AnthropicProvider extends LLMProvider {
   }
 }
 
-export const anthropicProviderOptions = {
+export const anthropicProviderOptions: LLMProviderMeta = {
   title: 'Anthropic',
+  supportedModel: [SupportedModel.LLM],
+  models: {
+    [SupportedModel.LLM]: [
+      'claude-opus-4-0',
+      'claude-sonnet-4-0',
+      'claude-3-7-sonnet-latest',
+      'claude-3-5-sonnet-latest',
+      'claude-3-5-haiku-latest',
+    ],
+  },
   provider: AnthropicProvider,
 };

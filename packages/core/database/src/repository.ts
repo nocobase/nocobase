@@ -50,6 +50,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { valuesToFilter } from './utils/filter-utils';
+import { processIncludes } from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -292,7 +293,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       distinct: Boolean(this.collection.model.primaryKeyAttribute) && !this.collection.isMultiFilterTargetKey(),
     };
 
-    if (queryOptions.include?.length === 0) {
+    if (Array.isArray(queryOptions.include) && queryOptions.include.length > 0) {
+      queryOptions.include = processIncludes(queryOptions.include, this.collection.model);
+    } else {
       delete queryOptions.include;
     }
 
@@ -313,7 +316,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const tableName = this.collection.tableName();
     try {
       if (this.database.isMySQLCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE TABLE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT table_rows FROM information_schema.tables
@@ -322,17 +324,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       `,
           { replacements: [tableName], type: QueryTypes.SELECT },
         );
-        return Number(results?.[0]?.table_rows ?? 0);
+        return Number(results?.[0]?.[this.database.inDialect('mysql') ? 'TABLE_ROWS' : 'table_rows'] ?? 0);
       }
       if (this.database.isPostgresCompatibleDialect()) {
-        await this.database.sequelize.query(`ANALYZE ${this.collection.getTableNameWithSchema()}`);
         const results: any[] = await this.database.sequelize.query(
           `
         SELECT reltuples::BIGINT AS estimate
         FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = ? AND n.nspname = current_schema();
+        WHERE c.relname = ? AND n.nspname = ?;
       `,
-          { replacements: [tableName], type: QueryTypes.SELECT },
+          { replacements: [tableName, this.collection.collectionSchema()], type: QueryTypes.SELECT, logging: true },
         );
         return Number(results?.[0]?.estimate ?? 0);
       }
@@ -526,6 +527,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       subQuery: false,
       ...this.buildQueryOptions(options),
     };
+    if (!_.isUndefined(opts.limit)) {
+      opts.limit = Number(opts.limit);
+    }
 
     let rows;
 
@@ -638,6 +642,14 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
+  private validate(options: {
+    values: Record<string, any>[];
+    context: { t: Function };
+    operation: 'create' | 'update';
+  }) {
+    this.collection.validate(options);
+  }
+
   /**
    * Save instance to database
    *
@@ -652,7 +664,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, {
@@ -662,7 +673,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-
+    this.validate({ values: values as any, context: options.context, operation: 'create' });
     const instance = await this.model.create<any>(values, {
       ...options,
       transaction,
@@ -728,13 +739,12 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
-
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-
+    this.validate({ values: values as any, context: options.context, operation: 'update' });
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
     // 2. strictly `false` comparing for compatibility of legacy api invoking

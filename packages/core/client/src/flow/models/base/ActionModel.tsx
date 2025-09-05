@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, FlowModel, escapeT } from '@nocobase/flow-engine';
+import { FlowModel, escapeT } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
+import { updateOpenViewStepParams } from '../../flows/openViewFlow';
 
 export class ActionModel extends FlowModel {
   declare props: ButtonProps;
@@ -26,13 +27,59 @@ export class ActionModel extends FlowModel {
   enableEditType = true;
   enableEditDanger = true;
 
+  getAclActionName() {
+    return 'view';
+  }
+
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('actionName', {
+      get: () => {
+        return this.getAclActionName();
+      },
+      cache: false,
+    });
+  }
+
+  onClick(event) {
+    this.dispatchEvent('click', { event });
+  }
+
   render() {
-    const props = { ...this.defaultProps, ...this.props };
+    const props = this.props;
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-    const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
+    // const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
+
     return (
-      <Button {...props} icon={icon} style={{ ...linkStyle, ...props.style }}>
+      <Button
+        {...props}
+        onClick={this.onClick.bind(this)}
+        icon={icon}
+        // style={{
+        //   // ...linkStyle,
+        //   ...props.style,
+        // }}
+      >
         {props.children || props.title}
+      </Button>
+    );
+  }
+
+  // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
+  protected renderHiddenInConfig(): React.ReactNode | undefined {
+    const merged: ButtonProps = this.props;
+    const { onClick, style, icon, type, children, title, ...rest } = merged;
+    const btnStyle: React.CSSProperties = {
+      ...(style || {}),
+      opacity: 0.5,
+      cursor: 'default',
+    };
+    const iconNode = icon ? typeof icon === 'string' ? <Icon type={icon} /> : icon : undefined;
+    const isLink = type === 'link';
+    const linkStyle = isLink ? { padding: 0, height: 'auto' } : undefined;
+    return (
+      <Button {...rest} type={type} icon={iconNode} style={{ ...linkStyle, ...btnStyle }}>
+        {children || title}
       </Button>
     );
   }
@@ -41,9 +88,10 @@ export class ActionModel extends FlowModel {
 ActionModel.registerFlow({
   key: 'buttonSettings',
   title: escapeT('Button settings'),
+  sort: -999,
   steps: {
     general: {
-      title: escapeT('General'),
+      title: escapeT('Edit button'),
       uiSchema(ctx) {
         return {
           title: ctx.model.enableEditTitle
@@ -84,29 +132,43 @@ ActionModel.registerFlow({
         };
       },
       defaultParams(ctx) {
-        return {
-          title: ctx.model.defaultProps.title,
-          icon: ctx.model.defaultProps.icon,
-          type: ctx.model.props.type || ctx.model.defaultProps.type,
-        };
+        return ctx.model.defaultProps;
       },
       handler(ctx, params) {
-        const { title, icon, type, danger } = params;
+        const { title, ...rest } = params;
         ctx.model.setProps({
           title: ctx.t(title),
-          icon,
-          type: type,
-          danger,
-          onClick: (event) => {
-            ctx.model.dispatchEvent('click', { event });
-          },
+          ...rest,
         });
       },
     },
   },
 });
 
-export class CollectionActionModel extends ActionModel {}
+export class CollectionActionModel extends ActionModel {
+  onInit(options) {
+    super.onInit(options);
+    updateOpenViewStepParams(
+      {
+        collectionName: this.context.collection?.name,
+        associationName: this.context.association?.resourceName,
+        dataSourceKey: this.context.collection?.dataSourceKey,
+      },
+      this,
+    );
+  }
+
+  onClick(event) {
+    if (!this.context.resource) {
+      this.context.message.error(escapeT('Resource is required to perform this action'));
+      return;
+    }
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource?.getSourceId(),
+    });
+  }
+}
 
 export class RecordActionModel extends ActionModel {
   defaultProps: ButtonProps = {
@@ -114,39 +176,67 @@ export class RecordActionModel extends ActionModel {
     children: escapeT('Action'),
   };
 
-  render() {
-    const props = { ...this.defaultProps, ...this.props };
-    const isLink = props.type === 'link';
-    const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-    return (
-      <Button style={isLink ? { padding: 0, height: 'auto' } : undefined} {...props} icon={icon}>
-        {props.children || props.title}
-      </Button>
+  onInit(options) {
+    super.onInit(options);
+    updateOpenViewStepParams(
+      {
+        collectionName: this.context.collection?.name,
+        associationName: this.context.association?.resourceName,
+        dataSourceKey: this.context.collection?.dataSourceKey,
+      },
+      this,
     );
+  }
+
+  onClick(event) {
+    if (!this.context.record) {
+      this.context.message.error(escapeT('Record is required to perform this action'));
+      return;
+    }
+    if (!this.context.collection) {
+      this.context.message.error(escapeT('Collection is required to perform this action'));
+      return;
+    }
+    if (!this.context.resource) {
+      this.context.message.error(escapeT('Resource is required to perform this action'));
+      return;
+    }
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource.getSourceId(),
+      filterByTk: this.context.collection.getFilterByTK(this.context.record),
+    });
   }
 }
 
-RecordActionModel.registerFlow({
-  key: 'recordActionSettings',
+export class JSCollectionActionModel extends CollectionActionModel {}
+
+JSCollectionActionModel.define({
+  label: escapeT('JS action'),
+  sort: 9999,
+});
+
+export class JSRecordActionModel extends RecordActionModel {}
+
+JSRecordActionModel.define({
+  label: escapeT('JS action'),
+  sort: 9999,
+});
+
+CollectionActionModel.registerFlow({
+  key: 'acl',
   steps: {
-    interaction: {
-      handler(ctx, params) {
-        const blockModel = ctx.blockModel;
-        if (!blockModel) {
-          throw new Error('Current block model is not set in context');
-        }
-        const { record } = ctx;
-        if (!record) {
-          throw new Error('Current record is not set in context');
-        }
-        ctx.model.setProps('onClick', (event) => {
-          const collection = ctx.collection as Collection;
-          ctx.model.dispatchEvent('click', {
-            event,
-            filterByTk: collection.getFilterByTK(record),
-          });
-        });
-      },
+    aclCheck: {
+      use: 'aclCheck',
+    },
+  },
+});
+
+RecordActionModel.registerFlow({
+  key: 'acl',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
     },
   },
 });

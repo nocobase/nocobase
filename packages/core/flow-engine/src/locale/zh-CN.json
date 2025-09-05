@@ -55,5 +55,6 @@
   "Failed to destroy model after creation error": "创建错误后销毁模型失败",
   "Add": "添加",
   "Name": "名称",
-  "Model with ID {{uid}} not found": "未找到 ID 为 {{uid}} 的模型"
+  "Model with ID {{uid}} not found": "未找到 ID 为 {{uid}} 的模型",
+  "Common actions": "通用操作"
 }

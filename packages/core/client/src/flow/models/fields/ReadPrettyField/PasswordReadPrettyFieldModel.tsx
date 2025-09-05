@@ -16,7 +16,7 @@ export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
 
   // @reactive
   public render() {
-    const value = this.getValue();
+    const { value } = this.props;
     if (!value) {
       return <div></div>;
     }

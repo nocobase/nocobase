@@ -116,7 +116,7 @@ export default class Processor {
         plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
 
-    const nodes = await execution.workflow.getNodes({ transaction });
+    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes({ transaction }));
     execution.workflow.nodes = nodes;
 
     this.makeNodes(nodes);
@@ -146,7 +146,7 @@ export default class Processor {
 
   public async start() {
     const { execution } = this;
-    if (execution.status !== EXECUTION_STATUS.STARTED) {
+    if (execution.status) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be started again`);
       return;
     }
@@ -161,7 +161,7 @@ export default class Processor {
 
   public async resume(job: JobModel) {
     const { execution } = this;
-    if (execution.status !== EXECUTION_STATUS.STARTED) {
+    if (execution.status) {
       this.logger.warn(`execution was ended with status ${execution.status} before, could not be resumed`);
       return;
     }
@@ -440,7 +440,7 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getScope(sourceNodeId: number | string, includeSelfScope = false) {
+  public getScope(sourceNodeId?: number | string, includeSelfScope = false) {
     const node = this.nodesMap.get(sourceNodeId);
     const systemFns = {};
     const scope = {
@@ -471,7 +471,11 @@ export default class Processor {
   /**
    * @experimental
    */
-  public getParsedValue(value, sourceNodeId: number | string, { additionalScope = {}, includeSelfScope = false } = {}) {
+  public getParsedValue(
+    value,
+    sourceNodeId?: number | string,
+    { additionalScope = {}, includeSelfScope = false } = {},
+  ) {
     const template = parse(value);
     const scope = Object.assign(this.getScope(sourceNodeId, includeSelfScope), additionalScope);
     template.parameters.forEach(({ key }) => {

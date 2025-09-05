@@ -79,7 +79,7 @@ describe('FlowEngine', () => {
   });
 
   it('registerModels should overwrite existing model', () => {
-    class NewBaseModel {}
+    class NewBaseModel extends FlowModel {}
     engine.registerModels({ BaseModel: NewBaseModel });
     expect(engine.getModelClass('BaseModel')).toBe(NewBaseModel);
   });

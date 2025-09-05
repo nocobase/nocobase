@@ -102,7 +102,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     const handleAddCondition = () => {
       items.push({
         leftValue: '',
-        operator: '$eq',
+        operator: '',
         rightValue: '',
       });
     };

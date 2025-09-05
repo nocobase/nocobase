@@ -73,7 +73,7 @@ const MobileDateTimePicker = connect(
     }, []);
     return (
       <>
-        <div contentEditable="false" onClick={() => setVisible(true)}>
+        <div onClick={() => setVisible(true)}>
           <NBDatePicker
             onClick={() => setVisible(true)}
             value={value}

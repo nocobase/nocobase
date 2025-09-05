@@ -7,38 +7,41 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FormButtonGroup, FormLayout } from '@formily/antd-v5';
-import { createForm, Form } from '@formily/core';
-import { FormProvider } from '@formily/react';
+import { SettingOutlined } from '@ant-design/icons';
+import { FormButtonGroup } from '@formily/antd-v5';
 import {
-  AddActionButton,
-  buildActionItems,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
+  FlowModelContext,
   FlowModelRenderer,
+  FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
-import { Pagination } from 'antd';
+import { Pagination, Space } from 'antd';
 import React from 'react';
-import { FormModel } from './FormModel';
+import { FormActionModel } from './FormActionModel';
+import { FormComponent, FormModel } from './FormModel';
 
 export class EditFormModel extends FormModel {
-  createResource(_ctx: any, params: any) {
+  static scene = ['one', 'many'];
+
+  createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
     if (Object.keys(params).includes('filterByTk')) {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
-    const resource = new MultiRecordResource();
+    const resource = this.context.createResource(MultiRecordResource);
     resource.setPageSize(1);
     return resource;
   }
@@ -51,7 +54,9 @@ export class EditFormModel extends FormModel {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
   }
-
+  getAclActionName() {
+    return 'update';
+  }
   handlePageChange = async (page: number) => {
     if (this.resource instanceof MultiRecordResource) {
       const multiResource = this.resource as MultiRecordResource;
@@ -65,39 +70,31 @@ export class EditFormModel extends FormModel {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
 
     return (
-      <>
-        <FormProvider form={this.form}>
-          <FormLayout
-            colon={colon}
-            labelAlign={labelAlign}
-            labelWidth={labelWidth}
-            labelWrap={labelWrap}
-            layout={layout}
-          >
-            <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
-          </FormLayout>
-          <DndProvider>
-            <FormButtonGroup>
-              {this.mapSubModels('actions', (action) => (
-                <Droppable model={action} key={action.uid}>
-                  <FlowModelRenderer
-                    key={action.uid}
-                    model={action}
-                    showFlowSettings={{ showBackground: false, showBorder: false }}
-                    extraToolbarItems={[
-                      {
-                        key: 'drag-handler',
-                        component: DragHandler,
-                        sort: 1,
-                      },
-                    ]}
-                  />
-                </Droppable>
-              ))}
-              <AddActionButton model={this} items={buildActionItems(this, 'FormActionModel')} />
-            </FormButtonGroup>
-          </DndProvider>
-        </FormProvider>
+      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+        <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
+        <DndProvider>
+          <Space>
+            {this.mapSubModels('actions', (action) => (
+              <Droppable model={action} key={action.uid}>
+                <FlowModelRenderer
+                  key={action.uid}
+                  model={action}
+                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ))}
+            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
+              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+            </AddSubModelButton>
+          </Space>
+        </DndProvider>
         {this.isMultiRecordResource() && (
           <div
             style={{
@@ -116,7 +113,7 @@ export class EditFormModel extends FormModel {
             />
           </div>
         )}
-      </>
+      </FormComponent>
     );
   }
 }
@@ -132,10 +129,13 @@ EditFormModel.registerFlow({
         }
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.resource.on('refresh', async () => {
-          await ctx.form.reset();
-          ctx.form.values = {};
+          if (ctx.form) {
+            await ctx.form.resetFields();
+          }
+
           const currentRecord = ctx.model.getCurrentRecord();
           const targetKey = ctx.association?.targetKey;
+
           if (targetKey) {
             ctx.resource.setMeta({
               currentFilterByTk: currentRecord?.[targetKey],
@@ -145,7 +145,7 @@ EditFormModel.registerFlow({
               currentFilterByTk: ctx.collection.getFilterByTK(currentRecord),
             });
           }
-          ctx.model.form.setValues(currentRecord);
+          ctx.form && ctx.form.setFieldsValue(currentRecord);
         });
       },
     },
@@ -154,18 +154,16 @@ EditFormModel.registerFlow({
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
-        // 1. 先初始化字段网格，确保所有字段都创建完成
-        await ctx.model.applySubModelsAutoFlows('grid');
-        // 2. 加载数据
-        // await ctx.resource.refresh();
       },
     },
   },
 });
 
 EditFormModel.define({
-  title: escapeT('Form (Edit)'),
-  defaultOptions: {
+  label: escapeT('Form (Edit)'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search'),
+  createModelOptions: {
     use: 'EditFormModel',
     subModels: {
       grid: {

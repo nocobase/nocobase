@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React, { useMemo, useEffect, useState } from 'react';
 import { useFieldSchema, useForm } from '@formily/react';
-import { reaction } from '@formily/reactive';
+import { last, isEqual } from 'lodash';
 import { uid } from '@formily/shared';
-import { isEqual, last } from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import { reaction } from '@formily/reactive';
+import { useLocalVariables, useVariables } from '../../variables';
+import { useReactiveLinkageEffect } from './utils';
 import { useDesignable } from '../../';
+import { forEachLinkageRule } from '../../schema-settings/LinkageRules/forEachLinkageRule';
 import {
   getVariableValuesInCondition,
   getVariableValuesInExpression,
 } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
-import { forEachLinkageRule } from '../../schema-settings/LinkageRules/forEachLinkageRule';
-import { useLocalVariables, useVariables } from '../../variables';
-import { useReactiveLinkageEffect } from './utils';
 
 const getLinkageRules = (fieldSchema) => {
   if (!fieldSchema) {
@@ -82,7 +82,7 @@ export const BlockLinkageRuleProvider = (props) => {
     return props.children;
   }
 
-  if (displayResult == null || displayResult.length === 0) return null;
+  if (displayResult === null) return null;
   if (last(displayResult) === 'hidden') {
     if (designable) {
       return <div style={{ opacity: 0.3 }}>{props.children}</div>;

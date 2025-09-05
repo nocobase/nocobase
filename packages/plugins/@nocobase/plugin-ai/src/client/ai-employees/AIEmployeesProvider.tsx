@@ -13,6 +13,7 @@ import { AISettingsProvider } from './AISettingsProvider';
 import { ChatBoxLayout } from './chatbox/ChatBoxLayout';
 import { AISelection } from './AISelection';
 import { ContextAwareTooltip } from './ContextAwareTooltip';
+import { AISelectionControl } from './AISelectionControl';
 
 export const AIEmployeesProvider: React.FC<{
   children: React.ReactNode;
@@ -23,6 +24,7 @@ export const AIEmployeesProvider: React.FC<{
         <ChatBoxLayout>{props.children}</ChatBoxLayout>
         <ContextAwareTooltip />
         <AISelection />
+        <AISelectionControl />
       </AISettingsProvider>
     </AISelectionProvider>
   );

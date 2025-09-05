@@ -17,7 +17,7 @@ class AsyncValueModel extends FlowModel {
       },
     });
   }
-  async beforeApplyAutoFlows() {
+  async onBeforeAutoFlows() {
     await Promise.all([this.context.concurrent, this.context.concurrent, this.context.concurrent]);
     this.concurrent = await this.context.concurrent;
   }

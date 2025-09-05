@@ -10,7 +10,7 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
-
+import { jioToJoiSchema } from './jioToJoiSchema';
 export interface DataSourceOptions extends Record<string, any> {
   key: string;
   displayName?: string;
@@ -120,8 +120,15 @@ export class DataSource {
     return this.collectionManager.getCollection(name);
   }
 
+  /**
+   * @deprecated use getAssociation instead
+   */
   getAssocation(associationName: string): CollectionField | undefined {
-    return this.collectionManager.getAssocation(associationName);
+    return this.getAssociation(associationName);
+  }
+
+  getAssociation(associationName: string): CollectionField | undefined {
+    return this.collectionManager.getAssociation(associationName);
   }
 
   addCollection(collection: Collection | CollectionOptions) {
@@ -160,7 +167,7 @@ export class DataSource {
     if (!collection) {
       throw new Error(`Collection ${collectionName} not found in data source ${this.key}`);
     }
-    const field = collection.getField(fieldName);
+    const field = collection.getFieldByPath(fieldName);
     if (!field) {
       return;
     }
@@ -302,7 +309,7 @@ export class CollectionManager {
     this.collections.clear();
   }
 
-  getAssocation(associationName: string): CollectionField | undefined {
+  getAssociation(associationName: string): CollectionField | undefined {
     const [collectionName, fieldName] = associationName.split('.');
     const collection = this.getCollection(collectionName);
     if (!collection) {
@@ -411,6 +418,26 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
+  getToOneAssociationFields(): CollectionField[] {
+    return this.getAssociationFields(['toOne']);
+  }
+
+  getAssociationFields(types = []): CollectionField[] {
+    if (types.includes('toNew')) {
+      return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
+    }
+    if (types.includes('toMany') && types.includes('toOne')) {
+      return this.getFields().filter((field) => field.isAssociationField());
+    }
+    if (types.includes('toMany')) {
+      return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
+    }
+    if (types.includes('toOne')) {
+      return this.getFields().filter((field) => ['hasOne', 'belongsTo'].includes(field.type));
+    }
+    return this.getFields().filter((field) => field.isAssociationField());
+  }
+
   mapFields(callback: (field: CollectionField) => any): any[] {
     return this.getFields().map(callback);
   }
@@ -430,6 +457,18 @@ export class Collection {
         this.addField(field);
       }
     }
+  }
+
+  getFieldByPath(fieldPath: string): CollectionField | undefined {
+    const [fieldName, ...otherKeys] = fieldPath.split('.');
+    const field = this.getField(fieldName);
+    if (otherKeys.length === 0) {
+      return field;
+    }
+    if (!field.targetCollection) {
+      return null;
+    }
+    return field.targetCollection.getFieldByPath(otherKeys.join('.'));
   }
 
   getField(fieldName: string): CollectionField | undefined {
@@ -543,6 +582,14 @@ export class CollectionField {
     return this.collection.dataSourceKey;
   }
 
+  get resourceName() {
+    return `${this.collection.name}.${this.name}`;
+  }
+
+  get collectionName() {
+    return this.collection.name;
+  }
+
   get readonly() {
     return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
   }
@@ -612,8 +659,47 @@ export class CollectionField {
     return this.options.target && this.collection.collectionManager.getCollection(this.options.target);
   }
 
+  get validation() {
+    return this.options.validation;
+  }
+
   getComponentProps() {
-    return this.options.uiSchema?.['x-component-props'] || {};
+    const { type, target } = this.options;
+    const componentProps = _.omitBy(
+      {
+        ...(this.options.uiSchema?.['x-component-props'] || {}),
+        options: this.enum.length ? this.enum : undefined,
+        mode: this.type === 'array' ? 'multiple' : undefined,
+        multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : undefined,
+        maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+        valuePropName: this.interface === 'checkbox' ? 'checked' : 'value',
+        target: target,
+      },
+      _.isUndefined,
+    );
+    if (this.validation) {
+      // 初始化数据表字段jio验证规则
+      const rules = [];
+      const schema = jioToJoiSchema(this.validation);
+      const label = this.title;
+      rules.push({
+        validator: (_, value) => {
+          const { error } = schema.validate(value, {
+            context: { label },
+            abortEarly: false,
+          });
+
+          if (error) {
+            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+            return Promise.reject(message);
+          }
+
+          return Promise.resolve();
+        },
+      });
+      componentProps.rules = rules;
+    }
+    return componentProps;
   }
 
   getFields(): CollectionField[] {
@@ -697,3 +783,5 @@ export function isFieldInterfaceMatch(
   }
   return false;
 }
+
+export { jioToJoiSchema };

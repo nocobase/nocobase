@@ -20,7 +20,7 @@ export const formFillerTool: [string, string, ToolOptions] = [
         return;
       }
       const model = app.flowEngine.getModel(uid) as FormModel;
-      model?.form?.setValues(data);
+      model?.form?.setFieldsValue(data);
     },
   },
 ];

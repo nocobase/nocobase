@@ -8,17 +8,14 @@
  */
 
 import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
-import { FilterFormEditableFieldModel } from '../../form-v2/fields';
+import { FilterFormFieldModel } from '../../form/fields';
+import { operators } from '../../../../../collection-manager';
 
-export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
+export const defaultOperator = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
   title: 'Default operator',
   uiSchema(ctx: FlowContext) {
     const operatorOptions = getOperatorOptions(ctx.model);
-
-    if (!ctx.model.enableOperator) {
-      return;
-    }
 
     return {
       value: {
@@ -41,8 +38,10 @@ export const defaultOperator = defineAction<FilterFormEditableFieldModel>({
 });
 
 function getOperatorOptions(model: FlowModel) {
-  return (model.context.collectionField.filterable?.operators || []).map((op) => ({
-    ...op,
-    label: model.translate(op.label),
-  }));
+  return (model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type]).map(
+    (op) => ({
+      ...op,
+      label: model.translate(op.label),
+    }),
+  );
 }

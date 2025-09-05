@@ -27,7 +27,7 @@ const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutL
     for (const task of tasks) {
       const workContext = task.message.workContext || [];
       for (const context of workContext) {
-        const target = context.type === 'flow-model' && context.uid === ctx.model.uid;
+        const target = context.type.startsWith('flow-model') && context.uid === ctx.model.uid;
         if (target) {
           return true;
         }
@@ -58,7 +58,7 @@ BlockModel.registerFlow({
           onMouseEnter: (e: Event) => {
             onMouseEnter?.(e);
 
-            if (!model) {
+            if (!model || contextAware.isShowed(model.uid)) {
               return;
             }
             const awareModels = getAwareModels(ctx, model);
@@ -66,6 +66,7 @@ BlockModel.registerFlow({
               subModel.setProps('showNotice', true);
             });
             contextAware.setAIEmployees(awareModels.map((model) => model.props.aiEmployee));
+            contextAware.addShowed(model.uid);
           },
           onMouseLeave: (e: Event) => {
             onMouseLeave?.(e);

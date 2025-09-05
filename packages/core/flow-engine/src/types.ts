@@ -8,8 +8,15 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import { SubModelItemsType } from './components';
-import { FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
+import { SubModelItem, SubModelItemsType } from './components';
+import {
+  FlowContext,
+  FlowEngineContext,
+  FlowModelContext,
+  FlowRuntimeContext,
+  FlowSettingsContext,
+} from './flowContext';
+import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 
@@ -27,6 +34,8 @@ import type { FlowModel } from './models';
  */
 export type ArrayElementType<T> = T extends (infer U)[] ? U : T;
 
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
     ? DeepPartial<U>[]
@@ -40,7 +49,7 @@ export type DeepPartial<T> = {
 /**
  * Defines a flow with generic model type support.
  */
-export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
+export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
   /**
    * Unique identifier for the flow.
    * 建议采用统一的 xxxSettings 风格命名，例如：
@@ -95,56 +104,12 @@ export interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   sort?: number;
 
   /**
-   * Optional configuration to allow this flow to be triggered by `dispatchEvent`。
-   * 支持字符串或对象形式：
-   * - 字符串：直接指定事件名（如 'click'、'submit' 等），推荐与主流事件命名保持一致。
-   * - 对象：可扩展更多事件配置，目前支持 { eventName, handler }
-   *   - eventName: 事件名，推荐使用 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等主流命名
-   *   - handler: 事件触发时的自定义处理函数（可选，若不指定则默认执行 flow 的 steps）
-   *
-   * @example
-   * // 字符串形式，仅指定事件名
-   * on: 'click'
-   *
-   * // 对象形式，指定事件名和自定义处理函数
-   * on: {
-   *   eventName: 'click',
-   *   handler: (ctx, params) => {
-   *     // 自定义事件处理逻辑
-   *     ctx.logger.info('Custom click event triggered');
-   *   }
-   * }
-   *
-   * // 推荐事件名
-   * 'click' | 'submit' | 'change' | 'delete' | 'open' | 'close' 等
+   * 允许该 Flow 被 `dispatchEvent` 触发的事件配置。
+   * 仅用于声明触发事件名（字符串或 { eventName }），不包含处理函数。
    */
-  on?:
-    | string
-    | {
-        eventName: string;
-        handler?: (ctx: FlowRuntimeContext<TModel>, params: Record<string, any>) => void | Promise<void>;
-      };
+  on?: FlowEvent<TModel>;
 
   steps: Record<string, StepDefinition<TModel>>;
-}
-
-// 扩展FlowDefinition类型，添加partial标记用于部分覆盖
-export interface ExtendedFlowDefinition extends DeepPartial<FlowDefinition> {
-  /**
-   * Whether this flow should be executed manually only (prevents auto-execution)
-   * Flows without 'on' property are auto-executed by default unless manual: true
-   */
-  manual?: boolean;
-  /**
-   * Sort order for flow execution, lower numbers execute first
-   * Defaults to 0, can be negative
-   */
-  sort?: number;
-  /**
-   * 当设置为true时，表示这是对现有流程的部分覆盖，而不是完全替换
-   * 如果父类中不存在同名流程，此标记将被忽略
-   */
-  patch?: boolean;
 }
 
 export interface IModelComponentProps {
@@ -159,35 +124,56 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = (new (
-  options: FlowModelOptions & {
-    uid: string;
-    props?: IModelComponentProps;
-    stepParams?: StepParams;
-    meta?: FlowModelMeta;
-    subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
-    [key: string]: any; // Allow additional options
-  },
-) => T) & {
+export type ModelConstructor<T extends FlowModel = FlowModel> = (new (options: FlowModelOptions) => T) & {
   meta?: FlowModelMeta;
 };
 
 /**
  * Defines a reusable action with generic model type support.
  */
-export interface ActionDefinition<TModel extends FlowModel = FlowModel> {
+export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> {
   name: string; // Unique identifier for the action
   title?: string;
-  handler: (ctx: FlowRuntimeContext<TModel>, params: any) => Promise<any> | any;
-  uiSchema?:
-    | Record<string, ISchema>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
-  defaultParams?:
-    | Record<string, any>
-    | ((ctx: FlowRuntimeContext<TModel>) => Record<string, any> | Promise<Record<string, any>>);
+  handler: (ctx: TCtx, params: any) => Promise<any> | any;
+  uiSchema?: Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
+  defaultParams?: Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>);
   beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
-  useRawParams?: boolean | ((ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>);
+  useRawParams?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+}
+
+/**
+ * Flow 事件名称集合。
+ * - 收录内置常用事件，便于智能提示；
+ * - 允许扩展字符串以保持向后兼容。
+ */
+export type FlowEventName =
+  | 'click'
+  | 'submit'
+  | 'reset'
+  | 'remove'
+  | 'openView'
+  | 'dropdownOpen'
+  | 'popupScroll'
+  | 'search'
+  | 'customRequest'
+  | 'collapseToggle'
+  // fallback to any string for extensibility
+  | (string & {});
+
+/**
+ * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
+ */
+export type FlowEvent<TModel extends FlowModel = FlowModel> = FlowEventName | { eventName: FlowEventName };
+
+/**
+ * 事件定义：用于事件注册表（全局/模型类级）。
+ */
+export interface EventDefinition<TModel extends FlowModel = FlowModel> {
+  name: FlowEventName;
+  label?: string;
+  title?: string;
+  description?: string;
 }
 
 export type StepUIMode =
@@ -195,8 +181,7 @@ export type StepUIMode =
   | 'drawer'
   // | 'switch'
   // | 'select'
-  | { type: 'dialog'; props?: Record<string, any> }
-  | { type: 'drawer'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -205,10 +190,12 @@ export type StepUIMode =
  * Extends ActionDefinition but makes some properties optional and adds step-specific properties
  */
 export interface StepDefinition<TModel extends FlowModel = FlowModel>
-  extends Partial<Omit<ActionDefinition<TModel>, 'name'>> {
+  extends Partial<Omit<ActionDefinition<TModel, FlowRuntimeContext<TModel>>, 'name'>> {
+  key?: string; // Unique identifier for the step within the flow
   // Step-specific properties
   isAwait?: boolean; // Whether to await the handler, defaults to true
   use?: string; // Name of the registered ActionDefinition to use as base
+  sort?: number; // Sort order for step execution, lower numbers execute first
 
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
@@ -277,6 +264,7 @@ export interface CreateModelOptions {
   uid?: string;
   use: RegisteredModelClassName | ModelConstructor;
   props?: IModelComponentProps;
+  flowRegistry?: Record<string, Omit<FlowDefinitionOptions, 'key'>>;
   stepParams?: StepParams;
   subModels?: Record<string, CreateSubModelOptions | CreateSubModelOptions[]>;
   parentId?: string;
@@ -288,7 +276,7 @@ export interface CreateModelOptions {
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
-  save(model: T): Promise<Record<string, any>>;
+  save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
 }
@@ -364,102 +352,41 @@ export interface FlowModelOptions<Structure extends { parent?: FlowModel; subMod
   props?: IModelComponentProps; // 组件属性
   stepParams?: StepParams;
   subModels?: Structure['subModels'];
+  flowRegistry?: Record<string, Omit<FlowDefinitionOptions, 'key'>>;
   flowEngine?: FlowEngine;
   parentId?: string;
   delegateToParent?: boolean;
   subKey?: string;
   subType?: 'object' | 'array';
   sortIndex?: number;
+  /**
+   * 是否启用“始终干净”的运行模式：
+   * - false：与传统模式一致（直接在 master 或当前 fork 上执行）。
+   */
+  cleanRun?: boolean;
 }
 
-export interface FlowModelMeta {
-  title?: string;
-  key?: string;
-  label?: string;
-  group?: string;
-  requiresDataSource?: boolean; // 是否需要数据源
-  /**
-   * 默认选项配置，支持静态对象或动态函数形式
-   *
-   * 当为静态对象时，将直接使用该配置作为默认值
-   * 当为函数时，将在创建菜单项时调用，可根据父模型上下文动态生成配置
-   *
-   * @example
-   * // 静态配置
-   * defaultOptions: { someProperty: 'value' }
-   *
-   * // 动态配置
-   * defaultOptions: (ctx) => {
-   *   return {
-   *     someProperty: ctx.model.someData ? 'valueA' : 'valueB'
-   *   };
-   * }
-   */
-  createModelOptions?:
-    | Record<string, any>
-    | ((ctx: FlowModelContext, item?: any) => Record<string, any> | Promise<Record<string, any>>);
-  defaultOptions?:
-    | Record<string, any>
-    | ((ctx: FlowModelContext) => Record<string, any> | Promise<Record<string, any>>);
-  icon?: string;
-  // uniqueSub?: boolean;
-  /**
-   * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
-   * 排序最靠前的将作为默认选择
-   * @default 0
-   */
-  sort?: number;
-  /**
-   * 是否在菜单中隐藏该模型类
-   * @default false
-   */
-  hide?: boolean;
-  /**
-   * 子菜单项定义，支持创建多层嵌套的层级菜单结构
-   *
-   * 当定义了 children 时，该模型本身不会直接出现在菜单中，
-   * 而是显示为一个包含子菜单项的分组。每个子项都可以再有自己的 children，
-   * 形成无限层级的嵌套结构。
-   *
-   * 对于数据区块类型，系统会自动为每个叶子节点生成数据源和数据表的选择菜单。
-   * 对于普通区块和动作，叶子节点将直接作为可选择的菜单项。
-   *
-   * 支持静态数组和函数形式：
-   * - 静态数组：直接定义固定的子项列表
-   * - 函数形式：可根据父模型动态生成子项，支持同步和异步函数
-   *
-   * @example
-   * // 静态配置
-   * children: [
-   *   {
-   *     title: 'Basic Blocks',
-   *     children: [
-   *       { title: 'Table', defaultOptions: { use: 'TableModel' } },
-   *       { title: 'Form', defaultOptions: { use: 'FormModel' } }
-   *     ]
-   *   }
-   * ]
-   *
-   * // 动态配置
-   * children: (ctx) => {
-   *   const hasPermission = ctx.model.checkPermission('advanced');
-   *   return [
-   *     { title: 'Basic Table', defaultOptions: { use: 'TableModel' } },
-   *     ...(hasPermission ? [{ title: 'Advanced Chart', defaultOptions: { use: 'ChartModel' } }] : [])
-   *   ];
-   * }
-   */
-  children?: false | SubModelItemsType;
-  /**
-   * 切换检测器函数，用于判断该模型是否已存在
-   * 主要用于支持切换式的 UI 交互
-   */
-  toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
-  /**
-   * 自定义移除函数，用于处理该项的删除逻辑
-   */
-  customRemove?: (ctx: FlowModelContext, item: any) => Promise<void>;
-}
+export type FlowModelMeta =
+  // 从 SubModelItem 选取的属性，保持原始类型
+  Pick<
+    SubModelItem,
+    'key' | 'label' | 'icon' | 'children' | 'createModelOptions' | 'toggleable' | 'searchable' | 'searchPlaceholder'
+  > & {
+    // FlowModelMeta 独有的属性
+    group?: string;
+    /**
+     * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
+     * 排序最靠前的将作为默认选择
+     * @default 0
+     */
+    sort?: number;
+    /**
+     * 是否在菜单中隐藏该模型类
+     * @default false
+     */
+    hide?: boolean;
+    eventList?: { label: string; value: string }[]; // 支持的事件列表
+  };
 
 /**
  * 字段 FlowModel 的专用元数据接口
@@ -501,3 +428,12 @@ export interface ApplyFlowCacheEntry {
   data?: any;
   error?: any;
 }
+
+export interface PersistOptions {
+  /**
+   * 是否持久化（保存到数据库），默认为 true
+   */
+  persist?: boolean;
+}
+
+export type ResourceType<T = any> = string | { new (...args: any[]): T };

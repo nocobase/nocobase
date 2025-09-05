@@ -9,6 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import { AIManager } from './manager/ai-manager';
+import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import aiResource from './resource/ai';
@@ -32,11 +33,15 @@ import {
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
+import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { BuiltInManager } from './manager/built-in-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
+  features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
+  builtInManager = new BuiltInManager(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
@@ -58,11 +63,16 @@ export class PluginAIServer extends Plugin {
     this.registerWorkflow();
   }
 
+  async setupBuiltIn() {
+    await this.builtInManager.createOrUpdateAIEmployee();
+  }
+
   registerLLMProviders() {
     this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
+    this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
   }
 
@@ -208,6 +218,7 @@ export class PluginAIServer extends Plugin {
       return;
     }
     await this.db.getRepository('aiSettings').create({});
+    await this.setupBuiltIn();
   }
 
   async afterEnable() {}

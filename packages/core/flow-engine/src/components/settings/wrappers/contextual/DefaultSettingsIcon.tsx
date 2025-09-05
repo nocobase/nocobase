@@ -7,20 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { Dropdown, Modal, App } from 'antd';
+import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import {
-  SettingOutlined,
-  DeleteOutlined,
-  ExclamationCircleOutlined,
-  MenuOutlined,
-  CopyOutlined,
-} from '@ant-design/icons';
+import { App, Dropdown, Modal } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { openStepSettings } from './StepSettings';
 import { getT, resolveStepUiSchema } from '../../../../utils';
+import { openStepSettings } from './StepSettings';
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -177,8 +171,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       }
 
       try {
-        openStepSettings({
-          model: targetModel,
+        targetModel.openFlowSettings({
           flowKey,
           stepKey,
         });
@@ -213,8 +206,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const getModelConfigurableFlowsAndSteps = useCallback(
     async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
       try {
-        const ModelClass = targetModel.constructor as typeof FlowModel;
-        const flows = ModelClass.getFlows();
+        const flows = targetModel.getFlows();
 
         const flowsArray = Array.from(flows.values());
 
@@ -401,7 +393,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
             items.push({
               key: uniqueKey,
-              icon: <SettingOutlined />,
               label: t(stepInfo.title),
             });
           });
@@ -440,7 +431,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 items.push({
                   key: uniqueKey,
-                  icon: <SettingOutlined />,
                   label: t(stepInfo.title),
                 });
               });
@@ -456,7 +446,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 subMenuChildren.push({
                   key: uniqueKey,
-                  icon: <SettingOutlined />,
                   label: t(stepInfo.title),
                 });
               });
@@ -480,18 +469,17 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const items = [...menuItems];
 
     if (showCopyUidButton || showDeleteButton) {
-      // 如果有flows配置项，添加分割线
-      if (configurableFlowsAndSteps.length > 0) {
-        items.push({
-          type: 'divider' as const,
-        });
-      }
+      // 使用分组呈现常用操作（不再使用分割线）
+      items.push({
+        key: 'common-actions',
+        label: t('Common actions'),
+        type: 'group' as const,
+      });
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
         items.push({
           key: 'copy-uid',
-          icon: <CopyOutlined />,
           label: t('Copy UID'),
         });
       }
@@ -500,14 +488,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       if (showDeleteButton && typeof model.destroy === 'function') {
         items.push({
           key: 'delete',
-          icon: <DeleteOutlined />,
           label: t('Delete'),
         });
       }
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, configurableFlowsAndSteps.length, model.uid, model.destroy]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy]);
 
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
   if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {

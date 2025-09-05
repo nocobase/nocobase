@@ -20,10 +20,6 @@
 - `close()`：关闭当前视图
 - `update()`：更新属性
 
-## 示例
-
-<code src="./dialog-hook.tsx"></code>
-
 ### 打开一个对话框
 
 ```tsx | pure
@@ -83,3 +79,13 @@ function DialogContent() {
 ## 注意事项
 
 - 目前仅 dialog 和 drawer 支持 Header 和 Footer。
+
+## 示例
+
+### useFlowView
+
+<code src="./dialog-hook.tsx"></code>
+
+### 参数传递
+
+<code src="./input-args.tsx"></code>

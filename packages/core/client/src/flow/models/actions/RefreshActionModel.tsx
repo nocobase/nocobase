@@ -19,7 +19,7 @@ export class RefreshActionModel extends CollectionActionModel {
 }
 
 RefreshActionModel.define({
-  title: escapeT('Refresh'),
+  label: escapeT('Refresh'),
 });
 
 RefreshActionModel.registerFlow({

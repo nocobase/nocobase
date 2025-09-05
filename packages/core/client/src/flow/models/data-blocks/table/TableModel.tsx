@@ -7,32 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
-  AddActionButton,
-  AddFieldButton,
-  buildActionItems,
-  buildFieldItems,
+  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
+  FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
+  observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel, CollectionActionModel } from '../../base/ActionModel';
 import { CollectionBlockModel } from '../../base/BlockModel';
 import { QuickEditForm } from '../form/QuickEditForm';
-import { TableColumnModel } from './TableColumnModel';
+import { TableColumnModel, TableCustomColumnModel } from './TableColumnModel';
 import { extractIndex } from './utils';
 
 type TableModelStructure = {
@@ -109,76 +108,61 @@ const HeaderWrapperComponent = React.memo((props) => {
 });
 
 const AddFieldColumn = ({ model }) => {
-  const items = buildFieldItems(
-    model.collection.getFields(),
-    model,
-    'ReadPrettyFieldModel',
-    'columns',
-    ({ defaultOptions, fieldPath }) => ({
-      use: 'TableColumnModel',
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: model.collection.dataSourceKey,
-            collectionName: model.collection.name,
-            fieldPath,
-          },
-        },
-      },
-      subModels: {
-        field: {
-          use: defaultOptions.use,
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: model.collection.dataSourceKey,
-                collectionName: model.collection.name,
-                fieldPath,
-              },
-            },
-          },
-        },
-      },
-    }),
-  );
   return (
-    <AddFieldButton
+    <AddSubModelButton
       model={model}
       subModelKey={'columns'}
-      subModelBaseClass="TableCustomColumnModel"
-      items={items}
-      onModelCreated={async (column: TableColumnModel) => {
+      key={'table-add-columns'}
+      subModelBaseClasses={['TableColumnModel', 'AssociationFieldItemModel', 'TableCustomColumnModel']}
+      afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
-      onSubModelAdded={async (column: TableColumnModel) => {
-        model.addAppends(column.fieldPath, true);
+      afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
+        // Only append fields for actual table field columns
+        if (column instanceof TableColumnModel) {
+          model.addAppends(column.fieldPath, true);
+          model.addAppends(column.associationPathName, true);
+        }
       }}
-    />
+      keepDropdownOpen
+    >
+      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+    </AddSubModelButton>
   );
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
+  static scene = 'many';
+
+  rowSelectionProps = observable.deep({});
+
   get resource() {
     return super.resource as MultiRecordResource;
   }
 
   createResource(ctx, params) {
-    return new MultiRecordResource();
+    return this.context.createResource(MultiRecordResource);
   }
 
   getColumns() {
-    return this.mapSubModels('columns', (column) => {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
+      .filter(Boolean)
       .concat({
         key: 'empty',
-      })
-      .concat({
+      });
+    if (isConfigMode) {
+      cols.push({
         key: 'addColumn',
         fixed: 'right',
         width: 200,
         title: <AddFieldColumn model={this} />,
       } as any);
+    }
+
+    return cols;
   }
 
   EditableRow = (props) => {
@@ -240,9 +224,10 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
                     fork.context.defineProperty('record', {
                       get: () => record,
                     });
-                    fork.context.defineProperty('fieldValue', {
-                      get: () => values[dataIndex],
-                    });
+                    // fork.context.defineProperty('fieldValue', {
+                    //   get: () => values[dataIndex],
+                    // });
+                    fork.setProps({ value: values[dataIndex] });
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
                     });
@@ -375,11 +360,14 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
 
                 return null;
               })}
-              <AddActionButton
+              <AddSubModelButton
+                key={'table-column-add-actions'}
                 model={this}
-                items={buildActionItems(this, 'CollectionActionModel')}
+                subModelBaseClass={CollectionActionModel}
                 subModelKey="actions"
-              />
+              >
+                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+              </AddSubModelButton>
             </Space>
           </div>
         </DndProvider>
@@ -396,6 +384,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
             },
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
             renderCell: this.renderCell,
+            ...this.rowSelectionProps,
           }}
           loading={this.resource.loading}
           virtual={this.props.virtual}
@@ -539,16 +528,28 @@ TableModel.registerFlow({
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await Promise.all(
+          ctx.model.mapSubModels('columns', async (column) => {
+            if (column.hidden) return;
+            try {
+              await column.applyAutoFlows();
+            } catch (err) {
+              column['__autoFlowError'] = err;
+              // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
+            }
+          }),
+        );
       },
     },
   },
 });
 
 TableModel.define({
-  title: escapeT('Table'),
+  label: escapeT('Table'),
   group: escapeT('Content'),
-  defaultOptions: {
+  searchable: true,
+  searchPlaceholder: escapeT('Search'),
+  createModelOptions: {
     use: 'TableModel',
     subModels: {
       columns: [

@@ -27,10 +27,14 @@ export class ExportActionModel extends CollectionActionModel {
     type: 'default',
     icon: 'clouddownloadoutlined',
   };
+
+  getAclActionName() {
+    return 'export';
+  }
 }
 
 ExportActionModel.define({
-  title: escapeT('Export'),
+  label: escapeT('Export'),
 });
 
 ExportActionModel.registerFlow({

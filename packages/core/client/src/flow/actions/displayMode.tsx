@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 
 export const displayMode = defineAction({

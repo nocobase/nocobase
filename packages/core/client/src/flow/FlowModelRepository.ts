@@ -125,11 +125,15 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     return response.data?.data;
   }
 
-  async save(model: FlowModel) {
+  async save(model: FlowModel, options?: { onlyStepParams?: boolean }) {
+    const data = model.serialize();
+    if (options?.onlyStepParams) {
+      delete data.subModels;
+    }
     const response = await this.app.apiClient.request({
       method: 'POST',
       url: 'flowModels:save',
-      data: model.serialize(),
+      data,
     });
     return response.data?.data;
   }

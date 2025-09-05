@@ -49,7 +49,6 @@ export class NotificationManager implements NotificationManager {
 
   async send(params: SendOptions) {
     this.plugin.logger.info('receive sending message request', params);
-    console.log('receive sending message request', params);
     const message = compile(params.message ?? {}, params.data ?? {});
     const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...message };
     const logData: any = {

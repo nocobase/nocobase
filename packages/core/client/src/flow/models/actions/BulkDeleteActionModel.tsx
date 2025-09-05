@@ -16,10 +16,13 @@ export class BulkDeleteActionModel extends CollectionActionModel {
     title: escapeT('Delete'),
     icon: 'DeleteOutlined',
   };
+  getAclActionName() {
+    return 'destroy';
+  }
 }
 
 BulkDeleteActionModel.define({
-  title: escapeT('Delete'),
+  label: escapeT('Delete'),
 });
 
 BulkDeleteActionModel.registerFlow({

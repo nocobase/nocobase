@@ -15,10 +15,11 @@ interface DialogComponentProps extends React.ComponentProps<typeof Modal> {
   content?: React.ReactNode;
   footer?: React.ReactNode;
   header?: { title?: React.ReactNode; extra?: React.ReactNode };
+  hidden?: boolean;
 }
 
 const DialogComponent = forwardRef<unknown, DialogComponentProps>(
-  ({ afterClose, footer: initialFooter, header: initialHeader, ...props }, ref) => {
+  ({ afterClose, footer: initialFooter, header: initialHeader, hidden, ...props }, ref) => {
     const [visible, setVisible] = useState(true);
     const [config, setConfig] = useState<any>(props);
     const [footer, setFooter] = useState(initialFooter);
@@ -50,6 +51,7 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
     return (
       <Modal
         closable={false}
+        rootClassName={hidden ? 'nb-hidden' : ''}
         {...modalProps}
         open={visible}
         onCancel={(e) => {

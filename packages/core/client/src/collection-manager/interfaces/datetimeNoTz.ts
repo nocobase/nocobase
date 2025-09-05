@@ -33,6 +33,7 @@ export class DatetimeNoTzFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string', 'datetimeNoTz'];
   hasDefaultValue = true;
+  validationType = 'date';
   properties = {
     ...defaultProps,
     ...dateTimeProps,

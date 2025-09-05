@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Card, Empty, Collapse } from 'antd';
-import { StepDefinition } from '../../../../types';
-import { FlowModel } from '../../../../models';
 import { observer } from '@formily/react';
+import { Card, Collapse, Empty } from 'antd';
+import React from 'react';
+import { FlowModel } from '../../../../models';
+import { StepDefinition } from '../../../../types';
 import { FlowSettings } from './FlowSettings';
 
 const { Panel } = Collapse;
@@ -24,8 +24,7 @@ interface FlowsSettingsContentProps {
 
 // 默认使用 Collapse 组件渲染多个流程设置
 const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ model, expandAll = false }) => {
-  const ModelClass = model.constructor as typeof FlowModel;
-  const flows = ModelClass.getFlows();
+  const flows = model.getFlows();
 
   const filterFlows = Array.from(flows.values()).filter((flow) => {
     const configurableSteps = Object.entries(flow.steps)

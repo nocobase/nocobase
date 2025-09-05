@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Tag, Modal, Typography } from 'antd';
 import { ContextItem as ContextItemType } from '../types';
 import PluginAIClient from '../..';
@@ -36,6 +36,20 @@ export const ContextItem: React.FC<{
   }, [item.type, workContext]);
   const C = options?.tag?.Component;
   const getContent = options?.getContent;
+
+  const [text, setText] = useState(item.content);
+  useEffect(() => {
+    if (getContent) {
+      getContent(app, item)
+        .then((content) => {
+          setText(content);
+        })
+        .catch(() => {
+          // ignore
+        });
+    }
+  }, [app, getContent, item]);
+
   return (
     <>
       <Tag
@@ -54,7 +68,7 @@ export const ContextItem: React.FC<{
       <Modal open={showContent} onCancel={() => setShowContent(false)} footer={null} width="50%">
         <Paragraph
           copyable={{
-            text: item.content,
+            text: text,
           }}
         >
           <pre
@@ -64,7 +78,7 @@ export const ContextItem: React.FC<{
               marginTop: '24px',
             }}
           >
-            {item.content || getContent?.(app, item)}
+            {text}
           </pre>
         </Paragraph>
       </Modal>

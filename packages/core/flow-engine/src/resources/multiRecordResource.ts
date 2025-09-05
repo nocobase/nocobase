@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
+import { AxiosRequestConfig } from 'axios';
 import _ from 'lodash';
 import { BaseRecordResource } from './baseRecordResource';
 
@@ -15,7 +16,8 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   protected _data = observable.ref<TDataItem[]>([]);
   protected _meta = observable.ref<Record<string, any>>({});
   private refreshTimer: NodeJS.Timeout | null = null;
-
+  protected createActionOptions = {};
+  protected updateActionOptions = {};
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     // url: null as string | null,
@@ -37,6 +39,16 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   get supportsFilter() {
     return true;
+  }
+
+  setCreateActionOptions(options: AxiosRequestConfig) {
+    this.createActionOptions = options;
+    return this;
+  }
+
+  setUpdateActionOptions(options: AxiosRequestConfig) {
+    this.updateActionOptions = options;
+    return this;
   }
 
   setSelectedRows(selectedRows: TDataItem[]) {
@@ -96,10 +108,9 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     }
   }
 
-  async create(data: TDataItem): Promise<void> {
-    await this.runAction('create', {
-      data,
-    });
+  async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
+    const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
+    await this.runAction('create', config);
     await this.refresh();
   }
 
@@ -115,17 +126,18 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return data;
   }
 
-  async update(filterByTk: string | number, data: Partial<TDataItem>): Promise<void> {
-    const options = {
-      params: {
-        filterByTk,
-        updateAssociationValues: this.getUpdateAssociationValues(),
+  async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
+    const config = this.mergeRequestConfig(
+      {
+        params: {
+          filterByTk,
+        },
+        data,
       },
-    };
-    await this.runAction('update', {
-      ...options,
-      data,
-    });
+      this.updateActionOptions,
+      options,
+    );
+    await this.runAction('update', config);
     await this.refresh();
   }
 
@@ -137,17 +149,21 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.destroy(selectedRows);
   }
 
-  async destroy(filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[]): Promise<void> {
-    const options = {
-      params: {
-        filterByTk: _.castArray(filterByTk).map((item) => {
-          return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
-        }),
+  async destroy(
+    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[],
+    options?: AxiosRequestConfig,
+  ): Promise<void> {
+    const config = this.mergeRequestConfig(
+      {
+        params: {
+          filterByTk: _.castArray(filterByTk).map((item) => {
+            return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
+          }),
+        },
       },
-    };
-    await this.runAction('destroy', {
-      ...options,
-    });
+      options,
+    );
+    await this.runAction('destroy', config);
     await this.refresh();
   }
 

@@ -16,6 +16,7 @@ import {
   useCollectionRecordData,
   useDataBlockRequest,
   useDataBlockResource,
+  useDestroyActionProps,
 } from '@nocobase/client';
 import { useT } from '../../locale';
 import { useForm } from '@formily/react';
@@ -24,14 +25,22 @@ import { uid } from '@formily/shared';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 
 export const useCreateFormProps = () => {
+  const t = useT();
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
           username: `${uid()}`,
+          enableKnowledgeBase: false,
+          knowledgeBase: {
+            knowledgeBaseIds: [],
+            topK: 3,
+            score: '0.6',
+          },
+          knowledgeBasePrompt: t('knowledge Base Prompt default'),
         },
       }),
-    [],
+    [t],
   );
   return {
     form,
@@ -115,6 +124,23 @@ export const useEditActionProps = () => {
       setVisible(false);
       form.reset();
       refreshAIEmployees();
+    },
+  };
+};
+
+export const useDeleteActionProps = () => {
+  const t = useT();
+  const record = useCollectionRecordData();
+  const { onClick } = useDestroyActionProps();
+  const isBuiltIn = record?.builtIn;
+  const { message } = App.useApp();
+  return {
+    async onClick(e?, callBack?) {
+      if (isBuiltIn) {
+        message.warning(t('Cannot delete built-in ai employees'));
+        return;
+      }
+      await onClick(e, callBack);
     },
   };
 };

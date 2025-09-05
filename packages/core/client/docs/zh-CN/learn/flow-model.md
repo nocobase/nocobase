@@ -168,7 +168,7 @@ const fork2 = model.createFork('key2', {});
 
 ### 1. 生命周期逻辑集中且清晰
 
-FlowModel 拥有多个生命周期钩子（如 `onInit`、`onMount`、`onUnmount`、`beforeApplyAutoFlows`、 `afterApplyAutoFlows` 等），这些逻辑通过类方法更清晰地组织，避免了函数式中多个 Hook 间的复杂依赖。
+FlowModel 拥有多个生命周期钩子（如 `onInit`、`onMount`、`onUnmount`、`onBeforeAutoFlows`、`onAfterAutoFlows` 等），这些逻辑通过类方法更清晰地组织，避免了函数式中多个 Hook 间的复杂依赖。
 
 ### 2. 支持继承与复用
 
@@ -216,8 +216,8 @@ FlowModel 并不会改变组件的实现方式。它只是为 ReactComponent 增
 | ------ | --------------------------------- | -------------------------------------------- |
 | 初始化    | `constructor`、`componentDidMount` | `onInit`、`onMount`                           |
 | 卸载     | `componentWillUnmount`            | `onUnmount`                                  |
-| 响应输入   | `componentDidUpdate`              | `beforeApplyAutoFlows`、`afterApplyAutoFlows` |
-| 错误处理   | `componentDidCatch`               | `onApplyAutoFlowsError`                      |
+| 响应输入   | `componentDidUpdate`              | `onBeforeAutoFlows`、`onAfterAutoFlows` |
+| 错误处理   | `componentDidCatch`               | `onAutoFlowsError`                      |
 
 ### 🧱 构建结构对比
 
@@ -289,9 +289,9 @@ class HelloModel extends FlowModel {
 * `onInit(options)`
 * `onMount()`
 * `onUnmount()`
-* `beforeApplyAutoFlows(inputArgs)`
-* `afterApplyAutoFlows(results, inputArgs)`
-* `onApplyAutoFlowsError(error, inputArgs)`
+* `onBeforeAutoFlows(inputArgs)`
+* `onAfterAutoFlows(results, inputArgs)`
+* `onAutoFlowsError(error, inputArgs)`
 
 ### 属性和参数管理
 
