@@ -395,6 +395,12 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       interface: string;
       getFirstSubclassNameOf: (baseClass: string) => string;
       target?: string;
+      filterable: {
+        operators: {
+          label: string;
+          value: string;
+        }[];
+      };
     }[]
   > {
     return this.collection.getFields().filter((field) => field.filterable);

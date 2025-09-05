@@ -44,7 +44,6 @@ const getModelFields = async (model: CollectionBlockModel) => {
     return {
       key: field.name,
       label: field.title,
-      toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
       useModel: 'FilterFormItemModel',
       createModelOptions: () => ({
         use: 'FilterFormItemModel',
@@ -253,7 +252,7 @@ FilterFormItemModel.registerFlow({
       async handler(ctx) {
         await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
-        if (collectionField) {
+        if (collectionField?.getComponentProps) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
         ctx.model.setProps({

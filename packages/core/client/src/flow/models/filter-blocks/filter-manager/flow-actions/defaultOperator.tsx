@@ -37,7 +37,7 @@ export const defaultOperator = defineAction<FilterFormFieldModel>({
 });
 
 function getOperatorOptions(model: FlowModel) {
-  return (model.context.collectionField.filterable?.operators || []).map((op) => ({
+  return (model.context.collectionField?.filterable?.operators || []).map((op) => ({
     ...op,
     label: model.translate(op.label),
   }));
