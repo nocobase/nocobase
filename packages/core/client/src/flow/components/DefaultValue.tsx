@@ -18,6 +18,7 @@ import {
   MetaTreeNode,
   VariableInput,
   isVariableExpression,
+  parseValueToPath,
   useFlowContext,
   useFlowSettingsContext,
   extractPropertyPath,
@@ -190,7 +191,7 @@ export const DefaultValue = connect((props: Props) => {
       {...props}
       converters={{
         resolveValueFromPath: (item) => (item?.paths?.[0] === 'constant' ? '' : undefined),
-        resolvePathFromValue: (val) => (isVariableExpression(val) ? undefined : ['constant']),
+        resolvePathFromValue: (val) => (isVariableExpression(val) ? parseValueToPath(val) : ['constant']),
       }}
     />
   );
