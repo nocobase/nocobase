@@ -25,6 +25,7 @@ export class FormCustomFormItemModel extends FlowModel {
         label: ctx.t(ModelClass.meta.label),
         createModelOptions: { use: name },
         sort: (ModelClass.meta.sort ?? 999) as number,
+        key: name,
       }));
 
     return _.sortBy([...toChildren(commonModels), ...toChildren(formCustomModels)], 'sort');
