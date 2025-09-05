@@ -8,9 +8,9 @@
  */
 
 import { Select } from 'antd';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class CheckboxFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
+export class CheckboxFilterFieldModel extends FilterFormFieldModel {
   static readonly supportedFieldInterfaces = ['checkbox'];
 
   get component() {

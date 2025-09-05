@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Select } from '@formily/antd-v5';
-import { FilterFormEditableFieldModel } from './FilterFormEditableFieldModel';
+import { Select } from 'antd';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
 
-export class CheckboxGroupFilterFormEditableFieldModel extends FilterFormEditableFieldModel {
-  static readonly supportedFieldInterfaces = ['checkboxGroup'];
+export class RadioGroupFilterFieldModel extends FilterFormFieldModel {
+  static readonly supportedFieldInterfaces = ['radioGroup'];
 
   get component() {
     return [
       Select,
       {
         allowClear: true,
-        mode: 'tags',
       },
     ];
   }
