@@ -29,7 +29,7 @@ class FormAssociationFieldModel extends AssociationFieldModel {
     });
   }
 }
-const ObjectNester = (props) => {
+export const ObjectNester = (props) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;

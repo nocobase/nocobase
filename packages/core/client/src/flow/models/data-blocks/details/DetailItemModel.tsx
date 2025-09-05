@@ -17,6 +17,23 @@ import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 
+/**
+ * 从 record 中取值
+ * @param record 当前行数据
+ * @param fieldPath 字段路径 (如 "o2m_aa.oho_bb.name")
+ * @param idx Form.List 的索引
+ */
+export function getValueWithIndex(record: any, fieldPath: string, idx?: number) {
+  const path = fieldPath.split('.');
+
+  if (idx != null) {
+    // 在第一级集合名后插入索引
+    return get(record, [path[0], idx, ...path.slice(1)]);
+  }
+
+  return get(record, path);
+}
+
 export class DetailItemModel extends CollectionFieldItemModel<{
   parent: DetailsFieldGridModel;
   subModels: { field: FieldModel };
@@ -61,10 +78,23 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = get(this.context.record, this.fieldPath);
+    const idx = this.context.fieldIndex;
+    // 嵌套场景下继续传透，为字段子模型创建 fork
+    const modelForRender =
+      idx != null
+        ? (() => {
+            const fork = fieldModel.createFork({}, `${idx}`);
+            fork.context.defineProperty('fieldIndex', {
+              get: () => idx,
+            });
+            return fork;
+          })()
+        : fieldModel;
+    const value = getValueWithIndex(this.context.record, this.fieldPath, idx);
+
     return (
       <FormItem {...this.props} value={value}>
-        <FieldModelRenderer model={fieldModel} />
+        <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
   }

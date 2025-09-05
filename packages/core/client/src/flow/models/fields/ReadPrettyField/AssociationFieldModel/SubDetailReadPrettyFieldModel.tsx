@@ -7,24 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, MultiRecordResource, useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
-import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Card, Form, Button, Tooltip, Divider } from 'antd';
+import { useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Card, Form, Button, Divider } from 'antd';
 import React, { useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { css } from '@emotion/css';
 import { FormItemModel } from '../../../data-blocks/form/FormItem/FormItemModel';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
+import { ObjectNester } from '../../AssociationFieldModel/SubFormFieldModel';
 
-const ObjectNester = (props) => {
-  const model: any = useFlowModel();
-  return (
-    <Card>
-      <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
-    </Card>
-  );
-};
 export class ObjectDetailAssociationFieldModel extends ReadPrettyAssociationFieldModel {
   static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
 
