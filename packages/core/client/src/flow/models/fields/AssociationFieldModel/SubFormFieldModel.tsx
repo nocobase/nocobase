@@ -50,6 +50,7 @@ export const ObjectNester = (props) => {
 };
 export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
   static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
+  updateAssociation = true;
   onInit(options) {
     super.onInit(options);
   }
@@ -132,6 +133,7 @@ const ArrayNester = ({ name, value }: any) => {
 
 export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+  updateAssociation = true;
   onInit(options) {
     super.onInit(options);
   }
