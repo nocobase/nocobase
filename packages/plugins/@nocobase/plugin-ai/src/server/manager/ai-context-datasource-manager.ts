@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { transformFilter } from '@nocobase/utils';
 import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
 
@@ -52,7 +53,7 @@ export class AIContextDatasourceManager {
         .map((x) => x.options.name);
     }
 
-    const result = await collection.repository.find({ fields, filter, sort, limit });
+    const result = await collection.repository.find({ fields, filter: transformFilter(filter), sort, limit });
 
     const records = result.map((x) =>
       targetFields.map((field) => {

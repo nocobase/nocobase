@@ -8,6 +8,7 @@
  */
 
 import type { CollectionOptions, Fields, Filter, Sort } from '@nocobase/database';
+import type { FilterGroupType } from '@nocobase/utils';
 
 export default {
   name: 'aiContextDatasources',
@@ -74,7 +75,7 @@ export type AIContextDatasource = {
   datasource: string;
   collectionName: string;
   fields?: Fields;
-  filter?: Filter;
+  filter?: FilterGroupType;
   sort?: Sort[];
   limit: number;
   enabled: boolean;

@@ -11,7 +11,8 @@ import React from 'react';
 import { Form, FormInstance } from 'antd';
 import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
 import { CollectionCascader } from '../basic';
-import { ContextFilterItem, FilterGroup, FilterGroupType } from '@nocobase/client';
+import { FilterGroupType } from '@nocobase/utils/client';
+import { ContextFilterItem, FilterGroup } from '@nocobase/client';
 
 const Filter: React.FC<{
   value: any;

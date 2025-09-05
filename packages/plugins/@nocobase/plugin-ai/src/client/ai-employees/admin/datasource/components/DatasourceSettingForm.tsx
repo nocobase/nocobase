@@ -16,7 +16,7 @@ import {
   useFlowContext,
   createCollectionContextMeta,
 } from '@nocobase/flow-engine';
-import { FilterGroupType, transformFilter } from '@nocobase/client';
+import { FilterGroupType, transformFilter } from '@nocobase/utils/client';
 import { CollectionSetting, FieldsSetting, FilterSetting, Preview, SortSetting } from './form-steps';
 
 type RecordType = any;
@@ -114,7 +114,7 @@ export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ recor
         setFormData((prev) => ({ ...prev, datasource, collectionName }));
       }
     } else if (name === 'filterSetting') {
-      setFormData((prev) => ({ ...prev, filter: transformFilter(dataScope) }));
+      setFormData((prev) => ({ ...prev, filter: dataScope }));
     }
   };
 

@@ -142,7 +142,17 @@ const PreviewTable: React.FC<{
         flex: 1,
       }}
     >
-      <Table columns={columns} dataSource={datasource} loading={loading} scroll={{ x: 'max-content' }}></Table>
+      <Table
+        columns={columns}
+        dataSource={datasource}
+        loading={loading}
+        scroll={{ x: 'max-content' }}
+        pagination={{
+          showSizeChanger: true,
+          showTotal: (total) => ctx.t('Total {{total}} items', { total }),
+          pageSize: 25,
+        }}
+      ></Table>
     </Card>
   );
 };

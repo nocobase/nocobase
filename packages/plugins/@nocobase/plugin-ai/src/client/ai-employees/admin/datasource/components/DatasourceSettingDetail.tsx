@@ -9,8 +9,14 @@
 
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Button, Flex, Form, Space, Tabs } from 'antd';
-import { FlowModelContext, MultiRecordResource, observable, useFlowContext } from '@nocobase/flow-engine';
-import { FilterGroupType, transformFilter } from '@nocobase/client';
+import {
+  createCollectionContextMeta,
+  FlowModelContext,
+  MultiRecordResource,
+  observable,
+  useFlowContext,
+} from '@nocobase/flow-engine';
+import { FilterGroupType } from '@nocobase/utils/client';
 import { CollectionSetting, FieldsSetting, FilterSetting, Preview, SortSetting } from './form-steps';
 
 type RecordType = any;
@@ -36,12 +42,22 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
 
   useEffect(() => {
     if (record) {
+      const { datasource, collectionName } = record;
       setFormData(record);
       collectionForm.setFieldsValue(record);
       fieldsForm.setFieldValue('fields', record.fields);
+      dataScope.items = record.filter?.items || [];
 
       allForms.forEach((form) => {
-        form.setFieldValue('collection', [record.datasource, record.collectionName]);
+        form.setFieldValue('collection', [datasource, collectionName]);
+      });
+
+      ctx.model.context.defineProperty('collection', {
+        get: () => ctx.dataSourceManager.getCollection(datasource, collectionName),
+        meta: createCollectionContextMeta(
+          () => ctx.dataSourceManager.getCollection(datasource, collectionName),
+          ctx.t('Current collection'),
+        ),
       });
     }
   }, [record]);
@@ -53,7 +69,7 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
         const { collection, datasource, collectionName, ...rest } = await form.validateFields();
         data = { ...data, ...rest };
       }
-      data['filter'] = transformFilter(dataScope);
+      data['filter'] = dataScope;
       await ctx.resource.update(record.id, data);
       ctx.message.success(ctx.t('Save datasource successfully'));
       ctx.view.close();
