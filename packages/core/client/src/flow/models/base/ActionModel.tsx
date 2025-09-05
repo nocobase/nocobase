@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, FlowModel, escapeT } from '@nocobase/flow-engine';
+import { FlowModel, escapeT } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
@@ -142,9 +142,6 @@ ActionModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
   },
 });
 
@@ -224,4 +221,22 @@ export class JSRecordActionModel extends RecordActionModel {}
 JSRecordActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
+});
+
+CollectionActionModel.registerFlow({
+  key: 'acl',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
+  },
+});
+
+RecordActionModel.registerFlow({
+  key: 'acl',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+    },
+  },
 });

@@ -13,17 +13,16 @@ import { FieldModel } from '../models/base/FieldModel';
 export const aclCheck = defineAction({
   name: 'aclCheck',
   async handler(ctx, params) {
-    {
-      const result = await ctx.aclCheck({
-        dataSourceKey: ctx.model.context.dataSource.key,
-        resourceName: ctx.model.context.resourceName,
-        actionName: ctx.model.context.actionName,
-        fields: (ctx.model as FieldModel)?.collectionField && [(ctx.model as FieldModel).collectionField.name],
-      });
-      if (!result) {
-        ctx.model.hidden = true;
-        ctx.exitAll();
-      }
+    const result = await ctx.aclCheck({
+      dataSourceKey: ctx.model.context.dataSource?.key,
+      resourceName: ctx.model.context.resourceName,
+      actionName: ctx.model.context.actionName,
+      fields: (ctx.model as FieldModel)?.collectionField && [(ctx.model as FieldModel).collectionField.name],
+    });
+
+    if (!result) {
+      ctx.model.hidden = true;
+      ctx.exitAll();
     }
   },
 });

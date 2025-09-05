@@ -12,11 +12,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { transformFilter, FilterGroup } from '../utils';
+import { FilterGroupType, transformFilter } from '../transformFilter';
 
 describe('transformFilter', () => {
   it('should correctly transform simple single-condition filter', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$and',
       items: [
         {
@@ -42,7 +42,7 @@ describe('transformFilter', () => {
   });
 
   it('should correctly transform multi-condition $or filter', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$or',
       items: [
         {
@@ -78,7 +78,7 @@ describe('transformFilter', () => {
   });
 
   it('should correctly transform nested filter structure', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$or',
       items: [
         {
@@ -123,7 +123,7 @@ describe('transformFilter', () => {
   });
 
   it('should correctly transform complex nested filter structure', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$or',
       items: [
         {
@@ -178,7 +178,7 @@ describe('transformFilter', () => {
   });
 
   it('should support multi-level nested filter structure', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$and',
       items: [
         {
@@ -252,7 +252,7 @@ describe('transformFilter', () => {
   });
 
   it('should handle different types of values', () => {
-    const input: FilterGroup = {
+    const input: FilterGroupType = {
       logic: '$and',
       items: [
         {

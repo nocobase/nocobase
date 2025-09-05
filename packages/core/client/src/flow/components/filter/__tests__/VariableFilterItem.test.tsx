@@ -12,8 +12,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { VariableFilterItem } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { Application } from '../../../../application/Application';
-import { CollectionFieldInterface } from '../../../../data-source/collection-field-interface/CollectionFieldInterface';
+import { Application } from '../../../../../application/Application';
+import { CollectionFieldInterface } from '../../../../../data-source/collection-field-interface/CollectionFieldInterface';
 
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
