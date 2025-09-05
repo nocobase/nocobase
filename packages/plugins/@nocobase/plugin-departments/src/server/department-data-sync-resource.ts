@@ -167,6 +167,11 @@ export class DepartmentDataSyncResource extends UserDataResource {
       if (userDepartments.length) {
         await user.removeDepartments(userDepartments);
       }
+      // Clear mainDepartmentId
+      await this.userRepo.update({
+        filterByTk: user.id,
+        values: { mainDepartmentId: null },
+      });
       if (currentDepartmentIds && currentDepartmentIds.length) {
         return currentDepartmentIds.map((id) => ({ resourcesPk: id, isDeleted: true }));
       } else {
@@ -180,18 +185,16 @@ export class DepartmentDataSyncResource extends UserDataResource {
         return sourceDepartment.uid;
       });
       const newDepartmentIds = await this.getDepartmentIdsBySourceUks(sourceDepartmentIds, sourceName);
-      const newDepartments = await this.deptRepo.find({
-        filter: { id: { $in: newDepartmentIds } },
-      });
+      const newDepartments = await this.deptRepo.find({ filter: { id: { $in: newDepartmentIds } } });
       const realCurrentDepartments = await user.getDepartments();
-      // 需要删除的部门
+
       const toRealRemoveDepartments = realCurrentDepartments.filter((currnetDepartment) => {
         return !newDepartments.find((newDepartment) => newDepartment.id === currnetDepartment.id);
       });
       if (toRealRemoveDepartments.length) {
         await user.removeDepartments(toRealRemoveDepartments);
       }
-      // 需要添加的部门
+
       const toRealAddDepartments = newDepartments.filter((newDepartment) => {
         if (realCurrentDepartments.length === 0) {
           return true;
@@ -201,7 +204,9 @@ export class DepartmentDataSyncResource extends UserDataResource {
       if (toRealAddDepartments.length) {
         await user.addDepartments(toRealAddDepartments);
       }
-      // 更新部门主管和主部门
+
+      // Update main department and owners
+      let mainDepartmentId: any = null;
       for (const sourceDepartment of sourceDepartments) {
         this.logger.debug('update dept owner: ' + JSON.stringify(sourceDepartment));
         let isOwner = false;
@@ -215,49 +220,50 @@ export class DepartmentDataSyncResource extends UserDataResource {
           uid = sourceDepartment;
         }
         const deptId = await this.getDepartmentIdBySourceUk(uid, sourceName);
-        this.logger.debug('update dept owner: ' + JSON.stringify({ deptId, isOwner, isMain, userId: user.id }));
+        this.logger.debug(
+          'update dept owner: ' +
+            JSON.stringify({ deptId, isOwner, mainDepartmentId: isMain ? deptId : null, userId: user.id }),
+        );
         if (!deptId) {
           continue;
         }
+
+        // Update owner status in through table
         await this.deptUserRepo.update({
-          filter: {
-            userId: user.id,
-            departmentId: deptId,
-          },
-          values: {
-            isOwner,
-            isMain,
-          },
+          filter: { userId: user.id, departmentId: deptId },
+          values: { isOwner },
         });
+
+        // Track main department
+        if (isMain) {
+          mainDepartmentId = deptId;
+        }
       }
+
+      // Update user's mainDepartmentId
+      await this.userRepo.update({
+        filterByTk: user.id,
+        values: { mainDepartmentId },
+      });
+
       const recordResourceChangeds: RecordResourceChanged[] = [];
       if (currentDepartmentIds !== undefined && currentDepartmentIds.length > 0) {
-        // 需要删除的部门ID
         const toRemoveDepartmentIds = currentDepartmentIds.filter(
           (currentDepartmentId) => !newDepartmentIds.includes(currentDepartmentId),
         );
         recordResourceChangeds.push(
-          ...toRemoveDepartmentIds.map((departmentId) => {
-            return { resourcesPk: departmentId, isDeleted: true };
-          }),
+          ...toRemoveDepartmentIds.map((departmentId) => ({ resourcesPk: departmentId, isDeleted: true })),
         );
-        // 需要添加的部门ID
+
         const toAddDepartmentIds = newDepartmentIds.filter(
           (newDepartmentId) => !currentDepartmentIds.includes(newDepartmentId),
         );
         recordResourceChangeds.push(
-          ...toAddDepartmentIds.map((departmentId) => {
-            return { resourcesPk: departmentId, isDeleted: false };
-          }),
+          ...toAddDepartmentIds.map((departmentId) => ({ resourcesPk: departmentId, isDeleted: false })),
         );
       } else {
         recordResourceChangeds.push(
-          ...toRealAddDepartments.map((department) => {
-            return {
-              resourcesPk: department.id,
-              isDeleted: false,
-            };
-          }),
+          ...toRealAddDepartments.map((department) => ({ resourcesPk: department.id, isDeleted: false })),
         );
       }
       return recordResourceChangeds;
@@ -266,22 +272,18 @@ export class DepartmentDataSyncResource extends UserDataResource {
 
   async updateDepartment(department: Model, sourceDepartment: FormatDepartment, sourceName: string) {
     if (sourceDepartment.isDeleted) {
-      // 删除部门
       await department.destroy();
       return;
     }
-    let dataChanged = false;
     const filteredSourceDepartment = this.getFlteredSourceDepartment(sourceDepartment);
-    lodash.forOwn(filteredSourceDepartment, (value, key) => {
-      if (department[key] !== value) {
-        department[key] = value;
-        dataChanged = true;
-      }
-    });
-    if (dataChanged) {
-      await department.save();
+    await department.update(filteredSourceDepartment);
+    const parentUid = sourceDepartment.parentUid;
+    if (parentUid) {
+      await this.updateParentDepartment(department, parentUid, sourceName);
+    } else {
+      // Clear parent relationship when parentUid is not provided
+      await department.update({ parentId: null });
     }
-    await this.updateParentDepartment(department, sourceDepartment.parentUid, sourceName);
   }
 
   async createDepartment(sourceDepartment: FormatDepartment, sourceName: string): Promise<string> {
@@ -289,45 +291,22 @@ export class DepartmentDataSyncResource extends UserDataResource {
     const department = await this.deptRepo.create({
       values: filteredSourceDepartment,
     });
-    await this.updateParentDepartment(department, sourceDepartment.parentUid, sourceName);
+
+    // Handle parent relationship after creation
+    const parentUid = sourceDepartment.parentUid;
+    if (parentUid) {
+      await this.updateParentDepartment(department, parentUid, sourceName);
+    }
+
     return department.id;
   }
 
   async updateParentDepartment(department: Model, parentUid: string, sourceName: string) {
-    if (!parentUid) {
-      const parentDepartment = await department.getParent();
-      if (parentDepartment) {
-        await department.setParent(null);
-      }
-    } else {
-      const syncDepartmentRecord = await this.syncRecordRepo.findOne({
-        filter: {
-          sourceName,
-          dataType: 'department',
-          sourceUk: parentUid,
-          'resources.resource': this.name,
-        },
-        appends: ['resources'],
+    const parentId = await this.getDepartmentIdBySourceUk(parentUid, sourceName);
+    if (parentId) {
+      await department.update({
+        parentId,
       });
-      if (syncDepartmentRecord && syncDepartmentRecord.resources?.length) {
-        const parentDepartment = await this.deptRepo.findOne({
-          filterByTk: syncDepartmentRecord.resources[0].resourcePk,
-        });
-        if (!parentDepartment) {
-          await department.setParent(null);
-          return;
-        }
-        const parent = await department.getParent();
-        if (parent) {
-          if (parentDepartment.id !== parent.id) {
-            await department.setParent(parentDepartment);
-          }
-        } else {
-          await department.setParent(parentDepartment);
-        }
-      } else {
-        await department.setParent(null);
-      }
     }
   }
 }
