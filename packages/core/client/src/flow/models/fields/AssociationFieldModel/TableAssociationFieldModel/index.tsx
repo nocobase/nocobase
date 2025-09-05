@@ -21,7 +21,6 @@ import { AssociationFieldModel } from '../AssociationFieldModel';
 import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
-import { CollectionNotAllowView } from '../../../base/BlockModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -63,6 +62,7 @@ const HeaderWrapperComponent = React.memo((props) => {
 
 export class TableAssociationFieldModel extends AssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+  updateAssociation = true;
   get collection() {
     return this.collectionField.targetCollection;
   }
@@ -120,9 +120,6 @@ TableAssociationFieldModel.registerFlow({
     init: {
       async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('columns');
-        const currentBlock = ctx.model.context.blockModel;
-        const resource = currentBlock.context.resource as SingleRecordResource;
-        resource.addUpdateAssociationValues(ctx.model.fieldPath);
       },
     },
     allowAddNew: {

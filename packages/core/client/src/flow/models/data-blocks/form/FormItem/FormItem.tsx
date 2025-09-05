@@ -51,7 +51,12 @@ const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'showLabel',
 ];
 
-export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExtraProps) => {
+export const FormItem = ({
+  children,
+  showLabel = true,
+  labelWidth,
+  ...rest
+}: ExtendedFormItemProps & ChildExtraProps) => {
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
   const childProps = Object.fromEntries(
     Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
@@ -65,7 +70,7 @@ export const FormItem = ({ children, ...rest }: ExtendedFormItemProps & ChildExt
           }
           return child;
         });
-  const { showLabel = true, label, labelWrap, colon = true, labelWidth, layout } = rest;
+  const { label, labelWrap, colon = true, layout } = rest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const renderLabel = () => {
     if (!showLabel) return null;

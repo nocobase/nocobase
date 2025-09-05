@@ -33,7 +33,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
   return convert(record);
 }
 
-function LabelByField(props) {
+export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any =
@@ -43,8 +43,13 @@ function LabelByField(props) {
   fieldModel.context.defineProperty('record', {
     get: () => option,
   });
-  fieldModel.setProps({ value: option?.[fieldNames.label] });
-  return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
+  const labelValue = option?.[fieldNames.label] || option.label;
+  fieldModel.setProps({ value: labelValue });
+  return (
+    <span style={{ pointerEvents: 'none' }} key={key}>
+      {labelValue ? fieldModel.render() : tval('N/A')}
+    </span>
+  );
 }
 
 export function LazySelect(props) {
@@ -72,7 +77,7 @@ export function LazySelect(props) {
   );
 }
 
-export class SelectAssociationFieldModel extends AssociationFieldModel {
+export class RemoteSelectFieldModel extends AssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
 
@@ -105,7 +110,7 @@ const paginationState = {
 };
 
 // 事件绑定
-SelectAssociationFieldModel.registerFlow({
+RemoteSelectFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 300,
   steps: {
@@ -142,7 +147,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-SelectAssociationFieldModel.registerFlow({
+RemoteSelectFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -172,7 +177,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-SelectAssociationFieldModel.registerFlow({
+RemoteSelectFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -212,7 +217,7 @@ SelectAssociationFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-SelectAssociationFieldModel.registerFlow({
+RemoteSelectFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -260,7 +265,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //专有配置项
-SelectAssociationFieldModel.registerFlow({
+RemoteSelectFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
   sort: 200,
