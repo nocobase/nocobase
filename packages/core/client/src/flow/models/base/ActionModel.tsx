@@ -46,19 +46,19 @@ export class ActionModel extends FlowModel {
   }
 
   render() {
-    const props = { ...this.defaultProps, ...this.props };
+    const props = this.props;
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-    const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
+    // const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
 
     return (
       <Button
         {...props}
         onClick={this.onClick.bind(this)}
         icon={icon}
-        style={{
-          ...linkStyle,
-          ...props.style,
-        }}
+        // style={{
+        //   // ...linkStyle,
+        //   ...props.style,
+        // }}
       >
         {props.children || props.title}
       </Button>
@@ -67,7 +67,7 @@ export class ActionModel extends FlowModel {
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    const merged: ButtonProps = { ...this.defaultProps, ...(this.props || {}) };
+    const merged: ButtonProps = this.props;
     const { onClick, style, icon, type, children, title, ...rest } = merged;
     const btnStyle: React.CSSProperties = {
       ...(style || {}),
@@ -132,19 +132,13 @@ ActionModel.registerFlow({
         };
       },
       defaultParams(ctx) {
-        return {
-          title: ctx.model.defaultProps.title,
-          icon: ctx.model.defaultProps.icon,
-          type: ctx.model.props.type || ctx.model.defaultProps.type,
-        };
+        return ctx.model.defaultProps;
       },
       handler(ctx, params) {
-        const { title, icon, type, danger } = params;
+        const { title, ...rest } = params;
         ctx.model.setProps({
           title: ctx.t(title),
-          icon,
-          type: type,
-          danger,
+          ...rest,
         });
       },
     },
@@ -216,44 +210,18 @@ export class RecordActionModel extends ActionModel {
       filterByTk: this.context.collection.getFilterByTK(this.context.record),
     });
   }
-
-  render() {
-    const props = { ...this.defaultProps, ...this.props };
-
-    const isLink = props.type === 'link';
-    const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-
-    return (
-      <Button
-        {...props}
-        onClick={this.onClick.bind(this)}
-        icon={icon}
-        style={{
-          ...(isLink ? { padding: 0, height: 'auto' } : {}),
-          ...props.style,
-        }}
-      >
-        {props.children || props.title}
-      </Button>
-    );
-  }
-
-  // 设置态隐藏时的占位渲染（行内样式，去除 onClick 并降低透明度）
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
-    const merged: ButtonProps = { ...this.defaultProps, ...(this.props || {}) };
-    const { onClick, style, icon, type, children, title, ...rest } = merged;
-    const iconNode = icon ? typeof icon === 'string' ? <Icon type={icon} /> : icon : undefined;
-    const isLink = (type ?? 'link') === 'link';
-    const btnStyle: React.CSSProperties = {
-      ...(style || {}),
-      opacity: 0.5,
-      cursor: 'default',
-    };
-    const linkStyle = isLink ? { padding: 0, height: 'auto' } : undefined;
-    return (
-      <Button {...rest} type={type} icon={iconNode} style={{ ...linkStyle, ...btnStyle }}>
-        {children || title}
-      </Button>
-    );
-  }
 }
+
+export class JSCollectionActionModel extends CollectionActionModel {}
+
+JSCollectionActionModel.define({
+  label: escapeT('JS action'),
+  sort: 9999,
+});
+
+export class JSRecordActionModel extends RecordActionModel {}
+
+JSRecordActionModel.define({
+  label: escapeT('JS action'),
+  sort: 9999,
+});

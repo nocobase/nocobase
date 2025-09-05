@@ -21,7 +21,6 @@ import {
   FlowModelProvider,
   FlowsFloatContextMenu,
   ModelRenderMode,
-  useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
@@ -29,10 +28,8 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
-import { FieldModel } from '../../base/FieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 import { FormItem } from '../form/FormItem/FormItem';
-
 export class TableColumnModel extends CollectionFieldItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -350,4 +347,64 @@ TableCustomColumnModel.registerFlow({
 TableCustomColumnModel.define({
   hide: true,
   label: escapeT('Other columns'),
+});
+
+export class TableJSColumnModel extends TableCustomColumnModel {
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
+  getColumnProps() {
+    const titleContent = (
+      <Droppable model={this}>
+        <FlowsFloatContextMenu
+          model={this}
+          containerStyle={{ display: 'block', padding: '11px 8px', margin: '-11px -8px' }}
+          showBorder={false}
+          extraToolbarItems={[
+            {
+              key: 'drag-handler',
+              component: DragHandler,
+              sort: 1,
+            },
+          ]}
+        >
+          <div
+            className={css`
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              width: calc(${this.props.width}px - 16px);
+            `}
+          >
+            {this.props.title || 'JS column'}
+          </div>
+        </FlowsFloatContextMenu>
+      </Droppable>
+    );
+    return {
+      ...this.props,
+      width: 100,
+      title: this.props.tooltip ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {titleContent}
+          <Tooltip title={this.props.tooltip}>
+            <QuestionCircleOutlined style={{ cursor: 'pointer' }} />
+          </Tooltip>
+        </span>
+      ) : (
+        titleContent
+      ),
+      render: this.render(),
+    };
+  }
+
+  render() {
+    return (value, record, index) => <span>js column</span>;
+  }
+}
+
+TableJSColumnModel.define({
+  label: 'JS column',
+  sort: 9999,
 });
