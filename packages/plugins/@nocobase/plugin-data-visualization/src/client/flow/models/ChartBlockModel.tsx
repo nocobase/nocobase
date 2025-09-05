@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel, DataBlockModel, FlowPage, SubPageModel } from '@nocobase/client';
+import { DataBlockModel, SubPageModel } from '@nocobase/client';
 import { SQLResource, escapeT } from '@nocobase/flow-engine';
-import { EChartsType } from 'echarts';
 import React from 'react';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';

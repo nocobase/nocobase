@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import { Alert, Empty } from 'antd';
-import { capitalize, debounce } from 'lodash';
+import _, { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
@@ -55,9 +55,12 @@ const getModelFields = async (model: CollectionBlockModel) => {
               fieldPath,
             },
           },
-          editItemSettings: {
+          filterFormItemSettings: {
             label: {
               label: field.title,
+            },
+            init: {
+              filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
             },
           },
         },
@@ -214,7 +217,7 @@ FilterFormItemModel.define({
 });
 
 FilterFormItemModel.registerFlow({
-  key: 'editItemSettings',
+  key: 'filterFormItemSettings',
   sort: 300,
   title: escapeT('Form item settings'),
   steps: {
@@ -227,7 +230,7 @@ FilterFormItemModel.registerFlow({
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {
               const model = ctx.model;
-              const originTitle = model.collectionField?.title;
+              const originTitle = model.collectionField?.title || ctx.filterField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
                 extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
@@ -238,7 +241,7 @@ FilterFormItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          label: ctx.collectionField.title,
+          label: ctx.collectionField?.title || ctx.filterField?.title,
         };
       },
       handler(ctx, params) {
@@ -249,7 +252,7 @@ FilterFormItemModel.registerFlow({
     //   use: 'aclCheck',
     // },
     init: {
-      async handler(ctx) {
+      async handler(ctx, params) {
         await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
@@ -257,6 +260,9 @@ FilterFormItemModel.registerFlow({
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
+        });
+        ctx.model.context.defineProperty('filterField', {
+          value: params.filterField,
         });
       },
     },
