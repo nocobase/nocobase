@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelContext } from '../../flowContext';
+import * as _ from 'lodash';
 import type { Collection } from '../../data-source';
-import { ModelConstructor, FlowModelMeta } from '../../types';
+import { FlowModelContext } from '../../flowContext';
+import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
-import * as _ from 'lodash';
 
 function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModelItem {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
@@ -44,6 +44,9 @@ function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModel
 function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
   let children: any;
+  if (meta.children) {
+    children = meta.children;
+  }
   if (M['defineChildren']) {
     children = M['defineChildren'].bind(M);
   }
@@ -93,7 +96,7 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
         }
         return true;
       })
-      .sort((A, B) => (A.meta?.sort ?? 0) - (B.meta?.sort ?? 0));
+      .sort((A, B) => (A.meta?.sort ?? 1000) - (B.meta?.sort ?? 1000));
 
     const items: SubModelItem[] = [];
     for (const M of candidates) {
@@ -159,30 +162,35 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
 export interface BuildFieldChildrenOptions {
   useModel: string;
   fieldUseModel?: string | ((field: any) => string);
+  collection?: Collection;
+  associationPathName?: string;
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel } = options;
-  const collection: Collection = ctx.model['collection'] || ctx.collection;
+  const { useModel, fieldUseModel, associationPathName } = options;
+  const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
-
   for (const f of fields) {
     if (!f?.options?.interface) continue;
-    const fieldPath = f.name;
+    const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FormFieldModel';
     const stepPayload = {
       dataSourceKey: collection.dataSourceKey,
       collectionName: collection.name,
-      fieldPath,
+      fieldPath: f.name,
+      associationPathName,
     };
 
     children.push({
       key: fieldPath,
       label: f.title,
-      toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
+      toggleable: (subModel) => {
+        const { associationPathName, fieldPath: fieldName } = subModel.getStepParams('fieldSettings', 'init') || {};
+        return (associationPathName ? `${associationPathName}.${fieldName}` : fieldName) === fieldPath;
+      },
       useModel: useModel,
       createModelOptions: () => ({
         use: useModel,
@@ -205,7 +213,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
     });
   }
 
-  const groupKey = 'addField';
+  const groupKey = `addField_${collection.name}`;
   const finalSearchPlaceholder = ctx.t('Search fields');
   return [
     {

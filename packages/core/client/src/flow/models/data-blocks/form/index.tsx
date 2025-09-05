@@ -14,4 +14,4 @@ export * from './FormFieldGridModel';
 export * from './FormModel';
 export * from './QuickEditForm';
 export * from './FormItem';
-//
+export * from './FormCustomFormItemModel';

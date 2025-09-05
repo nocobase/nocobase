@@ -85,13 +85,15 @@ describe('ViewNavigation', () => {
       expect(call[1]).toBeUndefined();
     });
 
-    it('should not navigate if pathname is the same', () => {
+    it('should navigate back when pathname is the same', () => {
       viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
-      mockCtx.route.pathname = '/admin/view1/view/view2';
+      // set browser location to match the generated pathname
+      window.history.pushState({}, '', '/admin/view1/view/view2');
 
       viewNavigation.navigateTo({ viewUid: 'view2' });
 
-      expect(mockCtx.router.navigate).not.toHaveBeenCalled();
+      // when same pathname, navigate(-1) to avoid "no reaction" UX
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith(-1);
       expect(viewNavigation.viewStack).toEqual([{ viewUid: 'view1' }]);
     });
 
@@ -127,6 +129,8 @@ describe('ViewNavigation', () => {
   describe('back', () => {
     it('should call router navigate with -1', () => {
       viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+      // set browser location to current stack pathname so back() triggers
+      window.history.pushState({}, '', '/admin/view1');
 
       viewNavigation.back();
 

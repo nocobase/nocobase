@@ -33,4 +33,5 @@ export default class extends Instruction {
   components = {
     LocalProvider,
   };
+  testable = true;
 }

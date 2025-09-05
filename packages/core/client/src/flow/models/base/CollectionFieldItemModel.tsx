@@ -15,11 +15,16 @@ export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
   fieldPath: string;
+  associationPathName?: string;
 }
 
 export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T> {
   renderHiddenInConfig(): React.ReactNode | undefined {
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
+  }
+
+  get title() {
+    return undefined;
   }
 
   onInit(options: any): void {
@@ -33,6 +38,7 @@ export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T>
       },
     });
     this.context.blockModel.addAppends(this.fieldPath);
+    this.context.blockModel.addAppends(this.associationPathName);
   }
 
   getFieldSettingsInitParams(): FieldSettingsInitParams {
@@ -41,6 +47,10 @@ export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T>
 
   get fieldPath(): string {
     return this.getFieldSettingsInitParams().fieldPath;
+  }
+
+  get associationPathName(): string {
+    return this.getFieldSettingsInitParams().associationPathName;
   }
 
   get collectionField() {

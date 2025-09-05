@@ -21,6 +21,7 @@ import {
   FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
+  observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
@@ -112,16 +113,17 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       key={'table-add-columns'}
-      subModelBaseClasses={['TableColumnModel', 'TableCustomColumnModel']}
-      // afterSubModelInit={async (column: TableColumnModel) => {
-      //   await column.applyAutoFlows();
-      // }}
-      // afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
-      //   // Only append fields for actual table field columns
-      //   if (column instanceof TableColumnModel) {
-      //     model.addAppends(column.fieldPath, true);
-      //   }
-      // }}
+      subModelBaseClasses={['TableColumnModel', 'AssociationFieldItemModel', 'TableCustomColumnModel']}
+      afterSubModelInit={async (column: TableColumnModel) => {
+        await column.applyAutoFlows();
+      }}
+      afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
+        // Only append fields for actual table field columns
+        if (column instanceof TableColumnModel) {
+          model.addAppends(column.fieldPath, true);
+          model.addAppends(column.associationPathName, true);
+        }
+      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -130,14 +132,16 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableModel extends CollectionBlockModel<TableModelStructure> {
-  static type = 'toMany';
+  static scene = 'many';
+
+  rowSelectionProps = observable.deep({});
 
   get resource() {
     return super.resource as MultiRecordResource;
   }
 
   createResource(ctx, params) {
-    return new MultiRecordResource();
+    return this.context.createResource(MultiRecordResource);
   }
 
   getColumns() {
@@ -380,6 +384,7 @@ export class TableModel extends CollectionBlockModel<TableModelStructure> {
             },
             selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
             renderCell: this.renderCell,
+            ...this.rowSelectionProps,
           }}
           loading={this.resource.loading}
           virtual={this.props.virtual}
@@ -543,7 +548,7 @@ TableModel.define({
   label: escapeT('Table'),
   group: escapeT('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'TableModel',
     subModels: {

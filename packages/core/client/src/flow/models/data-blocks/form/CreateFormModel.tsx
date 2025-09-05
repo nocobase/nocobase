@@ -25,10 +25,10 @@ import { FormComponent, FormModel } from './FormModel';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
-  static type = 'toNew';
+  static scene = 'new';
 
   createResource(ctx, params) {
-    const resource = new SingleRecordResource();
+    const resource = this.context.createResource(SingleRecordResource);
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
   }
@@ -91,7 +91,7 @@ CreateFormModel.registerFlow({
 CreateFormModel.define({
   label: escapeT('Form (Add new)'),
   searchable: true,
-  searchPlaceholder: escapeT('Search collections'),
+  searchPlaceholder: escapeT('Search'),
   createModelOptions: {
     use: 'CreateFormModel',
     subModels: {

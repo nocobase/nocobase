@@ -23,6 +23,7 @@ import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
+import { useDesignable } from '../schema-component';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -48,8 +49,8 @@ export const FlowRoute = () => {
     [uid in string]: { close: () => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
-  const isStepNavigatingRef = useRef(false);
   const hasStepNavigatedRef = useRef(false);
+  const { designable } = useDesignable();
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -63,6 +64,15 @@ export const FlowRoute = () => {
       get: () => isMobileLayout,
     });
   }, [isMobileLayout, routeModel]);
+
+  useEffect(() => {
+    // 移动端中不允许配置 UI
+    if (isMobileLayout) {
+      flowEngine.flowSettings.disable();
+    } else if (designable) {
+      flowEngine.flowSettings.enable();
+    }
+  }, [designable, flowEngine, isMobileLayout]);
 
   useEffect(() => {
     if (!layoutContentRef.current) {
@@ -83,7 +93,7 @@ export const FlowRoute = () => {
     const dispose = reaction(
       () => flowEngine.context.route,
       async (newRoute) => {
-        if (newRoute.params.name !== pageUidRef.current || isStepNavigatingRef.current) {
+        if (newRoute.params.name !== pageUidRef.current) {
           return;
         }
 
@@ -100,11 +110,6 @@ export const FlowRoute = () => {
               return;
             }
 
-            // 在最后一步时，确保能触发路由监听函数
-            if (index === viewList.length - 1) {
-              isStepNavigatingRef.current = false;
-            }
-
             if (index === 0) {
               new ViewNavigation(flowEngine.context, []).navigateTo(viewList[index].params, { replace: true });
             } else {
@@ -114,14 +119,10 @@ export const FlowRoute = () => {
               ).navigateTo(viewList[index].params);
             }
 
-            // 需要有个延迟，才能正常触发路由的跳转
-            setTimeout(() => {
-              navigateTo(index + 1);
-            }, 20);
+            navigateTo(index + 1);
           };
 
           navigateTo(0);
-          isStepNavigatingRef.current = true;
           hasStepNavigatedRef.current = true;
           return;
         }
@@ -159,6 +160,7 @@ export const FlowRoute = () => {
                 openView(index + 1); // 递归打开下一个视图
               },
               hidden: viewItem.hidden, // 是否隐藏视图
+              isMobileLayout,
             });
 
             viewStateRef.current[viewItem.params.viewUid] = {
@@ -185,7 +187,7 @@ export const FlowRoute = () => {
     );
 
     return dispose;
-  }, [flowEngine, routeModel]);
+  }, [flowEngine, isMobileLayout, routeModel]);
 
   return <div ref={layoutContentRef} />;
 };

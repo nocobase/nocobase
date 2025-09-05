@@ -16,6 +16,7 @@ import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContex
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
+import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -25,6 +26,7 @@ import type {
   IFlowModelRepository,
   ModelConstructor,
   PersistOptions,
+  ResourceType,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -102,6 +104,8 @@ export class FlowEngine {
    */
   #flowContext: FlowEngineContext;
 
+  #resources = new Map<string, typeof FlowResource>();
+
   logger: pino.Logger;
 
   /**
@@ -129,6 +133,13 @@ export class FlowEngine {
     this.reactView = new ReactView(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
     this.registerModels({ FlowModel }); // 会造成循环依赖问题，移除掉
+    this.registerResources({
+      FlowResource,
+      SQLResource,
+      APIResource,
+      SingleRecordResource,
+      MultiRecordResource,
+    });
     this.logger = pino({
       level: 'trace',
       browser: {
@@ -272,6 +283,24 @@ export class FlowEngine {
     }
   }
 
+  registerResources(resources: Record<string, any>) {
+    for (const [name, resourceClass] of Object.entries(resources)) {
+      this.#resources.set(name, resourceClass);
+    }
+  }
+
+  createResource<T = FlowResource>(resourceType: ResourceType<T>, options?: { context?: FlowContext }): T {
+    if (typeof resourceType === 'string') {
+      const ResourceClass = this.#resources.get(resourceType);
+      if (!ResourceClass) {
+        throw new Error(`Resource class '${resourceType}' not found. Please register it first.`);
+      }
+      return new ResourceClass(options?.context || this.context) as T;
+    }
+    const R = resourceType;
+    return new R(options?.context || this.context) as T;
+  }
+
   /**
    * Get all registered model classes.
    * @returns {Map<string, ModelConstructor>} Model class map
@@ -335,7 +364,10 @@ export class FlowEngine {
    * @param {CreateModelOptions} options Model creation options
    * @returns {T} Created model instance
    */
-  public createModel<T extends FlowModel = FlowModel>(options: CreateModelOptions): T {
+  public createModel<T extends FlowModel = FlowModel>(
+    options: CreateModelOptions,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
     const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
 
@@ -352,8 +384,15 @@ export class FlowEngine {
       modelInstance = new (ModelClass as ModelConstructor<T>)({ ...options, flowEngine: this } as any);
     }
 
+    if (extra?.delegate) {
+      modelInstance.context.addDelegate(extra.delegate);
+    }
+
     if (parentId && this.#modelInstances.has(parentId)) {
       modelInstance.setParent(this.#modelInstances.get(parentId));
+      if (extra?.delegateToParent === false) {
+        modelInstance.removeParentDelegate();
+      }
     }
 
     this.#modelInstances.set(modelInstance.uid, modelInstance);
@@ -475,7 +514,13 @@ export class FlowEngine {
    * @param {any} options Load or create options
    * @returns {Promise<T | null>} Model instance or null
    */
-  async loadOrCreateModel<T extends FlowModel = FlowModel>(options): Promise<T | null> {
+  async loadOrCreateModel<T extends FlowModel = FlowModel>(
+    options,
+    extra?: {
+      delegateToParent?: boolean;
+      delegate?: FlowContext;
+    },
+  ): Promise<T | null> {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
     if (uid && this.#modelInstances.has(uid)) {
@@ -488,9 +533,9 @@ export class FlowEngine {
     const data = await this.#modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
-      model = this.createModel<T>(data as any);
+      model = this.createModel<T>(data as any, extra);
     } else {
-      model = this.createModel<T>(options);
+      model = this.createModel<T>(options, extra);
       await model.save();
     }
     if (model.parent) {

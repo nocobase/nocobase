@@ -1,11 +1,11 @@
 import {
   Application,
-  Plugin,
   FieldModelRenderer,
-  FormItemV2 as FormItem,
+  FormComponent,
+  FormItem,
   PercentFieldModel,
   PercentInput,
-  FormComponent,
+  Plugin,
 } from '@nocobase/client';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Form } from 'antd';

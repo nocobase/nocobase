@@ -113,19 +113,26 @@ class PluginCollectionTreeServer extends Plugin {
               throw new Error('Cannot set itself as the parent node');
             }
           });
+
+          this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
+            const name = `main_${collection.get('name')}_path`;
+            if (!condition(collection.options)) {
+              return;
+            }
+
+            const collectionTree = this.db.getCollection(name);
+            if (collectionTree) {
+              await this.db.getCollection(name).removeFromDb({ transaction });
+
+              collectionManager.db.removeAllListeners(`${collection.name}.afterSync`);
+              this.db.removeAllListeners(`${collection.name}.afterCreate`);
+              this.db.removeAllListeners(`${collection.name}.afterUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterBulkUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterDestroy`);
+              this.db.removeAllListeners(`${collection.name}.beforeSave`);
+            }
+          });
         });
-      }
-    });
-
-    this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
-      const name = `main_${collection.get('name')}_path`;
-      if (!condition(collection.options)) {
-        return;
-      }
-
-      const collectionTree = this.db.getCollection(name);
-      if (collectionTree) {
-        await this.db.getCollection(name).removeFromDb({ transaction });
       }
     });
   }

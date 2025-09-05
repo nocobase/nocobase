@@ -406,6 +406,7 @@ describe('workflow > Plugin', () => {
 
       await e2.reload();
       expect(e2.status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(e2.dispatched).toBe(false);
 
       // queueing execution of disabled workflow should not effect other executions
       await e3.reload();
@@ -518,7 +519,8 @@ describe('workflow > Plugin', () => {
 
       const e1s = await w1.getExecutions();
       expect(e1s.length).toBe(1);
-      expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
+      expect(e1s[0].dispatched).toBe(true);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.QUEUEING);
 
       plugin.start(e1s[0]);
 

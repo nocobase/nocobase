@@ -167,7 +167,7 @@ export class DataSource {
     if (!collection) {
       throw new Error(`Collection ${collectionName} not found in data source ${this.key}`);
     }
-    const field = collection.getField(fieldName);
+    const field = collection.getFieldByPath(fieldName);
     if (!field) {
       return;
     }
@@ -418,6 +418,10 @@ export class Collection {
     return Array.from(fieldMap.values());
   }
 
+  getToOneAssociationFields(): CollectionField[] {
+    return this.getAssociationFields(['toOne']);
+  }
+
   getAssociationFields(types = []): CollectionField[] {
     if (types.includes('toNew')) {
       return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
@@ -453,6 +457,18 @@ export class Collection {
         this.addField(field);
       }
     }
+  }
+
+  getFieldByPath(fieldPath: string): CollectionField | undefined {
+    const [fieldName, ...otherKeys] = fieldPath.split('.');
+    const field = this.getField(fieldName);
+    if (otherKeys.length === 0) {
+      return field;
+    }
+    if (!field.targetCollection) {
+      return null;
+    }
+    return field.targetCollection.getFieldByPath(otherKeys.join('.'));
   }
 
   getField(fieldName: string): CollectionField | undefined {

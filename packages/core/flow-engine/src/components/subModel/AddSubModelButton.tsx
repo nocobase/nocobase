@@ -29,7 +29,7 @@ export interface SubModelItem {
   type?: 'group' | 'divider';
   disabled?: boolean;
   icon?: React.ReactNode;
-  children?: SubModelItemsType;
+  children?: false | SubModelItemsType;
   createModelOptions?:
     | CreateModelOptionsStringUse
     | ((ctx: FlowModelContext, extra?: any) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>);

@@ -137,7 +137,7 @@ export function createTriggerWorkflowsSchema({
 
 FormSubmitActionModel.registerFlow({
   key: 'formTriggerWorkflowsActionSettings',
-  title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
+  title: `{{t('Workflow', { ns: 'workflow' })}}`,
   steps: {
     setTriggerWorkflows: {
       title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,

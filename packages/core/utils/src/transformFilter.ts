@@ -213,8 +213,3 @@ export function transformFilter(filter: FilterGroup): QueryObject {
 
   return transformGroup(filter);
 }
-
-/**
- * 默认导出转换函数
- */
-export default transformFilter;
