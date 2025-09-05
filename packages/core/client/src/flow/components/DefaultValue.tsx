@@ -65,27 +65,19 @@ export const DefaultValue = connect((props: Props) => {
 
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
-    const host: any = model as any;
-    const origin: any = host?.subModels?.field;
+    const host = model;
+    const origin = host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
-    let Target = origin?.constructor || (model.constructor as any);
-    if (init?.dataSourceKey && init?.collectionName && init?.fieldPath) {
-      const dsm = model.context.dataSourceManager;
-      const cf = dsm?.getCollectionField?.(`${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`);
-      const use = cf?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
-      Target = model.context.engine.getModelClass(use) || Target;
-    }
+    const Target = origin?.constructor || (model.constructor as any);
     const Temp = createTempFieldClass(Target);
-    const tempName = `Var${model.uid}`;
-    model.context.engine.registerModels({ [tempName]: Temp });
     const fieldSub = {
-      use: tempName,
+      use: Temp,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
       stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false },
+      props: { disabled: false, originalModel: origin },
     } as any;
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
@@ -100,6 +92,17 @@ export const DefaultValue = connect((props: Props) => {
     }
     return created;
   }, [model]);
+
+  // Cleanup temporary models on unmount to avoid leaking into engine instance map
+  React.useEffect(() => {
+    return () => {
+      const fields = tempRoot.subModels?.fields || [];
+      if (Array.isArray(fields)) {
+        fields.forEach((m) => m?.remove?.());
+      }
+      tempRoot.remove();
+    };
+  }, [tempRoot]);
 
   // Right-side editor (the field component itself)
   const InputComponent = useMemo(
