@@ -28,7 +28,7 @@ export class CreateFormModel extends FormModel {
   static scene = 'new';
 
   createResource(ctx, params) {
-    const resource = new SingleRecordResource();
+    const resource = this.context.createResource(SingleRecordResource);
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
   }

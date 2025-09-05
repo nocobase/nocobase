@@ -8,6 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
+import { FlowContext } from '../flowContext';
 
 interface TDataItem {
   id: string | number;
@@ -62,6 +63,8 @@ export class FlowResource<TData = any> {
   protected _data = observable.ref<TData>(null);
   protected _meta = observable.ref<Record<string, any>>({});
   protected _error = observable.ref<ResourceError>(null);
+
+  constructor(protected context: FlowContext) {}
 
   getData(): TData {
     return this._data.value;

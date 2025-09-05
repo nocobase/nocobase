@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelContext } from '../../flowContext';
+import * as _ from 'lodash';
 import type { Collection } from '../../data-source';
-import { ModelConstructor, FlowModelMeta } from '../../types';
+import { FlowModelContext } from '../../flowContext';
+import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
-import * as _ from 'lodash';
 
 function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModelItem {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
@@ -44,6 +44,9 @@ function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModel
 function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
   let children: any;
+  if (meta.children) {
+    children = meta.children;
+  }
   if (M['defineChildren']) {
     children = M['defineChildren'].bind(M);
   }
@@ -93,7 +96,7 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
         }
         return true;
       })
-      .sort((A, B) => (A.meta?.sort ?? 0) - (B.meta?.sort ?? 0));
+      .sort((A, B) => (A.meta?.sort ?? 1000) - (B.meta?.sort ?? 1000));
 
     const items: SubModelItem[] = [];
     for (const M of candidates) {

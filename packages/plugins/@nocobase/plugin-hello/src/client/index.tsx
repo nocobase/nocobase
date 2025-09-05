@@ -47,7 +47,7 @@ HelloDataBlockModel.define({
 
 class HelloCollectionBlockModel extends CollectionBlockModel {
   createResource() {
-    return new MultiRecordResource();
+    return this.context.createResource(MultiRecordResource);
   }
 
   renderComponent() {

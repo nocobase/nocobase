@@ -32,16 +32,16 @@ export class EditFormModel extends FormModel {
   createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsModel的逻辑
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
     if (Object.keys(params).includes('filterByTk')) {
-      const resource = new SingleRecordResource();
+      const resource = this.context.createResource(SingleRecordResource);
       resource.isNewRecord = false;
       return resource;
     }
-    const resource = new MultiRecordResource();
+    const resource = this.context.createResource(MultiRecordResource);
     resource.setPageSize(1);
     return resource;
   }

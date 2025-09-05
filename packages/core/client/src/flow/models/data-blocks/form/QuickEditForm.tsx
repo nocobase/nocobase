@@ -23,10 +23,10 @@ import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FormComponent } from './FormModel';
-import { FormItem } from './FormItem/FormItem';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormFieldModel } from '../../fields';
+import { FormItem } from './FormItem/FormItem';
+import { FormComponent } from './FormModel';
 
 export class QuickEditForm extends FlowModel {
   fieldPath: string;
@@ -195,10 +195,10 @@ QuickEditForm.registerFlow({
         }
         ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-        const resource = new SingleRecordResource();
+        const resource = ctx.createResource(SingleRecordResource);
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
-        resource.setAPIClient(ctx.api);
+        // resource.setAPIClient(ctx.api);
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {

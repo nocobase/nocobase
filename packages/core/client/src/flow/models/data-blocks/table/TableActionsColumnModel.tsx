@@ -28,7 +28,14 @@ import { TableCustomColumnModel } from './TableColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
-    <Space size={'middle'}>
+    <Space
+      size={'middle'}
+      className={css`
+        button {
+          padding: 0;
+        }
+      `}
+    >
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
         const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(

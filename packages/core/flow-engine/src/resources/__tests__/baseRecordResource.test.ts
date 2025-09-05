@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FlowEngine } from '../../flowEngine';
 import { BaseRecordResource } from '../baseRecordResource';
 import { ResourceError } from '../flowResource';
 
@@ -16,14 +17,19 @@ class TestRecordResource<T = any> extends BaseRecordResource<T> {
   async refresh(): Promise<void> {}
 }
 
+function createTestRecordResource<T = any>() {
+  const engine = new FlowEngine();
+  return engine.createResource(TestRecordResource);
+}
+
 describe('BaseRecordResource - basic properties', () => {
   it('supportsFilter should be true', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
     expect(r.supportsFilter).toBe(true);
   });
 
   it('set/get resourceName & sourceId & dataSourceKey', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     r.setResourceName('users');
     expect(r.getResourceName()).toBe('users');
@@ -38,7 +44,7 @@ describe('BaseRecordResource - basic properties', () => {
 
 describe('BaseRecordResource - filters', () => {
   it('add/remove filter groups and resetFilter should update params.filter (JSON)', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     // initially, no filter -> resetFilter leads to undefined value stored
     r.resetFilter();
@@ -65,7 +71,7 @@ describe('BaseRecordResource - filters', () => {
   });
 
   it('setFilterByTk / getFilterByTk', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
     r.setFilterByTk(1);
     expect(r.getFilterByTk()).toBe(1);
   });
@@ -73,7 +79,7 @@ describe('BaseRecordResource - filters', () => {
 
 describe('BaseRecordResource - field and list params', () => {
   it('fields, sort, except, whitelist, blacklist support string or array with split', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     r.setFields('id,name');
     expect(r.getFields()).toEqual(['id', 'name']);
@@ -94,14 +100,14 @@ describe('BaseRecordResource - field and list params', () => {
 
 describe('BaseRecordResource - appends helpers', () => {
   it('setAppends / getAppends', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     r.setAppends(['a', 'b']);
     expect(r.getAppends()).toEqual(['a', 'b']);
   });
 
   it('addAppends merges and dedups; removeAppends removes items', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     r.addAppends('a,b');
     expect(r.getAppends()).toEqual(['a', 'b']);
@@ -119,7 +125,7 @@ describe('BaseRecordResource - appends helpers', () => {
 
 describe('BaseRecordResource - runAction and URL building', () => {
   it('runAction builds URL from resourceName and action; merges configs', async () => {
-    const r = new TestRecordResource<any>();
+    const r = createTestRecordResource();
     const api = { request: vi.fn().mockResolvedValue({ data: { data: { ok: 1 }, meta: { total: 10 } } }) };
     r.setAPIClient(api as any);
 
@@ -143,7 +149,7 @@ describe('BaseRecordResource - runAction and URL building', () => {
   });
 
   it('nested resourceName with sourceId builds parent/{id}/child:action', async () => {
-    const r = new TestRecordResource<any>();
+    const r = createTestRecordResource<any>();
     const api = { request: vi.fn().mockResolvedValue({ data: { data: { ok: 1 } } }) };
     r.setAPIClient(api as any);
 
@@ -155,7 +161,7 @@ describe('BaseRecordResource - runAction and URL building', () => {
   });
 
   it('when response has no "data" wrapper, returns raw response', async () => {
-    const r = new TestRecordResource<any>();
+    const r = createTestRecordResource<any>();
     const api = { request: vi.fn().mockResolvedValue({ data: { ok: 1 } }) };
     r.setAPIClient(api as any);
 
@@ -167,7 +173,7 @@ describe('BaseRecordResource - runAction and URL building', () => {
 
 describe('BaseRecordResource - updateAssociationValues', () => {
   it('getUpdateAssociationValues returns [] by default; addUpdateAssociationValues merges and dedups', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     expect(r.getUpdateAssociationValues()).toEqual([]);
 
@@ -179,7 +185,7 @@ describe('BaseRecordResource - updateAssociationValues', () => {
   });
 
   it('create-like actions include updateAssociationValues in request params', async () => {
-    const r = new TestRecordResource<any>();
+    const r = createTestRecordResource<any>();
     const api = { request: vi.fn().mockResolvedValue({ data: { data: {} } }) };
     r.setAPIClient(api as any);
     r.setResourceName('users');
@@ -194,7 +200,7 @@ describe('BaseRecordResource - updateAssociationValues', () => {
 
 describe('BaseRecordResource - runAction error', () => {
   it('throws ResourceError on API failure', async () => {
-    const r = new TestRecordResource<any>();
+    const r = createTestRecordResource<any>();
     const api = { request: vi.fn().mockRejectedValue({ response: { data: { error: { message: 'boom' } } } }) };
     r.setAPIClient(api as any).setResourceName('users');
     await expect(r.runAction('create', {})).rejects.toBeInstanceOf(ResourceError);
@@ -203,7 +209,7 @@ describe('BaseRecordResource - runAction error', () => {
 
 describe('BaseRecordResource - mergeRequestConfig', () => {
   it('deep merges params; later overrides earlier for scalars', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     const merged = r.mergeRequestConfig(
       { params: { a: 'a', x: 1, nested: { p: 1 } } },
@@ -214,7 +220,7 @@ describe('BaseRecordResource - mergeRequestConfig', () => {
   });
 
   it('deep merges data; arrays are replaced by later config', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     const merged = r.mergeRequestConfig(
       { data: { list: [1, 2], obj: { a: 1 } } as any },
@@ -225,7 +231,7 @@ describe('BaseRecordResource - mergeRequestConfig', () => {
   });
 
   it('skips undefined values when merging params/data', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     const merged = r.mergeRequestConfig(
       { params: { a: 1, b: 2 }, data: { x: 1, y: 2 } as any },
@@ -237,7 +243,7 @@ describe('BaseRecordResource - mergeRequestConfig', () => {
   });
 
   it('params.obj.nested should be replaced (not merged)', () => {
-    const r = new TestRecordResource();
+    const r = createTestRecordResource();
 
     const merged = r.mergeRequestConfig(
       { params: { obj: { nested: { a: 1 }, arr: [1, 2], keep: { x: 1 } } } },

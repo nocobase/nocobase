@@ -28,12 +28,13 @@ import { FlowModel, ForkFlowModel } from './models';
 import {
   APIResource,
   BaseRecordResource,
+  FlowResource,
   FlowSQLRepository,
   MultiRecordResource,
   SingleRecordResource,
   SQLResource,
 } from './resources';
-import type { ActionDefinition, EventDefinition } from './types';
+import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
   extractPropertyPath,
   FlowExitException,
@@ -874,6 +875,7 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
     EventDefinition<TModel>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
+  declare createResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
 }
 
 export class FlowEngineContext extends BaseFlowEngineContext {
@@ -1180,6 +1182,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         return acl;
       },
     });
+    this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
+      return this.engine.createResource(resourceType, {
+        context: this,
+      });
+    });
   }
 }
 
@@ -1291,7 +1298,6 @@ export class FlowRuntimeContext<
   ) {
     super();
     this.addDelegate(this.model.context);
-    const ResourceMap = { APIResource, BaseRecordResource, SingleRecordResource, MultiRecordResource, SQLResource };
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
     });
@@ -1307,13 +1313,7 @@ export class FlowRuntimeContext<
         }
         model.context.defineProperty('resource', {
           get: () => {
-            const R = ResourceMap[className];
-            if (!R) {
-              throw new Error(`Resource class ${className} not found in ResourceMap`);
-            }
-            const resource = new R() as APIResource;
-            resource.setAPIClient(model.context.api);
-            return resource;
+            return this.createResource(className);
           },
         });
         if (!model['resource']) {

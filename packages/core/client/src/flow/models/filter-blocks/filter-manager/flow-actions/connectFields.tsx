@@ -14,7 +14,7 @@ import { Button, Dropdown, Select, Segmented, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { CollectionBlockModel } from '../../../base/BlockModel';
-import { FilterFormEditableFieldModel } from '../../form-v2/fields';
+import { FilterFormEditableFieldModel } from '../../form/fields';
 import { getAllDataModels } from '../../utils';
 import { ConnectFieldsConfig } from '../FilterManager';
 

@@ -31,9 +31,9 @@ export * from './fields';
 // export * from './filter-blocks/form/FilterFormSubmitActionModel';
 export * from './common/JsonInput';
 export * from './data-blocks/CustomItem';
-export * from './filter-blocks/form-v2/actions';
-export * from './filter-blocks/form-v2/fields';
-export * from './filter-blocks/form-v2/FilterFormFieldGridModel';
-export * from './filter-blocks/form-v2/FormFilterBlockModel';
+export * from './filter-blocks/form/actions';
+export * from './filter-blocks/form/fields';
+export * from './filter-blocks/form/FilterFormFieldGridModel';
+export * from './filter-blocks/form/FormFilterBlockModel';
 export * from './other-blocks/html/HtmlBlockModel';
 //

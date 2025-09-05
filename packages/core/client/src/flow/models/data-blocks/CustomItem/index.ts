@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './CommonModel';
-export * from './MarkdownItemModel';
-export * from './GroupItemModel';
 export * from './AssociationFieldItemModel';
+export * from './CommonModel';
+export * from './GroupItemModel';
+export * from './JSFieldItemModel';
+export * from './MarkdownItemModel';
+//

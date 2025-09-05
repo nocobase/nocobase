@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildWrapperFieldChildren, Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
@@ -30,6 +30,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
         key: field.name,
         label: field.title,
         toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        useModel: 'DetailItemModel',
         createModelOptions: () => ({
           use: 'DetailItemModel',
           stepParams: {
@@ -75,9 +76,7 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 }
 
 DetailItemModel.define({
-  createModelOptions: {
-    use: 'DetailItemModel',
-  },
+  label: escapeT('Display collection fields'),
   sort: 100,
 });
 

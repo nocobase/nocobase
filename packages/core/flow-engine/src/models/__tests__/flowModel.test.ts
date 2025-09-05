@@ -877,6 +877,28 @@ describe('FlowModel', () => {
 
           expect(eventSpy).toHaveBeenCalledWith(result);
         });
+
+        test('should allow setSubModel via fork and bind to master', () => {
+          const childModel = new FlowModel({ uid: 'object-child-via-fork', flowEngine });
+          const fork = parentModel.createFork();
+
+          const result = (fork as any).setSubModel('testChildObject', childModel);
+
+          expect(result.parent).toBe(parentModel);
+          expect((parentModel.subModels as any)['testChildObject']).toBe(result);
+        });
+
+        test('should allow multiple setSubModel via fork with same instance without error', () => {
+          const childModel = new FlowModel({ uid: 'object-child-via-fork-2', flowEngine });
+          const fork = parentModel.createFork();
+
+          const first = (fork as any).setSubModel('testChildObject2', childModel);
+          const second = (fork as any).setSubModel('testChildObject2', childModel);
+
+          expect(first).toBe(second);
+          expect(second.parent).toBe(parentModel);
+          expect((parentModel.subModels as any)['testChildObject2']).toBe(second);
+        });
       });
 
       describe('addSubModel (array type)', () => {
@@ -940,6 +962,36 @@ describe('FlowModel', () => {
           const result = parentModel.addSubModel('testChildren', childModel);
 
           expect(eventSpy).toHaveBeenCalledWith(result);
+        });
+
+        test('should allow addSubModel via fork and bind to master', () => {
+          const childModel = new FlowModel({ uid: 'child-via-fork', flowEngine });
+          const fork = parentModel.createFork();
+
+          const result = (fork as any).addSubModel('testChildren', childModel);
+
+          expect(result.parent).toBe(parentModel);
+          expect(Array.isArray(parentModel.subModels.testChildren)).toBe(true);
+          expect((parentModel.subModels.testChildren as FlowModel[]).some((m) => m.uid === 'child-via-fork')).toBe(
+            true,
+          );
+        });
+
+        test('should allow multiple addSubModel via fork with same instance without error', () => {
+          const childModel = new FlowModel({ uid: 'child-via-fork-2', flowEngine });
+          const fork = parentModel.createFork();
+
+          const r1 = (fork as any).addSubModel('testChildren2', childModel);
+          const r2 = (fork as any).addSubModel('testChildren2', childModel);
+
+          expect(r1).toBe(r2);
+          expect(r1.parent).toBe(parentModel);
+          const arr = (parentModel.subModels as any)['testChildren2'];
+          expect(Array.isArray(arr)).toBe(true);
+          // allow duplicate binding without throwing
+          expect(arr.length).toBe(2);
+          expect(arr[0]).toBe(childModel);
+          expect(arr[1]).toBe(childModel);
         });
       });
 

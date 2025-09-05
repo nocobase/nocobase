@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT, ModelRenderMode, FlowModelContext } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, FlowModelContext, ModelRenderMode } from '@nocobase/flow-engine';
+import _ from 'lodash';
 
 export class DetailCustomModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -18,11 +19,13 @@ export class DetailCustomModel extends FlowModel {
 
     const toChildren = (models: Map<string, any>) =>
       Array.from(models.entries()).map(([name, ModelClass]) => ({
+        key: name,
         label: ctx.t(ModelClass.meta.label),
         createModelOptions: { use: name },
+        sort: (ModelClass.meta.sort ?? 999) as number,
       }));
 
-    return [...toChildren(commonModels), ...toChildren(detailCustomModels)];
+    return _.sortBy([...toChildren(commonModels), ...toChildren(detailCustomModels)], 'sort');
   }
 }
 
