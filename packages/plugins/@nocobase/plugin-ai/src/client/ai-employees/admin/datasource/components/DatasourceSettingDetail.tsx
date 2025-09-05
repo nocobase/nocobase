@@ -10,6 +10,7 @@
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Button, Flex, Form, Space, Tabs } from 'antd';
 import {
+  Collection,
   createCollectionContextMeta,
   FlowModelContext,
   MultiRecordResource,
@@ -18,6 +19,7 @@ import {
 } from '@nocobase/flow-engine';
 import { FilterGroupType } from '@nocobase/utils/client';
 import { CollectionSetting, FieldsSetting, FilterSetting, Preview, SortSetting } from './form-steps';
+import { CollectionContext, CurrentCollection } from '../context';
 
 type RecordType = any;
 
@@ -39,27 +41,18 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
   const [sortForm] = Form.useForm();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const allForms = [collectionForm, fieldsForm, filterForm, sortForm];
+  const [collection, setCollection] = useState<Collection | null>(null);
 
   useEffect(() => {
-    if (record) {
-      const { datasource, collectionName } = record;
-      setFormData(record);
-      collectionForm.setFieldsValue(record);
-      fieldsForm.setFieldValue('fields', record.fields);
-      dataScope.items = record.filter?.items || [];
+    setFormData(record);
 
-      allForms.forEach((form) => {
-        form.setFieldValue('collection', [datasource, collectionName]);
-      });
+    const { datasource, collectionName } = record;
+    setCollection(ctx.dataSourceManager.getCollection(datasource, collectionName));
 
-      ctx.model.context.defineProperty('collection', {
-        get: () => ctx.dataSourceManager.getCollection(datasource, collectionName),
-        meta: createCollectionContextMeta(
-          () => ctx.dataSourceManager.getCollection(datasource, collectionName),
-          ctx.t('Current collection'),
-        ),
-      });
-    }
+    collectionForm.setFieldsValue(record);
+    collectionForm.setFieldValue('collection', [datasource, collectionName]);
+    fieldsForm.setFieldValue('fields', record.fields);
+    dataScope.items = record.filter?.items || [];
   }, [record]);
 
   const onSubmit = async () => {
@@ -133,29 +126,31 @@ export const DatasourceSettingDetail: React.FC<{ record: RecordType }> = ({ reco
 
   return (
     <>
-      <Header title={ctx.t('Edit datasource')} />
+      <CollectionContext.Provider value={new CurrentCollection(collection)}>
+        <Header title={ctx.t('Edit datasource')} />
 
-      <Tabs defaultActiveKey="Tab-0" items={items} />
+        <Tabs defaultActiveKey="Tab-0" items={items} />
 
-      <Footer>
-        <Flex justify="flex-end" align="end">
-          <Space>
-            {ctx.view && (
-              <Button
-                onClick={() => {
-                  ctx.view.close();
-                }}
-              >
-                {ctx.t('Cancel')}
+        <Footer>
+          <Flex justify="flex-end" align="end">
+            <Space>
+              {ctx.view && (
+                <Button
+                  onClick={() => {
+                    ctx.view.close();
+                  }}
+                >
+                  {ctx.t('Cancel')}
+                </Button>
+              )}
+
+              <Button type="primary" onClick={onSubmit}>
+                {ctx.t('Submit')}
               </Button>
-            )}
-
-            <Button type="primary" onClick={onSubmit}>
-              {ctx.t('Submit')}
-            </Button>
-          </Space>
-        </Flex>
-      </Footer>
+            </Space>
+          </Flex>
+        </Footer>
+      </CollectionContext.Provider>
     </>
   );
 };

@@ -9,24 +9,17 @@
 
 import React, { useState } from 'react';
 import { Button, Divider, Flex, Form, Space, StepProps, Steps } from 'antd';
-import {
-  FlowModelContext,
-  MultiRecordResource,
-  observable,
-  useFlowContext,
-  createCollectionContextMeta,
-} from '@nocobase/flow-engine';
-import { FilterGroupType, transformFilter } from '@nocobase/utils/client';
+import { FlowModelContext, MultiRecordResource, observable, useFlowContext, Collection } from '@nocobase/flow-engine';
+import { FilterGroupType } from '@nocobase/utils/client';
 import { CollectionSetting, FieldsSetting, FilterSetting, Preview, SortSetting } from './form-steps';
-
-type RecordType = any;
+import { CollectionContext, CurrentCollection } from '../context';
 
 const dataScope: FilterGroupType = observable({
   logic: '$and',
   items: [],
 });
 
-export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ record }) => {
+export const DatasourceSettingForm: React.FC = () => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
   const { Header, Footer } = ctx.view;
   const [collectionForm] = Form.useForm();
@@ -36,6 +29,7 @@ export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ recor
   const [previewForm] = Form.useForm();
   const [current, setCurrent] = useState(0);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [collection, setCollection] = useState<Collection | null>(null);
 
   const getCurrentForm = () => {
     switch (current) {
@@ -92,13 +86,7 @@ export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ recor
       return;
     }
     const [dataSourceKey, collectionName] = value;
-    ctx.model.context.defineProperty('collection', {
-      get: () => ctx.dataSourceManager.getCollection(dataSourceKey, collectionName),
-      meta: createCollectionContextMeta(
-        () => ctx.dataSourceManager.getCollection(dataSourceKey, collectionName),
-        ctx.t('Current collection'),
-      ),
-    });
+    setCollection(ctx.dataSourceManager.getCollection(dataSourceKey, collectionName));
     dataScope.items = [];
     fieldsForm.setFieldValue('fields', []);
   };
@@ -106,9 +94,6 @@ export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ recor
   const onFormFinish = (name, { values }) => {
     setFormData((prev) => ({ ...prev, ...values }));
     if (name === 'collectionSetting') {
-      fieldsForm.setFieldValue('collection', values.collection);
-      filterForm.setFieldValue('collection', values.collection);
-      sortForm.setFieldValue('collection', values.collection);
       if (values.collection) {
         const [datasource, collectionName] = values.collection;
         setFormData((prev) => ({ ...prev, datasource, collectionName }));
@@ -120,55 +105,53 @@ export const DatasourceSettingForm: React.FC<{ record?: RecordType }> = ({ recor
 
   return (
     <>
-      <Header title={record ? ctx.t('Edit datasource') : ctx.t('Add datasource')} />
-      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-        <Steps current={current} items={items} size="small" />
-        <Divider dashed />
-        <Form.Provider onFormFinish={onFormFinish}>
-          <CollectionSetting
-            form={collectionForm}
-            onCollectionCascaderChange={onCollectionCascaderChange}
-            name="collectionSetting"
-            show={current === 0}
-          />
-          <FieldsSetting form={fieldsForm} name="fieldsSetting" show={current === 1} />
-          <FilterSetting form={filterForm} dataScope={dataScope} name="filterSetting" show={current === 2} />
-          <SortSetting form={sortForm} name="sortSetting" show={current === 3} />
-        </Form.Provider>
-        <Preview formData={formData} show={current === 4} />
-      </Space>
+      <CollectionContext.Provider value={new CurrentCollection(collection)}>
+        <Header title={ctx.t('Add datasource')} />
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Steps current={current} items={items} size="small" />
+          <Divider dashed />
+          <Form.Provider onFormFinish={onFormFinish}>
+            <CollectionSetting
+              form={collectionForm}
+              onCollectionCascaderChange={onCollectionCascaderChange}
+              name="collectionSetting"
+              show={current === 0}
+            />
+            <FieldsSetting form={fieldsForm} name="fieldsSetting" show={current === 1} />
+            <FilterSetting form={filterForm} dataScope={dataScope} name="filterSetting" show={current === 2} />
+            <SortSetting form={sortForm} name="sortSetting" show={current === 3} />
+          </Form.Provider>
+          <Preview formData={formData} show={current === 4} />
+        </Space>
 
-      <Footer>
-        <Flex justify="flex-end" align="end">
-          <Space>
-            <Button style={{ margin: '0 8px' }} onClick={() => prev()} disabled={current === 0}>
-              Previous
-            </Button>
-            {current < items.length - 1 && (
-              <Button type="primary" onClick={() => next()}>
-                Next
+        <Footer>
+          <Flex justify="flex-end" align="end">
+            <Space>
+              <Button style={{ margin: '0 8px' }} onClick={() => prev()} disabled={current === 0}>
+                Previous
               </Button>
-            )}
-            {current === items.length - 1 && (
-              <Button
-                type="primary"
-                onClick={async () => {
-                  const resource = ctx.resource as MultiRecordResource;
-                  if (record) {
-                    await resource.update(record.id, formData);
-                  } else {
+              {current < items.length - 1 && (
+                <Button type="primary" onClick={() => next()}>
+                  Next
+                </Button>
+              )}
+              {current === items.length - 1 && (
+                <Button
+                  type="primary"
+                  onClick={async () => {
+                    const resource = ctx.resource as MultiRecordResource;
                     await resource.create(formData);
-                  }
-                  ctx.message.success('Processing complete!');
-                  ctx.view?.close();
-                }}
-              >
-                Submit
-              </Button>
-            )}
-          </Space>
-        </Flex>
-      </Footer>
+                    ctx.message.success('Processing complete!');
+                    ctx.view?.close();
+                  }}
+                >
+                  Submit
+                </Button>
+              )}
+            </Space>
+          </Flex>
+        </Footer>
+      </CollectionContext.Provider>
     </>
   );
 };

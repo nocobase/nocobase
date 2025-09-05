@@ -7,17 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Form, FormInstance } from 'antd';
-import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
-import { CollectionCascader } from '../basic';
+import React, { useEffect, useState } from 'react';
+import { Form, FormInstance, Input } from 'antd';
+import {
+  createCollectionContextMeta,
+  FlowModelContext,
+  MultiRecordResource,
+  observer,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import { FilterGroupType } from '@nocobase/utils/client';
 import { ContextFilterItem, FilterGroup } from '@nocobase/client';
+import { useCollectionContext } from '../../context';
 
 const Filter: React.FC<{
   value: any;
 }> = observer(({ value }) => {
   const ctx = useFlowContext();
+  const currentCollection = useCollectionContext();
+
+  useEffect(() => {
+    if (currentCollection.collection) {
+      ctx.model.context.defineProperty('collection', {
+        get: () => currentCollection.collection,
+        meta: createCollectionContextMeta(() => currentCollection.collection, ctx.t('Current collection')),
+      });
+    }
+  }, [ctx, currentCollection]);
+
   return <FilterGroup value={value} FilterItem={(props) => <ContextFilterItem {...props} model={ctx.model} />} />;
 });
 
@@ -28,28 +45,14 @@ export const FilterSetting: React.FC<{
   show: boolean;
 }> = ({ form, dataScope, name, show }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+  const currentCollection = useCollectionContext();
 
   return (
     <Form form={form} name={name} layout="vertical" colon={true} style={!show && { display: 'none' }}>
-      <Form.Item
-        required={false}
-        label={ctx.t('Collection')}
-        name="collection"
-        rules={[
-          {
-            required: true,
-          },
-        ]}
-      >
-        <CollectionCascader disabled={true} />
+      <Form.Item label={ctx.t('Collection')}>
+        <Input value={currentCollection.displayName} disabled />
       </Form.Item>
-      <Form.Item
-        rules={[
-          {
-            required: true,
-          },
-        ]}
-      >
+      <Form.Item label={ctx.t('Filter group')}>
         <Filter value={dataScope} />
       </Form.Item>
     </Form>

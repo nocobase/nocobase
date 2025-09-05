@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Table, Tabs, Tooltip, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { CollectionField, FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
+import { useCollectionContext } from '../../context';
 
 const { Text, Paragraph } = Typography;
 
@@ -19,7 +20,8 @@ export const Preview: React.FC<{
   show: boolean;
 }> = ({ formData, show }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
-  const title = `Collection: ${formData.datasource}/${formData.collectionName}`;
+  const currentCollection = useCollectionContext();
+  const title = `Collection: ${currentCollection.displayName}`;
   const { loading, collectionFields, datasource, refresh } = usePreview(formData);
 
   useEffect(() => {

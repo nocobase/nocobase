@@ -9,14 +9,8 @@
 
 import React, { PropsWithChildren } from 'react';
 import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
-import { Button, ButtonProps, Divider, Dropdown, Flex, Modal, Result, Space, Switch, Tooltip, Typography } from 'antd';
-import {
-  PlusOutlined,
-  EllipsisOutlined,
-  SettingOutlined,
-  DeleteOutlined,
-  ExclamationCircleFilled,
-} from '@ant-design/icons';
+import { Button, ButtonProps, Divider, Flex, Modal, Result, Space, Switch, Tooltip, Typography } from 'antd';
+import { PlusOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { Card, Col, Row } from 'antd';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';

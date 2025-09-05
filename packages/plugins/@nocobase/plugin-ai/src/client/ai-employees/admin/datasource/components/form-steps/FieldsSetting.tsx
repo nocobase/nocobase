@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Form, FormInstance } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Form, FormInstance, Input } from 'antd';
 import { FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
-import { CollectionCascader, FieldsTransfer } from '../basic';
+import { FieldsTransfer } from '../basic';
+import { useCollectionContext } from '../../context';
 
 export const FieldsSetting: React.FC<{
   form: FormInstance;
@@ -18,19 +19,12 @@ export const FieldsSetting: React.FC<{
   show: boolean;
 }> = ({ form, name, show }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+  const currentCollection = useCollectionContext();
+
   return (
     <Form form={form} name={name} layout="vertical" colon={true} style={!show && { display: 'none' }}>
-      <Form.Item
-        required={false}
-        label={ctx.t('Collection')}
-        name="collection"
-        rules={[
-          {
-            required: true,
-          },
-        ]}
-      >
-        <CollectionCascader disabled={true} />
+      <Form.Item label={ctx.t('Collection')}>
+        <Input value={currentCollection.displayName} disabled />
       </Form.Item>
       <Form.Item
         label={ctx.t('Fields')}

@@ -8,10 +8,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Flex, Table, Tag, Transfer, Form } from 'antd';
+import { Flex, Table, Transfer } from 'antd';
 import type { GetProp, TableColumnsType, TableProps, TransferProps } from 'antd';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { useRequest } from '@nocobase/client';
+import { useCollectionContext } from '../../context';
 
 type TransferItem = GetProp<TransferProps, 'dataSource'>[number];
 type TableRowSelection<T extends object> = TableProps<T>['rowSelection'];
@@ -82,10 +82,7 @@ export const FieldsTransfer: React.FC<{
 }> = ({ value, onChange }) => {
   const ctx = useFlowContext();
   const ds = ctx.dataSourceManager;
-  const form = Form.useFormInstance();
-  const collection = Form.useWatch('collection', form);
-  const [dataSourceKey, collectionName] = collection || [];
-
+  const currentCollection = useCollectionContext();
   const [dataSource, setDataSource] = useState<DataType[]>([]);
 
   const columns: TableColumnsType<DataType> = [
@@ -96,7 +93,7 @@ export const FieldsTransfer: React.FC<{
   ];
 
   useEffect(() => {
-    const collection = ds.getDataSource(dataSourceKey)?.getCollection(collectionName);
+    const collection = currentCollection.collection;
     if (!collection) {
       setDataSource([]);
       return;
@@ -109,7 +106,7 @@ export const FieldsTransfer: React.FC<{
         title: field.title,
       }));
     setDataSource(dataSource);
-  }, [ds, dataSourceKey, collectionName]);
+  }, [ds, currentCollection]);
 
   return (
     <Flex align="start" gap="middle" vertical>
