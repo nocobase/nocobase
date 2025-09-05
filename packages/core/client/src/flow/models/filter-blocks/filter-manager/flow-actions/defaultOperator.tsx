@@ -9,6 +9,7 @@
 
 import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
 import { FilterFormFieldModel } from '../../form/fields';
+import { operators } from '../../../../../collection-manager';
 
 export const defaultOperator = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
@@ -37,8 +38,10 @@ export const defaultOperator = defineAction<FilterFormFieldModel>({
 });
 
 function getOperatorOptions(model: FlowModel) {
-  return (model.context.collectionField?.filterable?.operators || []).map((op) => ({
-    ...op,
-    label: model.translate(op.label),
-  }));
+  return (model.context.collectionField?.filterable?.operators || operators[model.context.filterField.type]).map(
+    (op) => ({
+      ...op,
+      label: model.translate(op.label),
+    }),
+  );
 }
