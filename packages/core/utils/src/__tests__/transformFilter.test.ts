@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import transformFilter, { FilterGroup } from '../transformFilter';
+import { FilterGroup, transformFilter } from '../transformFilter';
 
 describe('transformFilter', () => {
   it('should correctly transform simple single-condition filter', () => {
