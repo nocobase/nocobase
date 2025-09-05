@@ -204,19 +204,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't2',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't3',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't1',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -239,19 +239,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't3',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't1',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't2',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -274,19 +274,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't2',
-            sort2: 1,
+            sort2: expect.toEqualNumberOrString(1),
           },
           {
             title: 't3',
-            sort2: 2,
+            sort2: expect.toEqualNumberOrString(2),
           },
           {
             title: 't1',
-            sort2: 3,
+            sort2: expect.toEqualNumberOrString(3),
           },
           {
             title: 't4',
-            sort2: 4,
+            sort2: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -308,19 +308,19 @@ describe('sort action', () => {
         data: [
           {
             title: 't3',
-            sort: 0,
+            sort: expect.toEqualNumberOrString(0),
           },
           {
             title: 't1',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't2',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't4',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -492,15 +492,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -517,23 +517,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't11',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't22',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't23',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
           {
             title: 't24',
-            sort: 5,
+            sort: expect.toEqualNumberOrString(5),
           },
         ],
       });
@@ -558,15 +558,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -581,23 +581,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't11',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't23',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
           {
             title: 't24',
-            sort: 5,
+            sort: expect.toEqualNumberOrString(5),
           },
         ],
       });
@@ -619,23 +619,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't11',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't12',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't13',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
           {
             title: 't14',
-            sort: 5,
+            sort: expect.toEqualNumberOrString(5),
           },
         ],
       });
@@ -650,15 +650,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -681,23 +681,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't11',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't12',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't22',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't13',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
           {
             title: 't14',
-            sort: 5,
+            sort: expect.toEqualNumberOrString(5),
           },
         ],
       });
@@ -712,15 +712,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -747,15 +747,15 @@ describe('sort action', () => {
         data: [
           {
             title: 't12',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't13',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't14',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
         ],
       });
@@ -770,23 +770,23 @@ describe('sort action', () => {
         data: [
           {
             title: 't21',
-            sort: 1,
+            sort: expect.toEqualNumberOrString(1),
           },
           {
             title: 't22',
-            sort: 2,
+            sort: expect.toEqualNumberOrString(2),
           },
           {
             title: 't23',
-            sort: 3,
+            sort: expect.toEqualNumberOrString(3),
           },
           {
             title: 't24',
-            sort: 4,
+            sort: expect.toEqualNumberOrString(4),
           },
           {
             title: 't11',
-            sort: 5,
+            sort: expect.toEqualNumberOrString(5),
           },
         ],
       });

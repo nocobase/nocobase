@@ -44,7 +44,7 @@ export async function destroy(context: Context, next) {
       fields: ['id', 'key', 'current'],
       transaction,
     });
-    const ids = new Set<number>(items.map((item) => item.id));
+    const ids = new Set<number | string>(items.map((item) => item.id));
     const keysSet = new Set<string>(items.filter((item) => item.current).map((item) => item.key));
     const revisions = await repository.find({
       filter: {

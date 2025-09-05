@@ -174,8 +174,8 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
   async toggle(options: TargetKey | { tk?: TargetKey; transaction?: Transaction }): Promise<void> {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
-
-    const has = await sourceModel[this.accessors().hasSingle](options['tk'], {
+    const tk = typeof options['tk'] === 'number' ? options['tk'].toString() : options['tk'];
+    const has = await sourceModel[this.accessors().hasSingle](tk, {
       transaction,
     });
 
