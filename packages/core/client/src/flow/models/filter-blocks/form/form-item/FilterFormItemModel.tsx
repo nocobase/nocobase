@@ -19,6 +19,7 @@ import { FormItem } from '../../../data-blocks/form/FormItem';
 import { FilterManager } from '../../filter-manager/FilterManager';
 import { getAllDataModels } from '../../utils';
 import { FilterFormFieldModel } from '../fields';
+import { CollectionBlockModel } from '../../../base/BlockModel';
 
 const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -34,9 +35,10 @@ const FieldNotAllow = ({ actionName, FieldTitle }) => {
   return <Alert type="warning" message={messageValue} showIcon />;
 };
 
-const getModelFields = (model: FlowModel) => {
+const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
-  return collection.getFields().map((field) => {
+  const fields = (await model?.getFilterFields()) || [];
+  return fields.map((field) => {
     const fieldModel = field.getFirstSubclassNameOf('FilterFormFieldModel') || 'FilterFormFieldModel';
     const fieldPath = field.name;
     return {
@@ -49,9 +51,14 @@ const getModelFields = (model: FlowModel) => {
         stepParams: {
           fieldSettings: {
             init: {
-              dataSourceKey: collection.dataSourceKey,
-              collectionName: collection.name,
+              dataSourceKey: collection?.dataSourceKey,
+              collectionName: collection?.name,
               fieldPath,
+            },
+          },
+          editItemSettings: {
+            label: {
+              label: field.title,
             },
           },
         },
@@ -96,20 +103,22 @@ export class FilterFormItemModel extends CollectionFieldItemModel<{
       ];
     }
 
-    return allModelInstances.map((model) => {
+    return allModelInstances.map((model: CollectionBlockModel) => {
       return {
         key: model.uid,
         label: `${model.title} #${model.uid.substring(0, 4)}`,
-        children: [
-          {
-            key: 'fields',
-            label: 'Fields',
-            type: 'group' as const,
-            searchable: true,
-            searchPlaceholder: 'Search fields',
-            children: getModelFields(model),
-          },
-        ],
+        children: async () => {
+          return [
+            {
+              key: 'fields',
+              label: 'Fields',
+              type: 'group' as const,
+              searchable: true,
+              searchPlaceholder: 'Search fields',
+              children: await getModelFields(model),
+            },
+          ];
+        },
       };
     });
   }
@@ -339,6 +348,18 @@ FilterFormItemModel.registerFlow({
     },
     defaultOperator: {
       use: 'defaultOperator',
+    },
+  },
+});
+
+FilterFormItemModel.registerFlow({
+  key: 'fieldSettings',
+  title: escapeT('Field settings'),
+  steps: {
+    init: {
+      // 去掉 CollectionFieldItemModel 的一些报错信息，
+      // 筛选这里 dataSourceKey, collectionName, fieldPath 不是必须的
+      handler(ctx, params) {},
     },
   },
 });

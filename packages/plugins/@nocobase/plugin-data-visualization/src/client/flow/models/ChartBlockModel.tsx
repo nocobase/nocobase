@@ -76,6 +76,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
         title: field,
         type: fieldType,
         interface: fieldType === 'number' ? 'number' : 'input',
+        getFirstSubclassNameOf() {
+          return fieldType === 'number' ? 'NumberFilterFieldModel' : 'InputFilterFieldModel';
+        },
       };
     });
     return fields;
