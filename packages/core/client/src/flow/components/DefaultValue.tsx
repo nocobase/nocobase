@@ -48,6 +48,27 @@ function createTempFieldClass(Base: any) {
       if (cf || fb) this.context.defineProperty('collectionField', { get: () => cf || fb });
     }
     async onAfterAutoFlows() {
+      // Ensure the temp field respects original props for behavior consistency
+      // especially the `multiple` flag for to-many relationships
+      const originalProps = (this.props as any)?.originalModel?.props || {};
+      const collectionField = (this.context as any)?.collectionField;
+      const inferMultipleFromCF = () => {
+        try {
+          const t = collectionField?.type;
+          const i = collectionField?.interface;
+          // to-many: belongsToMany / hasMany, and interfaces m2m / o2m / mbm
+          const byType = t && (t === 'belongsToMany' || t === 'hasMany' || t === 'belongsToArray');
+          const byIface = i && (i === 'm2m' || i === 'o2m' || i === 'mbm');
+          return !!(byType || byIface);
+        } catch (e) {
+          return undefined;
+        }
+      };
+      const multiple = typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCF();
+      if (typeof multiple !== 'undefined') {
+        this.setProps({ multiple });
+      }
+
       this.showTitle?.(null);
       this.setDescription?.(null);
       this.setPattern?.('editable');
@@ -122,7 +143,7 @@ export const DefaultValue = connect((props: Props) => {
       { title: 'Null', name: 'null', type: 'object', paths: ['null'], render: NullComponent },
       ...tree,
     ];
-  }, [InputComponent]);
+  }, [InputComponent, NullComponent]);
 
   // Pass value/handler to the temp field
   React.useEffect(() => {
@@ -134,8 +155,7 @@ export const DefaultValue = connect((props: Props) => {
     });
   }, [tempRoot, onChange, value]);
 
-  // Apply on OK: if params changed and field untouched (by value snapshot), set new default to current form
-  const startRef = useRef<any>(undefined);
+  // Apply on OK: only set default if field not modified by user
   const namePathRef = useRef<any[]>([]);
   React.useEffect(() => {
     const stepKey = 'initialValue';
@@ -144,15 +164,14 @@ export const DefaultValue = connect((props: Props) => {
     const raw: any = (settings.model as any)?.props?.name || (settings.model as any)?.fieldPath;
     const namePath = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split('.') : [raw].filter(Boolean);
     namePathRef.current = namePath as any[];
-    if (form?.getFieldValue) startRef.current = form.getFieldValue(namePathRef.current as any);
     return () => {
       setTimeout(() => {
         const latest = settings.getStepParams?.(stepKey) || {};
         if (!isEqual(initial, latest)) {
           const f: any = settings.model?.context?.form;
           if (!f || !namePathRef.current.length) return;
-          const cur = f.getFieldValue?.(namePathRef.current as any);
-          if (!isEqual(cur, startRef.current)) return;
+          // Do not override if user has interacted with this field
+          if (f?.isFieldsTouched?.([namePathRef.current as any])) return;
           let v = latest?.defaultValue;
           if (isVariableExpression(v)) {
             const p = extractPropertyPath(String(v));
