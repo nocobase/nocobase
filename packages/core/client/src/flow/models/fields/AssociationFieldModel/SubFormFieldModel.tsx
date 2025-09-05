@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, MultiRecordResource, useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
-import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
+import { useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { Card, Form, Button, Tooltip, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,9 +31,20 @@ class FormAssociationFieldModel extends AssociationFieldModel {
 }
 const ObjectNester = (props) => {
   const model: any = useFlowModel();
+  const gridModel = model.subModels.grid;
+  const rowIndex = model.context.fieldIndex;
+  // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
+  const grid = React.useMemo(() => {
+    if (rowIndex == null) return gridModel;
+    const fork = gridModel.createFork({}, `${rowIndex}`);
+    fork.context.defineProperty('fieldIndex', {
+      get: () => rowIndex,
+    });
+    return fork;
+  }, [gridModel, rowIndex]);
   return (
     <Card>
-      <FlowModelRenderer model={model.subModels.grid} showFlowSettings={false} />
+      <FlowModelRenderer model={grid} showFlowSettings={false} />
     </Card>
   );
 };
@@ -44,12 +54,7 @@ export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
     super.onInit(options);
   }
   get component() {
-    return [
-      ObjectNester,
-      {
-        type: this.collectionField.type,
-      },
-    ];
+    return [ObjectNester, {}];
   }
 }
 

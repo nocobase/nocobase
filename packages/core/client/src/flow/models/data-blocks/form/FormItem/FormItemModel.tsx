@@ -90,9 +90,17 @@ export class FormItemModel extends CollectionFieldItemModel {
       }
     }
 
-    // 针对每一行，为字段子模型创建 fork
-    const modelForRender = idx != null ? fieldModel.createFork({}, `${idx}`) : fieldModel;
-
+    // 嵌套场景下继续传透，为字段子模型创建 fork
+    const modelForRender =
+      idx != null
+        ? (() => {
+            const fork = fieldModel.createFork({}, `${idx}`);
+            fork.context.defineProperty('fieldIndex', {
+              get: () => idx,
+            });
+            return fork;
+          })()
+        : fieldModel;
     return (
       <FormItem {...this.props} name={dynamicName}>
         <FieldModelRenderer model={modelForRender} />
