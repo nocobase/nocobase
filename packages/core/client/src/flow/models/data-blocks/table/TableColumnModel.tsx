@@ -10,7 +10,6 @@
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
-  buildWrapperFieldChildren,
   Collection,
   DragHandler,
   Droppable,
@@ -20,6 +19,7 @@ import {
   FlowModelContext,
   FlowModelProvider,
   FlowsFloatContextMenu,
+  FormItem,
   ModelRenderMode,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
@@ -29,7 +29,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
-import { FormItem } from '../form/FormItem/FormItem';
+
 export class TableColumnModel extends CollectionFieldItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;

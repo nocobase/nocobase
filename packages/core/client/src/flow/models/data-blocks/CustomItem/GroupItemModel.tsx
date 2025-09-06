@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FormItem } from '@nocobase/flow-engine';
 import { Divider } from 'antd';
 import React from 'react';
-import { FormItem } from '../form/FormItem/FormItem';
 import { NBColorPicker } from '../../fields/ColorFieldModel';
 import { CommonModel } from './CommonModel';
 

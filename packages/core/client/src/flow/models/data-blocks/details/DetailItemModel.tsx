@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, FormItem } from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
-import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
 

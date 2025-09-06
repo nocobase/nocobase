@@ -11,24 +11,24 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
+  buildWrapperFieldChildren,
   DragHandler,
   Droppable,
   escapeT,
+  FlowModelContext,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  useFlowEngine,
-  FlowModelContext,
-  buildWrapperFieldChildren,
+  FormItem,
   ModelRenderMode,
+  useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Form } from 'antd';
+import { Form, TableColumnProps, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
+import { TableAssociationFieldModel } from '.';
+import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { FieldModel } from '../../../base/FieldModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
-import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
-import { FormItem } from '../../../data-blocks/form/FormItem/FormItem';
-import { TableAssociationFieldModel } from '.';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();

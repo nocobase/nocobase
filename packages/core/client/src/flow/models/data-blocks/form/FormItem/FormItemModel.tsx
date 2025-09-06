@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, jioToJoiSchema } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, FormItem, jioToJoiSchema } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
@@ -18,7 +18,6 @@ import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../../base/FieldModel';
 import { EditFormModel } from '../EditFormModel';
-import { FormItem } from './FormItem';
 
 export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
