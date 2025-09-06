@@ -134,10 +134,20 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     }, [leftMeta, currentOpMeta]);
 
     // 右侧静态输入（无变量模式）与右侧 VariableInput 的静态渲染组件，统一复用
+    // t 可能每次渲染产生新引用，导致 staticInputRenderer 引用不稳定，进而触发右侧输入卸载/重建。
+    // 通过 stableT 包装，保持函数引用稳定，同时读取最新的 t。
+    const tRef = React.useRef(t);
+    React.useEffect(() => {
+      tRef.current = t;
+    }, [t]);
+    const stableT = React.useCallback((s: string) => tRef.current?.(s) ?? s, []);
+
     const staticInputRenderer = useMemo(
-      () => createStaticInputRenderer(mergedSchema, leftMeta, t),
-      [createStaticInputRenderer, mergedSchema, leftMeta, t],
+      () => createStaticInputRenderer(mergedSchema, leftMeta, stableT),
+      [mergedSchema, leftMeta, stableT],
     );
+
+    //
 
     const renderRightValueComponent = useCallback(() => {
       const Comp = staticInputRenderer;
@@ -148,18 +158,21 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       );
     }, [staticInputRenderer, rightValue, value]);
 
-    // 当启用右侧变量输入时，构造 VariableInput 的 converters，使其在未选择变量时渲染与 mergedSchema 对应的静态输入
+    // 是否为变量值（例如 "{{ ctx.user.id }}"）
+    const isRightVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
+
+    //
+
+    // 当启用右侧变量输入时，构造 VariableInput 的 converters：
+    // - 变量模式：返回 null 让 VariableInput 渲染 VariableTag
+    // - 常量模式：返回静态输入组件，且依赖仅与 isRightVariable 和 schema 相关，避免随输入字符抖动
     const rightConverters = useMemo<Converters>(() => {
       return {
         renderInputComponent: () => {
-          const isVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
-          if (isVariable) return null;
-          return staticInputRenderer;
+          return isRightVariable ? null : staticInputRenderer;
         },
       };
-    }, [staticInputRenderer, rightValue]);
-
-    const isRightVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
+    }, [isRightVariable, staticInputRenderer]);
 
     return (
       <Space wrap style={{ width: '100%' }}>
@@ -195,14 +208,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               metaTree={rightMetaTree || (() => ctx.getPropertyMetaTree())}
               converters={rightConverters}
               showValueComponent
-              style={{
-                flex: isRightVariable ? '1 1 50%' : '1 1 30%',
-                minWidth: 160,
-                maxWidth: '100%',
-              }}
+              style={{ flex: isRightVariable ? '1 1 50%' : '1 1 30%', minWidth: 160, maxWidth: '100%' }}
               placeholder={t('Enter value')}
             />
           ) : (
+            // 纯静态输入分支
             renderRightValueComponent()
           ))}
       </Space>

@@ -17,16 +17,17 @@ import {
   FlowModelRenderer,
   MetaTreeNode,
   VariableInput,
+  VariableTag,
   isVariableExpression,
   parseValueToPath,
   useFlowContext,
-  useFlowSettingsContext,
   extractPropertyPath,
 } from '@nocobase/flow-engine';
-import { get, isEqual } from 'lodash';
-import React, { useMemo, useRef } from 'react';
+import { get } from 'lodash';
+import React, { useMemo } from 'react';
 import { Input } from 'antd';
 import { EditableFieldModel } from '../models';
+import { RemoteSelectFieldModel } from '../models/fields/AssociationFieldModel';
 
 interface Props {
   value: any;
@@ -35,37 +36,45 @@ interface Props {
   model: EditableFieldModel;
 }
 
-function createTempFieldClass(Base: any) {
+// 近似 AntD 的 NamePath，用于减少 any 断言
+type NamePathLike = (string | number)[];
+
+function createTempFieldClass(Base: any, hostModel: any, valueRef: React.MutableRefObject<any>) {
   return class Temp extends Base {
+    __restoreSave?: () => void;
     async onBeforeAutoFlows() {
-      const p = this.getStepParams?.('fieldSettings', 'init') || {};
-      const k =
-        p?.dataSourceKey &&
-        p?.collectionName &&
-        p?.fieldPath &&
-        `${p.dataSourceKey}.${p.collectionName}.${p.fieldPath}`;
-      const cf = k && this.context?.dataSourceManager?.getCollectionField?.(k);
-      const fb = this.props?.originalModel?.collectionField;
-      if (cf || fb) this.context.defineProperty('collectionField', { get: () => cf || fb });
+      const initParams = this.getStepParams?.('fieldSettings', 'init') || {};
+      const collectionFieldKey =
+        initParams?.dataSourceKey &&
+        initParams?.collectionName &&
+        initParams?.fieldPath &&
+        `${initParams.dataSourceKey}.${initParams.collectionName}.${initParams.fieldPath}`;
+      const collectionFieldFromManager =
+        collectionFieldKey && this.context?.dataSourceManager?.getCollectionField?.(collectionFieldKey);
+      const fallbackCollectionField = this.props?.originalModel?.collectionField;
+      if (collectionFieldFromManager || fallbackCollectionField)
+        this.context.defineProperty('collectionField', {
+          get: () => collectionFieldFromManager || fallbackCollectionField,
+        });
     }
     async onAfterAutoFlows() {
       // Ensure the temp field respects original props for behavior consistency
       // especially the `multiple` flag for to-many relationships
-      const originalProps = (this.props as any)?.originalModel?.props || {};
-      const collectionField = (this.context as any)?.collectionField;
-      const inferMultipleFromCF = () => {
-        try {
-          const t = collectionField?.type;
-          const i = collectionField?.interface;
-          // to-many: belongsToMany / hasMany, and interfaces m2m / o2m / mbm
-          const byType = t && (t === 'belongsToMany' || t === 'hasMany' || t === 'belongsToArray');
-          const byIface = i && (i === 'm2m' || i === 'o2m' || i === 'mbm');
-          return !!(byType || byIface);
-        } catch (e) {
-          return undefined;
-        }
+      const originalProps = (this.props as { originalModel?: { props?: any } } | undefined)?.originalModel?.props || {};
+      const collectionField = (this.context as { collectionField?: any } | undefined)?.collectionField;
+      const inferMultipleFromCollectionField = () => {
+        const relationType = collectionField?.type;
+        const relationInterface = collectionField?.interface;
+        const byType =
+          relationType &&
+          (relationType === 'belongsToMany' || relationType === 'hasMany' || relationType === 'belongsToArray');
+        const byInterface =
+          relationInterface &&
+          (relationInterface === 'm2m' || relationInterface === 'o2m' || relationInterface === 'mbm');
+        return !!(byType || byInterface);
       };
-      const multiple = typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCF();
+      const multiple =
+        typeof originalProps.multiple !== 'undefined' ? originalProps.multiple : inferMultipleFromCollectionField();
       if (typeof multiple !== 'undefined') {
         this.setProps({ multiple });
       }
@@ -74,43 +83,151 @@ function createTempFieldClass(Base: any) {
       this.setDescription?.(null);
       this.setPattern?.('editable');
       if (this.props.onChange) this.setProps({ onChange: this.props.onChange });
-      const v = this.getStepParams('formItemSettings', 'initialValue')?.defaultValue;
-      if (typeof v !== 'undefined') this.setProps({ value: v });
+      const initialValueFromStep = this.getStepParams('formItemSettings', 'initialValue')?.defaultValue;
+      if (typeof initialValueFromStep !== 'undefined') this.setProps({ value: initialValueFromStep });
+
+      // Patch host model's saveStepParams so we can apply default after saving once
+      const host: any = hostModel;
+      const originalSaveStepParams = host?.saveStepParams?.bind(host);
+      if (originalSaveStepParams && !this.__restoreSave) {
+        const rawName: unknown = host?.props?.name ?? host?.fieldPath;
+        const namePath: NamePathLike = Array.isArray(rawName)
+          ? rawName
+          : typeof rawName === 'string'
+            ? rawName.split('.')
+            : [rawName].filter(Boolean);
+        host.saveStepParams = async (...saveArgs: any[]) => {
+          const result = await originalSaveStepParams(...saveArgs);
+          const form: any = host?.context?.form;
+          if (form && namePath.length) {
+            const touched = !!form?.isFieldsTouched?.([namePath]);
+            if (!touched) {
+              let defaultValueCandidate = valueRef.current;
+              if (isVariableExpression(defaultValueCandidate)) {
+                // Prefer backend-capable resolution for variables that may require async fetching
+                const ctx: any = host.context;
+                const resolved = await ctx.resolveJsonTemplate(defaultValueCandidate);
+                if (resolved !== undefined) {
+                  defaultValueCandidate = resolved;
+                }
+                // Fallback: attempt to extract value from local context path
+                if (defaultValueCandidate === valueRef.current) {
+                  const propertyPath = extractPropertyPath(String(defaultValueCandidate));
+                  if (propertyPath) defaultValueCandidate = get(ctx, propertyPath.join('.'));
+                }
+              }
+              // Avoid writing undefined back to the form which may wipe existing values
+              if (defaultValueCandidate !== undefined) {
+                if (form?.setFieldValue) {
+                  form.setFieldValue(namePath, defaultValueCandidate);
+                } else {
+                  const fieldKey = namePath.join('.');
+                  form?.setFieldsValue?.({ [fieldKey]: defaultValueCandidate });
+                }
+              } else {
+                // skip backfill when resolved value is undefined
+              }
+            }
+          }
+          return result;
+        };
+        this.__restoreSave = () => {
+          host.saveStepParams = originalSaveStepParams;
+        };
+      }
+    }
+
+    remove(...args: any[]) {
+      this.__restoreSave?.();
+      // @ts-ignore
+      super.remove?.(...args);
     }
   };
 }
 
 export const DefaultValue = connect((props: Props) => {
-  const { value, onChange } = props;
-  const { model } = useFlowContext();
-  const settings = useFlowSettingsContext();
+  const { value, onChange, metaTree: propMetaTree, ...restProps } = props;
+  const flowContext = useFlowContext();
+  const { model } = flowContext;
+  const latestValueRef = React.useRef<any>(value);
+  React.useEffect(() => {
+    latestValueRef.current = value;
+  }, [value]);
+
+  const backfillOriginalForm = React.useCallback(
+    async (raw: any) => {
+      const host: any = model;
+      const form: any = host?.context?.form;
+      const rawName: unknown = host?.props?.name ?? host?.fieldPath;
+      const namePath: NamePathLike = Array.isArray(rawName)
+        ? rawName
+        : typeof rawName === 'string'
+          ? rawName.split('.')
+          : [rawName].filter(Boolean);
+      if (!form || !namePath.length) return;
+      const touched = !!form?.isFieldsTouched?.([namePath]);
+      if (touched) return;
+
+      let defaultValue = raw;
+      if (isVariableExpression(defaultValue)) {
+        const ctx: any = host.context;
+        const resolved = await ctx.resolveJsonTemplate(defaultValue);
+        if (resolved !== undefined) defaultValue = resolved;
+        if (defaultValue === raw) {
+          const propertyPath = extractPropertyPath(String(defaultValue));
+          if (propertyPath) defaultValue = get(host.context as Record<string, any>, propertyPath.join('.'));
+        }
+      }
+
+      if (defaultValue !== undefined) {
+        if (form?.setFieldValue) {
+          form.setFieldValue(namePath, defaultValue);
+        } else {
+          const fieldKey = namePath.join('.');
+          form?.setFieldsValue?.({ [fieldKey]: defaultValue });
+        }
+      }
+    },
+    [model],
+  );
 
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
     const host = model;
     const origin = host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
-    const Target = origin?.constructor || (model.constructor as any);
-    const Temp = createTempFieldClass(Target);
+    // 如果是关系的对多字段，统一使用 RemoteSelectFieldModel 作为默认值渲染模型
+    const collectionField = origin?.collectionField;
+    const relationType = collectionField?.type;
+    const relationInterface = collectionField?.interface;
+    const isToManyRelation =
+      relationType === 'belongsToMany' ||
+      relationType === 'hasMany' ||
+      relationType === 'belongsToArray' ||
+      relationInterface === 'm2m' ||
+      relationInterface === 'o2m' ||
+      relationInterface === 'mbm';
+    const fieldModelClass = isToManyRelation ? RemoteSelectFieldModel : origin?.constructor || model.constructor;
+    const TempFieldClass = createTempFieldClass(fieldModelClass, model, latestValueRef);
     const fieldSub = {
-      use: Temp,
+      use: TempFieldClass,
       uid: uid(),
       parentId: null,
       subKey: null,
       subType: null,
       stepParams: init ? { fieldSettings: { init } } : undefined,
       props: { disabled: false, originalModel: origin },
-    } as any;
+    };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
       subModels: { fields: [fieldSub] },
-    } as any);
+    });
     if (init?.dataSourceKey && init?.collectionName) {
-      const dsm = model.context.dataSourceManager;
-      const ds = dsm?.getDataSource?.(init.dataSourceKey);
-      const col = dsm?.getCollection?.(init.dataSourceKey, init.collectionName);
-      if (ds) created.context?.defineProperty?.('dataSource', { get: () => ds });
-      if (col) created.context?.defineProperty?.('collection', { get: () => col });
+      const dataSourceManager = model.context.dataSourceManager;
+      const dataSource = dataSourceManager?.getDataSource?.(init.dataSourceKey);
+      const targetCollection = dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName);
+      if (dataSource) created.context?.defineProperty?.('dataSource', { get: () => dataSource });
+      if (targetCollection) created.context?.defineProperty?.('collection', { get: () => targetCollection });
     }
     return created;
   }, [model]);
@@ -118,80 +235,105 @@ export const DefaultValue = connect((props: Props) => {
   // Cleanup temporary models on unmount to avoid leaking into engine instance map
   React.useEffect(() => {
     return () => {
-      const fields = tempRoot.subModels?.fields || [];
-      if (Array.isArray(fields)) {
-        fields.forEach((m) => m?.remove?.());
-      }
+      tempRoot.subModels?.fields?.forEach((fieldModelItem: any) => fieldModelItem?.remove?.());
       tempRoot.remove();
     };
   }, [tempRoot]);
 
   // Right-side editor (the field component itself)
-  const InputComponent = useMemo(
-    () => (p) => (
-      <div style={{ flexGrow: 1 }}>
-        {tempRoot.setProps({ ...p })}
-        <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
-      </div>
-    ),
-    [tempRoot],
-  );
-  const NullComponent = useMemo(() => () => <Input placeholder="<Null>" readOnly />, []);
-  const metaTree = useMemo<MetaTreeNode[]>(() => {
-    const tree = (useFlowContext().getPropertyMetaTree?.() || []) as MetaTreeNode[];
-    return [
-      { title: 'Constant', name: 'constant', type: 'string', paths: ['constant'], render: InputComponent },
-      { title: 'Null', name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-      ...tree,
-    ];
-  }, [InputComponent, NullComponent]);
+  const InputComponent = useMemo(() => {
+    const ConstantValueEditor = (inputProps) => {
+      React.useEffect(() => {
+        tempRoot.setProps({ ...inputProps });
+      }, [tempRoot, inputProps]);
+      return (
+        <div style={{ flexGrow: 1 }}>
+          <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
+        </div>
+      );
+    };
+    return ConstantValueEditor;
+  }, [tempRoot]);
+  const NullComponent = useMemo(() => {
+    function NullValuePlaceholder() {
+      return <Input placeholder={`<${flowContext.t?.('Null') ?? 'Null'}>`} readOnly />;
+    }
+    return NullValuePlaceholder;
+  }, [flowContext]);
+  const mergedMetaTree = useMemo<() => Promise<MetaTreeNode[]>>(() => {
+    return async () => {
+      let base: MetaTreeNode[] = [];
+      if (typeof propMetaTree === 'function') {
+        base = ((await propMetaTree()) || []) as MetaTreeNode[];
+      } else if (Array.isArray(propMetaTree)) {
+        base = propMetaTree as MetaTreeNode[];
+      } else {
+        base = ((flowContext.getPropertyMetaTree?.() || []) as MetaTreeNode[]) || [];
+      }
+      return [
+        {
+          title: flowContext.t?.('Constant') ?? 'Constant',
+          name: 'constant',
+          type: 'string',
+          paths: ['constant'],
+          render: InputComponent,
+        },
+        {
+          title: flowContext.t?.('Null') ?? 'Null',
+          name: 'null',
+          type: 'object',
+          paths: ['null'],
+          render: NullComponent,
+        },
+        ...base,
+      ];
+    };
+  }, [propMetaTree, flowContext, InputComponent, NullComponent]);
 
   // Pass value/handler to the temp field
   React.useEffect(() => {
-    const fm = tempRoot.subModels.fields?.[0] as any;
-    fm?.setProps({
+    const tempFieldModel: any = tempRoot.subModels.fields?.[0];
+    tempFieldModel?.setProps({
       disabled: false,
       value,
-      onChange: (ev: any) => onChange?.(ev && typeof ev === 'object' && 'target' in ev ? ev.target.value : ev),
+      onChange: (eventOrValue: any) => {
+        const nextValue =
+          eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue
+            ? eventOrValue.target.value
+            : eventOrValue;
+        onChange?.(nextValue);
+        Promise.resolve()
+          .then(() => backfillOriginalForm(nextValue))
+          .catch((_) => {
+            // ignore
+          });
+      },
     });
-  }, [tempRoot, onChange, value]);
-
-  // Apply on OK: only set default if field not modified by user
-  const namePathRef = useRef<any[]>([]);
-  React.useEffect(() => {
-    const stepKey = 'initialValue';
-    const initial = settings.getStepParams?.(stepKey) || {};
-    const form: any = settings.model?.context?.form;
-    const raw: any = (settings.model as any)?.props?.name || (settings.model as any)?.fieldPath;
-    const namePath = Array.isArray(raw) ? raw : typeof raw === 'string' ? raw.split('.') : [raw].filter(Boolean);
-    namePathRef.current = namePath as any[];
-    return () => {
-      setTimeout(() => {
-        const latest = settings.getStepParams?.(stepKey) || {};
-        if (!isEqual(initial, latest)) {
-          const f: any = settings.model?.context?.form;
-          if (!f || !namePathRef.current.length) return;
-          // Do not override if user has interacted with this field
-          if (f?.isFieldsTouched?.([namePathRef.current as any])) return;
-          let v = latest?.defaultValue;
-          if (isVariableExpression(v)) {
-            const p = extractPropertyPath(String(v));
-            if (p) v = get(settings.model.context as any, p.join('.'));
-          }
-          if (f.setFieldValue) f.setFieldValue(namePathRef.current as any, v);
-          else if (f.setFieldsValue) f.setFieldsValue({ [namePathRef.current.join('.')]: v });
-        }
-      }, 0);
-    };
-  }, [settings]);
+  }, [tempRoot, onChange, value, backfillOriginalForm]);
 
   return (
     <VariableInput
-      metaTree={metaTree}
-      {...props}
+      metaTree={mergedMetaTree}
+      value={value}
+      onChange={onChange}
+      {...restProps}
       converters={{
-        resolveValueFromPath: (item) => (item?.paths?.[0] === 'constant' ? '' : undefined),
-        resolvePathFromValue: (val) => (isVariableExpression(val) ? parseValueToPath(val) : ['constant']),
+        renderInputComponent: (meta) => {
+          const firstPath = meta?.paths?.[0];
+          if (firstPath === 'constant') return InputComponent;
+          if (firstPath === 'null') return NullComponent;
+          return VariableTag;
+        },
+        resolveValueFromPath: (item) => {
+          const firstPath = item?.paths?.[0];
+          if (firstPath === 'constant') return '';
+          if (firstPath === 'null') return null;
+          return undefined;
+        },
+        resolvePathFromValue: (currentValue) => {
+          if (currentValue === null) return ['null'];
+          return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
+        },
       }}
     />
   );
