@@ -141,7 +141,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
     const renderRightValueComponent = useCallback(() => {
       const Comp = staticInputRenderer;
-      return <Comp value={rightValue} onChange={(val: any) => (value.rightValue = val)} />;
+      return (
+        <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
+          <Comp value={rightValue} onChange={(val: any) => (value.rightValue = val)} />
+        </div>
+      );
     }, [staticInputRenderer, rightValue, value]);
 
     // 当启用右侧变量输入时，构造 VariableInput 的 converters，使其在未选择变量时渲染与 mergedSchema 对应的静态输入
@@ -155,21 +159,23 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       };
     }, [staticInputRenderer, rightValue]);
 
+    const isRightVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
+
     return (
-      <Space>
+      <Space wrap style={{ width: '100%' }}>
         <VariableInput
           value={leftValue}
           metaTree={() => model.context.getPropertyMetaTree('{{ ctx.collection }}')}
           onChange={handleLeftChange}
           converters={customConverters}
           showValueComponent={false}
-          style={{ width: 200 }}
+          style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
           onlyLeafSelectable={true}
           placeholder={t('Select field')}
         />
 
         <Select
-          style={{ width: 120 }}
+          style={{ flex: '0 0 140px', minWidth: 120, maxWidth: '100%' }}
           placeholder={t('Comparition')}
           value={operator || undefined}
           onChange={handleOperatorChange}
@@ -189,7 +195,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               metaTree={rightMetaTree || (() => ctx.getPropertyMetaTree())}
               converters={rightConverters}
               showValueComponent
-              style={{ width: 260 }}
+              style={{
+                flex: isRightVariable ? '1 1 50%' : '1 1 30%',
+                minWidth: 160,
+                maxWidth: '100%',
+              }}
               placeholder={t('Enter value')}
             />
           ) : (
