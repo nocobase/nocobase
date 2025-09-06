@@ -83,6 +83,19 @@ export const useStyles = genStyleHook('upload', (token) => {
         [`${antCls}-btn`]: {
           background: 'rgba(0, 0, 0, 0.5)',
         },
+        // Override Ant Design's default upload icon styles to ensure all icons have white color
+        [`${componentCls}-list-picture-card .ant-upload-list-item-actions .anticon`]: {
+          zIndex: 10,
+          width: '16px',
+          margin: '0 4px',
+          fontSize: '16px',
+          cursor: 'pointer',
+          transition: 'all 0.1s',
+          color: '#fff !important',
+          '&:hover': {
+            color: '#fff !important',
+          },
+        },
         [`${componentCls}-list-picture-card-container`]: {
           // marginBlock: '0 28px !important',
         },
