@@ -14,6 +14,7 @@ import type { VariableTagProps } from './types';
 import { parseValueToPath } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
+import { useFlowContext } from '../../FlowContextProvider';
 
 const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
@@ -24,13 +25,14 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   metaTree,
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  const ctx = useFlowContext();
 
   const { data: displayedValue } = useRequest(
     async () => {
       if (metaTreeNode) {
         return metaTreeNode.parentTitles
-          ? [...metaTreeNode.parentTitles, metaTreeNode.title].join('/')
-          : metaTreeNode.title || '';
+          ? [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/')
+          : ctx.t(metaTreeNode.title) || '';
       }
       if (!value) return String(value);
       const path = parseValueToPath(value);

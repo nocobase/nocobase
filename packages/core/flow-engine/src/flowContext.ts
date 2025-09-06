@@ -41,6 +41,7 @@ import {
   resolveDefaultParams,
   resolveExpressions,
   extractUsedVariablePaths,
+  escapeT,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
 import { JSONValue } from './utils/params-resolvers';
@@ -105,6 +106,13 @@ export interface PropertyMeta {
 // hint fields like `title` and `sort` for UI building before resolution.
 export type PropertyMetaFactory = {
   (): PropertyMeta | Promise<PropertyMeta | null> | null;
+  /**
+   * 仅作为“是否可能存在子节点”的提示，不影响 meta 工厂本身的惰性特性。
+   * - true（默认）：视为可能有 children，节点会提供 children 懒加载器（用于级联展开加载子级）。
+   * - false：视为没有 children，不渲染展开箭头，且不提供 children 懒加载器；
+   *          但节点本身的 meta 工厂仍保持惰性（在需要时仍可解析出 title/type 等信息）。
+   */
+  hasChildren?: boolean;
   title?: string;
   sort?: number;
 };
@@ -625,6 +633,7 @@ export class FlowContext {
 
     if (typeof metaOrFactory === 'function') {
       const initialTitle = name;
+      const hasChildrenHint = (metaOrFactory as PropertyMetaFactory).hasChildren;
       node = {
         name,
         title: metaOrFactory.title || initialTitle, // 初始使用 name 作为 title
@@ -633,30 +642,41 @@ export class FlowContext {
         uiSchema: undefined,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
-        children: async () => {
-          try {
-            const meta = await metaOrFactory();
-            const finalTitle = meta?.title || name;
-            node.title = finalTitle;
-            node.type = meta?.type;
-            node.interface = meta?.interface;
-            node.uiSchema = meta?.uiSchema;
-            // parentTitles 保持不变，因为它不包含自身 title
+        // 注意：即便 hasChildren === false，也只是“没有子节点”的 UI 提示；
+        // 节点自身依然通过 meta 工厂保持惰性特性（需要时可解析出 title/type 等）。
+        // 这里仅在 hasChildren !== false 时，提供子节点的懒加载逻辑。
+        children:
+          hasChildrenHint === false
+            ? undefined
+            : async () => {
+                try {
+                  const meta = await metaOrFactory();
+                  const finalTitle = meta?.title || name;
+                  node.title = finalTitle;
+                  node.type = meta?.type;
+                  node.interface = meta?.interface;
+                  node.uiSchema = meta?.uiSchema;
+                  // parentTitles 保持不变，因为它不包含自身 title
 
-            if (!meta?.properties) return [];
+                  if (!meta?.properties) return [];
 
-            const childNodes = this.#createChildNodes(meta.properties, paths, [...parentTitles, finalTitle], meta);
-            const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
+                  const childNodes = this.#createChildNodes(
+                    meta.properties,
+                    paths,
+                    [...parentTitles, finalTitle],
+                    meta,
+                  );
+                  const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
 
-            // 更新 children 为解析后的结果
-            node.children = resolvedChildren;
+                  // 更新 children 为解析后的结果
+                  node.children = resolvedChildren;
 
-            return resolvedChildren;
-          } catch (error) {
-            console.warn(`Failed to load meta for ${name}:`, error);
-            return [];
-          }
-        },
+                  return resolvedChildren;
+                } catch (error) {
+                  console.warn(`Failed to load meta for ${name}:`, error);
+                  return [];
+                }
+              },
       };
     } else {
       // 同步 meta：直接创建节点
@@ -1014,12 +1034,22 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineProperty('token', {
       get: () => this.api?.auth?.token,
       cache: false,
-      meta: { type: 'string', title: this.t('API Token'), sort: 980 },
+      // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
+      meta: Object.assign(() => ({ type: 'string', title: this.t('API Token'), sort: 980 }), {
+        title: 'API Token',
+        sort: 980,
+        hasChildren: false,
+      }),
     });
     this.defineProperty('role', {
       get: () => this.api?.auth?.role,
       cache: false,
-      meta: { type: 'string', title: this.t('Current role'), sort: 990 },
+      // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
+      meta: Object.assign(() => ({ type: 'string', title: this.t('Current role'), sort: 990 }), {
+        title: escapeT('Current role'),
+        sort: 990,
+        hasChildren: false,
+      }),
     });
     this.defineProperty('logger', {
       get: () => {

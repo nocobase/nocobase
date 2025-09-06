@@ -17,6 +17,7 @@ import {
   preloadContextSelectorPath,
 } from './variables/utils';
 import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
+import { useFlowContext } from '../FlowContextProvider';
 
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
@@ -40,6 +41,21 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
 
+  // 获取引擎上下文中的翻译函数，若不可用则回退为原文
+  const flowCtx = useFlowContext<any>();
+
+  const translateOptions = useCallback(
+    (items: ContextSelectorItem[] | undefined): ContextSelectorItem[] => {
+      if (!items) return [];
+      return items.map((o) => ({
+        ...o,
+        label: flowCtx.t(o.label),
+        children: Array.isArray(o.children) ? translateOptions(o.children) : o.children,
+      }));
+    },
+    [flowCtx],
+  );
+
   // 用于强制重新渲染的状态
   const [updateFlag, setUpdateFlag] = useState(0);
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
@@ -50,8 +66,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 触发 rc-cascader 重新构建 pathKeyEntities，避免二级节点未被索引导致的报错。
   const options = useMemo(() => {
     if (!resolvedMetaTree) return [];
-    return buildContextSelectorItems(resolvedMetaTree);
-  }, [resolvedMetaTree, updateFlag]);
+    const base = buildContextSelectorItems(resolvedMetaTree);
+    return translateOptions(base);
+  }, [resolvedMetaTree, updateFlag, translateOptions]);
+
+  // 内部展开路径：在 onlyLeafSelectable=true 时，点击父节点不会触发 onChange，
+  // 但会触发 loadData。我们在此记录路径以在懒加载后保持展开。
+  const [tempSelectedPath, setTempSelectedPath] = useState<string[]>([]);
 
   // 处理异步加载子节点
   const handleLoadData = useCallback(
@@ -67,12 +88,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       try {
+        // 记录当前点击的路径，保证 options 重建后仍能维持展开并展示子级
+        setTempSelectedPath(selectedOptions.map((o) => String(o.value)));
         targetOption.loading = true;
         triggerUpdate();
         const childNodes = await targetMetaNode.children();
         targetMetaNode.children = childNodes;
         // 立即把 options 树也补上 children，避免等待下一次重算
-        const childOptions = buildContextSelectorItems(childNodes);
+        const childOptions = translateOptions(buildContextSelectorItems(childNodes));
         targetOption.children = childOptions;
         targetOption.isLeaf = !childOptions || childOptions.length === 0;
       } catch (error) {
@@ -88,10 +111,6 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const currentPath = useMemo(() => {
     return customParseValueToPath(value);
   }, [value, customParseValueToPath]);
-
-  // 为了在展开非叶子节点时维持展开态（即使 options 在懒加载后被重建），
-  // 这里增加一个内部路径状态，在外部 value 未提供有效路径时作为后备。
-  const [tempSelectedPath, setTempSelectedPath] = useState<string[]>([]);
 
   // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
   // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
@@ -179,7 +198,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     <Cascader
       {...cascaderProps}
       options={options}
-      value={effectivePath && effectivePath.length > 0 ? effectivePath : tempSelectedPath}
+      value={tempSelectedPath && tempSelectedPath.length > 0 ? tempSelectedPath : effectivePath}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}

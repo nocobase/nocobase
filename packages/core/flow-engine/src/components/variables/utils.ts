@@ -88,7 +88,10 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
   }
 
   const convertNode = (node: MetaTreeNode): ContextSelectorItem => {
-    const hasChildren = node.children;
+    const hasChildren = !!(
+      node.children &&
+      (typeof node.children === 'function' || (Array.isArray(node.children) && node.children.length > 0))
+    );
     const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
@@ -97,7 +100,7 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
       paths: node.paths,
     };
 
-    if (hasChildren && Array.isArray(node.children)) {
+    if (Array.isArray(node.children) && node.children.length > 0) {
       option.children = node.children.map((child) => convertNode(child));
     }
 
