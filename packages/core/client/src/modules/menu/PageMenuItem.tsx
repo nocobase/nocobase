@@ -107,7 +107,9 @@ export const PageMenuItem = () => {
     // 同时插入一个对应的 Schema
     insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
-  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />;
+  return (
+    <SchemaInitializerItem title={t('Classic page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />
+  );
 };
 
 export function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {

@@ -18,7 +18,7 @@
     "antd-mobile": "^5.38"
   },
   "peerDependencies": {
-    "@formily/reactive": "^2",
+    "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
     "@nocobase/client": "1.x",
     "@nocobase/plugin-notification-manager": "1.x",

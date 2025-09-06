@@ -43,7 +43,10 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
     () =>
       triggerOptions
         .filter((item) => {
-          return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
+          return (
+            typeof item.options.isActionTriggerable_deprecated === 'function' ||
+            item.options.isActionTriggerable_deprecated === true
+          );
         })
         .map((item) => item.value),
     [triggerOptions],
@@ -73,11 +76,11 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
         return true;
       }
       const trigger = workflowPlugin.triggers.get(type);
-      if (trigger.isActionTriggerable === true) {
+      if (trigger.isActionTriggerable_deprecated === true) {
         return true;
       }
-      if (typeof trigger.isActionTriggerable === 'function') {
-        return trigger.isActionTriggerable(config, {
+      if (typeof trigger.isActionTriggerable_deprecated === 'function') {
+        return trigger.isActionTriggerable_deprecated(config, {
           action: actionType,
           formAction,
           buttonAction,
