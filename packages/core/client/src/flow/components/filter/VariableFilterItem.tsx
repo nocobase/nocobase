@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Select, Space } from 'antd';
+import { Input, Select, Space } from 'antd';
 import merge from 'lodash/merge';
 import { observer } from '@formily/reactive-react';
 import {
@@ -17,6 +17,7 @@ import {
   type Converters,
   FlowModel,
   useFlowViewContext,
+  parseValueToPath,
 } from '@nocobase/flow-engine';
 import { createStaticInputRenderer } from './utils';
 import _ from 'lodash';
@@ -158,21 +159,54 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       );
     }, [staticInputRenderer, rightValue, value]);
 
-    // 是否为变量值（例如 "{{ ctx.user.id }}"）
-    const isRightVariable = typeof rightValue === 'string' && /\{\{\s*ctx\b/.test(rightValue);
+    // Null 占位组件（仿照 DefaultValue.tsx 的实现）
+    const NullComponent = useMemo(() => {
+      return function NullValue() {
+        return <Input placeholder={`<${t('Null')}>`} readOnly />;
+      };
+    }, [t]);
 
-    //
+    // 右侧变量树：在原有变量上下文前，追加“常量/空值”两个根选项
+    const mergedRightMetaTree = useMemo(() => {
+      return async () => {
+        const base = (
+          typeof rightMetaTree === 'function' ? await rightMetaTree() : rightMetaTree || ctx.getPropertyMetaTree()
+        ) as MetaTreeNode[];
+        return [
+          { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'], render: staticInputRenderer },
+          { title: t('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+          ...(Array.isArray(base) ? base : []),
+        ];
+      };
+    }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t]);
 
     // 当启用右侧变量输入时，构造 VariableInput 的 converters：
     // - 变量模式：返回 null 让 VariableInput 渲染 VariableTag
-    // - 常量模式：返回静态输入组件，且依赖仅与 isRightVariable 和 schema 相关，避免随输入字符抖动
+    // - 常量模式/空值：根据所选根节点返回对应输入组件
+    // - 路径/值互相解析，保证从值恢复时可定位到 constant/null
     const rightConverters = useMemo<Converters>(() => {
       return {
-        renderInputComponent: () => {
-          return isRightVariable ? null : staticInputRenderer;
+        renderInputComponent: (meta) => {
+          const first = meta?.paths?.[0];
+          if (first === 'constant') return staticInputRenderer;
+          if (first === 'null') return NullComponent;
+          return null;
+        },
+        resolveValueFromPath: (meta) => {
+          const first = meta?.paths?.[0];
+          if (first === 'constant') return '';
+          if (first === 'null') return null;
+          return undefined; // 交给默认逻辑格式化变量表达式
+        },
+        resolvePathFromValue: (val) => {
+          if (val === null) return ['null'];
+          // 变量表达式：使用内置解析；其他静态值走 constant
+          const parsed = parseValueToPath(val as any);
+          if (parsed) return parsed;
+          return ['constant'];
         },
       };
-    }, [isRightVariable, staticInputRenderer]);
+    }, [NullComponent, staticInputRenderer]);
 
     return (
       <Space wrap style={{ width: '100%' }}>
@@ -205,10 +239,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
             <VariableInput
               value={rightValue}
               onChange={(v) => (value.rightValue = v)}
-              metaTree={rightMetaTree || (() => ctx.getPropertyMetaTree())}
+              metaTree={mergedRightMetaTree}
               converters={rightConverters}
               showValueComponent
-              style={{ flex: isRightVariable ? '1 1 50%' : '1 1 30%', minWidth: 160, maxWidth: '100%' }}
+              style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
               placeholder={t('Enter value')}
             />
           ) : (

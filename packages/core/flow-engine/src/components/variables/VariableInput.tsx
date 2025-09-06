@@ -228,7 +228,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return;
     }
     setCurrentMetaTreeNode(null);
-    emitChange(null);
+    emitChange('');
   }, [emitChange, disabled]);
 
   const stableProps = useMemo(() => {
