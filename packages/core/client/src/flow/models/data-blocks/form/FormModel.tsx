@@ -8,7 +8,9 @@
  */
 
 // import { createForm, Form } from '@formily/core';
-import { CollectionField } from '@nocobase/flow-engine';
+import { CollectionField, inferRecordRef } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
@@ -16,6 +18,7 @@ import { CollectionBlockModel } from '../../base/BlockModel';
 import { BlockGridModel } from '../../base/GridModel';
 import { FormActionModel } from './FormActionModel';
 import { FormFieldGridModel } from './FormFieldGridModel';
+import { buildRecordMeta } from '@nocobase/flow-engine';
 
 export class FormModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
@@ -28,9 +31,12 @@ export class FormModel extends CollectionBlockModel<{
   onInit(options) {
     super.onInit(options);
 
+    const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
+      resolveOnServer: true,
+      meta: recordMeta,
     });
   }
 

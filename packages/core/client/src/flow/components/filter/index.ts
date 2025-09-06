@@ -11,8 +11,5 @@ export { FilterContainer as FilterContent } from './FilterContainer';
 export { FilterGroup } from './FilterGroup';
 export { FilterItem } from './FilterItem';
 export type { FilterItemProps } from './FilterItem';
-export { VariableFilterItem as ContextFilterItem } from './VariableFilterItem';
-export type {
-  VariableFilterItemProps as ContextFilterItemProps,
-  VariableFilterItemValue as ContextFilterItemValue,
-} from './VariableFilterItem';
+export { VariableFilterItem } from './VariableFilterItem';
+export type { VariableFilterItemProps, VariableFilterItemValue } from './VariableFilterItem';

@@ -56,5 +56,6 @@
   "Add": "添加",
   "Name": "名称",
   "Model with ID {{uid}} not found": "未找到 ID 为 {{uid}} 的模型",
-  "Common actions": "通用操作"
+  "Common actions": "通用操作",
+  "This variable is not available": "此变量不可用"
 }

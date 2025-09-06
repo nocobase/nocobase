@@ -22,6 +22,8 @@ import {
   FormItem,
   ModelRenderMode,
 } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
@@ -153,11 +155,18 @@ export class TableColumnModel extends CollectionFieldItemModel {
       <>
         {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
           const fork = field.createFork({}, `${index}`);
+          const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(
+            fork.context,
+            () => fork.context.collection,
+          );
           fork.context.defineProperty('record', {
             get: () => record,
+            resolveOnServer: true,
+            meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
             get: () => index,
+            meta: { type: 'number', title: fork.context.t('Current row') },
           });
           const value = get(record, this.fieldPath);
           return (

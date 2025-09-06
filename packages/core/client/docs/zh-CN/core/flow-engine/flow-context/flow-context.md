@@ -26,6 +26,20 @@
 - **缓存控制**：`cache: true`（默认）或 `false`（每次访问都执行 getter）
 - **元信息**：`meta` 参数可用于描述属性结构
 
+##### 服务端解析标记（可选）
+
+- `resolveOnServer?: boolean | (subPath: string) => boolean`
+  - 默认不设置（即 false）：该变量仅在前端解析
+  - 设为 true：该变量的所有用法都交由服务端解析（会通过 variables:resolve 调用服务器）
+  - 设为函数：可按子路径精确控制哪些片段由服务端解析，例如仅 `record` 分支：
+    ```ts
+    ctx.defineProperty('view', {
+      get: () => currentView,
+      meta: createViewMeta(ctx, () => currentView),
+      resolveOnServer: (p) => p === 'record' || p.startsWith('record.'),
+    });
+    ```
+
 #### `has(key: string): boolean`
 
 判断当前上下文是否有某个属性。
@@ -37,6 +51,17 @@
 #### `defineMethod(name: string, fn: Function): void`
 
 注册方法（同步或异步均可）。
+
+---
+
+### 属性工具方法
+
+#### `getPropertyOptions(key: string): PropertyOptions | undefined`
+
+获取属性定义选项（包含代理链）。
+
+- 先查找当前上下文通过 `defineProperty` 注册的属性；若不存在，则沿委托链向上查找第一个命中的定义
+- 返回 `PropertyOptions` 或 `undefined`
 
 ---
 

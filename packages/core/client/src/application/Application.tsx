@@ -291,9 +291,6 @@ export class Application {
       get: () => this.router.router,
       cache: false,
     });
-    this.flowEngine.context.defineProperty('role', {
-      get: () => this.apiClient.auth.role,
-    });
     this.flowEngine.context.defineProperty('documentTitle', {
       get: () => document.title,
     });

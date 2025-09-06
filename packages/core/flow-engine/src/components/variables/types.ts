@@ -24,13 +24,14 @@ export interface FlowContextSelectorProps
 }
 
 export interface ContextSelectorItem {
-  label: string;
+  label: React.ReactNode;
   value: string;
   isLeaf?: boolean;
   children?: ContextSelectorItem[];
   loading?: boolean;
   meta?: MetaTreeNode;
   paths: string[];
+  disabled?: boolean;
 }
 
 export interface Converters {
