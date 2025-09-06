@@ -81,9 +81,11 @@ export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
-export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+export {
+  fileSizeSetting,
+  showFileName,
+} from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
-export { fileSizeSetting } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 
 export { languageCodes } from './locale';
 
@@ -95,3 +97,5 @@ export {
   RefreshComponentProvider,
   useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';
+
+export { transformFilter } from '@nocobase/utils/client';

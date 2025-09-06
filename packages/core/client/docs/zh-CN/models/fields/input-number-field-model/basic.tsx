@@ -1,5 +1,5 @@
-import { Application, FieldModelRenderer, FormComponent, FormItem, NumberFieldModel, Plugin } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Application, FieldModelRenderer, FormComponent, NumberFieldModel, Plugin } from '@nocobase/client';
+import { FlowModel, FlowModelRenderer, FormItem } from '@nocobase/flow-engine';
 import { Form, InputNumber } from 'antd';
 import React, { useEffect } from 'react';
 

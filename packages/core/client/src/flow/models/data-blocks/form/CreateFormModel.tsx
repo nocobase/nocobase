@@ -88,6 +88,25 @@ CreateFormModel.registerFlow({
   },
 });
 
+CreateFormModel.registerFlow({
+  key: 'Event settings',
+  on: 'fieldChange',
+  title: escapeT('Event settings'),
+  steps: {
+    fieldChange: {
+      title: escapeT('On field change'),
+      uiSchema: {
+        code: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+          title: escapeT('JavaScript'),
+        },
+      },
+      async handler(ctx, params) {},
+    },
+  },
+});
+
 CreateFormModel.define({
   label: escapeT('Form (Add new)'),
   searchable: true,

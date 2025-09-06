@@ -14,6 +14,7 @@ import {
   FlowEngine,
   FlowModel,
   FlowModelRenderer,
+  FormItem,
   SingleRecordResource,
   buildRecordMeta,
   inferRecordRef,
@@ -25,7 +26,6 @@ import _ from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormFieldModel } from '../../fields';
-import { FormItem } from './FormItem/FormItem';
 import { FormComponent } from './FormModel';
 
 export class QuickEditForm extends FlowModel {
