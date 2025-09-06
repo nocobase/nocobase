@@ -65,8 +65,16 @@ export const searchInLoadedNodes = (
     for (const node of nodes) {
       const nodePath = [...currentPath, node.value];
 
+      // 计算可搜索的纯文本标签
+      const labelText =
+        typeof node.label === 'string'
+          ? node.label
+          : typeof node.meta?.title === 'string'
+            ? node.meta!.title
+            : String(node.value);
+
       // 检查节点标签是否匹配搜索文本
-      if (node.label.toLowerCase().includes(lowerSearchText)) {
+      if (labelText.toLowerCase().includes(lowerSearchText)) {
         results.push(node);
       }
 
@@ -92,12 +100,15 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
       node.children &&
       (typeof node.children === 'function' || (Array.isArray(node.children) && node.children.length > 0))
     );
+    // 计算禁用状态：支持 boolean 或函数
+    const disabled = !!(typeof node.disabled === 'function' ? node.disabled() : node.disabled);
     const option: ContextSelectorItem = {
       label: node.title || node.name,
       value: node.name,
       isLeaf: !hasChildren,
       meta: node,
       paths: node.paths,
+      disabled,
     };
 
     if (Array.isArray(node.children) && node.children.length > 0) {

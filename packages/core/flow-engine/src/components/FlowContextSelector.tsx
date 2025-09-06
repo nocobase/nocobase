@@ -8,7 +8,8 @@
  */
 
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { Button, Cascader } from 'antd';
+import { Button, Cascader, Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import {
   buildContextSelectorItems,
@@ -47,11 +48,40 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const translateOptions = useCallback(
     (items: ContextSelectorItem[] | undefined): ContextSelectorItem[] => {
       if (!items) return [];
-      return items.map((o) => ({
-        ...o,
-        label: flowCtx.t(o.label),
-        children: Array.isArray(o.children) ? translateOptions(o.children) : o.children,
-      }));
+      return items.map((o) => {
+        // 计算禁用状态与提示
+        const meta = o.meta;
+        const disabled = meta ? !!(typeof meta.disabled === 'function' ? meta.disabled() : meta.disabled) : false;
+        const disabledReason = meta
+          ? ((typeof meta.disabledReason === 'function' ? meta.disabledReason() : meta.disabledReason) as any)
+          : undefined;
+
+        // 文本国际化：仅当 label 为字符串时进行翻译
+        const baseLabel = typeof o.label === 'string' ? flowCtx.t(o.label) : o.label;
+
+        const label = disabled ? (
+          <span>
+            {baseLabel}
+            <Tooltip
+              title={disabledReason || flowCtx.t('This variable is not available')}
+              placement="right"
+              overlayClassName="flow-variable-disabled-tip"
+              destroyTooltipOnHide
+            >
+              <QuestionCircleOutlined style={{ marginLeft: 6, color: 'rgba(0,0,0,0.35)' }} />
+            </Tooltip>
+          </span>
+        ) : (
+          baseLabel
+        );
+
+        return {
+          ...o,
+          label,
+          disabled,
+          children: Array.isArray(o.children) ? translateOptions(o.children) : o.children,
+        };
+      });
     },
     [flowCtx],
   );

@@ -15,6 +15,7 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
+import qs from 'qs';
 import pino from 'pino';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
@@ -82,6 +83,9 @@ export interface MetaTreeNode {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   paths: string[];
   parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
+  // 变量禁用状态与原因（用于变量选择器 UI 展示）
+  disabled?: boolean | (() => boolean);
+  disabledReason?: string | (() => string | undefined);
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -95,6 +99,10 @@ export interface PropertyMeta {
   sort?: number;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
+  // 变量禁用控制：若 disabled 为真（或函数返回真）则禁用
+  disabled?: boolean | (() => boolean);
+  // 禁用原因（用于 UI 小问号提示），可为函数
+  disabledReason?: string | (() => string | undefined);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
   // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
   buildVariablesParams?: (
@@ -631,6 +639,14 @@ export class FlowContext {
 
     let node: MetaTreeNode;
 
+    // 计算禁用状态与原因的帮助函数
+    const computeDisabledFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string } => {
+      if (!m) return { disabled: false };
+      const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
+      const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
+      return { disabled: !!disabledVal, reason };
+    };
+
     if (typeof metaOrFactory === 'function') {
       const initialTitle = name;
       const hasChildrenHint = (metaOrFactory as PropertyMetaFactory).hasChildren;
@@ -642,6 +658,16 @@ export class FlowContext {
         uiSchema: undefined,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
+        disabled: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return false;
+          return computeDisabledFromMeta(maybe as PropertyMeta).disabled;
+        },
+        disabledReason: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return undefined;
+          return computeDisabledFromMeta(maybe as PropertyMeta).reason;
+        },
         // 注意：即便 hasChildren === false，也只是“没有子节点”的 UI 提示；
         // 节点自身依然通过 meta 工厂保持惰性特性（需要时可解析出 title/type 等）。
         // 这里仅在 hasChildren !== false 时，提供子节点的懒加载逻辑。
@@ -681,6 +707,7 @@ export class FlowContext {
     } else {
       // 同步 meta：直接创建节点
       const nodeTitle = metaOrFactory.title;
+      const { disabled, reason } = computeDisabledFromMeta(metaOrFactory);
       node = {
         name,
         title: nodeTitle,
@@ -689,6 +716,8 @@ export class FlowContext {
         uiSchema: metaOrFactory.uiSchema,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
+        disabled,
+        disabledReason: reason,
         children: metaOrFactory.properties
           ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
           : undefined,
@@ -1050,6 +1079,49 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         sort: 990,
         hasChildren: false,
       }),
+    });
+    // URL 查询参数（等价于 1.0 的 `$nURLSearchParams`）
+    this.defineProperty('urlSearchParams', {
+      // 不缓存，确保随 URL 变化实时生效
+      cache: false,
+      get: () => {
+        const search = this.location?.search || '';
+        const str = search.startsWith('?') ? search.slice(1) : search;
+        return (qs.parse(str) as Record<string, any>) || {};
+      },
+      // 变量选择器中的元信息与动态子项
+      meta: Object.assign(
+        () => ({
+          type: 'object',
+          title: this.t('URL search params'),
+          sort: 970,
+          disabled: () => {
+            const search = this.location?.search || '';
+            const str = search.startsWith('?') ? search.slice(1) : search;
+            const params = (qs.parse(str) as Record<string, any>) || {};
+            return Object.keys(params).length === 0;
+          },
+          disabledReason: () =>
+            this.t(
+              'The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.',
+            ),
+          properties: async () => {
+            const search = this.location?.search || '';
+            const str = search.startsWith('?') ? search.slice(1) : search;
+            const params = (qs.parse(str) as Record<string, any>) || {};
+            const props: Record<string, any> = {};
+            for (const key of Object.keys(params)) {
+              props[key] = { type: 'string', title: key };
+            }
+            return props;
+          },
+        }),
+        {
+          title: escapeT('URL search params'),
+          sort: 970,
+          hasChildren: true,
+        },
+      ),
     });
     this.defineProperty('logger', {
       get: () => {

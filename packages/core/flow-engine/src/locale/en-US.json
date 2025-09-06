@@ -56,5 +56,6 @@
   "Add": "Add",
   "Name": "Name",
   "Model with ID {{uid}} not found": "Model with ID {{uid}} not found",
-  "Common actions": "Common actions"
+  "Common actions": "Common actions",
+  "This variable is not available": "This variable is not available"
 }
