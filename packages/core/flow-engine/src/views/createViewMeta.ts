@@ -10,27 +10,57 @@
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import { inferRecordRef, buildRecordMeta } from '../utils/variablesParams';
 
-function makeMetaFromValue(value: any, title?: string): any {
+// 判断是否为普通对象（Plain Object），避免对类实例/代理等进行深度遍历
+function isPlainObject(val: any) {
+  if (val === null || typeof val !== 'object') return false;
+  const proto = Object.getPrototypeOf(val);
+  return proto === Object.prototype || proto === null;
+}
+
+// 懒加载元信息：仅在展开节点时计算子属性；并加入循环引用防护
+function makeMetaFromValue(value: any, title?: string, seen?: WeakSet<any>): any {
   const t = typeof value;
   if (value === null || value === undefined) return { type: 'any', title };
+
   if (Array.isArray(value)) {
-    // 为数组提供索引子节点，最多展示前 10 项，便于继续向下遍历
-    const max = Math.min(value.length || 0, 10);
-    const children: Record<string, any> = {};
-    for (let i = 0; i < max; i++) {
-      children[String(i)] = makeMetaFromValue(value[i], `#${i}`);
-    }
-    return { type: 'array', title, properties: Object.keys(children).length ? children : undefined };
+    return {
+      type: 'array',
+      title,
+      properties: async () => {
+        const max = Math.min(value.length || 0, 10);
+        const children: Record<string, any> = {};
+        const nextSeen = seen ?? new WeakSet<any>();
+        for (let i = 0; i < max; i++) {
+          children[String(i)] = makeMetaFromValue(value[i], `#${i}`, nextSeen);
+        }
+        return children;
+      },
+    };
   }
+
   if (t === 'string') return { type: 'string', title };
   if (t === 'number') return { type: 'number', title };
   if (t === 'boolean') return { type: 'boolean', title };
-  if (t === 'object') {
-    const props: Record<string, any> = {};
-    Object.keys(value || {}).forEach((k) => {
-      props[k] = makeMetaFromValue(value[k], k);
-    });
-    return { type: 'object', title, properties: props };
+
+  // 仅对普通对象做懒递归；其它对象（如运行时实例）视为 any，防止进入复杂的循环引用
+  if (t === 'object' && isPlainObject(value)) {
+    return {
+      type: 'object',
+      title,
+      properties: async () => {
+        const nextSeen = seen ?? new WeakSet<any>();
+        if (nextSeen.has(value)) {
+          // 循环引用：不再展开子节点
+          return {};
+        }
+        nextSeen.add(value);
+        const props: Record<string, any> = {};
+        Object.keys(value || {}).forEach((k) => {
+          props[k] = makeMetaFromValue(value[k], k, nextSeen);
+        });
+        return props;
+      },
+    };
   }
   return { type: 'any', title };
 }

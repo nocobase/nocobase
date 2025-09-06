@@ -89,6 +89,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     return customParseValueToPath(value);
   }, [value, customParseValueToPath]);
 
+  // 为了在展开非叶子节点时维持展开态（即使 options 在懒加载后被重建），
+  // 这里增加一个内部路径状态，在外部 value 未提供有效路径时作为后备。
+  const [tempSelectedPath, setTempSelectedPath] = useState<string[]>([]);
+
   // 当 metaTree 为子层（如 getPropertyMetaTree('{{ ctx.collection }}') 返回的是 collection 的子节点）
   // 而 value path 仍包含根键（如 ['collection', 'field']）时，自动丢弃不存在的首段，确保级联能正确对齐。
   const effectivePath = useMemo(() => {
@@ -101,8 +105,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 预加载：当存在有效路径时，按路径逐级加载 children，保证默认展开和选中路径可用
   const pathToPreload = useMemo(() => {
-    return Array.isArray(effectivePath) ? effectivePath : [];
-  }, [effectivePath]);
+    const finalPath = effectivePath && effectivePath.length > 0 ? effectivePath : tempSelectedPath;
+    return Array.isArray(finalPath) ? finalPath : [];
+  }, [effectivePath, tempSelectedPath]);
 
   useEffect(() => {
     if (pathToPreload.length === 0 || !options?.length) return;
@@ -125,6 +130,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
         onChange?.('', lastOption?.meta);
+        setTempSelectedPath([]);
         return;
       }
 
@@ -146,6 +152,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isLeaf) {
         onChange?.(formattedValue, lastOption?.meta);
+        // 选中叶子节点后，可清空内部临时路径（外部 value 将驱动级联）
+        setTempSelectedPath([]);
         return;
       }
 
@@ -160,6 +168,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       } else {
         // 单击：记录状态，仅展开
         lastSelectedRef.current = { path: pathString, time: now };
+        // 同时记录内部路径，保证懒加载后 options 重建也能维持展开
+        setTempSelectedPath(path);
       }
     },
     [onChange, customFormatPathToValue, onlyLeafSelectable],
@@ -169,7 +179,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     <Cascader
       {...cascaderProps}
       options={options}
-      value={effectivePath}
+      value={effectivePath && effectivePath.length > 0 ? effectivePath : tempSelectedPath}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}
