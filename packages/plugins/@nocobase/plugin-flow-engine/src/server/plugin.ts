@@ -10,7 +10,7 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Plugin } from '@nocobase/server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
-import { resolveJsonTemplate } from './template/resolver';
+import { resolveJsonTemplate, JSONValue } from './template/resolver';
 import { variables } from './variables/registry';
 
 export class PluginFlowEngineServer extends Plugin {
@@ -39,23 +39,44 @@ export class PluginFlowEngineServer extends Plugin {
       actions: {
         // 解析 JSON 模板中的 ctx 变量
         resolve: async (ctx, next) => {
-          // 兼容两种提交方式：
-          // 1) 直接将整个 values 当作模板
-          // 2) 将模板放在 values.template 下
-          // 同时兼容 resourcer 的包裹（会把 body 再包到 params.values 下）
+          // 仅保留两种提交方式：
+          // 1) values.batch: [{ id?, template, contextParams }]
+          // 2) values.template + values.contextParams
           const raw = ctx.action?.params?.values ?? {};
           const values = typeof raw?.values !== 'undefined' ? raw.values : raw;
-          const template = typeof values?.template !== 'undefined' ? values.template : values;
-          const contextParams = values?.contextParams || {};
-          const { ok, missing } = variables.validate(template, contextParams);
-          if (!ok) {
-            ctx.throw(400, {
-              code: 'INVALID_CONTEXT_PARAMS',
-              message: `Missing required parameters: ${missing?.join(', ')}`,
-              missing,
-            });
+
+          // 批量解析分支
+          if (Array.isArray(values?.batch)) {
+            const batchItems = values.batch as Array<{
+              id?: string | number;
+              template: JSONValue;
+              contextParams?: Record<string, unknown>;
+            }>;
+            // 请求级缓存由 variables.registry 在首次查询时按需初始化
+            const results: Array<{ id?: string | number; data: unknown }> = [];
+            for (const item of batchItems) {
+              const template = item?.template ?? {};
+              const contextParams = item?.contextParams || {};
+              const requestCtx = new HttpRequestContext(ctx);
+              requestCtx.delegate(this.globalContext);
+              await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
+              const resolved = await resolveJsonTemplate(template, requestCtx);
+              results.push({ id: item?.id, data: resolved });
+            }
+            ctx.body = { results };
+            await next();
+            return;
           }
 
+          // 单条解析分支
+          if (typeof values?.template === 'undefined') {
+            ctx.throw(400, {
+              code: 'INVALID_PAYLOAD',
+              message: 'values.template is required when batch is not provided',
+            });
+          }
+          const template = values.template as JSONValue;
+          const contextParams = values?.contextParams || {};
           const requestCtx = new HttpRequestContext(ctx);
           requestCtx.delegate(this.globalContext);
           await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);

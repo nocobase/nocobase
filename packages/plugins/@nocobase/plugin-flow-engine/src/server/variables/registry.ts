@@ -202,6 +202,56 @@ function inferSelectsFromUsage(paths: string[] = [], params?: any) {
   return { generatedAppends, generatedFields };
 }
 
+/**
+ * 在一次 variables.resolve 调用（或批处理）范围内缓存记录查询结果，减少重复 DB 读。
+ * 缓存挂载在 koaCtx.state.__varResolveBatchCache。
+ */
+async function fetchRecordWithRequestCache(
+  koaCtx: ResourcerContext,
+  dataSourceKey: string,
+  collection: string,
+  filterByTk: unknown,
+  fields?: string[],
+  appends?: string[],
+): Promise<unknown> {
+  try {
+    const stateObj = (koaCtx as ResourcerContext & { state?: Record<string, unknown> }).state;
+    if (stateObj && !(stateObj as Record<string, unknown>)['__varResolveBatchCache']) {
+      (stateObj as Record<string, unknown>)['__varResolveBatchCache'] = new Map<string, unknown>();
+    }
+    const cache = stateObj
+      ? (stateObj as { __varResolveBatchCache?: Map<string, unknown> }).__varResolveBatchCache || null
+      : null;
+    const ds = koaCtx.app.dataSourceManager.get(dataSourceKey || 'main');
+    const cm = ds.collectionManager as SequelizeCollectionManager;
+    if (!cm?.db) return undefined;
+    const repo = cm.db.getRepository(collection);
+
+    const keyObj: { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] } = {
+      ds: dataSourceKey || 'main',
+      c: collection,
+      tk: filterByTk,
+      f: Array.isArray(fields) ? [...fields].sort() : undefined,
+      a: Array.isArray(appends) ? [...appends].sort() : undefined,
+    };
+    const key = JSON.stringify(keyObj);
+    if (cache && cache.has(key)) {
+      return cache.get(key);
+    }
+    const tk: any = filterByTk as any;
+    const rec = await repo.findOne({
+      filterByTk: tk,
+      fields,
+      appends,
+    });
+    const json = rec ? rec.toJSON() : undefined;
+    if (cache) cache.set(key, json);
+    return json;
+  } catch (_) {
+    return undefined;
+  }
+}
+
 function isRecordParams(val: any): val is { collection: string; filterByTk: any; dataSourceKey?: string } {
   return val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val;
 }
@@ -232,16 +282,14 @@ function attachGenericRecordVariables(
       flowCtx.defineProperty(varName, {
         get: async () => {
           const dataSourceKey = topParams?.dataSourceKey || 'main';
-          const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-          const cm = ds.collectionManager as SequelizeCollectionManager;
-          if (!cm?.db) return undefined;
-          const repo = cm.db.getRepository(topParams.collection);
-          const rec = await repo.findOne({
-            filterByTk: topParams.filterByTk,
-            fields: generatedFields,
-            appends: generatedAppends,
-          });
-          return rec ? rec.toJSON() : undefined;
+          return await fetchRecordWithRequestCache(
+            koaCtx,
+            dataSourceKey,
+            topParams.collection,
+            topParams.filterByTk,
+            generatedFields,
+            generatedAppends,
+          );
         },
         cache: true,
       });
@@ -291,16 +339,14 @@ function attachGenericRecordVariables(
           sub.defineProperty(defKey, {
             get: async () => {
               const dataSourceKey = rp?.dataSourceKey || 'main';
-              const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-              const cm = ds.collectionManager as SequelizeCollectionManager;
-              if (!cm?.db) return undefined;
-              const repo = cm.db.getRepository(rp.collection);
-              const rec = await repo.findOne({
-                filterByTk: rp.filterByTk,
-                fields: generatedFields,
-                appends: generatedAppends,
-              });
-              return rec ? rec.toJSON() : undefined;
+              return await fetchRecordWithRequestCache(
+                koaCtx,
+                dataSourceKey,
+                rp.collection,
+                rp.filterByTk,
+                generatedFields,
+                generatedAppends,
+              );
             },
             cache: true,
           });
@@ -328,19 +374,10 @@ variables.register({
 
     flowCtx.defineProperty('user', {
       get: async () => {
-        const uid = (koaCtx as any)?.auth?.user?.id;
+        const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
+        const uid = authObj?.user?.id;
         if (typeof uid === 'undefined' || uid === null) return undefined;
-
-        const ds = koaCtx.app.dataSourceManager.get('main');
-        const cm = ds.collectionManager as SequelizeCollectionManager;
-        if (!cm?.db) return undefined;
-        const repo = cm.db.getRepository('users');
-        const rec = await repo.findOne({
-          filterByTk: uid,
-          fields: generatedFields,
-          appends: generatedAppends,
-        });
-        return rec ? rec.toJSON() : undefined;
+        return await fetchRecordWithRequestCache(koaCtx, 'main', 'users', uid, generatedFields, generatedAppends);
       },
       cache: true,
     });

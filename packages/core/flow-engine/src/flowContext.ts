@@ -45,7 +45,7 @@ import {
   escapeT,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { JSONValue } from './utils/params-resolvers';
+import { JSONValue, enqueueVariablesResolve } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import type { RecordRef } from './utils/serverContextParams';
@@ -1036,19 +1036,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
-            const { data } = await this.api.request({
-              method: 'POST',
-              url: 'variables:resolve',
-              data: {
-                values: {
-                  template,
-                  contextParams: autoContextParams || {},
-                },
-              },
+            serverResolved = await enqueueVariablesResolve(this, {
+              template,
+              contextParams: autoContextParams || {},
             });
-            serverResolved = data?.data ?? template;
           } catch (e) {
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
+            serverResolved = template;
           }
         }
       }
