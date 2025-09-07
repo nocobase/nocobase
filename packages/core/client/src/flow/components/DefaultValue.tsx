@@ -47,17 +47,15 @@ function createTempFieldClass(Base: any) {
         `${initParams.dataSourceKey}.${initParams.collectionName}.${initParams.fieldPath}`;
       const collectionFieldFromManager =
         collectionFieldKey && this.context?.dataSourceManager?.getCollectionField?.(collectionFieldKey);
-      const fallbackCollectionField = this.props?.originalModel?.collectionField;
+      const fallbackCollectionField = this._originalModel?.collectionField;
       if (collectionFieldFromManager || fallbackCollectionField)
         this.context.defineProperty('collectionField', {
           get: () => collectionFieldFromManager || fallbackCollectionField,
         });
     }
     async onAfterAutoFlows() {
-      // Ensure the temp field respects original props for behavior consistency
-      // especially the `multiple` flag for to-many relationships
-      const originalProps = (this.props as { originalModel?: { props?: any } } | undefined)?.originalModel?.props || {};
-      const collectionField = (this.context as { collectionField?: any } | undefined)?.collectionField;
+      const originalProps = this._originalModel?.props || {};
+      const collectionField = this.context?.collectionField;
       const inferMultipleFromCollectionField = () => {
         const relationType = collectionField?.type;
         const relationInterface = collectionField?.interface;
@@ -83,8 +81,12 @@ function createTempFieldClass(Base: any) {
       if (typeof initialValueFromStep !== 'undefined') this.setProps({ value: initialValueFromStep });
     }
 
+    setProps(props: any) {
+      const { originalModel, ...filteredProps } = props || {};
+      return super.setProps?.(filteredProps);
+    }
+
     remove(...args: any[]) {
-      // @ts-ignore
       super.remove?.(...args);
     }
   };
@@ -256,12 +258,16 @@ export const DefaultValue = connect((props: Props) => {
       subKey: null,
       subType: null,
       stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false, originalModel: origin },
+      props: { disabled: false },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
       subModels: { fields: [fieldSub] },
     });
+    const tempFieldModel = created.subModels?.fields?.[0];
+    if (tempFieldModel) {
+      tempFieldModel._originalModel = origin;
+    }
     if (init?.dataSourceKey && init?.collectionName) {
       const dataSourceManager = model.context.dataSourceManager;
       const dataSource = dataSourceManager?.getDataSource?.(init.dataSourceKey);
@@ -285,7 +291,7 @@ export const DefaultValue = connect((props: Props) => {
     const ConstantValueEditor = (inputProps) => {
       React.useEffect(() => {
         tempRoot.setProps({ ...inputProps });
-      }, [tempRoot, inputProps]);
+      }, [inputProps]);
       return (
         <div style={{ flexGrow: 1 }}>
           <FlowModelRenderer model={tempRoot} showFlowSettings={false} />

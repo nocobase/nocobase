@@ -235,8 +235,21 @@ async function fetchRecordWithRequestCache(
       a: Array.isArray(appends) ? [...appends].sort() : undefined,
     };
     const key = JSON.stringify(keyObj);
-    if (cache && cache.has(key)) {
-      return cache.get(key);
+    if (cache) {
+      // 精确命中
+      if (cache.has(key)) return cache.get(key);
+      // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）
+      const needFields = Array.isArray(fields) ? new Set(fields) : undefined;
+      const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
+      for (const [ck, cv] of cache.entries()) {
+        const parsed = JSON.parse(ck) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
+        if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
+        const cachedFields = Array.isArray(parsed.f) ? new Set(parsed.f) : undefined;
+        const cachedAppends = Array.isArray(parsed.a) ? new Set(parsed.a) : undefined;
+        const fieldsOk = !needFields || (cachedFields && [...needFields].every((x) => cachedFields.has(x)));
+        const appendsOk = !needAppends || (cachedAppends && [...needAppends].every((x) => cachedAppends.has(x)));
+        if (fieldsOk && appendsOk) return cv;
+      }
     }
     const tk: any = filterByTk as any;
     const rec = await repo.findOne({

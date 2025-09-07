@@ -7,13 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import { FlowContext } from '../../../flowContext';
+import { FlowContextProvider } from '../../../FlowContextProvider';
+
+/**
+ * Test wrapper component that provides FlowContext to child components
+ */
+export function TestFlowContextWrapper({ context, children }: { context: FlowContext; children: React.ReactNode }) {
+  return <FlowContextProvider context={context}>{children}</FlowContextProvider>;
+}
 
 /**
  * Create a test FlowContext with consistent data for testing
  */
 export function createTestFlowContext() {
   const flowContext = new FlowContext();
+
+  // Mock the translation function
+  (flowContext as any).t = (key: string) => key;
 
   flowContext.defineProperty('user', {
     value: { name: 'John', email: 'john@example.com' },
