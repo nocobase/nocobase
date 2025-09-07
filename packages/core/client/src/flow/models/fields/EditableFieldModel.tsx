@@ -10,8 +10,8 @@
 import { DefaultStructure } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormFieldGridModel, FormModel } from '../..';
+import { JsonInput } from '../../components';
 import { FieldModel } from '../base/FieldModel';
-import { JsonInput } from '../common/JsonInput';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 

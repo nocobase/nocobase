@@ -14,6 +14,7 @@ import {
   DragHandler,
   Droppable,
   escapeT,
+  FieldModelRenderer,
   FlowErrorFallback,
   FlowModel,
   FlowModelContext,
@@ -26,7 +27,6 @@ import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 

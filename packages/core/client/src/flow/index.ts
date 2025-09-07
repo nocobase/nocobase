@@ -11,12 +11,11 @@ import { FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '../application/Plugin';
 import { IconPicker } from '../schema-component/antd/icon-picker';
 import * as actions from './actions';
-import * as filterFormActions from './models/filter-blocks/filter-manager/flow-actions';
-import { FlowEngineRunner } from './FlowEngineRunner';
+import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
-import { DefaultValue } from './components/DefaultValue';
+import * as filterFormActions from './models/filter-blocks/filter-manager/flow-actions';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -30,7 +29,6 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.registerModels(filteredModels);
     this.flowEngine.registerActions(actions);
     this.flowEngine.registerActions(filterFormActions);
-    this.app.addProvider(FlowEngineRunner, {});
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
@@ -39,9 +37,8 @@ export class PluginFlowEngine extends Plugin {
 }
 
 // Export all models for external use
+export * from './components/filter';
 export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
-export * from './components/filter';
-export * from './common/FieldModelRenderer';
 //

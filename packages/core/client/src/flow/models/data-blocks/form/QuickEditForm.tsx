@@ -11,6 +11,7 @@ import {
   BaseRecordResource,
   Collection,
   CollectionField,
+  FieldModelRenderer,
   FlowEngine,
   FlowModel,
   FlowModelRenderer,
@@ -20,7 +21,6 @@ import {
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormFieldModel } from '../../fields';
 import { FormComponent } from './FormModel';
 

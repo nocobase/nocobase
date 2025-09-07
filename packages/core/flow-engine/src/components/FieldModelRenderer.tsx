@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
 import { FlowModelRenderer, FlowModelRendererProps } from '@nocobase/flow-engine';
+import _ from 'lodash';
+import React, { useEffect } from 'react';
 
 const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
   'model',
@@ -28,13 +29,11 @@ const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
 
 export function FieldModelRenderer(props: any) {
   const { model, ...rest } = props;
+  const modelProps = _.omit(rest, flowModelRendererPropKeys);
 
-  const modelProps = Object.fromEntries(
-    Object.entries(rest).filter(([key]) => !flowModelRendererPropKeys.includes(key as keyof FlowModelRendererProps)),
-  );
   useEffect(() => {
     model.setProps(modelProps);
-  }, [modelProps]);
+  }, [model, modelProps]);
 
   return <FlowModelRenderer model={model} {...rest} />;
 }

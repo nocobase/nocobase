@@ -15,6 +15,7 @@ import {
   DragHandler,
   Droppable,
   escapeT,
+  FieldModelRenderer,
   FlowModelContext,
   FlowModelRenderer,
   FlowsFloatContextMenu,
@@ -25,7 +26,6 @@ import {
 import { Form, TableColumnProps, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { TableAssociationFieldModel } from '.';
-import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { FieldModel } from '../../../base/FieldModel';
 import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
