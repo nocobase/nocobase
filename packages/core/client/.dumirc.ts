@@ -258,6 +258,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: '变量解析请求统计',
+              link: '/examples/flow-context/variables',
+            },
+            {
               title: 'ctx.defineProperty() - 定义属性',
               link: '/examples/flow-context/define-property',
             },
