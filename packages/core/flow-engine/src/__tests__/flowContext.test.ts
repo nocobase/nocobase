@@ -237,6 +237,9 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['foo'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -246,6 +249,9 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['bar'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: [
           {
             name: 'baz',
@@ -255,6 +261,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: undefined,
             paths: ['bar', 'baz'],
             parentTitles: ['Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
           {
@@ -265,6 +273,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: undefined,
             paths: ['bar', 'qux'],
             parentTitles: ['Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
         ],
@@ -302,6 +312,9 @@ describe('FlowContext properties and methods', () => {
         interface: 'text',
         uiSchema: { type: 'text' },
         paths: ['foo'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -311,6 +324,9 @@ describe('FlowContext properties and methods', () => {
         interface: 'object',
         uiSchema: { type: 'object' },
         paths: ['bar'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: [
           {
             name: 'x',
@@ -320,6 +336,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: { type: 'text' },
             paths: ['bar', 'x'],
             parentTitles: ['Local Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
         ],
@@ -368,6 +386,9 @@ describe('FlowContext properties and methods', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['syncProp'],
+      parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: [
         {
           name: 'field1',
@@ -377,6 +398,8 @@ describe('FlowContext properties and methods', () => {
           uiSchema: undefined,
           paths: ['syncProp', 'field1'],
           parentTitles: ['Sync Property'],
+          disabled: false,
+          disabledReason: undefined,
           children: undefined,
         },
         {
@@ -387,6 +410,8 @@ describe('FlowContext properties and methods', () => {
           uiSchema: undefined,
           paths: ['syncProp', 'field2'],
           parentTitles: ['Sync Property'],
+          disabled: false,
+          disabledReason: undefined,
           children: undefined,
         },
       ],
@@ -408,6 +433,8 @@ describe('FlowContext properties and methods', () => {
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField1'],
         parentTitles: ['Async Property'],
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -418,6 +445,8 @@ describe('FlowContext properties and methods', () => {
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField2'],
         parentTitles: ['Async Property'],
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
     ]);
@@ -965,6 +994,8 @@ describe('FlowContext delayed meta loading', () => {
       uiSchema: undefined,
       paths: ['userAsync', 'id'],
       parentTitles: ['Delayed User'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(children[1]).toEqual({
@@ -975,6 +1006,8 @@ describe('FlowContext delayed meta loading', () => {
       uiSchema: undefined,
       paths: ['userAsync', 'name'],
       parentTitles: ['Delayed User'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1298,6 +1331,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'id'],
       parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(subTree[1]).toEqual({
@@ -1308,6 +1343,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'name'],
       parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1491,6 +1528,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'profile', 'bio'],
       parentTitles: ['User', 'User Profile'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(profileSubTree[1]).toEqual({
@@ -1501,6 +1540,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'profile', 'avatar'],
       parentTitles: ['User', 'User Profile'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1893,5 +1934,43 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
     const arr = await ensureArray(rootDeepTree);
     expect(arr).toHaveLength(1);
     expect(arr[0].name).toBe('level1');
+  });
+
+  it('aggregates multiple resolves into one batch request', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        // Should be batched into one request with values.batch
+        const batch = config?.data?.values?.batch;
+        expect(Array.isArray(batch)).toBe(true);
+        expect(batch.length).toBe(2);
+        // Echo back distinct data for each id to verify mapping
+        const results = batch.map((item: any, idx: number) => ({ id: item.id, data: { ok: idx + 1 } }));
+        return { data: { data: { results } } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    // Define a server-resolved variable (no builder needed)
+    engine.context.defineProperty('foo', {
+      value: { a: 1 },
+      resolveOnServer: true,
+    });
+
+    // 使用不同的模板键，避免运行期去重（dedup）导致只保留一个 payload
+    const t1 = { a: '{{ ctx.foo.a }}' } as any;
+    const t2 = { b: '{{ ctx.foo.a }}' } as any;
+
+    // Fire two resolves within the same micro-batch window (concurrently)
+    const [r1, r2] = await Promise.all([
+      (engine.context as any).resolveJsonTemplate(t1),
+      (engine.context as any).resolveJsonTemplate(t2),
+    ]);
+
+    // API called once with batched payload
+    expect(api.request).toHaveBeenCalledTimes(1);
+    // Ensure both results were mapped back correctly by order (ok:1, ok:2)
+    expect(r1.ok).toBe(1);
+    expect(r2.ok).toBe(2);
   });
 });

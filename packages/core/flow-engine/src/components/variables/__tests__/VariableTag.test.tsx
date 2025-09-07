@@ -10,11 +10,19 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { FlowContextProvider } from '../../../FlowContextProvider';
+import { FlowEngine } from '../../../flowEngine';
 import { VariableTag } from '../VariableTag';
+
+// 统一包装：提供最小可用 FlowContext（含 t 等），避免 useFlowContext 为空
+const renderWithCtx = (ui: React.ReactElement) => {
+  const engine = new FlowEngine();
+  return render(<FlowContextProvider context={engine.context as any}>{ui}</FlowContextProvider>);
+};
 
 describe('VariableTag', () => {
   it('should render with variable value and display parsed path', async () => {
-    render(<VariableTag value="{{ ctx.User.Name }}" />);
+    renderWithCtx(<VariableTag value="{{ ctx.User.Name }}" />);
 
     await waitFor(
       () => {
@@ -28,7 +36,7 @@ describe('VariableTag', () => {
 
   it('should render with allowClear when onClear is provided', async () => {
     const onClear = vi.fn();
-    const { container } = render(<VariableTag value="{{ ctx.User.Email }}" onClear={onClear} />);
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Email }}" onClear={onClear} />);
 
     await waitFor(
       () => {
@@ -47,7 +55,7 @@ describe('VariableTag', () => {
   });
 
   it('should not show close button when onClear is not provided', async () => {
-    const { container } = render(<VariableTag value="{{ ctx.User.Name }}" />);
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Name }}" />);
 
     await waitFor(
       () => {
@@ -61,7 +69,7 @@ describe('VariableTag', () => {
   });
 
   it('should be read-only', async () => {
-    const { container } = render(<VariableTag value="{{ ctx.User.Name }}" />);
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Name }}" />);
 
     await waitFor(
       () => {
@@ -76,7 +84,7 @@ describe('VariableTag', () => {
 
   it('should apply custom className and style', async () => {
     const customStyle = { fontSize: '16px', color: 'red' };
-    const { container } = render(
+    const { container } = renderWithCtx(
       <VariableTag value="{{ ctx.Custom.Tag }}" className="custom-class" style={customStyle} />,
     );
 
@@ -95,7 +103,7 @@ describe('VariableTag', () => {
   });
 
   it('should have blue color by default', async () => {
-    render(<VariableTag value="{{ ctx.Test }}" />);
+    renderWithCtx(<VariableTag value="{{ ctx.Test }}" />);
 
     await waitFor(
       () => {
@@ -107,7 +115,7 @@ describe('VariableTag', () => {
   });
 
   it('should have proper styling for tag appearance', async () => {
-    render(<VariableTag value="{{ ctx.Styled.Tag }}" />);
+    renderWithCtx(<VariableTag value="{{ ctx.Styled.Tag }}" />);
 
     await waitFor(
       () => {
@@ -180,7 +188,7 @@ describe('VariableTag', () => {
 
   it('should show clear button when onClear is provided', async () => {
     const onClear = vi.fn();
-    const { container } = render(<VariableTag value="{{ ctx.Test }}" onClear={onClear} />);
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.Test }}" onClear={onClear} />);
 
     await waitFor(
       () => {
@@ -226,7 +234,7 @@ describe('VariableTag', () => {
   });
 
   it('should have proper accessibility attributes for Select component', async () => {
-    const { container } = render(<VariableTag value="{{ ctx.Test }}" />);
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.Test }}" />);
 
     await waitFor(
       () => {
@@ -252,7 +260,7 @@ describe('VariableTag', () => {
       // 没有 parentTitles 属性
     };
 
-    render(<VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} />);
+    renderWithCtx(<VariableTag value="{{ ctx.user.profile.firstName }}" metaTreeNode={mockMetaTreeNode} />);
 
     // 没有 parentTitles 时应该显示 title
     await waitFor(
@@ -281,7 +289,9 @@ describe('VariableTag', () => {
       paths: ['user'],
     };
 
-    render(<VariableTag value="{{ ctx.user }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTreeFunction} />);
+    renderWithCtx(
+      <VariableTag value="{{ ctx.user }}" metaTreeNode={mockMetaTreeNode} metaTree={mockMetaTreeFunction} />,
+    );
 
     await waitFor(
       () => {
@@ -301,7 +311,7 @@ describe('VariableTag', () => {
       paths: ['long', 'path'],
     };
 
-    render(<VariableTag value="{{ ctx.long.path }}" metaTreeNode={mockMetaTreeNode} />);
+    renderWithCtx(<VariableTag value="{{ ctx.long.path }}" metaTreeNode={mockMetaTreeNode} />);
 
     await waitFor(
       () => {
@@ -323,7 +333,7 @@ describe('VariableTag', () => {
       parentTitles: ['Parent Title', 'Child Title'],
     };
 
-    render(<VariableTag value="{{ ctx.parent.child.field }}" metaTreeNode={mockMetaTreeNode} />);
+    renderWithCtx(<VariableTag value="{{ ctx.parent.child.field }}" metaTreeNode={mockMetaTreeNode} />);
 
     await waitFor(
       () => {
