@@ -223,7 +223,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
         <Select
           style={{ flex: '0 0 140px', minWidth: 120, maxWidth: '100%' }}
-          placeholder={t('Comparition')}
+          placeholder={t('Comparison')}
           value={operator || undefined}
           onChange={handleOperatorChange}
         >
