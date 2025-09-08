@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// import { createForm, Form } from '@formily/core';
-import { CollectionField } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
@@ -32,6 +30,12 @@ export class FormModel extends CollectionBlockModel<{
       get: () => this.getCurrentRecord(),
       cache: false,
     });
+  }
+
+  onMount() {
+    super.onMount();
+    // 首次渲染触发一次事件流
+    this.applyFlow('eventSettings');
   }
 
   getCurrentRecord() {
@@ -69,7 +73,7 @@ export function FormComponent({
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
-        model.dispatchEvent('formValuesChange', { changedValues, allValues });
+        model.dispatchEvent('formValuesChange');
       }}
     >
       {children}
