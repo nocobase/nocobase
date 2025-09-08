@@ -7,8 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { lodash } from '@nocobase/utils';
+import mysql from 'mysql2';
 import { BaseDialect } from './base-dialect';
+
+function safeBigIntConvert(val: string) {
+  if (val === null || val === undefined) {
+    return val;
+  }
+  try {
+    const big = BigInt(val);
+    return big <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(big) : val;
+  } catch {
+    return val;
+  }
+}
 
 export class MysqlDialect extends BaseDialect {
   static dialectName = 'mysql';
@@ -25,10 +37,21 @@ export class MysqlDialect extends BaseDialect {
   }
 
   getSequelizeOptions(options: any) {
-    lodash.set(options, 'dialectOptions.multipleStatements', true);
-    lodash.set(options, 'dialectOptions.supportBigNumbers', true);
-    lodash.set(options, 'dialectOptions.bigNumberStrings', true);
+    const dialectOptions: mysql.ConnectionOptions = {
+      ...(options.dialectOptions || {}),
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+      multipleStatements: true,
+      typeCast: function (field, next) {
+        if (field.type === 'LONGLONG') {
+          const val = field.string();
+          return safeBigIntConvert(val);
+        }
+        return next();
+      },
+    };
 
+    options.dialectOptions = dialectOptions;
     return options;
   }
 }

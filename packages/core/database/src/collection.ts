@@ -241,33 +241,6 @@ export class Collection<
     return this.options.underscored ? snakeCase(tName) : tName;
   }
 
-  setBigIntGetter() {
-    for (const attrName in this.model.getAttributes()) {
-      const attr = this.model.getAttributes()[attrName];
-      if (attr.type instanceof DataTypes.BIGINT) {
-        const originalGetter = attr.get;
-        Object.defineProperty(this.model.prototype, attrName, {
-          get: function () {
-            const val = originalGetter ? originalGetter.call(this) : this.getDataValue(attrName);
-            if (val === null || val === undefined) {
-              return null;
-            }
-            try {
-              const num = BigInt(val);
-              const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
-              if (num <= maxSafe) {
-                return Number(num);
-              }
-              return val;
-            } catch {
-              return val;
-            }
-          },
-        });
-      }
-    }
-  }
-
   /**
    * @internal
    */
