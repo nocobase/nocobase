@@ -20,10 +20,14 @@ import { FormActionModel } from './FormActionModel';
 import { FormFieldGridModel } from './FormFieldGridModel';
 import { buildRecordMeta } from '@nocobase/flow-engine';
 
-export class FormModel extends CollectionBlockModel<{
+type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
   subModels?: { grid: FormFieldGridModel; actions?: FormActionModel[] };
-}> {
+};
+
+export class FormModel<
+  T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
+> extends CollectionBlockModel<T> {
   get form() {
     return this.context.form;
   }

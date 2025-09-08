@@ -7,36 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- */
-
 import React from 'react';
 import { FlowModelRenderer, SingleRecordResource, escapeT } from '@nocobase/flow-engine';
 import { FormComponent, FormModel } from '../data-blocks/form/FormModel';
+import { AssignFieldGridModel } from './AssignFieldGridModel';
 
 /**
- * 赋值配置表单（2.0）：外层为 FormModel（与 CreateFormModel 一致），
- * grid 子模型使用 AssignFieldGridModel，行内字段项为 FieldAssignItemModel。
+ * 赋值配置表单
  */
-export class AssignFieldsFormModel extends FormModel {
+// 使用范型标注 subModels.grid 的类型，提升类型提示与可读性
+export class AssignFieldsFormModel extends FormModel<{ subModels: { grid: AssignFieldGridModel } }> {
   onInit(options: any) {
     super.onInit(options);
-    try {
-      const params = this.getStepParams('resourceSettings', 'init') || {};
-      if (!params?.dataSourceKey || !params?.collectionName) {
-        const coll = (this.context as any)?.collection;
-        const dsKey = coll?.dataSourceKey;
-        const collName = coll?.name;
-        if (dsKey && collName) {
-          this.setStepParams('resourceSettings', 'init', { dataSourceKey: dsKey, collectionName: collName });
-        }
+    const params = this.getStepParams('resourceSettings', 'init') || {};
+    const hasResourceInfo = params?.dataSourceKey && params?.collectionName;
+    if (!hasResourceInfo) {
+      const coll = (this.context as any)?.collection;
+      const dsKey = coll?.dataSourceKey;
+      const collName = coll?.name;
+      if (dsKey && collName) {
+        this.setStepParams('resourceSettings', 'init', { dataSourceKey: dsKey, collectionName: collName });
       }
-    } catch (e) {
-      // 忽略上下文读取失败
-      void e;
     }
   }
   createResource(ctx: any, params: any) {
@@ -50,21 +41,20 @@ export class AssignFieldsFormModel extends FormModel {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props as any;
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-        <FlowModelRenderer model={(this.subModels as any).grid} showFlowSettings={false} />
+        <FlowModelRenderer model={this.subModels?.grid} showFlowSettings={false} />
       </FormComponent>
     );
   }
 
   setInitialAssignedValues(map: Record<string, any> | undefined) {
-    const grid = (this.subModels as any)?.grid as any;
-    if (!grid || typeof grid.addOrEnsureItem !== 'function') return;
+    const grid = this.subModels?.grid;
     Object.entries(map || {}).forEach(([fieldName, value]) => {
       grid.addOrEnsureItem(fieldName, value);
     });
   }
 
   getAssignedValues(): Record<string, any> {
-    const grid = (this.subModels as any)?.grid as any;
+    const grid = this.subModels?.grid as any;
     if (!grid || typeof grid.getAssignedValues !== 'function') return {};
     return grid.getAssignedValues();
   }

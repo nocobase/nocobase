@@ -7,18 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- */
-
 import React from 'react';
 import { AddSubModelButton, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
 import { GridModel } from '../base/GridModel';
 import { SettingOutlined } from '@ant-design/icons';
+import { AssignFormItemModel } from './AssignFormItemModel';
 
-export class AssignFieldGridModel extends GridModel<{ subModels: { items: any[] } }> {
+// 使用范型准确标注 subModels.items 的类型
+export class AssignFieldGridModel extends GridModel<{ subModels: { items: AssignFormItemModel[] } }> {
   renderAddSubModelButton() {
     const collection = (this.context as any)?.collection;
     const fields = collection?.getFields?.() || [];
@@ -79,19 +75,14 @@ export class AssignFieldGridModel extends GridModel<{ subModels: { items: any[] 
 
   addOrEnsureItem(fieldName: string, value?: any) {
     const collection = (this.context as any)?.collection;
-    const items = ((this.subModels as any)?.items || []) as any[];
+    const items = (this.subModels?.items || []) as AssignFormItemModel[];
     const existing = items.find((m) => m?.fieldPath === fieldName);
     if (existing) {
-      try {
-        // 更新已有项的当前值，便于重新打开时回填
-        if (typeof existing.setStepParams === 'function') {
-          existing.setStepParams('fieldSettings', 'assignValue', { value });
-        }
-        existing.assignValue = value;
-      } catch (e) {
-        // 忽略更新失败
-        void e;
+      // 更新已有项的当前值，便于重新打开时回填
+      if (typeof (existing as any)?.setStepParams === 'function') {
+        (existing as any).setStepParams('fieldSettings', 'assignValue', { value });
       }
+      (existing as any).assignValue = value;
       return;
     }
     const fieldModel =
@@ -127,19 +118,14 @@ export class AssignFieldGridModel extends GridModel<{ subModels: { items: any[] 
       parentId: this.uid,
       subKey: 'items',
     });
-    try {
-      created.assignValue = value;
-    } catch (e) {
-      // 忽略赋值失败
-      void e;
-    }
+    created.assignValue = value;
   }
 
   getAssignedValues(): Record<string, any> {
-    const items = ((this.subModels as any)?.items || []) as any[];
+    const items = (this.subModels?.items || []) as AssignFormItemModel[];
     const result: Record<string, any> = {};
     for (const it of items) {
-      const pair = typeof it.getAssignedEntry === 'function' ? it.getAssignedEntry() : null;
+      const pair = typeof (it as any).getAssignedEntry === 'function' ? (it as any).getAssignedEntry() : null;
       if (pair && Array.isArray(pair)) {
         result[pair[0]] = pair[1];
       }

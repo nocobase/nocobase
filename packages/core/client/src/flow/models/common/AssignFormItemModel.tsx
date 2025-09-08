@@ -7,12 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- */
-
 import React from 'react';
 import { Input } from 'antd';
 import { define, observable } from '@formily/reactive';
@@ -53,39 +47,29 @@ export class AssignFormItemModel extends FormItemModel {
     });
 
     // 确保存在 subModels.field，便于沿用 FormItemModel 的组件切换/设置步骤（fieldComponent 等）
-    try {
-      const ctx: any = this.context;
-      const collection = ctx.collection;
-      const init = this.fieldInit;
-      if (!(this.subModels as any)?.field) {
-        const fields = collection?.getFields?.() || [];
-        const f = fields.find((x: any) => x.name === init?.fieldPath);
-        const fieldModel = f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
-        ctx.engine.createModel({
-          use: fieldModel,
-          stepParams: { fieldSettings: { init } },
-          parentId: this.uid,
-          subKey: 'field',
-        });
-      }
-    } catch (e) {
-      // 忽略字段子模型创建失败
-      void e;
+    const ctx: any = this.context;
+    const collection = ctx?.collection;
+    const init = this.fieldInit;
+    if (!(this.subModels as any)?.field && collection?.getFields) {
+      const fields = collection.getFields() || [];
+      const f = fields.find((x: any) => x?.name === init?.fieldPath);
+      const fieldModel = f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+      ctx?.engine?.createModel?.({
+        use: fieldModel,
+        stepParams: { fieldSettings: { init } },
+        parentId: this.uid,
+        subKey: 'field',
+      });
     }
 
     // 设置表单项的 label 与 name，保证渲染时显示标题，而不是仅冒号
-    try {
-      const collection = (this.context as any)?.collection;
-      const fp = this.fieldPath;
-      if (fp) {
-        const cf = collection?.getField?.(fp);
-        const label = cf?.title || fp;
-        const namePath = fp.includes('.') ? fp.split('.') : [fp];
-        this.setProps({ label, name: namePath });
-      }
-    } catch (e) {
-      // 忽略表单项属性设置失败
-      void e;
+    const coll = (this.context as any)?.collection;
+    const fp = this.fieldPath;
+    if (fp) {
+      const cf = coll?.getField?.(fp);
+      const label = cf?.title || fp;
+      const namePath = fp.includes('.') ? fp.split('.') : [fp];
+      this.setProps({ label, name: namePath });
     }
   }
 
@@ -103,7 +87,7 @@ export class AssignFormItemModel extends FormItemModel {
     return [name, this.assignValue];
   }
 
-  render(): React.ReactNode {
+  render() {
     // 与 FormItemModel.render 结构保持一致，仅替换内部渲染为 VariableInput + 常量编辑器
     const ctx: any = this.context;
     const collection = ctx.collection;
@@ -116,131 +100,98 @@ export class AssignFormItemModel extends FormItemModel {
       const [tempRoot, setTempRoot] = React.useState<any>(null);
       React.useEffect(() => {
         if (!fieldPath) return;
-        try {
-          const fields = collection?.getFields?.() || [];
-          const f = fields.find((x: any) => x.name === fieldPath);
-          const cfObj = collection?.getField?.(fieldPath);
-          const relationType = cfObj?.type;
-          const relationInterface = cfObj?.interface;
-          const isToMany =
-            relationType === 'belongsToMany' ||
-            relationType === 'hasMany' ||
-            relationType === 'belongsToArray' ||
-            relationInterface === 'm2m' ||
-            relationInterface === 'o2m' ||
-            relationInterface === 'mbm';
-          const fieldModel = isToMany
-            ? 'RemoteSelectFieldModel'
-            : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
-          const created = ctx.engine.createModel({
-            use: 'VariableFieldFormModel',
-            subModels: {
-              fields: [
-                {
-                  use: fieldModel,
-                  stepParams: { fieldSettings: { init } },
-                },
-              ],
-            },
+        const fields = collection?.getFields?.() || [];
+        const f = fields.find((x: any) => x?.name === fieldPath);
+        const cfObj = collection?.getField?.(fieldPath);
+        const relationType = cfObj?.type;
+        const relationInterface = cfObj?.interface;
+        const isToMany =
+          relationType === 'belongsToMany' ||
+          relationType === 'hasMany' ||
+          relationType === 'belongsToArray' ||
+          relationInterface === 'm2m' ||
+          relationInterface === 'o2m' ||
+          relationInterface === 'mbm';
+        const fieldModel = isToMany
+          ? 'RemoteSelectFieldModel'
+          : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+
+        const created = ctx?.engine?.createModel?.({
+          use: 'VariableFieldFormModel',
+          subModels: {
+            fields: [
+              {
+                use: fieldModel,
+                stepParams: { fieldSettings: { init } },
+              },
+            ],
+          },
+        });
+        if (!created) return;
+
+        // 将集合/数据源/字段/区块/资源注入临时根，保证字段组件行为一致
+        created.context?.defineProperty?.('collection', { value: collection });
+        const ds = ctx?.dataSource;
+        if (ds) created.context?.defineProperty?.('dataSource', { value: ds });
+        const cf2 = collection?.getField?.(init?.fieldPath);
+        if (cf2) created.context?.defineProperty?.('collectionField', { value: cf2 });
+        const block = ctx?.blockModel;
+        if (block) created.context?.defineProperty?.('blockModel', { value: block });
+        if (created.context) {
+          Object.defineProperty(created.context, 'resource', {
+            configurable: true,
+            enumerable: true,
+            get: () => block?.resource,
           });
-          // 将集合/数据源/字段/区块/资源注入临时根，保证字段组件行为一致
-          created.context?.defineProperty?.('collection', { value: collection });
-          try {
-            const ds = ctx.dataSource;
-            if (ds) created.context?.defineProperty?.('dataSource', { value: ds });
-          } catch (e) {
-            // 忽略数据源注入失败
-            void e;
-          }
-          try {
-            const cf2 = collection?.getField?.(init?.fieldPath);
-            if (cf2) created.context?.defineProperty?.('collectionField', { value: cf2 });
-          } catch (e) {
-            // 忽略字段注入失败
-            void e;
-          }
-          try {
-            const block = ctx.blockModel;
-            if (block) created.context?.defineProperty?.('blockModel', { value: block });
-            Object.defineProperty(created.context, 'resource', {
-              configurable: true,
-              enumerable: true,
-              get: () => block?.resource,
-            });
-          } catch (e) {
-            // 忽略区块/资源注入失败
-            void e;
-          }
-          // 强制可编辑，忽略原始字段的 disabled/readOnly 设置
-          try {
-            const fm = created?.subModels?.fields?.[0];
-            const cf2 = collection?.getField?.(init?.fieldPath);
-            const relationType = cf2?.type;
-            const relationInterface = cf2?.interface;
-            const isToMany =
-              relationType === 'belongsToMany' ||
-              relationType === 'hasMany' ||
-              relationType === 'belongsToArray' ||
-              relationInterface === 'm2m' ||
-              relationInterface === 'o2m' ||
-              relationInterface === 'mbm';
-            fm?.setProps?.({
-              disabled: false,
-              readPretty: false,
-              pattern: 'editable',
-              updateAssociation: false,
-              multiple: isToMany,
-            });
-            fm?.applyAutoFlows?.();
-            try {
-              if (!fm?.props?.fieldNames && cf2?.targetCollection) {
-                const targetCol = cf2.targetCollection;
-                fm.setProps({ fieldNames: { label: targetCol.titleField, value: targetCol.getPrimaryKey() } });
-              }
-            } catch (e) {
-              void e;
-            }
-          } catch (e) {
-            // 忽略字段模型属性设置失败
-            void e;
-          }
-          setTempRoot(created);
-          return () => {
-            try {
-              created?.subModels?.fields?.forEach?.((m: any) => m?.remove?.());
-              created?.remove?.();
-            } catch (e) {
-              // 忽略临时字段模型清理失败
-              void e;
-            }
-          };
-        } catch (e) {
-          // 忽略临时字段模型创建失败
-          void e;
         }
+
+        // 强制可编辑，忽略原始字段的 disabled/readOnly 设置
+        const fm = created?.subModels?.fields?.[0];
+        const cfForMultiple = collection?.getField?.(init?.fieldPath);
+        const relType = cfForMultiple?.type;
+        const relInterface = cfForMultiple?.interface;
+        const multi =
+          relType === 'belongsToMany' ||
+          relType === 'hasMany' ||
+          relType === 'belongsToArray' ||
+          relInterface === 'm2m' ||
+          relInterface === 'o2m' ||
+          relInterface === 'mbm';
+        fm?.setProps?.({
+          disabled: false,
+          readPretty: false,
+          pattern: 'editable',
+          updateAssociation: false,
+          multiple: multi,
+        });
+        fm?.applyAutoFlows?.();
+        if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
+          const targetCol = cfForMultiple.targetCollection;
+          fm?.setProps?.({ fieldNames: { label: targetCol.titleField, value: targetCol.getPrimaryKey() } });
+        }
+
+        setTempRoot(created);
+        return () => {
+          created?.subModels?.fields?.forEach?.((m: any) => m?.remove?.());
+          created?.remove?.();
+        };
       }, [fieldPath]);
 
       const ConstantValueEditor: React.FC<any> = (inputProps: any) => {
         React.useEffect(() => {
-          if (tempRoot) {
-            // 同步根 props（变量输入的受控 value/onChange）
-            tempRoot.setProps({ ...inputProps });
-            // 同步到具体字段模型，确保字段组件能触发 onChange
-            try {
-              const fm = tempRoot?.subModels?.fields?.[0];
-              if (fm) {
-                fm.setProps({
-                  value: inputProps?.value,
-                  onChange: (...args: any[]) => {
-                    const next = args && args.length ? args[0] : undefined;
-                    inputProps?.onChange?.(next);
-                  },
-                });
-              }
-            } catch (e) {
-              // 忽略字段 props 同步失败
-              void e;
-            }
+          if (!tempRoot) return;
+          // 同步根 props（变量输入的受控 value/onChange）
+          tempRoot.setProps?.({ ...inputProps });
+          // 同步到具体字段模型，确保字段组件能触发 onChange
+          const fm = tempRoot?.subModels?.fields?.[0];
+          if (fm) {
+            fm.setProps?.({
+              value: inputProps?.value,
+              onChange: (...args: any[]) => {
+                const next = args && args.length ? args[0] : undefined;
+                inputProps?.onChange?.(next);
+              },
+            });
           }
         }, [tempRoot, inputProps]);
         // 占满可用宽度
@@ -274,14 +225,8 @@ export class AssignFormItemModel extends FormItemModel {
 
       // 合并变量树：在最前面追加“常量/空值”两个选项
       const mergedMetaTree = async () => {
-        let base: any[] = [];
-        try {
-          const getTree = (this.context as any)?.getPropertyMetaTree;
-          base = typeof getTree === 'function' ? await getTree() : [];
-        } catch (e) {
-          // 忽略变量树合并失败
-          void e;
-        }
+        const getTree = (this.context as any)?.getPropertyMetaTree;
+        const base: any[] = typeof getTree === 'function' ? await getTree() : [];
         return [
           { title: '常量', name: 'constant', type: 'string', paths: ['constant'], render: ConstantValueEditor },
           { title: '空值', name: 'null', type: 'object', paths: ['null'], render: NullComponent },
@@ -291,13 +236,8 @@ export class AssignFormItemModel extends FormItemModel {
 
       // 计算 label：优先集合字段标题，回退为字段路径
       let labelText = this.fieldPath || '';
-      try {
-        const cf = collection?.getField?.(this.fieldPath);
-        labelText = cf?.title || labelText;
-      } catch (e) {
-        // 忽略标题读取失败
-        void e;
-      }
+      const cf = collection?.getField?.(this.fieldPath);
+      labelText = cf?.title || labelText;
 
       return (
         <FormItem label={labelText} name={namePath} valuePropName="__assign_value__" trigger="__assign_trigger__">
