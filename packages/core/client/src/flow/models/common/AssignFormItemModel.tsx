@@ -43,6 +43,14 @@ export class AssignFormItemModel extends FormItemModel {
     // 不调用父类 onInit，避免触发基类对资源/集合的依赖（配置态无需 addAppends 等数据交互）
     const initAssign = this.getStepParams('fieldSettings', 'assignValue')?.value;
     if (typeof initAssign !== 'undefined') this.assignValue = initAssign;
+    this.context.defineProperty('collectionField', {
+      get: () => {
+        const params = this.getStepParams('fieldSettings', 'init') || {};
+        const key = `${params?.dataSourceKey}.${params?.collectionName}.${params?.fieldPath}`;
+        const dsm = (this.context as any)?.dataSourceManager;
+        return dsm?.getCollectionField?.(key);
+      },
+    });
 
     // 确保存在 subModels.field，便于沿用 FormItemModel 的组件切换/设置步骤（fieldComponent 等）
     try {
@@ -166,7 +174,6 @@ export class AssignFormItemModel extends FormItemModel {
           // 强制可编辑，忽略原始字段的 disabled/readOnly 设置
           try {
             const fm = created?.subModels?.fields?.[0];
-            // 推断是否为对多关系，显式开启 multiple
             const cf2 = collection?.getField?.(init?.fieldPath);
             const relationType = cf2?.type;
             const relationInterface = cf2?.interface;
@@ -177,7 +184,6 @@ export class AssignFormItemModel extends FormItemModel {
               relationInterface === 'm2m' ||
               relationInterface === 'o2m' ||
               relationInterface === 'mbm';
-
             fm?.setProps?.({
               disabled: false,
               readPretty: false,
@@ -185,20 +191,13 @@ export class AssignFormItemModel extends FormItemModel {
               updateAssociation: false,
               multiple: isToMany,
             });
-
-            // 主动触发字段子模型的自动流程，确保其内部依赖（resource/fieldNames 等）就绪
             fm?.applyAutoFlows?.();
-
-            // 兜底设置 fieldNames（value=主键，label=目标集合 titleField）
             try {
               if (!fm?.props?.fieldNames && cf2?.targetCollection) {
                 const targetCol = cf2.targetCollection;
-                const labelKey = targetCol.titleField;
-                const valueKey = targetCol.getPrimaryKey();
-                fm.setProps({ fieldNames: { label: labelKey, value: valueKey } });
+                fm.setProps({ fieldNames: { label: targetCol.titleField, value: targetCol.getPrimaryKey() } });
               }
             } catch (e) {
-              // 忽略 fieldNames 兜底设置失败
               void e;
             }
           } catch (e) {
@@ -301,10 +300,12 @@ export class AssignFormItemModel extends FormItemModel {
       }
 
       return (
-        <FormItem label={labelText} name={namePath}>
+        <FormItem label={labelText} name={namePath} valuePropName="__assign_value__" trigger="__assign_trigger__">
           <VariableInput
             value={this.assignValue}
-            onChange={(v: any) => (this.assignValue = v)}
+            onChange={(v: any) => {
+              this.assignValue = v;
+            }}
             metaTree={mergedMetaTree}
             converters={converters}
           />

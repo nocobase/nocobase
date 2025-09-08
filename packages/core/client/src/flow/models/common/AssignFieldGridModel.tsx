@@ -95,8 +95,8 @@ export class AssignFieldGridModel extends GridModel<{ subModels: { items: any[] 
             collectionName: collection?.name,
             fieldPath: fieldName,
           },
+          assignValue: { value },
         },
-        assignValue: { value },
       },
       subModels: {
         field: {
