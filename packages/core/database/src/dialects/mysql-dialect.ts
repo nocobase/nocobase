@@ -26,6 +26,9 @@ export class MysqlDialect extends BaseDialect {
 
   getSequelizeOptions(options: any) {
     lodash.set(options, 'dialectOptions.multipleStatements', true);
+    lodash.set(options, 'dialectOptions.supportBigNumbers', true);
+    lodash.set(options, 'dialectOptions.bigNumberStrings', true);
+
     return options;
   }
 }
