@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { SingleRecordResource } from '@nocobase/flow-engine';
+import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FormFieldModel } from '../FormFieldModel';
-import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
 export class AssociationFieldModel extends FormFieldModel {
   public static readonly supportedFieldInterfaces = null;
 }

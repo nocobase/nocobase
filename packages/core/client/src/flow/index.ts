@@ -15,7 +15,7 @@ import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
-import * as filterFormActions from './models/filter-blocks/filter-manager/flow-actions';
+import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 
 export class PluginFlowEngine extends Plugin {
   async load() {

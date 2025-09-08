@@ -60,9 +60,9 @@
 
 ---
 
-##### 2.1.1.1 DetailsModelContext
+##### 2.1.1.1 DetailsBlockModelContext
 
-**层级**：... > DataBlockModelContext > DetailsModelContext
+**层级**：... > DataBlockModelContext > DetailsBlockModelContext
 
 **上下文属性**：
 

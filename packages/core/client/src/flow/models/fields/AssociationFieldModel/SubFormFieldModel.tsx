@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
-import { Card, Form, Button, Tooltip, Divider } from 'antd';
+import { css } from '@emotion/css';
+import { FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
+import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
-import { FormItemModel } from '../../data-blocks/form/FormItem/FormItemModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -64,7 +64,7 @@ ObjectFormAssociationFieldModel.define({
     use: 'ObjectFormAssociationFieldModel',
     subModels: {
       grid: {
-        use: 'FormFieldGridModel',
+        use: 'FormGridModel',
       },
     },
   },
@@ -148,7 +148,7 @@ ArrayFormAssociationFieldModel.define({
     use: 'ArrayFormAssociationFieldModel',
     subModels: {
       grid: {
-        use: 'FormFieldGridModel',
+        use: 'FormGridModel',
       },
     },
   },

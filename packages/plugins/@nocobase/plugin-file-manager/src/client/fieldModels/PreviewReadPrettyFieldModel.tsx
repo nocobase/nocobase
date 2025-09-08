@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ReadPrettyFieldModel, DetailItemModel, TableColumnModel } from '@nocobase/client';
+import { EyeOutlined } from '@ant-design/icons';
+import { DetailsItemModel, ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
+import { escapeT, reactive } from '@nocobase/flow-engine';
+import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { reactive, escapeT } from '@nocobase/flow-engine';
-import { Image, Space, Tooltip } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
 
 function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
   let mimetype = '';
@@ -186,7 +186,7 @@ PreviewReadPrettyFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          size: ctx.model.parent instanceof DetailItemModel ? 100 : 28,
+          size: ctx.model.parent instanceof DetailsItemModel ? 100 : 28,
         };
       },
       handler(ctx, params) {

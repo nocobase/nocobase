@@ -1,6 +1,5 @@
 import { Plugin } from '@nocobase/client';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
-import actions from 'packages/plugins/@nocobase/plugin-workflow/src/server/actions';
 import React from 'react';
 import { createApp } from '../createApp';
 import { FormItemModel } from '../form/form-item-model';

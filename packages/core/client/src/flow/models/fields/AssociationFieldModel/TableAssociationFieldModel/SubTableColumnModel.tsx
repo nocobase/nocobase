@@ -27,7 +27,7 @@ import { Form, TableColumnProps, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { TableAssociationFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
-import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
+import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {

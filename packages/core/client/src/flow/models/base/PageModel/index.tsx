@@ -10,6 +10,7 @@
 export * from './ChildPageModel';
 export * from './MainPageModel';
 export * from './PageModel';
+export * from './PageTabModel';
 export * from './RootPageModel';
 export * from './SubPageModel';
 //

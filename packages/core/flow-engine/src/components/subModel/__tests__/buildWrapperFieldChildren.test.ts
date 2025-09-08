@@ -8,10 +8,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildWrapperFieldChildren } from '../utils';
 import { Collection } from '../../../data-source';
 import { FlowEngine } from '../../../flowEngine';
 import { FlowModel } from '../../../models';
+import { buildWrapperFieldChildren } from '../utils';
 
 describe('buildWrapperFieldChildren', () => {
   it('generates a group with children per field and correct defaults', () => {
@@ -68,7 +68,7 @@ describe('buildWrapperFieldChildren', () => {
     ctx.defineProperty('collection', { value: collection });
 
     const groups = buildWrapperFieldChildren(ctx, {
-      useModel: 'DetailItemModel',
+      useModel: 'DetailsItemModel',
       fieldUseModel: (f) => (f.interface === 'select' ? 'SelectPrettyFieldModel' : 'ReadPrettyFieldModel'),
     });
 
@@ -84,7 +84,7 @@ describe('buildWrapperFieldChildren', () => {
       ? statusItem.createModelOptions(ctx)
       : statusItem.createModelOptions);
 
-    expect(titleCreate.use).toBe('DetailItemModel');
+    expect(titleCreate.use).toBe('DetailsItemModel');
     expect(titleCreate.stepParams).toEqual({
       fieldSettings: {
         init: {

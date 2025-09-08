@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Card, Form, Button, Divider } from 'antd';
-import React, { useRef } from 'react';
 import { css } from '@emotion/css';
-import { FormItemModel } from '../../../data-blocks/form/FormItem/FormItemModel';
-import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
+import { FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { Card, Divider } from 'antd';
+import React, { useRef } from 'react';
+import { FormItemModel } from '../../../blocks/form/FormItemModel';
 import { ObjectNester } from '../../AssociationFieldModel/SubFormFieldModel';
+import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
 export class ObjectDetailAssociationFieldModel extends ReadPrettyAssociationFieldModel {
   static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
@@ -39,7 +39,7 @@ ObjectDetailAssociationFieldModel.define({
     use: 'ObjectDetailAssociationFieldModel',
     subModels: {
       grid: {
-        use: 'DetailsFieldGridModel',
+        use: 'DetailsGridModel',
       },
     },
   },
@@ -110,7 +110,7 @@ ArrayDetailAssociationFieldModel.define({
     use: 'ArrayDetailAssociationFieldModel',
     subModels: {
       grid: {
-        use: 'DetailsFieldGridModel',
+        use: 'DetailsGridModel',
       },
     },
   },
