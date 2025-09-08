@@ -273,7 +273,7 @@ export class FilterManager {
 
       // 构建筛选条件
       const filterConditions = config.filterPaths.map((fieldPath) => ({
-        key: fieldPath,
+        path: fieldPath,
         operator: config.operator || getDefaultOperator(filterModel),
         value: filterValue,
       }));
@@ -284,7 +284,7 @@ export class FilterManager {
           (targetModel as any).resource.addFilterGroup(
             config.filterId,
             new FilterItem({
-              key: filterConditions[0].key,
+              path: filterConditions[0].path,
               operator: filterConditions[0].operator,
               value: filterConditions[0].value,
             }),
