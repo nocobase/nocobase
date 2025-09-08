@@ -37,29 +37,29 @@ export class PluginFlowEngineServer extends Plugin {
     try {
       const groupMap = new Map<
         string,
-        { ds: string; collection: string; tk: unknown; fields: Set<string>; appends: Set<string> }
+        { dataSourceKey: string; collection: string; filterByTk: unknown; fields: Set<string>; appends: Set<string> }
       >();
-      const ensureGroup = (ds: string, collection: string, tk: unknown) => {
-        const gk = JSON.stringify({ ds, collection, tk });
-        let g = groupMap.get(gk);
-        if (!g) {
-          g = { ds, collection, tk, fields: new Set<string>(), appends: new Set<string>() };
-          groupMap.set(gk, g);
+      const ensureGroup = (dataSourceKey: string, collection: string, filterByTk: unknown) => {
+        const groupKey = JSON.stringify({ ds: dataSourceKey, collection, tk: filterByTk });
+        let group = groupMap.get(groupKey);
+        if (!group) {
+          group = { dataSourceKey, collection, filterByTk, fields: new Set<string>(), appends: new Set<string>() };
+          groupMap.set(groupKey, group);
         }
-        return g;
+        return group;
       };
-      const normalizeNestedSeg = (seg: string): string => (/^\d+$/.test(seg) ? `[${seg}]` : seg);
-      const toFirstSeg = (path: string): { seg: string; hasDeep: boolean } => {
+      const normalizeNestedSeg = (segment: string): string => (/^\d+$/.test(segment) ? `[${segment}]` : segment);
+      const toFirstSeg = (path: string): { segment: string; hasDeep: boolean } => {
         const m = path.match(/^([^.[]+|\[[^\]]+\])([\s\S]*)$/);
-        const seg = m ? m[1] : '';
+        const segment = m ? m[1] : '';
         const rest = m ? m[2] : '';
-        return { seg, hasDeep: rest.includes('.') || rest.includes('[') || rest.length > 0 };
+        return { segment, hasDeep: rest.includes('.') || rest.includes('[') || rest.length > 0 };
       };
       for (const it of items) {
         const template = it?.template ?? {};
         const contextParams = (it?.contextParams || {}) as Record<string, any>;
         const usage = variables.extractUsage(template);
-        for (const [cpKey, rp] of Object.entries(contextParams)) {
+        for (const [cpKey, recordParams] of Object.entries(contextParams)) {
           const parts = String(cpKey).split('.');
           const varName = parts[0];
           const nestedSeg = parts.slice(1).join('.');
@@ -74,17 +74,17 @@ export class PluginFlowEngineServer extends Plugin {
               remainders.push(p.slice(segNorm.length + 1));
           }
           if (!remainders.length) continue;
-          const ds = (rp as any)?.dataSourceKey || 'main';
-          const collection = (rp as any)?.collection;
-          const tk = (rp as any)?.filterByTk;
-          if (!collection || typeof tk === 'undefined') continue;
-          const g = ensureGroup(ds, collection, tk);
+          const dataSourceKey = (recordParams as any)?.dataSourceKey || 'main';
+          const collection = (recordParams as any)?.collection;
+          const filterByTk = (recordParams as any)?.filterByTk;
+          if (!collection || typeof filterByTk === 'undefined') continue;
+          const group = ensureGroup(dataSourceKey, collection, filterByTk);
           for (const r of remainders) {
-            const { seg, hasDeep } = toFirstSeg(r);
-            if (!seg) continue;
-            const key = seg.replace(/^\[(.+)\]$/, '$1');
-            if (hasDeep) g.appends.add(key);
-            else g.fields.add(key);
+            const { segment, hasDeep } = toFirstSeg(r);
+            if (!segment) continue;
+            const key = segment.replace(/^\[(.+)\]$/, '$1');
+            if (hasDeep) group.appends.add(key);
+            else group.fields.add(key);
           }
         }
       }
@@ -94,18 +94,18 @@ export class PluginFlowEngineServer extends Plugin {
         stateObj['__varResolveBatchCache'] = new Map<string, unknown>();
       }
       const cache: Map<string, unknown> | undefined = (koaCtx as any).state?.['__varResolveBatchCache'];
-      for (const { ds, collection, tk, fields, appends } of groupMap.values()) {
+      for (const { dataSourceKey, collection, filterByTk, fields, appends } of groupMap.values()) {
         try {
-          const dataSource = this.app.dataSourceManager.get(ds);
+          const dataSource = this.app.dataSourceManager.get(dataSourceKey);
           const cm = dataSource.collectionManager as SequelizeCollectionManager;
           if (!cm?.db) continue;
           const repo = cm.db.getRepository(collection);
           const fld = fields.size ? Array.from(fields) : undefined;
           const app = appends.size ? Array.from(appends) : undefined;
-          const rec = await repo.findOne({ filterByTk: tk as any, fields: fld, appends: app });
+          const rec = await repo.findOne({ filterByTk: filterByTk as any, fields: fld, appends: app });
           const json = rec ? rec.toJSON() : undefined;
           if (cache) {
-            const key = JSON.stringify({ ds, c: collection, tk, f: fld, a: app });
+            const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
             cache.set(key, json);
           }
         } catch {
@@ -122,6 +122,8 @@ export class PluginFlowEngineServer extends Plugin {
     this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
     this.app.acl.allow('variables', 'resolve', 'loggedIn');
+    // 赋值动作权限
+    this.app.acl.allow('fieldAssignments', 'apply', 'loggedIn');
     // 定义资源与动作
     this.app.resourceManager.define({
       name: 'variables',
@@ -178,6 +180,104 @@ export class PluginFlowEngineServer extends Plugin {
           await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
           const resolved = await resolveJsonTemplate(template, requestCtx);
           ctx.body = resolved;
+          await next();
+        },
+      },
+    });
+
+    // 字段赋值（批量/单条）服务端解析与更新
+    this.app.resourceManager.define({
+      name: 'fieldAssignments',
+      actions: {
+        apply: async (ctx, next) => {
+          // 支持两种提交方式：直接 values 或 values.values
+          const raw = ctx.action?.params?.values ?? {};
+          const input = typeof raw?.values !== 'undefined' ? raw.values : raw;
+
+          const dataSourceKey: string = input?.dataSourceKey || 'main';
+          const collection: string | undefined = input?.collection;
+          const filterByTk = input?.filterByTk;
+          const ids: any[] | undefined = Array.isArray(input?.ids) ? input.ids : undefined;
+          const assignedValues: JSONValue | undefined = input?.assignedValues;
+          const contextParams: Record<string, unknown> | undefined = input?.contextParams;
+          const updateAssociationValues: string[] | undefined = input?.updateAssociationValues;
+
+          if (!collection) {
+            ctx.throw(400, { code: 'INVALID_PAYLOAD', message: 'collection is required' });
+          }
+          if (!assignedValues || (typeof assignedValues !== 'object' && typeof assignedValues !== 'string')) {
+            ctx.throw(400, { code: 'INVALID_PAYLOAD', message: 'assignedValues is required' });
+          }
+
+          // 目标记录集合：单条或多条（ids 代表 filterByTk 数组）
+          const targets: any[] = [];
+          if (typeof filterByTk !== 'undefined' && filterByTk !== null) {
+            targets.push(filterByTk);
+          }
+          if (Array.isArray(ids) && ids.length) {
+            for (const tk of ids) {
+              if (typeof tk !== 'undefined' && tk !== null) targets.push(tk);
+            }
+          }
+          if (!targets.length) {
+            ctx.throw(400, { code: 'INVALID_TARGETS', message: 'No targets to update' });
+          }
+
+          // 预取“同记录并集”以提升解析性能（请求级缓存）
+          await this.prefetchRecordsForResolve(
+            ctx as ResourcerContext,
+            targets.map((tk) => ({
+              template: assignedValues,
+              contextParams: {
+                ...(contextParams || {}),
+                record: { collection, filterByTk: tk, dataSourceKey },
+              },
+            })),
+          );
+
+          // 获取数据源与仓库
+          const dataSource = this.app.dataSourceManager.get(dataSourceKey);
+          const cm = dataSource.collectionManager as SequelizeCollectionManager;
+          if (!cm?.db) {
+            ctx.throw(500, { code: 'NO_DB', message: 'Database not available' });
+          }
+          const repo = cm.db.getRepository(collection);
+
+          let updated = 0;
+          const results: Array<{ filterByTk: any; ok: boolean; error?: string }> = [];
+
+          for (const filterByTkVal of targets) {
+            try {
+              // 构建请求级上下文并委托全局上下文
+              const reqCtx = new HttpRequestContext(ctx);
+              reqCtx.delegate(this.globalContext);
+
+              // 自动注入当前记录 contextParams（ctx.record）
+              const cp = {
+                ...(contextParams || {}),
+                record: { collection, filterByTk: filterByTkVal, dataSourceKey },
+              };
+
+              // 附加变量并解析模板
+              await variables.attachUsedVariables(reqCtx, ctx, assignedValues, cp);
+              const resolved = await resolveJsonTemplate(assignedValues, reqCtx);
+
+              // 逐条更新（支持关联更新：updateAssociationValues）
+              await repo.update({
+                filterByTk: filterByTkVal as any,
+                values: resolved,
+                updateAssociationValues,
+                context: ctx,
+              });
+              updated += 1;
+              results.push({ filterByTk: filterByTkVal, ok: true });
+            } catch (e: any) {
+              const msg = e?.message || 'update failed';
+              results.push({ filterByTk: filterByTkVal, ok: false, error: msg });
+            }
+          }
+
+          ctx.body = { updated, results };
           await next();
         },
       },

@@ -193,24 +193,24 @@ function inferSelectsFromUsage(paths: string[] = [], params?: any) {
   const appendSet = new Set<string>();
   const fieldSet = new Set<string>();
 
-  for (let p of paths) {
-    if (!p) continue;
+  for (let path of paths) {
+    if (!path) continue;
     // 若以数字索引开头（如 [0].name），去掉前导的 [n].，用于推断字段/关联
     // 这样 record[0].name 的子路径（传入本函数时为 [0].name）会被识别为字段 name，而非关联
-    while (/^\[(\d+)\](\.|$)/.test(p)) {
-      p = p.replace(/^\[(\d+)\]\.?/, '');
+    while (/^\[(\d+)\](\.|$)/.test(path)) {
+      path = path.replace(/^\[(\d+)\]\.?/, '');
     }
-    if (!p) continue;
+    if (!path) continue;
     // 若以字符串括号开头（如 ['name'] 或 ["name"])，将其作为首段字段名处理
     let first = '';
     let rest = '';
-    const mStr = p.match(/^\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\](.*)$/);
+    const mStr = path.match(/^\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\](.*)$/);
     if (mStr) {
       first = (mStr[1] ?? mStr[2]) || '';
       rest = mStr[3] || '';
     } else {
       // 字符类中 '.' 和 '[' 无需转义，避免 no-useless-escape
-      const m = p.match(/^([^.[]+)([\s\S]*)$/);
+      const m = path.match(/^([^.[]+)([\s\S]*)$/);
       first = m?.[1] ?? '';
       rest = m?.[2] ?? '';
     }
@@ -265,16 +265,16 @@ async function fetchRecordWithRequestCache(
       const needFields = Array.isArray(fields) ? new Set(fields) : undefined;
       const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
       let fallbackAny: unknown = undefined;
-      for (const [ck, cv] of cache.entries()) {
-        const parsed = JSON.parse(ck) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
+      for (const [cacheKey, cacheVal] of cache.entries()) {
+        const parsed = JSON.parse(cacheKey) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
         if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
         const cachedFields = Array.isArray(parsed.f) ? new Set(parsed.f) : undefined;
         const cachedAppends = Array.isArray(parsed.a) ? new Set(parsed.a) : undefined;
         const fieldsOk = !needFields || (cachedFields && [...needFields].every((x) => cachedFields.has(x)));
         const appendsOk = !needAppends || (cachedAppends && [...needAppends].every((x) => cachedAppends.has(x)));
-        if (fieldsOk && appendsOk) return cv;
+        if (fieldsOk && appendsOk) return cacheVal;
         // 兜底：记住同 ds/c/tk 的任意缓存，若无“超集”匹配则使用它（prefetch 已保证并集）
-        if (typeof fallbackAny === 'undefined') fallbackAny = cv;
+        if (typeof fallbackAny === 'undefined') fallbackAny = cacheVal;
       }
       if (typeof fallbackAny !== 'undefined') return fallbackAny;
     }
@@ -308,8 +308,8 @@ function attachGenericRecordVariables(
   usage: VarUsage,
   contextParams: any,
 ) {
-  const parseIndexSeg = (seg: string): string | undefined => {
-    const m = seg.match(/^\[(\d+)\]$/);
+  const parseIndexSegment = (segment: string): string | undefined => {
+    const m = segment.match(/^\[(\d+)\]$/);
     return m ? m[1] : undefined;
   };
   for (const varName of Object.keys(usage)) {
@@ -338,7 +338,7 @@ function attachGenericRecordVariables(
 
     // Nested record-like under varName
     // Group paths by first segment（支持首段后直接跟数字索引，如 record[0].name）
-    const segMap = new Map<string, string[]>();
+    const segmentMap = new Map<string, string[]>();
     const splitHead = (path: string): { seg: string; remainder: string } => {
       if (!path) return { seg: '', remainder: '' };
       // 1) 以 [n] 开头（如 [0].name）
@@ -364,15 +364,15 @@ function attachGenericRecordVariables(
       if (!p) continue;
       const { seg, remainder } = splitHead(p);
       if (!seg) continue;
-      const arr = segMap.get(seg) || [];
+      const arr = segmentMap.get(seg) || [];
       arr.push(remainder);
-      segMap.set(seg, arr);
+      segmentMap.set(seg, arr);
     }
 
     // Build a container sub-context lazily only if any child is record-like
-    const segEntries = Array.from(segMap.entries());
+    const segEntries = Array.from(segmentMap.entries());
     const recordChildren = segEntries.filter(([seg]) => {
-      const idx = parseIndexSeg(seg);
+      const idx = parseIndexSegment(seg);
       const nestedObj =
         _.get(contextParams, [varName, seg]) ?? (idx ? _.get(contextParams, [varName, idx]) : undefined);
       const dotted =
@@ -383,10 +383,10 @@ function attachGenericRecordVariables(
 
     flowCtx.defineProperty(varName, {
       get: () => {
-        const sub = new ServerBaseContext();
+        const subContext = new ServerBaseContext();
         for (const [seg, remainders] of recordChildren) {
-          const idx = parseIndexSeg(seg);
-          const rp =
+          const idx = parseIndexSegment(seg);
+          const recordParams =
             _.get(contextParams, [varName, seg]) ??
             (idx ? _.get(contextParams, [varName, idx]) : undefined) ??
             (contextParams || {})[`${varName}.${seg}`] ??
@@ -401,16 +401,16 @@ function attachGenericRecordVariables(
               .filter((x) => !!x);
             if (all.length) effRemainders = all;
           }
-          const { generatedAppends, generatedFields } = inferSelectsFromUsage(effRemainders, rp);
-          const defKey = idx ?? seg; // define numeric index for [0] so lodash.get '[0]' resolves to '0'
-          sub.defineProperty(defKey, {
+          const { generatedAppends, generatedFields } = inferSelectsFromUsage(effRemainders, recordParams);
+          const definitionKey = idx ?? seg; // define numeric index for [0] so lodash.get '[0]' resolves to '0'
+          subContext.defineProperty(definitionKey, {
             get: async () => {
-              const dataSourceKey = rp?.dataSourceKey || 'main';
+              const dataSourceKey = recordParams?.dataSourceKey || 'main';
               return await fetchRecordWithRequestCache(
                 koaCtx,
                 dataSourceKey,
-                rp.collection,
-                rp.filterByTk,
+                recordParams.collection,
+                recordParams.filterByTk,
                 generatedFields,
                 generatedAppends,
               );
@@ -418,7 +418,7 @@ function attachGenericRecordVariables(
             cache: true,
           });
         }
-        return sub.createProxy();
+        return subContext.createProxy();
       },
       cache: true,
     });
