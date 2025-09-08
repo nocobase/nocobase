@@ -18,9 +18,9 @@ import { Trans } from 'react-i18next';
  */
 interface FilterItemProps {
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
 }
 
@@ -51,9 +51,9 @@ interface FilterGroupProps {
  *   logic: '$and',
  *   items: [
  *     {
- *       leftValue: 'name',
+ *       path: 'name',
  *       operator: 'eq',
- *       rightValue: 'test'
+ *       value: 'test'
  *     },
  *     {
  *       logic: '$or',
@@ -102,9 +102,9 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
 
     const handleAddCondition = () => {
       items.push({
-        leftValue: '',
+        path: '',
         operator: '',
-        rightValue: '',
+        value: '',
       });
     };
 
@@ -120,7 +120,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     };
 
     const isConditionItem = (item: any) => {
-      return 'leftValue' in item || 'operator' in item || 'rightValue' in item;
+      return 'path' in item || 'operator' in item || 'value' in item;
     };
 
     const isGroupItem = (item: any) => {
@@ -193,7 +193,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   <div key={index} style={{ marginBottom: 8 }}>
                     <Space>
                       <span>
-                        {item.leftValue} {item.operator} {String(item.rightValue)}
+                        {item.path} {item.operator} {String(item.value)}
                       </span>
                       <a role="button" aria-label="icon-close">
                         <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
