@@ -266,6 +266,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       this.delayCollectionExtend.get(collection.name)?.forEach((collectionExtend) => {
         collection.updateOptions(collectionExtend.collectionOptions, collectionExtend.mergeOptions);
       });
+      collection.setBigIntGetter();
     });
 
     // register database field types

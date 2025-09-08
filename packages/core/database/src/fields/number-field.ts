@@ -26,29 +26,6 @@ export class BigIntField extends NumberField {
   get dataType() {
     return DataTypes.BIGINT;
   }
-
-  additionalSequelizeOptions() {
-    const { name } = this.options;
-
-    return {
-      get() {
-        const raw = this.getDataValue(name);
-        if (raw === null || raw === undefined) {
-          return null;
-        }
-        try {
-          const num = BigInt(raw);
-          const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
-          if (num <= maxSafe) {
-            return Number(num);
-          }
-          return raw;
-        } catch {
-          return raw;
-        }
-      },
-    };
-  }
 }
 
 export interface BigIntFieldOptions extends BaseColumnFieldOptions {
