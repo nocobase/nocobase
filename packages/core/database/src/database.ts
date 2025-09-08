@@ -8,7 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, parseBigIntValue } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -85,6 +85,9 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { BaseDialect } from './dialects/base-dialect';
+
+// @ts-ignore
+DataTypes.BIGINT.parse = (value: string | number) => parseBigIntValue(value);
 
 export type MergeOptions = merge.Options;
 

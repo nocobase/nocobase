@@ -9,7 +9,6 @@
 
 import mysql from 'mysql2';
 import { BaseDialect } from './base-dialect';
-import { parseBigIntValue } from '@nocobase/utils';
 
 export class MysqlDialect extends BaseDialect {
   static dialectName = 'mysql';
@@ -31,13 +30,6 @@ export class MysqlDialect extends BaseDialect {
       supportBigNumbers: true,
       bigNumberStrings: true,
       multipleStatements: true,
-      typeCast: function (field, next) {
-        if (field.type === 'LONGLONG') {
-          const val = field.string();
-          return parseBigIntValue(val);
-        }
-        return next();
-      },
     };
 
     options.dialectOptions = dialectOptions;
