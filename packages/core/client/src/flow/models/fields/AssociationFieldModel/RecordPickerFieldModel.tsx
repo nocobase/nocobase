@@ -199,6 +199,7 @@ RecordPickerFieldModel.registerFlow({
             scene: 'select',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',
               defaultSelectedRows: () => {
