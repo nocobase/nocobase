@@ -89,6 +89,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
           border: `1px dashed ${token.colorBorder}`,
           padding: token.paddingSM,
           marginBottom: token.marginXS,
+          borderRadius: token.borderRadius,
         }
       : {
           position: 'relative',
@@ -218,10 +219,16 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         </div>
 
         <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
+          <Button style={{ padding: 0 }} type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
             Add condition
           </Button>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={handleAddConditionGroup}>
+          <Button
+            style={{ padding: 0 }}
+            type="link"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={handleAddConditionGroup}
+          >
             Add condition group
           </Button>
         </Space>

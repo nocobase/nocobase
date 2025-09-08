@@ -142,6 +142,18 @@ ActionModel.registerFlow({
         });
       },
     },
+    linkageRules: {
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: 900,
+        },
+      },
+      use: 'linkageRules',
+      defaultParams: {
+        supportedActions: ['setButtonProps', 'runjs'],
+      },
+    },
   },
 });
 

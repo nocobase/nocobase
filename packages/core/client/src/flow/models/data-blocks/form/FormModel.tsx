@@ -85,5 +85,17 @@ FormModel.registerFlow({
       use: 'layout',
       title: tval('Layout'),
     },
+    linkageRules: {
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: 900,
+        },
+      },
+      use: 'linkageRules',
+      defaultParams: {
+        supportedActions: ['setFieldProps', 'assignField', 'runjs'],
+      },
+    },
   },
 });

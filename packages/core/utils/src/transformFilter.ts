@@ -213,3 +213,122 @@ export function transformFilter(filter: FilterGroupType): QueryObject {
 
   return transformGroup(filter);
 }
+
+/**
+ * 条件评估器函数类型
+ *
+ * @param leftValue - 左值（字段名）
+ * @param operator - 操作符
+ * @param rightValue - 右值
+ * @returns 条件评估结果
+ */
+export type ConditionEvaluator = (leftValue: string, operator: string, rightValue: any) => boolean;
+
+/**
+ * 评估单个过滤器条件
+ *
+ * @param condition - 过滤器条件项
+ * @param evaluator - 条件评估器函数
+ * @returns 条件评估结果
+ */
+function evaluateCondition(condition: FilterCondition, evaluator: ConditionEvaluator): boolean {
+  const { leftValue, operator, rightValue } = condition;
+  return evaluator(leftValue, operator, rightValue);
+}
+
+/**
+ * 评估过滤器分组
+ *
+ * @param group - 过滤器分组
+ * @param evaluator - 条件评估器函数
+ * @returns 分组评估结果
+ */
+function evaluateGroup(group: FilterGroupType, evaluator: ConditionEvaluator): boolean {
+  const { logic, items } = group;
+
+  if (!items || items.length === 0) {
+    return true; // 空条件组默认为 true
+  }
+
+  const results = items.map((item) => {
+    if (isFilterCondition(item)) {
+      return evaluateCondition(item, evaluator);
+    } else if (isFilterGroup(item)) {
+      return evaluateGroup(item, evaluator);
+    } else {
+      throw new Error('Invalid filter item type');
+    }
+  });
+
+  // 根据逻辑操作符组合结果
+  if (logic === '$and') {
+    return results.every((result) => result === true);
+  } else if (logic === '$or') {
+    return results.some((result) => result === true);
+  } else {
+    throw new Error(`Unsupported logic operator: ${logic}`);
+  }
+}
+
+/**
+ * 评估过滤器条件
+ *
+ * 解析 FilterGroupType 类型的条件，根据提供的评估器函数计算每个条件的值，
+ * 然后按照逻辑操作符组合得出最终的布尔值结果。
+ *
+ * @param conditions - 过滤器条件配置对象
+ * @param evaluator - 条件评估器函数，用于计算 leftValue、operator、rightValue 的结果
+ * @returns 最终的布尔值结果
+ *
+ * @throws {Error} 当条件格式无效时抛出错误
+ *
+ * @example
+ * ```typescript
+ * // 定义条件评估器
+ * const evaluator: ConditionEvaluator = (leftValue, operator, rightValue) => {
+ *   // 这里实现具体的条件计算逻辑
+ *   // 例如从上下文中获取字段值并与 rightValue 比较
+ *   const fieldValue = getFieldValue(leftValue);
+ *   return compareValues(fieldValue, operator, rightValue);
+ * };
+ *
+ * // 评估条件
+ * const conditions = {
+ *   logic: '$and',
+ *   items: [
+ *     {
+ *       leftValue: 'name',
+ *       operator: '$eq',
+ *       rightValue: 'test'
+ *     },
+ *     {
+ *       leftValue: 'age',
+ *       operator: '$gt',
+ *       rightValue: 18
+ *     }
+ *   ]
+ * };
+ *
+ * const result = evaluateConditions(conditions, evaluator);
+ * // 返回: boolean (根据评估器的具体实现)
+ * ```
+ */
+export function evaluateConditions(conditions: FilterGroupType, evaluator: ConditionEvaluator): boolean {
+  if (!conditions || typeof conditions !== 'object') {
+    throw new Error('Invalid conditions: conditions must be an object');
+  }
+
+  if (!isFilterGroup(conditions)) {
+    throw new Error('Invalid conditions: conditions must have logic and items properties');
+  }
+
+  if (!Array.isArray(conditions.items)) {
+    throw new Error('Invalid conditions: items must be an array');
+  }
+
+  if (typeof evaluator !== 'function') {
+    throw new Error('Invalid evaluator: evaluator must be a function');
+  }
+
+  return evaluateGroup(conditions, evaluator);
+}
