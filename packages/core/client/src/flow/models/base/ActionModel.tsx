@@ -149,10 +149,7 @@ ActionModel.registerFlow({
           width: 900,
         },
       },
-      use: 'linkageRules',
-      defaultParams: {
-        supportedActions: ['setButtonProps', 'runjs'],
-      },
+      use: 'actionLinkageRules',
     },
   },
 });

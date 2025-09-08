@@ -129,11 +129,7 @@ BlockModel.registerFlow({
           width: 900,
         },
       },
-      use: 'linkageRules',
-      title: 'Block linkage rules',
-      defaultParams: {
-        supportedActions: ['setBlockProps', 'runjs'],
-      },
+      use: 'blockLinkageRules',
     },
     // setBlockHeight: {
     //   title: tval('Set block height'),

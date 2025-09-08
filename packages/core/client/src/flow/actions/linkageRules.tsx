@@ -78,7 +78,7 @@ const linkageActions: LinkageActions = {
     },
   },
   // 按钮属性设置
-  setButtonProps: {
+  setActionProps: {
     title: '按钮属性设置',
     component: (props) => {
       const { value, onChange } = props;
@@ -373,8 +373,8 @@ const linkageActions: LinkageActions = {
   },
 };
 
-const LinkageRulesUI = observer((props: { readonly value: LinkageRule[] }) => {
-  const { value: rules } = props;
+const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
+  const { value: rules, supportedActions } = props;
   const ctx = useFlowContext();
 
   // 创建新规则的默认值
@@ -437,7 +437,6 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[] }) => {
 
   // 获取可用的动作类型
   const getAvailableActions = () => {
-    const supportedActions = ctx.model.__supportedActions || [];
     return supportedActions.filter((actionType: string) => linkageActions[actionType]);
   };
 
@@ -689,70 +688,107 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[] }) => {
   );
 });
 
-export const linkageRules = defineAction({
-  name: 'linkageRules',
+const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
+  const evaluator = (path: string, operator: string, value: any) => {
+    return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
+  };
+
+  const linkageRules = params.value as LinkageRule[];
+  const models: FlowModel[] = [];
+
+  // 1. 运行所有的联动规则
+  linkageRules
+    .filter((rule) => rule.enable)
+    .forEach((rule) => {
+      const { conditions, actions } = rule;
+
+      if (evaluateConditions(conditions, evaluator)) {
+        actions.forEach((action) => {
+          const handler = linkageActions[action.type]?.handler;
+
+          if (!handler) {
+            throw new Error(`Unknown action type: ${action.type}`);
+          }
+
+          const setProps = (model: FlowModel & { __originalProps?: any; __props?: any }, props: any) => {
+            // 存储原始值，用于恢复
+            if (!model.__originalProps) {
+              model.__originalProps = { ...model.props };
+            }
+
+            // 临时存起来，遍历完所有规则后，再统一处理
+            model.__props = {
+              ...model.__props,
+              ...props,
+            };
+
+            models.push(model);
+          };
+
+          handler({ ctx, value: action.value, setProps });
+        });
+      }
+    });
+
+  // 2. 最后才实际更改相关 model 的状态
+  models.forEach((model: FlowModel & { __originalProps?: any; __props?: any }) => {
+    model.setProps({
+      ...model.__originalProps,
+      ...model.__props,
+    });
+  });
+};
+
+export const blockLinkageRules = defineAction({
+  name: 'blockLinkageRules',
+  title: escapeT('Block linkage Rules'),
+  uiSchema: {
+    value: {
+      type: 'array',
+      'x-component': LinkageRulesUI,
+      'x-component-props': {
+        supportedActions: ['setBlockProps', 'runjs'],
+      },
+    },
+  },
+  defaultParams: {
+    value: [],
+  },
+  handler: commonLinkageRulesHandler,
+});
+
+export const actionLinkageRules = defineAction({
+  name: 'actionLinkageRules',
   title: escapeT('Linkage Rules'),
   uiSchema: {
     value: {
       type: 'array',
       'x-component': LinkageRulesUI,
+      'x-component-props': {
+        supportedActions: ['setActionProps', 'runjs'],
+      },
     },
   },
   defaultParams: {
     value: [],
-    supportedActions: ['setBlockProps', 'setButtonProps', 'setFieldProps', 'assignField', 'runjs'],
   },
-  handler(ctx, params) {
-    const evaluator = (path: string, operator: string, value: any) => {
-      return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
-    };
+  handler: commonLinkageRulesHandler,
+});
 
-    const linkageRules = params.value as LinkageRule[];
-    const models: FlowModel[] = [];
-
-    // 再渲染配置弹窗时会用到
-    ctx.model.__supportedActions = params.supportedActions || [];
-
-    // 1. 运行所有的联动规则
-    linkageRules
-      .filter((rule) => rule.enable)
-      .forEach((rule) => {
-        const { conditions, actions } = rule;
-
-        if (evaluateConditions(conditions, evaluator)) {
-          actions.forEach((action) => {
-            const handler = linkageActions[action.type]?.handler;
-
-            if (!handler) {
-              throw new Error(`Unknown action type: ${action.type}`);
-            }
-
-            const setProps = (model: FlowModel & { __originalProps?: any; __props?: any }, props: any) => {
-              // 存储原始值，用于恢复
-              if (!model.__originalProps) {
-                model.__originalProps = { ...model.props };
-              }
-
-              // 临时存起来，遍历完所有规则后，再统一处理
-              model.__props = {
-                ...model.__props,
-                ...props,
-              };
-
-              models.push(model);
-            };
-
-            handler({ ctx, value: action.value, setProps });
-          });
-        }
-      });
-
-    // 2. 最后才实际更改相关 model 的状态
-    models.forEach((model: FlowModel & { __originalProps?: any; __props?: any }) => {
-      model.setProps({
-        ...model.__originalProps,
-        ...model.__props,
-      });
-    });
+export const fieldLinkageRules = defineAction({
+  name: 'fieldLinkageRules',
+  title: escapeT('Field linkage Rules'),
+  uiSchema: {
+    value: {
+      type: 'array',
+      'x-component': LinkageRulesUI,
+      'x-component-props': {
+        supportedActions: ['setFieldProps', 'assignField', 'runjs'],
+      },
+    },
   },
+  defaultParams: {
+    value: [],
+  },
+  handler: commonLinkageRulesHandler,
 });
