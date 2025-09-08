@@ -17,6 +17,7 @@ import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { FilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
+import { DefaultValue } from '../components/DefaultValue';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -287,13 +288,7 @@ const linkageActions: LinkageActions = {
           </div>
           <div>
             <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
-            <Input.TextArea
-              value={value.assignValue}
-              onChange={(e) => onChange({ ...value, assignValue: e.target.value })}
-              placeholder="请输入赋值内容"
-              rows={3}
-              style={{ width: '100%' }}
-            />
+            <DefaultValue value={value.assignValue} onChange={(v) => onChange({ ...value, assignValue: v })} />
           </div>
         </div>
       );
