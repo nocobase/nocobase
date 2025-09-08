@@ -322,9 +322,9 @@ const linkageActions: LinkageActions = {
       });
     },
   },
-  // 执行 JS 脚本
+  // 执行 JavaScript
   runjs: {
-    title: '执行 JS 脚本',
+    title: 'Execute JavaScript',
     component: (props) => {
       const { value = { script: '' }, onChange } = props;
       const handleScriptChange = (script: string) => {
