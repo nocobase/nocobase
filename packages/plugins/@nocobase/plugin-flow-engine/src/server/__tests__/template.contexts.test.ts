@@ -9,8 +9,12 @@
 
 import { describe, it, expect } from 'vitest';
 import { ServerBaseContext, GlobalContext, HttpRequestContext } from '../template/contexts';
+import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('ServerBaseContext', () => {
+  beforeAll(() => {
+    resetVariablesRegistryForTest();
+  });
   it('defineProperty: value', () => {
     const ctx = new ServerBaseContext();
     (ctx as any).defineProperty('foo', { value: 123 });

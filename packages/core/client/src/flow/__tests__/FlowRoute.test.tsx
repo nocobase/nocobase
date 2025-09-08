@@ -34,6 +34,17 @@ vi.mock('@nocobase/flow-engine', () => {
         };
       }),
     }),
+    defineFlow: vi.fn((config) => config),
+    escapeT: vi.fn((str) => str),
+    FlowModel: vi.fn().mockImplementation(() => ({
+      registerFlow: vi.fn(),
+    })),
+    ActionModel: {
+      registerFlow: vi.fn(),
+    },
+    observable: {
+      ref: vi.fn((value) => ({ value })),
+    },
   };
 });
 

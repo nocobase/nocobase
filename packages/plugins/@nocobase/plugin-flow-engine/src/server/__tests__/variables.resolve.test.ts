@@ -9,9 +9,13 @@
 
 import { createMockServer, MockServer } from '@nocobase/test';
 import { variables } from '../variables/registry';
+import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   let app: MockServer;
+  beforeAll(() => {
+    resetVariablesRegistryForTest();
+  });
   const execResolve = async (values: any, userId?: number) => {
     const action = app.resourceManager.getAction('variables', 'resolve');
     const ctx: any = {
@@ -43,7 +47,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     return ctx;
   };
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     app = await createMockServer({
       database: { dialect: 'sqlite', storage: ':memory:' },
       plugins: [
@@ -58,7 +62,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     });
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await app?.destroy();
   });
 
@@ -154,6 +158,22 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.b).toBe(1);
     expect(typeof data.c).toBe('string');
     expect(data.c.length).toBeGreaterThan(0);
+  });
+
+  it('batch: resolves multiple items and preserves unmatched placeholders', async () => {
+    const payload = {
+      batch: [
+        { id: 't1', template: { ts: '{{ ctx.timestamp }}' } },
+        // missing contextParams for view.record -> keep placeholder
+        { id: 't2', template: { id: '{{ ctx.view.record.id }}' } },
+      ],
+    } as any;
+    const res = await execResolve(payload, 1);
+    const results = res.body?.results || [];
+    const r1 = results.find((r: any) => r.id === 't1');
+    const r2 = results.find((r: any) => r.id === 't2');
+    expect(typeof r1.data.ts).toBe('number');
+    expect(r2.data.id).toBe('{{ ctx.view.record.id }}');
   });
 
   it('should support top-level bracket var for record', async () => {

@@ -12,8 +12,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { VariableFilterItem } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { Application } from '../../../../../application/Application';
-import { CollectionFieldInterface } from '../../../../../data-source/collection-field-interface/CollectionFieldInterface';
+import { Application } from '../../../../application/Application';
+import { CollectionFieldInterface } from '../../../../data-source/collection-field-interface/CollectionFieldInterface';
 
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
@@ -104,15 +104,15 @@ describe('VariableFilterItem', () => {
     const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable />);
 
     // Left select -> both left and right variable inputs should be available (2 instances)
-    fireEvent.click(screen.getByTestId('variable-input'));
+    fireEvent.click(screen.getAllByTestId('variable-input')[0]);
 
     // Two VariableInput mocks should exist (left + right)
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(2);
 
     // Set operator to a noValue operator and rerender -> right side should disappear
-    value.operator = '$null';
-    rerender(<VariableFilterItem value={value} model={model} rightAsVariable />);
-    // Only left VariableInput remains
+    const nextValue: any = { ...value, operator: '$null' };
+    rerender(<VariableFilterItem value={nextValue} model={model} rightAsVariable />);
+    // Only left VariableInput remains（右侧在 noValue 操作符下不渲染）
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(1);
   });
 });

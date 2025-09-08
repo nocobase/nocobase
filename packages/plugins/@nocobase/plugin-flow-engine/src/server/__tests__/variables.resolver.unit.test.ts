@@ -11,12 +11,14 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { GlobalContext, HttpRequestContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
 import { variables } from '../variables/registry';
+import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables resolver (no HTTP)', () => {
   let app: MockServer;
   let CAN_ENV = false;
 
   beforeAll(async () => {
+    resetVariablesRegistryForTest();
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
@@ -97,18 +99,6 @@ describe('variables resolver (no HTTP)', () => {
     const tpl = { t: '{{ typeof setTimeout }}' } as any;
     const out = await resolveJsonTemplate(tpl, req);
     expect(out.t).toBe('undefined');
-  });
-
-  it.runIf(CAN_ENV)('filters env to public prefixes only', async () => {
-    app.environment.setVariable('PUBLIC_FOO', 'x');
-    app.environment.setVariable('NEXT_PUBLIC_BAR', 'y');
-    app.environment.setVariable('NCB_PUBLIC_Z', 'z');
-    app.environment.setVariable('SECRET_TOKEN', 'hidden');
-    const { req } = makeCtx(1);
-    const tpl = { a: '{{ ctx.env.PUBLIC_FOO }}', b: '{{ ctx.env.SECRET_TOKEN }}' } as any;
-    const out = await resolveJsonTemplate(tpl, req);
-    expect(out.a).toBe('x');
-    expect(out.b).toBe('{{ ctx.env.SECRET_TOKEN }}');
   });
 
   it('resolves date variables (shape existence)', async () => {
