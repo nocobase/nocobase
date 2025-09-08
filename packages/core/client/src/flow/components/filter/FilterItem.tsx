@@ -19,9 +19,9 @@ import { fieldsToOptions } from './fieldsToOptions';
 export interface FilterItemProps {
   /** 筛选条件值对象 */
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
   model: FlowModel;
   noIgnore?: boolean;
@@ -36,16 +36,16 @@ export interface FilterItemProps {
  * ```typescript
  * <FilterItem
  *   value={{
- *     leftValue: "name",
+ *     path: "name",
  *     operator: "eq",
- *     rightValue: "test"
+ *     value: "test"
  *   }}
  * />
  * ```
  */
 export const FilterItem: FC<FilterItemProps> = observer(
   (props) => {
-    const { leftValue, operator, rightValue } = props.value;
+    const { path: leftValue, operator, value: rightValue } = props.value;
     const modelInstance = props.model;
     const currentBlockModel = modelInstance.context.blockModel;
     const fields =
@@ -81,7 +81,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
 
     // 处理字段选择变化
     const handleFieldChange = (value: string) => {
-      props.value.leftValue = value;
+      props.value.path = value;
       // 当字段改变时，重置操作符和值
       const selectedField = options.find((option) => option.name === value);
       if (selectedField?.operators?.length > 0) {
@@ -89,7 +89,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
       } else {
         props.value.operator = '';
       }
-      props.value.rightValue = '';
+      props.value.value = '';
     };
 
     // 处理操作符选择变化
@@ -99,7 +99,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
 
     // 处理值输入变化
     const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      props.value.rightValue = e.target.value;
+      props.value.value = e.target.value;
     };
 
     return (
