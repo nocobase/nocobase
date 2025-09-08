@@ -57,13 +57,14 @@ export function FormComponent({
   const [form] = Form.useForm();
 
   React.useEffect(() => {
-    model.context.defineProperty('form', { get: () => form });
+    if (!model.context.has('form')) {
+      model.context.defineProperty('form', { get: () => form, cache: false });
+    }
   }, [form, model]);
 
   return (
     <Form
-      key={model.uid}
-      form={form}
+      form={model.form}
       initialValues={model.context.record || initialValues}
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
