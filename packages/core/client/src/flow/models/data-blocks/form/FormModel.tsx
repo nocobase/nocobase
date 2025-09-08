@@ -107,6 +107,7 @@ FormModel.registerFlow({
 FormModel.registerFlow({
   key: 'eventSettings',
   title: tval('Event settings'),
+  on: 'formValuesChange',
   steps: {
     linkageRules: {
       uiMode: {
