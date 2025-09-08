@@ -10,7 +10,7 @@
 import { BlockGridModel } from '@nocobase/client';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FILTER_CONFIGS_STEP_KEY, FILTER_MANAGER_FLOW_KEY, FilterManager } from '../FilterManager';
+import { FilterManager } from '../FilterManager';
 
 // Mock FlowModel
 const mockFlowModel = {
