@@ -48,10 +48,11 @@ export const FilterItem: FC<FilterItemProps> = observer(
     const { leftValue, operator, rightValue } = props.value;
     const modelInstance = props.model;
     const currentBlockModel = modelInstance.context.blockModel;
-    const fields = currentBlockModel.collection.getFields().filter((field) => {
-      // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
-      return field.target !== 'attachments';
-    });
+    const fields =
+      currentBlockModel.collection?.getFields().filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }) || [];
     const ignoreFieldsNames = getIgnoreFieldsNames(
       modelInstance.props.filterableFieldsNames || [],
       fields.map((field) => field.name),
@@ -140,5 +141,5 @@ export const FilterItem: FC<FilterItemProps> = observer(
 );
 
 function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
-  return allFields.filter((field) => !filterableFieldsNames.includes(field));
+  return allFields?.filter((field) => !filterableFieldsNames.includes(field));
 }
