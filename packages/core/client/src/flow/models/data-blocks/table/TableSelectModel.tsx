@@ -16,6 +16,15 @@ export class TableSelectModel extends TableModel {
   rowSelectionProps: any = observable.deep({});
   onInit(options: any) {
     super.onInit(options);
+    const collectionField = this.context.view.inputArgs.collectionField || {};
+    const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
+    if (isOToAny) {
+      this.resource.addFilterGroup(`${this.uid}-${collectionField.name}`, {
+        [collectionField.foreignKey]: {
+          $is: null,
+        },
+      });
+    }
 
     Object.assign(this.rowSelectionProps, this.context.view.inputArgs.rowSelectionProps || {});
   }
