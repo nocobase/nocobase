@@ -11,7 +11,7 @@ import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowCont
 import type { JSONValue } from './params-resolvers';
 import type { Collection } from '../data-source';
 import { createCollectionContextMeta } from './createRecordProxyContext';
-import type { RecordRef } from '../utils/serverContextParams';
+import { buildServerContextParams, type RecordRef, type ServerContextParams } from '../utils/serverContextParams';
 
 // Narrowest resource shape we rely on for inference
 type ResourceLike = {
@@ -227,4 +227,46 @@ export function extractUsedVariablePaths(template: JSONValue): Record<string, st
   };
   visit(template);
   return usage;
+}
+
+/**
+ * 根据模板中用到的 ctx 变量，收集并构建服务端解析所需的 contextParams。
+ * - 通过 FlowContext 的 PropertyMeta.buildVariablesParams 收集 RecordRef
+ * - 仅包含模板中实际使用到的顶层变量键，避免无谓膨胀
+ */
+export async function collectContextParamsForTemplate(
+  ctx: FlowContext,
+  template: JSONValue,
+): Promise<ServerContextParams | undefined> {
+  try {
+    const usage = extractUsedVariablePaths(template) || {};
+    const varNames = Object.keys(usage);
+    if (!varNames.length) return undefined;
+
+    const input: Record<string, any> = {};
+    for (const key of varNames) {
+      const opt = (ctx as any).getPropertyOptions?.(key);
+      const meta: PropertyMeta | (() => Promise<PropertyMeta | null> | PropertyMeta | null) | undefined = opt?.meta;
+      if (!meta) continue;
+      let built: any;
+      try {
+        const resolvedMeta = typeof meta === 'function' ? await (meta as any)() : (meta as any);
+        const builder = resolvedMeta?.buildVariablesParams;
+        if (typeof builder === 'function') {
+          built = await builder(ctx);
+        }
+      } catch (err) {
+        // 忽略构建变量参数时的异常，继续处理其他变量
+        // 使用 void 引用以避免 no-unused-vars，同时避免空代码块触发 no-empty
+        void err;
+        continue;
+      }
+      if (built) {
+        input[key] = built;
+      }
+    }
+    return buildServerContextParams(ctx, input);
+  } catch (_) {
+    return undefined;
+  }
 }

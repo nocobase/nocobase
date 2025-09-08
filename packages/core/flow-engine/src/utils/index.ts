@@ -49,6 +49,7 @@ export {
   inferParentRecordRef,
   extractUsedVariableNames,
   extractUsedVariablePaths,
+  collectContextParamsForTemplate,
   type RecordParamsBuilder,
 } from './variablesParams';
 

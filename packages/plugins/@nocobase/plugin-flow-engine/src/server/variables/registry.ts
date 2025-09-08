@@ -169,8 +169,16 @@ class VariableRegistry {
   }
 }
 
-/** 变量注册表（全局单例） */
-export const variables = new VariableRegistry();
+/** 变量注册表（全局单例，确保 src/dist 共享同一实例） */
+const GLOBAL_KEY = '__ncbVarRegistry__';
+const g: any = typeof globalThis !== 'undefined' ? globalThis : (global as any);
+if (!g[GLOBAL_KEY]) {
+  g[GLOBAL_KEY] = new VariableRegistry();
+}
+export const variables: VariableRegistry = g[GLOBAL_KEY] as VariableRegistry;
+
+/** 仅测试使用：重置变量注册表为内置默认集 */
+// 注意：测试重置逻辑已迁移至测试工具，避免在实现文件中暴露仅供测试的 API。
 
 /**
  * 从使用路径推断查询所需的 fields 与 appends。
@@ -185,16 +193,31 @@ function inferSelectsFromUsage(paths: string[] = [], params?: any) {
   const appendSet = new Set<string>();
   const fieldSet = new Set<string>();
 
-  for (const p of paths) {
-    const seg = p.split(/\.|\[/)[0];
-    if (!seg) continue;
-    // Nested access implies association/append (e.g. roles[0].name or author.company)
-    if (p.includes('.') || p.includes('[')) {
-      appendSet.add(seg);
-    } else {
-      // Top-level path implies base field selection
-      fieldSet.add(seg);
+  for (let p of paths) {
+    if (!p) continue;
+    // 若以数字索引开头（如 [0].name），去掉前导的 [n].，用于推断字段/关联
+    // 这样 record[0].name 的子路径（传入本函数时为 [0].name）会被识别为字段 name，而非关联
+    while (/^\[(\d+)\](\.|$)/.test(p)) {
+      p = p.replace(/^\[(\d+)\]\.?/, '');
     }
+    if (!p) continue;
+    // 若以字符串括号开头（如 ['name'] 或 ["name"])，将其作为首段字段名处理
+    let first = '';
+    let rest = '';
+    const mStr = p.match(/^\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\](.*)$/);
+    if (mStr) {
+      first = (mStr[1] ?? mStr[2]) || '';
+      rest = mStr[3] || '';
+    } else {
+      // 字符类中 '.' 和 '[' 无需转义，避免 no-useless-escape
+      const m = p.match(/^([^.[]+)([\s\S]*)$/);
+      first = m?.[1] ?? '';
+      rest = m?.[2] ?? '';
+    }
+    if (!first) continue;
+    const hasDeep = rest.includes('.') || rest.includes('[');
+    if (hasDeep) appendSet.add(first);
+    else fieldSet.add(first);
   }
 
   const generatedAppends = appendSet.size ? Array.from(appendSet) : undefined;
@@ -215,13 +238,13 @@ async function fetchRecordWithRequestCache(
   appends?: string[],
 ): Promise<unknown> {
   try {
-    const stateObj = (koaCtx as ResourcerContext & { state?: Record<string, unknown> }).state;
-    if (stateObj && !(stateObj as Record<string, unknown>)['__varResolveBatchCache']) {
-      (stateObj as Record<string, unknown>)['__varResolveBatchCache'] = new Map<string, unknown>();
+    // 确保 state 与 __varResolveBatchCache 始终存在
+    const kctx = koaCtx as ResourcerContext & { state?: Record<string, unknown> };
+    if (!kctx.state) kctx.state = {};
+    if (!(kctx.state as Record<string, unknown>)['__varResolveBatchCache']) {
+      (kctx.state as Record<string, unknown>)['__varResolveBatchCache'] = new Map<string, unknown>();
     }
-    const cache = stateObj
-      ? (stateObj as { __varResolveBatchCache?: Map<string, unknown> }).__varResolveBatchCache || null
-      : null;
+    const cache = (kctx.state as { __varResolveBatchCache?: Map<string, unknown> }).__varResolveBatchCache || null;
     const ds = koaCtx.app.dataSourceManager.get(dataSourceKey || 'main');
     const cm = ds.collectionManager as SequelizeCollectionManager;
     if (!cm?.db) return undefined;
@@ -241,6 +264,7 @@ async function fetchRecordWithRequestCache(
       // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）
       const needFields = Array.isArray(fields) ? new Set(fields) : undefined;
       const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
+      let fallbackAny: unknown = undefined;
       for (const [ck, cv] of cache.entries()) {
         const parsed = JSON.parse(ck) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
         if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
@@ -249,7 +273,10 @@ async function fetchRecordWithRequestCache(
         const fieldsOk = !needFields || (cachedFields && [...needFields].every((x) => cachedFields.has(x)));
         const appendsOk = !needAppends || (cachedAppends && [...needAppends].every((x) => cachedAppends.has(x)));
         if (fieldsOk && appendsOk) return cv;
+        // 兜底：记住同 ds/c/tk 的任意缓存，若无“超集”匹配则使用它（prefetch 已保证并集）
+        if (typeof fallbackAny === 'undefined') fallbackAny = cv;
       }
+      if (typeof fallbackAny !== 'undefined') return fallbackAny;
     }
     const tk: any = filterByTk as any;
     const rec = await repo.findOne({
@@ -310,13 +337,33 @@ function attachGenericRecordVariables(
     }
 
     // Nested record-like under varName
-    // Group paths by first segment
+    // Group paths by first segment（支持首段后直接跟数字索引，如 record[0].name）
     const segMap = new Map<string, string[]>();
+    const splitHead = (path: string): { seg: string; remainder: string } => {
+      if (!path) return { seg: '', remainder: '' };
+      // 1) 以 [n] 开头（如 [0].name）
+      const mIdx = path.match(/^\[(\d+)\](?:\.(.*))?$/);
+      if (mIdx) {
+        return { seg: `[${mIdx[1]}]`, remainder: mIdx[2] || '' };
+      }
+      // 2) 标识符开头，后面可能紧跟 [n] 或 .
+      const m = path.match(/^([a-zA-Z_$][a-zA-Z0-9_$]*)(\[(?:\d+|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\])?(?:\.(.*))?$/);
+      if (m) {
+        const seg = m[1];
+        const idxPart = m[2] || '';
+        const tail = m[3] || '';
+        // 若紧跟 [n]，则把 [n] 保留到 remainder 中，seg 仅为标识符本体
+        const remainder = (idxPart ? `${idxPart}${tail ? `.${tail}` : ''}` : tail) || '';
+        return { seg, remainder };
+      }
+      // 3) 兜底：按 . 分割
+      const [seg, ...rest] = path.split('.');
+      return { seg, remainder: rest.join('.') };
+    };
     for (const p of usedPaths) {
       if (!p) continue;
-      const [seg, ...rest] = p.split('.');
+      const { seg, remainder } = splitHead(p);
       if (!seg) continue;
-      const remainder = rest.join('.') || '';
       const arr = segMap.get(seg) || [];
       arr.push(remainder);
       segMap.set(seg, arr);
@@ -344,10 +391,17 @@ function attachGenericRecordVariables(
             (idx ? _.get(contextParams, [varName, idx]) : undefined) ??
             (contextParams || {})[`${varName}.${seg}`] ??
             (idx ? (contextParams || {})[`${varName}.${idx}`] : undefined);
-          const { generatedAppends, generatedFields } = inferSelectsFromUsage(
-            remainders.filter((r) => !!r), // use sub-paths under seg
-            rp,
-          );
+          // 优先使用本段的子路径；若解析不到任何子路径，则尝试从原始 usedPaths 回退计算一次（去掉首段 `${seg}.`）
+          let effRemainders = remainders.filter((r) => !!r);
+          if (!effRemainders.length) {
+            const all = usedPaths
+              .map((p) =>
+                p.startsWith(`${seg}.`) ? p.slice(seg.length + 1) : p.startsWith(`${seg}[`) ? p.slice(seg.length) : '',
+              )
+              .filter((x) => !!x);
+            if (all.length) effRemainders = all;
+          }
+          const { generatedAppends, generatedFields } = inferSelectsFromUsage(effRemainders, rp);
           const defKey = idx ?? seg; // define numeric index for [0] so lodash.get '[0]' resolves to '0'
           sub.defineProperty(defKey, {
             get: async () => {
@@ -371,28 +425,33 @@ function attachGenericRecordVariables(
   }
 }
 
-/**
- * Register `user` variable:
- * - No contextParams required or expected from client.
- * - Infers fields/appends from usage paths (e.g. ctx.user.roles[0].name -> appends: ['roles']).
- * - Loads current user from DB by primary key in koaCtx.auth.user.id.
- */
-variables.register({
-  name: 'user',
-  scope: 'request',
-  // no requiredParams: frontend will not pass context params for user
-  attach: (flowCtx, koaCtx, _params, usage) => {
-    const paths = usage?.['user'] || [];
-    const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
+function registerBuiltInVariables(reg: VariableRegistry) {
+  /**
+   * Register `user` variable:
+   * - No contextParams required or expected from client.
+   * - Infers fields/appends from usage paths (e.g. ctx.user.roles[0].name -> appends: ['roles']).
+   * - Loads current user from DB by primary key in koaCtx.auth.user.id.
+   */
+  reg.register({
+    name: 'user',
+    scope: 'request',
+    // no requiredParams: frontend will not pass context params for user
+    attach: (flowCtx, koaCtx, _params, usage) => {
+      const paths = usage?.['user'] || [];
+      const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
 
-    flowCtx.defineProperty('user', {
-      get: async () => {
-        const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
-        const uid = authObj?.user?.id;
-        if (typeof uid === 'undefined' || uid === null) return undefined;
-        return await fetchRecordWithRequestCache(koaCtx, 'main', 'users', uid, generatedFields, generatedAppends);
-      },
-      cache: true,
-    });
-  },
-});
+      flowCtx.defineProperty('user', {
+        get: async () => {
+          const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
+          const uid = authObj?.user?.id;
+          if (typeof uid === 'undefined' || uid === null) return undefined;
+          return await fetchRecordWithRequestCache(koaCtx, 'main', 'users', uid, generatedFields, generatedAppends);
+        },
+        cache: true,
+      });
+    },
+  });
+}
+
+// 初始化默认内置变量
+registerBuiltInVariables(variables);
