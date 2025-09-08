@@ -86,9 +86,6 @@ import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { BaseDialect } from './dialects/base-dialect';
 
-// @ts-ignore
-DataTypes.BIGINT.parse = (value: string | number) => parseBigIntValue(value);
-
 export type MergeOptions = merge.Options;
 
 export interface PendingOptions {
@@ -237,6 +234,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
         return val;
       });
+    }
+
+    if (options.dialect === 'mysql') {
+      opts.dialectOptions = {
+        ...opts.dialectOptions,
+
+        typeCast: (field, next) => {
+          // @ts-ignore
+          const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
+          if (field.type === 'LONGLONG') {
+            const val = field.string();
+            return parseBigIntValue(val);
+          }
+          // @ts-ignore
+          return ConnectionManager._typecast.bind(this.sequelize.dialect.connectionManager)(field, next);
+        },
+      };
     }
 
     if (options.logging && process.env['DB_SQL_BENCHMARK'] == 'true') {
