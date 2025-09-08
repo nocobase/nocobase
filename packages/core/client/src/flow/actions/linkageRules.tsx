@@ -703,8 +703,8 @@ export const linkageRules = defineAction({
     supportedActions: ['setBlockProps', 'setButtonProps', 'setFieldProps', 'assignField', 'runjs'],
   },
   handler(ctx, params) {
-    const evaluator = (leftValue: string, operator: string, rightValue: any) => {
-      return ctx.app.jsonLogic.apply({ [operator]: [leftValue, rightValue] });
+    const evaluator = (path: string, operator: string, value: any) => {
+      return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
     };
 
     const linkageRules = params.value as LinkageRule[];

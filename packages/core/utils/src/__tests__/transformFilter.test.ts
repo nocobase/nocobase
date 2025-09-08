@@ -20,9 +20,9 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
       ],
     };
@@ -46,14 +46,14 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'isAdmin',
+          path: 'isAdmin',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
         {
-          leftValue: 'nickname',
+          path: 'nickname',
           operator: '$includes',
-          rightValue: '11',
+          value: '11',
         },
       ],
     };
@@ -82,17 +82,17 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'nickname',
+          path: 'nickname',
           operator: '$includes',
-          rightValue: '11',
+          value: '11',
         },
         {
           logic: '$and',
           items: [
             {
-              leftValue: 'username',
+              path: 'username',
               operator: '$includes',
-              rightValue: '222',
+              value: '222',
             },
           ],
         },
@@ -127,22 +127,22 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'isAdmin',
+          path: 'isAdmin',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
         {
           logic: '$and',
           items: [
             {
-              leftValue: 'name',
+              path: 'name',
               operator: '$eq',
-              rightValue: 'NocoBase',
+              value: 'NocoBase',
             },
             {
-              leftValue: 'age',
+              path: 'age',
               operator: '$gt',
-              rightValue: 18,
+              value: 18,
             },
           ],
         },
@@ -182,30 +182,30 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'status',
+          path: 'status',
           operator: '$eq',
-          rightValue: 'active',
+          value: 'active',
         },
         {
           logic: '$or',
           items: [
             {
-              leftValue: 'role',
+              path: 'role',
               operator: '$eq',
-              rightValue: 'admin',
+              value: 'admin',
             },
             {
               logic: '$and',
               items: [
                 {
-                  leftValue: 'department',
+                  path: 'department',
                   operator: '$eq',
-                  rightValue: 'IT',
+                  value: 'IT',
                 },
                 {
-                  leftValue: 'level',
+                  path: 'level',
                   operator: '$gte',
-                  rightValue: 3,
+                  value: 3,
                 },
               ],
             },
@@ -256,29 +256,29 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'stringField',
+          path: 'stringField',
           operator: '$eq',
-          rightValue: 'text',
+          value: 'text',
         },
         {
-          leftValue: 'numberField',
+          path: 'numberField',
           operator: '$gt',
-          rightValue: 100,
+          value: 100,
         },
         {
-          leftValue: 'booleanField',
+          path: 'booleanField',
           operator: '$eq',
-          rightValue: false,
+          value: false,
         },
         {
-          leftValue: 'arrayField',
+          path: 'arrayField',
           operator: '$in',
-          rightValue: [1, 2, 3],
+          value: [1, 2, 3],
         },
         {
-          leftValue: 'nullField',
+          path: 'nullField',
           operator: '$null',
-          rightValue: null,
+          value: null,
         },
       ],
     };
@@ -373,26 +373,26 @@ describe('transformFilter', () => {
 describe('evaluateConditions', () => {
   // 创建一个简单的条件评估器用于测试
   const createMockEvaluator = (mockData: Record<string, any>): ConditionEvaluator => {
-    return (leftValue: string, operator: string, rightValue: any): boolean => {
-      const fieldValue = mockData[leftValue];
+    return (path: string, operator: string, value: any): boolean => {
+      const fieldValue = mockData[path];
 
       switch (operator) {
         case '$eq':
-          return fieldValue === rightValue;
+          return fieldValue === value;
         case '$ne':
-          return fieldValue !== rightValue;
+          return fieldValue !== value;
         case '$gt':
-          return fieldValue > rightValue;
+          return fieldValue > value;
         case '$gte':
-          return fieldValue >= rightValue;
+          return fieldValue >= value;
         case '$lt':
-          return fieldValue < rightValue;
+          return fieldValue < value;
         case '$lte':
-          return fieldValue <= rightValue;
+          return fieldValue <= value;
         case '$includes':
-          return typeof fieldValue === 'string' && fieldValue.includes(rightValue);
+          return typeof fieldValue === 'string' && fieldValue.includes(value);
         case '$in':
-          return Array.isArray(rightValue) && rightValue.includes(fieldValue);
+          return Array.isArray(value) && value.includes(fieldValue);
         case '$null':
           return fieldValue === null || fieldValue === undefined;
         default:
@@ -409,9 +409,9 @@ describe('evaluateConditions', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
       ],
     };
@@ -428,9 +428,9 @@ describe('evaluateConditions', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'different',
+          value: 'different',
         },
       ],
     };
@@ -447,19 +447,19 @@ describe('evaluateConditions', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
         {
-          leftValue: 'age',
+          path: 'age',
           operator: '$gt',
-          rightValue: 20,
+          value: 20,
         },
         {
-          leftValue: 'isActive',
+          path: 'isActive',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
       ],
     };
@@ -476,19 +476,19 @@ describe('evaluateConditions', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
         {
-          leftValue: 'age',
+          path: 'age',
           operator: '$gt',
-          rightValue: 20,
+          value: 20,
         },
         {
-          leftValue: 'isActive',
+          path: 'isActive',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
       ],
     };
@@ -505,19 +505,19 @@ describe('evaluateConditions', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
         {
-          leftValue: 'age',
+          path: 'age',
           operator: '$gt',
-          rightValue: 20,
+          value: 20,
         },
         {
-          leftValue: 'isActive',
+          path: 'isActive',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
       ],
     };
@@ -534,19 +534,19 @@ describe('evaluateConditions', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
         {
-          leftValue: 'age',
+          path: 'age',
           operator: '$gt',
-          rightValue: 20,
+          value: 20,
         },
         {
-          leftValue: 'isActive',
+          path: 'isActive',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
       ],
     };
@@ -563,22 +563,22 @@ describe('evaluateConditions', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'admin',
+          value: 'admin',
         },
         {
           logic: '$and',
           items: [
             {
-              leftValue: 'department',
+              path: 'department',
               operator: '$eq',
-              rightValue: 'IT',
+              value: 'IT',
             },
             {
-              leftValue: 'level',
+              path: 'level',
               operator: '$gte',
-              rightValue: 3,
+              value: 3,
             },
           ],
         },
@@ -603,37 +603,37 @@ describe('evaluateConditions', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'status',
+          path: 'status',
           operator: '$eq',
-          rightValue: 'active',
+          value: 'active',
         },
         {
           logic: '$or',
           items: [
             {
-              leftValue: 'role',
+              path: 'role',
               operator: '$eq',
-              rightValue: 'admin',
+              value: 'admin',
             },
             {
               logic: '$and',
               items: [
                 {
-                  leftValue: 'department',
+                  path: 'department',
                   operator: '$eq',
-                  rightValue: 'IT',
+                  value: 'IT',
                 },
                 {
-                  leftValue: 'level',
+                  path: 'level',
                   operator: '$gte',
-                  rightValue: 3,
+                  value: 3,
                 },
               ],
             },
             {
-              leftValue: 'experience',
+              path: 'experience',
               operator: '$gt',
-              rightValue: 4,
+              value: 4,
             },
           ],
         },
@@ -669,28 +669,28 @@ describe('evaluateConditions', () => {
     // Test $includes
     let conditions: FilterGroupType = {
       logic: '$and',
-      items: [{ leftValue: 'name', operator: '$includes', rightValue: 'John' }],
+      items: [{ path: 'name', operator: '$includes', value: 'John' }],
     };
     expect(evaluateConditions(conditions, evaluator)).toBe(true);
 
     // Test $ne
     conditions = {
       logic: '$and',
-      items: [{ leftValue: 'age', operator: '$ne', rightValue: 25 }],
+      items: [{ path: 'age', operator: '$ne', value: 25 }],
     };
     expect(evaluateConditions(conditions, evaluator)).toBe(true);
 
     // Test $null
     conditions = {
       logic: '$and',
-      items: [{ leftValue: 'status', operator: '$null', rightValue: null }],
+      items: [{ path: 'status', operator: '$null', value: null }],
     };
     expect(evaluateConditions(conditions, evaluator)).toBe(true);
 
     // Test $in
     conditions = {
       logic: '$and',
-      items: [{ leftValue: 'name', operator: '$in', rightValue: ['John Doe', 'Jane Doe'] }],
+      items: [{ path: 'name', operator: '$in', value: ['John Doe', 'Jane Doe'] }],
     };
     expect(evaluateConditions(conditions, evaluator)).toBe(true);
   });
@@ -748,7 +748,7 @@ describe('evaluateConditions', () => {
 
       const conditions = {
         logic: '$invalid',
-        items: [{ leftValue: 'name', operator: '$eq', rightValue: 'test' }],
+        items: [{ path: 'name', operator: '$eq', value: 'test' }],
       } as any;
 
       expect(() => evaluateConditions(conditions, evaluator)).toThrow('Unsupported logic operator: $invalid');

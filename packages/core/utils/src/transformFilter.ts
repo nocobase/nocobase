@@ -18,17 +18,17 @@
  *   "logic": "$or",
  *   "items": [
  *     {
- *       "leftValue": "isAdmin",
+ *       "path": "isAdmin",
  *       "operator": "$eq",
- *       "rightValue": true
+ *       "value": true
  *     },
  *     {
  *       "logic": "$and",
  *       "items": [
  *         {
- *           "leftValue": "name",
+ *           "path": "name",
  *           "operator": "$eq",
- *           "rightValue": "NocoBase"
+ *           "value": "NocoBase"
  *         }
  *       ]
  *     }
@@ -45,11 +45,11 @@
  */
 export interface FilterCondition {
   /** 字段名 */
-  leftValue: string;
+  path: string;
+  /** 值 */
+  value: any;
   /** 操作符 */
   operator: string;
-  /** 值 */
-  rightValue: any;
 }
 
 /**
@@ -87,7 +87,7 @@ export type QueryObject =
  * @returns 是否为条件项
  */
 function isFilterCondition(item: FilterCondition | FilterGroupType): item is FilterCondition {
-  return 'leftValue' in item && 'operator' in item && 'rightValue' in item;
+  return 'path' in item && 'operator' in item && 'value' in item;
 }
 
 /**
@@ -107,11 +107,11 @@ function isFilterGroup(item: FilterCondition | FilterGroupType): item is FilterG
  * @returns 查询条件对象
  */
 function transformCondition(condition: FilterCondition): QueryCondition {
-  const { leftValue, operator, rightValue } = condition;
+  const { path, operator, value } = condition;
 
   return {
-    [leftValue]: {
-      [operator]: rightValue,
+    [path]: {
+      [operator]: value,
     },
   };
 }
@@ -157,9 +157,9 @@ function transformGroup(group: FilterGroupType): QueryObject {
  *   "logic": "$and",
  *   "items": [
  *     {
- *       "leftValue": "name",
+ *       "path": "name",
  *       "operator": "$eq",
- *       "rightValue": "test"
+ *       "value": "test"
  *     }
  *   ]
  * };
@@ -172,22 +172,22 @@ function transformGroup(group: FilterGroupType): QueryObject {
  *   "logic": "$or",
  *   "items": [
  *     {
- *       "leftValue": "isAdmin",
+ *       "path": "isAdmin",
  *       "operator": "$eq",
- *       "rightValue": true
+ *       "value": true
  *     },
  *     {
  *       "logic": "$and",
  *       "items": [
  *         {
- *           "leftValue": "name",
+ *           "path": "name",
  *           "operator": "$includes",
- *           "rightValue": "NocoBase"
+ *           "value": "NocoBase"
  *         },
  *         {
- *           "leftValue": "age",
+ *           "path": "age",
  *           "operator": "$gt",
- *           "rightValue": 18
+ *           "value": 18
  *         }
  *       ]
  *     }
@@ -217,12 +217,12 @@ export function transformFilter(filter: FilterGroupType): QueryObject {
 /**
  * 条件评估器函数类型
  *
- * @param leftValue - 左值（字段名）
+ * @param path - 左值（字段名）
  * @param operator - 操作符
- * @param rightValue - 右值
+ * @param value - 右值
  * @returns 条件评估结果
  */
-export type ConditionEvaluator = (leftValue: string, operator: string, rightValue: any) => boolean;
+export type ConditionEvaluator = (path: string, operator: string, value: any) => boolean;
 
 /**
  * 评估单个过滤器条件
@@ -232,8 +232,8 @@ export type ConditionEvaluator = (leftValue: string, operator: string, rightValu
  * @returns 条件评估结果
  */
 function evaluateCondition(condition: FilterCondition, evaluator: ConditionEvaluator): boolean {
-  const { leftValue, operator, rightValue } = condition;
-  return evaluator(leftValue, operator, rightValue);
+  const { path: path, operator, value: value } = condition;
+  return evaluator(path, operator, value);
 }
 
 /**
@@ -277,7 +277,7 @@ function evaluateGroup(group: FilterGroupType, evaluator: ConditionEvaluator): b
  * 然后按照逻辑操作符组合得出最终的布尔值结果。
  *
  * @param conditions - 过滤器条件配置对象
- * @param evaluator - 条件评估器函数，用于计算 leftValue、operator、rightValue 的结果
+ * @param evaluator - 条件评估器函数，用于计算 path、operator、value 的结果
  * @returns 最终的布尔值结果
  *
  * @throws {Error} 当条件格式无效时抛出错误
@@ -285,11 +285,11 @@ function evaluateGroup(group: FilterGroupType, evaluator: ConditionEvaluator): b
  * @example
  * ```typescript
  * // 定义条件评估器
- * const evaluator: ConditionEvaluator = (leftValue, operator, rightValue) => {
+ * const evaluator: ConditionEvaluator = (path, operator, value) => {
  *   // 这里实现具体的条件计算逻辑
- *   // 例如从上下文中获取字段值并与 rightValue 比较
- *   const fieldValue = getFieldValue(leftValue);
- *   return compareValues(fieldValue, operator, rightValue);
+ *   // 例如从上下文中获取字段值并与 value 比较
+ *   const fieldValue = getFieldValue(path);
+ *   return compareValues(fieldValue, operator, value);
  * };
  *
  * // 评估条件
@@ -297,14 +297,14 @@ function evaluateGroup(group: FilterGroupType, evaluator: ConditionEvaluator): b
  *   logic: '$and',
  *   items: [
  *     {
- *       leftValue: 'name',
+ *       path: 'name',
  *       operator: '$eq',
- *       rightValue: 'test'
+ *       value: 'test'
  *     },
  *     {
- *       leftValue: 'age',
+ *       path: 'age',
  *       operator: '$gt',
- *       rightValue: 18
+ *       value: 18
  *     }
  *   ]
  * };
