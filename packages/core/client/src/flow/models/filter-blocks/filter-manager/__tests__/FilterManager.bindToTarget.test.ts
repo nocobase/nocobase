@@ -28,6 +28,7 @@ describe('FilterManager.bindToTarget', () => {
       getStepParams: vi.fn().mockReturnValue([]),
       setStepParams: vi.fn(),
       save: vi.fn(),
+      saveStepParams: vi.fn().mockResolvedValue(undefined),
     };
 
     filterManager = new FilterManager(mockGridModel);
