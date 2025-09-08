@@ -8,7 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, parseBigIntValue } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -31,6 +31,7 @@ import {
   Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
+import mysql from 'mysql2';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
@@ -253,6 +254,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
     );
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
+    if (options.dialect === 'mysql') {
+      this.addTypeCastForMySQLOptions(sequelizeOptions);
+    }
     this.sequelize = new Sequelize(sequelizeOptions);
 
     this.queryInterface = buildQueryInterface(this);
@@ -374,7 +378,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
    * @internal
    */
   sequelizeOptions(options: DatabaseOptions) {
-    return this.dialect.getSequelizeOptions(options, this);
+    return this.dialect.getSequelizeOptions(options);
   }
 
   /**
@@ -516,6 +520,27 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   isPostgresCompatibleDialect() {
     return this.inDialect('postgres');
+  }
+
+  addTypeCastForMySQLOptions(options: DatabaseOptions) {
+    const { supportBigNumbers, bigNumberStrings } = (options.dialectOptions as mysql.ConnectionOptions) || {};
+    if (!(supportBigNumbers && bigNumberStrings)) {
+      return;
+    }
+    const dialectOptions: mysql.ConnectionOptions = {
+      ...options.dialectOptions,
+      typeCast: (field, next) => {
+        // @ts-ignore
+        const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
+        if (field.type === 'LONGLONG') {
+          const val = field.string();
+          return parseBigIntValue(val);
+        }
+        // @ts-ignore
+        return ConnectionManager._typecast.bind(this.sequelize.dialect.connectionManager)(field, next);
+      },
+    };
+    options.dialectOptions = dialectOptions;
   }
 
   /**

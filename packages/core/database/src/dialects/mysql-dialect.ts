@@ -9,8 +9,7 @@
 
 import mysql from 'mysql2';
 import { BaseDialect } from './base-dialect';
-import Database, { DatabaseOptions } from '../database';
-import { parseBigIntValue } from '@nocobase/utils';
+import { DatabaseOptions } from '../database';
 
 export class MysqlDialect extends BaseDialect {
   static dialectName = 'mysql';
@@ -26,22 +25,12 @@ export class MysqlDialect extends BaseDialect {
     };
   }
 
-  getSequelizeOptions(options: DatabaseOptions, db: Database) {
+  getSequelizeOptions(options: DatabaseOptions) {
     const dialectOptions: mysql.ConnectionOptions = {
       ...(options.dialectOptions || {}),
       supportBigNumbers: true,
       bigNumberStrings: true,
       multipleStatements: true,
-      typeCast: (field, next) => {
-        // @ts-ignore
-        const ConnectionManager = db.sequelize.dialect.connectionManager.constructor;
-        if (field.type === 'LONGLONG') {
-          const val = field.string();
-          return parseBigIntValue(val);
-        }
-        // @ts-ignore
-        return ConnectionManager._typecast.bind(db.sequelize.dialect.connectionManager)(field, next);
-      },
     };
 
     options.dialectOptions = dialectOptions;
