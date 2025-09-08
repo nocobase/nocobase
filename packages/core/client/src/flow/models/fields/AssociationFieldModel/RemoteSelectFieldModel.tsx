@@ -18,7 +18,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
   const { label: labelKey, value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
-    if (typeof item !== 'object' || item === null) return undefined;
+    if (typeof item !== 'object' || item === null || item == undefined) return undefined;
     return {
       label: <LabelByField option={item} fieldNames={fieldNames} />,
       value: item[valueKey],
@@ -53,9 +53,17 @@ export function LabelByField(props) {
 }
 
 export function LazySelect(props) {
-  const { fieldNames, value, multiple, options, ...others } = props;
+  const { fieldNames, value, multiple, options = [], ...others } = props;
   const realOptions =
-    options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
+    options && options.length
+      ? options
+      : multiple
+        ? Array.isArray(value)
+          ? value.filter(Boolean)
+          : []
+        : value
+          ? [value]
+          : [];
   return (
     <Select
       {...others}

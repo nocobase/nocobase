@@ -17,7 +17,7 @@ import {
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Select } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FormFieldModel } from '../FormFieldModel';
 import { LabelByField } from './RemoteSelectFieldModel';
@@ -74,6 +74,9 @@ function RecordPickerField(props) {
   const { fieldNames } = props;
   const ctx = useFlowContext();
   const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+  useEffect(() => {
+    ctx.model.selectedRows.value = props.value;
+  }, [props.value]);
   const normalizeValue = (value, fieldNames, toOne) => {
     if (!value) return toOne ? undefined : [];
     if (toOne) {
