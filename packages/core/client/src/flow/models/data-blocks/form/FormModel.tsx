@@ -68,6 +68,9 @@ export function FormComponent({
       initialValues={model.context.record || initialValues}
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onValuesChange={(changedValues, allValues) => {
+        model.dispatchEvent('formValuesChange', { changedValues, allValues });
+      }}
     >
       {children}
     </Form>
@@ -94,6 +97,26 @@ FormModel.registerFlow({
         },
       },
       use: 'linkageRules',
+      defaultParams: {
+        supportedActions: ['setFieldProps', 'assignField', 'runjs'],
+      },
+    },
+  },
+});
+
+FormModel.registerFlow({
+  key: 'eventSettings',
+  title: tval('Event settings'),
+  steps: {
+    linkageRules: {
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: 900,
+        },
+      },
+      use: 'linkageRules',
+      title: 'Field linkage rules',
       defaultParams: {
         supportedActions: ['setFieldProps', 'assignField', 'runjs'],
       },

@@ -130,6 +130,7 @@ BlockModel.registerFlow({
         },
       },
       use: 'linkageRules',
+      title: 'Block linkage rules',
       defaultParams: {
         supportedActions: ['setBlockProps', 'runjs'],
       },
