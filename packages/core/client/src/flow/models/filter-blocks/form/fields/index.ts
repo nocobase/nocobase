@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './InputFilterFormEditableFieldModel';
-export * from './FilterFormEditableFieldModel';
-export * from './CheckboxFilterFormEditableFieldModel';
-export * from './CheckboxGroupFilterFormEditableFieldModel';
-export * from './SelectFilterFormEditableFieldModel';
-export * from './TimeFilterFormEditableFieldModel';
-export * from './RadioGroupFilterFormEditableFieldModel';
-export * from './NumberFilterFormEditableFieldModel';
-export * from './PercentFilterFormEditableFieldModel';
-export * from './UploadFilterFormEditableFieldModel';
+export * from './InputFilterFieldModel';
+export * from './FilterFormFieldModel';
+export * from './CheckboxFilterFieldModel';
+export * from './CheckboxGroupFilterFieldModel';
+export * from './SelectFilterFieldModel';
+export * from './TimeFilterFieldModel';
+export * from './RadioGroupFilterFieldModel';
+export * from './NumberFilterFieldModel';
+export * from './PercentFilterFieldModel';
 export * from './association';
 export * from './date-time';

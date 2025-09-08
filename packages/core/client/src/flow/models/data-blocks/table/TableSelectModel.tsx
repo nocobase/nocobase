@@ -7,23 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observable } from '@nocobase/flow-engine';
+import { observable, escapeT } from '@nocobase/flow-engine';
+import { castArray } from 'lodash';
 import { TableModel } from './TableModel';
 
 export class TableSelectModel extends TableModel {
   static scene = 'select';
-  rowSelectionProps = observable.deep({});
+  rowSelectionProps: any = observable.deep({});
   onInit(options: any) {
     super.onInit(options);
-    this.resource.addFilterGroup(`${this.uid}-select`, {
-      [this.collection.filterTargetKey]: ['root'],
-    });
+
     Object.assign(this.rowSelectionProps, this.context.view.inputArgs.rowSelectionProps || {});
-    console.log('inputArgs', this.context.view.inputArgs);
+  }
+
+  async onMount() {
+    super.onMount();
+    const selectData = this.rowSelectionProps.defaultSelectedRows();
+    const data = (selectData && castArray(selectData)) || [];
+    const filterKeys = data
+      .map((v) => {
+        return v[this.collection.filterTargetKey];
+      })
+      .filter(Boolean);
+    this.resource.addFilterGroup(`${this.uid}-select`, {
+      [`${this.collection.filterTargetKey}.$ne`]: filterKeys,
+    });
+    await this.resource.refresh();
   }
 }
 
 TableSelectModel.define({
-  label: 'Table',
+  label: escapeT('Table'),
   children: false,
 });

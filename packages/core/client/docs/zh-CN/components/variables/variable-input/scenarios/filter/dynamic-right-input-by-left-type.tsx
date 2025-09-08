@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Application, Plugin, FilterGroup, transformFilter } from '@nocobase/client';
+import { Application, Plugin, FilterGroup } from '@nocobase/client';
+import { transformFilter } from '@nocobase/utils/client';
 import { observer } from '@formily/reactive-react';
 import { observable } from '@formily/reactive';
 import { Card, DatePicker, Input, InputNumber, Select, Space } from 'antd';

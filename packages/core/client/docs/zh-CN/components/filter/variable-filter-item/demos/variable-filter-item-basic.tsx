@@ -9,7 +9,8 @@ import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { observer } from '@formily/reactive-react';
 import { observable } from '@formily/reactive';
 import { Card, Typography } from 'antd';
-import { ContextFilterItem, transformFilter } from '@nocobase/client';
+import { ContextFilterItem } from '@nocobase/client';
+import { transformFilter } from '@nocobase/utils/client';
 
 const { Text, Paragraph } = Typography;
 

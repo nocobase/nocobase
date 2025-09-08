@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, jioToJoiSchema } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, FormItem, jioToJoiSchema } from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
@@ -18,7 +18,6 @@ import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../../base/FieldModel';
 import { EditFormModel } from '../EditFormModel';
-import { FormItem } from './FormItem';
 
 export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   const { t } = useTranslation();
@@ -34,16 +33,40 @@ export const FieldNotAllow = ({ actionName, FieldTitle }) => {
   return <Alert type="warning" message={messageValue} showIcon />;
 };
 
+function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
+  if (!fieldIndex?.length) {
+    return nameParts;
+  }
+
+  // 取最后一个索引
+  const [lastField, indexStr] = fieldIndex[fieldIndex.length - 1].split(':');
+  const idx = Number(indexStr);
+
+  // 找到 lastField 在 nameParts 的位置
+  const lastIndex = nameParts.indexOf(lastField);
+
+  if (lastIndex === -1) {
+    // 找不到对应字段，直接返回原始 nameParts
+    return nameParts;
+  }
+
+  // 结果 = [索引, ...lastField 后面的字段]
+  return [idx, ...nameParts.slice(lastIndex + 1)];
+}
+
 export class FormItemModel extends CollectionFieldItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-      const fieldPath = field.name;
+      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
       return {
-        key: field.name,
+        key: fullName,
         label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        toggleable: (subModel) => {
+          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+          return fieldPath === fullName;
+        },
         useModel: 'FormItemModel',
         createModelOptions: () => ({
           use: 'FormItemModel',
@@ -51,8 +74,8 @@ export class FormItemModel extends CollectionFieldItemModel {
             fieldSettings: {
               init: {
                 dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
+                collectionName: ctx.model.context.blockModel.collection.name,
+                fieldPath: fullName,
               },
             },
           },
@@ -72,9 +95,24 @@ export class FormItemModel extends CollectionFieldItemModel {
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
+    // 行索引（来自数组子表单）
+    const idx = this.context.fieldIndex;
+
+    // 嵌套场景下继续传透，为字段子模型创建 fork
+    const modelForRender =
+      idx != null
+        ? (() => {
+            const fork = fieldModel.createFork({}, `${idx}`);
+            fork.context.defineProperty('fieldIndex', {
+              get: () => idx,
+            });
+            return fork;
+          })()
+        : fieldModel;
+    const namePath = buildDynamicName(this.props.name, idx);
     return (
-      <FormItem {...this.props}>
-        <FieldModelRenderer model={fieldModel} />
+      <FormItem {...this.props} name={namePath}>
+        <FieldModelRenderer model={modelForRender} name={namePath} />
       </FormItem>
     );
   }
@@ -135,8 +173,10 @@ FormItemModel.registerFlow({
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
+        const fieldPath = ctx.model.fieldPath;
+        const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
-          name: ctx.model.fieldPath,
+          name: fullName,
         });
       },
     },

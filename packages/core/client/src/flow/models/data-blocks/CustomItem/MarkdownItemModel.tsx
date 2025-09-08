@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
 import { MarkdownReadPretty } from '../../../internal/components/MarkdownDisplay/MarkdownReadPretty';
-import { FormItem } from '../form/FormItem/FormItem';
 import { CommonModel } from './CommonModel';
 
 export class MarkdownItemModel extends CommonModel {

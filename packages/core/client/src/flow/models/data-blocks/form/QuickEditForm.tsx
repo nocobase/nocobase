@@ -14,6 +14,7 @@ import {
   FlowEngine,
   FlowModel,
   FlowModelRenderer,
+  FormItem,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Button, Skeleton, Space } from 'antd';
@@ -21,7 +22,6 @@ import _ from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { FormFieldModel } from '../../fields';
-import { FormItem } from './FormItem/FormItem';
 import { FormComponent } from './FormModel';
 
 export class QuickEditForm extends FlowModel {

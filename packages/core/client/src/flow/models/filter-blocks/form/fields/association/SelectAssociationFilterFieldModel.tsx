@@ -10,12 +10,12 @@ import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
-import { AssociationFieldModel } from './AssociationFieldModel';
+import { AssociationFilterFieldModel } from './AssociationFilterFieldModel';
 
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
 
-  const { label: labelKey, value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null) return undefined;
@@ -47,8 +47,8 @@ function LabelByField(props) {
   return <span style={{ pointerEvents: 'none' }}>{option[fieldNames.label] ? fieldModel.render() : tval('N/A')}</span>;
 }
 
-export function LazySelect(props) {
-  const { fieldNames, value, multiple, options, ...others } = props;
+function LazySelect(props) {
+  const { fieldNames, value, multiple, options, onChange, ...others } = props;
   const realOptions =
     options && options.length ? options : multiple ? (Array.isArray(value) ? value : []) : value ? [value] : [];
   return (
@@ -62,8 +62,8 @@ export function LazySelect(props) {
       options={realOptions}
       value={toValue(value, fieldNames, multiple)}
       mode={multiple ? 'multiple' : undefined}
-      onChange={(value, option) => {
-        props.onChange(option);
+      onChange={(value, options) => {
+        onChange(options);
       }}
       optionRender={({ data }) => {
         return <LabelByField option={data} fieldNames={fieldNames} />;
@@ -72,7 +72,7 @@ export function LazySelect(props) {
   );
 }
 
-export class SelectAssociationFieldModel extends AssociationFieldModel {
+export class SelectAssociationFilterFieldModel extends AssociationFilterFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
 
@@ -92,6 +92,14 @@ export class SelectAssociationFieldModel extends AssociationFieldModel {
   getDataSource() {
     return this.props.options;
   }
+
+  getFilterValue() {
+    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.props.value)
+      ? this.props.value.map((item) => item[fieldNames.value])
+      : this.props.value?.[fieldNames.value];
+  }
+
   get component() {
     return [LazySelect, {}];
   }
@@ -105,7 +113,7 @@ const paginationState = {
 };
 
 // 事件绑定
-SelectAssociationFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 300,
   steps: {
@@ -142,7 +150,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-SelectAssociationFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -172,7 +180,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-SelectAssociationFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -212,7 +220,7 @@ SelectAssociationFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-SelectAssociationFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -260,7 +268,7 @@ SelectAssociationFieldModel.registerFlow({
 });
 
 //专有配置项
-SelectAssociationFieldModel.registerFlow({
+SelectAssociationFilterFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
   sort: 200,

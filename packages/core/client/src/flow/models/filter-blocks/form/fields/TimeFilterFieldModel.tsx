@@ -6,8 +6,14 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { DateTimeFilterFormFieldModel } from './DateTimeFilterFormFieldModel';
 
-export class UnixTimestampFilterFormFieldModel extends DateTimeFilterFormFieldModel {
-  static readonly supportedFieldInterfaces = ['unixTimestamp'];
+import { TimePicker } from 'antd';
+import { FilterFormFieldModel } from './FilterFormFieldModel';
+
+export class TimeFilterFieldModel extends FilterFormFieldModel {
+  static readonly supportedFieldInterfaces = ['time'];
+
+  get component() {
+    return [TimePicker, {}];
+  }
 }

@@ -7,15 +7,50 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, escapeT, FlowModelContext, FormItem } from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import React from 'react';
 import { FieldModelRenderer } from '../../../common/FieldModelRenderer';
 import { CollectionFieldItemModel } from '../../base/CollectionFieldItemModel';
 import { FieldModel } from '../../base/FieldModel';
-import { FormItem } from '../form/FormItem/FormItem';
 import { FieldNotAllow } from '../form/FormItem/FormItemModel';
 import { DetailsFieldGridModel } from './DetailsFieldGridModel';
+
+/**
+ * 从 record 中取值
+ * @param record 当前行数据
+ * @param fieldPath 字段路径 (如 "o2m_aa.oho_bb.name")
+ * @param idx Form.List 的索引
+ */
+export function getValueWithIndex(record: any, fieldPath: string, fieldIndex?: string[]) {
+  const path = fieldPath.split('.');
+
+  if (fieldIndex?.length) {
+    const fullPath: (string | number)[] = [];
+    let pathPtr = 0;
+    let idxPtr = 0;
+
+    while (pathPtr < path.length) {
+      const current = path[pathPtr];
+      fullPath.push(current);
+
+      // 检查当前集合是否有索引
+      if (idxPtr < fieldIndex.length) {
+        const [listName, indexStr] = fieldIndex[idxPtr].split(':');
+        if (listName === current) {
+          fullPath.push(Number(indexStr));
+          idxPtr++;
+        }
+      }
+
+      pathPtr++;
+    }
+
+    return get(record, fullPath);
+  }
+
+  return get(record, path);
+}
 
 export class DetailItemModel extends CollectionFieldItemModel<{
   parent: DetailsFieldGridModel;
@@ -25,11 +60,14 @@ export class DetailItemModel extends CollectionFieldItemModel<{
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {
       const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      const fieldPath = field.name;
+      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
       return {
-        key: field.name,
+        key: fullName,
         label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+        toggleable: (subModel) => {
+          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+          return fieldPath === fullName;
+        },
         useModel: 'DetailItemModel',
         createModelOptions: () => ({
           use: 'DetailItemModel',
@@ -37,8 +75,8 @@ export class DetailItemModel extends CollectionFieldItemModel<{
             fieldSettings: {
               init: {
                 dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
+                collectionName: ctx.model.context.blockModel.collection.name,
+                fieldPath: fullName,
               },
             },
           },
@@ -58,10 +96,23 @@ export class DetailItemModel extends CollectionFieldItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    const value = get(this.context.record, this.fieldPath);
+    const idx = this.context.fieldIndex;
+    // 嵌套场景下继续传透，为字段子模型创建 fork
+    const modelForRender =
+      idx != null
+        ? (() => {
+            const fork = fieldModel.createFork({}, `${idx}`);
+            fork.context.defineProperty('fieldIndex', {
+              get: () => idx,
+            });
+            return fork;
+          })()
+        : fieldModel;
+    const value = getValueWithIndex(this.context.record, this.fieldPath, idx);
+
     return (
       <FormItem {...this.props} value={value}>
-        <FieldModelRenderer model={fieldModel} />
+        <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
   }

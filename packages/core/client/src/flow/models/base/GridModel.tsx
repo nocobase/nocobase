@@ -296,12 +296,24 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 rows={this.getRows()}
                 sizes={this.getSizes()}
                 renderItem={(uid) => {
-                  const item = this.flowEngine.getModel(uid);
+                  const baseItem = this.flowEngine.getModel(uid);
+                  const rowIndex = this.context.fieldIndex;
+                  // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
+                  const item =
+                    rowIndex == null
+                      ? baseItem
+                      : (() => {
+                          const fork = baseItem.createFork({}, `${rowIndex}:${uid}`);
+                          fork.context.defineProperty('fieldIndex', {
+                            get: () => rowIndex,
+                          });
+                          return fork;
+                        })();
                   return (
                     <Droppable model={item}>
                       <FlowModelRenderer
                         model={item}
-                        key={item.uid}
+                        key={`${item.uid}:${rowIndex}`}
                         fallback={<SkeletonFallback />}
                         showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.itemFlowSettings }}
                         showErrorFallback
@@ -378,6 +390,22 @@ export class BlockGridModel extends GridModel {
     this.context.defineProperty('blockGridModel', {
       value: this,
     });
+    this.context.defineProperty('filterManager', {
+      once: true,
+      get: () => {
+        return new FilterManager(this, options['filterManager']);
+      },
+    });
+  }
+
+  get filterManager(): FilterManager {
+    return this.context.filterManager;
+  }
+
+  serialize() {
+    const data = super.serialize();
+    data['filterManager'] = this.filterManager.getFilterConfigs();
+    return data;
   }
 
   renderAddSubModelButton() {
@@ -400,22 +428,6 @@ export class BlockGridModel extends GridModel {
     return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
   }
 }
-
-BlockGridModel.registerFlow({
-  key: FILTER_MANAGER_FLOW_KEY,
-  steps: {
-    [FILTER_CONFIGS_STEP_KEY]: {
-      handler(ctx) {
-        ctx.model.context.defineProperty('filterManager', {
-          once: true,
-          get: () => {
-            return new FilterManager(ctx.model);
-          },
-        });
-      },
-    },
-  },
-});
 
 BlockGridModel.registerFlow({
   key: 'blockGridSettings',

@@ -497,6 +497,11 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
 
       if (isGroup) {
+        // 对于 group 的异步 children，若尚未加载则在解析阶段直接触发加载，
+        // 以支持“嵌套分组”的按需预取（上层 effect 仅能捕获到初始根层分组）。
+        if (hasAsyncChildren && !loaded && menuVisible) {
+          handleLoadChildren(keyPath, item.children as () => Item[] | Promise<Item[]>);
+        }
         let groupChildren = children ? resolveItems(children, [...path, item.key]) : [];
 
         // 如果 group 启用了搜索功能，在 children 前面添加搜索框
