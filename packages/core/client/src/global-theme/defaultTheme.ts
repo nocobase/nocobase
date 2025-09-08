@@ -22,12 +22,12 @@ const defaultTheme: ThemeConfig = {
     colorTextHeaderMenuActive: '#ffffff',
 
     // 侧边菜单栏
-    colorBgSider: '#001529',
-    colorBgSiderMenuHover: '#ffffff1a',
-    colorBgSiderMenuActive: '#ffffff1a',
-    colorTextSiderMenu: '#ffffffa6',
-    colorTextSiderMenuHover: '#ffffff',
-    colorTextSiderMenuActive: '#ffffff',
+    colorBgSider: '#ffffff',
+    colorBgSiderMenuHover: '#f0f0f0',
+    colorBgSiderMenuActive: '#e6f4ff',
+    colorTextSiderMenu: '#000000',
+    colorTextSiderMenuHover: '#000000',
+    colorTextSiderMenuActive: '#1677ff',
 
     // UI 配置组件
     colorSettings: '#F18B62',
