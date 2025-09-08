@@ -8,7 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter, parseBigIntValue } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -236,23 +236,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       });
     }
 
-    if (options.dialect === 'mysql') {
-      opts.dialectOptions = {
-        ...opts.dialectOptions,
-
-        typeCast: (field, next) => {
-          // @ts-ignore
-          const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
-          if (field.type === 'LONGLONG') {
-            const val = field.string();
-            return parseBigIntValue(val);
-          }
-          // @ts-ignore
-          return ConnectionManager._typecast.bind(this.sequelize.dialect.connectionManager)(field, next);
-        },
-      };
-    }
-
     if (options.logging && process.env['DB_SQL_BENCHMARK'] == 'true') {
       opts.benchmark = true;
     }
@@ -390,8 +373,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   /**
    * @internal
    */
-  sequelizeOptions(options) {
-    return this.dialect.getSequelizeOptions(options);
+  sequelizeOptions(options: DatabaseOptions) {
+    return this.dialect.getSequelizeOptions(options, this);
   }
 
   /**

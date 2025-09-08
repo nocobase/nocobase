@@ -19,7 +19,7 @@ export interface DialectVersionGuard {
 export abstract class BaseDialect {
   static dialectName: string;
 
-  getSequelizeOptions(options: DatabaseOptions) {
+  getSequelizeOptions(options: DatabaseOptions, db: Database) {
     return options;
   }
 
