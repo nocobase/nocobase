@@ -1036,7 +1036,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
-            serverResolved = await enqueueVariablesResolve(this, {
+            serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
               template,
               contextParams: autoContextParams || {},
             });

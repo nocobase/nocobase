@@ -12,9 +12,10 @@ import { AddSubModelButton, FlowSettingsButton, escapeT } from '@nocobase/flow-e
 import { GridModel } from '../base/GridModel';
 import { SettingOutlined } from '@ant-design/icons';
 import { AssignFormItemModel } from './AssignFormItemModel';
+import { FormFieldGridModel } from '../data-blocks/form';
 
 // 使用范型准确标注 subModels.items 的类型
-export class AssignFieldGridModel extends GridModel<{ subModels: { items: AssignFormItemModel[] } }> {
+export class AssignFieldGridModel extends FormFieldGridModel<{ subModels: { items: any[] } }> {
   renderAddSubModelButton() {
     const collection = (this.context as any)?.collection;
     const fields = collection?.getFields?.() || [];
@@ -118,7 +119,7 @@ export class AssignFieldGridModel extends GridModel<{ subModels: { items: Assign
       parentId: this.uid,
       subKey: 'items',
     });
-    created.assignValue = value;
+    created['assignValue'] = value;
   }
 
   getAssignedValues(): Record<string, any> {

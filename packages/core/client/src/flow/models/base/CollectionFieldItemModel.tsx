@@ -18,7 +18,7 @@ export interface FieldSettingsInitParams {
   associationPathName?: string;
 }
 
-export class CollectionFieldItemModel<T = DefaultStructure> extends FlowModel<T> {
+export class CollectionFieldItemModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   renderHiddenInConfig(): React.ReactNode | undefined {
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
   }

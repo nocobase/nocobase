@@ -14,7 +14,7 @@ import React from 'react';
 import { Icon } from '../../../icon/Icon';
 import { updateOpenViewStepParams } from '../../flows/openViewFlow';
 
-export class ActionModel<T extends DefaultStructure = any> extends FlowModel<T> {
+export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   declare props: ButtonProps;
 
   defaultProps: ButtonProps = {
@@ -145,7 +145,7 @@ ActionModel.registerFlow({
   },
 });
 
-export class CollectionActionModel<T extends DefaultStructure = any> extends ActionModel<T> {
+export class CollectionActionModel<T extends DefaultStructure = DefaultStructure> extends ActionModel<T> {
   onInit(options) {
     super.onInit(options);
     updateOpenViewStepParams(
@@ -170,7 +170,7 @@ export class CollectionActionModel<T extends DefaultStructure = any> extends Act
   }
 }
 
-export class RecordActionModel<T extends DefaultStructure = any> extends ActionModel<T> {
+export class RecordActionModel<T extends DefaultStructure = DefaultStructure> extends ActionModel<T> {
   defaultProps: ButtonProps = {
     type: 'link',
     children: escapeT('Action'),

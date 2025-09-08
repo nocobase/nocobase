@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FlowModelContext, FormItem, jioToJoiSchema } from '@nocobase/flow-engine';
+import {
+  Collection,
+  DefaultStructure,
+  escapeT,
+  FlowModelContext,
+  FormItem,
+  jioToJoiSchema,
+} from '@nocobase/flow-engine';
 import { Alert } from 'antd';
 import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
@@ -54,7 +61,7 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   return [idx, ...nameParts.slice(lastIndex + 1)];
 }
 
-export class FormItemModel extends CollectionFieldItemModel {
+export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends CollectionFieldItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {
