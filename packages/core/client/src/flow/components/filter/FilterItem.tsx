@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, useFlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { FlowModel } from '@nocobase/flow-engine';
 import { observer } from '@formily/reactive-react';
 import { Input, Select, Space } from 'antd';
 import React, { FC, useMemo } from 'react';
