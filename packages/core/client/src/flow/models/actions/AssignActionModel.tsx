@@ -9,12 +9,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { ButtonProps, Alert } from 'antd';
-import {
-  collectContextParamsForTemplate,
-  escapeT,
-  FlowModelRenderer,
-  useFlowSettingsContext,
-} from '@nocobase/flow-engine';
+import { escapeT, FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
 import { AssignFieldsFormModel } from '../common/AssignFieldsFormModel';
 
@@ -47,6 +42,16 @@ function AssignFieldsEditor() {
       void e;
     }
     formModel.setInitialAssignedValues(prev?.assignedValues || {});
+    // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
+    try {
+      const isBulk = action instanceof CollectionActionModel && !(action instanceof RecordActionModel);
+      if (isBulk) {
+        // 从上下文层面移除 record 的 meta，使其不出现在变量树中
+        formModel.context.defineProperty('record', { get: () => undefined });
+      }
+    } catch (e) {
+      void e;
+    }
     // 回填：优先从每个子项自身的 stepParams 读取 assignValue
     try {
       const grid = (formModel as any)?.subModels?.grid;
@@ -135,34 +140,23 @@ RecordAssignActionModel.registerFlow({
   on: 'click',
   steps: {
     apply: {
-      async handler(ctx) {
+      async defaultParams(ctx) {
         const step = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
-        const assignedValues = step?.assignedValues || {};
+        return { assignedValues: step?.assignedValues || {} };
+      },
+      async handler(ctx, params) {
+        const assignedValues = (params?.assignedValues || {}) as any;
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;
         }
-        const dataSourceKey = ctx.collection?.dataSourceKey || 'main';
         const collection = ctx.collection?.name;
         const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
         if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) {
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        const contextParams = await collectContextParamsForTemplate(ctx, assignedValues);
-        await ctx.api.request({
-          method: 'POST',
-          url: 'fieldAssignments:apply',
-          data: {
-            values: {
-              dataSourceKey,
-              collection,
-              filterByTk,
-              assignedValues,
-              contextParams: contextParams || {},
-            },
-          },
-        });
+        await ctx.api.resource(collection).update({ filterByTk, values: assignedValues });
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
@@ -230,41 +224,32 @@ BulkAssignActionModel.registerFlow({
   on: 'click',
   steps: {
     apply: {
-      async handler(ctx) {
+      async defaultParams(ctx) {
         const step = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
-        const assignedValues = step?.assignedValues || {};
-        // 仅支持选中范围
+        return { assignedValues: step?.assignedValues || {} };
+      },
+      async handler(ctx, params) {
+        const assignedValues = (params?.assignedValues || {}) as any;
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
           return;
         }
-        const dataSourceKey = ctx.collection?.dataSourceKey || 'main';
         const collection = ctx.collection?.name;
         if (!collection) {
           ctx.message.error(ctx.t('Collection is required to perform this action'));
           return;
         }
-        const contextParams = await collectContextParamsForTemplate(ctx, assignedValues);
-
         const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
         if (!rows.length) {
           ctx.message.error(ctx.t('Please select the records to be updated'));
           return;
         }
+        // 构造 filter：仅限制到选中的记录
+        const pk = ctx.collection?.getPrimaryKey?.() || ctx.collection?.filterTargetKey || 'id';
+        const filterKey = ctx.collection?.filterTargetKey || pk || 'id';
         const ids = rows.map((r: any) => ctx.collection.getFilterByTK(r)).filter((v: any) => v != null);
-        await ctx.api.request({
-          method: 'POST',
-          url: 'fieldAssignments:apply',
-          data: {
-            values: {
-              dataSourceKey,
-              collection,
-              ids,
-              assignedValues,
-              contextParams: contextParams || {},
-            },
-          },
-        });
+        const filter = { $and: [{ [filterKey]: { $in: ids } }] };
+        await ctx.api.resource(collection).update({ filter, values: assignedValues });
 
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));

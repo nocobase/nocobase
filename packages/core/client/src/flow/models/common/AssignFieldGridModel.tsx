@@ -22,42 +22,54 @@ export class AssignFieldGridModel extends GridModel<{ subModels: { items: any[] 
   renderAddSubModelButton() {
     const collection = (this.context as any)?.collection;
     const fields = collection?.getFields?.() || [];
-    const items = fields.map((field: any) => {
-      const fullName = field.name as string;
-      const label = field.title || field.name;
-      const fieldModel = field?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
-      return {
-        key: fullName,
-        label,
-        useModel: 'AssignFormItemModel',
-        createModelOptions: () => ({
-          use: 'AssignFormItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection?.dataSourceKey,
-                collectionName: collection?.name,
-                fieldPath: fullName,
+    // 过滤主键/过滤键字段，避免产生“更新主键”的无效配置
+    const pk = typeof collection?.getPrimaryKey === 'function' ? collection.getPrimaryKey() : undefined;
+    const filterKey = collection?.filterTargetKey;
+    const isForbidden = (name: string) => {
+      if (!name) return false;
+      if (pk && name === pk) return true;
+      if (typeof filterKey === 'string' && name === filterKey) return true;
+      if (Array.isArray(filterKey) && filterKey.includes(name)) return true;
+      return false;
+    };
+    const items = fields
+      .filter((field: any) => !isForbidden(field?.name))
+      .map((field: any) => {
+        const fullName = field.name as string;
+        const label = field.title || field.name;
+        const fieldModel = field?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+        return {
+          key: fullName,
+          label,
+          useModel: 'AssignFormItemModel',
+          createModelOptions: () => ({
+            use: 'AssignFormItemModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection?.dataSourceKey,
+                  collectionName: collection?.name,
+                  fieldPath: fullName,
+                },
               },
             },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
-              stepParams: {
-                fieldSettings: {
-                  init: {
-                    dataSourceKey: collection?.dataSourceKey,
-                    collectionName: collection?.name,
-                    fieldPath: fullName,
+            subModels: {
+              field: {
+                use: fieldModel,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: collection?.dataSourceKey,
+                      collectionName: collection?.name,
+                      fieldPath: fullName,
+                    },
                   },
                 },
               },
             },
-          },
-        }),
-      };
-    });
+          }),
+        };
+      });
     return (
       <AddSubModelButton subModelKey="items" model={this} items={items} keepDropdownOpen>
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
