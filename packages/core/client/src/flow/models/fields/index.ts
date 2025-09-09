@@ -30,3 +30,8 @@ export * from './UploadFieldModel';
 export * from './VariableFieldFormModel';
 
 export * from './ReadPrettyField';
+
+export * from './GroupItemModel';
+export * from './JSFieldItemModel';
+export * from './MarkdownItemModel';
+//

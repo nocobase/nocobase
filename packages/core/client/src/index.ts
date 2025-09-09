@@ -98,4 +98,5 @@ export {
   useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';
 
+export { FieldModelRenderer } from '@nocobase/flow-engine';
 export { transformFilter } from '@nocobase/utils/client';

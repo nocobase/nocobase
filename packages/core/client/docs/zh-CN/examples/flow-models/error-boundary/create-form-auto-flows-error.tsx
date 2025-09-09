@@ -6,8 +6,9 @@
 import {
   Application,
   CreateFormModel,
-  FormFieldGridModel,
+  FilterManager,
   FormFieldModel,
+  FormGridModel,
   FormItemModel,
   Plugin,
 } from '@nocobase/client';
@@ -15,7 +16,6 @@ import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
 import React from 'react';
-import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
   form!: CreateFormModel;
@@ -43,7 +43,7 @@ class DemoPlugin extends Plugin {
 
     this.flowEngine.registerModels({
       CreateFormModel,
-      FormFieldGridModel,
+      FormGridModel,
       FormItemModel,
       FormFieldModel,
     });
@@ -53,7 +53,7 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'posts' } } },
       subModels: {
         grid: {
-          use: 'FormFieldGridModel',
+          use: 'FormGridModel',
           subModels: {
             items: [
               {

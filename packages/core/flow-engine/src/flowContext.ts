@@ -1278,6 +1278,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         return acl;
       },
     });
+    this.defineMethod('aclCheck', function (params) {
+      return this.acl.aclCheck(params);
+    });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
       return this.engine.createResource(resourceType, {
         context: this,

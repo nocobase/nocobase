@@ -223,9 +223,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         console.error(`Failed to load dynamic flows for ${this.constructor.name}:`, error);
       });
     */
-    this.context.defineMethod('aclCheck', async (params) => {
-      return await this.flowEngine.context.acl.aclCheck(params);
-    });
   }
 
   /**
@@ -707,6 +704,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 子类可覆盖。
    */
   public async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
+
+  useHooksBeforeRender() {}
 
   /**
    * 执行所有自动应用流程
