@@ -6,8 +6,8 @@
 import {
   Application,
   CreateFormModel,
-  FormFieldGridModel,
   FormFieldModel,
+  FormGridModel,
   FormItemModel,
   FormSubmitActionModel,
   Plugin,
@@ -44,7 +44,7 @@ class DemoPlugin extends Plugin {
 
     this.flowEngine.registerModels({
       CreateFormModel,
-      FormFieldGridModel,
+      FormGridModel,
       FormItemModel,
       FormFieldModel,
       FormSubmitActionModel,
@@ -55,7 +55,7 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         grid: {
-          use: 'FormFieldGridModel',
+          use: 'FormGridModel',
           subModels: {
             items: [
               {

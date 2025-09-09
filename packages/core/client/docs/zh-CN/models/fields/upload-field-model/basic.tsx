@@ -1,13 +1,5 @@
-import {
-  Application,
-  CardUpload,
-  FieldModelRenderer,
-  FormComponent,
-  FormItem,
-  Plugin,
-  UploadFieldModel,
-} from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Application, CardUpload, FieldModelRenderer, FormComponent, Plugin, UploadFieldModel } from '@nocobase/client';
+import { FlowModel, FlowModelRenderer, FormItem } from '@nocobase/flow-engine';
 import React from 'react';
 
 class HelloModel extends FlowModel {

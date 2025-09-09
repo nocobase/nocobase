@@ -25,6 +25,7 @@ import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
+import _ from 'lodash';
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -247,7 +248,7 @@ export const UserMessage: React.FC<{
           ))}
         </div>
       ) : null}
-      <Bubble content={msg.content} />
+      {_.isEmpty(msg.content) ? <></> : <Bubble content={msg.content} />}
     </MessageWrapper>
   );
 });

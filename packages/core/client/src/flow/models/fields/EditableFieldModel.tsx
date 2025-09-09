@@ -9,14 +9,14 @@
 
 import { DefaultStructure } from '@nocobase/flow-engine';
 import React from 'react';
-import { FormFieldGridModel, FormModel } from '../..';
+import { FormGridModel, FormModel } from '../..';
+import { JsonInput } from '../../components';
 import { FieldModel } from '../base/FieldModel';
-import { JsonInput } from '../common/JsonInput';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 
 type Structure = {
-  parent: FormFieldGridModel | FormModel;
+  parent: FormGridModel | FormModel;
 };
 
 export class EditableFieldModel<T extends DefaultStructure = DefaultStructure> extends FieldModel<T> {

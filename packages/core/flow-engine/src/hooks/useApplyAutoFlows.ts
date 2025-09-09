@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useRequest } from 'ahooks';
 import { useMemo } from 'react';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
-import { useRequest } from 'ahooks';
 
 /**
  * Hook for applying auto-apply flows on a FlowModel
@@ -30,6 +30,8 @@ export function useApplyAutoFlows(
     }
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
+
+  model?.useHooksBeforeRender();
 
   const { loading, error } = useRequest(
     async () => {

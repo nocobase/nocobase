@@ -9,9 +9,11 @@
 
 export * from './common/FlowSettingsButton';
 export * from './dnd';
+export * from './FieldModelRenderer';
+export * from './FlowContextSelector';
 export * from './FlowErrorFallback';
 export * from './FlowModelRenderer';
-export * from './FlowContextSelector';
+export * from './FormItem';
 export * from './settings';
 export * from './subModel';
 export * from './variables';

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { largeField } from '@nocobase/flow-engine';
-import { JsonInput } from '../common/JsonInput';
+import { JsonInput } from '../../components';
 import { FormFieldModel } from './FormFieldModel';
 
 @largeField()
