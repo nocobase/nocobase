@@ -3,12 +3,19 @@
  * title: 错误回退 - CreateForm 自动流异常
  */
 
-import { Application, CreateFormModel, FormFieldModel, FormGridModel, FormItemModel, Plugin } from '@nocobase/client';
+import {
+  Application,
+  CreateFormModel,
+  FilterManager,
+  FormFieldModel,
+  FormGridModel,
+  FormItemModel,
+  Plugin,
+} from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
 import React from 'react';
-import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
   form!: CreateFormModel;

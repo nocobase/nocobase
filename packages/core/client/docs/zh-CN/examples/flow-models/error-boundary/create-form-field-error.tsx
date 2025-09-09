@@ -3,12 +3,19 @@
  * title: 错误回退 - CreateForm 字段渲染异常
  */
 
-import { Application, CreateFormModel, FormFieldModel, FormGridModel, FormItemModel, Plugin } from '@nocobase/client';
+import {
+  Application,
+  CreateFormModel,
+  FilterManager,
+  FormFieldModel,
+  FormGridModel,
+  FormItemModel,
+  Plugin,
+} from '@nocobase/client';
 import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
 import React from 'react';
-import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 // 一个会在渲染时抛出错误的自定义表单项
 class ThrowFormItem extends FlowModel {

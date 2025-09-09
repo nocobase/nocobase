@@ -3,21 +3,21 @@
  * title: 错误回退 - 表格列（RenderFunction）
  */
 
-import React from 'react';
 import {
   Application,
-  Plugin,
-  TableModel,
-  TableColumnModel,
-  TableActionsColumnModel,
   CollectionActionModel,
-  RecordActionModel,
+  FilterManager,
+  Plugin,
   ReadPrettyFieldModel,
+  RecordActionModel,
+  TableActionsColumnModel,
+  TableBlockModel,
+  TableColumnModel,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
+import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 import { api } from './api';
 
 // 自定义列：在单元格渲染函数中抛出异常，并用局部 ErrorBoundary 兜底，保留表格/列设置外壳
@@ -48,7 +48,7 @@ class ThrowTableColumnModel extends TableColumnModel {
 }
 
 class DemoPlugin extends Plugin {
-  table!: TableModel;
+  table!: TableBlockModel;
 
   async load() {
     // 强制显示设置入口
@@ -71,7 +71,7 @@ class DemoPlugin extends Plugin {
 
     // 注册所需模型 + 自定义抛错列模型
     this.flowEngine.registerModels({
-      TableModel,
+      TableBlockModel,
       TableColumnModel,
       TableActionsColumnModel,
       CollectionActionModel,
@@ -80,9 +80,9 @@ class DemoPlugin extends Plugin {
       ThrowTableColumnModel,
     });
 
-    // 创建 TableModel：包含一个正常字段列和一个抛错列
+    // 创建 TableBlockModel：包含一个正常字段列和一个抛错列
     this.table = this.flowEngine.createModel({
-      use: 'TableModel',
+      use: 'TableBlockModel',
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         columns: [
@@ -111,7 +111,7 @@ class DemoPlugin extends Plugin {
           },
         ],
       },
-    }) as TableModel;
+    }) as TableBlockModel;
 
     // 提供 filterManager，避免刷新流程绑定时报错
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });
