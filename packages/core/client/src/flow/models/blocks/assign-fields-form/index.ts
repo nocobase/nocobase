@@ -7,10 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './details';
-export * from './filter-form';
-export * from './filter-manager';
-export * from './form';
-export * from './table';
-export * from './assign-fields-form';
-//
+export * from './AssignFieldsFormModel';
+export * from './AssignFieldGridModel';
+export * from './AssignFormItemModel';

@@ -9,8 +9,8 @@
 
 import React from 'react';
 import { FlowModelRenderer, SingleRecordResource, escapeT } from '@nocobase/flow-engine';
-import { FormComponent, FormModel } from '../models/blocks/form/FormModel';
-import { FormGridModel } from '../models/blocks/form/FormGridModel';
+import { FormComponent, FormModel } from '../form/FormModel';
+import { FormGridModel } from '../form/FormGridModel';
 import { AssignFieldGridModel } from './AssignFieldGridModel';
 
 /**

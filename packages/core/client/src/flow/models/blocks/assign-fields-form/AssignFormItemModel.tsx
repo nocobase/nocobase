@@ -19,7 +19,7 @@ import {
   parseValueToPath,
 } from '@nocobase/flow-engine';
 import type { FlowModel, FlowDefinitionOptions, StepDefinition } from '@nocobase/flow-engine';
-import { FormItemModel } from '../models/blocks/form/FormItemModel';
+import { FormItemModel } from '../form/FormItemModel';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。

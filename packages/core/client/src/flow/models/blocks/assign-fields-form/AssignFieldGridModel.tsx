@@ -10,8 +10,7 @@
 import React from 'react';
 import { AddSubModelButton, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { AssignFormItemModel } from './AssignFormItemModel';
-import { FormGridModel } from '../models/blocks/form/FormGridModel';
+import { FormGridModel } from '../form/FormGridModel';
 
 // 使用范型准确标注 subModels.items 的类型
 export class AssignFieldGridModel extends FormGridModel {

@@ -18,6 +18,7 @@ import _ from 'lodash';
 import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { ResourcerContext } from '@nocobase/resourcer';
+import { extractUsedVariablePaths } from '@nocobase/utils';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -57,79 +58,8 @@ class VariableRegistry {
   }
 
   extractUsage(template: JSONValue): VarUsage {
-    const usage: VarUsage = {};
-    const visit = (src: any) => {
-      if (typeof src === 'string') {
-        const regex = /\{\{\s*([^}]+?)\s*\}\}/g;
-        let m: RegExpExecArray | null;
-        while ((m = regex.exec(src)) !== null) {
-          const expr = m[1];
-          // capture ctx.<var>(.<path>|[...])*
-          const pathRegex = /ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*)([^\s)]*)/g;
-          let pm: RegExpExecArray | null;
-          while ((pm = pathRegex.exec(expr)) !== null) {
-            const varName = pm[1];
-            const after = pm[2] || '';
-            usage[varName] = usage[varName] || [];
-            if (after.startsWith('.')) {
-              usage[varName].push(after.slice(1));
-            } else if (after.startsWith('[')) {
-              // Normalize bracket string key: ctx.record["roles"][0].name -> roles[0].name
-              const mm = after.match(/^\[\s*(['"])\s*([^'"\]]+)\s*\1\s*\](.*)$/);
-              if (mm) {
-                const first = mm[2];
-                const rest = mm[3] || '';
-                usage[varName].push(`${first}${rest}`);
-              } else {
-                // Numeric index: ctx.list[0].name -> [0].name
-                const mn = after.match(/^\[(\d+)\](.*)$/);
-                if (mn) {
-                  const idx = mn[1];
-                  const rest = mn[2] || '';
-                  usage[varName].push(`[${idx}]${rest}`);
-                }
-              }
-            } else if (after.startsWith('(')) {
-              // method call: ctx.twice(21) -> record usage to trigger attach
-              if (!usage[varName].length) usage[varName].push('');
-            }
-          }
-          // also capture top-level bracket var: ctx["record"].roles[0].name
-          const bracketVarRegex = /ctx\[\s*(["'])\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\1\s*\]([^\s)]*)/g;
-          let bm: RegExpExecArray | null;
-          while ((bm = bracketVarRegex.exec(expr)) !== null) {
-            const varName = bm[2];
-            const after = bm[3] || '';
-            usage[varName] = usage[varName] || [];
-            if (after.startsWith('.')) {
-              usage[varName].push(after.slice(1));
-            } else if (after.startsWith('[')) {
-              const mm = after.match(/^\[\s*(['"])\s*([^'"\]]+)\s*\1\s*\](.*)$/);
-              if (mm) {
-                const first = mm[2];
-                const rest = mm[3] || '';
-                usage[varName].push(`${first}${rest}`);
-              } else {
-                const mn = after.match(/^\[(\d+)\](.*)$/);
-                if (mn) {
-                  const idx = mn[1];
-                  const rest = mn[2] || '';
-                  usage[varName].push(`[${idx}]${rest}`);
-                }
-              }
-            } else if (after.startsWith('(')) {
-              if (!usage[varName].length) usage[varName].push('');
-            }
-          }
-        }
-      } else if (Array.isArray(src)) {
-        src.forEach(visit);
-      } else if (src && typeof src === 'object') {
-        Object.values(src).forEach(visit);
-      }
-    };
-    visit(template);
-    return usage;
+    // 复用公用工具，保持前后端一致的路径解析/规范化逻辑
+    return extractUsedVariablePaths(template) as VarUsage;
   }
 
   validate(template: JSONValue, contextParams: any): { ok: boolean; missing?: string[] } {
