@@ -50,34 +50,37 @@
   .ant-layout-sider {
     .ant-menu {
       background: var(--colorBgSider) !important;
-      
+
       .ant-menu-item {
         color: var(--colorTextSiderMenu) !important;
-        
+
         &:hover {
           background-color: var(--colorBgSiderMenuHover) !important;
           color: var(--colorTextSiderMenuHover) !important;
         }
-        
+
+        &:active {
+          background-color: var(--colorBgSiderMenuActive) !important;
+        }
+
         &.ant-menu-item-selected {
           background-color: var(--colorBgSiderMenuActive) !important;
           color: var(--colorTextSiderMenuActive) !important;
         }
       }
-      
+
       .ant-menu-submenu {
         .ant-menu-submenu-title {
           color: var(--colorTextSiderMenu) !important;
-          
+
           &:hover {
             background-color: var(--colorBgSiderMenuHover) !important;
             color: var(--colorTextSiderMenuHover) !important;
           }
         }
-        
+
         &.ant-menu-submenu-selected {
           .ant-menu-submenu-title {
-            background-color: var(--colorBgSiderMenuActive) !important;
             color: var(--colorTextSiderMenuActive) !important;
           }
         }

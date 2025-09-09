@@ -21,14 +21,6 @@ const defaultTheme: ThemeConfig = {
     colorTextHeaderMenuHover: '#ffffff',
     colorTextHeaderMenuActive: '#ffffff',
 
-    // 侧边菜单栏
-    colorBgSider: '#ffffff',
-    colorBgSiderMenuHover: '#f0f0f0',
-    colorBgSiderMenuActive: '#e6f4ff',
-    colorTextSiderMenu: '#000000',
-    colorTextSiderMenuHover: '#000000',
-    colorTextSiderMenuActive: '#1677ff',
-
     // UI 配置组件
     colorSettings: '#F18B62',
     colorBgSettingsHover: 'rgba(241, 139, 98, 0.06)',
