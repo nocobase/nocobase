@@ -4,9 +4,8 @@
  */
 
 import React from 'react';
-import MockAdapter from 'axios-mock-adapter';
 import { APIClient } from '@nocobase/sdk';
-import { Application, Plugin, TableModel, TableColumnModel, ReadPrettyFieldModel } from '@nocobase/client';
+import { Application, Plugin, TableBlockModel, TableColumnModel, ReadPrettyFieldModel } from '@nocobase/client';
 import {
   FlowEngineProvider,
   FlowModelRenderer,
@@ -42,11 +41,9 @@ const makeUsers = (count = 12) =>
 class DemoPlugin extends Plugin {
   async load() {
     const records = makeUsers(12);
-    // 两套 API + mock
+    // 两套 API（通过覆盖 axios.request 实现本地 mock）
     const baselineApi = new APIClient({ baseURL: 'https://demo.local/api' });
     const optimizedApi = new APIClient({ baseURL: 'https://demo.local/api' });
-    const baselineMock = new MockAdapter(baselineApi.axios, { delayResponse: 0 });
-    const optimizedMock = new MockAdapter(optimizedApi.axios, { delayResponse: 0 });
 
     let setBase: React.Dispatch<React.SetStateAction<any>> | null = null;
     let setOpt: React.Dispatch<React.SetStateAction<any>> | null = null;
@@ -60,44 +57,50 @@ class DemoPlugin extends Plugin {
       (mode === 'baseline' ? setBase : setOpt)?.((prev: any) => ({ ...prev, [key]: (prev?.[key] || 0) + 1 }));
     };
 
-    const attachCounters = (mode: 'baseline' | 'optimized', api: APIClient, mock: MockAdapter) => {
-      api.axios.interceptors.request.use((config) => {
+    const attachCounters = (mode: 'baseline' | 'optimized', api: APIClient) => {
+      const origRequest = api.axios.request.bind(api.axios);
+      api.axios.request = async (config: any) => {
         if (config?.url) bump(mode, 'total');
-        return config;
-      });
-      mock.onPost('variables:resolve').reply((config) => {
-        bump(mode, 'variablesResolve');
-        try {
-          const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
-          const template = body?.values?.template ?? body?.template ?? body;
-          const sig = JSON.stringify(template);
-          if (mode === 'baseline') {
-            if (!baseVarSigs.has(sig)) {
-              baseVarSigs.add(sig);
-              bump(mode, 'variablesUnique');
+        const method = String(config?.method || 'get').toLowerCase();
+        const url = String(config?.url || '');
+        // variables:resolve（POST）
+        if (url === 'variables:resolve' && method === 'post') {
+          bump(mode, 'variablesResolve');
+          try {
+            const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+            const template = body?.values?.template ?? body?.template ?? body;
+            const sig = JSON.stringify(template);
+            if (mode === 'baseline') {
+              if (!baseVarSigs.has(sig)) {
+                baseVarSigs.add(sig);
+                bump(mode, 'variablesUnique');
+              }
+            } else {
+              if (!optVarSigs.has(sig)) {
+                optVarSigs.add(sig);
+                bump(mode, 'variablesUnique');
+              }
             }
-          } else {
-            if (!optVarSigs.has(sig)) {
-              optVarSigs.add(sig);
-              bump(mode, 'variablesUnique');
-            }
+            return Promise.resolve({ data: { data: template } } as any);
+          } catch {
+            return Promise.resolve({ data: { data: {} } } as any);
           }
-          return [200, { data: template }];
-        } catch {
-          return [200, { data: {} }];
         }
-      });
-      mock.onGet('users:list').reply((config) => {
-        bump(mode, 'usersList');
-        const page = Number(config?.params?.page || 1);
-        const pageSize = Number(config?.params?.pageSize || 20);
-        const start = (page - 1) * pageSize;
-        const data = records.slice(start, start + pageSize);
-        return [200, { data, meta: { page, pageSize, count: records.length } }];
-      });
+        // users:list（GET）
+        if (url === 'users:list' && method === 'get') {
+          bump(mode, 'usersList');
+          const page = Number(config?.params?.page || 1);
+          const pageSize = Number(config?.params?.pageSize || 20);
+          const start = (page - 1) * pageSize;
+          const data = records.slice(start, start + pageSize);
+          return Promise.resolve({ data: { data, meta: { page, pageSize, count: records.length } } } as any);
+        }
+        // 兜底：不应命中真实网络
+        return origRequest(config);
+      };
     };
-    attachCounters('baseline', baselineApi, baselineMock);
-    attachCounters('optimized', optimizedApi, optimizedMock);
+    attachCounters('baseline', baselineApi);
+    attachCounters('optimized', optimizedApi);
 
     // 数据源/集合
     const dsm = this.flowEngine.context.dataSourceManager;
@@ -112,11 +115,11 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    this.flowEngine.registerModels({ TableModel, TableColumnModel, ReadPrettyFieldModel, DemoFieldModel });
+    this.flowEngine.registerModels({ TableBlockModel, TableColumnModel, ReadPrettyFieldModel, DemoFieldModel });
 
     const makeTable = () =>
       this.flowEngine.createModel({
-        use: 'TableModel',
+        use: 'TableBlockModel',
         stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
         subModels: {
           columns: [
@@ -130,7 +133,7 @@ class DemoPlugin extends Plugin {
             },
           ],
         },
-      }) as TableModel;
+      }) as TableBlockModel;
 
     const tableBaseline = makeTable();
     const tableOptimized = makeTable();

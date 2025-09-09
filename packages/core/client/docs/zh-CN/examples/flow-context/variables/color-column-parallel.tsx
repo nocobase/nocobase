@@ -4,9 +4,8 @@
  */
 
 import React from 'react';
-import MockAdapter from 'axios-mock-adapter';
 import { APIClient } from '@nocobase/sdk';
-import { Application, Plugin, TableModel, TableColumnModel } from '@nocobase/client';
+import { Application, Plugin, TableBlockModel, TableColumnModel } from '@nocobase/client';
 import {
   FlowEngineProvider,
   FlowModel,
@@ -50,8 +49,6 @@ class DemoPlugin extends Plugin {
     const records = makeUsers(12);
     const baselineApi = new APIClient({ baseURL: 'https://demo.local/api' });
     const optimizedApi = new APIClient({ baseURL: 'https://demo.local/api' });
-    const baselineMock = new MockAdapter(baselineApi.axios, { delayResponse: 0 });
-    const optimizedMock = new MockAdapter(optimizedApi.axios, { delayResponse: 0 });
 
     // 计数（raw + unique）
     let setBase: React.Dispatch<React.SetStateAction<any>> | null = null;
@@ -66,38 +63,41 @@ class DemoPlugin extends Plugin {
       (mode === 'baseline' ? setBase : setOpt)?.((prev: any) => ({ ...prev, [key]: (prev?.[key] || 0) + 1 }));
     };
 
-    const attachCounters = (mode: 'baseline' | 'optimized', api: APIClient, mock: MockAdapter) => {
-      api.axios.interceptors.request.use((config) => {
+    const attachCounters = (mode: 'baseline' | 'optimized', api: APIClient) => {
+      const origRequest = api.axios.request.bind(api.axios);
+      api.axios.request = async (config: any) => {
         if (config?.url) bump(mode, 'total');
-        return config;
-      });
-      mock.onGet('users:list').reply((config) => {
-        bump(mode, 'usersList');
-        const page = Number(config?.params?.page || 1);
-        const pageSize = Number(config?.params?.pageSize || 20);
-        const start = (page - 1) * pageSize;
-        const data = records.slice(start, start + pageSize);
-        return [200, { data, meta: { page, pageSize, count: records.length } }];
-      });
-      mock.onPost('variables:resolve').reply((config) => {
-        bump(mode, 'variablesResolve');
-        try {
-          const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
-          const template = body?.values?.template ?? body?.template ?? body;
-          const sig = JSON.stringify(template);
-          const sigs = mode === 'baseline' ? baseSigs : optSigs;
-          if (!sigs.has(sig)) {
-            sigs.add(sig);
-            bump(mode, 'variablesUnique');
-          }
-          return [200, { data: template }];
-        } catch {
-          return [200, { data: {} }];
+        const method = String(config?.method || 'get').toLowerCase();
+        const url = String(config?.url || '');
+        if (url === 'users:list' && method === 'get') {
+          bump(mode, 'usersList');
+          const page = Number(config?.params?.page || 1);
+          const pageSize = Number(config?.params?.pageSize || 20);
+          const start = (page - 1) * pageSize;
+          const data = records.slice(start, start + pageSize);
+          return Promise.resolve({ data: { data, meta: { page, pageSize, count: records.length } } } as any);
         }
-      });
+        if (url === 'variables:resolve' && method === 'post') {
+          bump(mode, 'variablesResolve');
+          try {
+            const body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+            const template = body?.values?.template ?? body?.template ?? body;
+            const sig = JSON.stringify(template);
+            const sigs = mode === 'baseline' ? baseSigs : optSigs;
+            if (!sigs.has(sig)) {
+              sigs.add(sig);
+              bump(mode, 'variablesUnique');
+            }
+            return Promise.resolve({ data: { data: template } } as any);
+          } catch {
+            return Promise.resolve({ data: { data: {} } } as any);
+          }
+        }
+        return origRequest(config);
+      };
     };
-    attachCounters('baseline', baselineApi, baselineMock);
-    attachCounters('optimized', optimizedApi, optimizedMock);
+    attachCounters('baseline', baselineApi);
+    attachCounters('optimized', optimizedApi);
 
     // 数据源/集合
     const dsm = this.flowEngine.context.dataSourceManager;
@@ -113,11 +113,11 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    this.flowEngine.registerModels({ TableModel, TableColumnModel, ColorTextFieldModel });
+    this.flowEngine.registerModels({ TableBlockModel, TableColumnModel, ColorTextFieldModel });
 
     const makeTable = () =>
       this.flowEngine.createModel({
-        use: 'TableModel',
+        use: 'TableBlockModel',
         stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
         subModels: {
           columns: [
@@ -139,7 +139,7 @@ class DemoPlugin extends Plugin {
             },
           ],
         },
-      }) as TableModel;
+      }) as TableBlockModel;
 
     const baselineTable = makeTable();
     const optimizedTable = makeTable();
@@ -167,7 +167,7 @@ class DemoPlugin extends Plugin {
     });
 
     // 给两侧的列字段追加一个“探针参数”，在 colorize 的 init 步中引用 {{ctx.forceServer}}，用于验证优化侧的上行请求
-    const injectProbe = (table: TableModel) => {
+    const injectProbe = (table: TableBlockModel) => {
       const cols = (table.subModels as any)?.columns as any[];
       if (Array.isArray(cols)) {
         cols.forEach((col) => {
