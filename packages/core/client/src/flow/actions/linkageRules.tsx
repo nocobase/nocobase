@@ -76,7 +76,7 @@ const linkageActions: LinkageActions = {
       );
     },
     handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hidden: value === 'hide' });
+      setProps(ctx.model, { hiddenModel: value === 'hide' });
     },
   },
   // 按钮属性设置
@@ -102,7 +102,7 @@ const linkageActions: LinkageActions = {
       );
     },
     handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hidden: value === 'hide', disabled: value === 'disable' });
+      setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
     },
   },
   // 字段属性设置
