@@ -27,4 +27,3 @@ https://www.nocobase.com/en/agreement
 
 
 ## Contact Us:  
-hello@nocobase.com
