@@ -101,7 +101,7 @@ RecordAssignActionModel.registerFlow({
   title: escapeT('Action settings'),
   steps: {
     showConfirm: {
-      title: escapeT('Require confirmation'),
+      title: escapeT('Secondary confirmation'),
       uiSchema: {
         value: {
           type: 'boolean',
@@ -223,7 +223,7 @@ BulkAssignActionModel.registerFlow({
   title: escapeT('Action settings'),
   steps: {
     showConfirm: {
-      title: escapeT('Require confirmation'),
+      title: escapeT('Secondary confirmation'),
       uiSchema: {
         value: {
           type: 'boolean',

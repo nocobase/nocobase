@@ -18,8 +18,8 @@ import {
   isVariableExpression,
   parseValueToPath,
 } from '@nocobase/flow-engine';
+import type { FlowModel, FlowDefinitionOptions, StepDefinition } from '@nocobase/flow-engine';
 import { FormItemModel } from '../data-blocks/form/FormItem/FormItemModel';
-import { getUniqueKeyFromCollection } from '../../../collection-manager/interfaces/utils';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
@@ -53,7 +53,12 @@ export class AssignFormItemModel extends FormItemModel {
     if (!this.subModels?.field && collection?.getFields) {
       const fields = collection.getFields() || [];
       const f = fields.find((x) => x?.name === init?.fieldPath);
-      const fieldModel = f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+      const cfObj = collection?.getField?.(init?.fieldPath);
+      // 关联字段一律使用 RemoteSelectFieldModel；否则回退到字段模型分派
+      const isAssociation = cfObj?.isAssociationField?.() || cfObj?.isRelationshipField?.();
+      const fieldModel = isAssociation
+        ? 'RemoteSelectFieldModel'
+        : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
       ctx?.engine?.createModel?.({
         use: fieldModel,
         stepParams: { fieldSettings: { init } },
@@ -70,6 +75,34 @@ export class AssignFormItemModel extends FormItemModel {
       const label = cf?.title || fp;
       const namePath = fp.includes('.') ? fp.split('.') : [fp];
       this.setProps({ label, name: namePath });
+    }
+
+    // 针对 AssignFormItemModel：仅覆盖“当前实例”的 editItemSettings 流，隐藏“字段组件切换（fieldComponent）”
+    // 做法：复制类级静态流到实例流后修改（避免修改静态流影响其它模型）
+    const hasInstance =
+      typeof this.flowRegistry?.hasFlow === 'function' && this.flowRegistry.hasFlow('editItemSettings');
+    if (!hasInstance) {
+      const ModelCtor = this.constructor as unknown as typeof FlowModel;
+      const staticFlow = ModelCtor?.globalFlowRegistry?.getFlow?.('editItemSettings');
+      const serialized = typeof staticFlow?.serialize === 'function' ? staticFlow.serialize() : null;
+      if (serialized && typeof serialized === 'object') {
+        const data = serialized as FlowDefinitionOptions;
+        const steps: Record<string, StepDefinition> = { ...(data.steps || {}) };
+        if (steps.model) {
+          steps.model = {
+            ...steps.model,
+            hideInSettings: true,
+            uiSchema: () => ({}),
+          };
+        }
+        const { key: _ignoredKey, steps: _ignoredSteps, ...rest } = data;
+        if (typeof this.flowRegistry?.addFlow === 'function') {
+          this.flowRegistry.addFlow('editItemSettings', {
+            ...rest,
+            steps,
+          });
+        }
+      }
     }
   }
 
@@ -101,17 +134,10 @@ export class AssignFormItemModel extends FormItemModel {
         if (!fieldPath) return;
         const fields = collection?.getFields?.() || [];
         const f = fields.find((x: any) => x?.name === fieldPath);
-        const cfObj = collection?.getField?.(fieldPath);
-        const relationType = cfObj?.type;
-        const relationInterface = cfObj?.interface;
-        const isToMany =
-          relationType === 'belongsToMany' ||
-          relationType === 'hasMany' ||
-          relationType === 'belongsToArray' ||
-          relationInterface === 'm2m' ||
-          relationInterface === 'o2m' ||
-          relationInterface === 'mbm';
-        const fieldModel = isToMany
+        const cfObj = collection.getField(fieldPath);
+        // 正确判定是否为关联字段（优先使用 flow-engine 的方法）
+        const isAssociation = cfObj?.isAssociationField?.() || cfObj?.isRelationshipField?.();
+        const fieldModel = isAssociation
           ? 'RemoteSelectFieldModel'
           : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
 
@@ -166,8 +192,8 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.applyAutoFlows?.();
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
           const targetCol = cfForMultiple.targetCollection;
-          const valueKey = getUniqueKeyFromCollection(targetCol);
-          fm?.setProps?.({ fieldNames: { label: targetCol?.titleField, value: valueKey } });
+          const valueKey = cfForMultiple?.targetKey || targetCol?.filterTargetKey || 'id';
+          fm?.setProps?.({ fieldNames: { label: (targetCol as any)?.titleField, value: valueKey } });
         }
 
         setTempRoot(created);
@@ -228,19 +254,31 @@ export class AssignFormItemModel extends FormItemModel {
         const getTree = (this.context as any)?.getPropertyMetaTree;
         const base: any[] = typeof getTree === 'function' ? await getTree() : [];
         return [
-          { title: '常量', name: 'constant', type: 'string', paths: ['constant'], render: ConstantValueEditor },
-          { title: '空值', name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+          {
+            title: escapeT('Constant'),
+            name: 'constant',
+            type: 'string',
+            paths: ['constant'],
+            render: ConstantValueEditor,
+          },
+          { title: escapeT('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
           ...base,
         ];
       };
 
-      // 计算 label：优先集合字段标题，回退为字段路径
-      let labelText = this.fieldPath || '';
+      // 计算 label：优先使用配置中的 label，其次集合字段标题，最后回退字段路径
+      let labelText = this.props?.label ?? this.fieldPath ?? '';
       const cf = collection?.getField?.(this.fieldPath);
-      labelText = cf?.title || labelText;
+      labelText = this.props?.label ?? cf?.title ?? labelText;
 
       return (
-        <FormItem label={labelText} name={namePath} valuePropName="__assign_value__" trigger="__assign_trigger__">
+        <FormItem
+          {...this.props}
+          label={labelText}
+          name={namePath}
+          valuePropName="__assign_value__"
+          trigger="__assign_trigger__"
+        >
           <VariableInput
             value={this.assignValue}
             onChange={(v: any) => {

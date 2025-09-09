@@ -38,6 +38,11 @@ export class AssignFieldGridModel extends FormFieldGridModel<{ subModels: { item
         return {
           key: fullName,
           label,
+          // 防止同一字段被重复添加：根据已存在子模型的 fieldPath 判定可切换性
+          toggleable: (subModel) => {
+            const init = subModel.getStepParams('fieldSettings', 'init') || {};
+            return init?.fieldPath === fullName;
+          },
           useModel: 'AssignFormItemModel',
           createModelOptions: () => ({
             use: 'AssignFormItemModel',
