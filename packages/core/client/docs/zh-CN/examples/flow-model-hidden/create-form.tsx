@@ -6,6 +6,7 @@
 import {
   Application,
   CreateFormModel,
+  FilterManager,
   FormFieldModel,
   FormGridModel,
   FormItemModel,
@@ -16,7 +17,6 @@ import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { Card, Space, Switch } from 'antd';
 import React from 'react';
-import { FilterManager } from '../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
   form!: CreateFormModel;
