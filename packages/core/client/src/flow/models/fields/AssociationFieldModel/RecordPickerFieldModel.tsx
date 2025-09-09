@@ -140,6 +140,7 @@ export class RecordPickerFieldModel extends FormFieldModel {
 
 RecordPickerFieldModel.registerFlow({
   key: 'popupSettings',
+  title: escapeT('Selector setting'),
   on: {
     eventName: 'openView',
   },
@@ -237,7 +238,7 @@ RecordPickerFieldModel.registerFlow({
 //专有配置项
 RecordPickerFieldModel.registerFlow({
   key: 'recordPickerSettings',
-  title: escapeT('Association recordPicker settings'),
+  title: escapeT('RecordPicker settings'),
   sort: 200,
   steps: {
     fieldNames: {
