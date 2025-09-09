@@ -35,7 +35,9 @@ export class FormModel extends CollectionBlockModel<{
   onMount() {
     super.onMount();
     // 首次渲染触发一次事件流
-    this.applyFlow('eventSettings');
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
   }
 
   getCurrentRecord() {
