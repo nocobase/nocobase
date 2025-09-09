@@ -702,6 +702,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   public async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
+  useHooksBeforeRender() {}
+
   /**
    * 执行所有自动应用流程
    * @param {Record<string, any>} [inputArgs] 可选的运行时参数

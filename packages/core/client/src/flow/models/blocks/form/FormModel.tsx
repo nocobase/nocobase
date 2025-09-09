@@ -25,6 +25,12 @@ export class FormModel extends CollectionBlockModel<{
     return this.context.form;
   }
 
+  useHooksBeforeRender() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [form] = Form.useForm();
+    this.context.defineProperty('form', { get: () => form, cache: false });
+  }
+
   onInit(options) {
     super.onInit(options);
 
@@ -54,14 +60,6 @@ export function FormComponent({
   layoutProps?: any;
   initialValues?: any;
 }) {
-  const [form] = Form.useForm();
-
-  React.useEffect(() => {
-    if (!model.context.has('form')) {
-      model.context.defineProperty('form', { get: () => form, cache: false });
-    }
-  }, [form, model]);
-
   return (
     <Form
       form={model.form}

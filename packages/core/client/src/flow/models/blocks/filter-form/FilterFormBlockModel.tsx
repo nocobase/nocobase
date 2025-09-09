@@ -18,6 +18,7 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
+import { Form } from 'antd';
 import React from 'react';
 import { FilterBlockModel } from '../../base/BlockModel';
 import { FormComponent } from '../../blocks/form/FormModel';
@@ -36,6 +37,12 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
   get form() {
     return this.context.form;
+  }
+
+  useHooksBeforeRender() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [form] = Form.useForm();
+    this.context.defineProperty('form', { get: () => form, cache: false });
   }
 
   addAppends() {}
