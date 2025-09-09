@@ -63,7 +63,7 @@ export const FormItem = ({
 
   // 适配联动规则
   useEffect(() => {
-    form.setFieldValue(rest.name as string, value);
+    form?.setFieldValue(rest.name as string, value);
   }, [value, form, rest.name]);
 
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
