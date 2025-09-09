@@ -135,7 +135,7 @@ ctx.element.innerHTML = \`
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code);
+          await ctx.runjs(code, { window, document });
         });
       },
     },

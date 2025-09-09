@@ -61,7 +61,7 @@ export class ElementProxy {
   }
 
   // ✅ 示例：封装方法（可选）
-  safeAppend(child) {
+  appendChild(child) {
     if (child instanceof HTMLElement || typeof child === 'string') {
       this.__el.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
     }

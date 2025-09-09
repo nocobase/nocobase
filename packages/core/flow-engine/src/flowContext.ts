@@ -1042,7 +1042,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: this.createProxy(),
           ...variables,
         },
       });
@@ -1101,7 +1101,7 @@ export class FlowRuntimeContext<
     this.defineMethod('runjs', async (code, variables) => {
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: this.createProxy(),
           ...variables,
         },
       });

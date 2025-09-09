@@ -178,15 +178,15 @@ ChartBlockModel.registerFlow({
 
 ChartBlockModel.registerFlow({
   key: 'popupSettings',
-  on: {
-    eventName: 'openView',
-  },
+  on: 'openView',
   steps: {
     openView: {
       use: 'openView',
       hideInSettings: true,
       defaultParams(ctx) {
-        return {};
+        return {
+          navigation: false,
+        };
       },
     },
   },
