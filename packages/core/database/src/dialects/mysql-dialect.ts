@@ -28,6 +28,8 @@ export class MysqlDialect extends BaseDialect {
   getSequelizeOptions(options: DatabaseOptions) {
     const dialectOptions: mysql.ConnectionOptions = {
       ...(options.dialectOptions || {}),
+      supportBigNumbers: true,
+      bigNumberStrings: true,
       multipleStatements: true,
     };
 
