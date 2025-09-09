@@ -7,13 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FieldModelRenderer, FlowModelContext, FormItem } from '@nocobase/flow-engine';
+import {
+  Collection,
+  escapeT,
+  FieldModelRenderer,
+  FilterableItemModel,
+  FlowModelContext,
+  FormItem,
+} from '@nocobase/flow-engine';
 import { Alert, Empty } from 'antd';
 import _, { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionBlockModel } from '../../base/BlockModel';
-import { CollectionFieldModel } from '../../base/CollectionFieldModel';
 import { FieldModel } from '../../base/FieldModel';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { getAllDataModels } from '../filter-manager/utils';
@@ -73,7 +79,7 @@ const getModelFields = async (model: CollectionBlockModel) => {
   });
 };
 
-export class FilterFormItemModel extends CollectionFieldModel<{
+export class FilterFormItemModel extends FilterableItemModel<{
   subModels: {
     field: FilterFormFieldModel & { getFilterValue?: () => any };
   };

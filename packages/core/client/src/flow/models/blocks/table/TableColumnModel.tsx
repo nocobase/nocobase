@@ -9,8 +9,11 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   Collection,
+  createRecordMetaFactory,
+  DisplayItemModel,
   DragHandler,
   Droppable,
   escapeT,
@@ -23,16 +26,13 @@ import {
   FormItem,
   ModelRenderMode,
 } from '@nocobase/flow-engine';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createRecordMetaFactory } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CollectionFieldModel } from '../../base/CollectionFieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
-export class TableColumnModel extends CollectionFieldModel {
+export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
