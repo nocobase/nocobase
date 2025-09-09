@@ -16,7 +16,7 @@ import { Schema } from '@formily/react';
 import { usePlugin } from '@nocobase/client';
 import PluginAIClient from '..';
 import { ContextItem, WorkContextOptions } from './types';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { FlowModelContext, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 
 const walkthrough = (
   workContexts: WorkContextOptions[],
@@ -39,11 +39,12 @@ const walkthrough = (
 
 export const AddContextButton: React.FC<{
   onAdd: (item: ContextItem) => void;
+  onRemove: (type: string, uid: string) => void;
   disabled?: boolean;
   ignore?: (key: string, workContext: WorkContextOptions) => boolean;
-}> = ({ onAdd, disabled, ignore }) => {
+}> = ({ onAdd, onRemove, disabled, ignore }) => {
   const t = useT();
-  const flowEngine = useFlowEngine();
+  const ctx = useFlowContext<FlowModelContext>();
   const plugin = usePlugin('ai') as PluginAIClient;
   const workContext = plugin.aiManager.workContext;
 
@@ -85,12 +86,15 @@ export const AddContextButton: React.FC<{
     const onClick = (e) => {
       const workContextItem = contextItemMapping.get(e.key);
       const clickHandler = workContextItem?.menu?.clickHandler?.({
-        flowEngine,
+        ctx,
         onAdd: (contextItem) =>
           onAdd({
             type: e.key,
             ...contextItem,
           }),
+        onRemove: (uid: string) => {
+          onRemove(e.key, uid);
+        },
       });
       clickHandler?.();
     };

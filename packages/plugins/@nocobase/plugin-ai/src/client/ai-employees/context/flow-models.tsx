@@ -9,10 +9,10 @@
 
 import React from 'react';
 import { ContextItem, WorkContextOptions } from '../types';
-import { BuildOutlined, PicLeftOutlined, TableOutlined } from '@ant-design/icons';
+import { BuildOutlined, PicLeftOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
-import { FlowEngine, FlowModel, useFlowEngine } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelContext, useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { aiSelection } from '../stores/ai-selection';
 import { CollectionBlockModel, FieldModel, FormModel } from '@nocobase/client';
@@ -112,13 +112,13 @@ const toSimplifyComponentTree = (model: FlowModel) => {
   return result;
 };
 
-const handleSelect = (flowEngine: FlowEngine, onAdd: (item: Omit<ContextItem, 'type'>) => void) => () => {
+const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'type'>) => void) => () => {
   aiSelection.startSelect('flow-model', {
     onSelect: ({ uid }) => {
       if (!uid) {
         return;
       }
-      const model = flowEngine.getModel(uid);
+      const model = ctx.engine.getModel(uid);
       if (!model) {
         return;
       }
@@ -137,7 +137,7 @@ export const FlowModelsContext: WorkContextOptions = {
       const t = useT();
       return <div>{t('Pick Block')}</div>;
     },
-    clickHandler: ({ flowEngine, onAdd }) => handleSelect(flowEngine, onAdd),
+    clickHandler: ({ ctx, onAdd }) => handleSelect(ctx, onAdd),
   },
   tag: {
     Component: ({ item }) => {

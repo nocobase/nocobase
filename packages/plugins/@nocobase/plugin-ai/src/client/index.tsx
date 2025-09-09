@@ -29,6 +29,7 @@ import { aiEmployeesData } from './ai-employees/flow/context';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { DatasourceSettingPage } from './ai-employees/admin/datasource';
+import { DatasourceContext } from './ai-employees/context/datasource';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -128,6 +129,7 @@ export class PluginAIClient extends Plugin {
     });
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
+    this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
   }

@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, Table, Tabs, Tooltip, Typography } from 'antd';
+import { Button, Card, Space, Table, Tabs, Tooltip, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { CollectionField, FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { useCollectionContext } from '../../context';
@@ -51,7 +51,13 @@ export const Preview: React.FC<{
     },
   ];
 
-  return show && <Tabs type="card" tabBarStyle={{ marginBottom: 0 }} defaultActiveKey="1" items={items} />;
+  return (
+    show && (
+      <div style={{ padding: '16px' }}>
+        <Tabs type="card" tabBarStyle={{ marginBottom: 0 }} defaultActiveKey="1" items={items} />
+      </div>
+    )
+  );
 };
 
 const usePreview = (formData: Record<string, any>) => {
@@ -125,37 +131,40 @@ const PreviewTable: React.FC<{
   }, [collectionFields]);
 
   return (
-    <Card
-      title={title}
-      extra={
-        <Tooltip title={ctx.t('Refresh')}>
-          <Button
-            icon={<ReloadOutlined />}
-            type="link"
-            onClick={() => {
-              onRefresh();
-            }}
-          ></Button>
-        </Tooltip>
-      }
-      style={{
-        borderTop: 'none',
-        borderTopLeftRadius: '0',
-        flex: 1,
-      }}
-    >
-      <Table
-        columns={columns}
-        dataSource={datasource}
-        loading={loading}
-        scroll={{ x: 'max-content' }}
-        pagination={{
-          showSizeChanger: true,
-          showTotal: (total) => ctx.t('Total {{total}} items', { total }),
-          pageSize: 25,
+    <div style={{ height: '100%' }}>
+      <Card
+        title={title}
+        extra={
+          <Tooltip title={ctx.t('Refresh')}>
+            <Button
+              icon={<ReloadOutlined />}
+              type="link"
+              onClick={() => {
+                onRefresh();
+              }}
+            ></Button>
+          </Tooltip>
+        }
+        style={{
+          borderTop: 'none',
+          borderTopLeftRadius: '0',
         }}
-      ></Table>
-    </Card>
+      >
+        <Space direction="vertical" size={'large'} style={{ width: '100%' }}>
+          <Table
+            columns={columns}
+            dataSource={datasource}
+            loading={loading}
+            scroll={{ x: 'max-content', y: '45vh' }}
+            pagination={{
+              showSizeChanger: true,
+              showTotal: (total) => ctx.t('Total {{total}} items', { total }),
+              pageSize: 25,
+            }}
+          ></Table>
+        </Space>
+      </Card>
+    </div>
   );
 };
 
@@ -173,28 +182,29 @@ const PreviewJSON: React.FC<{
   }, [datasource]);
 
   return (
-    <Card
-      title={title}
-      extra={<Text copyable={{ text }} />}
-      style={{
-        borderTop: 'none',
-        borderTopLeftRadius: '0',
-        flex: 1,
-      }}
-    >
-      <Paragraph>
-        {!loading && (
-          <pre
-            style={{
-              maxHeight: '70vh',
-              overflowY: 'auto',
-              marginTop: '24px',
-            }}
-          >
-            {text}
-          </pre>
-        )}
-      </Paragraph>
-    </Card>
+    <div style={{ height: '100%' }}>
+      <Card
+        title={title}
+        extra={<Text copyable={{ text }} />}
+        style={{
+          borderTop: 'none',
+          borderTopLeftRadius: '0',
+        }}
+      >
+        <Paragraph>
+          {!loading && (
+            <pre
+              style={{
+                height: '60vh',
+                overflowY: 'auto',
+                marginTop: '24px',
+              }}
+            >
+              {text}
+            </pre>
+          )}
+        </Paragraph>
+      </Card>
+    </div>
   );
 };

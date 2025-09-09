@@ -145,7 +145,7 @@ const WorkContext: React.FC = () => {
           <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
         ))}
       </div>
-      <AddContextButton onAdd={onAdd} />
+      <AddContextButton onAdd={onAdd} onRemove={onRemove} />
     </>
   );
 };
