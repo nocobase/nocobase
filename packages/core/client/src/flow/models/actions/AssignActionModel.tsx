@@ -65,6 +65,9 @@ export class RecordAssignActionModel extends RecordActionModel<{
     assignForm: AssignFieldsFormModel;
   };
 }> {
+  // 专用于保存动作配置的属性，避免透传到 Button DOM props
+  actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
+
   defaultProps: ButtonProps = {
     title: escapeT('Update record'),
     type: 'link',
@@ -77,10 +80,19 @@ export class RecordAssignActionModel extends RecordActionModel<{
 
 RecordAssignActionModel.define({
   label: escapeT('Update record'),
-  createModelOptions: {
-    subModels: {
-      assignForm: { use: 'AssignFieldsFormModel' },
-    },
+  // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
+  createModelOptions: (ctx) => {
+    const dsKey = ctx.collection.dataSourceKey;
+    const collName = ctx.collection.name;
+    const init = dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
+    return {
+      subModels: {
+        assignForm: {
+          use: 'AssignFieldsFormModel',
+          stepParams: { resourceSettings: { init } },
+        },
+      },
+    };
   },
 });
 
@@ -89,7 +101,7 @@ RecordAssignActionModel.registerFlow({
   title: escapeT('Action settings'),
   steps: {
     showConfirm: {
-      title: '是否二次确认',
+      title: escapeT('Require confirmation'),
       uiSchema: {
         value: {
           type: 'boolean',
@@ -98,7 +110,9 @@ RecordAssignActionModel.registerFlow({
         },
       },
       handler: (ctx, params) => {
-        ctx.model.setProps('showConfirm', params.value);
+        // 存入 actionProps，避免污染按钮 DOM props
+        const m = ctx.model as RecordAssignActionModel;
+        m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
       },
     },
     assignFieldValues: {
@@ -143,7 +157,9 @@ RecordAssignActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        if (ctx.model.props['showConfirm']) {
+        const m = ctx.model as RecordAssignActionModel;
+        const needConfirm = m.actionProps?.showConfirm === true;
+        if (needConfirm) {
           await ctx.runAction('confirm');
         }
         const assignedValues = params?.assignedValues || {};
@@ -171,8 +187,12 @@ export class BulkAssignActionModel extends CollectionActionModel<{
     assignForm: AssignFieldsFormModel;
   };
 }> {
+  // 专用于保存动作配置的属性，避免透传到 Button DOM props
+  // 不需要 observe，仅在运行时读取
+  actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
+
   defaultProps: ButtonProps = {
-    title: escapeT('Bulk update'),
+    title: escapeT('Bulk edit'),
     icon: 'EditOutlined',
   };
   getAclActionName() {
@@ -181,11 +201,20 @@ export class BulkAssignActionModel extends CollectionActionModel<{
 }
 
 BulkAssignActionModel.define({
-  label: escapeT('Bulk update'),
-  createModelOptions: {
-    subModels: {
-      assignForm: { use: 'AssignFieldsFormModel' },
-    },
+  label: escapeT('Bulk edit'),
+  // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
+  createModelOptions: (ctx) => {
+    const dsKey = ctx.collection.dataSourceKey;
+    const collName = ctx.collection?.name;
+    const init = dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
+    return {
+      subModels: {
+        assignForm: {
+          use: 'AssignFieldsFormModel',
+          stepParams: { resourceSettings: { init } },
+        },
+      },
+    };
   },
 });
 
@@ -194,7 +223,7 @@ BulkAssignActionModel.registerFlow({
   title: escapeT('Action settings'),
   steps: {
     showConfirm: {
-      title: '是否二次确认',
+      title: escapeT('Require confirmation'),
       uiSchema: {
         value: {
           type: 'boolean',
@@ -203,25 +232,27 @@ BulkAssignActionModel.registerFlow({
         },
       },
       handler: (ctx, params) => {
-        ctx.model.setProps('showConfirm', params.value);
+        const m = ctx.model as BulkAssignActionModel;
+        m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
       },
     },
     updateMode: {
-      title: '更新范围',
+      title: escapeT('Data will be updated'),
       uiSchema: {
         value: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           enum: [
-            { label: '仅选中', value: 'selected' },
-            { label: '整表', value: 'all' },
+            { label: escapeT('Selected'), value: 'selected' },
+            { label: escapeT('All'), value: 'all' },
           ],
           default: 'selected',
         },
       },
       handler: (ctx, params) => {
-        ctx.model.setProps('updateMode', params.value || 'selected');
+        const m = ctx.model as BulkAssignActionModel;
+        m.actionProps = { ...(m.actionProps || {}), updateMode: (params.value as any) || 'selected' };
       },
     },
     assignFieldValues: {
@@ -260,7 +291,9 @@ BulkAssignActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        if (ctx.model.props['showConfirm']) {
+        const m = ctx.model as BulkAssignActionModel;
+        const needConfirm = m.actionProps?.showConfirm === true;
+        if (needConfirm) {
           await ctx.runAction('confirm');
         }
         const assignedValues = params?.assignedValues || {};
@@ -273,7 +306,7 @@ BulkAssignActionModel.registerFlow({
           ctx.message.error(ctx.t('Collection is required to perform this action'));
           return;
         }
-        const mode = ctx.model.props['updateMode'] || 'selected';
+        const mode = m.actionProps?.updateMode || 'selected';
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
           if (!rows.length) {

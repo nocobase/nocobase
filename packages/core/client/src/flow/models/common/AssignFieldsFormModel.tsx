@@ -17,24 +17,10 @@ import { AssignFieldGridModel } from './AssignFieldGridModel';
  */
 // 使用范型标注 subModels.grid 的类型，提升类型提示与可读性
 export class AssignFieldsFormModel extends FormModel<{ subModels: { grid: any } }> {
-  onInit(options: any) {
-    super.onInit(options);
-    const params = this.getStepParams('resourceSettings', 'init') || {};
-    const hasResourceInfo = params?.dataSourceKey && params?.collectionName;
-    if (!hasResourceInfo) {
-      const coll = (this.context as any)?.collection;
-      const dsKey = coll?.dataSourceKey;
-      const collName = coll?.name;
-      if (dsKey && collName) {
-        this.setStepParams('resourceSettings', 'init', { dataSourceKey: dsKey, collectionName: collName });
-      }
-    }
-  }
   createResource(ctx: any, params: any) {
-    // 配置表单不直接依赖数据读取，这里返回单记录资源占位，避免 BlockModel 抛错
     const resource = this.context.createResource(SingleRecordResource);
     // 行为与 CreateFormModel 一致：视为新记录，避免额外 GET
-    (resource as any).isNewRecord = true;
+    resource.isNewRecord = true;
     return resource;
   }
   renderComponent(): React.ReactNode {
@@ -54,14 +40,13 @@ export class AssignFieldsFormModel extends FormModel<{ subModels: { grid: any } 
   }
 
   getAssignedValues(): Record<string, any> {
-    const grid = this.subModels?.grid as any;
-    if (!grid || typeof grid.getAssignedValues !== 'function') return {};
-    return grid.getAssignedValues();
+    return this.subModels.grid.getAssignedValues() || {};
   }
 }
 
 AssignFieldsFormModel.define({
   label: escapeT('Field assignments'),
+  hide: true,
   createModelOptions: {
     use: 'AssignFieldsFormModel',
     subModels: {

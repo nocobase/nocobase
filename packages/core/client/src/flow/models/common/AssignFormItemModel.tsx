@@ -19,9 +19,10 @@ import {
   parseValueToPath,
 } from '@nocobase/flow-engine';
 import { FormItemModel } from '../data-blocks/form/FormItem/FormItemModel';
+import { getUniqueKeyFromCollection } from '../../../collection-manager/interfaces/utils';
 
 /**
- * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型（VariableFieldFormModel + 字段 FieldModel）。
+ * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
  */
 export class AssignFormItemModel extends FormItemModel {
   assignValue: any = undefined;
@@ -34,7 +35,6 @@ export class AssignFormItemModel extends FormItemModel {
   }
 
   onInit(options: any) {
-    // 不调用父类 onInit，避免触发基类对资源/集合的依赖（配置态无需 addAppends 等数据交互）
     const initAssign = this.getStepParams('fieldSettings', 'assignValue')?.value;
     if (typeof initAssign !== 'undefined') this.assignValue = initAssign;
     this.context.defineProperty('collectionField', {
@@ -50,9 +50,9 @@ export class AssignFormItemModel extends FormItemModel {
     const ctx: any = this.context;
     const collection = ctx?.collection;
     const init = this.fieldInit;
-    if (!(this.subModels as any)?.field && collection?.getFields) {
+    if (!this.subModels?.field && collection?.getFields) {
       const fields = collection.getFields() || [];
-      const f = fields.find((x: any) => x?.name === init?.fieldPath);
+      const f = fields.find((x) => x?.name === init?.fieldPath);
       const fieldModel = f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
       ctx?.engine?.createModel?.({
         use: fieldModel,
@@ -93,7 +93,6 @@ export class AssignFormItemModel extends FormItemModel {
     const collection = ctx.collection;
     const init = this.fieldInit;
     const namePath = this.props?.name || (this.fieldPath ? [this.fieldPath] : undefined);
-    const metaTreeProvider = () => ctx.getPropertyMetaTree?.();
     const fieldPath = this.fieldPath;
 
     const FieldRow: React.FC = () => {
@@ -167,7 +166,8 @@ export class AssignFormItemModel extends FormItemModel {
         fm?.applyAutoFlows?.();
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
           const targetCol = cfForMultiple.targetCollection;
-          fm?.setProps?.({ fieldNames: { label: targetCol.titleField, value: targetCol.getPrimaryKey() } });
+          const valueKey = getUniqueKeyFromCollection(targetCol);
+          fm?.setProps?.({ fieldNames: { label: targetCol?.titleField, value: valueKey } });
         }
 
         setTempRoot(created);
