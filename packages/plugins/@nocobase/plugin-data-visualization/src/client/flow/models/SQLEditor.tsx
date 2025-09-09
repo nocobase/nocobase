@@ -7,16 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React, { useRef } from 'react';
 import { connect, mapProps } from '@formily/react';
-import { CodeEditor } from '../components/CodeEditor';
+import { CodeEditor, CodeEditorHandle } from '../components/CodeEditor';
+import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
+
+const SQLEditorBase: React.FC<any> = (props) => {
+  const { value, onChange } = props;
+  const editorRef = useRef<CodeEditorHandle>(null);
+  const ctx = useFlowContext();
+
+  return (
+    <CodeEditor
+      ref={editorRef}
+      language="sql"
+      value={value}
+      onChange={onChange}
+      rightExtra={
+        <FlowContextSelector
+          onChange={(val) => {
+            if (!val) return;
+            editorRef.current?.insertAtCursor(val);
+          }}
+          metaTree={() => ctx.getPropertyMetaTree().filter((item) => ['userAsync'].includes(item.name))}
+        />
+      }
+    />
+  );
+};
 
 export const SQLEditor = connect(
-  CodeEditor,
-  mapProps((props) => {
-    return {
-      language: 'sql',
-      value: props.value,
-      onChange: props.onChange,
-    };
-  }),
+  SQLEditorBase,
+  mapProps((props) => ({
+    value: props.value,
+    onChange: props.onChange,
+  })),
 );
