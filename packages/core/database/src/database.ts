@@ -254,10 +254,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     );
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
-    if (options.dialect === 'mysql') {
-      this.addTypeCastForMySQLOptions(sequelizeOptions);
-    }
     this.sequelize = new Sequelize(sequelizeOptions);
+
+    if (options.dialect === 'mysql') {
+      this.bindMySQLFormatBindParameters();
+    }
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -522,25 +523,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.inDialect('postgres');
   }
 
-  addTypeCastForMySQLOptions(options: DatabaseOptions) {
-    const { supportBigNumbers, bigNumberStrings } = (options.dialectOptions as mysql.ConnectionOptions) || {};
-    if (!(supportBigNumbers && bigNumberStrings)) {
-      return;
-    }
-    const dialectOptions: mysql.ConnectionOptions = {
-      ...options.dialectOptions,
-      typeCast: (field, next) => {
-        // @ts-ignore
-        const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
-        if (field.type === 'LONGLONG') {
-          const val = field.string();
-          return parseBigIntValue(val);
+  bindMySQLFormatBindParameters() {
+    // @ts-ignore
+    const originalFormatBindParameters = this.sequelize.dialect.Query.formatBindParameters;
+    const formatBindParameters = function (sql, values, dialect) {
+      const [newSql, bindParams] = originalFormatBindParameters(sql, values, dialect);
+
+      const patchedParams = bindParams?.map((v) => {
+        if (typeof v === 'number') {
+          return v.toString();
         }
-        // @ts-ignore
-        return ConnectionManager._typecast.bind(this.sequelize.dialect.connectionManager)(field, next);
-      },
+        return v;
+      });
+
+      return [newSql, patchedParams];
     };
-    options.dialectOptions = dialectOptions;
+    // @ts-ignore
+    this.sequelize.dialect.Query.formatBindParameters = formatBindParameters;
   }
 
   /**
