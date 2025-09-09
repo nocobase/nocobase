@@ -17,7 +17,11 @@ import {
   FlowModelRenderer,
   FormItem,
   SingleRecordResource,
+  buildRecordMeta,
+  inferRecordRef,
 } from '@nocobase/flow-engine';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { Button, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -98,8 +102,11 @@ export class QuickEditFormModel extends FlowModel {
     this.context.defineProperty('blockModel', {
       value: this,
     });
+    const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
+      resolveOnServer: true,
+      meta: recordMeta,
     });
   }
 

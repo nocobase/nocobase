@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel, escapeT } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
 import { updateOpenViewStepParams } from '../../flows/openViewFlow';
 
-export class ActionModel extends FlowModel {
+export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   declare props: ButtonProps;
 
   defaultProps: ButtonProps = {
@@ -145,7 +145,7 @@ ActionModel.registerFlow({
   },
 });
 
-export class CollectionActionModel extends ActionModel {
+export class CollectionActionModel<T extends DefaultStructure = DefaultStructure> extends ActionModel<T> {
   onInit(options) {
     super.onInit(options);
     updateOpenViewStepParams(
@@ -170,7 +170,7 @@ export class CollectionActionModel extends ActionModel {
   }
 }
 
-export class RecordActionModel extends ActionModel {
+export class RecordActionModel<T extends DefaultStructure = DefaultStructure> extends ActionModel<T> {
   defaultProps: ButtonProps = {
     type: 'link',
     children: escapeT('Action'),

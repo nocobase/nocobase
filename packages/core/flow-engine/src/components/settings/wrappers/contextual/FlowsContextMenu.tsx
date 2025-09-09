@@ -84,6 +84,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             okText: t('Confirm Delete'),
             okType: 'danger',
             cancelText: t('Cancel'),
+            zIndex: 999999,
             onOk() {
               try {
                 model.dispatchEvent('remove');

@@ -9,7 +9,7 @@
 
 import { FlowModel, escapeT } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { PageTabModel } from '../PageTabModel';
+import { PageTabModel } from './PageTabModel';
 
 type PageModelStructure = {
   subModels: {

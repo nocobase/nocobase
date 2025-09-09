@@ -426,7 +426,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {FlowDefinitionOptions<TModel>} [flowDefinition] 当第一个参数为流程 Key 时，此参数为流程的定义。
    * @returns {void}
    */
-  public static registerFlow<TClass extends ModelConstructor, TModel extends InstanceType<TClass>>(
+  public static registerFlow<
+    TClass extends ModelConstructor,
+    TModel extends InstanceType<TClass> = InstanceType<TClass>,
+  >(
     this: TClass,
     keyOrDefinition: string | FlowDefinitionOptions<TModel>,
     flowDefinition?: Omit<FlowDefinitionOptions<TModel>, 'key'> & { key?: string },

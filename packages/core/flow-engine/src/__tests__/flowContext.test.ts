@@ -237,6 +237,9 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['foo'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -246,6 +249,9 @@ describe('FlowContext properties and methods', () => {
         interface: undefined,
         uiSchema: undefined,
         paths: ['bar'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: [
           {
             name: 'baz',
@@ -255,6 +261,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: undefined,
             paths: ['bar', 'baz'],
             parentTitles: ['Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
           {
@@ -265,6 +273,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: undefined,
             paths: ['bar', 'qux'],
             parentTitles: ['Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
         ],
@@ -302,6 +312,9 @@ describe('FlowContext properties and methods', () => {
         interface: 'text',
         uiSchema: { type: 'text' },
         paths: ['foo'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -311,6 +324,9 @@ describe('FlowContext properties and methods', () => {
         interface: 'object',
         uiSchema: { type: 'object' },
         paths: ['bar'],
+        parentTitles: undefined,
+        disabled: false,
+        disabledReason: undefined,
         children: [
           {
             name: 'x',
@@ -320,6 +336,8 @@ describe('FlowContext properties and methods', () => {
             uiSchema: { type: 'text' },
             paths: ['bar', 'x'],
             parentTitles: ['Local Bar'],
+            disabled: false,
+            disabledReason: undefined,
             children: undefined,
           },
         ],
@@ -368,6 +386,9 @@ describe('FlowContext properties and methods', () => {
       interface: undefined,
       uiSchema: undefined,
       paths: ['syncProp'],
+      parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: [
         {
           name: 'field1',
@@ -377,6 +398,8 @@ describe('FlowContext properties and methods', () => {
           uiSchema: undefined,
           paths: ['syncProp', 'field1'],
           parentTitles: ['Sync Property'],
+          disabled: false,
+          disabledReason: undefined,
           children: undefined,
         },
         {
@@ -387,6 +410,8 @@ describe('FlowContext properties and methods', () => {
           uiSchema: undefined,
           paths: ['syncProp', 'field2'],
           parentTitles: ['Sync Property'],
+          disabled: false,
+          disabledReason: undefined,
           children: undefined,
         },
       ],
@@ -408,6 +433,8 @@ describe('FlowContext properties and methods', () => {
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField1'],
         parentTitles: ['Async Property'],
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
       {
@@ -418,6 +445,8 @@ describe('FlowContext properties and methods', () => {
         uiSchema: undefined,
         paths: ['asyncProp', 'dynamicField2'],
         parentTitles: ['Async Property'],
+        disabled: false,
+        disabledReason: undefined,
         children: undefined,
       },
     ]);
@@ -965,6 +994,8 @@ describe('FlowContext delayed meta loading', () => {
       uiSchema: undefined,
       paths: ['userAsync', 'id'],
       parentTitles: ['Delayed User'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(children[1]).toEqual({
@@ -975,6 +1006,8 @@ describe('FlowContext delayed meta loading', () => {
       uiSchema: undefined,
       paths: ['userAsync', 'name'],
       parentTitles: ['Delayed User'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1048,6 +1081,207 @@ describe('FlowContext delayed meta loading', () => {
   });
 });
 
+describe('FlowContext resolveOnServer selective server resolution', () => {
+  it('does not call server by default (no resolveOnServer set)', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ record: { id: 2 }, type: 'dialog' }),
+      // default resolveOnServer = false
+    });
+
+    const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ id: 2, type: 'dialog' });
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('calls server only for subpaths that match resolveOnServer function', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        // Only 'view.record' should be present
+        expect(Object.keys(cp)).toContain('view.record');
+        return { data: { id: 1 } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ type: 'dialog' }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'users', filterByTk: 1, dataSourceKey: 'main' } }),
+      }),
+    });
+
+    const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out.type).toBe('dialog');
+    expect(api.request).toHaveBeenCalledTimes(1);
+    const [{ url }] = api.request.mock.calls[0];
+    expect(url).toBe('variables:resolve');
+  });
+
+  it('calls server for whole variable when resolveOnServer is true', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        expect(Object.keys(cp)).toContain('user');
+        return { data: { userId: 1 } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('user', {
+      value: { id: 1, name: 'tester' },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 1, dataSourceKey: 'main' }),
+      }),
+    });
+
+    const tpl = { uid: '{{ ctx.user.id }}' } as any;
+    await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads resolveOnServer from delegated context properties (e.g., engine.context -> model.context)', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => ({ data: { ok: true } })),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    // Define 'user' on engine.context only
+    engine.context.defineProperty('user', {
+      value: { id: 3 },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        // purposefully omit builder to test empty contextParams path
+      }),
+    });
+
+    // Create a model and call resolveJsonTemplate on model.context (delegates to engine.context)
+    const M = class extends FlowModel {};
+    engine.registerModels({ M });
+    const model = engine.createModel({ use: 'M' });
+
+    const tpl = { uid: '{{ ctx.user.id }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('x', {
+      value: { a: 1 },
+      resolveOnServer: true,
+      // no meta / no buildVariablesParams
+    });
+
+    const tpl = { a: '{{ ctx.x.a }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ a: 1 });
+    // based on resolveOnServer, still calls server with empty contextParams
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('mixes server and client variables correctly in one pass', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const cp = config?.data?.values?.contextParams || {};
+        expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('user', {
+      value: { id: 7, name: 'u' },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 7, dataSourceKey: 'main' }),
+      }),
+    });
+
+    engine.context.defineProperty('view', {
+      get: () => ({ type: 'dialog' }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'posts', filterByTk: 11, dataSourceKey: 'main' } }),
+      }),
+    });
+
+    engine.context.defineProperty('role', { value: 'admin' });
+
+    const tpl = {
+      a: '{{ ctx.user.id }}',
+      b: '{{ ctx.view.record.id }}',
+      c: '{{ ctx.view.type }}',
+      d: '{{ ctx.role }}',
+    } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    // client-resolved fields
+    expect(out.c).toBe('dialog');
+    expect(out.d).toBe('admin');
+    // server was called
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('FlowContext.getPropertyOptions()', () => {
+  it('returns own property options when defined locally', () => {
+    const ctx = new FlowContext();
+    ctx.defineProperty('alpha', { value: 1, cache: true });
+    const opt = ctx.getPropertyOptions('alpha');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(1);
+    expect(opt.cache).toBe(true);
+  });
+
+  it('returns delegated property options when not defined locally', () => {
+    const base = new FlowContext();
+    base.defineProperty('beta', { value: 2, resolveOnServer: true });
+    const ctx = new FlowContext();
+    ctx.addDelegate(base);
+    const opt = ctx.getPropertyOptions('beta');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(2);
+    expect(opt.resolveOnServer).toBe(true);
+  });
+
+  it('prefers own property options over delegated ones', () => {
+    const base = new FlowContext();
+    base.defineProperty('gamma', { value: 10, resolveOnServer: true });
+    const ctx = new FlowContext();
+    ctx.addDelegate(base);
+    ctx.defineProperty('gamma', { value: 99, resolveOnServer: false });
+    const opt = ctx.getPropertyOptions('gamma');
+    expect(opt).toBeTruthy();
+    expect(opt.value).toBe(99);
+    expect(opt.resolveOnServer).toBe(false);
+  });
+});
+
 describe('FlowContext getPropertyMetaTree with value parameter', () => {
   it('should return full tree when no value parameter is provided', () => {
     const ctx = new FlowContext();
@@ -1097,6 +1331,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'id'],
       parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(subTree[1]).toEqual({
@@ -1107,6 +1343,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'name'],
       parentTitles: undefined,
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1290,6 +1528,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'profile', 'bio'],
       parentTitles: ['User', 'User Profile'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
     expect(profileSubTree[1]).toEqual({
@@ -1300,6 +1540,8 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       uiSchema: undefined,
       paths: ['user', 'profile', 'avatar'],
       parentTitles: ['User', 'User Profile'],
+      disabled: false,
+      disabledReason: undefined,
       children: undefined,
     });
   });
@@ -1361,6 +1603,79 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
     // Test path that doesn't exist
     const result = ctx.getPropertyMetaTree('{{ ctx.user.nonExistent }}');
     expect(result).toEqual([]); // Should return empty array for non-existent path
+  });
+});
+
+describe('FlowContext meta sort and factory title', () => {
+  it('should sort root nodes by meta.sort (including factory.sort)', async () => {
+    const ctx = new FlowContext();
+
+    // Static metas with sort
+    ctx.defineProperty('b', { meta: { type: 'string', title: 'B', sort: 10 } });
+    ctx.defineProperty('a', { meta: { type: 'string', title: 'A', sort: 5 } });
+    ctx.defineProperty('c', { meta: { type: 'string', title: 'C' } }); // sort defaults to 0
+
+    // Factory meta with title/sort on the function itself
+    const fFactory: any = async () => ({ type: 'object', title: 'F-resolved', properties: {} });
+    fFactory.title = 'F-initial';
+    fFactory.sort = 15;
+    ctx.defineProperty('f', { meta: fFactory });
+
+    const tree = ctx.getPropertyMetaTree();
+    expect(tree.map((n) => n.name)).toEqual(['f', 'b', 'a', 'c']);
+
+    // factory node uses its function.title before resolve
+    const fNode = tree[0];
+    expect(fNode.name).toBe('f');
+    expect(fNode.title).toBe('F-initial');
+
+    // After resolving children, title should update to resolved meta.title
+    if (typeof fNode.children === 'function') {
+      await (fNode.children as () => Promise<any>)();
+      expect(fNode.title).toBe('F-resolved');
+    }
+  });
+
+  it('should sort child nodes by meta.sort (sync properties)', () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('parent', {
+      meta: {
+        type: 'object',
+        title: 'Parent',
+        properties: {
+          c: { type: 'string', title: 'C', sort: 1 },
+          a: { type: 'string', title: 'A', sort: 3 },
+          b: { type: 'string', title: 'B', sort: 2 },
+        },
+      },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.parent }}');
+    expect(Array.isArray(subTree)).toBe(true);
+    const names = (subTree as any[]).map((n) => n.name);
+    expect(names).toEqual(['a', 'b', 'c']); // desc by sort
+  });
+
+  it('should sort child nodes by meta.sort (async properties)', async () => {
+    const ctx = new FlowContext();
+
+    ctx.defineProperty('asyncParent', {
+      meta: {
+        type: 'object',
+        title: 'AsyncParent',
+        properties: async () => ({
+          c: { type: 'string', title: 'C', sort: 1 },
+          a: { type: 'string', title: 'A', sort: 3 },
+          b: { type: 'string', title: 'B', sort: 2 },
+        }),
+      },
+    });
+
+    const subTree = ctx.getPropertyMetaTree('{{ ctx.asyncParent }}');
+    const nodes = typeof subTree === 'function' ? await (subTree as any)() : subTree;
+    const names = (nodes as any[]).map((n) => n.name);
+    expect(names).toEqual(['a', 'b', 'c']);
   });
 });
 
@@ -1619,5 +1934,43 @@ describe('FlowContext getPropertyMetaTree with complex async/sync mixing scenari
     const arr = await ensureArray(rootDeepTree);
     expect(arr).toHaveLength(1);
     expect(arr[0].name).toBe('level1');
+  });
+
+  it('aggregates multiple resolves into one batch request', async () => {
+    const engine = new FlowEngine();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        // Should be batched into one request with values.batch
+        const batch = config?.data?.values?.batch;
+        expect(Array.isArray(batch)).toBe(true);
+        expect(batch.length).toBe(2);
+        // Echo back distinct data for each id to verify mapping
+        const results = batch.map((item: any, idx: number) => ({ id: item.id, data: { ok: idx + 1 } }));
+        return { data: { data: { results } } } as any;
+      }),
+    } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    // Define a server-resolved variable (no builder needed)
+    engine.context.defineProperty('foo', {
+      value: { a: 1 },
+      resolveOnServer: true,
+    });
+
+    // 使用不同的模板键，避免运行期去重（dedup）导致只保留一个 payload
+    const t1 = { a: '{{ ctx.foo.a }}' } as any;
+    const t2 = { b: '{{ ctx.foo.a }}' } as any;
+
+    // Fire two resolves within the same micro-batch window (concurrently)
+    const [r1, r2] = await Promise.all([
+      (engine.context as any).resolveJsonTemplate(t1),
+      (engine.context as any).resolveJsonTemplate(t2),
+    ]);
+
+    // API called once with batched payload
+    expect(api.request).toHaveBeenCalledTimes(1);
+    // Ensure both results were mapped back correctly by order (ok:1, ok:2)
+    expect(r1.ok).toBe(1);
+    expect(r2.ok).toBe(2);
   });
 });

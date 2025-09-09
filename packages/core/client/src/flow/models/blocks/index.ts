@@ -12,4 +12,5 @@ export * from './filter-form';
 export * from './filter-manager';
 export * from './form';
 export * from './table';
+export * from './assign-fields-form';
 //

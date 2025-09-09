@@ -9,6 +9,7 @@
 
 import {
   Collection,
+  DefaultStructure,
   escapeT,
   FieldModelRenderer,
   FlowModelContext,
@@ -60,7 +61,7 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   return [idx, ...nameParts.slice(lastIndex + 1)];
 }
 
-export class FormItemModel extends CollectionFieldModel {
+export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends CollectionFieldModel<T> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {

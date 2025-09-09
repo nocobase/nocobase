@@ -24,8 +24,8 @@ import {
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React, { ReactNode } from 'react';
-import { BasePageTabModel } from '../PageTabModel';
 import { DragEndEvent } from '@dnd-kit/core';
+import { BasePageTabModel } from './PageTabModel';
 
 type PageModelStructure = {
   subModels: {

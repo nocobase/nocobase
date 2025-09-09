@@ -15,6 +15,7 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
+import qs from 'qs';
 import pino from 'pino';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
@@ -35,10 +36,40 @@ import {
   SQLResource,
 } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
-import { extractPropertyPath, FlowExitException, resolveDefaultParams, resolveExpressions } from './utils';
+import {
+  extractPropertyPath,
+  FlowExitException,
+  resolveDefaultParams,
+  resolveExpressions,
+  extractUsedVariablePaths,
+  escapeT,
+} from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { JSONValue } from './utils/params-resolvers';
+import { JSONValue, enqueueVariablesResolve } from './utils/params-resolvers';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import type { RecordRef } from './utils/serverContextParams';
+
+// Helper: detect a RecordRef-like object
+function isRecordRefLike(val: any): boolean {
+  return !!(val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val);
+}
+
+// Helper: Filter builder output by subpaths that need server resolution
+// - built can be RecordRef (top-level var) or an object mapping subKey -> RecordRef (e.g., { record: ref })
+function filterBuilderOutputByPaths(built: any, neededPaths: string[]): any {
+  if (!neededPaths || neededPaths.length === 0) return undefined;
+  if (isRecordRefLike(built)) return built;
+  if (built && typeof built === 'object' && !Array.isArray(built)) {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(built)) {
+      const hit = neededPaths.some((p) => p === k || p.startsWith(`${k}.`) || p.startsWith(`${k}[`));
+      if (hit) out[k] = v;
+    }
+    return out;
+  }
+  return undefined;
+}
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
@@ -52,6 +83,9 @@ export interface MetaTreeNode {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   paths: string[];
   parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
+  // 变量禁用状态与原因（用于变量选择器 UI 展示）
+  disabled?: boolean | (() => boolean);
+  disabledReason?: string | (() => string | undefined);
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -61,9 +95,37 @@ export interface PropertyMeta {
   interface?: string;
   uiSchema?: ISchema; // TODO: 这个是不是压根没必要啊？
   render?: (props: any) => JSX.Element; // 自定义渲染函数
+  // 用于 VariableInput 的排序：数值越大，显示越靠前；相同值保持稳定顺序
+  sort?: number;
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   properties?: Record<string, PropertyMeta> | (() => Promise<Record<string, PropertyMeta>>);
+  // 变量禁用控制：若 disabled 为真（或函数返回真）则禁用
+  disabled?: boolean | (() => boolean);
+  // 禁用原因（用于 UI 小问号提示），可为函数
+  disabledReason?: string | (() => string | undefined);
+  // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
+  // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
+  buildVariablesParams?: (
+    ctx: FlowContext,
+  ) => RecordRef | Record<string, any> | Promise<RecordRef | Record<string, any> | undefined> | undefined;
 }
+
+// A factory function that lazily produces PropertyMeta, and may carry
+// hint fields like `title` and `sort` for UI building before resolution.
+export type PropertyMetaFactory = {
+  (): PropertyMeta | Promise<PropertyMeta | null> | null;
+  /**
+   * 仅作为“是否可能存在子节点”的提示，不影响 meta 工厂本身的惰性特性。
+   * - true（默认）：视为可能有 children，节点会提供 children 懒加载器（用于级联展开加载子级）。
+   * - false：视为没有 children，不渲染展开箭头，且不提供 children 懒加载器；
+   *          但节点本身的 meta 工厂仍保持惰性（在需要时仍可解析出 title/type 等信息）。
+   */
+  hasChildren?: boolean;
+  title?: string;
+  sort?: number;
+};
+
+export type PropertyMetaOrFactory = PropertyMeta | PropertyMetaFactory;
 
 export interface PropertyOptions {
   value?: any;
@@ -71,7 +133,11 @@ export interface PropertyOptions {
   get?: Getter;
   cache?: boolean;
   observable?: boolean; // 是否为 observable 属性
-  meta?: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>); // 支持静态、函数和异步函数
+  meta?: PropertyMetaOrFactory; // 支持静态、函数和异步函数（工厂函数可带 title/sort）
+  // 标记该属性是否在服务端解析：
+  // - boolean: true 表示整个顶层变量交给服务端；false 表示仅前端解析
+  // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
+  resolveOnServer?: boolean | ((subPath: string) => boolean);
 }
 
 type RouteOptions = {
@@ -90,8 +156,7 @@ export class FlowContext {
   protected _pending: Record<string, Promise<any>> = {};
   [key: string]: any;
   #proxy: FlowContext | null = null;
-  private _metaNodeCache: WeakMap<PropertyMeta | (() => Promise<PropertyMeta> | PropertyMeta), MetaTreeNode> =
-    new WeakMap();
+  private _metaNodeCache: WeakMap<PropertyMetaOrFactory, MetaTreeNode> = new WeakMap();
 
   createProxy() {
     if (this.#proxy) {
@@ -242,7 +307,7 @@ export class FlowContext {
   /**
    * 清除特定 meta 对象的缓存
    */
-  private _clearMetaNodeCacheFor(meta: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>)): void {
+  private _clearMetaNodeCacheFor(meta: PropertyMetaOrFactory): void {
     this._metaNodeCache.delete(meta);
   }
 
@@ -335,7 +400,13 @@ export class FlowContext {
       }
     }
 
-    return Object.entries(metaMap).map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
+    // 根级节点按 meta.sort 降序排列（未设置默认为 0）
+    const sorted = (Object.entries(metaMap) as [string, PropertyMetaOrFactory][]).sort(([, a], [, b]) => {
+      const sa = (typeof a === 'function' ? a.sort : a?.sort) ?? 0;
+      const sb = (typeof b === 'function' ? b.sort : b?.sort) ?? 0;
+      return sb - sa;
+    });
+    return sorted.map(([key, metaOrFactory]) => this.#toTreeNode(key, metaOrFactory, [key], []));
   }
 
   #createChildNodes(
@@ -351,13 +422,13 @@ export class FlowContext {
           if (parentMeta) {
             parentMeta.properties = resolved;
           }
-          return Object.entries(resolved).map(([name, meta]) =>
-            this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
-          );
+          const entries = Object.entries(resolved) as [string, PropertyMeta][];
+          entries.sort(([, a], [, b]) => (b?.sort ?? 0) - (a?.sort ?? 0));
+          return entries.map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles));
         }
-      : Object.entries(properties).map(([name, meta]) =>
-          this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles),
-        );
+      : (Object.entries(properties) as [string, PropertyMeta][])
+          .sort(([, a], [, b]) => (b?.sort ?? 0) - (a?.sort ?? 0))
+          .map(([name, meta]) => this.#toTreeNode(name, meta, [...parentPaths, name], parentTitles));
   }
 
   /**
@@ -365,7 +436,7 @@ export class FlowContext {
    * @param propertyPath 属性路径数组，例如 ["aaa", "bbb"]
    * @returns [finalKey, metaOrFactory, fullPath] 或 null
    */
-  #findMetaByPath(propertyPath: string[]): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+  #findMetaByPath(propertyPath: string[]): [string, PropertyMetaOrFactory, string[]] | null {
     if (propertyPath.length === 0) return null;
 
     const [firstKey, ...remainingPath] = propertyPath;
@@ -393,10 +464,10 @@ export class FlowContext {
    */
   #findMetaInProperty(
     currentKey: string,
-    metaOrFactory: PropertyMeta | (() => PropertyMeta | Promise<PropertyMeta>),
+    metaOrFactory: PropertyMetaOrFactory,
     remainingPath: string[],
     currentPath: string[],
-  ): [string, PropertyMeta | (() => Promise<PropertyMeta>), string[]] | null {
+  ): [string, PropertyMetaOrFactory, string[]] | null {
     // 如果已经到了最后一层，直接返回当前的 meta
     if (remainingPath.length === 0) {
       return [currentKey, metaOrFactory as any, currentPath];
@@ -553,7 +624,7 @@ export class FlowContext {
 
   #toTreeNode(
     name: string,
-    metaOrFactory: PropertyMeta | (() => Promise<PropertyMeta>),
+    metaOrFactory: PropertyMetaOrFactory,
     paths: string[] = [name],
     parentTitles: string[] = [],
   ): MetaTreeNode {
@@ -568,44 +639,75 @@ export class FlowContext {
 
     let node: MetaTreeNode;
 
+    // 计算禁用状态与原因的帮助函数
+    const computeDisabledFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string } => {
+      if (!m) return { disabled: false };
+      const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
+      const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
+      return { disabled: !!disabledVal, reason };
+    };
+
     if (typeof metaOrFactory === 'function') {
       const initialTitle = name;
+      const hasChildrenHint = (metaOrFactory as PropertyMetaFactory).hasChildren;
       node = {
         name,
-        title: metaOrFactory['title'] || initialTitle, // 初始使用 name 作为 title
+        title: metaOrFactory.title || initialTitle, // 初始使用 name 作为 title
         type: 'object', // 初始类型
         interface: undefined,
         uiSchema: undefined,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
-        children: async () => {
-          try {
-            const meta = await metaOrFactory();
-            const finalTitle = meta?.title || name;
-            node.title = finalTitle;
-            node.type = meta?.type;
-            node.interface = meta?.interface;
-            node.uiSchema = meta?.uiSchema;
-            // parentTitles 保持不变，因为它不包含自身 title
-
-            if (!meta?.properties) return [];
-
-            const childNodes = this.#createChildNodes(meta.properties, paths, [...parentTitles, finalTitle], meta);
-            const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
-
-            // 更新 children 为解析后的结果
-            node.children = resolvedChildren;
-
-            return resolvedChildren;
-          } catch (error) {
-            console.warn(`Failed to load meta for ${name}:`, error);
-            return [];
-          }
+        disabled: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return false;
+          return computeDisabledFromMeta(maybe as PropertyMeta).disabled;
         },
+        disabledReason: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return undefined;
+          return computeDisabledFromMeta(maybe as PropertyMeta).reason;
+        },
+        // 注意：即便 hasChildren === false，也只是“没有子节点”的 UI 提示；
+        // 节点自身依然通过 meta 工厂保持惰性特性（需要时可解析出 title/type 等）。
+        // 这里仅在 hasChildren !== false 时，提供子节点的懒加载逻辑。
+        children:
+          hasChildrenHint === false
+            ? undefined
+            : async () => {
+                try {
+                  const meta = await metaOrFactory();
+                  const finalTitle = meta?.title || name;
+                  node.title = finalTitle;
+                  node.type = meta?.type;
+                  node.interface = meta?.interface;
+                  node.uiSchema = meta?.uiSchema;
+                  // parentTitles 保持不变，因为它不包含自身 title
+
+                  if (!meta?.properties) return [];
+
+                  const childNodes = this.#createChildNodes(
+                    meta.properties,
+                    paths,
+                    [...parentTitles, finalTitle],
+                    meta,
+                  );
+                  const resolvedChildren = Array.isArray(childNodes) ? childNodes : await childNodes();
+
+                  // 更新 children 为解析后的结果
+                  node.children = resolvedChildren;
+
+                  return resolvedChildren;
+                } catch (error) {
+                  console.warn(`Failed to load meta for ${name}:`, error);
+                  return [];
+                }
+              },
       };
     } else {
       // 同步 meta：直接创建节点
       const nodeTitle = metaOrFactory.title;
+      const { disabled, reason } = computeDisabledFromMeta(metaOrFactory);
       node = {
         name,
         title: nodeTitle,
@@ -614,6 +716,8 @@ export class FlowContext {
         uiSchema: metaOrFactory.uiSchema,
         paths,
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
+        disabled,
+        disabledReason: reason,
         children: metaOrFactory.properties
           ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
           : undefined,
@@ -626,8 +730,8 @@ export class FlowContext {
     return node;
   }
 
-  _getPropertiesMeta(): Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> {
-    const metaMap: Record<string, PropertyMeta | (() => Promise<PropertyMeta>)> = {};
+  _getPropertiesMeta(): Record<string, PropertyMetaOrFactory> {
+    const metaMap: Record<string, PropertyMetaOrFactory> = {};
 
     // 先处理委托链（委托链的 meta 优先级较低）
     for (const delegate of this._delegates) {
@@ -637,8 +741,7 @@ export class FlowContext {
     // 处理自身属性（自身属性优先级较高）
     for (const [key, options] of Object.entries(this._props)) {
       if (options.meta) {
-        metaMap[key] =
-          typeof options.meta === 'function' ? (options.meta as () => Promise<PropertyMeta>) : options.meta;
+        metaMap[key] = typeof options.meta === 'function' ? (options.meta as PropertyMetaFactory) : options.meta;
       }
     }
 
@@ -752,6 +855,22 @@ export class FlowContext {
     }
     return false;
   }
+
+  /**
+   * 获取属性定义选项（包含代理链）。
+   *
+   * - 优先查找当前上下文自身通过 defineProperty 注册的属性定义
+   * - 若自身不存在，则沿委托链（delegates）向上查找第一个命中的定义
+   *
+   * @param key 顶层属性名（例如 'user'、'view'）
+   * @returns 属性定义选项，或 undefined（未定义）
+   */
+  getPropertyOptions(key: string): PropertyOptions | undefined {
+    if (Object.prototype.hasOwnProperty.call(this._props, key)) {
+      return this._props[key];
+    }
+    return this._findPropertyInDelegates(this._delegates, key);
+  }
 }
 
 class BaseFlowEngineContext extends FlowContext {
@@ -762,8 +881,8 @@ class BaseFlowEngineContext extends FlowContext {
   /**
    * @deprecated use `resolveJsonTemplate` instead
    */
-  declare renderJson: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
-  declare resolveJsonTemplate: (template: JSONValue, options?: Record<string, any>) => Promise<any>;
+  declare renderJson: (template: JSONValue) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -837,13 +956,166 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return i18n.translate(keyOrTemplate, options);
     });
     this.defineMethod('renderJson', function (template: any) {
-      return resolveExpressions(template, this);
+      return this.resolveJsonTemplate(template);
     });
-    this.defineMethod('resolveJsonTemplate', function (template: any) {
-      return resolveExpressions(template, this);
+    this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+      // 提取模板使用到的变量及其子路径
+      const used = extractUsedVariablePaths(template);
+      const usedVarNames = Object.keys(used || {});
+      if (!usedVarNames.length) {
+        // 模板未包含任何 ctx.* 变量，直接前端解析
+        return resolveExpressions(template, this);
+      }
+
+      // 分流：根据 resolveOnServer 标记与子路径判断哪些交给后端
+      const serverVarPaths: Record<string, string[]> = {};
+      for (const varName of usedVarNames) {
+        const paths = used[varName] || [];
+        const opt = this.getPropertyOptions(varName);
+        const mark = opt?.resolveOnServer;
+        if (mark === true) {
+          serverVarPaths[varName] = paths;
+        } else if (typeof mark === 'function') {
+          const filtered = paths.filter((p) => {
+            try {
+              return !!mark(p);
+            } catch (_) {
+              return false;
+            }
+          });
+          if (filtered.length) serverVarPaths[varName] = filtered;
+        }
+      }
+
+      const needServer = Object.keys(serverVarPaths).length > 0;
+      let serverResolved = template;
+      if (needServer) {
+        const collectFromMeta = async (): Promise<Record<string, any>> => {
+          const out: Record<string, any> = {};
+          try {
+            const metas = this._getPropertiesMeta?.() as Record<
+              string,
+              PropertyMeta | (() => Promise<PropertyMeta | null> | PropertyMeta | null)
+            >;
+            if (!metas || typeof metas !== 'object') return out;
+            for (const [key, metaOrFactory] of Object.entries(metas)) {
+              if (!serverVarPaths[key]) continue; // 仅处理需要后端解析的变量
+              try {
+                let meta: PropertyMeta | null;
+                if (typeof metaOrFactory === 'function') {
+                  const fn = metaOrFactory as () => Promise<PropertyMeta | null>;
+                  meta = await fn();
+                } else {
+                  meta = metaOrFactory as PropertyMeta;
+                }
+                if (!meta || typeof meta !== 'object') continue;
+                const builder = meta.buildVariablesParams;
+                if (typeof builder !== 'function') continue;
+                const built = await builder(this);
+                if (!built) continue;
+                const neededPaths = serverVarPaths[key] || [];
+                const filtered = filterBuilderOutputByPaths(built, neededPaths);
+                if (filtered && (typeof filtered !== 'object' || Object.keys(filtered).length)) {
+                  out[key] = filtered;
+                }
+              } catch (_) {
+                // 忽略单个属性的错误
+              }
+            }
+          } catch (_) {
+            // ignore
+          }
+          return out;
+        };
+
+        const inputFromMeta = await collectFromMeta();
+        const autoInput = { ...inputFromMeta };
+        const autoContextParams = Object.keys(autoInput).length
+          ? _buildServerContextParams(this, autoInput)
+          : undefined;
+
+        if (this.api) {
+          try {
+            serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              template,
+              contextParams: autoContextParams || {},
+            });
+          } catch (e) {
+            this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
+            serverResolved = template;
+          }
+        }
+      }
+
+      return resolveExpressions(serverResolved, this);
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
+    });
+    // Expose API token and current role as top-level variables for VariableInput.
+    // Front-end only: no resolveOnServer flag. Mark cache: false to reflect runtime changes.
+    this.defineProperty('token', {
+      get: () => this.api?.auth?.token,
+      cache: false,
+      // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
+      meta: Object.assign(() => ({ type: 'string', title: this.t('API Token'), sort: 980 }), {
+        title: 'API Token',
+        sort: 980,
+        hasChildren: false,
+      }),
+    });
+    this.defineProperty('role', {
+      get: () => this.api?.auth?.role,
+      cache: false,
+      // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
+      meta: Object.assign(() => ({ type: 'string', title: this.t('Current role'), sort: 990 }), {
+        title: escapeT('Current role'),
+        sort: 990,
+        hasChildren: false,
+      }),
+    });
+    // URL 查询参数（等价于 1.0 的 `$nURLSearchParams`）
+    this.defineProperty('urlSearchParams', {
+      // 不缓存，确保随 URL 变化实时生效
+      cache: false,
+      get: () => {
+        const search = this.location?.search || '';
+        const str = search.startsWith('?') ? search.slice(1) : search;
+        return (qs.parse(str) as Record<string, any>) || {};
+      },
+      // 变量选择器中的元信息与动态子项
+      meta: Object.assign(
+        () => ({
+          type: 'object',
+          title: this.t('URL search params'),
+          sort: 970,
+          disabled: () => {
+            const search = this.location?.search || '';
+            const str = search.startsWith('?') ? search.slice(1) : search;
+            const params = (qs.parse(str) as Record<string, any>) || {};
+            return Object.keys(params).length === 0;
+          },
+          disabledReason: () =>
+            this.t(
+              'The value of this variable is derived from the query string of the page URL. This variable can only be used normally when the page has a query string.',
+            ),
+          properties: async () => {
+            const search = this.location?.search || '';
+            const str = search.startsWith('?') ? search.slice(1) : search;
+            const params = (qs.parse(str) as Record<string, any>) || {};
+            const props: Record<string, any> = {};
+            for (const key of Object.keys(params)) {
+              props[key] = { type: 'string', title: key };
+            }
+            return props;
+          },
+        }),
+        {
+          title: escapeT('URL search params'),
+          sort: 970,
+          hasChildren: true,
+        },
+      ),
     });
     this.defineProperty('logger', {
       get: () => {
@@ -899,6 +1171,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         },
       });
     });
+    // Helper: build server contextParams for variables:resolve
+    this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {
+      return _buildServerContextParams(this, input);
+    });
     this.defineMethod('runjs', function (code, variables) {
       const runner = new JSRunner({
         globals: {
@@ -917,6 +1193,58 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('getEvents', function (this: BaseFlowEngineContext) {
       return this.engine.getEvents();
     });
+
+    // // Date variables (for variable selector meta tree)
+    // this.defineProperty('date', {
+    //   get: () => {
+    //     const vars = getDateVars() as Record<string, any>;
+    //     // align with client options: add dayBeforeYesterday
+    //     vars.dayBeforeYesterday = toUnit('day', -2);
+    //     const now = new Date().toISOString();
+    //     const out: Record<string, any> = {};
+    //     for (const [k, v] of Object.entries(vars)) {
+    //       try {
+    //         out[k] = typeof v === 'function' ? v({ now }) : v;
+    //       } catch (e) {
+    //         // ignore
+    //       }
+    //     }
+    //     return out;
+    //   },
+    //   meta: () => {
+    //     const title = this.t('Date variables');
+    //     const mk = (t: string) => ({ type: 'any', title: this.t(t) });
+    //     return {
+    //       type: 'object',
+    //       title,
+    //       properties: {
+    //         now: mk('Current time'),
+    //         dayBeforeYesterday: mk('Day before yesterday'),
+    //         yesterday: mk('Yesterday'),
+    //         today: mk('Today'),
+    //         tomorrow: mk('Tomorrow'),
+    //         lastIsoWeek: mk('Last week'),
+    //         thisIsoWeek: mk('This week'),
+    //         nextIsoWeek: mk('Next week'),
+    //         lastMonth: mk('Last month'),
+    //         thisMonth: mk('This month'),
+    //         nextMonth: mk('Next month'),
+    //         lastQuarter: mk('Last quarter'),
+    //         thisQuarter: mk('This quarter'),
+    //         nextQuarter: mk('Next quarter'),
+    //         lastYear: mk('Last year'),
+    //         thisYear: mk('This year'),
+    //         nextYear: mk('Next year'),
+    //         last7Days: mk('Last 7 days'),
+    //         next7Days: mk('Next 7 days'),
+    //         last30Days: mk('Last 30 days'),
+    //         next30Days: mk('Next 30 days'),
+    //         last90Days: mk('Last 90 days'),
+    //         next90Days: mk('Next 90 days'),
+    //       },
+    //     } as PropertyMeta;
+    //   },
+    // });
     this.defineMethod(
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
@@ -934,7 +1262,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, ctx);
+          // 先服务端解析，再前端补齐
+          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {
@@ -1005,7 +1334,7 @@ export class FlowModelContext extends BaseFlowModelContext {
           useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await resolveExpressions(combinedParams, ctx);
+          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {

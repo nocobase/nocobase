@@ -31,4 +31,6 @@ export * from './parseHTML';
 export * from './uid';
 export * from './url';
 export * from './transformMultiColumnToSingleColumn';
+export * from './transformFilter';
+export * from './variable-usage';
 export { dayjs, lodash, getDayRangeByParams, getOffsetRangeByParams };

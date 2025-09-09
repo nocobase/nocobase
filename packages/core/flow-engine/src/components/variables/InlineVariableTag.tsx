@@ -14,6 +14,7 @@ import { parseValueToPath } from './utils';
 import type { MetaTreeNode } from '../../flowContext';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
+import { useFlowContext } from '../../FlowContextProvider';
 
 export interface InlineVariableTagProps {
   value?: string;
@@ -37,13 +38,14 @@ export const InlineVariableTag: React.FC<InlineVariableTagProps> = ({
   maxWidth = '400px',
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  const ctx = useFlowContext();
 
   const { data: displayedValue } = useRequest(
     async () => {
       if (metaTreeNode) {
         return metaTreeNode.parentTitles
-          ? [...metaTreeNode.parentTitles, metaTreeNode.title].join('/')
-          : metaTreeNode.title || '';
+          ? [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/')
+          : ctx.t(metaTreeNode.title) || '';
       }
 
       if (!value) return String(value);

@@ -15,4 +15,5 @@ export * from './FilterActionModel';
 export * from './PopupRecordActionModel';
 export * from './RefreshActionModel';
 export * from './ViewActionModel';
+export * from './AssignActionModel';
 //

@@ -126,6 +126,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       okText: t('Confirm'),
       okType: 'primary',
       cancelText: t('Cancel'),
+      zIndex: 999999,
       async onOk() {
         try {
           await model.destroy();

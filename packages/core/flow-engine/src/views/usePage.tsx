@@ -14,6 +14,7 @@ import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
+import { createViewMeta } from './createViewMeta';
 
 let uuid = 0;
 
@@ -36,6 +37,7 @@ export function usePage() {
     const currentPage = {
       type: 'embed',
       inputArgs: config.inputArgs || {},
+      preventClose: !!config.preventClose,
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
       close: (result?: any) => {
@@ -51,6 +53,8 @@ export function usePage() {
     const ctx = new FlowContext();
     ctx.defineProperty('view', {
       get: () => currentPage,
+      meta: createViewMeta(ctx, () => currentPage),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
     if (inheritContext) {
       ctx.addDelegate(flowContext);

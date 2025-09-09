@@ -10,13 +10,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContextSelector } from '../../FlowContextSelector';
-import { createTestFlowContext } from './test-utils';
+import * as FlowContextSelectorModule from '../../FlowContextSelector';
+import { createTestFlowContext, TestFlowContextWrapper } from './test-utils';
+
+const FlowContextSelector = FlowContextSelectorModule.FlowContextSelector;
 
 describe('FlowContextSelector', () => {
   it('should render with default children', async () => {
     const flowContext = createTestFlowContext();
-    render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('button')).toBeInTheDocument();
@@ -26,9 +32,11 @@ describe('FlowContextSelector', () => {
   it('should render with custom children', async () => {
     const flowContext = createTestFlowContext();
     render(
-      <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()}>
-        <button>Custom Button</button>
-      </FlowContextSelector>,
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()}>
+          <button>Custom Button</button>
+        </FlowContextSelector>
+      </TestFlowContextWrapper>,
     );
 
     await waitFor(() => {
@@ -41,11 +49,13 @@ describe('FlowContextSelector', () => {
     const flowContext = createTestFlowContext();
 
     render(
-      <FlowContextSelector
-        metaTree={() => flowContext.getPropertyMetaTree()}
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+        />
+      </TestFlowContextWrapper>,
     );
 
     const cascader = screen.getByRole('button');
@@ -60,7 +70,11 @@ describe('FlowContextSelector', () => {
     const flowContext = createTestFlowContext();
     const metaTreeFn = vi.fn(() => flowContext.getPropertyMetaTree());
 
-    render(<FlowContextSelector metaTree={metaTreeFn} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTreeFn} />
+      </TestFlowContextWrapper>,
+    );
 
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
@@ -74,7 +88,11 @@ describe('FlowContextSelector', () => {
     const flowContext = createTestFlowContext();
     const asyncMetaTree = async () => flowContext.getPropertyMetaTree();
 
-    render(<FlowContextSelector metaTree={asyncMetaTree} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={asyncMetaTree} />
+      </TestFlowContextWrapper>,
+    );
 
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
@@ -88,7 +106,11 @@ describe('FlowContextSelector', () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
 
-    render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />
+      </TestFlowContextWrapper>,
+    );
 
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
@@ -118,7 +140,11 @@ describe('FlowContextSelector', () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
 
-    render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />
+      </TestFlowContextWrapper>,
+    );
 
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
@@ -141,7 +167,11 @@ describe('FlowContextSelector', () => {
 
   it('should support search functionality', async () => {
     const flowContext = createTestFlowContext();
-    render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} showSearch />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} showSearch />
+      </TestFlowContextWrapper>,
+    );
 
     const cascader = screen.getByRole('button');
     fireEvent.click(cascader);
@@ -157,7 +187,11 @@ describe('FlowContextSelector', () => {
 
   it('should handle FlowContext metaTree', async () => {
     const flowContext = createTestFlowContext();
-    render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     await waitFor(() => {
       expect(screen.getByRole('button')).toBeInTheDocument();
@@ -165,7 +199,12 @@ describe('FlowContextSelector', () => {
   });
 
   it('should handle empty metaTree', async () => {
-    render(<FlowContextSelector metaTree={[]} />);
+    const flowContext = createTestFlowContext();
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={[]} />
+      </TestFlowContextWrapper>,
+    );
 
     await waitFor(() => {
       const cascader = screen.getByRole('button');
@@ -177,11 +216,13 @@ describe('FlowContextSelector', () => {
   it('should pass through cascader props', async () => {
     const flowContext = createTestFlowContext();
     render(
-      <FlowContextSelector
-        metaTree={() => flowContext.getPropertyMetaTree()}
-        placeholder="Select a variable"
-        disabled
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          placeholder="Select a variable"
+          disabled
+        />
+      </TestFlowContextWrapper>,
     );
 
     // Check if basic rendering works with props
@@ -196,7 +237,11 @@ describe('FlowContextSelector', () => {
       const onChange = vi.fn();
       const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />
+        </TestFlowContextWrapper>,
+      );
 
       const cascader = screen.getByRole('button');
       fireEvent.click(cascader);
@@ -223,7 +268,11 @@ describe('FlowContextSelector', () => {
       const onChange = vi.fn();
       const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} onChange={onChange} />
+        </TestFlowContextWrapper>,
+      );
 
       // The implementation supports double-click detection with 300ms window
       // For testing purposes, we verify the component renders correctly
@@ -240,12 +289,14 @@ describe('FlowContextSelector', () => {
       const customParseValueToPath = vi.fn().mockReturnValue(['user', 'name']);
 
       render(
-        <FlowContextSelector
-          metaTree={() => flowContext.getPropertyMetaTree()}
-          value="custom.user.name"
-          onChange={onChange}
-          parseValueToPath={customParseValueToPath}
-        />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            value="custom.user.name"
+            onChange={onChange}
+            parseValueToPath={customParseValueToPath}
+          />
+        </TestFlowContextWrapper>,
       );
 
       await waitFor(() => {
@@ -259,11 +310,13 @@ describe('FlowContextSelector', () => {
       const customFormatPathToValue = vi.fn().mockReturnValue('custom.formatted.value');
 
       render(
-        <FlowContextSelector
-          metaTree={() => flowContext.getPropertyMetaTree()}
-          onChange={onChange}
-          formatPathToValue={customFormatPathToValue}
-        />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            onChange={onChange}
+            formatPathToValue={customFormatPathToValue}
+          />
+        </TestFlowContextWrapper>,
       );
 
       const cascader = screen.getByRole('button');
@@ -284,11 +337,13 @@ describe('FlowContextSelector', () => {
       const customFormatPathToValue = vi.fn().mockReturnValue(undefined);
 
       render(
-        <FlowContextSelector
-          metaTree={() => flowContext.getPropertyMetaTree()}
-          onChange={onChange}
-          formatPathToValue={customFormatPathToValue}
-        />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            onChange={onChange}
+            formatPathToValue={customFormatPathToValue}
+          />
+        </TestFlowContextWrapper>,
       );
 
       const cascader = screen.getByRole('button');
@@ -310,14 +365,20 @@ describe('FlowContextSelector', () => {
       const flowContext = createTestFlowContext();
 
       const { rerender } = render(
-        <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={false} />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={false} />
+        </TestFlowContextWrapper>,
       );
 
       // When open=false, cascader should be closed
       expect(screen.getByRole('button')).toBeInTheDocument();
       expect(screen.queryByText('User')).not.toBeInTheDocument();
 
-      rerender(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />);
+      rerender(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />
+        </TestFlowContextWrapper>,
+      );
 
       // When open=true, options should be visible after data loads
       await waitFor(
@@ -331,7 +392,11 @@ describe('FlowContextSelector', () => {
     it('should handle programmatic open state changes', async () => {
       const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} open={true} />
+        </TestFlowContextWrapper>,
+      );
 
       // Should show dropdown when open=true
       await waitFor(() => {
@@ -344,8 +409,13 @@ describe('FlowContextSelector', () => {
   describe('Error handling and edge cases', () => {
     it('should handle invalid metaTree function', async () => {
       const invalidMetaTree = vi.fn().mockRejectedValue(new Error('Network error'));
+      const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={invalidMetaTree} />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={invalidMetaTree} />
+        </TestFlowContextWrapper>,
+      );
 
       const cascader = screen.getByRole('button');
       fireEvent.click(cascader);
@@ -359,7 +429,12 @@ describe('FlowContextSelector', () => {
     });
 
     it('should handle null/undefined metaTree', () => {
-      render(<FlowContextSelector metaTree={undefined} />);
+      const flowContext = createTestFlowContext();
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={undefined} />
+        </TestFlowContextWrapper>,
+      );
 
       const cascader = screen.getByRole('button');
       fireEvent.click(cascader);
@@ -370,7 +445,11 @@ describe('FlowContextSelector', () => {
     it('should handle invalid value format', async () => {
       const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} value="invalid.format" />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={() => flowContext.getPropertyMetaTree()} value="invalid.format" />
+        </TestFlowContextWrapper>,
+      );
 
       await waitFor(() => {
         expect(screen.getByRole('button')).toBeInTheDocument();
@@ -379,8 +458,13 @@ describe('FlowContextSelector', () => {
 
     it('should handle metaTree function returning non-array', async () => {
       const invalidMetaTree = vi.fn().mockResolvedValue(null);
+      const flowContext = createTestFlowContext();
 
-      render(<FlowContextSelector metaTree={invalidMetaTree} />);
+      render(
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector metaTree={invalidMetaTree} />
+        </TestFlowContextWrapper>,
+      );
 
       const cascader = screen.getByRole('button');
       fireEvent.click(cascader);
@@ -399,14 +483,16 @@ describe('FlowContextSelector', () => {
 
       // Test that component accepts various Cascader props without crashing
       render(
-        <FlowContextSelector
-          metaTree={() => flowContext.getPropertyMetaTree()}
-          disabled={true}
-          placeholder="Select a variable"
-          size="large"
-          className="custom-cascader"
-          allowClear={true}
-        />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            disabled={true}
+            placeholder="Select a variable"
+            size="large"
+            className="custom-cascader"
+            allowClear={true}
+          />
+        </TestFlowContextWrapper>,
       );
 
       // Should render without errors
@@ -420,12 +506,14 @@ describe('FlowContextSelector', () => {
 
       // Test expandTrigger and other Cascader-specific props
       render(
-        <FlowContextSelector
-          metaTree={() => flowContext.getPropertyMetaTree()}
-          expandTrigger="hover"
-          changeOnSelect={false}
-          displayRender={(labels) => labels.join(' > ')}
-        />,
+        <TestFlowContextWrapper context={flowContext}>
+          <FlowContextSelector
+            metaTree={() => flowContext.getPropertyMetaTree()}
+            expandTrigger="hover"
+            changeOnSelect={false}
+            displayRender={(labels) => labels.join(' > ')}
+          />
+        </TestFlowContextWrapper>,
       );
 
       await waitFor(() => {
@@ -439,11 +527,13 @@ describe('FlowContextSelector', () => {
     const flowContext = createTestFlowContext();
 
     render(
-      <FlowContextSelector
-        metaTree={() => flowContext.getPropertyMetaTree()}
-        onChange={onChange}
-        onlyLeafSelectable={true}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          onChange={onChange}
+          onlyLeafSelectable={true}
+        />
+      </TestFlowContextWrapper>,
     );
 
     const cascader = screen.getByRole('button');
