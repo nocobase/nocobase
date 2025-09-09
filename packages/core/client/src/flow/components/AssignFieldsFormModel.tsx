@@ -17,7 +17,7 @@ import { AssignFieldGridModel } from './AssignFieldGridModel';
  * 赋值配置表单
  */
 // 使用范型标注 subModels.grid 的类型，提升类型提示与可读性
-export class AssignFieldsFormModel extends FormModel<{ subModels: { grid: FormGridModel } }> {
+export class AssignFieldsFormModel extends FormModel<{ subModels: { grid: any } }> {
   createResource(ctx: any, params: any) {
     const resource = this.context.createResource(SingleRecordResource);
     // 行为与 CreateFormModel 一致：视为新记录，避免额外 GET

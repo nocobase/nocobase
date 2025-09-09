@@ -80,7 +80,7 @@ export class AssignFieldGridModel extends FormGridModel {
 
   addOrEnsureItem(fieldName: string, value?: any) {
     const collection = (this.context as any)?.collection;
-    const items = (this.subModels?.items || []) as AssignFormItemModel[];
+    const items = this.subModels?.items || [];
     const existing = items.find((m) => m?.fieldPath === fieldName);
     if (existing) {
       // 更新已有项的当前值，便于重新打开时回填
@@ -127,7 +127,7 @@ export class AssignFieldGridModel extends FormGridModel {
   }
 
   getAssignedValues(): Record<string, any> {
-    const items = (this.subModels?.items || []) as AssignFormItemModel[];
+    const items = this.subModels?.items || [];
     const result: Record<string, any> = {};
     for (const it of items) {
       const pair = typeof (it as any).getAssignedEntry === 'function' ? (it as any).getAssignedEntry() : null;

@@ -11,7 +11,7 @@ import React, { useEffect, useRef } from 'react';
 import { ButtonProps, Alert } from 'antd';
 import { escapeT, FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
-import { AssignFieldsFormModel } from '../common/AssignFieldsFormModel';
+import { AssignFieldsFormModel } from '../../components/AssignFieldsFormModel';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 
