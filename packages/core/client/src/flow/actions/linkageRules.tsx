@@ -706,10 +706,24 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
             throw new Error(`Unknown action type: ${action.type}`);
           }
 
-          const setProps = (model: FlowModel & { __originalProps?: any; __props?: any }, props: any) => {
+          const setProps = (
+            model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
+            props: any,
+          ) => {
             // 存储原始值，用于恢复
             if (!model.__originalProps) {
-              model.__originalProps = { ...model.props, hiddenModel: model.hidden };
+              model.__originalProps = {
+                hiddenModel: model.hidden,
+                disabled: undefined,
+                required: undefined,
+                hidden: undefined,
+                ...model.props,
+              };
+            }
+
+            if (model.__shouldReset) {
+              model.__props = {};
+              model.__shouldReset = false;
             }
 
             // 临时存起来，遍历完所有规则后，再统一处理
@@ -718,7 +732,9 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
               ...props,
             };
 
-            models.push(model);
+            if (models.indexOf(model) === -1) {
+              models.push(model);
+            }
           };
 
           handler({ ctx, value: action.value, setProps });
@@ -727,7 +743,7 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
     });
 
   // 2. 最后才实际更改相关 model 的状态
-  models.forEach((model: FlowModel & { __originalProps?: any; __props?: any }) => {
+  models.forEach((model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean }) => {
     const newProps = {
       ...model.__originalProps,
       ...model.__props,
@@ -735,6 +751,8 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
 
     model.setProps(_.omit(newProps, 'hiddenModel'));
     model.hidden = !!newProps.hiddenModel;
+
+    model.__shouldReset = true;
   });
 };
 
@@ -790,4 +808,8 @@ export const fieldLinkageRules = defineAction({
     value: [],
   },
   handler: commonLinkageRulesHandler,
+  afterParamsSave(ctx) {
+    // 保存后，自动运行一次
+    ctx.model.applyFlow('eventSettings');
+  },
 });
