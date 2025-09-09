@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 const MobilePicker = connect(
   (props) => {
-    const { value, onChange, options = [], mode } = props;
+    const { value, onChange, options = [], mode, disabled } = props;
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [selected, setSelected] = useState(value || []);
@@ -38,12 +38,13 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div onClick={() => setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <Select
             placeholder={t('Select')}
             value={value}
             dropdownStyle={{ display: 'none' }}
             multiple={mode === 'multiple'}
+            disabled={disabled}
             onClear={() => {
               setVisible(false);
               onChange(null);
