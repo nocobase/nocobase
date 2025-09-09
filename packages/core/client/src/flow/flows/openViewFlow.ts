@@ -9,7 +9,7 @@
 
 import { defineFlow, escapeT, FlowModel } from '@nocobase/flow-engine';
 
-export const openViewFlow = defineFlow({
+export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
   title: escapeT('Popup settings'),
   on: 'click',

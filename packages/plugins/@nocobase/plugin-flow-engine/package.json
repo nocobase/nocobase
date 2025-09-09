@@ -13,6 +13,9 @@
     "koa-send": "^5.0.1",
     "koa-static": "^5.0.0"
   },
+  "dependencies": {
+    "ses": "^1.14.0"
+  },
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/database": "1.x",

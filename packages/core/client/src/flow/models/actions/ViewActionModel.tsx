@@ -9,8 +9,8 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
 import { openViewFlow } from '../../flows/openViewFlow';
+import { RecordActionModel } from '../base/ActionModel';
 
 export class ViewActionModel extends RecordActionModel {
   defaultProps: ButtonProps = {

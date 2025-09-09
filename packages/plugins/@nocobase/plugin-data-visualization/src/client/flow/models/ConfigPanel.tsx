@@ -62,19 +62,30 @@ const RunButton: React.FC = memo(() => {
 export const ConfigPanel: React.FC = () => {
   const t = useT();
   const ctx = useFlowSettingsContext<ChartBlockModel>();
+  const form = useForm();
 
   useEffect(() => {
-    const error = ctx.model.resource.error;
     const uid = ctx.model.uid;
-    if (error && !configStore[uid]?.error) {
-      configStore.setError(uid, error.message);
-    } else if (!configStore[uid]?.result) {
-      configStore.setResult(uid, ctx.model.resource.getData());
+    configStore.setError(uid, null);
+    const sql = form?.values?.query?.sql;
+    // init fetch preview data
+    if (!configStore[uid]?.result && sql) {
+      ctx.sql
+        .run(sql)
+        .then((result) => {
+          configStore.setResult(uid, result);
+        })
+        .catch((error: AxiosError<{ errors: { message: string }[] }>) => {
+          const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
+          configStore.setError(uid, message);
+        });
     }
+
     return () => {
       configStore.setResult(uid, null);
+      configStore.setError(uid, null);
     };
-  }, [ctx.model.uid, ctx.model.resource]);
+  }, [ctx.model.uid, form?.values?.query?.sql]);
 
   return (
     <Row gutter={8}>

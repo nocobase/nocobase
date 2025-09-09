@@ -52,13 +52,15 @@ export const openView = defineAction({
     pageModelClass: 'ChildPageModel',
   },
   async handler(ctx, params) {
-    if (!ctx.inputArgs.navigation && ctx.view.navigation) {
-      ctx.view.navigation.navigateTo({
-        viewUid: ctx.model.uid,
-        filterByTk: ctx.inputArgs.filterByTk,
-        sourceId: ctx.inputArgs.sourceId,
-      });
-      return;
+    if (params.navigation !== false) {
+      if (!ctx.inputArgs.navigation && ctx.view.navigation) {
+        ctx.view.navigation.navigateTo({
+          viewUid: ctx.model.uid,
+          filterByTk: ctx.inputArgs.filterByTk,
+          sourceId: ctx.inputArgs.sourceId,
+        });
+        return;
+      }
     }
 
     const sizeToWidthMap: Record<string, any> = {
@@ -137,8 +139,9 @@ export const openView = defineAction({
           const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
           pageModel.invalidateAutoFlowCache(true);
         }
-
-        ctx.inputArgs.navigation?.back();
+        if (params.navigation !== false) {
+          ctx.inputArgs.navigation?.back();
+        }
       },
       onOpen: ctx.inputArgs.onOpen,
     });

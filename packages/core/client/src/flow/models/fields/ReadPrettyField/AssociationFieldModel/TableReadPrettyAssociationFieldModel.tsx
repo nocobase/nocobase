@@ -11,7 +11,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
-import { TableColumnModel } from '../../../data-blocks/table/TableColumnModel';
+import { TableColumnModel } from '../../../blocks/table/TableColumnModel';
 import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 
 const AddFieldColumn = ({ model }) => {

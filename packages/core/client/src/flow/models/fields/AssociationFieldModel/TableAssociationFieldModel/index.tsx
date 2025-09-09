@@ -6,21 +6,21 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
-import React from 'react';
 import {
+  AddSubModelButton,
+  DndProvider,
+  FlowSettingsButton,
   SingleRecordResource,
   escapeT,
-  AddSubModelButton,
-  FlowSettingsButton,
   useFlowEngine,
-  DndProvider,
 } from '@nocobase/flow-engine';
-import { SettingOutlined } from '@ant-design/icons';
+import React from 'react';
+import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { AssociationFieldModel } from '../AssociationFieldModel';
-import { SubTableField } from './SubTableField';
 import { SubTableColumnModel } from './SubTableColumnModel';
-import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
+import { SubTableField } from './SubTableField';
 
 const AddFieldColumn = ({ model }) => {
   return (

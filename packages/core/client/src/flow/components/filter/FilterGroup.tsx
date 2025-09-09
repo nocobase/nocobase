@@ -10,6 +10,7 @@
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
+import { useTranslation } from 'react-i18next';
 import React, { FC } from 'react';
 import { Trans } from 'react-i18next';
 
@@ -72,6 +73,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
   (props) => {
     const { value, FilterItem, showBorder = false, onRemove } = props;
     const { token } = theme.useToken();
+    const { t } = useTranslation();
 
     // 确保 value 有正确的默认结构
     if (!value.logic) {
@@ -144,8 +146,8 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         )}
 
         <div style={{ marginBottom: 8, color: token.colorText }}>
-          <Trans>
-            {'Meet '}
+          <span>
+            {t('Meet')}{' '}
             <Select
               // @ts-ignore
               role="button"
@@ -154,11 +156,11 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               value={logic}
               onChange={handleLogicChange}
             >
-              <Select.Option value="$and">All</Select.Option>
-              <Select.Option value="$or">Any</Select.Option>
-            </Select>
-            {' conditions in the group'}
-          </Trans>
+              <Select.Option value="$and">{t('All')}</Select.Option>
+              <Select.Option value="$or">{t('Any')}</Select.Option>
+            </Select>{' '}
+            {t('conditions in the group')}
+          </span>
         </div>
 
         <div>
@@ -178,40 +180,40 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               // 单个筛选条件
               if (FilterItem) {
                 return (
-                  <div key={index} style={{ marginBottom: 8 }}>
-                    <Space>
+                  <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
                       <FilterItem value={item} />
-                      <a role="button" aria-label="icon-close">
-                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                      </a>
                     </Space>
+                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                    </a>
                   </div>
                 );
               } else {
                 // 如果没有提供 FilterItem，显示简单的文本表示
                 return (
-                  <div key={index} style={{ marginBottom: 8 }}>
-                    <Space>
+                  <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
                       <span>
                         {item.path} {item.operator} {String(item.value)}
                       </span>
-                      <a role="button" aria-label="icon-close">
-                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                      </a>
                     </Space>
+                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                    </a>
                   </div>
                 );
               }
             } else {
               // 未知类型的项，显示占位符
               return (
-                <div key={index} style={{ marginBottom: 8 }}>
-                  <Space>
+                <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                  <Space wrap style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ color: token.colorTextTertiary }}>Invalid filter item</span>
-                    <a role="button" aria-label="icon-close">
-                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                    </a>
                   </Space>
+                  <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                    <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                  </a>
                 </div>
               );
             }
@@ -220,7 +222,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
 
         <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
           <Button style={{ padding: 0 }} type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
-            Add condition
+            {t('Add condition')}
           </Button>
           <Button
             style={{ padding: 0 }}
@@ -229,7 +231,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
             icon={<PlusOutlined />}
             onClick={handleAddConditionGroup}
           >
-            Add condition group
+            {t('Add condition group')}
           </Button>
         </Space>
       </div>

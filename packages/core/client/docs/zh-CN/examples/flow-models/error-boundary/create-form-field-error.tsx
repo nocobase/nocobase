@@ -6,8 +6,9 @@
 import {
   Application,
   CreateFormModel,
-  FormFieldGridModel,
+  FilterManager,
   FormFieldModel,
+  FormGridModel,
   FormItemModel,
   Plugin,
 } from '@nocobase/client';
@@ -15,7 +16,6 @@ import { FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow
 import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
 import React from 'react';
-import { FilterManager } from '../../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 // 一个会在渲染时抛出错误的自定义表单项
 class ThrowFormItem extends FlowModel {
@@ -51,7 +51,7 @@ class DemoPlugin extends Plugin {
     // 注册需要的模型（以及抛错项）
     this.flowEngine.registerModels({
       CreateFormModel,
-      FormFieldGridModel,
+      FormGridModel,
       FormItemModel,
       FormFieldModel,
       ThrowFormItem,
@@ -63,7 +63,7 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'posts' } } },
       subModels: {
         grid: {
-          use: 'FormFieldGridModel',
+          use: 'FormGridModel',
           subModels: {
             items: [
               // 正常字段（title）

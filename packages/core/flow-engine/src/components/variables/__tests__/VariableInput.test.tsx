@@ -12,18 +12,20 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContextSelectorItem } from '../types';
 import { VariableInput } from '../VariableInput';
-import { createTestFlowContext } from './test-utils';
+import { createTestFlowContext, TestFlowContextWrapper } from './test-utils';
 
 describe('VariableInput', () => {
   it('should not emit duplicate onChange during initial restoration', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
     render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     // Should call at most once while restoring meta from value
@@ -40,11 +42,13 @@ describe('VariableInput', () => {
     const flowContext = createTestFlowContext();
 
     render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     await waitFor(
@@ -66,7 +70,11 @@ describe('VariableInput', () => {
   });
   it('should render Input for static values', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="static text" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const input = await screen.findByDisplayValue('static text');
     expect(input).toBeInTheDocument();
@@ -75,7 +83,11 @@ describe('VariableInput', () => {
 
   it('should render VariableTag for dynamic variables', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     // 应该显示格式化后的路径 "User/Name"
     await waitFor(
@@ -90,7 +102,11 @@ describe('VariableInput', () => {
 
   it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
@@ -99,7 +115,11 @@ describe('VariableInput', () => {
   it('should handle onChange from Input', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="initial" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="initial" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const input = await screen.findByDisplayValue('initial');
     fireEvent.change(input, { target: { value: 'new value' } });
@@ -110,7 +130,11 @@ describe('VariableInput', () => {
   it('should handle variable selection from FlowContextSelector', async () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const selectorButton = await screen.findByRole('button');
     fireEvent.click(selectorButton);
@@ -150,11 +174,13 @@ describe('VariableInput', () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
     const { container } = render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     await waitFor(
@@ -196,12 +222,20 @@ describe('VariableInput', () => {
 
   it('should handle external prop updates', async () => {
     const flowContext = createTestFlowContext();
-    const { rerender } = render(<VariableInput value="initial" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    const { rerender } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="initial" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const initialInput = await screen.findByDisplayValue('initial');
     expect(initialInput).toBeInTheDocument();
 
-    rerender(<VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    rerender(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     await waitFor(
       () => {
@@ -213,7 +247,11 @@ describe('VariableInput', () => {
 
   it('should use FlowContext metaTree correctly', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
@@ -222,13 +260,15 @@ describe('VariableInput', () => {
   it('should pass through other props to the input component', async () => {
     const flowContext = createTestFlowContext();
     render(
-      <VariableInput
-        value="test"
-        placeholder="Enter value"
-        disabled
-        className="custom-class"
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="test"
+          placeholder="Enter value"
+          disabled
+          className="custom-class"
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     const input = await screen.findByDisplayValue('test');
@@ -240,7 +280,12 @@ describe('VariableInput', () => {
   });
 
   it('should handle empty metaTree', async () => {
-    render(<VariableInput value="test" metaTree={[]} />);
+    const flowContext = createTestFlowContext();
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="test" metaTree={[]} />
+      </TestFlowContextWrapper>,
+    );
 
     const input = await screen.findByDisplayValue('test');
     expect(input).toBeInTheDocument();
@@ -251,7 +296,11 @@ describe('VariableInput', () => {
 
   it('should handle undefined value', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
@@ -262,7 +311,11 @@ describe('VariableInput', () => {
     const flowContext = createTestFlowContext();
     const TestWrapper = () => {
       const [value, setValue] = React.useState('');
-      return <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />;
+      return (
+        <TestFlowContextWrapper context={flowContext}>
+          <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />
+        </TestFlowContextWrapper>
+      );
     };
 
     render(<TestWrapper />);
@@ -304,10 +357,12 @@ describe('VariableInput', () => {
     const TestWrapper = () => {
       const [value, setValue] = React.useState('test1');
       return (
-        <div>
-          <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />
-          <button onClick={() => setValue('test2')}>Change Value</button>
-        </div>
+        <TestFlowContextWrapper context={flowContext}>
+          <div>
+            <VariableInput value={value} onChange={setValue} metaTree={() => flowContext.getPropertyMetaTree()} />
+            <button onClick={() => setValue('test2')}>Change Value</button>
+          </div>
+        </TestFlowContextWrapper>
       );
     };
 
@@ -329,11 +384,13 @@ describe('VariableInput', () => {
 
     // Test with a variable value - use user.name which exists in test context
     const { rerender } = render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     // Should show VariableTag for variable value
@@ -349,7 +406,11 @@ describe('VariableInput', () => {
     // we test the component's ability to switch between variable and static input
 
     // Rerender with null value to simulate clearing
-    rerender(<VariableInput value={null} onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />);
+    rerender(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value={null} onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     // Should now show regular input (default behavior for static values)
     const input = await screen.findByRole('textbox');
@@ -358,11 +419,13 @@ describe('VariableInput', () => {
 
     // Rerender back to variable to confirm the component can handle both states
     rerender(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     // Should show VariableTag again
@@ -380,11 +443,13 @@ describe('VariableInput', () => {
     const flowContext = createTestFlowContext();
 
     const { container } = render(
-      <VariableInput
-        value="{{ ctx.user.name }}"
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{ ctx.user.name }}"
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+        />
+      </TestFlowContextWrapper>,
     );
 
     await waitFor(
@@ -406,7 +471,9 @@ describe('VariableInput', () => {
 
     // 测试组件能正确处理空值
     const { rerender } = render(
-      <VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="" onChange={onChange} metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
     );
 
     const input = await screen.findByRole('textbox');
@@ -417,7 +484,9 @@ describe('VariableInput', () => {
   it('should render VariableTag with proper styling', async () => {
     const flowContext = createTestFlowContext();
     const { container } = render(
-      <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
     );
 
     await waitFor(
@@ -437,7 +506,11 @@ describe('VariableInput', () => {
 
   it('should handle different field types correctly', async () => {
     const flowContext = createTestFlowContext();
-    render(<VariableInput value="" metaTree={() => flowContext.getPropertyMetaTree()} />);
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
 
     const input = await screen.findByRole('textbox');
     expect(input).toBeInTheDocument();
@@ -447,12 +520,14 @@ describe('VariableInput', () => {
     const onChange = vi.fn();
     const flowContext = createTestFlowContext();
     render(
-      <VariableInput
-        value=""
-        onChange={onChange}
-        metaTree={() => flowContext.getPropertyMetaTree()}
-        onlyLeafSelectable={true}
-      />,
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value=""
+          onChange={onChange}
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          onlyLeafSelectable={true}
+        />
+      </TestFlowContextWrapper>,
     );
 
     const selectorButton = await screen.findByRole('button');

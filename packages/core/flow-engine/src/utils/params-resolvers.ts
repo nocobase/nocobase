@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 import { RecordProxy } from '../RecordProxy';
+import type { ServerContextParams } from './serverContextParams';
 
 /**
  * 解析 defaultParams，支持静态值和函数形式
@@ -72,6 +73,151 @@ export async function resolveCreateModelOptions(
 }
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
+
+// =========================
+// variables:resolve 微批 + 去重（前端）
+// =========================
+
+type BatchPayload = {
+  template: JSONValue;
+  contextParams?: ServerContextParams | undefined;
+};
+
+type QueueItem = {
+  id: string;
+  ctx: FlowRuntimeContext;
+  payload: BatchPayload;
+  resolve: (v: unknown) => void;
+  reject: (e: unknown) => void;
+  runId: string;
+  dedupKey: string;
+};
+
+type Aggregator = {
+  queue: QueueItem[];
+  timer: ReturnType<typeof setTimeout> | null;
+  inflightByRun: Map<string, Map<string, Promise<unknown>>>;
+};
+
+const VAR_AGGREGATOR: Aggregator = { queue: [], timer: null, inflightByRun: new Map() };
+const BATCH_FLUSH_DELAY_MS = 10;
+
+// 使用 lodash 对象操作，按键名递归排序，便于稳定 stringify
+function sortKeysDeep(input: any): any {
+  if (Array.isArray(input)) return input.map(sortKeysDeep);
+  if (_.isPlainObject(input)) {
+    const entries = Object.entries(input).map(([k, v]) => [k, sortKeysDeep(v)] as [string, unknown]);
+    const sortedEntries = _.sortBy(entries, ([k]) => k);
+    return Object.fromEntries(sortedEntries);
+  }
+  return input;
+}
+
+function stableStringifyOrdered(obj: unknown): string {
+  try {
+    return JSON.stringify(sortKeysDeep(obj));
+  } catch {
+    try {
+      return JSON.stringify(obj as Record<string, unknown>);
+    } catch {
+      return String(obj);
+    }
+  }
+}
+
+export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchPayload): Promise<unknown> {
+  const agg = VAR_AGGREGATOR;
+  const runId = ctx.runId || 'GLOBAL';
+  const dedupKey = stableStringifyOrdered(payload);
+
+  let runMap = agg.inflightByRun.get(runId);
+  if (!runMap) {
+    runMap = new Map<string, Promise<unknown>>();
+    agg.inflightByRun.set(runId, runMap);
+  }
+  const existing = runMap.get(dedupKey);
+  if (existing) return existing;
+
+  let resolveFn!: (v: unknown) => void;
+  let rejectFn!: (e: unknown) => void;
+  const p = new Promise<unknown>((resolve, reject) => {
+    resolveFn = resolve;
+    rejectFn = reject;
+  });
+  runMap.set(dedupKey, p);
+
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const item: QueueItem = { id, ctx, payload, resolve: resolveFn, reject: rejectFn, runId, dedupKey };
+  agg.queue.push(item);
+
+  const flush = async () => {
+    const items = agg.queue.splice(0, agg.queue.length);
+    agg.timer = null;
+    if (!items.length) return;
+    const api = items[0].ctx?.api;
+    if (!api) {
+      // 无 API 客户端，直接回退原模板
+      for (const it of items) {
+        try {
+          it.resolve(it.payload.template);
+        } catch (e) {
+          it.reject(e);
+        } finally {
+          agg.inflightByRun.get(it.runId)?.delete(it.dedupKey);
+        }
+      }
+      return;
+    }
+    try {
+      const batch = items.map((it) => ({
+        id: it.id,
+        template: it.payload.template,
+        contextParams: it.payload.contextParams || {},
+      }));
+      const res = await api.request({ method: 'POST', url: 'variables:resolve', data: { values: { batch } } });
+      // 兼容形态：{ data: { data: { results } } } | { data: { results } } | { results }
+      const top = (res as { data?: unknown }).data ?? res;
+      const root = (top as { data?: unknown }).data ?? top;
+      const arr1 = (root as any)?.results;
+      const resultsArr: Array<{ id?: unknown; data?: unknown }> = Array.isArray(arr1)
+        ? (arr1 as Array<{ id?: unknown; data?: unknown }>)
+        : Array.isArray(root)
+          ? (root as Array<{ id?: unknown; data?: unknown }>)
+          : [];
+      const map = new Map<string, unknown>();
+      for (const r of resultsArr) {
+        const k = r?.id != null ? String(r.id) : '';
+        if (k) map.set(k, r?.data);
+      }
+      for (const it of items) {
+        try {
+          const k = String(it.id);
+          const resolved = map.has(k) ? map.get(k) : it.payload.template;
+          it.resolve(resolved);
+        } catch (e) {
+          it.reject(e);
+        } finally {
+          agg.inflightByRun.get(it.runId)?.delete(it.dedupKey);
+        }
+      }
+    } catch (e) {
+      for (const it of items) {
+        try {
+          ctx?.logger?.warn?.({ err: e }, 'variables:resolve(batch) failed, fallback');
+          it.resolve(it.payload.template);
+        } catch (err) {
+          it.reject(err);
+        } finally {
+          agg.inflightByRun.get(it.runId)?.delete(it.dedupKey);
+        }
+      }
+    }
+  };
+  if (!agg.timer) {
+    agg.timer = setTimeout(flush, BATCH_FLUSH_DELAY_MS);
+  }
+  return p;
+}
 
 /**
  * 解析参数中的 {{xxx}} 表达式，自动处理异步属性访问

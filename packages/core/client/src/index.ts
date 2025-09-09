@@ -52,6 +52,8 @@ export * from './powered-by';
 export * from './record-provider';
 export * from './route-switch';
 export * from './schema-component';
+// Explicitly re-export FormItem from schema-component to resolve ambiguity with flow
+export { FormItem } from './schema-component/antd/form-item/FormItem';
 export * from './schema-initializer';
 export * from './schema-items';
 export * from './schema-settings';
@@ -96,4 +98,5 @@ export {
   useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';
 
+export { FieldModelRenderer } from '@nocobase/flow-engine';
 export { transformFilter } from '@nocobase/utils/client';

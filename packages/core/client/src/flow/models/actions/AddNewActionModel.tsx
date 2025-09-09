@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, FlowModel } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { CollectionActionModel } from '../base/ActionModel';
 import { openViewFlow } from '../../flows/openViewFlow';

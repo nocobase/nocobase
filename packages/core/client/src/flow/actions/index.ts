@@ -20,4 +20,5 @@ export * from './layout';
 export * from './required';
 export * from './fieldComponent';
 export * from './aclCheck';
+export * from './pattern';
 export * from './linkageRules';
