@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Input, Select, Space } from 'antd';
+import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import { observer } from '@formily/reactive-react';
 import {
@@ -19,8 +19,9 @@ import {
   useFlowViewContext,
   parseValueToPath,
 } from '@nocobase/flow-engine';
-import { createStaticInputRenderer } from './utils';
 import _ from 'lodash';
+import { DateFilterDynamicComponent } from '../../../schema-component';
+import { NumberPicker } from '@formily/antd-v5';
 
 export interface VariableFilterItemValue {
   leftValue: string;
@@ -42,6 +43,34 @@ export interface VariableFilterItemProps {
    * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+}
+
+function createStaticInputRenderer(
+  schema: any,
+  meta: MetaTreeNode | null,
+  t: (s: string) => string,
+): (p: { value?: any; onChange?: (v: any) => void }) => JSX.Element {
+  const xComp = schema?.['x-component'];
+  const fieldProps = meta?.uiSchema?.['x-component-props'] || {};
+  const opProps = schema?.['x-component-props'] || {};
+  const combinedProps = merge({}, fieldProps, opProps);
+
+  const commonProps: any = {
+    style: { width: 200, ...(combinedProps?.style || {}) },
+    placeholder: combinedProps?.placeholder || t('Enter value'),
+    ...combinedProps,
+  };
+
+  return (p: any) => {
+    const { value, onChange } = p || {};
+    if (xComp === 'InputNumber') return <InputNumber {...commonProps} value={value} onChange={onChange} />;
+    if (xComp === 'NumberPicker') return <NumberPicker {...commonProps} value={value} onChange={onChange} />;
+    if (xComp === 'Switch') return <Switch {...commonProps} checked={!!value} onChange={onChange} />;
+    if (xComp === 'Select') return <Select {...commonProps} value={value} onChange={onChange} />;
+    if (xComp === 'DateFilterDynamicComponent')
+      return <DateFilterDynamicComponent {...commonProps} value={value} onChange={onChange} />;
+    return <Input {...commonProps} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
+  };
 }
 
 /**
