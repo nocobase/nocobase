@@ -27,6 +27,8 @@ function extractFields(obj) {
     obj.description,
     obj['x-component-props']?.title,
     obj['x-component-props']?.description,
+    obj['x-component-props']?.tooltip,
+    obj['x-component-props']?.children,
     obj['x-decorator-props']?.title,
     obj['x-decorator-props']?.description,
   ];

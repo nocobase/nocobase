@@ -232,7 +232,7 @@ const useTableColumns = (
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
-                tooltip={columnSchema?.['x-component-props']?.tooltip}
+                tooltip={t(columnSchema?.['x-component-props']?.tooltip, { ns: NAMESPACE_UI_SCHEMA })}
               />
             </RefreshComponentProvider>
           ),
