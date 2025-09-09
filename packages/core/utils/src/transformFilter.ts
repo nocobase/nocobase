@@ -8,39 +8,6 @@
  */
 
 /**
- * 过滤器数据结构转换工具
- *
- * 将结构化的过滤器配置转换为查询对象格式
- *
- * @example
- * ```typescript
- * const input = {
- *   "logic": "$or",
- *   "items": [
- *     {
- *       "path": "isAdmin",
- *       "operator": "$eq",
- *       "value": true
- *     },
- *     {
- *       "logic": "$and",
- *       "items": [
- *         {
- *           "path": "name",
- *           "operator": "$eq",
- *           "value": "NocoBase"
- *         }
- *       ]
- *     }
- *   ]
- * };
- *
- * const result = transformFilter(input);
- * // 输出: {"$or":[{"isAdmin":{"$eq":true}},{"$and":[{"name":{"$eq":"NocoBase"}}]}]}
- * ```
- */
-
-/**
  * 过滤器条件项接口
  */
 export interface FilterCondition {
