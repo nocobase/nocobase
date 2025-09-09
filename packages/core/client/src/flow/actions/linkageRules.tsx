@@ -601,7 +601,6 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                         borderRadius: '6px',
                         padding: '12px',
                         marginBottom: '8px',
-                        backgroundColor: '#fafafa',
                       }}
                     >
                       <div
