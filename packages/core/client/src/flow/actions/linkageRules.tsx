@@ -690,13 +690,15 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
   };
 
   const linkageRules = params.value as LinkageRule[];
-  const models: FlowModel[] = [];
+  const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
+  const ruleItemModels: FlowModel[] = ctx.model.__ruleModels || (ctx.model.__ruleModels = {});
 
   // 1. 运行所有的联动规则
   linkageRules
     .filter((rule) => rule.enable)
     .forEach((rule) => {
       const { conditions, actions } = rule;
+      const models = ruleItemModels[rule.key] || (ruleItemModels[rule.key] = []);
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
@@ -735,15 +737,25 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
             if (models.indexOf(model) === -1) {
               models.push(model);
             }
+
+            if (allModels.indexOf(model) === -1) {
+              allModels.push(model);
+            }
           };
 
           handler({ ctx, value: action.value, setProps });
+        });
+      } else {
+        // 条件不满足时重置状态
+        models.forEach((model: any) => {
+          model.__props = {};
+          model.__shouldReset = false;
         });
       }
     });
 
   // 2. 最后才实际更改相关 model 的状态
-  models.forEach((model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean }) => {
+  allModels.forEach((model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean }) => {
     const newProps = {
       ...model.__originalProps,
       ...model.__props,
