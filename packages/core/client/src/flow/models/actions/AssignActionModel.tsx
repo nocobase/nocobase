@@ -192,7 +192,7 @@ export class BulkAssignActionModel extends CollectionActionModel<{
   actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
 
   defaultProps: ButtonProps = {
-    title: escapeT('Bulk edit'),
+    title: escapeT('Bulk update'),
     icon: 'EditOutlined',
   };
   getAclActionName() {
@@ -201,7 +201,7 @@ export class BulkAssignActionModel extends CollectionActionModel<{
 }
 
 BulkAssignActionModel.define({
-  label: escapeT('Bulk edit'),
+  label: escapeT('Bulk update'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
