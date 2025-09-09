@@ -18,6 +18,7 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { FilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { DefaultValue } from '../components/DefaultValue';
+import _ from 'lodash';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -204,13 +205,13 @@ const linkageActions: LinkageActions = {
 
             switch (state) {
               case 'show':
-                props = { hidden: false, display: 'visible' };
+                props = { hiddenModel: false };
                 break;
               case 'hide':
-                props = { hidden: true, display: 'none' };
+                props = { hiddenModel: true };
                 break;
               case 'hideKeepValue':
-                props = { hidden: true, display: 'hidden' };
+                props = { hidden: true };
                 break;
               case 'required':
                 props = { required: true };
@@ -708,7 +709,7 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
           const setProps = (model: FlowModel & { __originalProps?: any; __props?: any }, props: any) => {
             // 存储原始值，用于恢复
             if (!model.__originalProps) {
-              model.__originalProps = { ...model.props };
+              model.__originalProps = { ...model.props, hiddenModel: model.hidden };
             }
 
             // 临时存起来，遍历完所有规则后，再统一处理
@@ -727,10 +728,13 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
 
   // 2. 最后才实际更改相关 model 的状态
   models.forEach((model: FlowModel & { __originalProps?: any; __props?: any }) => {
-    model.setProps({
+    const newProps = {
       ...model.__originalProps,
       ...model.__props,
-    });
+    };
+
+    model.setProps(_.omit(newProps, 'hiddenModel'));
+    model.hidden = !!newProps.hiddenModel;
   });
 };
 
