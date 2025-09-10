@@ -56,17 +56,18 @@ export class Snowflake {
     this.lastTs = ts;
 
     const id =
-      ((ts - this.epoch) << (this.workerIdBits + this.sequenceBits)) |
-      (this.workerId << this.sequenceBits) |
+      (ts - this.epoch) * (this.maxWorkerId + 1) * (this.maxSequence + 1) +
+      this.workerId * (this.maxSequence + 1) +
       this.sequence;
 
     return id;
   }
 
   parse(id: number) {
-    const timestamp = (id >> (this.workerIdBits + this.sequenceBits)) + this.epoch;
-    const workerId = (id >> this.sequenceBits) & this.maxWorkerId;
-    const sequence = id & this.maxSequence;
+    const sequence = id % (this.maxSequence + 1);
+    const workerId = Math.floor(id / (this.maxSequence + 1)) % (this.maxWorkerId + 1);
+    const tsDiff = Math.floor(id / ((this.maxWorkerId + 1) * (this.maxSequence + 1)));
+    const timestamp = tsDiff + this.epoch;
 
     return {
       id,

@@ -73,4 +73,21 @@ describe('Snowflake', () => {
 
     expect(parsed.timestamp).toBeGreaterThanOrEqual(1605024000);
   });
+
+  it('should generate unique IDs across multiple workers', () => {
+    const sf1 = new Snowflake({ workerId: 1 });
+    const sf2 = new Snowflake({ workerId: 2 });
+
+    const id1 = sf1.generate();
+    const id2 = sf2.generate();
+
+    expect(id1).not.toBe(id2);
+    expect(sf1.parse(id1).workerId).toBe(1);
+    expect(sf2.parse(id2).workerId).toBe(2);
+  });
+
+  it('should throw error for invalid workerId', () => {
+    expect(() => new Snowflake({ workerId: -1 })).toThrow();
+    expect(() => new Snowflake({ workerId: 32 })).toThrow();
+  });
 });
