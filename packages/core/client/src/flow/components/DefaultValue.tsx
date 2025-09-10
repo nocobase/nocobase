@@ -28,6 +28,7 @@ import React, { useMemo } from 'react';
 import { Input } from 'antd';
 import { EditableFieldModel } from '../models';
 import { RemoteSelectFieldModel } from '../models/fields/AssociationFieldModel';
+import { InputFieldModel } from '../models/fields/InputFieldModel';
 
 interface Props {
   value: any;
@@ -249,7 +250,8 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'm2m' ||
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
-    const fieldModelClass = isToManyRelation ? RemoteSelectFieldModel : origin?.constructor || model.constructor;
+    // 优先用原字段模型；无法解析时回退到 InputFieldModel，避免误用区块模型（会依赖 dataSource/collection）
+    const fieldModelClass = isToManyRelation ? RemoteSelectFieldModel : origin?.constructor || InputFieldModel;
     const TempFieldClass = createTempFieldClass(fieldModelClass);
     const fieldSub = {
       use: TempFieldClass,

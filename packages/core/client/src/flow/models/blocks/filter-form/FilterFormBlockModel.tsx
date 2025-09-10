@@ -70,7 +70,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
     // 清理所有子模型的筛选配置
     const filterManager: FilterManager = this.context.filterManager;
-    const promises = this.subModels.grid.subModels.items.map(async (item) => {
+    const promises = this.subModels.grid.subModels.items?.map(async (item) => {
       await filterManager.removeFilterConfig({ filterId: item.uid });
     });
 

@@ -13,19 +13,19 @@ import { FilterGroup, FilterItem } from './filterItem';
 describe('FilterItem', () => {
   describe('constructor', () => {
     it('should create FilterItem with simple options', () => {
-      const options = { key: 'status', value: 'active' };
+      const options = { path: 'status', value: 'active' };
       const filterItem = new FilterItem(options);
       expect(filterItem).toBeInstanceOf(FilterItem);
     });
 
     it('should create FilterItem with operator', () => {
-      const options = { key: 'age', value: 18, operator: '$gt' };
+      const options = { path: 'age', value: 18, operator: '$gt' };
       const filterItem = new FilterItem(options);
       expect(filterItem).toBeInstanceOf(FilterItem);
     });
 
     it('should return existing FilterItem when passed as argument', () => {
-      const original = new FilterItem({ key: 'test', value: 'value' });
+      const original = new FilterItem({ path: 'test', value: 'value' });
       const result = new FilterItem(original as any);
       expect(result).toBe(original);
     });
@@ -33,13 +33,13 @@ describe('FilterItem', () => {
 
   describe('toJSON', () => {
     it('should return simple key-value object without operator', () => {
-      const filterItem = new FilterItem({ key: 'status', value: 'active' });
+      const filterItem = new FilterItem({ path: 'status', value: 'active' });
       const result = filterItem.toJSON();
       expect(result).toEqual({ status: 'active' });
     });
 
     it('should return operator-based object with operator', () => {
-      const filterItem = new FilterItem({ key: 'age', value: 18, operator: '$gt' });
+      const filterItem = new FilterItem({ path: 'age', value: 18, operator: '$gt' });
       const result = filterItem.toJSON();
       expect(result).toEqual({ age: { $gt: 18 } });
     });
@@ -47,7 +47,7 @@ describe('FilterItem', () => {
     it('should handle different operators', () => {
       const operators = ['$lt', '$gte', '$lte', '$ne', '$in', '$nin'];
       operators.forEach((operator) => {
-        const filterItem = new FilterItem({ key: 'field', value: 'value', operator });
+        const filterItem = new FilterItem({ path: 'field', value: 'value', operator });
         const result = filterItem.toJSON();
         expect(result).toEqual({ field: { [operator]: 'value' } });
       });
@@ -64,7 +64,7 @@ describe('FilterItem', () => {
       ];
 
       testCases.forEach(({ value, expected }) => {
-        const filterItem = new FilterItem({ key: 'field', value });
+        const filterItem = new FilterItem({ path: 'field', value });
         const result = filterItem.toJSON();
         expect(result).toEqual({ field: expected });
       });
@@ -78,8 +78,8 @@ describe('FilterGroup', () => {
       const options = {
         logic: '$and' as const,
         items: [
-          { key: 'status', value: 'active' },
-          { key: 'age', value: 18, operator: '$gt' },
+          { path: 'status', value: 'active' },
+          { path: 'age', value: 18, operator: '$gt' },
         ],
       };
       const filterGroup = new FilterGroup(options);
@@ -90,8 +90,8 @@ describe('FilterGroup', () => {
       const options = {
         logic: '$or' as const,
         items: [
-          { key: 'status', value: 'active' },
-          { key: 'status', value: 'pending' },
+          { path: 'status', value: 'active' },
+          { path: 'status', value: 'pending' },
         ],
       };
       const filterGroup = new FilterGroup(options);
@@ -101,7 +101,7 @@ describe('FilterGroup', () => {
     it('should return existing FilterGroup when passed as argument', () => {
       const original = new FilterGroup({
         logic: '$and',
-        items: [{ key: 'test', value: 'value' }],
+        items: [{ path: 'test', value: 'value' }],
       });
       const result = new FilterGroup(original as any);
       expect(result).toBe(original);
@@ -129,12 +129,12 @@ describe('FilterGroup', () => {
       const options = {
         logic: '$and' as const,
         items: [
-          { key: 'status', value: 'active' },
+          { path: 'status', value: 'active' },
           {
             logic: '$or' as const,
             items: [
-              { key: 'age', value: 18, operator: '$gt' },
-              { key: 'age', value: 65, operator: '$lt' },
+              { path: 'age', value: 18, operator: '$gt' },
+              { path: 'age', value: 65, operator: '$lt' },
             ],
           },
         ],
@@ -144,10 +144,10 @@ describe('FilterGroup', () => {
     });
 
     it('should handle mixed FilterItem and FilterGroup instances', () => {
-      const filterItem = new FilterItem({ key: 'status', value: 'active' });
+      const filterItem = new FilterItem({ path: 'status', value: 'active' });
       const filterGroup = new FilterGroup({
         logic: '$or',
-        items: [{ key: 'type', value: 'user' }],
+        items: [{ path: 'type', value: 'user' }],
       });
 
       const options = {
@@ -164,8 +164,8 @@ describe('FilterGroup', () => {
       const filterGroup = new FilterGroup({
         logic: '$and',
         items: [
-          { key: 'status', value: 'active' },
-          { key: 'age', value: 18, operator: '$gt' },
+          { path: 'status', value: 'active' },
+          { path: 'age', value: 18, operator: '$gt' },
         ],
       });
       const result = filterGroup.toJSON();
@@ -178,8 +178,8 @@ describe('FilterGroup', () => {
       const filterGroup = new FilterGroup({
         logic: '$or',
         items: [
-          { key: 'status', value: 'active' },
-          { key: 'status', value: 'pending' },
+          { path: 'status', value: 'active' },
+          { path: 'status', value: 'pending' },
         ],
       });
       const result = filterGroup.toJSON();
@@ -192,12 +192,12 @@ describe('FilterGroup', () => {
       const filterGroup = new FilterGroup({
         logic: '$and',
         items: [
-          { key: 'status', value: 'active' },
+          { path: 'status', value: 'active' },
           {
             logic: '$or',
             items: [
-              { key: 'age', value: 18, operator: '$gt' },
-              { key: 'age', value: 65, operator: '$lt' },
+              { path: 'age', value: 18, operator: '$gt' },
+              { path: 'age', value: 65, operator: '$lt' },
             ],
           },
         ],
@@ -231,15 +231,15 @@ describe('FilterGroup', () => {
           {
             logic: '$and',
             items: [
-              { key: 'category', value: 'electronics' },
-              { key: 'price', value: 100, operator: '$lt' },
+              { path: 'category', value: 'electronics' },
+              { path: 'price', value: 100, operator: '$lt' },
             ],
           },
           {
             logic: '$and',
             items: [
-              { key: 'category', value: 'books' },
-              { key: 'rating', value: 4, operator: '$gte' },
+              { path: 'category', value: 'books' },
+              { path: 'rating', value: 4, operator: '$gte' },
             ],
           },
         ],

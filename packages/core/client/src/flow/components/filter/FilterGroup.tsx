@@ -19,9 +19,9 @@ import { Trans } from 'react-i18next';
  */
 interface FilterItemProps {
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
 }
 
@@ -52,9 +52,9 @@ interface FilterGroupProps {
  *   logic: '$and',
  *   items: [
  *     {
- *       leftValue: 'name',
+ *       path: 'name',
  *       operator: 'eq',
- *       rightValue: 'test'
+ *       value: 'test'
  *     },
  *     {
  *       logic: '$or',
@@ -91,6 +91,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
           border: `1px dashed ${token.colorBorder}`,
           padding: token.paddingSM,
           marginBottom: token.marginXS,
+          borderRadius: token.borderRadius,
         }
       : {
           position: 'relative',
@@ -103,9 +104,9 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
 
     const handleAddCondition = () => {
       items.push({
-        leftValue: '',
+        path: '',
         operator: '',
-        rightValue: '',
+        value: '',
       });
     };
 
@@ -121,7 +122,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     };
 
     const isConditionItem = (item: any) => {
-      return 'leftValue' in item || 'operator' in item || 'rightValue' in item;
+      return 'path' in item || 'operator' in item || 'value' in item;
     };
 
     const isGroupItem = (item: any) => {
@@ -180,26 +181,26 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               if (FilterItem) {
                 return (
                   <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                    <Space style={{ flex: 1, minWidth: 0 }}>
                       <FilterItem value={item} />
+                      <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                      </a>
                     </Space>
-                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                    </a>
                   </div>
                 );
               } else {
                 // 如果没有提供 FilterItem，显示简单的文本表示
                 return (
                   <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                    <Space style={{ flex: 1, minWidth: 0 }}>
                       <span>
-                        {item.leftValue} {item.operator} {String(item.rightValue)}
+                        {item.path} {item.operator} {String(item.value)}
                       </span>
+                      <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                      </a>
                     </Space>
-                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                    </a>
                   </div>
                 );
               }
@@ -207,12 +208,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               // 未知类型的项，显示占位符
               return (
                 <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                  <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                  <Space style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ color: token.colorTextTertiary }}>Invalid filter item</span>
+                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                    </a>
                   </Space>
-                  <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                    <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                  </a>
                 </div>
               );
             }
@@ -220,10 +221,16 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         </div>
 
         <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
+          <Button style={{ padding: 0 }} type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
             {t('Add condition')}
           </Button>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={handleAddConditionGroup}>
+          <Button
+            style={{ padding: 0 }}
+            type="link"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={handleAddConditionGroup}
+          >
             {t('Add condition group')}
           </Button>
         </Space>

@@ -17,9 +17,9 @@ import { FilterGroup } from './FilterGroup';
  */
 interface FilterItemProps {
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
 }
 
@@ -44,9 +44,9 @@ interface FilterContentProps {
  *   "logic": "or",
  *   "items": [
  *     {
- *       "leftValue": "isAdmin",
+ *       "path": "isAdmin",
  *       "operator": "eq",
- *       "rightValue": true
+ *       "value": true
  *     },
  *     {
  *       "logic": "and",
