@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
+import { getValuesByPath } from '@nocobase/utils/client';
 import type { FlowModel } from '../models';
 import type { ServerContextParams } from './serverContextParams';
 
@@ -406,6 +407,22 @@ export async function preprocessExpression(expression: string, ctx: FlowContext)
  * 编译表达式，使用统一的解析逻辑
  */
 async function compileExpression<TModel extends FlowModel = FlowModel>(expression: string, ctx: FlowContext) {
+  // 仅点号路径匹配：ctx.a.b.c（不支持括号/函数/索引），用于数组聚合取值
+  const matchDotOnly = (expr: string): string | null => {
+    const m = expr.trim().match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)$/);
+    return m ? m[1] : null;
+  };
+
+  // 基于 getValuesByPath 的聚合取值：支持数组扁平化，仅支持 '.' 访问
+  const resolveDotOnlyPath = async (dotPath: string): Promise<any> => {
+    const segs = dotPath.split('.');
+    const first = segs.shift();
+    if (!first) return undefined;
+    const base = await (ctx as any)[first];
+    if (segs.length === 0) return base;
+    return getValuesByPath(base as object, segs.join('.'));
+  };
+
   /**
    * 单个表达式模式匹配
    *
@@ -425,7 +442,12 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
    */
   const singleMatch = expression.match(/^\{\{\s*(.+)\s*\}\}$/);
   if (singleMatch) {
-    return await processExpression(singleMatch[1], ctx);
+    const inner = singleMatch[1];
+    const dotPath = matchDotOnly(inner);
+    if (dotPath) {
+      return await resolveDotOnlyPath(dotPath);
+    }
+    return await processExpression(inner, ctx);
   }
 
   /**
@@ -448,7 +470,8 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
   let result = expression;
 
   for (const [fullMatch, innerExpr] of matches) {
-    const value = await processExpression(innerExpr, ctx);
+    const dotPath = matchDotOnly(innerExpr);
+    const value = dotPath ? await resolveDotOnlyPath(dotPath) : await processExpression(innerExpr, ctx);
     if (value !== undefined) {
       const replacement = typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value);
       result = result.replace(fullMatch, replacement);
