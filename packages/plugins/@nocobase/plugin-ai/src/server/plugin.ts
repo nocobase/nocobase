@@ -37,6 +37,7 @@ import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
+import { createWorkContextHandler } from './manager/work-context-handler';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -45,6 +46,7 @@ export class PluginAIServer extends Plugin {
   aiEmployeesManager = new AIEmployeesManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
+  workContextHandler = createWorkContextHandler(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
@@ -64,6 +66,7 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.setPermissions();
     this.registerWorkflow();
+    this.registerWorkContextResolveStrategy();
   }
 
   async setupBuiltIn() {
@@ -204,6 +207,13 @@ export class PluginAIServer extends Plugin {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstruction('llm', LLMInstruction);
+  }
+
+  registerWorkContextResolveStrategy() {
+    this.workContextHandler.registerStrategy(
+      'datasource',
+      this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
+    );
   }
 
   handleSyncMessage(message: any): Promise<void> {

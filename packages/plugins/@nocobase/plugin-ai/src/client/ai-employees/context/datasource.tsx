@@ -16,6 +16,7 @@ import _ from 'lodash';
 import { DatasourceSelector } from '../datasource';
 import { Space } from 'antd';
 import { dialogController } from '../stores/dialog-controller';
+import { transformFilter } from '@nocobase/utils/client';
 
 export const DatasourceContext: WorkContextOptions = {
   name: 'datasource',
@@ -49,6 +50,15 @@ export const DatasourceContext: WorkContextOptions = {
     },
   },
   getContent: async (app, { uid }) => {
-    return uid;
+    const response = await app.apiClient.resource('aiContextDatasources').get({ filterByTk: uid });
+    const { data } = response.data;
+    return {
+      datasource: data.datasource,
+      collectionName: data.collectionName,
+      fields: data.fields,
+      filter: transformFilter(data.filter),
+      sort: data.sort,
+      limit: data.limit,
+    };
   },
 };

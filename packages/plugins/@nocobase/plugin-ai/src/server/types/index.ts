@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './ai-message.type';
 export * from './ai-chat-conversation.type';
 export * from './knowledge-base.type';
+export * from './work-context-handler.type';

@@ -46,7 +46,7 @@ export type ContextItem = {
   type: string;
   uid: string;
   title?: string;
-  content?: string;
+  content?: unknown;
 };
 
 export type ToolCall<T> = {
@@ -179,5 +179,5 @@ export type WorkContextOptions = {
   };
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
-  getContent?: (app: Application, item: ContextItem) => Promise<string>;
+  getContent?: (app: Application, item: ContextItem) => Promise<any>;
 };

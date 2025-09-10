@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { transformFilter } from '@nocobase/utils';
+import { QueryObject, transformFilter } from '@nocobase/utils';
 import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
+import { WorkContext } from '../types';
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
   async preview(options: PreviewOptions): Promise<QueryResult | null> {
-    return await this.innerQuery(options);
+    return await this.innerQuery({ ...options, filter: options.filter ? transformFilter(options.filter) : null });
   }
 
   async query({ id }: QueryOptions): Promise<QueryResult | null> {
@@ -24,7 +25,18 @@ export class AIContextDatasourceManager {
       return null;
     }
     const metadata = model.toJSON() as AIContextDatasource;
-    return await this.innerQuery(metadata);
+    return await this.innerQuery({ ...metadata, filter: metadata.filter ? transformFilter(metadata.filter) : null });
+  }
+
+  provideWorkContextResolveStrategy() {
+    return async (contextItem: WorkContext): Promise<string> => {
+      if (!contextItem.content) {
+        return '';
+      }
+      const query = contextItem.content as InnerQueryOptions;
+      const queryResult = await this.innerQuery(query);
+      return JSON.stringify(queryResult);
+    };
   }
 
   private async innerQuery(options: InnerQueryOptions): Promise<QueryResult | null> {
@@ -53,7 +65,7 @@ export class AIContextDatasourceManager {
         .map((x) => x.options.name);
     }
 
-    const result = await collection.repository.find({ fields, filter: transformFilter(filter), sort, limit });
+    const result = await collection.repository.find({ fields, filter, sort, limit });
 
     const records = result.map((x) =>
       targetFields.map((field) => {
@@ -74,7 +86,10 @@ export class AIContextDatasourceManager {
   }
 }
 
-export type PreviewOptions = InnerQueryOptions;
+export type PreviewOptions = Pick<
+  AIContextDatasource,
+  'datasource' | 'collectionName' | 'fields' | 'filter' | 'sort' | 'limit'
+>;
 
 export type QueryOptions = {
   id: string;
@@ -89,7 +104,6 @@ export type QueryResult = {
   }[][];
 };
 
-type InnerQueryOptions = Pick<
-  AIContextDatasource,
-  'datasource' | 'collectionName' | 'fields' | 'filter' | 'sort' | 'limit'
->;
+type InnerQueryOptions = Omit<PreviewOptions, 'filter'> & {
+  filter: QueryObject;
+};
