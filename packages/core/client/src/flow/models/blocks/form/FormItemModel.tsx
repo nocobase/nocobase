@@ -9,6 +9,8 @@
 
 import {
   Collection,
+  DefaultStructure,
+  EditableItemModel,
   escapeT,
   FieldModelRenderer,
   FlowModelContext,
@@ -21,7 +23,6 @@ import { customAlphabet as Alphabet } from 'nanoid';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldValidation } from '../../../../collection-manager';
-import { CollectionFieldModel } from '../../base/CollectionFieldModel';
 import { FieldModel } from '../../base/FieldModel';
 import { EditFormModel } from './EditFormModel';
 
@@ -60,7 +61,7 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   return [idx, ...nameParts.slice(lastIndex + 1)];
 }
 
-export class FormItemModel extends CollectionFieldModel {
+export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection.getFields().map((field) => {

@@ -6,7 +6,13 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { escapeT, FlowModel, MultiRecordResource, useFlowModel } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowModel,
+  MultiRecordResource,
+  useFlowModel,
+  createCurrentRecordMetaFactory,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
@@ -42,6 +48,7 @@ export function LabelByField(props) {
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
   fieldModel.setProps({ value: labelValue });

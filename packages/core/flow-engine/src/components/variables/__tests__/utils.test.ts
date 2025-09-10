@@ -179,14 +179,23 @@ describe('Variable Utils', () => {
         isLeaf: false,
         meta: metaTree[0],
         paths: ['user'],
+        disabled: false,
         children: [
-          { label: 'Name', value: 'name', isLeaf: true, meta: metaTree[0].children?.[0], paths: ['user', 'name'] },
+          {
+            label: 'Name',
+            value: 'name',
+            isLeaf: true,
+            meta: metaTree[0].children?.[0],
+            paths: ['user', 'name'],
+            disabled: false,
+          },
           {
             label: 'Email',
             value: 'email',
             isLeaf: true,
             meta: metaTree[0].children?.[1],
             paths: ['user', 'email'],
+            disabled: false,
           },
         ],
       });
@@ -196,6 +205,7 @@ describe('Variable Utils', () => {
         isLeaf: true,
         meta: metaTree[1],
         paths: ['data'],
+        disabled: false,
       });
     });
 
@@ -217,6 +227,7 @@ describe('Variable Utils', () => {
         isLeaf: false,
         meta: metaTree[0],
         paths: ['async'],
+        disabled: false,
       });
     });
 
@@ -250,6 +261,7 @@ describe('Variable Utils', () => {
           isLeaf: true,
           meta: { name: 'test', type: 'object', title: '', paths: ['test'] },
           paths: ['test'],
+          disabled: false,
         },
       ]);
     });

@@ -14,10 +14,12 @@ import { FieldModel } from '../../base/FieldModel';
 import { GridModel } from '../../base/GridModel';
 import { FormModel } from './FormModel';
 
-export class FormGridModel extends GridModel<{
+export type DefaultFormGridStructure = {
   parent: FormModel;
   subModels: { items: FieldModel[] };
-}> {
+};
+
+export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridStructure> extends GridModel<T> {
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,

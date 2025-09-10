@@ -8,7 +8,8 @@
  */
 
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { Button, Cascader } from 'antd';
+import { Button, Cascader, Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import {
   buildContextSelectorItems,
@@ -17,6 +18,7 @@ import {
   preloadContextSelectorPath,
 } from './variables/utils';
 import { useResolvedMetaTree } from './variables/useResolvedMetaTree';
+import { useFlowContext } from '../FlowContextProvider';
 
 const defaultButtonStyle = {
   fontStyle: 'italic' as const,
@@ -40,6 +42,50 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   const { resolvedMetaTree, loading } = useResolvedMetaTree(metaTree);
 
+  // 获取引擎上下文中的翻译函数，若不可用则回退为原文
+  const flowCtx = useFlowContext<any>();
+
+  const translateOptions = useCallback(
+    (items: ContextSelectorItem[] | undefined): ContextSelectorItem[] => {
+      if (!items) return [];
+      return items.map((o) => {
+        // 计算禁用状态与提示
+        const meta = o.meta;
+        const disabled = meta ? !!(typeof meta.disabled === 'function' ? meta.disabled() : meta.disabled) : false;
+        const disabledReason = meta
+          ? ((typeof meta.disabledReason === 'function' ? meta.disabledReason() : meta.disabledReason) as any)
+          : undefined;
+
+        // 文本国际化：仅当 label 为字符串时进行翻译
+        const baseLabel = typeof o.label === 'string' ? flowCtx.t(o.label) : o.label;
+
+        const label = disabled ? (
+          <span>
+            {baseLabel}
+            <Tooltip
+              title={disabledReason || flowCtx.t('This variable is not available')}
+              placement="right"
+              overlayClassName="flow-variable-disabled-tip"
+              destroyTooltipOnHide
+            >
+              <QuestionCircleOutlined style={{ marginLeft: 6, color: 'rgba(0,0,0,0.35)' }} />
+            </Tooltip>
+          </span>
+        ) : (
+          baseLabel
+        );
+
+        return {
+          ...o,
+          label,
+          disabled,
+          children: Array.isArray(o.children) ? translateOptions(o.children) : o.children,
+        };
+      });
+    },
+    [flowCtx],
+  );
+
   // 用于强制重新渲染的状态
   const [updateFlag, setUpdateFlag] = useState(0);
   const triggerUpdate = useCallback(() => setUpdateFlag((prev) => prev + 1), []);
@@ -50,8 +96,13 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   // 触发 rc-cascader 重新构建 pathKeyEntities，避免二级节点未被索引导致的报错。
   const options = useMemo(() => {
     if (!resolvedMetaTree) return [];
-    return buildContextSelectorItems(resolvedMetaTree);
-  }, [resolvedMetaTree, updateFlag]);
+    const base = buildContextSelectorItems(resolvedMetaTree);
+    return translateOptions(base);
+  }, [resolvedMetaTree, updateFlag, translateOptions]);
+
+  // 内部展开路径：在 onlyLeafSelectable=true 时，点击父节点不会触发 onChange，
+  // 但会触发 loadData。我们在此记录路径以在懒加载后保持展开。
+  const [tempSelectedPath, setTempSelectedPath] = useState<string[]>([]);
 
   // 处理异步加载子节点
   const handleLoadData = useCallback(
@@ -67,12 +118,14 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       try {
+        // 记录当前点击的路径，保证 options 重建后仍能维持展开并展示子级
+        setTempSelectedPath(selectedOptions.map((o) => String(o.value)));
         targetOption.loading = true;
         triggerUpdate();
         const childNodes = await targetMetaNode.children();
         targetMetaNode.children = childNodes;
         // 立即把 options 树也补上 children，避免等待下一次重算
-        const childOptions = buildContextSelectorItems(childNodes);
+        const childOptions = translateOptions(buildContextSelectorItems(childNodes));
         targetOption.children = childOptions;
         targetOption.isLeaf = !childOptions || childOptions.length === 0;
       } catch (error) {
@@ -101,8 +154,9 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
   // 预加载：当存在有效路径时，按路径逐级加载 children，保证默认展开和选中路径可用
   const pathToPreload = useMemo(() => {
-    return Array.isArray(effectivePath) ? effectivePath : [];
-  }, [effectivePath]);
+    const finalPath = effectivePath && effectivePath.length > 0 ? effectivePath : tempSelectedPath;
+    return Array.isArray(finalPath) ? finalPath : [];
+  }, [effectivePath, tempSelectedPath]);
 
   useEffect(() => {
     if (pathToPreload.length === 0 || !options?.length) return;
@@ -125,6 +179,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       const lastOption = selectedOptions?.[selectedOptions.length - 1];
       if (!selectedValues || selectedValues.length === 0) {
         onChange?.('', lastOption?.meta);
+        setTempSelectedPath([]);
         return;
       }
 
@@ -146,6 +201,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       if (isLeaf) {
         onChange?.(formattedValue, lastOption?.meta);
+        // 选中叶子节点后，可清空内部临时路径（外部 value 将驱动级联）
+        setTempSelectedPath([]);
         return;
       }
 
@@ -160,6 +217,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       } else {
         // 单击：记录状态，仅展开
         lastSelectedRef.current = { path: pathString, time: now };
+        // 同时记录内部路径，保证懒加载后 options 重建也能维持展开
+        setTempSelectedPath(path);
       }
     },
     [onChange, customFormatPathToValue, onlyLeafSelectable],
@@ -169,7 +228,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
     <Cascader
       {...cascaderProps}
       options={options}
-      value={effectivePath}
+      value={tempSelectedPath && tempSelectedPath.length > 0 ? tempSelectedPath : effectivePath}
       onChange={handleChange}
       loadData={handleLoadData}
       loading={loading}

@@ -157,6 +157,9 @@ describe('createRecordProxyContext', () => {
         children: undefined,
         parentTitles: ['Posts'],
         paths: ['currentRecord', 'id'],
+        // FlowContext 现在会在 MetaTreeNode 上默认附加禁用相关字段，单测需补齐
+        disabled: false,
+        disabledReason: undefined,
       });
 
       const titleField = fields.find((field) => field.name === 'title');
@@ -169,6 +172,8 @@ describe('createRecordProxyContext', () => {
         children: undefined,
         parentTitles: ['Posts'],
         paths: ['currentRecord', 'title'],
+        disabled: false,
+        disabledReason: undefined,
       });
 
       const contentField = fields.find((field) => field.name === 'content');
@@ -181,6 +186,8 @@ describe('createRecordProxyContext', () => {
         children: undefined,
         parentTitles: ['Posts'],
         paths: ['currentRecord', 'content'],
+        disabled: false,
+        disabledReason: undefined,
       });
     });
 

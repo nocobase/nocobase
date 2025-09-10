@@ -9,3 +9,9 @@
 
 export * from './flowModel';
 export * from './forkFlowModel';
+
+export * from './CollectionFieldModel';
+export * from './DisplayItemModel';
+export * from './EditableItemModel';
+export * from './FilterableItemModel';
+//

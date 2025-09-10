@@ -8,14 +8,13 @@
  */
 
 import React from 'react';
-import { Select, Tag } from 'antd';
+import { Select, Tag, theme } from 'antd';
 import { cx } from '@emotion/css';
 import type { VariableTagProps } from './types';
-import type { MetaTreeNode } from '../../flowContext';
-import { variableContainerStyle } from './styles/variableInput.styles';
 import { parseValueToPath } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
 import { useRequest } from 'ahooks';
+import { useFlowContext } from '../../FlowContextProvider';
 
 const VariableTagComponent: React.FC<VariableTagProps> = ({
   value,
@@ -26,13 +25,14 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
   metaTree,
 }) => {
   const { resolvedMetaTree } = useResolvedMetaTree(metaTree);
+  const ctx = useFlowContext();
 
   const { data: displayedValue } = useRequest(
     async () => {
       if (metaTreeNode) {
         return metaTreeNode.parentTitles
-          ? [...metaTreeNode.parentTitles, metaTreeNode.title].join('/')
-          : metaTreeNode.title || '';
+          ? [...metaTreeNode.parentTitles, metaTreeNode.title].map(ctx.t).join('/')
+          : ctx.t(metaTreeNode.title) || '';
       }
       if (!value) return String(value);
       const path = parseValueToPath(value);
@@ -40,6 +40,8 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
     },
     { refreshDeps: [resolvedMetaTree, value, metaTreeNode] },
   );
+
+  const { token } = theme.useToken();
 
   const customTagRender = (props: any) => {
     const { label, closable, onClose } = props;
@@ -53,14 +55,12 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
       <Tag
         color="blue"
         style={{
-          margin: '2px 4px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          lineHeight: '20px',
-          padding: '0 8px',
-          height: '24px',
+          margin: `0 ${token.marginXXS || token.marginXS}px`,
+          borderRadius: token.borderRadiusSM,
+          fontSize: token.fontSizeSM,
           display: 'inline-flex',
           alignItems: 'center',
+          padding: `0 ${token.paddingXXS}px`,
         }}
       >
         {truncateText(label)}
@@ -72,9 +72,10 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
     <Select
       className={cx('variable', className)}
       style={{
-        height: '32px',
-        minHeight: '32px',
-        maxWidth: '200px',
+        // Fill the available width of the surrounding layout.
+        // A fixed maxWidth here caused the input to shrink when a variable is selected.
+        width: '100%',
+        minWidth: 0,
         flex: '1 1 auto',
         ...style,
       }}

@@ -27,7 +27,8 @@ describe('FilterManager.bindToTarget', () => {
       flowEngine: mockFlowEngine,
       getStepParams: vi.fn().mockReturnValue([]),
       setStepParams: vi.fn(),
-      saveStepParams: vi.fn(),
+      save: vi.fn(),
+      saveStepParams: vi.fn().mockResolvedValue(undefined),
     };
 
     filterManager = new FilterManager(mockGridModel);

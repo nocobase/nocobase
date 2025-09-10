@@ -9,8 +9,11 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   Collection,
+  createRecordMetaFactory,
+  DisplayItemModel,
   DragHandler,
   Droppable,
   escapeT,
@@ -27,10 +30,9 @@ import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { CollectionFieldModel } from '../../base/CollectionFieldModel';
 import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
-export class TableColumnModel extends CollectionFieldModel {
+export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
@@ -153,11 +155,31 @@ export class TableColumnModel extends CollectionFieldModel {
       <>
         {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
           const fork = field.createFork({}, `${index}`);
+          const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
+            () => fork.context.collection,
+            fork.context.t('Current record'),
+            (c) => {
+              try {
+                const coll = (c as any).collection;
+                const rec = (c as any).record;
+                const name = coll?.name;
+                const dataSourceKey = coll?.dataSourceKey;
+                const filterByTk = coll?.getFilterByTK?.(rec);
+                if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+                return { collection: name, dataSourceKey, filterByTk };
+              } catch (e) {
+                void e;
+                return undefined;
+              }
+            },
+          );
           fork.context.defineProperty('record', {
             get: () => record,
+            resolveOnServer: true,
+            meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => index
           });
           const value = get(record, this.fieldPath);
           return (

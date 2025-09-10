@@ -23,6 +23,7 @@ import {
   MultiRecordResource,
   observable,
   useFlowEngine,
+  createCurrentRecordMetaFactory,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
@@ -222,8 +223,14 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     this.resource.getData()[recordIndex] = record;
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
+                    // Provide expandable meta for current row record based on the collection in context
+                    const recordMeta = createCurrentRecordMetaFactory(
+                      fork.context,
+                      () => (fork.context as any).collection,
+                    );
                     fork.context.defineProperty('record', {
                       get: () => record,
+                      meta: recordMeta,
                     });
                     // fork.context.defineProperty('fieldValue', {
                     //   get: () => values[dataIndex],

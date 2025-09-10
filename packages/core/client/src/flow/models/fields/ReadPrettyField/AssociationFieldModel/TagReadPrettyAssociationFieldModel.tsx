@@ -8,7 +8,7 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { escapeT, FlowModel } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -105,6 +105,7 @@ export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFie
             fieldModel = field.createFork({}, key);
             fieldModel.context.defineProperty('record', {
               get: () => v,
+              meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
             });
             // fieldModel.context.defineProperty('fieldValue', {
             //   get: () => v?.[fieldNames.label],
