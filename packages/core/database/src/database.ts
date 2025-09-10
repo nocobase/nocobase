@@ -534,7 +534,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const run = this.sequelize.dialect.Query.prototype.run;
     // @ts-ignore
     this.sequelize.dialect.Query.prototype.run = function (sql: string, parameters: any[]) {
-      if (!/^update\s+/i.test(sql.trim()) || !parameters.length) {
+      if (!/^update\s+/i.test(sql.trim()) || !parameters?.length) {
         return run.apply(this, [sql, parameters]);
       }
       try {
