@@ -14,4 +14,5 @@ export * from './FilterFormCollapseActionModel';
 export * from './FilterFormGridModel';
 export * from './FilterFormResetActionModel';
 export * from './FilterFormSubmitActionModel';
+export * from './FilterFormItemModel';
 //

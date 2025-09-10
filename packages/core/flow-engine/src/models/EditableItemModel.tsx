@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './flowModel';
-export * from './forkFlowModel';
+import { DefaultStructure } from '@nocobase/flow-engine';
+import { CollectionFieldModel } from './CollectionFieldModel';
 
-export * from './CollectionFieldModel';
-export * from './DisplayItemModel';
-export * from './EditableItemModel';
-export * from './FilterableItemModel';
-//
+export class EditableItemModel<T extends DefaultStructure = DefaultStructure> extends CollectionFieldModel<T> {}

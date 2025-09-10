@@ -58,10 +58,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     });
 
     this.context.defineMethod('openView', async (params) => {
-      const { mode, size } = params || {};
+      const { mode, size, ...rest } = params || {};
       this.dispatchEvent('openView', {
         mode: mode || 'dialog',
         size: size || 'large',
+        ...rest,
       });
     });
   }

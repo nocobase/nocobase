@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, escapeT, FieldModelRenderer, FlowModelContext, FormItem } from '@nocobase/flow-engine';
+import {
+  Collection,
+  DisplayItemModel,
+  escapeT,
+  FieldModelRenderer,
+  FlowModelContext,
+  FormItem,
+} from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import React from 'react';
-import { CollectionFieldModel } from '../../base/CollectionFieldModel';
 import { FieldModel } from '../../base/FieldModel';
 import { FieldNotAllow } from '../form/FormItemModel';
 import { DetailsGridModel } from './DetailsGridModel';
@@ -51,7 +57,7 @@ export function getValueWithIndex(record: any, fieldPath: string, fieldIndex?: s
   return get(record, path);
 }
 
-export class DetailsItemModel extends CollectionFieldModel<{
+export class DetailsItemModel extends DisplayItemModel<{
   parent: DetailsGridModel;
   subModels: { field: FieldModel };
 }> {
