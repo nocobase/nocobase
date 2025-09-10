@@ -85,6 +85,8 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   // 左侧选中的字段元信息
   const [leftFieldMeta, setLeftFieldMeta] = useState<MetaTreeNode | null>(null);
+  // 左侧变更后是否需要默认选择第一个操作符
+  const shouldDefaultOperatorRef = useRef(false);
   // 操作符列表：优先使用字段接口提供的 operators（与 VariableFilterItem 一致）
   const leftFieldSignature = useMemo(() => {
     if (!leftFieldMeta) return '';
@@ -125,10 +127,22 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
   useEffect(() => {
     // 仅当有可用操作符列表时才做校验/回填，避免在列表未就绪时覆盖已保存的值
     if (operatorMetadataList.length === 0) return;
+    // 未选择操作符：按需默认选择第一个
+    if (!selectedOperator) {
+      if (shouldDefaultOperatorRef.current) {
+        const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
+        value.operator = fallback?.value || '';
+        if (fallback?.noValue) {
+          value.value = '';
+        }
+        shouldDefaultOperatorRef.current = false;
+      }
+      return;
+    }
+    // 已选择操作符但不在当前列表中，回落到第一个
     const exists = operatorMetadataList.some((op) => op.value === selectedOperator);
     if (!exists) {
       const fallback = operatorMetadataList.find((op) => op.selected) || operatorMetadataList[0];
-      // 若不存在或无效，则使用 fallback；否则保持现有值
       value.operator = fallback?.value || '';
       if (fallback?.noValue) {
         value.value = '';
@@ -207,7 +221,21 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const handleLeftPathChange = useCallback(
     (variableValue: string, metaNode?: MetaTreeNode) => {
-      value.path = variableValue || '';
+      const prevPath = value.path || '';
+      const nextPath = variableValue || '';
+      const changed = nextPath !== prevPath;
+      value.path = nextPath;
+      // 仅当此前已有选择（prevPath 非空）且新旧不同，才清空中间与右侧
+      // 避免“初次回填/恢复”时误清空已保存的 operator/value
+      if (changed && prevPath) {
+        value.operator = '';
+        value.value = '';
+        shouldDefaultOperatorRef.current = true;
+      }
+      // 首次选择（prevPath 为空），且没有已保存 operator 时，默认选择第一个
+      if (!prevPath && nextPath && !value.operator) {
+        shouldDefaultOperatorRef.current = true;
+      }
       if (metaNode) setLeftFieldMeta(metaNode);
     },
     [value],
@@ -261,6 +289,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
           showValueComponent
           style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
           placeholder={t('Enter value')}
+          clearValue=""
         />
       )}
     </Space>
