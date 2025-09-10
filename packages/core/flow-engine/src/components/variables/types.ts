@@ -24,13 +24,14 @@ export interface FlowContextSelectorProps
 }
 
 export interface ContextSelectorItem {
-  label: string;
+  label: React.ReactNode;
   value: string;
   isLeaf?: boolean;
   children?: ContextSelectorItem[];
   loading?: boolean;
   meta?: MetaTreeNode;
   paths: string[];
+  disabled?: boolean;
 }
 
 export interface Converters {
@@ -63,6 +64,11 @@ export interface VariableInputProps {
   showValueComponent?: boolean;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   onlyLeafSelectable?: boolean;
+  /**
+   * 清空（点击 Tag 的 clear、或 Input 的 allowClear）时要设置的值。
+   * 默认行为为 null；可设置为 '' 等，以便清空后默认切换为“常量-空字符串”。
+   */
+  clearValue?: any;
   [key: string]: any;
 }
 

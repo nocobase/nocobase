@@ -84,10 +84,15 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   metaTree,
   showValueComponent = true,
   onlyLeafSelectable = false,
+  clearValue,
   ...restProps
 }) => {
   const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
   const lastEmitRef = useRef<{ value: any; path?: string } | null>(null);
+  const [innerValue, setInnerValue] = useState<any>(value);
+  useEffect(() => {
+    setInnerValue(value);
+  }, [value]);
   const { resolveValueFromPath, resolvePathFromValue, renderInputComponent } = useMemo(() => {
     return createFinalConverters(propConverters);
   }, [propConverters]);
@@ -122,13 +127,13 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const resolvedMetaTreeNode = useMemo(() => {
     if (currentMetaTreeNode) return currentMetaTreeNode;
     if (Array.isArray(resolvedMetaTree)) {
-      const path = resolvePathFromValue?.(value);
+      const path = resolvePathFromValue?.(innerValue);
       if (path) {
         return findMetaTreeNodeByPath(resolvedMetaTree, path);
       }
     }
     return null;
-  }, [currentMetaTreeNode, value, resolvedMetaTree, resolvePathFromValue]);
+  }, [currentMetaTreeNode, innerValue, resolvedMetaTree, resolvePathFromValue]);
 
   // 当 value 存在但 currentMetaTreeNode 还未恢复，尝试按路径逐级加载（支持 children 为函数的场景）
   useEffect(() => {
@@ -186,19 +191,19 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     };
 
     restoreFromValue();
-  }, [resolvedMetaTree, value, resolvePathFromValue, currentMetaTreeNode]);
+  }, [resolvedMetaTree, innerValue, resolvePathFromValue, currentMetaTreeNode]);
 
   const ValueComponent = useMemo(() => {
     const Component = renderInputComponent?.(resolvedMetaTreeNode);
     const CustomComponent = resolvedMetaTreeNode?.render;
-    const finalComponent = Component || CustomComponent || (isVariableValue(value) ? VariableTag : Input);
+    const finalComponent = isVariableValue(innerValue) ? VariableTag : Component || CustomComponent || Input;
     return finalComponent;
-  }, [renderInputComponent, resolvedMetaTreeNode, value]);
+  }, [renderInputComponent, resolvedMetaTreeNode, innerValue]);
 
   useEffect(() => {
     if (!resolvedMetaTreeNode) return;
-    if (!Array.isArray(resolvedMetaTree) || !value) return;
-    const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || value;
+    if (!Array.isArray(resolvedMetaTree) || !innerValue) return;
+    const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || innerValue;
     emitChange(finalValue, resolvedMetaTreeNode);
     setCurrentMetaTreeNode(resolvedMetaTreeNode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +212,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
+      setInnerValue(newValue);
       emitChange(newValue);
     },
     [emitChange],
@@ -216,6 +222,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     (variableValue: string, metaTreeNode?: MetaTreeNode) => {
       setCurrentMetaTreeNode(metaTreeNode);
       const finalValue = resolveValueFromPath?.(metaTreeNode) || variableValue;
+      setInnerValue(finalValue);
       emitChange(finalValue, metaTreeNode);
     },
     [emitChange, resolveValueFromPath],
@@ -228,8 +235,10 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return;
     }
     setCurrentMetaTreeNode(null);
-    emitChange(null);
-  }, [emitChange, disabled]);
+    const cleared = clearValue !== undefined ? clearValue : null;
+    setInnerValue(cleared);
+    emitChange(cleared as any);
+  }, [emitChange, disabled, clearValue]);
 
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;
@@ -238,7 +247,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const inputProps = useMemo(() => {
     const baseProps = {
-      value: value || '',
+      value: innerValue || '',
       onChange: handleInputChange,
       disabled,
     };
@@ -253,11 +262,23 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       };
     }
 
-    return {
+    // 避免外部 otherProps 中的 value/onChange 覆盖受控值
+    const { value: _ignoredValue, onChange: _ignoredOnChange, ...restOthers } = stableProps.otherProps || {};
+    const props = {
       ...baseProps,
-      ...stableProps.otherProps,
+      ...restOthers,
     };
-  }, [value, handleInputChange, disabled, handleClear, resolvedMetaTreeNode, metaTree, ValueComponent, stableProps]);
+    return props;
+  }, [
+    innerValue,
+    handleInputChange,
+    disabled,
+    handleClear,
+    resolvedMetaTreeNode,
+    metaTree,
+    ValueComponent,
+    stableProps,
+  ]);
 
   const finalStyle = useMemo(
     () => ({
@@ -276,7 +297,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       {showValueComponent && <ValueComponent style={{ width: '100%' }} {...inputProps} />}
       <FlowContextSelector
         metaTree={resolvedMetaTree}
-        value={value}
+        value={innerValue}
         onChange={handleVariableSelect}
         parseValueToPath={resolvePathFromValue}
         formatPathToValue={resolveValueFromPath}

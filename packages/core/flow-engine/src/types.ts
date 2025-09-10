@@ -124,7 +124,9 @@ export type CreateSubModelOptions = CreateModelOptions | FlowModel;
 /**
  * Constructor for model classes.
  */
-export type ModelConstructor<T extends FlowModel = FlowModel> = (new (options: FlowModelOptions) => T) & {
+export type ModelConstructor<T extends FlowModel<any> = FlowModel<any>> = (new (
+  options: FlowModelOptions<any>,
+) => T) & {
   meta?: FlowModelMeta;
 };
 

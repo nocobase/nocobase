@@ -1,26 +1,26 @@
 /**
  * defaultShowCode: true
- * title: TableModel - hidden 简明示例
+ * title: TableBlockModel - hidden 简明示例
  */
 
-import React from 'react';
 import {
   Application,
-  Plugin,
-  TableModel,
-  TableColumnModel,
-  TableActionsColumnModel,
   CollectionActionModel,
-  RecordActionModel,
+  FilterManager,
+  Plugin,
   ReadPrettyFieldModel,
+  RecordActionModel,
+  TableActionsColumnModel,
+  TableBlockModel,
+  TableColumnModel,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card, Space, Switch } from 'antd';
+import React from 'react';
 import { api } from './api';
-import { FilterManager } from '../../../../../client/src/flow/models/filter-blocks/filter-manager/FilterManager';
 
 class DemoPlugin extends Plugin {
-  table!: TableModel;
+  table!: TableBlockModel;
   topAction!: CollectionActionModel;
   rowAction!: RecordActionModel;
   col!: TableColumnModel;
@@ -42,7 +42,7 @@ class DemoPlugin extends Plugin {
     });
 
     this.flowEngine.registerModels({
-      TableModel,
+      TableBlockModel,
       TableColumnModel,
       TableActionsColumnModel,
       CollectionActionModel,
@@ -52,7 +52,7 @@ class DemoPlugin extends Plugin {
 
     // 一个顶栏动作 + 一个行内动作 + 一个字段列
     this.table = this.flowEngine.createModel({
-      use: 'TableModel',
+      use: 'TableBlockModel',
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         actions: [{ use: 'CollectionActionModel', stepParams: { buttonSettings: { general: { title: 'Delete' } } } }],
@@ -79,7 +79,7 @@ class DemoPlugin extends Plugin {
           },
         ],
       },
-    }) as TableModel;
+    }) as TableBlockModel;
 
     this.topAction = (this.table.subModels as any).actions[0] as CollectionActionModel;
     this.rowAction = ((this.table.subModels as any).columns[0].subModels as any).actions[0] as RecordActionModel;

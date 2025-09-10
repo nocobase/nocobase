@@ -89,3 +89,31 @@ function DialogContent() {
 ### 参数传递
 
 <code src="./input-args.tsx"></code>
+
+### 将 FlowViewContext 提供给其他 model 代理
+
+<code src="./model.tsx"></code>
+
+重要步骤说明：
+
+1. **提供纯粹的 FlowViewContext**
+
+添加 `inheritContext: false`，保证上层的 FlowContext 不继承给 FlowViewContext。
+
+```ts
+viewer.dialog({
+  inheritContext: false,
+  content: () => <TestModelRenderer />,
+});
+```
+
+2. **通过 delegate 指定继承的 context**
+
+将 FlowViewContext 传递给即将初始化的 TestModel
+
+```ts
+engine.createModel({ use: TestModel }, { delegate: ctx });
+```
+
+如果只是想快速的在组件内拿到当前 FlowViewContext，可以通过 `useFlowViewContext()` 获取。
+和 delegate 方式的区别在于 delegate context 可以在整个 Model 树内共享。

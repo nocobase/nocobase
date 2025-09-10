@@ -11,24 +11,24 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
+  buildWrapperFieldChildren,
   DragHandler,
   Droppable,
   escapeT,
+  FieldModelRenderer,
+  FlowModelContext,
   FlowModelRenderer,
   FlowsFloatContextMenu,
-  useFlowEngine,
-  FlowModelContext,
-  buildWrapperFieldChildren,
+  FormItem,
   ModelRenderMode,
+  useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip, Form } from 'antd';
+import { Form, TableColumnProps, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import { FieldModel } from '../../../base/FieldModel';
-import { EditFormModel } from '../../../data-blocks/form/EditFormModel';
-import { FormFieldModel } from '../../FormFieldModel';
-import { FieldModelRenderer } from '../../../../common/FieldModelRenderer';
-import { FormItem } from '../../../data-blocks/form/FormItem/FormItem';
 import { TableAssociationFieldModel } from '.';
+import { FieldModel } from '../../../base/FieldModel';
+import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { FormFieldModel } from '../../FormFieldModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -418,70 +418,31 @@ SubTableColumnModel.registerFlow({
       title: escapeT('Required'),
       use: 'required',
     },
-    pattern: {
-      title: escapeT('Display mode'),
+    model: {
+      use: 'fieldComponent',
+      title: escapeT('Field component'),
       uiSchema: (ctx) => {
+        const className = ctx.model.getProps().pattern === 'readPretty' ? 'ReadPrettyFieldModel' : 'FormFieldModel';
+        const classes = [...ctx.model.collectionField.getSubclassesOf(className).keys()];
+        if (classes.length === 1) {
+          return null;
+        }
         return {
-          pattern: {
+          use: {
+            type: 'string',
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: [
-              {
-                value: 'editable',
-                label: escapeT('Editable'),
-              },
-              {
-                value: 'disabled',
-                label: escapeT('Disabled'),
-              },
-
-              {
-                value: 'readPretty',
-                label: escapeT('Display only'),
-              },
-            ],
+            enum: classes.map((model) => ({
+              label: model,
+              value: model,
+            })),
           },
         };
       },
-      defaultParams: (ctx) => ({
-        pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
-      }),
-      async handler(ctx, params) {
-        if (params.pattern === 'readPretty') {
-          const use =
-            ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-          const model = ctx.model.setSubModel('field', {
-            use: use,
-            stepParams: {
-              fieldSettings: {
-                init: ctx.model.getFieldSettingsInitParams(),
-              },
-            },
-          });
-          await model.applyAutoFlows();
-          ctx.model.setProps({
-            readPretty: true,
-          });
-        } else {
-          const use = ctx.model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-          const subModel = ctx.model.subModels.field as FieldModel;
-          if (use !== subModel.use) {
-            const model = ctx.model.setSubModel('field', {
-              use: use,
-              stepParams: {
-                fieldSettings: {
-                  init: ctx.model.getFieldSettingsInitParams(),
-                },
-              },
-            });
-            await model.applyAutoFlows();
-          }
-          subModel.setProps({
-            disabled: params.pattern === 'disabled',
-            editable: params.pattern === 'editable',
-          });
-        }
-      },
+    },
+    pattern: {
+      title: escapeT('Display mode'),
+      use: 'pattern',
     },
   },
 });

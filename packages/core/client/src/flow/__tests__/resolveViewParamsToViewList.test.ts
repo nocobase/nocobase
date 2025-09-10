@@ -46,7 +46,7 @@ describe('resolveViewParamsToViewList', () => {
     expect(result).toHaveLength(1);
     expect(result[0].params.viewUid).toBe('view1');
     expect(result[0].model).toBe(mockRouteModel);
-    expect(result[0].hidden).toBe(false);
+    expect(result[0].hidden.value).toBe(false);
   });
 
   it('should use route model for first view and load models for subsequent views', async () => {
@@ -97,9 +97,9 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
 
       expect(result).toHaveLength(3);
-      expect(result[0].hidden).toBe(false);
-      expect(result[1].hidden).toBe(false);
-      expect(result[2].hidden).toBe(false);
+      expect(result[0].hidden.value).toBe(false);
+      expect(result[1].hidden.value).toBe(false);
+      expect(result[2].hidden.value).toBe(false);
     });
 
     it('should set hidden=true for views before embed type', async () => {
@@ -123,10 +123,10 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
 
       expect(result).toHaveLength(4);
-      expect(result[0].hidden).toBe(true); // before embed
-      expect(result[1].hidden).toBe(true); // before embed
-      expect(result[2].hidden).toBe(false); // embed itself
-      expect(result[3].hidden).toBe(false); // after embed
+      expect(result[0].hidden.value).toBe(true); // before embed
+      expect(result[1].hidden.value).toBe(true); // before embed
+      expect(result[2].hidden.value).toBe(false); // embed itself
+      expect(result[3].hidden.value).toBe(false); // after embed
     });
 
     it('should handle multiple embed types correctly', async () => {
@@ -150,10 +150,10 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
 
       expect(result).toHaveLength(4);
-      expect(result[0].hidden).toBe(true); // before first embed
-      expect(result[1].hidden).toBe(true); // first embed
-      expect(result[2].hidden).toBe(true); // between embeds
-      expect(result[3].hidden).toBe(false); // second embed
+      expect(result[0].hidden.value).toBe(true); // before first embed
+      expect(result[1].hidden.value).toBe(true); // first embed
+      expect(result[2].hidden.value).toBe(true); // between embeds
+      expect(result[3].hidden.value).toBe(false); // second embed
     });
 
     it('should handle embed type at the beginning', async () => {
@@ -168,9 +168,9 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModelEmbed);
 
       expect(result).toHaveLength(3);
-      expect(result[0].hidden).toBe(false); // embed itself
-      expect(result[1].hidden).toBe(false); // after embed
-      expect(result[2].hidden).toBe(false); // after embed
+      expect(result[0].hidden.value).toBe(false); // embed itself
+      expect(result[1].hidden.value).toBe(false); // after embed
+      expect(result[2].hidden.value).toBe(false); // after embed
     });
 
     it('should handle embed type at the end', async () => {
@@ -184,9 +184,9 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
 
       expect(result).toHaveLength(3);
-      expect(result[0].hidden).toBe(true); // before embed
-      expect(result[1].hidden).toBe(true); // before embed
-      expect(result[2].hidden).toBe(false); // embed itself
+      expect(result[0].hidden.value).toBe(true); // before embed
+      expect(result[1].hidden.value).toBe(true); // before embed
+      expect(result[2].hidden.value).toBe(false); // embed itself
     });
 
     it('should handle case with only embed type', async () => {
@@ -197,7 +197,7 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModelEmbed);
 
       expect(result).toHaveLength(1);
-      expect(result[0].hidden).toBe(false); // embed itself
+      expect(result[0].hidden.value).toBe(false); // embed itself
     });
   });
 
@@ -225,8 +225,8 @@ describe('resolveViewParamsToViewList', () => {
       const result = await resolveViewParamsToViewList(mockFlowEngine, viewParams, mockRouteModel);
 
       expect(result).toHaveLength(2);
-      expect(result[0].hidden).toBe(false); // default drawer type
-      expect(result[1].hidden).toBe(false); // default drawer type
+      expect(result[0].hidden.value).toBe(false); // default drawer type
+      expect(result[1].hidden.value).toBe(false); // default drawer type
     });
   });
 

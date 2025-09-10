@@ -875,11 +875,11 @@ export default defineConfig({
       //         link: '/core/flow-models/form-flow-model',
       //       },
       //       {
-      //         title: 'TableModel',
+      //         title: 'TableBlockModel',
       //         link: '/core/flow-models/table-flow-model',
       //       },
       //       {
-      //         title: 'DetailsModel',
+      //         title: 'DetailsBlockModel',
       //         link: '/core/flow-models/details-flow-model',
       //       },
       //       {

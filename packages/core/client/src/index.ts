@@ -52,6 +52,8 @@ export * from './powered-by';
 export * from './record-provider';
 export * from './route-switch';
 export * from './schema-component';
+// Explicitly re-export FormItem from schema-component to resolve ambiguity with flow
+export { FormItem } from './schema-component/antd/form-item/FormItem';
 export * from './schema-initializer';
 export * from './schema-items';
 export * from './schema-settings';
@@ -79,9 +81,11 @@ export { PopupContextProvider } from './modules/popup/PopupContextProvider';
 export { usePopupUtils } from './modules/popup/usePopupUtils';
 export { VariablePopupRecordProvider } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
 
-export { showFileName } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
+export {
+  fileSizeSetting,
+  showFileName,
+} from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 export { useCurrentPopupRecord } from './modules/variable/variablesProvider/VariablePopupRecordProvider';
-export { fileSizeSetting } from './modules/fields/component/FileManager/fileManagerComponentFieldSettings';
 
 export { languageCodes } from './locale';
 
@@ -93,3 +97,6 @@ export {
   RefreshComponentProvider,
   useRefreshFieldSchema,
 } from './formily/NocoBaseRecursionField';
+
+export { FieldModelRenderer } from '@nocobase/flow-engine';
+export { transformFilter } from '@nocobase/utils/client';

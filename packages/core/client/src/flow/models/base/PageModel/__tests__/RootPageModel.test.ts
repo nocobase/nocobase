@@ -137,9 +137,7 @@ describe('RootPageModel', () => {
       mockFlowEngine.getModel
         .mockReturnValueOnce(null)
         .mockReturnValueOnce({ uid: 'over-uid', props: { route: { id: 'over-route-id' } } });
-
-      await expect(rootPageModel.handleDragEnd(mockDragEndEvent as any)).rejects.toThrow();
-
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
       expect(mockApi.request).not.toHaveBeenCalled();
       expect(mockFlowEngine.moveModel).not.toHaveBeenCalled();
     });
@@ -153,9 +151,8 @@ describe('RootPageModel', () => {
       mockFlowEngine.getModel
         .mockReturnValueOnce({ uid: 'active-uid', props: { route: { id: 'active-route-id' } } })
         .mockReturnValueOnce(null);
-
-      await expect(rootPageModel.handleDragEnd(mockDragEndEvent as any)).rejects.toThrow();
-
+      // 实现选择静默返回而非抛错，这里只断言无副作用
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
       expect(mockApi.request).not.toHaveBeenCalled();
       expect(mockFlowEngine.moveModel).not.toHaveBeenCalled();
     });

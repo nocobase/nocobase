@@ -9,7 +9,7 @@
 
 import { RecordProxy } from '../RecordProxy';
 import type { Collection, CollectionField } from '../data-source';
-import type { FlowModelContext } from '../flowContext';
+import type { FlowModelContext, PropertyMetaFactory } from '../flowContext';
 
 // 类型常量定义
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'] as const;
@@ -44,7 +44,7 @@ export function createRecordProxyContext(
   collectionOrFactory: Collection | (() => Collection | null),
   title?: string, // 可选的标题参数，可以用于在获取实际的 meta 前显示的标题
 ) {
-  const metaFn = async () => {
+  const metaFn: PropertyMetaFactory = async () => {
     const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
 
     if (!collection) {
@@ -161,8 +161,8 @@ function createMetaBaseProperties(field: CollectionField) {
 export function createCollectionContextMeta(
   collectionOrFactory: Collection | (() => Collection | null),
   title?: string,
-) {
-  const metaFn = async () => {
+): PropertyMetaFactory {
+  const metaFn: PropertyMetaFactory = async () => {
     const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
 
     if (!collection) {

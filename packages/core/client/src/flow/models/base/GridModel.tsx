@@ -31,11 +31,7 @@ import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
-import {
-  FILTER_CONFIGS_STEP_KEY,
-  FILTER_MANAGER_FLOW_KEY,
-  FilterManager,
-} from '../filter-blocks/filter-manager/FilterManager';
+import { FilterManager } from '../blocks/filter-manager/FilterManager';
 
 export const GRID_FLOW_KEY = 'gridSettings';
 export const GRID_STEP = 'grid';
@@ -296,12 +292,24 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 rows={this.getRows()}
                 sizes={this.getSizes()}
                 renderItem={(uid) => {
-                  const item = this.flowEngine.getModel(uid);
+                  const baseItem = this.flowEngine.getModel(uid);
+                  const rowIndex = this.context.fieldIndex;
+                  // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
+                  const item =
+                    rowIndex == null
+                      ? baseItem
+                      : (() => {
+                          const fork = baseItem.createFork({}, `${rowIndex}:${uid}`);
+                          fork.context.defineProperty('fieldIndex', {
+                            get: () => rowIndex,
+                          });
+                          return fork;
+                        })();
                   return (
                     <Droppable model={item}>
                       <FlowModelRenderer
                         model={item}
-                        key={item.uid}
+                        key={`${item.uid}:${rowIndex}`}
                         fallback={<SkeletonFallback />}
                         showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.itemFlowSettings }}
                         showErrorFallback

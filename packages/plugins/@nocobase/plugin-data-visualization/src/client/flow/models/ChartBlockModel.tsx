@@ -24,7 +24,9 @@ type ChartProps = {
   query: {
     sql: string;
   };
-  chart: ChartOptions;
+  chart: ChartOptions & {
+    optionRaw?: string; // 持久化存储原始脚本，供数据刷新时重新生成 option
+  };
 };
 
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
@@ -38,9 +40,14 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.context.defineProperty('resource', {
       get: () => {
         const resource = this.context.createResource(SQLResource);
-        // resource.setAPIClient(this.context.api);
         resource.setSQLType('selectRows');
         resource.setFilterByTk(this.uid);
+
+        // refresh listener
+        resource.on('refresh', async () => {
+          this.invalidateAutoFlowCache();
+          await this.regenerateChartOption(); // regenerate option，refresh ECharts
+        });
         return resource;
       },
     });
@@ -51,16 +58,38 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     });
 
     this.context.defineMethod('openView', async (params) => {
-      const { mode, size } = params || {};
+      const { mode, size, ...rest } = params || {};
       this.dispatchEvent('openView', {
         mode: mode || 'dialog',
         size: size || 'large',
+        ...rest,
       });
     });
   }
 
   renderComponent() {
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
+  }
+
+  // regenerate option，refresh ECharts
+  async regenerateChartOption() {
+    const rawOption = (this.props.chart as any)?.optionRaw ?? (this.props.chart as any)?.option?.raw;
+    if (rawOption) {
+      const { value: option } = await this.context.runjs(rawOption as string, {
+        ctx: {
+          ...this.context,
+          data: convertDatasetFormats(this.resource.getData()),
+        },
+      });
+
+      this.setProps({
+        ...this.props,
+        chart: {
+          ...this.props.chart,
+          option,
+        },
+      });
+    }
   }
 
   async getFilterFields(): Promise<{ name: string; title: string; target?: string }[]> {
@@ -134,6 +163,7 @@ ChartBlockModel.registerFlow({
           ...params,
           chart: {
             ...params.chart,
+            optionRaw: rawOption, // keep raw option for refresh
             option,
           },
         });
@@ -149,15 +179,15 @@ ChartBlockModel.registerFlow({
 
 ChartBlockModel.registerFlow({
   key: 'popupSettings',
-  on: {
-    eventName: 'openView',
-  },
+  on: 'openView',
   steps: {
     openView: {
       use: 'openView',
       hideInSettings: true,
       defaultParams(ctx) {
-        return {};
+        return {
+          navigation: false,
+        };
       },
     },
   },

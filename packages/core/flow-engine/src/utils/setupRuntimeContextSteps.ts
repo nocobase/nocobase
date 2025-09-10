@@ -84,12 +84,8 @@ export function setupRuntimeContextSteps(
   }
 
   // 定义 steps 属性
+  // 暂时隐藏 settings 对应的变量选择项：不提供 meta，仅保留运行时访问能力
   ctx.defineProperty('steps', {
     get: () => steps,
-    meta: {
-      type: 'object',
-      title: escapeT('Settings'),
-      properties: stepsMetaProperties,
-    },
   });
 }
