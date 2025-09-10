@@ -139,7 +139,7 @@ EditableItemModel.bindModelToInterface(
   ['attachment', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   {
     isDefault: true,
-    when: (field) => {
+    when: (ctx, field) => {
       if (field.targetCollection) {
         return field.targetCollection.template === 'file';
       }

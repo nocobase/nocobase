@@ -156,13 +156,24 @@ ArrayFormAssociationFieldModel.define({
   },
 });
 
-EditableItemModel.bindModelToInterface('ObjectFormAssociationFieldModel', [
-  'm2o',
-  'o2o',
-  'oho',
-  'obo',
-  'updatedBy',
-  'createdBy',
-]);
+EditableItemModel.bindModelToInterface(
+  'ObjectFormAssociationFieldModel',
+  ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'],
+  {
+    when: (ctx, field) => {
+      if (field.targetCollection) {
+        return field.targetCollection.template !== 'file';
+      }
+      return true;
+    },
+  },
+);
 
-EditableItemModel.bindModelToInterface('ArrayFormAssociationFieldModel', ['m2m', 'o2m', 'mbm']);
+EditableItemModel.bindModelToInterface('ArrayFormAssociationFieldModel', ['m2m', 'o2m', 'mbm'], {
+  when: (ctx, field) => {
+    if (field.targetCollection) {
+      return field.targetCollection.template !== 'file';
+    }
+    return true;
+  },
+});

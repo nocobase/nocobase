@@ -172,4 +172,11 @@ TableAssociationFieldModel.define({
 });
 export { SubTableColumnModel };
 
-EditableItemModel.bindModelToInterface('TableAssociationFieldModel', ['m2m', 'o2m', 'mbm']);
+EditableItemModel.bindModelToInterface('TableAssociationFieldModel', ['m2m', 'o2m', 'mbm'], {
+  when: (ctx, field) => {
+    if (field.targetCollection) {
+      return field.targetCollection.template !== 'file';
+    }
+    return true;
+  },
+});
