@@ -38,7 +38,7 @@ const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, them
     resizeObserverRef.current.observe(chartRef.current);
 
     return () => {
-      instanceRef.current?.dispose();
+      instanceRef.current?.dispose?.();
       resizeObserverRef.current?.disconnect();
     };
   }, [theme, instanceRef, onRefReady]);

@@ -8,7 +8,7 @@
  */
 
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
@@ -32,7 +32,15 @@ export class FormModel<
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
-    this.context.defineProperty('form', { get: () => form, cache: false });
+    this.context.defineProperty('form', { get: () => form });
+    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
+    this.context.defineProperty('formValues', {
+      get: () => {
+        return this.context.form.getFieldsValue();
+      },
+      cache: false,
+      meta: recordMeta,
+    });
   }
 
   onInit(options) {
@@ -42,8 +50,6 @@ export class FormModel<
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
-      resolveOnServer: true,
-      meta: recordMeta,
     });
   }
 
