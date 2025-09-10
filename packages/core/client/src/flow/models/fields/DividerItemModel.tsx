@@ -13,9 +13,9 @@ import React from 'react';
 import { CommonItemModel } from '../base/CommonItemModel';
 import { NBColorPicker } from '../fields/ColorFieldModel';
 
-export class GroupItemModel extends CommonItemModel {
+export class DividerItemModel extends CommonItemModel {
   render() {
-    const { color, borderColor, title, orientation, dashed } = this.props;
+    const { color, borderColor, label, orientation, dashed } = this.props;
     return (
       <FormItem shouldUpdate showLabel={false}>
         <Divider
@@ -25,106 +25,57 @@ export class GroupItemModel extends CommonItemModel {
           orientation={orientation}
           dashed={dashed}
         >
-          {title}
+          {label}
         </Divider>
       </FormItem>
     );
   }
 }
 
-GroupItemModel.registerFlow({
+DividerItemModel.registerFlow({
   key: 'markdownItemSetting',
-  title: '{{t("Divider setting")}}',
+  title: '{{t("Divider settings")}}',
   steps: {
     title: {
-      title: '{{t("Edit group title")}}',
+      title: '{{t("Edit divider")}}',
       defaultParams: {
-        title: '{{t("Group")}}',
+        label: '{{t("Text")}}',
+        orientation: 'left',
+        color: 'rgba(0, 0, 0, 0.88)',
+        borderColor: 'rgba(5, 5, 5, 0.06)',
       },
       uiSchema(ctx) {
         return {
-          title: {
+          label: {
+            title: '{{t("Divider label")}}',
             'x-decorator': 'FormItem',
             'x-component': 'Input.TextArea',
             'x-component-props': {
               autoSize: true,
             },
           },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          title: params.title,
-        });
-      },
-    },
-    titlePosition: {
-      title: '{{t("Title position")}}',
-      uiSchema(ctx) {
-        return {
           orientation: {
-            'x-component': 'Select',
+            'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
+            title: '{{t("Label position")}}',
             enum: [
               { label: ctx.t('Left'), value: 'left' },
               { label: ctx.t('Center'), value: 'center' },
               { label: ctx.t('Right'), value: 'right' },
             ],
           },
-        };
-      },
-      defaultParams: {
-        orientation: 'left',
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          orientation: params.orientation,
-        });
-      },
-    },
-    dashed: {
-      title: '{{t("Dashed")}}',
-      uiSchema(ctx) {
-        return {
           dashed: {
+            title: '{{t("Dashed")}}',
             'x-component': 'Switch',
             'x-decorator': 'FormItem',
           },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          dashed: params.dashed,
-        });
-      },
-    },
-    color: {
-      title: '{{t("Color")}}',
-      defaultParams: {
-        color: 'rgba(0, 0, 0, 0.88)',
-      },
-      uiSchema(ctx) {
-        return {
           color: {
+            title: '{{t("Color")}}',
             'x-component': NBColorPicker,
             'x-decorator': 'FormItem',
           },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          color: params.color,
-        });
-      },
-    },
-    borderColor: {
-      title: '{{t("Divider line color")}}',
-      defaultParams: {
-        borderColor: 'rgba(5, 5, 5, 0.06)',
-      },
-      uiSchema(ctx) {
-        return {
           borderColor: {
+            title: '{{t("Divider line color")}}',
             'x-component': NBColorPicker,
             'x-decorator': 'FormItem',
           },
@@ -132,13 +83,13 @@ GroupItemModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({
-          borderColor: params.borderColor,
+          ...params,
         });
       },
     },
   },
 });
 
-GroupItemModel.define({
-  label: '{{t("Add group")}}',
+DividerItemModel.define({
+  label: '{{t("Divider")}}',
 });
