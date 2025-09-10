@@ -84,6 +84,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   metaTree,
   showValueComponent = true,
   onlyLeafSelectable = false,
+  clearValue,
   ...restProps
 }) => {
   const [currentMetaTreeNode, setCurrentMetaTreeNode] = useState<MetaTreeNode | null>(null);
@@ -234,9 +235,10 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
       return;
     }
     setCurrentMetaTreeNode(null);
-    setInnerValue(null);
-    emitChange(null as any);
-  }, [emitChange, disabled]);
+    const cleared = clearValue !== undefined ? clearValue : null;
+    setInnerValue(cleared);
+    emitChange(cleared as any);
+  }, [emitChange, disabled, clearValue]);
 
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;

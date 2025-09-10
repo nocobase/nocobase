@@ -29,7 +29,7 @@ const SQLEditorBase: React.FC<any> = (props) => {
             if (!val) return;
             editorRef.current?.insertAtCursor(val);
           }}
-          metaTree={() => ctx.getPropertyMetaTree().filter((item) => ['userAsync'].includes(item.name))}
+          metaTree={() => ctx.getPropertyMetaTree()}
         />
       }
     />
