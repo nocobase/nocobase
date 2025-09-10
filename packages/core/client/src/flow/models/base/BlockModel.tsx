@@ -123,22 +123,6 @@ BlockModel.registerFlow({
       },
     },
     linkageRules: {
-      uiMode: {
-        type: 'drawer',
-        props: {
-          width: 800,
-          closable: true,
-          mask: false,
-          onOpen() {
-            document.body.style.width = document.body.clientWidth - 800 + 'px';
-            document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
-          },
-          onClose() {
-            document.body.style.width = 'auto';
-            document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
-          },
-        },
-      },
       use: 'blockLinkageRules',
     },
     // setBlockHeight: {

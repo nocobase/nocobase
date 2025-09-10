@@ -775,9 +775,27 @@ const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
   });
 };
 
+const commonUIMode: any = {
+  type: 'drawer',
+  props: {
+    width: 800,
+    closable: true,
+    mask: false,
+    onOpen() {
+      document.body.style.width = document.body.clientWidth - 800 + 'px';
+      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
+    },
+    onClose() {
+      document.body.style.width = 'auto';
+      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+    },
+  },
+};
+
 export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
   title: escapeT('Block linkage Rules'),
+  uiMode: commonUIMode,
   uiSchema: {
     value: {
       type: 'array',
@@ -796,6 +814,7 @@ export const blockLinkageRules = defineAction({
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
   title: escapeT('Linkage Rules'),
+  uiMode: commonUIMode,
   uiSchema: {
     value: {
       type: 'array',
@@ -814,6 +833,7 @@ export const actionLinkageRules = defineAction({
 export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
   title: escapeT('Field linkage Rules'),
+  uiMode: commonUIMode,
   uiSchema: {
     value: {
       type: 'array',
