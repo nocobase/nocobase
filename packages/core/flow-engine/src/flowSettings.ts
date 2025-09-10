@@ -479,6 +479,7 @@ export class FlowSettings {
         let beforeParamsSave = step.beforeParamsSave;
         let afterParamsSave = step.afterParamsSave;
         let actionDefaultParams: Record<string, any> = {};
+        let uiMode;
         if (step.use) {
           const action = (model as any).flowEngine?.getAction?.(step.use);
           if (action) {
@@ -486,6 +487,7 @@ export class FlowSettings {
             stepTitle = stepTitle || action.title;
             beforeParamsSave = beforeParamsSave || action.beforeParamsSave;
             afterParamsSave = afterParamsSave || action.afterParamsSave;
+            uiMode = action.uiMode;
           }
         }
 
@@ -528,7 +530,7 @@ export class FlowSettings {
           beforeParamsSave,
           afterParamsSave,
           ctx: flowRuntimeContext,
-          uiMode: step.uiMode,
+          uiMode: step.uiMode || uiMode,
         });
       }
     }
