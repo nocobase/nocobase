@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { forwardRef, useEffect, useRef, MutableRefObject } from 'react';
+import React, { forwardRef, useEffect, useRef, useCallback, MutableRefObject } from 'react';
 import * as echarts from 'echarts';
 import type { EChartsType, EChartsOption } from 'echarts';
 
@@ -21,15 +21,36 @@ interface Props {
 
 const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, theme, onRefReady }, ref) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  const instanceRef = ref as MutableRefObject<EChartsType | null>;
+  // inner instance ref
+  const instanceRef = useRef<EChartsType | null>(null);
   const resizeObserverRef = useRef<ResizeObserver>();
 
+  // forword outside ref
+  const setForwardedRef = useCallback(
+    (value: EChartsType | null) => {
+      if (!ref) return;
+      if (typeof ref === 'function') {
+        ref(value);
+      } else {
+        (ref as MutableRefObject<EChartsType | null>).current = value;
+      }
+    },
+    [ref],
+  );
+
   useEffect(() => {
-    if (!chartRef.current || !instanceRef) {
+    if (!chartRef.current) {
       return;
     }
 
+    // clean up old instance
+    if (instanceRef.current && typeof (instanceRef.current as any).dispose === 'function') {
+      instanceRef.current.dispose();
+    }
+
+    // create new instance, and forword
     instanceRef.current = echarts.init(chartRef.current, theme);
+    setForwardedRef(instanceRef.current);
     onRefReady?.(instanceRef.current);
 
     resizeObserverRef.current = new ResizeObserver(() => {
@@ -37,17 +58,24 @@ const ECharts = forwardRef<EChartsType, Props>(({ option, style, className, them
     });
     resizeObserverRef.current.observe(chartRef.current);
 
+    // clean up
     return () => {
-      instanceRef.current?.dispose?.();
+      const ins = instanceRef.current;
+      if (ins && typeof (ins as any).dispose === 'function') {
+        ins.dispose();
+      }
+      instanceRef.current = null;
+      setForwardedRef(null);
       resizeObserverRef.current?.disconnect();
     };
-  }, [theme, instanceRef, onRefReady]);
+  }, [theme, onRefReady, setForwardedRef]);
 
   useEffect(() => {
-    if (instanceRef.current) {
-      instanceRef.current.setOption(option, true);
+    const ins = instanceRef.current;
+    if (ins) {
+      ins.setOption(option, true);
     }
-  }, [option, instanceRef]);
+  }, [option]);
 
   return <div ref={chartRef} style={{ width: '100%', height: 400, ...style }} className={className} />;
 });
