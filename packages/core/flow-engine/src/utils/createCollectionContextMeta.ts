@@ -7,9 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RecordProxy } from '../RecordProxy';
 import type { Collection, CollectionField } from '../data-source';
-import type { FlowModelContext, PropertyMetaFactory } from '../flowContext';
+import type { PropertyMetaFactory } from '../flowContext';
 
 // 类型常量定义
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'] as const;

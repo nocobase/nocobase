@@ -12,7 +12,6 @@ import { Collection } from '../../data-source';
 import { FlowRuntimeContext } from '../../flowContext';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel } from '../../models';
-import { RecordProxy } from '../../RecordProxy';
 import { preprocessExpression, resolveExpressions } from '../params-resolvers';
 
 /**
@@ -122,7 +121,6 @@ describe('preprocessExpression', () => {
       ],
     });
 
-    // 创建 RecordProxy 实例（参考 RecordProxy.test.ts）
     const mockRecord = {
       id: 1,
       title: 'Test Post',
@@ -131,21 +129,6 @@ describe('preprocessExpression', () => {
         name: 'Author Name',
       },
     };
-
-    const recordProxy = new RecordProxy(mockRecord, postsCollection, model.context);
-    ctx.defineProperty('recordAsync', { get: () => recordProxy });
-    ctx.defineProperty('recordProxyAsync', { get: async () => recordProxy });
-    // 创建用户 RecordProxy
-    const userRecord = {
-      id: 10,
-      name: 'User Name',
-      profile: {
-        id: 100,
-        bio: 'User Bio',
-      },
-    };
-    const userProxy = new RecordProxy(userRecord, usersCollection, model.context);
-    ctx.defineProperty('userProxy', { get: () => userProxy });
 
     // Mock APIClient request method
     const mockApiRequest = vi.fn();
@@ -211,57 +194,6 @@ describe('preprocessExpression', () => {
       const result = await preprocessExpression(expression, ctx);
 
       expect(result).toBe('(await ctx.user).profile.avatar');
-    });
-  });
-
-  /**
-   * RecordProxy 功能测试组
-   *
-   * 测试针对 RecordProxy 实例的特殊优化处理
-   * 验证双重 await 插入表达式
-   */
-  describe('RecordProxy', () => {
-    /**
-     * 测试 RecordProxy 实例会自动添加双重 await
-     * 场景：访问 RecordProxy 的深层关联数据，如 ctx.recordAsync.author.name
-     * 预期：添加双重 await，变成 await (await ctx.recordAsync).author.name
-     */
-    test('should add double await for RecordProxy deep paths', async () => {
-      const expression = 'ctx.recordAsync.author.name';
-      const result = await preprocessExpression(expression, ctx);
-
-      expect(result).toBe('await (await ctx.recordAsync).author.name');
-    });
-
-    /**
-     * 测试 RecordProxy 单层访问的标准 await 处理
-     * 场景：直接访问 RecordProxy 实例本身，如 ctx.recordAsync
-     * 预期：添加单个 await，变成 await ctx.recordAsync
-     */
-    test('should add single await for RecordProxy single-layer paths', async () => {
-      const expression = 'ctx.recordAsync';
-      const result = await preprocessExpression(expression, ctx);
-
-      expect(result).toBe('await ctx.recordAsync');
-    });
-
-    /**
-     * 测试混合 RecordProxy 和普通对象的差异化处理
-     * 场景：同一表达式中同时包含 RecordProxy 路径和普通对象路径
-     * 预期：RecordProxy 路径使用双重 await，普通对象路径使用单个 await
-     */
-    test('should distinguish different handling methods for RecordProxy and regular objects', async () => {
-      // 混合路径类型 - RecordProxy使用双重await，普通对象使用单个await'
-      const expression = 'ctx.recordAsync.author.name + ctx.user.name';
-      const result = await preprocessExpression(expression, ctx);
-
-      expect(result).toBe('await (await ctx.recordAsync).author.name + (await ctx.user).name');
-    });
-
-    test('should handle async proxy', async () => {
-      const expression = 'ctx.recordProxyAsync.author.name + ctx.user.name';
-      const result = await preprocessExpression(expression, ctx);
-      expect(result).toBe('await (await ctx.recordProxyAsync).author.name + (await ctx.user).name');
     });
   });
 
@@ -484,8 +416,6 @@ describe('resolveExpressions', () => {
     };
 
     // 创建 RecordProxy 实例
-    const recordProxy = new RecordProxy(mockRecord, usersCollection, model.context);
-    ctx.defineProperty('recordAsync', { value: recordProxy });
   });
 
   // 测试核心功能：单表达式解析
