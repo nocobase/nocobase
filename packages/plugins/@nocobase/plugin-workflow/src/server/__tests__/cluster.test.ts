@@ -104,7 +104,7 @@ describe('workflow > cluster', () => {
       sharedQueues = new Map();
       for (const node of cluster.nodes) {
         await node.eventQueue.close();
-        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name });
+        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name, logger: node.logger });
         adapter.setQueues(sharedQueues);
         node.eventQueue.setAdapter(adapter);
         await node.eventQueue.connect();
