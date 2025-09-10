@@ -113,7 +113,17 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       const targetMetaNode = targetOption.meta;
-      if (!targetMetaNode || !targetMetaNode.children || typeof targetMetaNode.children !== 'function') {
+      if (!targetMetaNode || !targetMetaNode.children) {
+        return;
+      }
+
+      // 若 children 已在其他地方加载为数组（非函数），直接补齐到 options，避免卡在加载态
+      if (Array.isArray(targetMetaNode.children)) {
+        const childNodes = targetMetaNode.children;
+        const childOptions = translateOptions(buildContextSelectorItems(childNodes));
+        targetOption.children = childOptions;
+        targetOption.isLeaf = !childOptions || childOptions.length === 0;
+        triggerUpdate();
         return;
       }
 
