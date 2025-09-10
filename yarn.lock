@@ -2983,9 +2983,9 @@
   integrity sha512-x/rqGMdzj+fWZvCOYForTghzbtqPDZ5gPwaoNGHdgDfF2QA/XZbCBp4Moo5scrkAMPhB7z26XM/AaHuIJdgauA==
 
 "@babel/runtime-corejs3@^7.15.4":
-  version "7.28.4"
-  resolved "https://registry.npmjs.org/@babel/runtime-corejs3/-/runtime-corejs3-7.28.4.tgz#c25be39c7997ce2f130d70b9baecb8ed94df93fa"
-  integrity sha512-h7iEYiW4HebClDEhtvFObtPmIvrd1SSfpI9EhOeKk4CtIK/ngBWFpuhCzhdmRKtg71ylcue+9I6dv54XYO1epQ==
+  version "7.28.3"
+  resolved "https://registry.npmjs.org/@babel/runtime-corejs3/-/runtime-corejs3-7.28.3.tgz#8a993bea33c4f03b02b95ca9164dad26aaca125d"
+  integrity sha512-LKYxD2CIfocUFNREQ1yk+dW+8OH8CRqmgatBZYXb+XhuObO8wsDpEoCNri5bKld9cnj8xukqZjxSX8p1YiRF8Q==
   dependencies:
     core-js-pure "^3.43.0"
 
@@ -23771,7 +23771,7 @@ node-xlsx@^0.16.1:
     buffer-from "^1.1.1"
     xlsx "^0.17.0"
 
-nodejs-snowflake@2.0.1, nodejs-snowflake@^2.0.1:
+nodejs-snowflake@2.0.1:
   version "2.0.1"
   resolved "https://registry.npmmirror.com/nodejs-snowflake/-/nodejs-snowflake-2.0.1.tgz#d82fb1c7398404c5ac984d6f1cdfb1b5aef7bd80"
   integrity sha512-zMfDorNNsJm1OWWx/OUUGVT0bQ3TwC2ti4URD8UjnpffVLtLpy3eBDIaV5TnLs91YrRhwBD6L0StqU6YtnZt9A==
@@ -31806,7 +31806,7 @@ url-parse-lax@^3.0.0:
 
 url-template@^2.0.8:
   version "2.0.8"
-  resolved "https://registry.npmmirror.com/url-template/-/url-template-2.0.8.tgz#fc565a3cccbff7730c775f5641f9555791439f21"
+  resolved "https://registry.npmjs.org/url-template/-/url-template-2.0.8.tgz#fc565a3cccbff7730c775f5641f9555791439f21"
   integrity sha512-XdVKMF4SJ0nP/O7XIPB0JwAEuT9lDIYnNsK8yGVe43y0AWoKeJNdv3ZNWh7ksJ6KqQFjOO6ox/VEitLnaVNufw==
 
 url@^0.11.0, url@^0.11.1:
