@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, useFlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { FlowModel } from '@nocobase/flow-engine';
 import { observer } from '@formily/reactive-react';
 import { Input, Select, Space } from 'antd';
 import React, { FC, useMemo } from 'react';
@@ -19,9 +19,9 @@ import { fieldsToOptions } from './fieldsToOptions';
 export interface FilterItemProps {
   /** 筛选条件值对象 */
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
   model: FlowModel;
   noIgnore?: boolean;
@@ -36,22 +36,23 @@ export interface FilterItemProps {
  * ```typescript
  * <FilterItem
  *   value={{
- *     leftValue: "name",
+ *     path: "name",
  *     operator: "eq",
- *     rightValue: "test"
+ *     value: "test"
  *   }}
  * />
  * ```
  */
 export const FilterItem: FC<FilterItemProps> = observer(
   (props) => {
-    const { leftValue, operator, rightValue } = props.value;
+    const { path: leftValue, operator, value: rightValue } = props.value;
     const modelInstance = props.model;
     const currentBlockModel = modelInstance.context.blockModel;
-    const fields = currentBlockModel.collection.getFields().filter((field) => {
-      // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
-      return field.target !== 'attachments';
-    });
+    const fields =
+      currentBlockModel.collection?.getFields().filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }) || [];
     const ignoreFieldsNames = getIgnoreFieldsNames(
       modelInstance.props.filterableFieldsNames || [],
       fields.map((field) => field.name),
@@ -80,7 +81,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
 
     // 处理字段选择变化
     const handleFieldChange = (value: string) => {
-      props.value.leftValue = value;
+      props.value.path = value;
       // 当字段改变时，重置操作符和值
       const selectedField = options.find((option) => option.name === value);
       if (selectedField?.operators?.length > 0) {
@@ -88,7 +89,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
       } else {
         props.value.operator = '';
       }
-      props.value.rightValue = '';
+      props.value.value = '';
     };
 
     // 处理操作符选择变化
@@ -98,7 +99,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
 
     // 处理值输入变化
     const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      props.value.rightValue = e.target.value;
+      props.value.value = e.target.value;
     };
 
     return (
@@ -140,5 +141,5 @@ export const FilterItem: FC<FilterItemProps> = observer(
 );
 
 function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
-  return allFields.filter((field) => !filterableFieldsNames.includes(field));
+  return allFields?.filter((field) => !filterableFieldsNames.includes(field));
 }

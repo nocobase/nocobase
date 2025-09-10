@@ -142,6 +142,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   useRawParams?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
+  uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 
 /**

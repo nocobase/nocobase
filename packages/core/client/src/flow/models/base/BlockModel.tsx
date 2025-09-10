@@ -122,6 +122,9 @@ BlockModel.registerFlow({
         ctx.model.setDecoratorProps({ title: title, description: description });
       },
     },
+    linkageRules: {
+      use: 'blockLinkageRules',
+    },
     // setBlockHeight: {
     //   title: tval('Set block height'),
     //   uiSchema: {

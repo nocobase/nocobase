@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FilterGroupType, transformFilter } from '../transformFilter';
+import { FilterGroupType, transformFilter, evaluateConditions, ConditionEvaluator } from '../transformFilter';
 
 describe('transformFilter', () => {
   it('should correctly transform simple single-condition filter', () => {
@@ -20,9 +20,9 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'name',
+          path: 'name',
           operator: '$eq',
-          rightValue: 'test',
+          value: 'test',
         },
       ],
     };
@@ -46,14 +46,14 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'isAdmin',
+          path: 'isAdmin',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
         {
-          leftValue: 'nickname',
+          path: 'nickname',
           operator: '$includes',
-          rightValue: '11',
+          value: '11',
         },
       ],
     };
@@ -82,17 +82,17 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'nickname',
+          path: 'nickname',
           operator: '$includes',
-          rightValue: '11',
+          value: '11',
         },
         {
           logic: '$and',
           items: [
             {
-              leftValue: 'username',
+              path: 'username',
               operator: '$includes',
-              rightValue: '222',
+              value: '222',
             },
           ],
         },
@@ -127,22 +127,22 @@ describe('transformFilter', () => {
       logic: '$or',
       items: [
         {
-          leftValue: 'isAdmin',
+          path: 'isAdmin',
           operator: '$eq',
-          rightValue: true,
+          value: true,
         },
         {
           logic: '$and',
           items: [
             {
-              leftValue: 'name',
+              path: 'name',
               operator: '$eq',
-              rightValue: 'NocoBase',
+              value: 'NocoBase',
             },
             {
-              leftValue: 'age',
+              path: 'age',
               operator: '$gt',
-              rightValue: 18,
+              value: 18,
             },
           ],
         },
@@ -182,30 +182,30 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'status',
+          path: 'status',
           operator: '$eq',
-          rightValue: 'active',
+          value: 'active',
         },
         {
           logic: '$or',
           items: [
             {
-              leftValue: 'role',
+              path: 'role',
               operator: '$eq',
-              rightValue: 'admin',
+              value: 'admin',
             },
             {
               logic: '$and',
               items: [
                 {
-                  leftValue: 'department',
+                  path: 'department',
                   operator: '$eq',
-                  rightValue: 'IT',
+                  value: 'IT',
                 },
                 {
-                  leftValue: 'level',
+                  path: 'level',
                   operator: '$gte',
-                  rightValue: 3,
+                  value: 3,
                 },
               ],
             },
@@ -256,29 +256,29 @@ describe('transformFilter', () => {
       logic: '$and',
       items: [
         {
-          leftValue: 'stringField',
+          path: 'stringField',
           operator: '$eq',
-          rightValue: 'text',
+          value: 'text',
         },
         {
-          leftValue: 'numberField',
+          path: 'numberField',
           operator: '$gt',
-          rightValue: 100,
+          value: 100,
         },
         {
-          leftValue: 'booleanField',
+          path: 'booleanField',
           operator: '$eq',
-          rightValue: false,
+          value: false,
         },
         {
-          leftValue: 'arrayField',
+          path: 'arrayField',
           operator: '$in',
-          rightValue: [1, 2, 3],
+          value: [1, 2, 3],
         },
         {
-          leftValue: 'nullField',
+          path: 'nullField',
           operator: '$null',
-          rightValue: null,
+          value: null,
         },
       ],
     };
@@ -366,6 +366,404 @@ describe('transformFilter', () => {
       } as any;
 
       expect(() => transformFilter(input)).toThrow('Invalid filter item type');
+    });
+  });
+});
+
+describe('evaluateConditions', () => {
+  // 创建一个简单的条件评估器用于测试
+  const createMockEvaluator = (mockData: Record<string, any>): ConditionEvaluator => {
+    return (path: string, operator: string, value: any): boolean => {
+      const fieldValue = mockData[path];
+
+      switch (operator) {
+        case '$eq':
+          return fieldValue === value;
+        case '$ne':
+          return fieldValue !== value;
+        case '$gt':
+          return fieldValue > value;
+        case '$gte':
+          return fieldValue >= value;
+        case '$lt':
+          return fieldValue < value;
+        case '$lte':
+          return fieldValue <= value;
+        case '$includes':
+          return typeof fieldValue === 'string' && fieldValue.includes(value);
+        case '$in':
+          return Array.isArray(value) && value.includes(fieldValue);
+        case '$null':
+          return fieldValue === null || fieldValue === undefined;
+        default:
+          return false;
+      }
+    };
+  };
+
+  it('should correctly evaluate simple single-condition with $and logic', () => {
+    const mockData = { name: 'test', age: 25 };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'test',
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true);
+  });
+
+  it('should correctly evaluate simple single-condition with false result', () => {
+    const mockData = { name: 'test', age: 25 };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'different',
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(false);
+  });
+
+  it('should correctly evaluate multi-condition $and logic (all true)', () => {
+    const mockData = { name: 'test', age: 25, isActive: true };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'test',
+        },
+        {
+          path: 'age',
+          operator: '$gt',
+          value: 20,
+        },
+        {
+          path: 'isActive',
+          operator: '$eq',
+          value: true,
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true);
+  });
+
+  it('should correctly evaluate multi-condition $and logic (one false)', () => {
+    const mockData = { name: 'test', age: 15, isActive: true };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'test',
+        },
+        {
+          path: 'age',
+          operator: '$gt',
+          value: 20,
+        },
+        {
+          path: 'isActive',
+          operator: '$eq',
+          value: true,
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(false);
+  });
+
+  it('should correctly evaluate multi-condition $or logic (one true)', () => {
+    const mockData = { name: 'test', age: 15, isActive: false };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$or',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'test',
+        },
+        {
+          path: 'age',
+          operator: '$gt',
+          value: 20,
+        },
+        {
+          path: 'isActive',
+          operator: '$eq',
+          value: true,
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true);
+  });
+
+  it('should correctly evaluate multi-condition $or logic (all false)', () => {
+    const mockData = { name: 'different', age: 15, isActive: false };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$or',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'test',
+        },
+        {
+          path: 'age',
+          operator: '$gt',
+          value: 20,
+        },
+        {
+          path: 'isActive',
+          operator: '$eq',
+          value: true,
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(false);
+  });
+
+  it('should correctly evaluate nested conditions', () => {
+    const mockData = { name: 'test', age: 25, department: 'IT', level: 3 };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$or',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'admin',
+        },
+        {
+          logic: '$and',
+          items: [
+            {
+              path: 'department',
+              operator: '$eq',
+              value: 'IT',
+            },
+            {
+              path: 'level',
+              operator: '$gte',
+              value: 3,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true);
+  });
+
+  it('should correctly evaluate complex nested conditions', () => {
+    const mockData = {
+      status: 'active',
+      role: 'user',
+      department: 'HR',
+      level: 2,
+      experience: 5,
+    };
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'status',
+          operator: '$eq',
+          value: 'active',
+        },
+        {
+          logic: '$or',
+          items: [
+            {
+              path: 'role',
+              operator: '$eq',
+              value: 'admin',
+            },
+            {
+              logic: '$and',
+              items: [
+                {
+                  path: 'department',
+                  operator: '$eq',
+                  value: 'IT',
+                },
+                {
+                  path: 'level',
+                  operator: '$gte',
+                  value: 3,
+                },
+              ],
+            },
+            {
+              path: 'experience',
+              operator: '$gt',
+              value: 4,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true); // status is active AND experience > 4
+  });
+
+  it('should handle empty conditions array', () => {
+    const mockData = {};
+    const evaluator = createMockEvaluator(mockData);
+
+    const conditions: FilterGroupType = {
+      logic: '$and',
+      items: [],
+    };
+
+    const result = evaluateConditions(conditions, evaluator);
+    expect(result).toBe(true); // Empty conditions should return true
+  });
+
+  it('should handle different operators correctly', () => {
+    const mockData = {
+      name: 'John Doe',
+      age: 30,
+      status: null,
+      tags: ['admin', 'user'],
+    };
+    const evaluator = createMockEvaluator(mockData);
+
+    // Test $includes
+    let conditions: FilterGroupType = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$includes', value: 'John' }],
+    };
+    expect(evaluateConditions(conditions, evaluator)).toBe(true);
+
+    // Test $ne
+    conditions = {
+      logic: '$and',
+      items: [{ path: 'age', operator: '$ne', value: 25 }],
+    };
+    expect(evaluateConditions(conditions, evaluator)).toBe(true);
+
+    // Test $null
+    conditions = {
+      logic: '$and',
+      items: [{ path: 'status', operator: '$null', value: null }],
+    };
+    expect(evaluateConditions(conditions, evaluator)).toBe(true);
+
+    // Test $in
+    conditions = {
+      logic: '$and',
+      items: [{ path: 'name', operator: '$in', value: ['John Doe', 'Jane Doe'] }],
+    };
+    expect(evaluateConditions(conditions, evaluator)).toBe(true);
+  });
+
+  describe('Error handling', () => {
+    const mockEvaluator = createMockEvaluator({});
+
+    it('should throw error when null conditions are passed', () => {
+      expect(() => evaluateConditions(null as any, mockEvaluator)).toThrow(
+        'Invalid conditions: conditions must be an object',
+      );
+    });
+
+    it('should throw error when undefined conditions are passed', () => {
+      expect(() => evaluateConditions(undefined as any, mockEvaluator)).toThrow(
+        'Invalid conditions: conditions must be an object',
+      );
+    });
+
+    it('should throw error when non-object conditions are passed', () => {
+      expect(() => evaluateConditions('invalid' as any, mockEvaluator)).toThrow(
+        'Invalid conditions: conditions must be an object',
+      );
+    });
+
+    it('should throw error when logic property is missing', () => {
+      const conditions = { items: [] } as any;
+      expect(() => evaluateConditions(conditions, mockEvaluator)).toThrow(
+        'Invalid conditions: conditions must have logic and items properties',
+      );
+    });
+
+    it('should throw error when items property is missing', () => {
+      const conditions = { logic: '$and' } as any;
+      expect(() => evaluateConditions(conditions, mockEvaluator)).toThrow(
+        'Invalid conditions: conditions must have logic and items properties',
+      );
+    });
+
+    it('should throw error when items is not an array', () => {
+      const conditions = { logic: '$and', items: 'not-array' } as any;
+      expect(() => evaluateConditions(conditions, mockEvaluator)).toThrow('Invalid conditions: items must be an array');
+    });
+
+    it('should throw error when evaluator is not a function', () => {
+      const conditions: FilterGroupType = { logic: '$and', items: [] };
+      expect(() => evaluateConditions(conditions, 'not-function' as any)).toThrow(
+        'Invalid evaluator: evaluator must be a function',
+      );
+    });
+
+    it('should throw error when unsupported logic operator is used', () => {
+      const mockData = { name: 'test' };
+      const evaluator = createMockEvaluator(mockData);
+
+      const conditions = {
+        logic: '$invalid',
+        items: [{ path: 'name', operator: '$eq', value: 'test' }],
+      } as any;
+
+      expect(() => evaluateConditions(conditions, evaluator)).toThrow('Unsupported logic operator: $invalid');
+    });
+
+    it('should throw error when invalid filter item type is encountered', () => {
+      const mockData = { name: 'test' };
+      const evaluator = createMockEvaluator(mockData);
+
+      const conditions = {
+        logic: '$and',
+        items: [{ invalidProperty: 'test' }],
+      } as any;
+
+      expect(() => evaluateConditions(conditions, evaluator)).toThrow('Invalid filter item type');
     });
   });
 });
