@@ -17,7 +17,7 @@ import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
-import { DefaultValue } from '../components/DefaultValue';
+import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
 import _ from 'lodash';
 
 interface LinkageRule {
@@ -242,7 +242,7 @@ const linkageActions: LinkageActions = {
   assignField: {
     title: '字段赋值',
     component: (props) => {
-      const { value = { fields: [], assignValue: '' }, onChange } = props;
+      const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const ctx = useFlowContext();
 
@@ -264,10 +264,16 @@ const linkageActions: LinkageActions = {
 
       const fieldOptions = getFormFields();
 
-      const handleFieldsChange = (selectedFields: string[]) => {
+      const selectedFieldUid = value.field;
+
+      const handleFieldChange = (selectedField) => {
+        const nextField = selectedField;
+        const changed = nextField !== selectedFieldUid;
         onChange({
           ...value,
-          fields: selectedFields,
+          field: nextField,
+          // 切换字段时清空赋值
+          assignValue: changed ? undefined : value.assignValue,
         });
       };
 
@@ -276,46 +282,48 @@ const linkageActions: LinkageActions = {
           <div>
             <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
             <Select
-              mode="multiple"
-              value={value.fields}
-              onChange={handleFieldsChange}
+              value={selectedFieldUid}
+              onChange={handleFieldChange}
               placeholder="请选择字段"
               style={{ width: '100%' }}
               options={fieldOptions}
               showSearch
               // @ts-ignore
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+              allowClear
             />
           </div>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
-            <DefaultValue value={value.assignValue} onChange={(v) => onChange({ ...value, assignValue: v })} />
-          </div>
+          {selectedFieldUid && (
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
+              <FieldAssignValueInput
+                key={selectedFieldUid}
+                fieldUid={selectedFieldUid}
+                value={value.assignValue}
+                onChange={(v) => onChange({ ...value, assignValue: v })}
+              />
+            </div>
+          )}
         </div>
       );
     },
     handler: ({ ctx, value, setProps }) => {
       // 字段赋值处理逻辑
-      const { fields, assignValue } = value || {};
-
-      if (!fields || !Array.isArray(fields) || !assignValue) {
-        return;
-      }
-
-      // 根据 uid 找到对应的字段 model 并设置值
-      fields.forEach((fieldUid: string) => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || {};
-          const fieldModel = Object.values(gridModels).find((model: any) => model.uid === fieldUid);
-
-          if (fieldModel) {
-            // 设置字段的值
-            setProps(fieldModel as FlowModel, { value: assignValue });
-          }
-        } catch (error) {
-          console.warn(`Failed to assign value to field ${fieldUid}:`, error);
+      const { assignValue, field } = value || {};
+      if (!field) return;
+      try {
+        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+        const fieldModel = gridModels.find((model: any) => model.uid === field);
+        if (!fieldModel) return;
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof assignValue === 'undefined') {
+          setProps(fieldModel as FlowModel, {});
+          return;
         }
-      });
+        setProps(fieldModel as FlowModel, { value: assignValue });
+      } catch (error) {
+        console.warn(`Failed to assign value to field ${field}:`, error);
+      }
     },
   },
   // 执行 JavaScript
