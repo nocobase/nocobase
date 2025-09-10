@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { NumberPicker } from '@formily/antd-v5';
+import { InputNumber } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from '@nocobase/client';
 
 export class SortFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['sort'];
 
   get component() {
-    return [NumberPicker, {}];
+    return [InputNumber, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('SortFieldModel', ['sort'], { isDefault: true });

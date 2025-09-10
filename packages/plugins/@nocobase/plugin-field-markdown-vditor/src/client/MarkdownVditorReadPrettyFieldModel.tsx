@@ -8,6 +8,8 @@
  */
 
 import React from 'react';
+import { largeField, DisplayItemModel } from '@nocobase/flow-engine';
+
 import { ReadPrettyFieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
@@ -38,3 +40,5 @@ MarkdownVditorReadPrettyFieldModel.registerFlow({
     },
   },
 });
+
+DisplayItemModel.bindModelToInterface('MarkdownVditorReadPrettyFieldModel', ['vditor'], { isDefault: true });

@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
 import { TableColumnModel } from '../../../blocks/table/TableColumnModel';
@@ -20,10 +20,10 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       subModelBaseClasses={['TableColumnModel']}
-      afterSubModelInit={async (column: TableColumnModel) => {
+      afterSubModelInit={async (column: any) => {
         await column.applyAutoFlows();
       }}
-      afterSubModelAdd={async (column: TableColumnModel) => {
+      afterSubModelAdd={async (column: any) => {
         const currentBlockModel = model.context.blockModel;
         currentBlockModel.addAppends(`${model.collectionField.name}.${column.fieldPath}`, true);
       }}
@@ -48,11 +48,9 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
 
   getColumns() {
     const { enableIndexColumn = true } = this.props;
-    const baseColumns = this.mapSubModels('columns', (column: TableColumnModel) => column.getColumnProps()).filter(
-      (v) => {
-        return !v.hidden;
-      },
-    );
+    const baseColumns = this.mapSubModels('columns', (column: any) => column.getColumnProps()).filter((v) => {
+      return !v.hidden;
+    });
 
     return [
       enableIndexColumn && {
@@ -99,3 +97,9 @@ TableReadPrettyAssociationFieldModel.registerFlow({
     },
   },
 });
+
+TableReadPrettyAssociationFieldModel.define({
+  label: escapeT('Sub-table'),
+});
+
+DisplayItemModel.bindModelToInterface('TableReadPrettyAssociationFieldModel', ['m2m', 'o2m', 'mbm']);

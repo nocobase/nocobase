@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowModel, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { FormItemModel } from '../../../blocks/form/FormItemModel';
@@ -35,6 +35,7 @@ export class ObjectDetailAssociationFieldModel extends ReadPrettyAssociationFiel
 }
 
 ObjectDetailAssociationFieldModel.define({
+  label: escapeT('Sub-detail'),
   createModelOptions: {
     use: 'ObjectDetailAssociationFieldModel',
     subModels: {
@@ -106,6 +107,7 @@ export class ArrayDetailAssociationFieldModel extends ReadPrettyAssociationField
 }
 
 ArrayDetailAssociationFieldModel.define({
+  label: escapeT('Sub-detail'),
   createModelOptions: {
     use: 'ArrayDetailAssociationFieldModel',
     subModels: {
@@ -115,3 +117,14 @@ ArrayDetailAssociationFieldModel.define({
     },
   },
 });
+
+DisplayItemModel.bindModelToInterface('ObjectDetailAssociationFieldModel', [
+  'm2o',
+  'o2o',
+  'oho',
+  'obo',
+  'updatedBy',
+  'createdBy',
+]);
+
+DisplayItemModel.bindModelToInterface('ArrayDetailAssociationFieldModel', ['m2m', 'o2m', 'mbm']);

@@ -209,6 +209,10 @@ PreviewReadPrettyFieldModel.registerFlow({
   },
 });
 
+PreviewReadPrettyFieldModel.define({
+  label: escapeT('Preview'),
+});
+
 DisplayItemModel.bindModelToInterface(
   'PreviewReadPrettyFieldModel',
   ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],

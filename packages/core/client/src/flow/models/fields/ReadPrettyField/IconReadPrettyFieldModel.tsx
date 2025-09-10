@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { Icon } from '../../../../icon';
 
@@ -18,3 +19,7 @@ export class IconReadPrettyFieldModel extends ReadPrettyFieldModel {
     return <Icon type={value} />;
   }
 }
+
+DisplayItemModel.bindModelToInterface('IconReadPrettyFieldModel', ['icon'], {
+  isDefault: true,
+});

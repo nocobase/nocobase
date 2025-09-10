@@ -8,7 +8,7 @@
  */
 
 import { css, cx } from '@emotion/css';
-import { escapeT, FlowModel, createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, createCurrentRecordMetaFactory, DisplayItemModel } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -226,3 +226,14 @@ TagReadPrettyAssociationFieldModel.registerFlow({
 });
 
 TagReadPrettyAssociationFieldModel.registerFlow(openViewFlow);
+
+TagReadPrettyAssociationFieldModel.define({
+  label: escapeT('Title'),
+});
+DisplayItemModel.bindModelToInterface(
+  'TagReadPrettyAssociationFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  {
+    isDefault: true,
+  },
+);

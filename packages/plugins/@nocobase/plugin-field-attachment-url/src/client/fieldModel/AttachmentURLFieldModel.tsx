@@ -10,6 +10,7 @@
 import { UploadFieldModel } from '@nocobase/client';
 import { Upload } from '@formily/antd-v5';
 import { UploadOutlined } from '@ant-design/icons';
+import { EditableItemModel, escapeT } from '@nocobase/flow-engine';
 import React, { useEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { castArray } from 'lodash';
@@ -64,3 +65,9 @@ export class AttachmentURLFieldModel extends UploadFieldModel {
     return [CardUpload, {}];
   }
 }
+
+AttachmentURLFieldModel.define({
+  label: escapeT('AttachmentURL'),
+});
+
+EditableItemModel.bindModelToInterface('AttachmentURLFieldModel', ['attachmentURL']);
