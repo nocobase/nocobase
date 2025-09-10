@@ -112,9 +112,19 @@ FormModel.registerFlow({
   steps: {
     linkageRules: {
       uiMode: {
-        type: 'dialog',
+        type: 'drawer',
         props: {
-          width: 900,
+          width: 750,
+          closable: true,
+          mask: false,
+          onOpen() {
+            document.body.style.width = document.body.clientWidth - 750 + 'px';
+            document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
+          },
+          onClose() {
+            document.body.style.width = 'auto';
+            document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+          },
         },
       },
       use: 'fieldLinkageRules',

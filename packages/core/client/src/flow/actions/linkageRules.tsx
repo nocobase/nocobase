@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext, parseValueToPath } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
@@ -15,7 +15,7 @@ import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusO
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
-import { FilterItem, LinkageFilterItem } from '../components/filter';
+import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { DefaultValue } from '../components/DefaultValue';
 import _ from 'lodash';
