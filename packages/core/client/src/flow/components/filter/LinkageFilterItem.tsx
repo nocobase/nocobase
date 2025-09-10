@@ -64,6 +64,16 @@ function createStaticInputRenderer(
 
 type OperatorMeta = { value: string; label: string; noValue?: boolean; schema?: any; selected?: boolean };
 
+// 当左侧变量不是 collection field（无 interface）时，按字符串类型推断操作符
+const fallbackStringOperators: OperatorMeta[] = [
+  { value: '$includes', label: 'contains', selected: true },
+  { value: '$notIncludes', label: 'does not contain' },
+  { value: '$eq', label: 'is' },
+  { value: '$ne', label: 'is not' },
+  { value: '$empty', label: 'is empty', noValue: true },
+  { value: '$notEmpty', label: 'is not empty', noValue: true },
+];
+
 /**
  * LinkageFilterItem：左/右均为可变量输入，适用于联动规则等“前端逻辑”场景
  */
@@ -103,7 +113,8 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       }));
       return mappedList;
     }
-    return [];
+    // 无 interface：按字符串类型兜底，保证可用性
+    return leftFieldMeta ? fallbackStringOperators : [];
   }, [leftFieldSignature, model]);
 
   const operatorSelectOptions = useMemo(() => {
