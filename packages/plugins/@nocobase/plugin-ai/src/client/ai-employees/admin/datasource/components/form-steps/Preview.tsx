@@ -155,7 +155,7 @@ const PreviewTable: React.FC<{
             columns={columns}
             dataSource={datasource}
             loading={loading}
-            scroll={{ x: 'max-content', y: '45vh' }}
+            scroll={{ x: 'max-content', y: '47vh' }}
             pagination={{
               showSizeChanger: true,
               showTotal: (total) => ctx.t('Total {{total}} items', { total }),
@@ -195,7 +195,7 @@ const PreviewJSON: React.FC<{
           {!loading && (
             <pre
               style={{
-                height: '60vh',
+                height: '62vh',
                 overflowY: 'auto',
                 marginTop: '24px',
               }}

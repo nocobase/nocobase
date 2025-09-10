@@ -9,39 +9,42 @@
 
 import React from 'react';
 import { WorkContextOptions } from '../types';
-import { BuildOutlined, PicLeftOutlined } from '@ant-design/icons';
+import { DatabaseOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
-import { useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { DatasourceSelector } from '../datasource';
+import { Space } from 'antd';
+import { dialogController } from '../stores/dialog-controller';
 
 export const DatasourceContext: WorkContextOptions = {
   name: 'datasource',
   menu: {
-    icon: <BuildOutlined />,
+    icon: <DatabaseOutlined />,
     Component: () => {
       const t = useT();
       return <div>{t('Datasource')}</div>;
     },
-    clickHandler:
-      ({ ctx, onAdd, onRemove }) =>
-      () => {
-        ctx.viewer.dialog({
-          title: ctx.t('Add Datasource'),
-          width: 1200,
-          content: () => <DatasourceSelector onAdd={onAdd} onRemove={onRemove} />,
-        });
-      },
+    onClick: ({ ctx, onAdd, onRemove }) => {
+      ctx.viewer.dialog({
+        width: '80%',
+        content: <DatasourceSelector onAdd={onAdd} onRemove={onRemove} />,
+        onOpen: () => {
+          dialogController.hide();
+        },
+        onClose: () => {
+          dialogController.resume();
+        },
+      });
+    },
   },
   tag: {
     Component: ({ item }) => {
-      const flowEngine = useFlowEngine();
-      const model = flowEngine.getModel(item.uid);
       return (
-        <>
-          <PicLeftOutlined /> {model?.title || ''}
-        </>
+        <Space>
+          <DatabaseOutlined />
+          <span> {item?.title || ''}</span>
+        </Space>
       );
     },
   },

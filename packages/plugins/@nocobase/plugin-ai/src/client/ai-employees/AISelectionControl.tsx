@@ -12,6 +12,7 @@ import { observer } from '@nocobase/flow-engine';
 import { notification, Flex, Button } from 'antd';
 import { aiSelection } from './stores/ai-selection';
 import { BorderOutlined } from '@ant-design/icons';
+import { dialogController } from './stores/dialog-controller';
 
 export const AISelectionControl: React.FC = observer(() => {
   const [api, contextHolder] = notification.useNotification();
@@ -30,6 +31,7 @@ export const AISelectionControl: React.FC = observer(() => {
             icon={<BorderOutlined />}
             onClick={() => {
               aiSelection.stopSelect();
+              dialogController.resume();
             }}
           ></Button>
         </Flex>

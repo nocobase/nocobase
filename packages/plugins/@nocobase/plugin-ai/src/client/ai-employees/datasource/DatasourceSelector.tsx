@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button, Flex, Layout } from 'antd';
+import { Button, Divider, Flex, Layout, Space } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import { DatasourceList } from './DatasourceList';
 import {
@@ -17,15 +18,17 @@ import {
   FlowModelRenderer,
   MultiRecordResource,
   observer,
+  useFlowContext,
   useFlowViewContext,
 } from '@nocobase/flow-engine';
 import { CollectionContext, CurrentCollection } from '../admin/datasource/context';
 import { Preview } from '../admin/datasource/components/form-steps';
-import { DEFAULT_DATA_SOURCE_KEY, useApp } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { namespace } from '../../locale';
 import { ContextItem } from '../types';
+import { dialogController } from '../stores/dialog-controller';
 
-const { Footer, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 export type DatasourceSelectorProps = {
   onAdd: (item: Omit<ContextItem, 'type'>) => void;
@@ -34,7 +37,7 @@ export type DatasourceSelectorProps = {
 
 export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observer(({ onAdd, onRemove }) => {
   const ctx = useFlowViewContext<FlowModelContext>();
-  const { Header, Footer } = ctx.view;
+  const { Header } = ctx.view;
   const [collection, setCollection] = useState<Collection | null>(null);
   const [formData, setFormData] = useState<Record<string, any> | null>(null);
 
@@ -47,32 +50,44 @@ export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observ
     [ctx],
   );
 
+  const closeBtn = (
+    <Button
+      type="text"
+      icon={<CloseOutlined />}
+      onClick={() => {
+        dialogController.resume();
+        ctx.view.close();
+      }}
+    ></Button>
+  );
+
   return (
     <>
-      <Header title={ctx.t('Select datasource')} />
-      <Layout style={{ height: '80vh' }}>
-        <Sider width={300} style={{ backgroundColor: '#f5f5f5' }}>
-          <Flex align="center" vertical>
-            <DatasourceList onSelect={onSelect} onAdd={onAdd} onRemove={onRemove} />
-          </Flex>
-        </Sider>
-        <Content style={{ backgroundColor: '#f5f5f5' }}>
-          <CollectionContext.Provider value={new CurrentCollection(collection)}>
-            {formData && <Preview formData={formData} show={true} />}
-          </CollectionContext.Provider>
-        </Content>
-      </Layout>
-      <Footer>
-        <Flex justify="flex-end" align="end">
-          <Button
-            onClick={() => {
-              ctx.view.close();
-            }}
-          >
-            {ctx.t('Cancel')}
-          </Button>
-        </Flex>
-      </Footer>
+      <div style={{ backgroundColor: '#f5f5f5', borderRadius: 8 }}>
+        <Header
+          title={
+            <>
+              <Space>
+                {closeBtn}
+                <span>{ctx.t('Select datasource')}</span>
+              </Space>
+            </>
+          }
+        />
+        <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5' }}>
+          <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
+            <Flex align="center" vertical>
+              <DatasourceList onSelect={onSelect} onAdd={onAdd} onRemove={onRemove} />
+            </Flex>
+          </Sider>
+          <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
+          <Content style={{ backgroundColor: 'transparent' }}>
+            <CollectionContext.Provider value={new CurrentCollection(collection)}>
+              {formData && <Preview formData={formData} show={true} />}
+            </CollectionContext.Provider>
+          </Content>
+        </Layout>
+      </div>
     </>
   );
 });
@@ -112,16 +127,14 @@ DatasourceSelectorModel.registerFlow({
   },
 });
 
-export const DatasourceSelector: React.FC<DatasourceSelectorProps> = (props) => {
-  const app = useApp();
-  const model = useMemo(
-    () =>
-      app.flowEngine.createModel({
-        use: DatasourceSelectorModel,
-        props,
-      }),
-    [app, props],
-  );
+export const DatasourceSelector: React.FC<DatasourceSelectorProps> = observer((props) => {
+  const ctx = useFlowContext();
+  const model = useMemo(() => {
+    return ctx.engine.createModel({
+      use: DatasourceSelectorModel,
+      props,
+    });
+  }, [ctx, props]);
 
   return <FlowModelRenderer model={model} />;
-};
+});

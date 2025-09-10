@@ -8,7 +8,7 @@
  */
 
 // @ts-nocheck
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Button, Dropdown } from 'antd';
 import { useT } from '../locale';
 import { AppstoreAddOutlined } from '@ant-design/icons';
@@ -85,7 +85,7 @@ export const AddContextButton: React.FC<{
 
     const onClick = (e) => {
       const workContextItem = contextItemMapping.get(e.key);
-      const clickHandler = workContextItem?.menu?.clickHandler?.({
+      workContextItem?.menu?.onClick?.({
         ctx,
         onAdd: (contextItem) =>
           onAdd({
@@ -96,11 +96,10 @@ export const AddContextButton: React.FC<{
           onRemove(e.key, uid);
         },
       });
-      clickHandler?.();
     };
 
     return [menuItems, onClick];
-  }, [workContext]);
+  }, [ctx, t, workContext, onAdd, onRemove, ignore]);
 
   return (
     <Dropdown

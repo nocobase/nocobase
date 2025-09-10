@@ -17,6 +17,8 @@ import _ from 'lodash';
 import { aiSelection } from '../stores/ai-selection';
 import { CollectionBlockModel, FieldModel, FormModel } from '@nocobase/client';
 import { FlowUtils } from '../flow';
+import { Space } from 'antd';
+import { dialogController } from '../stores/dialog-controller';
 
 type SimplifyComponentNode = {
   uid: string;
@@ -112,7 +114,8 @@ const toSimplifyComponentTree = (model: FlowModel) => {
   return result;
 };
 
-const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'type'>) => void) => () => {
+const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'type'>) => void) => {
+  dialogController.hide();
   aiSelection.startSelect('flow-model', {
     onSelect: ({ uid }) => {
       if (!uid) {
@@ -137,16 +140,17 @@ export const FlowModelsContext: WorkContextOptions = {
       const t = useT();
       return <div>{t('Pick Block')}</div>;
     },
-    clickHandler: ({ ctx, onAdd }) => handleSelect(ctx, onAdd),
+    onClick: ({ ctx, onAdd }) => handleSelect(ctx, onAdd),
   },
   tag: {
     Component: ({ item }) => {
       const flowEngine = useFlowEngine();
       const model = flowEngine.getModel(item.uid);
       return (
-        <>
-          <PicLeftOutlined /> {model?.title || ''}
-        </>
+        <Space>
+          <BuildOutlined />
+          <span>{model?.title || ''}</span>
+        </Space>
       );
     },
   },

@@ -166,11 +166,11 @@ export type WorkContextOptions = {
     icon?: React.ReactNode;
     label?: React.ReactNode;
     Component?: ComponentType<{ onAdd?: (item: Omit<ContextItem, 'type'>) => void }>;
-    clickHandler?: (props: {
+    onClick?: (props: {
       ctx: FlowModelContext;
       onAdd: (item: Omit<ContextItem, 'type'>) => void;
       onRemove: (uid: string) => void;
-    }) => () => void;
+    }) => void;
   };
   tag?: {
     Component: ComponentType<{
