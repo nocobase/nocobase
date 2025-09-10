@@ -54,6 +54,8 @@ interface LinkageActions {
   };
 }
 
+let currentLinkageRules = null;
+
 const linkageActions: LinkageActions = {
   // 区块属性设置
   setBlockProps: {
@@ -380,6 +382,7 @@ const linkageActions: LinkageActions = {
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
   const { value: rules, supportedActions } = props;
   const ctx = useFlowContext();
+  currentLinkageRules = rules;
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
@@ -691,12 +694,19 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   );
 });
 
-const commonLinkageRulesHandler = (ctx: FlowContext, params: any) => {
+const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const evaluator = (path: string, operator: string, value: any) => {
     return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
   };
 
-  const linkageRules = params.value as LinkageRule[];
+  let linkageRules: LinkageRule[] = [];
+
+  if (currentLinkageRules) {
+    linkageRules = await ctx.resolveJsonTemplate(currentLinkageRules);
+  } else {
+    linkageRules = params.value as LinkageRule[];
+  }
+
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
   const ruleItemModels: FlowModel[] = ctx.model.__ruleModels || (ctx.model.__ruleModels = {});
 
@@ -788,6 +798,8 @@ const commonUIMode: any = {
     onClose() {
       document.body.style.width = 'auto';
       document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+
+      currentLinkageRules = null;
     },
   },
 };
