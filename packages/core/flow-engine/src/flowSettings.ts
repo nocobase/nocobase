@@ -752,7 +752,10 @@ export class FlowSettings {
           React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
         );
 
-        const footerEl = React.createElement(currentDialog.Footer, null, footerButtons);
+        let footerEl;
+        if (currentDialog.Footer) {
+          footerEl = React.createElement(currentDialog.Footer, null, footerButtons);
+        }
 
         return React.createElement(React.Fragment, null, stepsEl, footerEl);
       },
