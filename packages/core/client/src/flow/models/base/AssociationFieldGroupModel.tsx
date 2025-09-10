@@ -8,11 +8,11 @@
  */
 
 import { Collection, FlowModel, FlowModelContext, DisplayItemModel } from '@nocobase/flow-engine';
-import { TableBlockModel } from '../blocks/table';
 
 export class AssociationFieldGroupModel extends FlowModel {
+  static itemModelName = 'DetailsItemModel';
   static defineChildren(ctx: FlowModelContext) {
-    const itemModel = ctx.model.context.blockModel instanceof TableBlockModel ? 'TableColumnModel' : 'DetailsItemModel';
+    const itemModel = this.itemModelName;
 
     const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
       return targetCollection.getToOneAssociationFields().map((field) => {

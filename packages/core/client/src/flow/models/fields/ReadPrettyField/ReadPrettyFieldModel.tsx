@@ -14,10 +14,6 @@ import { FieldModel } from '../../base/FieldModel';
 export class ReadPrettyFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = '*' as any;
 
-  getValue() {
-    return this.context.fieldValue;
-  }
-
   // @reactive
   public render() {
     const { prefix, suffix, value } = this.props;

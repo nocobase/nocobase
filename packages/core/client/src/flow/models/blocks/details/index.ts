@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './DetailsAssociationFieldGroupModel';
 export * from './DetailsBlockModel';
 export * from './DetailsCustomItemModel';
 export * from './DetailsGridModel';

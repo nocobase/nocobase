@@ -8,11 +8,11 @@
  */
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { ResourcerContext } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
-import { resolveJsonTemplate, JSONValue } from './template/resolver';
+import { JSONValue, resolveJsonTemplate } from './template/resolver';
 import { variables } from './variables/registry';
-import type { ResourcerContext } from '@nocobase/resourcer';
 
 export class PluginFlowEngineServer extends Plugin {
   private globalContext!: GlobalContext;
@@ -183,6 +183,11 @@ export class PluginFlowEngineServer extends Plugin {
           await next();
         },
       },
+    });
+
+    this.app.acl.registerSnippet({
+      name: 'ui.flow-settings',
+      actions: ['flowSql:*'],
     });
 
     // 字段赋值（批量/单条）后端专用 API 已移除：改为复用 1.0 公共更新接口（collection:update），变量解析走客户端通用逻辑。
