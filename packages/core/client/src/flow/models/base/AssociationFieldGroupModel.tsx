@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { Collection, FlowModel, FlowModelContext, DisplayItemModel } from '@nocobase/flow-engine';
 import { TableBlockModel } from '../blocks/table';
 
 export class AssociationFieldGroupModel extends FlowModel {
@@ -26,35 +26,43 @@ export class AssociationFieldGroupModel extends FlowModel {
                 key: `${fPath}-children-collectionField`,
                 label: 'Display collection fields',
                 type: 'group',
-                children: field.targetCollection.getFields().map((f) => {
-                  const fp = `${fPath}.${f.name}`;
-                  return {
-                    key: `c-${fPath}.${f.name}`,
-                    label: f.title,
-                    useModel: itemModel,
-                    toggleable: (subModel) => {
-                      const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-                      return fieldPath === fp;
-                    },
-                    createModelOptions: {
-                      stepParams: {
-                        fieldSettings: {
-                          init: {
-                            dataSourceKey: ctx.collection.dataSourceKey,
-                            collectionName: ctx.collection.name,
-                            fieldPath: fp,
-                            associationPathName: fPath,
+                children: field.targetCollection
+                  .getFields()
+                  .map((f) => {
+                    const fp = `${fPath}.${f.name}`;
+                    const binding = DisplayItemModel.getDefaultBindingByField(ctx, f);
+                    if (!binding) {
+                      return;
+                    }
+                    const use = binding.modelName;
+                    return {
+                      key: `c-${fPath}.${f.name}`,
+                      label: f.title,
+                      useModel: itemModel,
+                      toggleable: (subModel) => {
+                        const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+                        return fieldPath === fp;
+                      },
+                      createModelOptions: {
+                        stepParams: {
+                          fieldSettings: {
+                            init: {
+                              dataSourceKey: ctx.collection.dataSourceKey,
+                              collectionName: ctx.collection.name,
+                              fieldPath: fp,
+                              associationPathName: fPath,
+                            },
+                          },
+                        },
+                        subModels: {
+                          field: {
+                            use: use,
                           },
                         },
                       },
-                      subModels: {
-                        field: {
-                          use: f.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
-                        },
-                      },
-                    },
-                  };
-                }),
+                    };
+                  })
+                  .filter(Boolean),
               },
               {
                 key: `${fPath}-children-associationField`,

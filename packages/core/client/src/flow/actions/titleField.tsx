@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { defineAction, DisplayItemModel, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
@@ -67,7 +67,12 @@ export const titleField = defineAction({
     };
     ctx.model.setProps({ fieldNames: newFieldNames });
     const targetCollectionField = targetCollection.getField(label);
-    const use = targetCollectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+
+    const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+    if (!binding) {
+      return;
+    }
+    const use = binding.modelName;
     const model = ctx.model.setSubModel('field', {
       use,
       stepParams: {

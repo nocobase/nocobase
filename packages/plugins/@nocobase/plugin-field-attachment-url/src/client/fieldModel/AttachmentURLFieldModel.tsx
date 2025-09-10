@@ -70,4 +70,4 @@ AttachmentURLFieldModel.define({
   label: escapeT('AttachmentURL'),
 });
 
-EditableItemModel.bindModelToInterface('AttachmentURLFieldModel', ['attachmentURL']);
+EditableItemModel.bindModelToInterface('AttachmentURLFieldModel', ['attachmentURL'], { isDefault: true });

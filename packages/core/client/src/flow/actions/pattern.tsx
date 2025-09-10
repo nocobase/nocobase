@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction, escapeT, DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -39,32 +39,19 @@ export const pattern = defineAction({
     pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
   }),
   beforeParamsSave: async (ctx, params, previousParams) => {
-    const model: any = ctx.model;
+    const { model } = ctx;
 
     if (params.pattern === 'readPretty') {
-      const use = model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      await ctx.engine.replaceModel(model.subModels['field']['uid'], {
-        use: use,
-        stepParams: {
-          fieldSettings: {
-            init: model.getFieldSettingsInitParams(),
-          },
-        },
-      });
+      const binding = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      await rebuildFieldSubModel(ctx, model, binding);
     } else {
-      const use = model.collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+      const binding = EditableItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {
-        await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
-          use: use,
-          stepParams: {
-            fieldSettings: {
-              init: model.getFieldSettingsInitParams(),
-            },
-          },
-        });
+        await rebuildFieldSubModel(ctx, model, binding);
       }
     }
   },
+
   async handler(ctx, params) {
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
@@ -77,3 +64,25 @@ export const pattern = defineAction({
     }
   },
 });
+
+async function rebuildFieldSubModel(ctx, model, binding) {
+  if (!binding) return;
+
+  const fieldUid = model.subModels['field']?.['uid'];
+  if (fieldUid) {
+    await ctx.engine.destroyModel(fieldUid);
+  }
+
+  const subModel = model.setSubModel('field', {
+    use: binding.modelName,
+    props: binding.defaultProps,
+    stepParams: {
+      fieldSettings: {
+        init: model.getFieldSettingsInitParams(),
+      },
+    },
+  });
+
+  await subModel.applyAutoFlows();
+  await model.save(); // 持久化
+}

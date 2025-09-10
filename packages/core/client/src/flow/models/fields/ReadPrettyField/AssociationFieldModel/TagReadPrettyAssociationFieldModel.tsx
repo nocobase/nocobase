@@ -155,7 +155,12 @@ TagReadPrettyAssociationFieldModel.registerFlow({
           label,
         };
         const targetCollectionField = targetCollection.getField(label);
-        const use = targetCollectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
+
+        const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+        if (!binding) {
+          return;
+        }
+        const use = binding.modelName;
         ctx.model.setProps({ fieldNames: newFieldNames });
         const model = ctx.model.setSubModel('field', {
           use,

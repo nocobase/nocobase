@@ -7,15 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction } from '@nocobase/flow-engine';
+import { defineAction, DisplayItemModel, EditableItemModel, FlowEngineContext } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../models/base/FieldModel';
 
 export const fieldComponent = defineAction({
   title: tval('Field component'),
   name: 'fieldComponent',
-  uiSchema: (ctx) => {
-    const classes = [...(ctx.model as FieldModel).collectionField.getSubclassesOf('ReadPrettyFieldModel').keys()];
+  uiSchema: (ctx: FlowEngineContext) => {
+    const classes =
+      ctx.model.getProps().pattern === 'readPretty'
+        ? DisplayItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField)
+        : EditableItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField);
     if (classes.length === 1) {
       return null;
     }
@@ -24,15 +27,33 @@ export const fieldComponent = defineAction({
         type: 'string',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
-        enum: classes.map((model) => ({
-          label: model,
-          value: model,
-        })),
+        enum: classes.map((model) => {
+          const m = ctx.engine.getModelClass(model.modelName);
+          return {
+            label: m.meta.label || model.modelName,
+            value: model.modelName,
+            defaultProps: model.defaultProps,
+          };
+        }),
       },
     };
   },
   beforeParamsSave: async (ctx, params, previousParams) => {
+    console.log(params);
     if (params.use !== previousParams.use) {
+      const fieldUid = ctx.model.subModels['field']['uid'];
+      await ctx.engine.destroyModel(fieldUid);
+      ctx.model.setSubModel('field', {
+        use: params.use,
+        // props: binding.defaultProps,
+        stepParams: {
+          fieldSettings: {
+            init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
+          },
+        },
+      });
+      // 持久化
+      await ctx.model.save();
       await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
         use: params.use,
         stepParams: {

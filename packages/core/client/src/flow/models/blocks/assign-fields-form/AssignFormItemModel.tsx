@@ -17,6 +17,7 @@ import {
   escapeT,
   isVariableExpression,
   parseValueToPath,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 import type { FlowModel, FlowDefinitionOptions, StepDefinition } from '@nocobase/flow-engine';
 import { FormItemModel } from '../form/FormItemModel';
@@ -54,11 +55,11 @@ export class AssignFormItemModel extends FormItemModel {
       const fields = collection.getFields() || [];
       const f = fields.find((x) => x?.name === init?.fieldPath);
       const cfObj = collection?.getField?.(init?.fieldPath);
-      // 关联字段一律使用 RemoteSelectFieldModel；否则回退到字段模型分派
-      const isAssociation = cfObj?.isAssociationField?.() || cfObj?.isRelationshipField?.();
-      const fieldModel = isAssociation
-        ? 'RemoteSelectFieldModel'
-        : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+      const binding = EditableItemModel.getDefaultBindingByField(ctx, f);
+      if (!binding) {
+        return;
+      }
+      const fieldModel = binding.modelName;
       ctx?.engine?.createModel?.({
         use: fieldModel,
         stepParams: { fieldSettings: { init } },
@@ -135,12 +136,11 @@ export class AssignFormItemModel extends FormItemModel {
         const fields = collection?.getFields?.() || [];
         const f = fields.find((x: any) => x?.name === fieldPath);
         const cfObj = collection.getField(fieldPath);
-        // 正确判定是否为关联字段（优先使用 flow-engine 的方法）
-        const isAssociation = cfObj?.isAssociationField?.() || cfObj?.isRelationshipField?.();
-        const fieldModel = isAssociation
-          ? 'RemoteSelectFieldModel'
-          : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
-
+        const binding = EditableItemModel.getDefaultBindingByField(ctx, f);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
         const created = ctx?.engine?.createModel?.({
           use: 'VariableFieldFormModel',
           subModels: {

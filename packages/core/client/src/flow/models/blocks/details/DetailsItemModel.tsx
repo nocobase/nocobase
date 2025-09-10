@@ -63,36 +63,43 @@ export class DetailsItemModel extends DisplayItemModel<{
 }> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
-    return collection.getFields().map((field) => {
-      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
-      return {
-        key: fullName,
-        label: field.title,
-        toggleable: (subModel) => {
-          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-          return fieldPath === fullName;
-        },
-        useModel: 'DetailsItemModel',
-        createModelOptions: () => ({
-          use: 'DetailsItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: ctx.model.context.blockModel.collection.name,
-                fieldPath: fullName,
+    return collection
+      .getFields()
+      .map((field) => {
+        const binding = this.getDefaultBindingByField(ctx, field);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
+        const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
+        return {
+          key: fullName,
+          label: field.title,
+          toggleable: (subModel) => {
+            const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+            return fieldPath === fullName;
+          },
+          useModel: 'DetailsItemModel',
+          createModelOptions: () => ({
+            use: 'DetailsItemModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: ctx.model.context.blockModel.collection.name,
+                  fieldPath: fullName,
+                },
               },
             },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
+            subModels: {
+              field: {
+                use: fieldModel,
+              },
             },
-          },
-        }),
-      };
-    });
+          }),
+        };
+      })
+      .filter(Boolean);
   }
 
   onInit(options: any) {

@@ -47,33 +47,40 @@ export class TableColumnModel extends DisplayItemModel {
 
   static defineChildren(ctx: FlowModelContext) {
     const collection = (ctx.model as any).collection || (ctx.collection as Collection);
-    return collection.getFields().map((field) => {
-      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      const fieldPath = field.name;
-      return {
-        key: field.name,
-        label: field.title,
-        toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-        useModel: 'TableColumnModel',
-        createModelOptions: () => ({
-          use: 'TableColumnModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: collection.name,
-                fieldPath,
+    return collection
+      .getFields()
+      .map((field) => {
+        const binding = this.getDefaultBindingByField(ctx, field);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
+        const fieldPath = field.name;
+        return {
+          key: field.name,
+          label: field.title,
+          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+          useModel: 'TableColumnModel',
+          createModelOptions: () => ({
+            use: 'TableColumnModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: collection.name,
+                  fieldPath,
+                },
               },
             },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
+            subModels: {
+              field: {
+                use: fieldModel,
+              },
             },
-          },
-        }),
-      };
-    });
+          }),
+        };
+      })
+      .filter(Boolean);
   }
 
   getColumnProps(): TableColumnProps {
@@ -179,7 +186,7 @@ export class TableColumnModel extends DisplayItemModel {
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index
+            get: () => index,
           });
           const value = get(record, this.fieldPath);
           return (

@@ -74,4 +74,8 @@ export class DateTimeTzFieldModel extends DateTimeFieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('DateTimeTzFieldModel', ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp']);
+EditableItemModel.bindModelToInterface(
+  'DateTimeTzFieldModel',
+  ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
+  { isDefault: true },
+);

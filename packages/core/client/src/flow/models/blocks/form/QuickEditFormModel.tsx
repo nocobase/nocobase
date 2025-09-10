@@ -19,6 +19,7 @@ import {
   SingleRecordResource,
   buildRecordMeta,
   inferRecordRef,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
@@ -202,7 +203,11 @@ QuickEditFormModel.registerFlow({
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          const use = collectionField.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
+          const binding = EditableItemModel.getDefaultBindingByField(ctx, collectionField);
+          if (!binding) {
+            return;
+          }
+          const use = binding.modelName;
           const fieldModel = ctx.model.addSubModel<FormFieldModel>('fields', {
             use,
             stepParams: {
