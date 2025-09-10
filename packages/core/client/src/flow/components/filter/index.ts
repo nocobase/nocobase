@@ -13,3 +13,5 @@ export { FilterItem } from './FilterItem';
 export type { FilterItemProps } from './FilterItem';
 export { VariableFilterItem } from './VariableFilterItem';
 export type { VariableFilterItemProps, VariableFilterItemValue } from './VariableFilterItem';
+export { LinkageFilterItem } from './LinkageFilterItem';
+export type { LinkageFilterItemProps, LinkageFilterItemValue } from './LinkageFilterItem';

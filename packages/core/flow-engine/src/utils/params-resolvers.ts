@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
-import { RecordProxy } from '../RecordProxy';
 import type { ServerContextParams } from './serverContextParams';
 
 /**

@@ -13,6 +13,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
   AddSubModelButton,
+  createCurrentRecordMetaFactory,
   DndProvider,
   DragHandler,
   Droppable,
@@ -23,7 +24,6 @@ import {
   MultiRecordResource,
   observable,
   useFlowEngine,
-  createCurrentRecordMetaFactory,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
@@ -115,7 +115,7 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       key={'table-add-columns'}
-      subModelBaseClasses={['TableColumnModel', 'AssociationFieldGroupModel', 'TableCustomColumnModel']}
+      subModelBaseClasses={['TableColumnModel', 'TableAssociationFieldGroupModel', 'TableCustomColumnModel']}
       afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}

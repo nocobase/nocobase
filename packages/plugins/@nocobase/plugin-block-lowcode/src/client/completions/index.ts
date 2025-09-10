@@ -23,8 +23,8 @@ export default [
     info: 'APIClient instance for making HTTP requests.',
     detail: 'APIClient',
     boost: 100, // 次高优先级，常用功能
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    // 使用补全提供的 from/to 进行替换，避免仅在光标处插入
+    apply: (view, completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: completion.label },
       });
@@ -36,10 +36,13 @@ export default [
     info: 'Make an HTTP request using the APIClient instance.',
     detail: 'Promise<any>',
     boost: 95, // 中等优先级，具体方法
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, _completion, from, to) => {
       view.dispatch({
-        changes: { from, to, insert: 'await ctx.api.request({\n  url: "",\n  method: "get",\n  params: {}\n})' },
+        changes: {
+          from,
+          to,
+          insert: 'await ctx.api.request({\n  url: "",\n  method: "get",\n  params: {}\n})',
+        },
       });
     },
   },
@@ -49,8 +52,7 @@ export default [
     info: 'Represents the current HTML element in the runtime context',
     detail: 'HTMLElement',
     boost: 110, // 核心属性，优先级最高
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: completion.label },
       });
@@ -62,8 +64,7 @@ export default [
     info: 'Set the inner HTML content of the current HTML element in the runtime context.',
     detail: 'string',
     boost: 90, // 中等优先级，具体属性
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, _completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: 'ctx.element.innerHTML = `<h1>Hello, NocoBase!</h1>`;' },
       });
@@ -153,8 +154,7 @@ ctx.element.innerHTML = ctx.t('welcome_user', { user: ctx.auth.user.nickname, ns
     info: 'An instance of i18next for managing internationalization.',
     detail: 'i18next',
     boost: 100, // 次高优先级，常用功能
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: completion.label },
       });
@@ -166,8 +166,7 @@ ctx.element.innerHTML = ctx.t('welcome_user', { user: ctx.auth.user.nickname, ns
     info: 'Translate a given text key using the provided options.',
     detail: 'string',
     boost: 95, // 中等优先级，具体方法
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, _completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: 'ctx.t("key", { ns: "namespace" })' },
       });
@@ -179,8 +178,7 @@ ctx.element.innerHTML = ctx.t('welcome_user', { user: ctx.auth.user.nickname, ns
     info: 'Find the first descendant element that matches the specified CSS selector.',
     detail: 'HTMLElement | null',
     boost: 85, // 较低优先级，具体方法
-    apply: (view, completion) => {
-      const { from, to } = view.state.selection.main;
+    apply: (view, _completion, from, to) => {
       view.dispatch({
         changes: { from, to, insert: 'const child = ctx.element.querySelector(".child-class");' },
       });

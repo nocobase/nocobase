@@ -8,6 +8,7 @@
  */
 
 import { Input } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { CollectionField } from '../data-source';
 import { FlowEngineContext } from '../flowContext';
@@ -23,7 +24,7 @@ export interface FieldSettingsInitParams {
 }
 
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
-  static bindings = new Map();
+  private static _bindings = new Map();
 
   renderHiddenInConfig(): React.ReactNode | undefined {
     return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
@@ -113,12 +114,12 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
       return;
     }
     // Ensure the interface entry exists in the map
-    if (!this.bindings.has(interfaceName)) {
-      this.bindings.set(interfaceName, []);
+    if (!this.currentBindings.has(interfaceName)) {
+      this.currentBindings.set(interfaceName, []);
     }
 
     // Add the mapping entry
-    const bindings = this.bindings.get(interfaceName);
+    const bindings = this.currentBindings.get(interfaceName);
     bindings.push({
       modelName,
       isDefault: options.isDefault || false,
@@ -127,7 +128,55 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     });
 
     // Update the map
-    this.bindings.set(interfaceName, bindings);
+    this.currentBindings.set(interfaceName, bindings);
+  }
+
+  private static get currentBindings() {
+    if (!Object.prototype.hasOwnProperty.call(this, '_bindings') || !this._bindings) {
+      this._bindings = new Map();
+    }
+    return this._bindings;
+  }
+
+  static getAllParentClasses(): any[] {
+    const parentClasses = [];
+    let currentClass: any = this;
+
+    while (currentClass && currentClass !== Object) {
+      currentClass = Object.getPrototypeOf(currentClass);
+      if (currentClass?.currentBindings) {
+        parentClasses.push(currentClass);
+      }
+    }
+
+    return parentClasses;
+  }
+
+  static get bindings() {
+    const allBindings = new Map();
+
+    // 获取当前类及其所有父类
+    const allParentClasses = this.getAllParentClasses();
+
+    // 遍历所有父类的绑定
+    for (const parentClass of allParentClasses) {
+      for (const [interfaceName, binding] of parentClass.currentBindings) {
+        if (!allBindings.has(interfaceName)) {
+          allBindings.set(interfaceName, []);
+        }
+        allBindings.get(interfaceName).unshift(...binding);
+      }
+    }
+
+    // 合并当前类的绑定
+    for (const [interfaceName, binding] of this.currentBindings) {
+      if (!allBindings.has(interfaceName)) {
+        allBindings.set(interfaceName, []);
+      }
+      allBindings.get(interfaceName).unshift(...binding);
+    }
+
+    return allBindings;
   }
 }
 

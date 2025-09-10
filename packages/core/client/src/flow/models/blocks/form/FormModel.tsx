@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// import { createForm, Form } from '@formily/core';
-import { CollectionField, inferRecordRef } from '@nocobase/flow-engine';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
+import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
@@ -34,7 +32,15 @@ export class FormModel<
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
-    this.context.defineProperty('form', { get: () => form, cache: false });
+    this.context.defineProperty('form', { get: () => form });
+    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
+    this.context.defineProperty('formValues', {
+      get: () => {
+        return this.context.form.getFieldsValue();
+      },
+      cache: false,
+      meta: recordMeta,
+    });
   }
 
   onInit(options) {
@@ -44,9 +50,15 @@ export class FormModel<
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
-      resolveOnServer: true,
-      meta: recordMeta,
     });
+  }
+
+  onMount() {
+    super.onMount();
+    // 首次渲染触发一次事件流
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
   }
 
   getCurrentRecord() {
@@ -75,6 +87,9 @@ export function FormComponent({
       initialValues={model.context.record || initialValues}
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onValuesChange={(changedValues, allValues) => {
+        model.dispatchEvent('formValuesChange');
+      }}
     >
       {children}
     </Form>
@@ -92,6 +107,17 @@ FormModel.registerFlow({
     layout: {
       use: 'layout',
       title: tval('Layout'),
+    },
+  },
+});
+
+FormModel.registerFlow({
+  key: 'eventSettings',
+  title: tval('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'fieldLinkageRules',
     },
   },
 });

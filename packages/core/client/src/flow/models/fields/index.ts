@@ -31,7 +31,7 @@ export * from './VariableFieldFormModel';
 
 export * from './ReadPrettyField';
 
-export * from './GroupItemModel';
+export * from './DividerItemModel';
 export * from './JSFieldItemModel';
 export * from './MarkdownItemModel';
 //
