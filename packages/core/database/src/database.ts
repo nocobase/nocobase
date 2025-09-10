@@ -553,22 +553,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const run = this.sequelize.dialect.Query.prototype.run;
     // @ts-ignore
     this.sequelize.dialect.Query.prototype.run = function (sql: string, parameters: any[]) {
-      if (!/^update\s+/i.test(sql.trim())) {
+      if (!/^update\s+/i.test(sql.trim()) || !parameters.length) {
         return run.apply(this, [sql, parameters]);
       }
       try {
-        const options = this.options;
-        const model = options.model;
-        const fields = options.fields;
-        if (options.bind?.length > 0) {
-          fields?.forEach((name: string, index: number) => {
-            const field = model.getAttributes()[name];
-            const val = parameters[index];
-            if (field?.type instanceof DataTypes.BIGINT && val !== null && val !== undefined) {
-              parameters[index] = val.toString();
-            }
-          });
-        }
+        parameters.forEach((p, index) => {
+          if (typeof p === 'number') {
+            parameters[index] = p.toString();
+          }
+        });
       } catch (err) {
         that.logger.error(err);
       }
