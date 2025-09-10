@@ -12,7 +12,7 @@ import { BaseColumnFieldOptions, Field } from './field';
 import { Model } from '../model';
 
 interface SnowflakeIdGenerator {
-  getUniqueID(): BigInt;
+  generate(): number | BigInt;
 }
 
 export class SnowflakeIdField extends Field {
@@ -30,7 +30,7 @@ export class SnowflakeIdField extends Field {
     const value = instance.get(name);
 
     if (!value) {
-      instance.set(name, SnowflakeIdField.snowflakeIdGenerator.getUniqueID().toString());
+      instance.set(name, SnowflakeIdField.snowflakeIdGenerator.generate());
     }
   }
 

@@ -51,8 +51,7 @@
     "serve-handler": "^6.1.6",
     "ws": "^8.13.0",
     "xpipe": "^1.0.5",
-    "ioredis": "^5.7.0",
-    "nodejs-snowflake": "^2.0.1"
+    "ioredis": "^5.7.0"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9",

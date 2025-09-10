@@ -1,0 +1,10 @@
+{
+  "name": "@nocobase/snowflake-id",
+  "version": "1.9.0-alpha.14",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}

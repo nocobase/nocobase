@@ -8,22 +8,19 @@
  */
 
 import { SnowflakeIdField } from '@nocobase/database';
-import { Snowflake } from 'nodejs-snowflake';
+import { Snowflake } from '@nocobase/snowflake-id';
 
 export class SnowflakeIdGenerator {
   private snowflake: Snowflake;
-  // 2020-11-11 00:00:00 The date of the first commit of NocoBase.
-  private epoch = 1605024000000;
 
   constructor(workerId: number) {
     this.snowflake = new Snowflake({
-      instance_id: workerId,
-      custom_epoch: this.epoch,
+      workerId,
     });
   }
 
-  getUniqueID() {
-    return this.snowflake.getUniqueID();
+  generate() {
+    return this.snowflake.generate();
   }
 }
 
