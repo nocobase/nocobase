@@ -24,9 +24,9 @@ import { DateFilterDynamicComponent } from '../../../schema-component';
 import { NumberPicker } from '@formily/antd-v5';
 
 export interface VariableFilterItemValue {
-  leftValue: string;
+  path: string;
   operator: string;
-  rightValue: string;
+  value: string;
 }
 
 export interface VariableFilterItemProps {
@@ -81,7 +81,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
-    const { leftValue, operator, rightValue } = value;
+    const { path, operator, value: rightValue } = value;
 
     // 左侧选中的元数据节点
     const [leftMeta, setLeftMeta] = useState<MetaTreeNode | null>(null);
@@ -98,7 +98,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     useEffect(() => {
       if (operatorMetaList.length > 0 && !_.find(operatorMetaList, (o) => o.value === value.operator)) {
         value.operator = '';
-        value.rightValue = '';
+        value.value = '';
       }
     }, [operatorMetaList, value]);
 
@@ -113,7 +113,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 处理左侧值变化（值由 converters 决定如何解析）
     const handleLeftChange = useCallback(
       (variableValue: string, meta?: MetaTreeNode) => {
-        value.leftValue = variableValue || '';
+        value.path = variableValue || '';
         if (meta) {
           setLeftMeta(meta);
         }
@@ -143,7 +143,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         value.operator = operatorValue;
         const cur = operatorMetaList.find((op) => op.value === operatorValue);
         if (cur?.noValue) {
-          value.rightValue = '';
+          value.value = '';
         }
       },
       [operatorMetaList, value],
@@ -183,7 +183,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const Comp = staticInputRenderer;
       return (
         <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-          <Comp value={rightValue} onChange={(val: any) => (value.rightValue = val)} />
+          <Comp value={rightValue} onChange={(val: any) => (value.value = val)} />
         </div>
       );
     }, [staticInputRenderer, rightValue, value]);
@@ -240,7 +240,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     return (
       <Space wrap style={{ width: '100%' }}>
         <VariableInput
-          value={leftValue}
+          value={path}
           metaTree={() => model.context.getPropertyMetaTree('{{ ctx.collection }}')}
           onChange={handleLeftChange}
           converters={customConverters}
@@ -267,7 +267,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           (rightAsVariable ? (
             <VariableInput
               value={rightValue}
-              onChange={(v) => (value.rightValue = v)}
+              onChange={(v) => (value.value = v)}
               metaTree={mergedRightMetaTree}
               converters={rightConverters}
               showValueComponent
