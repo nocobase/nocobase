@@ -179,8 +179,7 @@ export class TableColumnModel extends CollectionFieldModel {
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
-            meta: { type: 'number', title: fork.context.t('Current row') },
+            get: () => index
           });
           const value = get(record, this.fieldPath);
           return (

@@ -55,8 +55,7 @@ const Columns = observer<any>(({ record, model, index }) => {
           meta: recordMeta,
         });
         fork.context.defineProperty('recordIndex', {
-          get: () => index,
-          meta: { type: 'number', title: fork.context.t('Current row') },
+          get: () => index
         });
         return (
           <FlowModelRenderer
