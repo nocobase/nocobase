@@ -14,7 +14,7 @@ export class FormCustomItemModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
   static defineChildren(ctx: FlowModelContext) {
-    const commonModels = ctx.engine.filterModelClassByParent('CommonModel');
+    const commonModels = ctx.engine.filterModelClassByParent('CommonItemModel');
     const formCustomModels = ctx.engine.filterModelClassByParent('FormCustomModel');
 
     const toChildren = (models: Map<string, any>) =>

@@ -8,7 +8,9 @@
  */
 
 export * from './ActionModel';
+export * from './AssociationFieldGroupModel';
 export * from './BlockModel';
+export * from './CommonItemModel';
 export * from './FieldModel';
 export * from './GridModel';
 export * from './PageModel';

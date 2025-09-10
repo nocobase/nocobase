@@ -8,6 +8,7 @@
  */
 
 export * from './TableActionsColumnModel';
+export * from './TableAssociationFieldGroupModel';
 export * from './TableBlockModel';
 export * from './TableColumnModel';
 export * from './TableCustomColumnModel';
