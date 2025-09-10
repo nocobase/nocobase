@@ -10,7 +10,7 @@
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import type { JSONValue } from './params-resolvers';
 import type { Collection } from '../data-source';
-import { createCollectionContextMeta } from './createRecordProxyContext';
+import { createCollectionContextMeta } from './createCollectionContextMeta';
 import { buildServerContextParams, type RecordRef, type ServerContextParams } from '../utils/serverContextParams';
 import {
   extractUsedVariableNames as _extractUsedVariableNames,

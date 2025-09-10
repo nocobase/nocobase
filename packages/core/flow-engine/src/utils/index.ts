@@ -40,7 +40,7 @@ export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-ut
 export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
-export { createRecordProxyContext, createCollectionContextMeta } from './createRecordProxyContext';
+export { createCollectionContextMeta } from './createCollectionContextMeta';
 export {
   buildRecordMeta,
   createRecordMetaFactory,

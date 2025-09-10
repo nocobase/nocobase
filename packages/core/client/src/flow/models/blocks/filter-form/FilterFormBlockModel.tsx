@@ -39,6 +39,10 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     return this.context.form;
   }
 
+  get title() {
+    return 'Filter form';
+  }
+
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();

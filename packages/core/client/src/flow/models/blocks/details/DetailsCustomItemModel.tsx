@@ -14,7 +14,7 @@ export class DetailsCustomItemModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
   static defineChildren(ctx: FlowModelContext) {
-    const commonModels = ctx.engine.filterModelClassByParent('CommonModel');
+    const commonModels = ctx.engine.filterModelClassByParent('CommonItemModel');
     const detailCustomModels = ctx.engine.filterModelClassByParent('DetailsCustomItemModel');
 
     const toChildren = (models: Map<string, any>) =>
