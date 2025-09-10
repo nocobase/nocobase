@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, EditableItemModel, FlowEngineContext } from '@nocobase/flow-engine';
+import {
+  defineAction,
+  DisplayItemModel,
+  EditableItemModel,
+  FlowEngineContext,
+  CollectionFieldModel,
+} from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../models/base/FieldModel';
 
@@ -32,20 +38,24 @@ export const fieldComponent = defineAction({
           return {
             label: m.meta.label || model.modelName,
             value: model.modelName,
-            defaultProps: model.defaultProps,
           };
         }),
       },
     };
   },
-  beforeParamsSave: async (ctx, params, previousParams) => {
-    console.log(params);
+  afterParamsSave: async (ctx, params, previousParams) => {
+    const classes =
+      ctx.model.getProps().pattern === 'readPretty'
+        ? DisplayItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField)
+        : EditableItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField);
+    // 找到选中的那条
+    const selected = classes.find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {
       const fieldUid = ctx.model.subModels['field']['uid'];
       await ctx.engine.destroyModel(fieldUid);
       ctx.model.setSubModel('field', {
         use: params.use,
-        // props: binding.defaultProps,
+        props: selected.defaultProps,
         stepParams: {
           fieldSettings: {
             init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
@@ -54,14 +64,6 @@ export const fieldComponent = defineAction({
       });
       // 持久化
       await ctx.model.save();
-      await ctx.engine.replaceModel(ctx.model.subModels['field']['uid'], {
-        use: params.use,
-        stepParams: {
-          fieldSettings: {
-            init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
-          },
-        },
-      });
     }
   },
   defaultParams: (ctx) => {
