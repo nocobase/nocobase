@@ -254,9 +254,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     );
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
-    if (options.dialect === 'mysql') {
-      this.addTypeCastForMySQLOptions(sequelizeOptions);
-    }
     this.sequelize = new Sequelize(sequelizeOptions);
 
     if (options.dialect === 'mysql') {
@@ -526,27 +523,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.inDialect('postgres');
   }
 
-  addTypeCastForMySQLOptions(options: DatabaseOptions) {
-    const { supportBigNumbers, bigNumberStrings } = (options.dialectOptions as mysql.ConnectionOptions) || {};
-    if (!(supportBigNumbers && bigNumberStrings)) {
-      return;
-    }
-    const dialectOptions: mysql.ConnectionOptions = {
-      ...options.dialectOptions,
-      typeCast: (field, next) => {
-        // @ts-ignore
-        const ConnectionManager = this.sequelize.dialect.connectionManager.constructor;
-        if (field.type === 'LONGLONG') {
-          const val = field.string();
-          return parseBigIntValue(val);
-        }
-        // @ts-ignore
-        return ConnectionManager._typecast.bind(this.sequelize.dialect.connectionManager)(field, next);
-      },
-    };
-    options.dialectOptions = dialectOptions;
-  }
-
+  /*
+   * https://github.com/sidorares/node-mysql2/issues/1239#issuecomment-766867699
+   * https://github.com/sidorares/node-mysql2/pull/1407#issuecomment-1325789581
+   * > I'm starting to think simple "always send (parameter.toString()) as VAR_STRING" unless the type is explicitly specified by user" might be actually the best behaviour
+   */
   wrapSequelizeRunForMySQL() {
     const that = this;
     // @ts-ignore
