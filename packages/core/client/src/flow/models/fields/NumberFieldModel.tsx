@@ -9,6 +9,7 @@
 
 import { InputNumber as NumberPicker } from 'antd';
 import { InputNumberProps as AntdInputNumberProps } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
@@ -50,3 +51,7 @@ export class NumberFieldModel extends FormFieldModel {
     return [InputNumberField, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('NumberFieldModel', ['number', 'integer', 'id'], {
+  isDefault: true,
+});

@@ -8,6 +8,7 @@
  */
 
 import { Radio } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 export class RadioGroupFieldModel extends FormFieldModel {
@@ -17,3 +18,7 @@ export class RadioGroupFieldModel extends FormFieldModel {
     return [Radio.Group, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('RadioGroupFieldModel', ['radioGroup'], {
+  isDefault: true,
+});

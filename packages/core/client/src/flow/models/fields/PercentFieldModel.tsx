@@ -12,6 +12,7 @@ import { InputNumber } from 'antd';
 import React from 'react';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
@@ -44,3 +45,7 @@ export class PercentFieldModel extends FormFieldModel {
     return [PercentInput, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('PercentFieldModel', ['percent'], {
+  isDefault: true,
+});

@@ -8,6 +8,7 @@
  */
 
 import { Checkbox } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 export class CheckboxGroupFieldModel extends FormFieldModel {
@@ -17,3 +18,7 @@ export class CheckboxGroupFieldModel extends FormFieldModel {
     return [Checkbox.Group, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('CheckboxGroupFieldModel', ['checkboxGroup'], {
+  isDefault: true,
+});

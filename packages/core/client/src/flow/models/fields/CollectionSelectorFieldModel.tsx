@@ -8,8 +8,8 @@
  */
 
 import React, { useCallback } from 'react';
-import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -65,4 +65,8 @@ CollectionSelectorFieldModel.registerFlow({
       },
     },
   },
+});
+
+EditableItemModel.bindModelToInterface('CollectionSelectorFieldModel', ['collection'], {
+  isDefault: true,
 });

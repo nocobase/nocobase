@@ -14,6 +14,7 @@ import {
   useFlowContext,
   useFlowViewContext,
   escapeT,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Select } from 'antd';
@@ -246,3 +247,19 @@ RecordPickerFieldModel.registerFlow({
     },
   },
 });
+
+RecordPickerFieldModel.define({
+  label: escapeT('Record picker'),
+});
+
+EditableItemModel.bindModelToInterface('RecordPickerFieldModel', [
+  'm2m',
+  'm2o',
+  'o2o',
+  'o2m',
+  'oho',
+  'obo',
+  'updatedBy',
+  'createdBy',
+  'mbm',
+]);

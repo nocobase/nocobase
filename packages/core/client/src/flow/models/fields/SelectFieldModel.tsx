@@ -8,17 +8,20 @@
  */
 
 import { Select } from 'antd';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 export class SelectFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['select', 'multipleSelect'];
 
   get component() {
-    return [
-      Select,
-      {
-        allowClear: true,
-      },
-    ];
+    return [Select, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('SelectFieldModel', ['select', 'multipleSelect'], {
+  isDefault: true,
+  defaultProps: {
+    allowClear: true,
+  },
+});

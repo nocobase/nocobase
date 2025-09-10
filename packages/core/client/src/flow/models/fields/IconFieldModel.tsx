@@ -13,6 +13,7 @@ import { Button, Empty, Flex, Input, Popover, Radio, Space, theme } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { Icon, hasIcon, icons } from '../../../icon';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -165,3 +166,7 @@ export class IconFieldModel extends FormFieldModel {
     return [IconPicker, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('IconFieldModel', ['icon'], {
+  isDefault: true,
+});

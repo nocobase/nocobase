@@ -9,6 +9,7 @@
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
 export const DateTimeNoTzPicker = (props) => {
@@ -39,3 +40,5 @@ export class DateTimeNoTzFieldModel extends DateTimeFieldModel {
     return [DateTimeNoTzPicker, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('DateTimeNoTzFieldModel', ['datetimeNoTz']);

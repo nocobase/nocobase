@@ -9,7 +9,7 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowModel, EditableItemModel, escapeT } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +60,7 @@ export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
 }
 
 ObjectFormAssociationFieldModel.define({
+  label: escapeT('Sub-form'),
   createModelOptions: {
     use: 'ObjectFormAssociationFieldModel',
     subModels: {
@@ -144,6 +145,7 @@ export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
 }
 
 ArrayFormAssociationFieldModel.define({
+  label: escapeT('Sub-form'),
   createModelOptions: {
     use: 'ArrayFormAssociationFieldModel',
     subModels: {
@@ -153,3 +155,14 @@ ArrayFormAssociationFieldModel.define({
     },
   },
 });
+
+EditableItemModel.bindModelToInterface('ObjectFormAssociationFieldModel', [
+  'm2o',
+  'o2o',
+  'oho',
+  'obo',
+  'updatedBy',
+  'createdBy',
+]);
+
+EditableItemModel.bindModelToInterface('ArrayFormAssociationFieldModel', ['m2m', 'o2m', 'mbm']);

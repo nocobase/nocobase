@@ -8,6 +8,7 @@
  */
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
 
@@ -51,3 +52,5 @@ export class DateOnlyFieldModel extends DateTimeFieldModel {
     return [DateOnlyPicker, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('DateOnlyFieldModel', ['date']);
