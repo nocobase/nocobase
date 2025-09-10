@@ -181,26 +181,26 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               if (FilterItem) {
                 return (
                   <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                    <Space style={{ flex: 1, minWidth: 0 }}>
                       <FilterItem value={item} />
+                      <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                      </a>
                     </Space>
-                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                    </a>
                   </div>
                 );
               } else {
                 // 如果没有提供 FilterItem，显示简单的文本表示
                 return (
                   <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                    <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                    <Space style={{ flex: 1, minWidth: 0 }}>
                       <span>
                         {item.path} {item.operator} {String(item.value)}
                       </span>
+                      <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                        <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                      </a>
                     </Space>
-                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                    </a>
                   </div>
                 );
               }
@@ -208,12 +208,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               // 未知类型的项，显示占位符
               return (
                 <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
-                  <Space wrap style={{ flex: 1, minWidth: 0 }}>
+                  <Space style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ color: token.colorTextTertiary }}>Invalid filter item</span>
+                    <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
+                      <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
+                    </a>
                   </Space>
-                  <a role="button" aria-label="icon-close" style={{ marginLeft: 8, flex: '0 0 auto' }}>
-                    <CloseCircleOutlined onClick={() => handleRemoveItem(index)} style={{ color: '#bfbfbf' }} />
-                  </a>
                 </div>
               );
             }

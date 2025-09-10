@@ -114,11 +114,11 @@ FormModel.registerFlow({
       uiMode: {
         type: 'drawer',
         props: {
-          width: 750,
+          width: 800,
           closable: true,
           mask: false,
           onOpen() {
-            document.body.style.width = document.body.clientWidth - 750 + 'px';
+            document.body.style.width = document.body.clientWidth - 800 + 'px';
             document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
           },
           onClose() {
