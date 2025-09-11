@@ -60,10 +60,10 @@ export const FlowRoute = () => {
   }, [flowEngine]);
 
   useEffect(() => {
-    routeModel.context.defineProperty('isMobileLayout', {
+    flowEngine.context.defineProperty('isMobileLayout', {
       get: () => isMobileLayout,
     });
-  }, [isMobileLayout, routeModel]);
+  }, [isMobileLayout, flowEngine]);
 
   useEffect(() => {
     // 移动端中不允许配置 UI
