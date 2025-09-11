@@ -340,6 +340,24 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const triggerRebuild = () => setRefreshTick((v) => v + 1);
+    if (model?.emitter) {
+      model.emitter.on('onSubModelAdded', triggerRebuild);
+      model.emitter.on('onSubModelRemoved', triggerRebuild);
+      model.emitter.on('onSubModelReplaced', triggerRebuild);
+    }
+    return () => {
+      if (model?.emitter) {
+        model.emitter.off('onSubModelAdded', triggerRebuild);
+        model.emitter.off('onSubModelRemoved', triggerRebuild);
+        model.emitter.off('onSubModelReplaced', triggerRebuild);
+      }
+    };
+  }, [model]);
 
   useEffect(() => {
     const loadConfigurableFlowsAndSteps = async () => {
@@ -356,7 +374,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     };
 
     loadConfigurableFlowsAndSteps();
-  }, [getConfigurableFlowsAndSteps]);
+  }, [getConfigurableFlowsAndSteps, refreshTick]);
 
   // 构建菜单项，包含错误处理和记忆化
   const menuItems = useMemo((): NonNullable<MenuProps['items']> => {
