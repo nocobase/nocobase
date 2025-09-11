@@ -11,15 +11,17 @@ import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
 import { Model } from '../model';
 
-interface SnowflakeIdGenerator {
-  generate(): number | BigInt;
+interface Application {
+  snowflakeIdGenerator: {
+    generate(): number | BigInt;
+  };
 }
 
 export class SnowflakeIdField extends Field {
-  private static snowflakeIdGenerator: SnowflakeIdGenerator;
+  private static app: Application;
 
-  static setSnowflakeIdGenerator(snowflakeIdGenerator: SnowflakeIdGenerator) {
-    this.snowflakeIdGenerator = snowflakeIdGenerator;
+  static setApp(app: Application) {
+    this.app = app;
   }
 
   get dataType() {
@@ -30,7 +32,8 @@ export class SnowflakeIdField extends Field {
     const value = instance.get(name);
 
     if (!value) {
-      instance.set(name, SnowflakeIdField.snowflakeIdGenerator.generate());
+      const generator = (<typeof SnowflakeIdField>this.constructor).app.snowflakeIdGenerator;
+      instance.set(name, generator.generate());
     }
   }
 

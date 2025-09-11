@@ -34,7 +34,7 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-
+import { Snowflake } from '@nocobase/snowflake-id';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -81,9 +81,9 @@ import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
 import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
-import { setupSnowflakeIdField, SnowflakeIdGenerator } from './snowflake-id-generator';
 import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
 import { WorkerIdAllocator } from './worker-id-allocator';
+import { setupSnowflakeIdField } from './snowflake-id-field';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -212,6 +212,10 @@ export type MaintainingCommandStatus = {
   error?: Error;
 };
 
+interface SnowflakeIdGenerator {
+  generate(): number | BigInt;
+}
+
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
   private _instanceId: number;
   /**
@@ -250,6 +254,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    */
   public redisConnectionManager: RedisConnectionManager;
   public workerIdAllocator: WorkerIdAllocator;
+  public snowflakeIdGenerator: SnowflakeIdGenerator;
+
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -708,9 +714,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._instanceId) {
       this._instanceId = await this.workerIdAllocator.getWorkerId();
       this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
-    }
 
-    setupSnowflakeIdField(this._instanceId);
+      this.snowflakeIdGenerator = new Snowflake({
+        workerId: this._instanceId,
+      });
+    }
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
@@ -1369,6 +1377,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
+
+    setupSnowflakeIdField(this);
   }
 
   protected createDatabase(options: ApplicationOptions) {

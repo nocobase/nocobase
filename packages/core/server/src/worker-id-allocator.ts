@@ -23,7 +23,7 @@ export class WorkerIdAllocator {
     if (this.adapter) {
       return this.adapter.getWorkerId();
     }
-    return 0;
+    return Math.floor(Math.random() * 32);
   }
 
   async release() {

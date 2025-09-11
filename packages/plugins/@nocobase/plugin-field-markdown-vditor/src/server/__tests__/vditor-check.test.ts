@@ -116,7 +116,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage1.id}",
+        "id": ${storage1.id},
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -134,7 +134,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage1.id}",
+        "id": ${storage1.id},
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -152,7 +152,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage2.id}",
+        "id": ${storage2.id},
         "name": "s3-storage",
         "rules": {},
         "title": null,
@@ -170,7 +170,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage3.id}",
+        "id": ${storage3.id},
         "name": "s3-storage-with-baseurl",
         "rules": {},
         "title": null,
@@ -188,7 +188,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage1.id}",
+        "id": ${storage1.id},
         "name": "default-storage",
         "rules": {},
         "title": null,
@@ -233,7 +233,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(false);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage.id}",
+        "id": ${storage.id},
         "name": "s3-storage-with-baseurl-not-public",
         "rules": {},
         "title": null,
@@ -274,7 +274,7 @@ describe('vditor:check', () => {
     expect(response.body.data.isSupportToUploadFiles).toBe(true);
     expect(response.body.data.storage).toMatchInlineSnapshot(`
       {
-        "id": "${storage.id}",
+        "id": ${storage.id},
         "name": "other-storage-type",
         "rules": {},
         "title": null,

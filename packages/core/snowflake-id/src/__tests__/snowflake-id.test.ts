@@ -11,14 +11,14 @@ import { Snowflake } from '../snowflake-id';
 
 describe('Snowflake', () => {
   it('should generate a numeric ID', () => {
-    const sf = new Snowflake({ workerId: 1, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 1 });
     const id = sf.generate();
     expect(typeof id).toBe('number');
     expect(id).toBeGreaterThan(0);
   });
 
   it('should generate unique IDs within the same second', () => {
-    const sf = new Snowflake({ workerId: 1, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 1 });
     const ids = new Set<number>();
     for (let i = 0; i < 1000; i++) {
       const id = sf.generate();
@@ -28,7 +28,7 @@ describe('Snowflake', () => {
   });
 
   it('should increment sequence within the same second', () => {
-    const sf = new Snowflake({ workerId: 2, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 2 });
     const id1 = sf.generate();
     const id2 = sf.generate();
     const parsed1 = sf.parse(id1);
@@ -39,7 +39,7 @@ describe('Snowflake', () => {
   });
 
   it('should produce larger IDs in later seconds', async () => {
-    const sf = new Snowflake({ workerId: 3, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 3 });
     const id1 = sf.generate();
     await new Promise((resolve) => setTimeout(resolve, 1100));
     const id2 = sf.generate();
@@ -48,7 +48,7 @@ describe('Snowflake', () => {
   });
 
   it('should parse ID back to components', () => {
-    const sf = new Snowflake({ workerId: 4, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 4 });
     const id = sf.generate();
     const parsed = sf.parse(id);
 
@@ -59,7 +59,7 @@ describe('Snowflake', () => {
   });
 
   it('should accept epoch in seconds', () => {
-    const sf = new Snowflake({ workerId: 0, epoch: 1605024000 });
+    const sf = new Snowflake({ workerId: 0 });
     const id = sf.generate();
     const parsed = sf.parse(id);
 
@@ -67,7 +67,7 @@ describe('Snowflake', () => {
   });
 
   it('should accept epoch in milliseconds', () => {
-    const sf = new Snowflake({ workerId: 0, epoch: 1605024000000 });
+    const sf = new Snowflake({ workerId: 0 });
     const id = sf.generate();
     const parsed = sf.parse(id);
 
