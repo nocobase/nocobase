@@ -23,8 +23,8 @@ export const fieldComponent = defineAction({
   uiSchema: (ctx: FlowEngineContext) => {
     const classes =
       ctx.model.getProps().pattern === 'readPretty'
-        ? DisplayItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField)
-        : EditableItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField);
+        ? DisplayItemModel.getBindingsByField(ctx, ctx.collectionField)
+        : EditableItemModel.getBindingsByField(ctx, ctx.collectionField);
     if (classes.length === 1) {
       return null;
     }

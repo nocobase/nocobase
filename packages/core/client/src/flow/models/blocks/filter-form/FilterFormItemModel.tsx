@@ -346,8 +346,8 @@ FilterFormItemModel.registerFlow({
       use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
-        const className = ctx.model.getProps().pattern === 'readPretty' ? 'ReadPrettyFieldModel' : 'FormFieldModel';
-        const classes = [...ctx.model.collectionField.getSubclassesOf(className).keys()];
+        const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        console.log(classes);
         if (classes.length === 1) {
           return null;
         }
