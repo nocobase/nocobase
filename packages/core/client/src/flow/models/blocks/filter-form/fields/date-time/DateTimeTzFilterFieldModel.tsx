@@ -8,6 +8,7 @@
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
 import React from 'react';
+import { FilterableItemModel } from '@nocobase/flow-engine';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateTimeTzPicker = (props) => {
@@ -36,3 +37,11 @@ export class DateTimeTzFilterFieldModel extends DateTimeFilterFieldModel {
     return [DateTimeTzPicker, {}];
   }
 }
+
+FilterableItemModel.bindModelToInterface(
+  'DateTimeTzFilterFieldModel',
+  ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
+  {
+    isDefault: true,
+  },
+);

@@ -10,7 +10,7 @@
 import { UploadOutlined } from '@ant-design/icons';
 import { Upload } from 'antd';
 import { castArray } from 'lodash';
-import { largeField } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel, escapeT } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -51,13 +51,6 @@ export class UploadFieldModel extends FormFieldModel {
     'createdBy',
     'mbm',
   ];
-
-  public static filterSupportedFields(field): boolean {
-    if (field.targetCollection) {
-      return field.targetCollection.template === 'file';
-    }
-    return true;
-  }
   set customRequest(fn) {
     this.setProps({ customRequest: fn });
   }
@@ -137,3 +130,20 @@ UploadFieldModel.registerFlow({
     },
   },
 });
+
+UploadFieldModel.define({
+  label: escapeT('Upload'),
+});
+EditableItemModel.bindModelToInterface(
+  'UploadFieldModel',
+  ['attachment', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  {
+    isDefault: true,
+    when: (ctx, field) => {
+      if (field.targetCollection) {
+        return field.targetCollection.template === 'file';
+      }
+      return true;
+    },
+  },
+);

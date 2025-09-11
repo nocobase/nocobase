@@ -9,6 +9,7 @@
 
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { MarkdownReadPretty } from '../../../internal/components/MarkdownDisplay/MarkdownReadPretty';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -29,4 +30,8 @@ MarkdownReadPrettyFieldModel.registerFlow({
       use: 'displayMode',
     },
   },
+});
+
+DisplayItemModel.bindModelToInterface('MarkdownReadPrettyFieldModel', ['markdown'], {
+  isDefault: true,
 });

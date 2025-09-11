@@ -9,6 +9,7 @@
 
 import { Input } from 'antd';
 import { tval } from '@nocobase/utils/client';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 export class PasswordFieldModel extends FormFieldModel {
@@ -55,4 +56,8 @@ PasswordFieldModel.registerFlow({
       },
     },
   },
+});
+
+EditableItemModel.bindModelToInterface('PasswordFieldModel', ['password'], {
+  isDefault: true,
 });

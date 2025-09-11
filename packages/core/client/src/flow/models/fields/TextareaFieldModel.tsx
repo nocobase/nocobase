@@ -8,23 +8,24 @@
  */
 
 import { Input } from 'antd';
-import { largeField } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 @largeField()
 export class TextareaFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['textarea', 'markdown'];
 
-  setProps(componentProps) {
-    super.setProps({
-      ...componentProps,
-      autoSize: {
-        maxRows: 10,
-        minRows: 3,
-      },
-    });
-  }
   get component() {
     return [Input.TextArea, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('TextareaFieldModel', ['textarea', 'markdown'], {
+  isDefault: true,
+  defaultProps: {
+    autoSize: {
+      maxRows: 10,
+      minRows: 3,
+    },
+  },
+});

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { reactive } from '@nocobase/flow-engine';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -22,7 +22,6 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
     'updatedAt',
     'unixTimestamp',
   ];
-  // @reactive
   public render() {
     const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc, value } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
@@ -58,3 +57,11 @@ DateTimeReadPrettyFieldModel.registerFlow({
     },
   },
 });
+
+DisplayItemModel.bindModelToInterface(
+  'DateTimeReadPrettyFieldModel',
+  ['date', 'datetimeNoTz', 'createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
+  {
+    isDefault: true,
+  },
+);

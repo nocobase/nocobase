@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { AddSubModelButton, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, escapeT, EditableItemModel } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { FormGridModel } from '../form/FormGridModel';
 
@@ -32,7 +32,11 @@ export class AssignFieldGridModel extends FormGridModel {
       .map((field: any) => {
         const fullName = field.name as string;
         const label = field.title || field.name;
-        const fieldModel = field?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+        const binding = EditableItemModel.getDefaultBindingByField(this.context, field);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
         return {
           key: fullName,
           label,
@@ -69,7 +73,8 @@ export class AssignFieldGridModel extends FormGridModel {
             },
           }),
         };
-      });
+      })
+      .filter(Boolean);
     return (
       <AddSubModelButton subModelKey="items" model={this} items={items} keepDropdownOpen>
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>
@@ -89,10 +94,13 @@ export class AssignFieldGridModel extends FormGridModel {
       (existing as any).assignValue = value;
       return;
     }
-    const fieldModel =
-      (collection?.getFields?.() || [])
-        .find((f: any) => f.name === fieldName)
-        ?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+    const field = (collection?.getFields?.() || []).find((f: any) => f.name === fieldName);
+
+    const binding = EditableItemModel.getDefaultBindingByField(this.context, field);
+    if (!binding) {
+      return;
+    }
+    const fieldModel = binding.modelName;
     const created = this.flowEngine.createModel({
       use: 'AssignFormItemModel',
       stepParams: {

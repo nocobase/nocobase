@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { dayjs } from '@nocobase/utils/client';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { DatePicker } from 'antd';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
@@ -72,3 +73,9 @@ export class DateTimeTzFieldModel extends DateTimeFieldModel {
     return [DateTimeTzPicker, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface(
+  'DateTimeTzFieldModel',
+  ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
+  { isDefault: true },
+);

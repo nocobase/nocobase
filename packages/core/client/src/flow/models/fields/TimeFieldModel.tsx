@@ -8,6 +8,7 @@
  */
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { TimePicker } from 'antd';
+import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -37,3 +38,11 @@ export class TimeFieldModel extends FormFieldModel {
     return [TimePicker, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('TimeFieldModel', ['time'], {
+  isDefault: true,
+});
+
+FilterableItemModel.bindModelToInterface('TimeFieldModel', ['time'], {
+  isDefault: true,
+});

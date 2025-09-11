@@ -73,7 +73,6 @@ export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   public static readonly supportedFieldInterfaces: SupportedFieldInterfaces = null;
-  public static filterSupportedFields: FilterSupportedFields = () => true;
 }
 
 FieldModel.registerFlow({

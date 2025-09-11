@@ -64,36 +64,43 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
-    return collection.getFields().map((field) => {
-      const fieldModel = field.getFirstSubclassNameOf('FormFieldModel') || 'FormFieldModel';
-      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
-      return {
-        key: fullName,
-        label: field.title,
-        toggleable: (subModel) => {
-          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-          return fieldPath === fullName;
-        },
-        useModel: 'FormItemModel',
-        createModelOptions: () => ({
-          use: 'FormItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: ctx.model.context.blockModel.collection.name,
-                fieldPath: fullName,
+    return collection
+      .getFields()
+      .map((field) => {
+        const binding = this.getDefaultBindingByField(ctx, field);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
+        const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
+        return {
+          key: fullName,
+          label: field.title,
+          toggleable: (subModel) => {
+            const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+            return fieldPath === fullName;
+          },
+          useModel: 'FormItemModel',
+          createModelOptions: () => ({
+            use: 'FormItemModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: ctx.model.context.blockModel.collection.name,
+                  fieldPath: fullName,
+                },
               },
             },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
+            subModels: {
+              field: {
+                use: fieldModel,
+              },
             },
-          },
-        }),
-      };
-    });
+          }),
+        };
+      })
+      .filter(Boolean);
   }
 
   onInit(options: any) {
@@ -269,24 +276,6 @@ FormItemModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: escapeT('Field component'),
-      uiSchema: (ctx) => {
-        const className = ctx.model.getProps().pattern === 'readPretty' ? 'ReadPrettyFieldModel' : 'FormFieldModel';
-        const classes = [...ctx.model.collectionField.getSubclassesOf(className).keys()];
-        if (classes.length === 1) {
-          return null;
-        }
-        return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model,
-              value: model,
-            })),
-          },
-        };
-      },
     },
     pattern: {
       title: escapeT('Display mode'),

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import * as math from 'mathjs';
-import { reactive } from '@nocobase/flow-engine';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { isNum } from '@formily/shared';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -37,3 +37,7 @@ export class PercentReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
+
+DisplayItemModel.bindModelToInterface('PercentReadPrettyFieldModel', ['percent'], {
+  isDefault: true,
+});

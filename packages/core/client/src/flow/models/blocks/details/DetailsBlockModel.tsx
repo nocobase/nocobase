@@ -179,6 +179,9 @@ DetailsBlockModel.registerFlow({
       use: 'layout',
       title: escapeT('Layout'),
     },
+    dataScope: {
+      use: 'dataScope',
+    },
   },
 });
 

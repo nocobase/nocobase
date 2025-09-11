@@ -9,6 +9,7 @@
 
 import { Input } from '@formily/antd-v5';
 import { FormFieldModel } from '@nocobase/client';
+import { EditableItemModel } from '@nocobase/flow-engine';
 
 export class SequenceFieldModel extends FormFieldModel {
   static supportedFieldInterfaces = ['sequence'];
@@ -17,3 +18,5 @@ export class SequenceFieldModel extends FormFieldModel {
     return [Input, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('SequenceFieldModel', ['sequence'], { isDefault: true });
