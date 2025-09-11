@@ -12,6 +12,7 @@ import { Button, Card, Space, Table, Tabs, Tooltip, Typography } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { CollectionField, FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { useCollectionContext } from '../../context';
+import { dayjs } from '@nocobase/utils/client';
 
 const { Text, Paragraph } = Typography;
 
@@ -112,18 +113,34 @@ const PreviewTable: React.FC<{
   useEffect(() => {
     setColumns(
       collectionFields.map((field) => ({
-        title: field.title,
-        dataIndex: field.name,
         key: field.name,
+        title: (
+          <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: field.title }}>
+            {field.title}
+          </Text>
+        ),
+        dataIndex: field.name,
+        width: 'auto',
         render: (value) => {
           if (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(field.type)) {
             return (
-              <Text style={{ width: 200 }} ellipsis={true}>
+              <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={true}>
                 {value ? JSON.stringify(value) : ''}
               </Text>
             );
+          }
+          if (field.type === 'date') {
+            return (
+              <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: value }}>
+                {dayjs(value).format('YYYY-MM-DD HH:mm:ss')}
+              </Text>
+            );
           } else {
-            return <span>{value}</span>;
+            return (
+              <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: value }}>
+                {value}
+              </Text>
+            );
           }
         },
       })),
@@ -155,7 +172,7 @@ const PreviewTable: React.FC<{
             columns={columns}
             dataSource={datasource}
             loading={loading}
-            scroll={{ x: 'max-content', y: '47vh' }}
+            scroll={{ x: 'max-content', y: '56vh' }}
             pagination={{
               showSizeChanger: true,
               showTotal: (total) => ctx.t('Total {{total}} items', { total }),

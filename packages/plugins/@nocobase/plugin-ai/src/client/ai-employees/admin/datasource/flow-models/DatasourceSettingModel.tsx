@@ -40,7 +40,7 @@ DatasourceSettingModel.registerFlow({
         const resource = ctx.resource as MultiRecordResource;
         resource.setDataSourceKey(DEFAULT_DATA_SOURCE_KEY);
         resource.setResourceName('aiContextDatasources');
-        resource.setPageSize(1000);
+        resource.setPageSize(16);
         await resource.refresh();
       },
     },

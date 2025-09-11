@@ -9,7 +9,7 @@
 
 import React, { PropsWithChildren } from 'react';
 import { FlowModelContext, MultiRecordResource, observer, useFlowContext } from '@nocobase/flow-engine';
-import { Button, ButtonProps, Divider, Flex, Modal, Result, Space, Switch, Tooltip, Typography } from 'antd';
+import { Button, ButtonProps, Divider, Flex, List, Modal, Result, Space, Switch, Tooltip, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { Card, Col, Row } from 'antd';
 import _ from 'lodash';
@@ -65,97 +65,106 @@ export const DatasourceSettingGrid: React.FC = observer(() => {
                 </AddButton>
               </Space>
             </Flex>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              {_.chunk(data, 4).map((chunk, index) => (
-                <Row key={index} gutter={8}>
-                  {chunk.map((item) => (
-                    <Col span={6} key={item.id}>
-                      <Card
-                        hoverable
-                        variant="borderless"
-                        style={{ minWidth: 300, display: 'flex', flexDirection: 'column' }}
-                        onClick={() => {
-                          ctx.viewer.drawer({
-                            width: '50%',
-                            content: <DatasourceSettingDetail record={item} />,
-                          });
-                        }}
-                      >
-                        <Card.Meta
-                          title={
-                            <Flex justify="space-between" align="center">
-                              <span>{item.title}</span>
-                              <Switch
-                                size="small"
-                                defaultValue={item.enabled}
-                                onClick={async (checked, event) => {
-                                  event.stopPropagation();
-                                  await ctx.resource.update(item.id, {
-                                    enabled: checked,
-                                  });
-                                }}
-                              ></Switch>
-                            </Flex>
-                          }
-                          description={
-                            <Space style={{ fontSize: 13 }}>
-                              <Text type="secondary">{ctx.t('Collection')}</Text>
-                              <Text>{`${item.datasource}/${item.collectionName}`}</Text>
-                              <Divider type="vertical" />
-                              <Text type="secondary">{ctx.t('Limit')}</Text>
-                              <Text>{item.limit}</Text>
-                            </Space>
-                          }
-                        />
-                        <div style={{ height: 100, display: 'flex', flexDirection: 'column', flex: 1, paddingTop: 10 }}>
-                          <div style={{ width: '100%', height: 90 }}>
-                            <Typography.Paragraph
-                              type="secondary"
-                              ellipsis={{
-                                rows: 2,
+            <List
+              grid={{ gutter: 16, column: 4 }}
+              dataSource={data}
+              loading={ctx.resource.loading}
+              pagination={{
+                showSizeChanger: false,
+                total: ctx.resource.getMeta('count'),
+                pageSize: ctx.resource.getPageSize(),
+                onChange: (page, pageSize) => {
+                  ctx.resource.setPage(page);
+                  ctx.resource.setPageSize(pageSize);
+                  ctx.resource.refresh();
+                },
+              }}
+              renderItem={(item) => (
+                <List.Item>
+                  <Card
+                    hoverable
+                    variant="borderless"
+                    style={{ minWidth: 300, display: 'flex', flexDirection: 'column' }}
+                    onClick={() => {
+                      ctx.viewer.drawer({
+                        width: '50%',
+                        content: <DatasourceSettingDetail record={item} />,
+                      });
+                    }}
+                  >
+                    <Card.Meta
+                      title={
+                        <Flex justify="space-between" align="center">
+                          <span>{item.title}</span>
+                          <Switch
+                            size="small"
+                            defaultValue={item.enabled}
+                            onClick={async (checked, event) => {
+                              event.stopPropagation();
+                              await ctx.resource.update(item.id, {
+                                enabled: checked,
+                              });
+                            }}
+                          ></Switch>
+                        </Flex>
+                      }
+                      description={
+                        <Space style={{ fontSize: 13 }}>
+                          <Text type="secondary">{ctx.t('Collection')}</Text>
+                          <Text>{`${item.datasource}/${item.collectionName}`}</Text>
+                          <Divider type="vertical" />
+                          <Text type="secondary">{ctx.t('Limit')}</Text>
+                          <Text>{item.limit}</Text>
+                        </Space>
+                      }
+                    />
+                    <div style={{ height: 100, display: 'flex', flexDirection: 'column', flex: 1, paddingTop: 10 }}>
+                      <div style={{ width: '100%', height: 90 }}>
+                        <Typography.Paragraph
+                          type="secondary"
+                          ellipsis={{
+                            rows: 2,
+                          }}
+                        >
+                          {item.description}
+                        </Typography.Paragraph>
+                      </div>
+                      <div style={{ marginTop: 'auto' }}>
+                        <Flex justify="space-between" align="center">
+                          <Space style={{ fontSize: 10 }}>
+                            <Text type="secondary">
+                              {`${ctx.t('Created at')} ${dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}`}
+                            </Text>
+                          </Space>
+                          <Tooltip title={ctx.t('Delete')}>
+                            <Button
+                              type="link"
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                Modal.confirm({
+                                  title: ctx.t('Confirm whether to delete'),
+                                  icon: <ExclamationCircleFilled />,
+                                  content: ctx.t('Are you sure delete this datasource?'),
+                                  okText: ctx.t('Yes'),
+                                  okType: 'danger',
+                                  cancelText: ctx.t('No'),
+                                  async onOk() {
+                                    await ctx.resource.destroy(item.id);
+                                    ctx.message.success(ctx.t('Datasource deleted successfully'));
+                                  },
+                                  onCancel() {},
+                                });
                               }}
-                            >
-                              {item.description}
-                            </Typography.Paragraph>
-                          </div>
-                          <div style={{ marginTop: 'auto' }}>
-                            <Flex justify="space-between" align="center">
-                              <Space style={{ fontSize: 10 }}>
-                                <Text type="secondary">
-                                  {`${ctx.t('Created at')} ${dayjs(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}`}
-                                </Text>
-                              </Space>
-                              <Tooltip title={ctx.t('Delete')}>
-                                <Button
-                                  type="link"
-                                  icon={<DeleteOutlined />}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    Modal.confirm({
-                                      title: ctx.t('Confirm whether to delete'),
-                                      icon: <ExclamationCircleFilled />,
-                                      content: ctx.t('Are you sure delete this datasource?'),
-                                      okText: ctx.t('Yes'),
-                                      okType: 'danger',
-                                      cancelText: ctx.t('No'),
-                                      async onOk() {
-                                        await ctx.resource.destroy(item.id);
-                                        ctx.message.success(ctx.t('Datasource deleted successfully'));
-                                      },
-                                      onCancel() {},
-                                    });
-                                  }}
-                                />
-                              </Tooltip>
-                            </Flex>
-                          </div>
-                        </div>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              ))}
-            </Space>
+                            />
+                          </Tooltip>
+                        </Flex>
+                      </div>
+                    </div>
+                  </Card>
+                </List.Item>
+              )}
+            />
           </Space>
         </div>
       )}
