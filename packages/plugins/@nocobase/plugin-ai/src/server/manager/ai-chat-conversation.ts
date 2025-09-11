@@ -143,7 +143,7 @@ class AIChatConversationImpl implements AIChatConversation {
         if (typeof content === 'string') {
           content = `<user_query>${content}</user_query>`;
           if (workContext?.length) {
-            const workContextStr = (await workContextHandler.resolve(workContext))
+            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
               .map((x) => `<work_context>${x}</work_context>`)
               .join('\n');
             content = workContextStr + '\n' + content;

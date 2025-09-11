@@ -9,19 +9,14 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import PluginAIServer from '../plugin';
+import { Context } from '@nocobase/actions';
 
 export const aiContextDatasources: ResourceOptions = {
   name: 'aiContextDatasources',
   actions: {
     preview: async (ctx, next) => {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      ctx.body = await plugin.aiContextDatasourceManager.preview(ctx.action.params.values);
-      next();
-    },
-    query: async (ctx, next) => {
-      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const { id } = ctx.action.params;
-      ctx.body = await plugin.aiContextDatasourceManager.query({ id });
+      ctx.body = await plugin.aiContextDatasourceManager.preview(ctx as Context, ctx.action.params.values);
       next();
     },
   },

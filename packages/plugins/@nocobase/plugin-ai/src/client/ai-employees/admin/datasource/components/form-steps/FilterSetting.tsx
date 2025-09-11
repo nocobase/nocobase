@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Form, FormInstance, Input } from 'antd';
 import {
   createCollectionContextMeta,
@@ -17,7 +17,7 @@ import {
   useFlowContext,
 } from '@nocobase/flow-engine';
 import { FilterGroupType } from '@nocobase/utils/client';
-import { ContextFilterItem, FilterGroup } from '@nocobase/client';
+import { VariableFilterItem, FilterGroup } from '@nocobase/client';
 import { useCollectionContext } from '../../context';
 
 const Filter: React.FC<{
@@ -35,7 +35,7 @@ const Filter: React.FC<{
     }
   }, [ctx, currentCollection]);
 
-  return <FilterGroup value={value} FilterItem={(props) => <ContextFilterItem {...props} model={ctx.model} />} />;
+  return <FilterGroup value={value} FilterItem={(props) => <VariableFilterItem {...props} model={ctx.model} />} />;
 });
 
 export const FilterSetting: React.FC<{

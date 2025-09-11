@@ -75,6 +75,7 @@ export type AIContextDatasource = {
   datasource: string;
   collectionName: string;
   fields?: Fields;
+  appends?: string[];
   filter?: FilterGroupType;
   sort?: Sort[];
   limit: number;

@@ -7,40 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { QueryObject, transformFilter } from '@nocobase/utils';
+import { assign, QueryObject, transformFilter } from '@nocobase/utils';
 import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
 import { WorkContext } from '../types';
+import { Context } from '@nocobase/actions';
 
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
-  async preview(options: PreviewOptions): Promise<QueryResult | null> {
-    return await this.innerQuery({ ...options, filter: options.filter ? transformFilter(options.filter) : null });
-  }
-
-  async query({ id }: QueryOptions): Promise<QueryResult | null> {
-    const model = await this.plugin.repositories.aiContextDatasources.findById(id);
-    if (!model) {
-      this.plugin.log.warn(`aiContextDatasources id: ${id} not found`, { id });
-      return null;
-    }
-    const metadata = model.toJSON() as AIContextDatasource;
-    return await this.innerQuery({ ...metadata, filter: metadata.filter ? transformFilter(metadata.filter) : null });
+  async preview(ctx: Context, options: PreviewOptions): Promise<QueryResult | null> {
+    return await this.innerQuery(ctx, { ...options, filter: options.filter ? transformFilter(options.filter) : null });
   }
 
   provideWorkContextResolveStrategy() {
-    return async (contextItem: WorkContext): Promise<string> => {
+    return async (ctx: Context, contextItem: WorkContext): Promise<string> => {
       if (!contextItem.content) {
         return '';
       }
       const query = contextItem.content as InnerQueryOptions;
-      const queryResult = await this.innerQuery(query);
+      const queryResult = await this.innerQuery(ctx, query);
       return JSON.stringify(queryResult);
     };
   }
 
-  private async innerQuery(options: InnerQueryOptions): Promise<QueryResult | null> {
-    const { datasource, collectionName, fields, filter, sort, limit } = options;
+  private async innerQuery(ctx: Context, options: InnerQueryOptions): Promise<QueryResult | null> {
+    const { datasource, collectionName } = options;
+    const resource = collectionName;
+    const action = 'list';
     const ds = this.plugin.app.dataSourceManager.get(datasource);
     if (!ds) {
       this.plugin.log.warn(`Datasource ${datasource} not found`);
@@ -57,18 +50,66 @@ export class AIContextDatasourceManager {
         records: [],
       };
     }
-    let targetFields = fields;
-    if (!targetFields?.length) {
-      targetFields = collection
+
+    if (!options?.fields?.length) {
+      options.fields = collection
         .getFields()
         .filter((x) => !x.isRelationField())
         .map((x) => x.options.name);
     }
 
+    const skip = await ds.acl.allowManager.isAllowed(resource, action, ctx);
+    if (!skip) {
+      const roles = ctx.state.currentRoles || ['anonymous'];
+      const can = ds.acl.can({ roles, resource, action, rawResourceName: resource });
+      if (!can || typeof can !== 'object') {
+        return {
+          options,
+          records: [],
+        };
+      }
+
+      const filteredParams = ds.acl.filterParams(ctx, collectionName, can.params);
+      const parsedParams = filteredParams ? await ds.acl.parseJsonTemplate(filteredParams, ctx) : {};
+
+      if (parsedParams.appends && options.fields) {
+        for (const queryField of options.fields) {
+          if (parsedParams.appends.indexOf(queryField) !== -1) {
+            // move field to appends
+            if (!options.appends) {
+              options.appends = [];
+            }
+            options.appends.push(queryField);
+            options.fields = options.fields.filter((f) => f !== queryField);
+          }
+        }
+      }
+
+      assign(options, parsedParams, {
+        filter: 'andMerge',
+        fields: 'intersect',
+        // appends: 'union',
+        except: 'union',
+        whitelist: 'intersect',
+        blacklist: 'intersect',
+        // sort: 'overwrite',
+        appends: (x, y) => {
+          if (!x) {
+            return [];
+          }
+          if (!y) {
+            return x;
+          }
+          return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+        },
+      });
+    }
+
+    const { fields, filter, sort, limit } = options;
     const result = await collection.repository.find({ fields, filter, sort, limit });
 
     const records = result.map((x) =>
-      targetFields.map((field) => {
+      fields.map((field) => {
         const { name, type } = collection.getField(field)?.options || {};
         const value = x[field];
         return {
@@ -88,7 +129,7 @@ export class AIContextDatasourceManager {
 
 export type PreviewOptions = Pick<
   AIContextDatasource,
-  'datasource' | 'collectionName' | 'fields' | 'filter' | 'sort' | 'limit'
+  'datasource' | 'collectionName' | 'fields' | 'appends' | 'filter' | 'sort' | 'limit'
 >;
 
 export type QueryOptions = {

@@ -10,6 +10,7 @@
 import { Registry } from '@nocobase/utils';
 import PluginAIServer from '../plugin';
 import { WorkContext, WorkContextHandler, WorkContextResolveStrategy } from '../types';
+import { Context } from '@nocobase/actions';
 
 export const createWorkContextHandler = (plugin: PluginAIServer): WorkContextHandler =>
   new WorkContextHandlerImpl(plugin);
@@ -27,25 +28,25 @@ class WorkContextHandlerImpl implements WorkContextHandler {
     this.resolveStrategies.register(type, strategy);
   }
 
-  async resolve(workContext: WorkContext[]): Promise<string[]> {
-    return Promise.all(workContext.map((x) => this.applyResolveStrategy(x)));
+  async resolve(ctx: Context, workContext: WorkContext[]): Promise<string[]> {
+    return Promise.all(workContext.map((contextItem) => this.applyResolveStrategy(ctx, contextItem)));
   }
 
-  private async applyResolveStrategy(contextItem: WorkContext): Promise<string> {
+  private async applyResolveStrategy(ctx: Context, contextItem: WorkContext): Promise<string> {
     if (!contextItem) {
       return '';
     }
     const resolve = this.resolveStrategies.get(contextItem.type);
     if (resolve) {
-      return await resolve(contextItem);
+      return await resolve(ctx, contextItem);
     }
 
-    return await this.defaultStrategy(contextItem);
+    return await this.defaultStrategy(ctx, contextItem);
   }
 }
 
 const Stringify =
   (_plugin: PluginAIServer) =>
-  async (contextItem: WorkContext): Promise<string> => {
+  async (_ctx: Context, contextItem: WorkContext): Promise<string> => {
     return JSON.stringify(contextItem);
   };

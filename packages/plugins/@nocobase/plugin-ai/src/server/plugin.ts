@@ -166,13 +166,15 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-settings`,
       actions: ['aiSettings:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
+    this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
+    this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
 

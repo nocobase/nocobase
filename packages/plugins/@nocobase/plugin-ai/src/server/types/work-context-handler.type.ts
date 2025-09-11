@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { WorkContext } from './ai-message.type';
+import type { WorkContext } from './ai-message.type';
+import type { Context } from '@nocobase/actions';
 
 export interface WorkContextHandler {
   registerStrategy(type: string, strategy: WorkContextResolveStrategy);
-  resolve(workContext: WorkContext[]): Promise<string[]>;
+  resolve(ctx: Context, workContext: WorkContext[]): Promise<string[]>;
 }
 
-export type WorkContextResolveStrategy = (contextItem: WorkContext) => Promise<string>;
+export type WorkContextResolveStrategy = (ctx: Context, contextItem: WorkContext) => Promise<string>;
