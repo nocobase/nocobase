@@ -23,7 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
-import { Button, Skeleton, Space } from 'antd';
+import { Button, Skeleton, Space, Form } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { FormFieldModel } from '../../fields';
@@ -42,6 +42,12 @@ export class QuickEditFormModel extends FlowModel {
 
   get form() {
     return this.context.form;
+  }
+
+  useHooksBeforeRender() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [form] = Form.useForm();
+    this.context.defineProperty('form', { get: () => form });
   }
 
   static async open(options: {
