@@ -714,7 +714,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!this._instanceId) {
       this._instanceId = await this.workerIdAllocator.getWorkerId();
       this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
-
+    }
+    if (!this.snowflakeIdGenerator) {
       this.snowflakeIdGenerator = new Snowflake({
         workerId: this._instanceId,
       });
