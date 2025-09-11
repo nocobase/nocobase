@@ -46,8 +46,8 @@ export const fieldComponent = defineAction({
   beforeParamsSave: async (ctx, params, previousParams) => {
     const classes =
       ctx.model.getProps().pattern === 'readPretty'
-        ? DisplayItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField)
-        : EditableItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField);
+        ? DisplayItemModel.getBindingsByField(ctx, ctx.collectionField)
+        : EditableItemModel.getBindingsByField(ctx, ctx.collectionField);
     // 找到选中的那条
     const selected = classes.find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {

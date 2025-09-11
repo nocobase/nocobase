@@ -232,7 +232,57 @@ DetailsItemModel.registerFlow({
     },
     model: {
       title: escapeT('Field component'),
-      use: 'fieldComponent',
+      uiSchema: (ctx) => {
+        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+        if (classes.length === 1) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => {
+              const m = ctx.engine.getModelClass(model.modelName);
+              return {
+                label: m.meta.label || model.modelName,
+                value: model.modelName,
+              };
+            }),
+          },
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+        // 找到选中的那条
+        const selected = classes.find((model) => model.modelName === params.use);
+        if (params.use !== previousParams.use) {
+          const fieldUid = ctx.model.subModels['field']['uid'];
+          await ctx.engine.destroyModel(fieldUid);
+          ctx.model.setSubModel('field', {
+            use: params.use,
+            props: selected.defaultProps,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+            },
+          });
+          // 持久化
+          await ctx.model.save();
+        }
+      },
+      defaultParams: (ctx: any) => {
+        const defaultModel = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+        return {
+          use: (ctx.model.subModels.field as FieldModel)?.use || defaultModel.modelName,
+        };
+      },
+      async handler(ctx, params) {
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
+        }
+      },
     },
   },
 });
