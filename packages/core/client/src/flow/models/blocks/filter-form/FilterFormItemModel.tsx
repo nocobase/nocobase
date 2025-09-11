@@ -42,41 +42,49 @@ const FieldNotAllow = ({ actionName, FieldTitle }) => {
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
   const fields = (await model?.getFilterFields()) || [];
-  return fields.map((field) => {
-    const fieldModel = field.getFirstSubclassNameOf('FilterFormFieldModel') || 'FilterFormFieldModel';
-    const fieldPath = field.name;
-    return {
-      key: field.name,
-      label: field.title,
-      useModel: 'FilterFormItemModel',
-      createModelOptions: () => ({
-        use: 'FilterFormItemModel',
-        stepParams: {
-          fieldSettings: {
-            init: {
-              dataSourceKey: collection?.dataSourceKey,
-              collectionName: collection?.name,
-              fieldPath,
+  return fields
+    .map((field: any) => {
+      const binding = FilterableItemModel.getDefaultBindingByField(model.context, field);
+      if (!binding) {
+        return;
+      }
+      const fieldModel = binding.modelName;
+      const fieldPath = field.name;
+      return {
+        key: field.name,
+        label: field.title,
+        useModel: 'FilterFormItemModel',
+        createModelOptions: () => ({
+          use: 'FilterFormItemModel',
+          stepParams: {
+            fieldSettings: {
+              init: {
+                dataSourceKey: collection?.dataSourceKey,
+                collectionName: collection?.name,
+                fieldPath,
+              },
+            },
+            filterFormItemSettings: {
+              label: {
+                label: field.title,
+              },
+              init: {
+                filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
+                defaultTargetUid: model.uid,
+              },
             },
           },
-          filterFormItemSettings: {
-            label: {
-              label: field.title,
-            },
-            init: {
-              filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
-              defaultTargetUid: model.uid,
+          subModels: {
+            field: {
+              use: fieldModel,
+              props:
+                typeof binding.defaultProps === 'function' ? binding.defaultProps(model.context) : binding.defaultProp,
             },
           },
-        },
-        subModels: {
-          field: {
-            use: fieldModel,
-          },
-        },
-      }),
-    };
-  });
+        }),
+      };
+    })
+    .filter(Boolean);
 };
 
 export class FilterFormItemModel extends FilterableItemModel<{

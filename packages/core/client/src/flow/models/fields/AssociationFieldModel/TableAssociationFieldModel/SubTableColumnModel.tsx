@@ -38,15 +38,10 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
-  fieldModel.context.defineProperty('fieldValue', {
-    get: () => {
-      return others.value;
-    },
-    cache: false,
-  });
   fieldModel.setProps({
-    value: others.value,
+    value: defaultValue,
   });
+
   const FieldModelRendererCom = (props) => {
     const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, path, ...rest } = props;
 
@@ -310,6 +305,7 @@ SubTableColumnModel.registerFlow({
           return null;
         }
         const classes = DisplayItemModel.getBindingsByField(ctx, ctx.model.collectionField);
+        console.log(classes);
         if (classes.length === 1) {
           return null;
         }
@@ -321,7 +317,7 @@ SubTableColumnModel.registerFlow({
             enum: classes.map((model) => {
               const m = ctx.engine.getModelClass(model.modelName);
               return {
-                label: m.meta.label || model.modelName,
+                label: m.meta?.label || model.modelName,
                 value: model.modelName,
                 defaultProps: model.defaultProps,
               };
@@ -330,9 +326,9 @@ SubTableColumnModel.registerFlow({
         };
       },
       defaultParams: (ctx) => {
+        const model = DisplayItemModel.getDefaultBindingByField(ctx, ctx.model.collectionField);
         return {
-          // use: ctx.model.collectionField.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel',
-          use: ctx.model.subModels.field.subModels.readPrettyField,
+          use: model.modelName,
         };
       },
       async handler(ctx, params) {

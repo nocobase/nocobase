@@ -8,7 +8,7 @@
  */
 
 import { Select } from 'antd';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { FormFieldModel } from './FormFieldModel';
 
 export class SelectFieldModel extends FormFieldModel {
@@ -23,5 +23,40 @@ EditableItemModel.bindModelToInterface('SelectFieldModel', ['select', 'multipleS
   isDefault: true,
   defaultProps: {
     allowClear: true,
+  },
+});
+
+FilterableItemModel.bindModelToInterface('SelectFieldModel', ['select', 'multipleSelect', 'radioGroup'], {
+  isDefault: true,
+  defaultProps: {
+    allowClear: true,
+  },
+});
+
+FilterableItemModel.bindModelToInterface('SelectFieldModel', ['checkboxGroup'], {
+  isDefault: true,
+  defaultProps: {
+    allowClear: true,
+    mode: 'tags',
+  },
+});
+
+FilterableItemModel.bindModelToInterface('SelectFieldModel', ['checkbox'], {
+  isDefault: true,
+  defaultProps: (ctx) => {
+    return {
+      allowClear: true,
+      multiple: false,
+      options: [
+        {
+          label: ctx.t('Yes'),
+          value: true,
+        },
+        {
+          label: ctx.t('No'),
+          value: false,
+        },
+      ],
+    };
   },
 });

@@ -218,7 +218,7 @@ DisplayItemModel.bindModelToInterface(
   ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
   {
     isDefault: true,
-    when: (field) => {
+    when: (ctx, field) => {
       if (field.targetCollection) {
         return field.targetCollection.template === 'file';
       }
