@@ -121,7 +121,7 @@ const linkageActions: LinkageActions = {
           const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
           const fields = gridModels;
           return fields.map((model: any) => ({
-            label: model.props.title || model.props.name,
+            label: model.props.label || model.props.name,
             value: model.uid,
             model,
           }));
