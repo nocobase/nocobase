@@ -29,12 +29,12 @@ import { Form, TableColumnProps, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { TableAssociationFieldModel } from '.';
 import { FieldModel } from '../../../base/FieldModel';
+import { FormComponent } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
-  const [form] = Form.useForm();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
@@ -43,17 +43,13 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   });
 
   const FieldModelRendererCom = (props) => {
-    const { model, id, value, onChange, ['aria-describedby']: ariaDescribedby, path, ...rest } = props;
+    const { model, onChange, ...rest } = props;
+    const handelChange = (val) => {
+      others.onChange(val);
+      onChange(val);
+    };
 
-    useEffect(() => {
-      const handelChange = (val) => {
-        others.onChange(val);
-        onChange(val);
-      };
-      model.setProps({ id, value, onChange: handelChange, ['aria-describedby']: ariaDescribedby, path, ...others });
-    }, [model, id, value, ariaDescribedby, onChange]);
-
-    return <FlowModelRenderer model={model} {...rest} />;
+    return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
   };
 
   const handleClick = async (e) => {
@@ -70,13 +66,12 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
-          model.setProps({ name: others.id });
           return (
-            <Form form={form}>
-              <Form.Item name={fieldPath} style={{ marginBottom: 0 }} initialValue={others.value}>
+            <FormComponent model={model}>
+              <FormItem name={fieldPath} showLabel={false} initialValue={defaultValue}>
                 <FieldModelRendererCom model={model} />
-              </Form.Item>
-            </Form>
+              </FormItem>
+            </FormComponent>
           );
         },
       });
@@ -240,7 +235,6 @@ export class SubTableColumnModel<
                   key={id}
                   name={[(this.parent as FormFieldModel).fieldPath, rowIdx, action.fieldPath]}
                   style={{ marginBottom: 0 }}
-                  initialValue={value}
                   showLabel={false}
                 >
                   {fork.constructor.isLargeField ? (
@@ -299,13 +293,12 @@ SubTableColumnModel.registerFlow({
       use: 'aclCheck',
     },
     subModel: {
-      title: escapeT('Field component'),
+      title: escapeT('Preview field component'),
       uiSchema: (ctx) => {
         if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
           return null;
         }
         const classes = DisplayItemModel.getBindingsByField(ctx, ctx.model.collectionField);
-        console.log(classes);
         if (classes.length === 1) {
           return null;
         }
