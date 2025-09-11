@@ -8,7 +8,7 @@
  */
 
 import { createMockServer, MockServer } from '@nocobase/test';
-import { GlobalContext, HttpRequestContext } from '../template/contexts';
+import { GlobalContext, HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
 import { variables } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
@@ -124,6 +124,60 @@ describe('variables resolver (no HTTP)', () => {
     await variables.attachUsedVariables(req, koa, tpl, {});
     const out = await resolveJsonTemplate(tpl, req);
     expect(out.v).toBe(42);
+  });
+
+  describe('server resolver: dot-only path aggregation', () => {
+    it('aggregates across arrays with dot-only path', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', {
+        value: {
+          b: [
+            { c: 1, d: [1, 2] },
+            { c: 2, d: [3] },
+          ],
+        },
+      });
+      const out = await resolveJsonTemplate('{{ ctx.a.b.d }}', ctx);
+      expect(out).toEqual([1, 2, 3]);
+    });
+
+    it('replaces inside strings with JSON stringified array', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', { value: { b: [{ d: [1, 2] }, { d: [3] }] } });
+      const out = await resolveJsonTemplate('x={{ ctx.a.b.d }};', ctx as any);
+      expect(out).toBe('x=[1,2,3];');
+    });
+
+    it('returns scalar for non-array dot-only path', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', { value: { title: 'hello' } });
+      const out = await resolveJsonTemplate('{{ ctx.a.title }}', ctx as any);
+      expect(out).toBe('hello');
+    });
+
+    it('preserves placeholder when path not found (single expression)', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', { value: { b: [{ d: [1, 2] }, { d: [3] }] } });
+      const out = await resolveJsonTemplate('{{ ctx.a.missing.path }}', ctx as any);
+      // 服务端单占位未解析到值时保留原占位
+      expect(out).toBe('{{ ctx.a.missing.path }}');
+    });
+
+    it('deep nested arrays keep nested structure (server, no final deep flatten)', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', {
+        value: { b: [{ e: [{ d: [1] }, { d: [2] }] }, { e: [{ d: [3, [4]] }, { d: null }] }] },
+      });
+      const out = await resolveJsonTemplate('{{ ctx.a.b.e.d }}', ctx as any);
+      expect(out).toEqual([1, 2, 3, [4]]);
+    });
+
+    it('non dot-only expressions remain unaffected alongside aggregation (server)', async () => {
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('a', { value: { b: [{ d: [1] }, { d: [2] }] } });
+      const out = await resolveJsonTemplate('sum={{ 1 + 2 }}, arr={{ ctx.a.b.d }}', ctx as any);
+      expect(out).toBe('sum=3, arr=[1,2]');
+    });
   });
 
   // Note: fallback via current action context is covered by integration tests.
