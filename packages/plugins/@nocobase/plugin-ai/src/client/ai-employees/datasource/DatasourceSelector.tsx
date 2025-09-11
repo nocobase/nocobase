@@ -31,66 +31,69 @@ import { dialogController } from '../stores/dialog-controller';
 const { Sider, Content } = Layout;
 
 export type DatasourceSelectorProps = {
+  contextItems?: ContextItem[];
   onAdd: (item: Omit<ContextItem, 'type'>) => void;
   onRemove: (uid: string) => void;
 };
 
-export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observer(({ onAdd, onRemove }) => {
-  const ctx = useFlowViewContext<FlowModelContext>();
-  const { Header } = ctx.view;
-  const [collection, setCollection] = useState<Collection | null>(null);
-  const [formData, setFormData] = useState<Record<string, any> | null>(null);
+export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observer(
+  ({ contextItems, onAdd, onRemove }) => {
+    const ctx = useFlowViewContext<FlowModelContext>();
+    const { Header } = ctx.view;
+    const [collection, setCollection] = useState<Collection | null>(null);
+    const [formData, setFormData] = useState<Record<string, any> | null>(null);
 
-  const onSelect = useCallback(
-    (item) => {
-      const { datasource, collectionName } = item;
-      setCollection(ctx.dataSourceManager.getCollection(datasource, collectionName));
-      setFormData(item);
-    },
-    [ctx],
-  );
+    const onSelect = useCallback(
+      (item) => {
+        const { datasource, collectionName } = item;
+        setCollection(ctx.dataSourceManager.getCollection(datasource, collectionName));
+        setFormData(item);
+      },
+      [ctx],
+    );
 
-  const closeBtn = (
-    <Button
-      type="text"
-      icon={<CloseOutlined />}
-      onClick={() => {
-        dialogController.resume();
-        ctx.view.close();
-      }}
-    ></Button>
-  );
+    const closeBtn = (
+      <Button
+        type="text"
+        icon={<CloseOutlined />}
+        onClick={() => {
+          dialogController.resume();
+          ctx.view.close();
+        }}
+      ></Button>
+    );
 
-  return (
-    <>
-      <div style={{ backgroundColor: '#f5f5f5', borderRadius: 8 }}>
-        <Header
-          title={
-            <>
-              <Space>
-                {closeBtn}
-                <span>{ctx.t('Select datasource')}</span>
-              </Space>
-            </>
-          }
-        />
-        <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5' }}>
-          <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
-            <Flex align="center" vertical>
-              <DatasourceList onSelect={onSelect} onAdd={onAdd} onRemove={onRemove} />
-            </Flex>
-          </Sider>
-          <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
-          <Content style={{ backgroundColor: 'transparent' }}>
-            <CollectionContext.Provider value={new CurrentCollection(collection)}>
-              {formData && <Preview formData={formData} show={true} />}
-            </CollectionContext.Provider>
-          </Content>
-        </Layout>
-      </div>
-    </>
-  );
-});
+    return (
+      <>
+        <div style={{ backgroundColor: '#f5f5f5', borderRadius: 8 }}>
+          <Header
+            title={
+              <>
+                <Space>
+                  {closeBtn}
+                  <span>{ctx.t('Select datasource')}</span>
+                </Space>
+              </>
+            }
+          />
+          <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5' }}>
+            <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
+              <Flex align="center" vertical>
+                <DatasourceList onSelect={onSelect} contextItems={contextItems} onAdd={onAdd} onRemove={onRemove} />
+              </Flex>
+            </Sider>
+            <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
+            <Content style={{ backgroundColor: 'transparent' }}>
+              <CollectionContext.Provider value={new CurrentCollection(collection)}>
+                {formData && <Preview formData={formData} show={true} />}
+              </CollectionContext.Provider>
+            </Content>
+          </Layout>
+        </div>
+      </>
+    );
+  },
+);
 
 class DatasourceSelectorModel extends FlowModel {
   declare resource: MultiRecordResource;

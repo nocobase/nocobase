@@ -26,10 +26,10 @@ export const DatasourceContext: WorkContextOptions = {
       const t = useT();
       return <div>{t('Datasource')}</div>;
     },
-    onClick: ({ ctx, onAdd, onRemove }) => {
+    onClick: ({ ctx, contextItems, onAdd, onRemove }) => {
       ctx.viewer.dialog({
         width: '80%',
-        content: <DatasourceSelector onAdd={onAdd} onRemove={onRemove} />,
+        content: <DatasourceSelector contextItems={contextItems} onAdd={onAdd} onRemove={onRemove} />,
         onOpen: () => {
           dialogController.hide();
         },

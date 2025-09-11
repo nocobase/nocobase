@@ -38,11 +38,12 @@ const walkthrough = (
 };
 
 export const AddContextButton: React.FC<{
+  contextItems?: ContextItem[];
   onAdd: (item: ContextItem) => void;
   onRemove: (type: string, uid: string) => void;
   disabled?: boolean;
   ignore?: (key: string, workContext: WorkContextOptions) => boolean;
-}> = ({ onAdd, onRemove, disabled, ignore }) => {
+}> = ({ contextItems, onAdd, onRemove, disabled, ignore }) => {
   const t = useT();
   const ctx = useFlowContext<FlowModelContext>();
   const plugin = usePlugin('ai') as PluginAIClient;
@@ -87,6 +88,7 @@ export const AddContextButton: React.FC<{
       const workContextItem = contextItemMapping.get(e.key);
       workContextItem?.menu?.onClick?.({
         ctx,
+        contextItems,
         onAdd: (contextItem) =>
           onAdd({
             type: e.key,

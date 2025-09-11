@@ -20,21 +20,22 @@ const { Text } = Typography;
 
 export type DatasourceListProps = {
   onSelect: (item) => void;
+  contextItems?: ContextItem[];
   onAdd: (item: Omit<ContextItem, 'type'>) => void;
   onRemove: (uid: string) => void;
 };
 
-export const DatasourceList: React.FC<DatasourceListProps> = observer(({ onSelect, onAdd, onRemove }) => {
+export const DatasourceList: React.FC<DatasourceListProps> = observer(({ onSelect, contextItems, onAdd, onRemove }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
-  const contextItems = useChatMessagesStore.use.contextItems();
+  const workContextItems = contextItems ?? useChatMessagesStore.use.contextItems();
   const dataSource = ctx.resource.getData();
   const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
 
   useEffect(() => {
-    const ids = contextItems.filter((x) => x.type === 'datasource').map((x) => x.uid);
+    const ids = workContextItems.filter((x) => x.type === 'datasource').map((x) => x.uid);
     setChecked(ids);
-  }, [contextItems]);
+  }, [workContextItems]);
 
   const itemClickHandler = (item) => () => {
     onSelect(item);

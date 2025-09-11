@@ -168,6 +168,7 @@ export type WorkContextOptions = {
     Component?: ComponentType<{ onAdd?: (item: Omit<ContextItem, 'type'>) => void }>;
     onClick?: (props: {
       ctx: FlowModelContext;
+      contextItems?: ContextItem[];
       onAdd: (item: Omit<ContextItem, 'type'>) => void;
       onRemove: (uid: string) => void;
     }) => void;
