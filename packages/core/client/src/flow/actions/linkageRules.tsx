@@ -54,7 +54,7 @@ interface LinkageActions {
   };
 }
 
-let currentLinkageRules = null;
+const currentLinkageRules = null;
 
 const linkageActions: LinkageActions = {
   // 区块属性设置
@@ -382,7 +382,7 @@ const linkageActions: LinkageActions = {
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
   const { value: rules, supportedActions } = props;
   const ctx = useFlowContext();
-  currentLinkageRules = rules;
+  // currentLinkageRules = rules;
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
@@ -786,21 +786,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 };
 
 const commonUIMode: any = {
-  type: 'drawer',
+  type: 'dialog',
   props: {
     width: 800,
-    closable: true,
-    mask: false,
-    onOpen() {
-      document.body.style.width = document.body.clientWidth - 800 + 'px';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
-    },
-    onClose() {
-      document.body.style.width = 'auto';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+    // closable: true,
+    // mask: false,
+    // onOpen() {
+    //   document.body.style.width = document.body.clientWidth - 800 + 'px';
+    //   document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
+    // },
+    // onClose() {
+    //   document.body.style.width = 'auto';
+    //   document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
 
-      currentLinkageRules = null;
-    },
+    //   currentLinkageRules = null;
+    // },
   },
 };
 
