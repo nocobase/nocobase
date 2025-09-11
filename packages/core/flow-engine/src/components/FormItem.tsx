@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tooltip, Form } from 'antd';
 import type { FormItemProps } from 'antd';
 
@@ -17,7 +17,6 @@ interface ExtendedFormItemProps extends FormItemProps {
   labelWidth?: number | string;
   labelWrap?: boolean;
   showLabel?: boolean;
-  value?: any;
 }
 
 const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
@@ -58,13 +57,6 @@ export const FormItem = ({
   labelWidth,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
-  const form = Form.useFormInstance();
-
-  // 适配联动规则
-  useEffect(() => {
-    form?.setFieldValue(rest.name as string, rest.value);
-  }, [rest.value, form, rest.name]);
-
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
   const childProps = Object.fromEntries(
     Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
