@@ -8,7 +8,7 @@
  */
 
 type FilterOptions = {
-  key: string;
+  path: string;
   value: any;
   operator?: string;
 };
@@ -22,13 +22,13 @@ export class FilterItem {
   toJSON() {
     if (this.options.operator) {
       return {
-        [this.options.key]: {
+        [this.options.path]: {
           [this.options.operator]: this.options.value,
         },
       };
     }
     return {
-      [this.options.key]: this.options.value,
+      [this.options.path]: this.options.value,
     };
   }
 }

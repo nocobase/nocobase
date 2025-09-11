@@ -91,7 +91,7 @@ FilterFormCollapseActionModel.registerFlow({
       },
     },
     defaultCollapsed: {
-      title: '默认是否折叠',
+      title: '默认折叠',
       uiSchema: {
         value: {
           type: 'boolean',

@@ -23,8 +23,8 @@ import { createJavaScriptLinter } from './linter';
 // 自定义自动补全函数
 const createCustomCompletion = () => {
   return (context: CompletionContext): CompletionResult | null => {
-    const word = context.matchBefore(/\w*/);
-    if (!word) return null;
+    const word = context.matchBefore(/[a-zA-Z_][\w.]*/);
+    if (!word || (word.from === word.to && !context.explicit)) return null;
 
     const from = word.from;
     const to = word.to;

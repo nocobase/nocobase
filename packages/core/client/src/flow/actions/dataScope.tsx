@@ -17,6 +17,12 @@ import { FieldModel } from '../models/base/FieldModel';
 export const dataScope = defineAction({
   name: 'dataScope',
   title: tval('Data scope'),
+  uiMode: {
+    type: 'dialog',
+    props: {
+      width: 800,
+    },
+  },
   uiSchema: {
     filter: {
       type: 'object',

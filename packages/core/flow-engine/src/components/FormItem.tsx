@@ -61,6 +61,7 @@ export const FormItem = ({
   const childProps = Object.fromEntries(
     Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
   );
+
   const processedChildren =
     typeof children === 'function'
       ? children

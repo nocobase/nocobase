@@ -12,7 +12,7 @@ import { useACLRoleContext } from '../acl';
 import { ReturnTypeOfUseRequest, useAPIClient, useRequest } from '../api-client';
 import { useApp, useAppSpin } from '../application';
 import { useCompile } from '../schema-component';
-import { createRecordProxyContext } from '@nocobase/flow-engine';
+import { createCollectionContextMeta } from '@nocobase/flow-engine';
 
 export const CurrentUserContext = createContext<ReturnTypeOfUseRequest>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
@@ -55,11 +55,10 @@ export const CurrentUserProvider = (props) => {
       })
       .then((res) => {
         {
-          const userMeta = createRecordProxyContext(
-            () => app.flowEngine.context.user,
+          const userMeta = createCollectionContextMeta(
             () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
             app.flowEngine.translate('Current user'),
-          ).meta;
+          );
           // 排序：用户优先显示
           userMeta.sort = 1000;
           app.flowEngine.context.defineProperty('user', {
@@ -68,16 +67,6 @@ export const CurrentUserProvider = (props) => {
             meta: userMeta,
           });
         }
-
-        // app.flowEngine.context.defineProperty(
-        //   'userAsync',
-        //   createRecordProxyContext(
-        //     () => app.flowEngine.context.user,
-        //     () => app.flowEngine.context.dataSourceManager.getDataSource('main')?.getCollection('users'),
-        //     app.flowEngine.translate('Current user'),
-        //   ),
-        // );
-
         return res?.data;
       }),
   );

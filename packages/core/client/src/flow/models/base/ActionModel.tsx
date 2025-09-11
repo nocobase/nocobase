@@ -142,6 +142,9 @@ ActionModel.registerFlow({
         });
       },
     },
+    linkageRules: {
+      use: 'actionLinkageRules',
+    },
   },
 });
 

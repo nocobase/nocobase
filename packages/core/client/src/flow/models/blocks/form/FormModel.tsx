@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// import { createForm, Form } from '@formily/core';
-import { CollectionField, inferRecordRef } from '@nocobase/flow-engine';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
@@ -55,6 +53,14 @@ export class FormModel<
     });
   }
 
+  onMount() {
+    super.onMount();
+    // 首次渲染触发一次事件流
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
+
   getCurrentRecord() {
     return {};
   }
@@ -81,6 +87,9 @@ export function FormComponent({
       initialValues={model.context.record || initialValues}
       {...layoutProps}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
+      onValuesChange={(changedValues, allValues) => {
+        model.dispatchEvent('formValuesChange');
+      }}
     >
       {children}
     </Form>
@@ -98,6 +107,17 @@ FormModel.registerFlow({
     layout: {
       use: 'layout',
       title: tval('Layout'),
+    },
+  },
+});
+
+FormModel.registerFlow({
+  key: 'eventSettings',
+  title: tval('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'fieldLinkageRules',
     },
   },
 });
