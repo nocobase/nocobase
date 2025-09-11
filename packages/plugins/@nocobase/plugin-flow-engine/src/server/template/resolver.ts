@@ -9,6 +9,7 @@
 
 import 'ses';
 import _ from 'lodash';
+import { getValuesByPath } from '@nocobase/utils/client';
 
 // TODO: 是否有必要lockdown?
 // // 使用 SES 进行隔离
@@ -72,7 +73,20 @@ async function replacePlaceholders(input: string, ctx: any) {
 // 在 SES 沙箱中执行完整的 JS 表达式；在此之前会将 ctx.* 访问改写为 await __get(var, path)
 async function evaluate(expr: string, ctx: any) {
   try {
-    const transformed = preprocessExpression(expr.trim());
+    const raw = expr.trim();
+
+    // 优先处理仅点号路径的聚合：ctx.a.b.c（不支持括号/函数/索引）
+    const dotOnly = raw.match(/^ctx\.([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)$/);
+    if (dotOnly) {
+      const path = dotOnly[1];
+      const segs = path.split('.');
+      const first = segs.shift();
+      const base = await ctx[first as string];
+      if (!segs.length) return base;
+      return getValuesByPath(base as object, segs.join('.'));
+    }
+
+    const transformed = preprocessExpression(raw);
     const compartment = new Compartment({
       ctx,
       __get: (varName: string, path?: string) => getAtPath(ctx, varName, path),

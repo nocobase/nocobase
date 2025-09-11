@@ -8,13 +8,12 @@
  */
 
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
   static readonly supportedFieldInterfaces = ['password'];
 
-  // @reactive
   public render() {
     const { value } = this.props;
     if (!value) {
@@ -23,3 +22,7 @@ export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
     return <div>********</div>;
   }
 }
+
+DisplayItemModel.bindModelToInterface('PasswordReadPrettyFieldModel', ['password'], {
+  isDefault: true,
+});

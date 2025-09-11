@@ -8,6 +8,7 @@
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
 import React from 'react';
+import { FilterableItemModel } from '@nocobase/flow-engine';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateTimeNoTzPicker = (props) => {
@@ -22,3 +23,7 @@ export class DateTimeNoTzFilterFieldModel extends DateTimeFilterFieldModel {
     return [DateTimeNoTzPicker, {}];
   }
 }
+
+FilterableItemModel.bindModelToInterface('DateTimeNoTzFilterFieldModel', ['datetimeNoTz'], {
+  isDefault: true,
+});

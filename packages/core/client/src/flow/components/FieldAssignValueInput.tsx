@@ -16,6 +16,7 @@ import {
   isVariableExpression,
   parseValueToPath,
   useFlowContext,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 
 interface Props {
@@ -55,10 +56,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
     const f = fields.find((x: any) => x?.name === fieldPath);
     const cfObj = typeof collection?.getField === 'function' ? collection.getField(fieldPath) : undefined;
-    const isAssociation = cfObj?.isAssociationField?.() || cfObj?.isRelationshipField?.();
-    const fieldModelUse = isAssociation
-      ? 'RemoteSelectFieldModel'
-      : f?.getFirstSubclassNameOf?.('FormFieldModel') || 'FormFieldModel';
+    const binding = EditableItemModel.getDefaultBindingByField(itemModel?.context, f);
+    if (!binding) {
+      return;
+    }
+    const fieldModelUse = binding.modelName;
 
     const created = engine?.createModel?.({
       use: 'VariableFieldFormModel',

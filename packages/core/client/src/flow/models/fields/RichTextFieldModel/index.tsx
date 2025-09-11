@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { largeField } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { lazy } from '../../../../lazy-helper';
 import { useRichTextStyles } from './style';
 import { FormFieldModel } from '../FormFieldModel';
@@ -60,3 +60,7 @@ export class RichTextFieldModel extends FormFieldModel {
     return [RichTextField, {}];
   }
 }
+
+EditableItemModel.bindModelToInterface('RichTextFieldModel', ['richText'], {
+  isDefault: true,
+});

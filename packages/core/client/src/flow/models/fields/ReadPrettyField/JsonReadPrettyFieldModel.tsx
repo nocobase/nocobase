@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { cx, css } from '@emotion/css';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -39,3 +39,7 @@ export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
+
+DisplayItemModel.bindModelToInterface('JsonReadPrettyFieldModel', ['json'], {
+  isDefault: true,
+});

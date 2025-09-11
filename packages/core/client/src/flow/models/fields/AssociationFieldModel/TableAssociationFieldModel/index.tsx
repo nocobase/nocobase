@@ -12,7 +12,7 @@ import {
   AddSubModelButton,
   DndProvider,
   FlowSettingsButton,
-  SingleRecordResource,
+  EditableItemModel,
   escapeT,
   useFlowEngine,
 } from '@nocobase/flow-engine';
@@ -167,4 +167,16 @@ TableAssociationFieldModel.registerFlow({
   },
 });
 
+TableAssociationFieldModel.define({
+  label: escapeT('Sub-table'),
+});
 export { SubTableColumnModel };
+
+EditableItemModel.bindModelToInterface('TableAssociationFieldModel', ['m2m', 'o2m', 'mbm'], {
+  when: (ctx, field) => {
+    if (field.targetCollection) {
+      return field.targetCollection.template !== 'file';
+    }
+    return true;
+  },
+});

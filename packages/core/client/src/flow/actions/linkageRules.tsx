@@ -10,7 +10,7 @@
 import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
-import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select, FormInstance } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
@@ -121,7 +121,7 @@ const linkageActions: LinkageActions = {
           const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
           const fields = gridModels;
           return fields.map((model: any) => ({
-            label: model.props.title || model.props.name,
+            label: model.props.label || model.props.name,
             value: model.uid,
             model,
           }));
@@ -254,7 +254,7 @@ const linkageActions: LinkageActions = {
           const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
           const fields = gridModels;
           return fields.map((model: any) => ({
-            label: model.props.title || model.props.name,
+            label: model.props.label || model.props.name,
             value: model.uid,
             model,
           }));
@@ -778,8 +778,13 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       ...model.__props,
     };
 
-    model.setProps(_.omit(newProps, 'hiddenModel'));
+    model.setProps(_.omit(newProps, ['hiddenModel', 'value']));
     model.hidden = !!newProps.hiddenModel;
+
+    // 目前只有表单的“字段赋值”有 value 属性
+    if ('value' in newProps && model.context.form) {
+      model.context.form.setFieldValue(model.props.name, newProps.value);
+    }
 
     model.__shouldReset = true;
   });

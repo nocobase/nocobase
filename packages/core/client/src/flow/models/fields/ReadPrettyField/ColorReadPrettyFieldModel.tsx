@@ -10,6 +10,7 @@
 import React from 'react';
 import { ColorPicker } from 'antd';
 import { css } from '@emotion/css';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -33,3 +34,7 @@ export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
+
+DisplayItemModel.bindModelToInterface('ColorReadPrettyFieldModel', ['color'], {
+  isDefault: true,
+});

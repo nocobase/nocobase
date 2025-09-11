@@ -9,7 +9,7 @@
 
 import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
-import { escapeT, reactive } from '@nocobase/flow-engine';
+import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -139,13 +139,6 @@ export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
     'mbm',
   ];
 
-  public static filterSupportedFields(field): boolean {
-    if (field.targetCollection) {
-      return field.targetCollection.template === 'file';
-    }
-    return true;
-  }
-
   // @reactive
   public render() {
     const { value } = this.props;
@@ -215,3 +208,21 @@ PreviewReadPrettyFieldModel.registerFlow({
     },
   },
 });
+
+PreviewReadPrettyFieldModel.define({
+  label: escapeT('Preview'),
+});
+
+DisplayItemModel.bindModelToInterface(
+  'PreviewReadPrettyFieldModel',
+  ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
+  {
+    isDefault: true,
+    when: (ctx, field) => {
+      if (field.targetCollection) {
+        return field.targetCollection.template === 'file';
+      }
+      return true;
+    },
+  },
+);

@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { Tag } from 'antd';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 interface FieldNames {
@@ -57,3 +58,11 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
     return content;
   }
 }
+
+DisplayItemModel.bindModelToInterface(
+  'SelectReadPrettyFieldModel',
+  ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'],
+  {
+    isDefault: true,
+  },
+);

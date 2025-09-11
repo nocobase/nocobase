@@ -8,6 +8,7 @@
  */
 import { DateTimeFilterFieldModel } from './DateTimeFilterFieldModel';
 import React from 'react';
+import { FilterableItemModel } from '@nocobase/flow-engine';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 const DateOnlyPicker = (props) => {
@@ -38,3 +39,7 @@ export class DateOnlyFilterFieldModel extends DateTimeFilterFieldModel {
     return [DateOnlyPicker, {}];
   }
 }
+
+FilterableItemModel.bindModelToInterface('DateOnlyFilterFieldModel', ['date'], {
+  isDefault: true,
+});

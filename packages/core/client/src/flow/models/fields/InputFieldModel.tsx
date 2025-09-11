@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import { FormFieldModel } from './FormFieldModel';
 
@@ -21,6 +21,27 @@ export class InputFieldModel extends FormFieldModel {
 EditableItemModel.bindModelToInterface(
   'InputFieldModel',
   ['input', 'email', 'phone', 'uuid', 'url', 'sequence', 'nanoid'],
+  {
+    isDefault: true,
+  },
+);
+
+FilterableItemModel.bindModelToInterface(
+  'InputFieldModel',
+  [
+    'input',
+    'email',
+    'phone',
+    'uuid',
+    'url',
+    'sequence',
+    'nanoid',
+    'textarea',
+    'markdown',
+    'richText',
+    'password',
+    'color',
+  ],
   {
     isDefault: true,
   },
