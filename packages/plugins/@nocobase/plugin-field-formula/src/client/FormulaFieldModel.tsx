@@ -9,6 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
+import { EditableItemModel } from '@nocobase/flow-engine';
 import { Form } from 'antd';
 import { Checkbox, DatePicker, FormFieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -131,3 +132,5 @@ export class FormulaFieldModel extends FormFieldModel {
     ];
   }
 }
+
+EditableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], { isDefault: true });

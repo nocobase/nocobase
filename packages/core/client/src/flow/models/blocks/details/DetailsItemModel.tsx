@@ -63,36 +63,43 @@ export class DetailsItemModel extends DisplayItemModel<{
 }> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
-    return collection.getFields().map((field) => {
-      const fieldModel = field.getFirstSubclassNameOf('ReadPrettyFieldModel') || 'ReadPrettyFieldModel';
-      const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
-      return {
-        key: fullName,
-        label: field.title,
-        toggleable: (subModel) => {
-          const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
-          return fieldPath === fullName;
-        },
-        useModel: 'DetailsItemModel',
-        createModelOptions: () => ({
-          use: 'DetailsItemModel',
-          stepParams: {
-            fieldSettings: {
-              init: {
-                dataSourceKey: collection.dataSourceKey,
-                collectionName: ctx.model.context.blockModel.collection.name,
-                fieldPath: fullName,
+    return collection
+      .getFields()
+      .map((field) => {
+        const binding = this.getDefaultBindingByField(ctx, field);
+        if (!binding) {
+          return;
+        }
+        const fieldModel = binding.modelName;
+        const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
+        return {
+          key: fullName,
+          label: field.title,
+          toggleable: (subModel) => {
+            const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
+            return fieldPath === fullName;
+          },
+          useModel: 'DetailsItemModel',
+          createModelOptions: () => ({
+            use: 'DetailsItemModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: ctx.model.context.blockModel.collection.name,
+                  fieldPath: fullName,
+                },
               },
             },
-          },
-          subModels: {
-            field: {
-              use: fieldModel,
+            subModels: {
+              field: {
+                use: fieldModel,
+              },
             },
-          },
-        }),
-      };
-    });
+          }),
+        };
+      })
+      .filter(Boolean);
   }
 
   onInit(options: any) {
@@ -225,7 +232,57 @@ DetailsItemModel.registerFlow({
     },
     model: {
       title: escapeT('Field component'),
-      use: 'fieldComponent',
+      uiSchema: (ctx) => {
+        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+        if (classes.length === 1) {
+          return null;
+        }
+        return {
+          use: {
+            type: 'string',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: classes.map((model) => {
+              const m = ctx.engine.getModelClass(model.modelName);
+              return {
+                label: m.meta.label || model.modelName,
+                value: model.modelName,
+              };
+            }),
+          },
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+        // 找到选中的那条
+        const selected = classes.find((model) => model.modelName === params.use);
+        if (params.use !== previousParams.use) {
+          const fieldUid = ctx.model.subModels['field']['uid'];
+          await ctx.engine.destroyModel(fieldUid);
+          ctx.model.setSubModel('field', {
+            use: params.use,
+            props: selected.defaultProps,
+            stepParams: {
+              fieldSettings: {
+                init: ctx.model.getFieldSettingsInitParams(),
+              },
+            },
+          });
+          // 持久化
+          await ctx.model.save();
+        }
+      },
+      defaultParams: (ctx: any) => {
+        const defaultModel = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+        return {
+          use: (ctx.model.subModels.field as FieldModel)?.use || defaultModel.modelName,
+        };
+      },
+      async handler(ctx, params) {
+        if (!params.use) {
+          throw new Error('model use is a required parameter');
+        }
+      },
     },
   },
 });

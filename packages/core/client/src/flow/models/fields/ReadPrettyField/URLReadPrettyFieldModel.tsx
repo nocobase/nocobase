@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { reactive } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
 export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -25,3 +25,11 @@ export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
     return <>{content}</>;
   }
 }
+
+URLReadPrettyFieldModel.define({
+  label: escapeT('URL'),
+});
+
+DisplayItemModel.bindModelToInterface('URLReadPrettyFieldModel', ['url'], {
+  isDefault: true,
+});

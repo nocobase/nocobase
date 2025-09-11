@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import { DisplayItemModel } from '@nocobase/flow-engine';
 
 import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
 
@@ -15,3 +16,5 @@ export class CircleReadPrettyFieldModel extends MapReadPrettyFieldModel {
     return 'circle';
   }
 }
+
+DisplayItemModel.bindModelToInterface('CircleReadPrettyFieldModel', ['circle'], { isDefault: true });

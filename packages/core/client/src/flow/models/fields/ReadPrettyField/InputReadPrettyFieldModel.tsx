@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -36,7 +36,9 @@ export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
-
+InputReadPrettyFieldModel.define({
+  label: escapeT('Text'),
+});
 DisplayItemModel.bindModelToInterface(
   'InputReadPrettyFieldModel',
   ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea', 'time', 'nanoid'],

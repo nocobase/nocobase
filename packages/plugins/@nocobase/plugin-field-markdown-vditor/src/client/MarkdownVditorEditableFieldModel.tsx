@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { FormFieldModel } from '@nocobase/client';
-import { largeField } from '@nocobase/flow-engine';
+import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { Edit } from './components/Edit';
 @largeField()
 export class MarkdownVditorEditableFieldModel extends FormFieldModel {
@@ -17,3 +17,4 @@ export class MarkdownVditorEditableFieldModel extends FormFieldModel {
     return [Edit, {}];
   }
 }
+EditableItemModel.bindModelToInterface('MarkdownVditorEditableFieldModel', ['vditor'], { isDefault: true });

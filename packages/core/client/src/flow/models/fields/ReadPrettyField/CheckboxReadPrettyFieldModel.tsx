@@ -10,6 +10,7 @@
 import React from 'react';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 import { Checkbox } from 'antd';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 
 export class CheckboxReadPrettyFieldModel extends ReadPrettyFieldModel {
@@ -33,3 +34,7 @@ export class CheckboxReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
+
+DisplayItemModel.bindModelToInterface('CheckboxReadPrettyFieldModel', ['checkbox'], {
+  isDefault: true,
+});

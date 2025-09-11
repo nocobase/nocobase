@@ -11,7 +11,7 @@ import { useForm } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { InputNumberReadPretty } from '../../../components/InputNumberReadPretty';
 import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
 
@@ -164,4 +164,8 @@ NumberReadPrettyFieldModel.registerFlow({
       },
     },
   },
+});
+
+DisplayItemModel.bindModelToInterface('NumberReadPrettyFieldModel', ['number', 'integer', 'id', 'formula'], {
+  isDefault: true,
 });

@@ -12,6 +12,8 @@ import {
   MultiRecordResource,
   useFlowModel,
   createCurrentRecordMetaFactory,
+  EditableItemModel,
+  FilterableItemModel,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
@@ -315,3 +317,19 @@ RemoteSelectFieldModel.registerFlow({
     },
   },
 });
+
+RemoteSelectFieldModel.define({
+  label: escapeT('Select'),
+});
+
+EditableItemModel.bindModelToInterface(
+  'RemoteSelectFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { isDefault: true },
+);
+
+FilterableItemModel.bindModelToInterface(
+  'RemoteSelectFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { isDefault: true },
+);
