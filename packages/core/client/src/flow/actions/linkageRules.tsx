@@ -32,8 +32,8 @@ interface LinkageRule {
   /** 联动规则的动作部分 */
   actions: {
     key: string;
-    type: string;
-    value?: any;
+    name: string;
+    params?: any;
   }[];
 }
 
@@ -451,8 +451,8 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   const handleAddAction = (ruleIndex: number, actionType: string) => {
     const newAction = {
       key: uid(),
-      type: actionType,
-      value: undefined,
+      name: actionType,
+      params: undefined,
     };
     rules[ruleIndex].actions.push(newAction);
   };
@@ -464,7 +464,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
 
   // 更新动作的值
   const handleActionValueChange = (ruleIndex: number, actionIndex: number, value: any) => {
-    rules[ruleIndex].actions[actionIndex].value = value;
+    rules[ruleIndex].actions[actionIndex].params = value;
   };
 
   // 生成折叠面板的自定义标题
@@ -601,7 +601,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             {rule.actions.length > 0 ? (
               <div style={{ marginBottom: 16 }}>
                 {rule.actions.map((action, actionIndex) => {
-                  const actionDef = linkageActions[action.type];
+                  const actionDef = linkageActions[action.name];
                   if (!actionDef) return null;
 
                   return (
@@ -634,7 +634,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                       </div>
                       <div>
                         {React.createElement(actionDef.component, {
-                          value: action.value,
+                          value: action.params,
                           onChange: (value: any) => handleActionValueChange(index, actionIndex, value),
                         })}
                       </div>
@@ -719,10 +719,10 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
-          const handler = linkageActions[action.type]?.handler;
+          const handler = linkageActions[action.name]?.handler;
 
           if (!handler) {
-            throw new Error(`Unknown action type: ${action.type}`);
+            throw new Error(`Unknown action type: ${action.name}`);
           }
 
           const setProps = (
@@ -760,7 +760,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             }
           };
 
-          handler({ ctx, value: action.value, setProps });
+          handler({ ctx, value: action.params, setProps });
         });
       } else {
         // 条件不满足时重置状态
