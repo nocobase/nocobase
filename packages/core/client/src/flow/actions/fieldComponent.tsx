@@ -43,7 +43,7 @@ export const fieldComponent = defineAction({
       },
     };
   },
-  afterParamsSave: async (ctx, params, previousParams) => {
+  beforeParamsSave: async (ctx, params, previousParams) => {
     const classes =
       ctx.model.getProps().pattern === 'readPretty'
         ? DisplayItemModel.getBindingsByField(ctx, (ctx.model as FieldModel).collectionField)
@@ -66,13 +66,17 @@ export const fieldComponent = defineAction({
       await ctx.model.save();
     }
   },
-  defaultParams: (ctx) => {
+  defaultParams: (ctx: any) => {
+    const defaultModel =
+      ctx.model.getProps().pattern === 'readPretty'
+        ? DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField)
+        : EditableItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+
     return {
-      use: (ctx.model.subModels.field as FieldModel).use,
+      use: (ctx.model.subModels.field as FieldModel).use || defaultModel.modelName,
     };
   },
   async handler(ctx, params) {
-    console.log('Sub model step1 handler');
     if (!params.use) {
       throw new Error('model use is a required parameter');
     }

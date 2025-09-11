@@ -69,10 +69,7 @@ export const titleField = defineAction({
     const targetCollectionField = targetCollection.getField(label);
 
     const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-    if (!binding) {
-      return;
-    }
-    const use = binding.modelName;
+    const use = binding.modelName || 'ReadPrettyFieldModel';
     const model = ctx.model.setSubModel('field', {
       use,
       stepParams: {
