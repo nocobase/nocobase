@@ -9,12 +9,12 @@
 
 import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 
-type UiSchemaEnumItem = string | number | boolean | { label?: any; value?: any; color?: string; icon?: any };
+export type UiSchemaEnumItem = string | number | boolean | { label?: any; value?: any; color?: string; icon?: any };
 
 /**
  * 将 uiSchema.enum 归一化为 antd 可识别的 options 数组
  */
-function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []) {
+export function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []) {
   if (!Array.isArray(uiEnum)) return [];
   return uiEnum.map((item: UiSchemaEnumItem) => {
     if (item && typeof item === 'object' && !Array.isArray(item)) {
@@ -51,4 +51,5 @@ export function ensureOptionsFromUiSchemaEnumIfAbsent(model: FlowModel, collecti
   if (!normalized.length) return false;
 
   model.setProps({ options: normalized });
+  return true;
 }
