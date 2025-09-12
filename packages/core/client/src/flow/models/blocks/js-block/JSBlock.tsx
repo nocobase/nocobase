@@ -140,6 +140,7 @@ ctx.element.innerHTML = \`
                 // fetch,
                 Math,
                 Date,
+                addEventListener: addEventListener.bind(window),
                 // 其他需要的全局对象或方法
               };
               if (prop in allowedGlobals) {

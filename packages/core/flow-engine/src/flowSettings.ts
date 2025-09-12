@@ -11,11 +11,13 @@ import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { autorun, define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowRuntimeContext } from './flowContext';
+import { FlowEngine } from './flowEngine';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
@@ -28,7 +30,6 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
-import _ from 'lodash';
 
 const Panel = Collapse.Panel;
 
@@ -65,10 +66,13 @@ export class FlowSettings {
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
 
-  constructor() {
+  constructor(engine: FlowEngine) {
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
     this.enabled = false;
-
+    engine.context.defineProperty('flowSettingsEnabled', {
+      get: () => this.enabled,
+      cache: false,
+    });
     // 添加默认的配置项目
     this.addDefaultToolbarItems();
 
@@ -266,8 +270,8 @@ export class FlowSettings {
   }
 
   public forceDisable() {
-    this.#forceEnabled = true;
-    this.enabled = true;
+    this.#forceEnabled = false;
+    this.enabled = false;
   }
 
   /**
