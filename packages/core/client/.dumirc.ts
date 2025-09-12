@@ -148,6 +148,10 @@ export default defineConfig({
               link: '/examples/flow-models/liquidjs',
             },
         {
+          title: 'JavaScript field',
+          link: '/models/fields/js-field-model',
+        },
+        {
           title: 'CRUD',
           link: '/examples/flow-models/crud',
         },
