@@ -28,6 +28,7 @@ export * from './TextareaFieldModel';
 export * from './TimeFieldModel';
 export * from './UploadFieldModel';
 export * from './VariableFieldFormModel';
+export * from './JSFieldModel';
 
 export * from './ReadPrettyField';
 
