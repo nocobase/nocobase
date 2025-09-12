@@ -195,15 +195,17 @@ export const DisplayNumber = (props: displayNumberProps) => {
 
 export class DisplayNumberFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['number', 'integer', 'id', 'formula'];
-  public render() {
-    const { value } = this.props;
+  public renderDisplayValue(value) {
     return (
       <div>
-        <DisplayNumber value={value} {...this.props} />
+        <DisplayNumber {...this.props} value={value} />
       </div>
     );
   }
 }
+DisplayNumberFieldModel.define({
+  label: escapeT('Number'),
+});
 
 const UnitConversion = () => {
   const form = useForm();

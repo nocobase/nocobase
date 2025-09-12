@@ -15,9 +15,7 @@ import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
 export class DisplayColorFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['color'];
-  public render() {
-    const { value } = this.props;
-
+  public renderDisplayValue(value) {
     return (
       <div
         role="button"

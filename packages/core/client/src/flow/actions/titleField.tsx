@@ -39,21 +39,21 @@ const SelectOptions = (props) => {
 export const titleField = defineAction({
   name: 'titleField',
   title: tval('Label field'),
-  uiSchema: {
-    label: {
-      'x-component': SelectOptions,
-      'x-decorator': 'FormItem',
-    },
+  uiSchema: (ctx) => {
+    if (!ctx.collectionField.isAssociationField()) {
+      return null;
+    }
+    return {
+      label: {
+        'x-component': SelectOptions,
+        'x-decorator': 'FormItem',
+      },
+    };
   },
   defaultParams: (ctx: any) => {
     const targetCollection = ctx.model.collectionField.targetCollection;
-    const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
     return {
-      label:
-        ctx.model.field?.props?.fieldNames?.label ||
-        ctx.model.props.fieldNames?.label ||
-        targetCollection.options.titleField ||
-        filterKey,
+      label: targetCollection.options.titleField || targetCollection.filterTargetKey,
     };
   },
   async handler(ctx: any, params) {
@@ -69,7 +69,7 @@ export const titleField = defineAction({
     const targetCollectionField = targetCollection.getField(label);
 
     const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-    const use = binding.modelName || 'ReadPrettyFieldModel';
+    const use = binding.modelName;
     const model = ctx.model.setSubModel('field', {
       use,
       stepParams: {
@@ -82,6 +82,7 @@ export const titleField = defineAction({
         },
       },
     });
+    await model.save();
     await model.applyAutoFlows();
   },
 });

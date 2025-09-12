@@ -22,8 +22,8 @@ export class DisplayDateTimeFieldModel extends InteractiveDisplayFieldModel {
     'updatedAt',
     'unixTimestamp',
   ];
-  public render() {
-    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc, value } = this.props;
+  public renderDisplayValue(value) {
+    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     let formattedValue = '';
     if (value) {

@@ -20,6 +20,7 @@ import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { FieldNotAllow } from '../form/FormItemModel';
 import { DetailsGridModel } from './DetailsGridModel';
+import { DisplayAssociationFieldModel } from '../../fields/DisplayAssociationField/DisplayAssociationFieldModel';
 
 /**
  * 从 record 中取值
@@ -63,14 +64,23 @@ export class DetailsItemModel extends DisplayItemModel<{
 }> {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
+
+    const resolveFieldModel = (field: any) => {
+      // 如果是关联字段，取目标集合的标题字段
+      const targetField = field.isAssociationField() ? field.targetCollection?.titleCollectionField : field;
+
+      if (!targetField) return null;
+
+      const binding = this.getDefaultBindingByField(ctx, targetField);
+      return binding?.modelName || null;
+    };
+
     return collection
       .getFields()
       .map((field) => {
-        const binding = this.getDefaultBindingByField(ctx, field);
-        if (!binding) {
-          return;
-        }
-        const fieldModel = binding.modelName;
+        const fieldModel = resolveFieldModel(field);
+        if (!fieldModel) return null;
+
         const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
         return {
           key: fullName,
@@ -233,35 +243,58 @@ DetailsItemModel.registerFlow({
     model: {
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
+        const { titleField } = ctx.model.props;
         const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
-        if (classes.length === 1) {
-          return null;
+        if (classes.length === 1) return null;
+
+        const makeOptions = (list) =>
+          list.map((model) => {
+            const m = ctx.engine.getModelClass(model.modelName);
+            return { label: m.meta.label || model.modelName, value: model.modelName };
+          });
+
+        let options;
+        if (titleField) {
+          const titleFieldClasses = DisplayItemModel.getBindingsByField(
+            ctx,
+            ctx.collectionField.targetCollection.getField(titleField),
+          );
+          options = [
+            { label: escapeT('AssociationField component'), options: makeOptions(classes) },
+            { label: escapeT('Title field component'), options: makeOptions(titleFieldClasses) },
+          ];
+        } else {
+          options = makeOptions(classes);
         }
         return {
           use: {
             type: 'string',
             'x-component': 'Select',
             'x-decorator': 'FormItem',
-            enum: classes.map((model) => {
-              const m = ctx.engine.getModelClass(model.modelName);
-              return {
-                label: m.meta.label || model.modelName,
-                value: model.modelName,
-              };
-            }),
+            enum: options,
           },
         };
       },
+
       beforeParamsSave: async (ctx, params, previousParams) => {
         const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+        const { titleField } = ctx.model.props;
+        let titleFieldClasses = [];
+        if (titleField) {
+          titleFieldClasses = DisplayItemModel.getBindingsByField(
+            ctx,
+            ctx.collectionField.targetCollection.getField(titleField),
+          );
+        }
+
         // 找到选中的那条
-        const selected = classes.find((model) => model.modelName === params.use);
+        const selected = classes.concat(titleFieldClasses).find((model) => model.modelName === params.use);
         if (params.use !== previousParams.use) {
           const fieldUid = ctx.model.subModels['field']['uid'];
           await ctx.engine.destroyModel(fieldUid);
           ctx.model.setSubModel('field', {
             use: params.use,
-            props: selected.defaultProps,
+            props: selected?.defaultProps,
             stepParams: {
               fieldSettings: {
                 init: ctx.model.getFieldSettingsInitParams(),
@@ -282,6 +315,45 @@ DetailsItemModel.registerFlow({
         if (!params.use) {
           throw new Error('model use is a required parameter');
         }
+      },
+    },
+    fieldNames: {
+      use: 'titleField',
+      title: escapeT('Label field'),
+
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (!ctx.collectionField.isAssociationField()) {
+          return null;
+        }
+        if (
+          params.label !== previousParams.label &&
+          !(ctx.model.subModels.field instanceof DisplayAssociationFieldModel)
+        ) {
+          const targetCollection = ctx.collectionField.targetCollection;
+          const targetCollectionField = targetCollection.getField(params.label);
+          const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          if (binding.modelName !== ctx.model.subModels.field.use) {
+            const fieldUid = ctx.model.subModels['field']['uid'];
+            await ctx.engine.destroyModel(fieldUid);
+            const model = ctx.model.setSubModel('field', {
+              use: binding.modelName,
+              stepParams: {
+                fieldSettings: {
+                  init: {
+                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                    collectionName: targetCollection.name,
+                    fieldPath: params.label,
+                  },
+                },
+              },
+            });
+            await model.save();
+          }
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+        }
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ titleField: params.label });
       },
     },
   },

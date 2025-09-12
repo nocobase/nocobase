@@ -14,8 +14,7 @@ import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
 export class DisplayIconFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['icon'];
-  public render() {
-    const { value } = this.props;
+  public renderDisplayValue(value) {
     return <Icon type={value} />;
   }
 }

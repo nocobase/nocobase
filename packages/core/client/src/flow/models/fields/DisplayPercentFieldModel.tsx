@@ -23,9 +23,8 @@ const toValue = (value: any, callback: (v: number) => number) => {
 };
 export class DisplayPercentFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
-  // @reactive
-  public render() {
-    const { prefix = '', suffix = '', value } = this.props;
+  public renderDisplayValue(value) {
+    const { prefix = '', suffix = '' } = this.props;
 
     const content = toValue(value, (v) => v * 100);
     return (

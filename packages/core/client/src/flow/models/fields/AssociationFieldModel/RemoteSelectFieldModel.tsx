@@ -45,7 +45,7 @@ export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any =
-    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
+    (currentModel.subModels?.field as FlowModel)?.subModels?.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
@@ -53,7 +53,7 @@ export function LabelByField(props) {
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
-  fieldModel.setProps({ value: labelValue });
+  fieldModel.setProps({ value: labelValue, clickToOpen: false });
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>
       {labelValue ? fieldModel.render() : tval('N/A')}

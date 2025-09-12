@@ -139,10 +139,21 @@ export class DisplayPreviewFieldModel extends FieldModel {
     'mbm',
   ];
 
-  // @reactive
-  public render() {
-    const { value } = this.props;
-    return <Preview {...this.props} value={castArray(value)} />;
+  render(): any {
+    const { value, titleField } = this.props;
+    if (titleField) {
+      return castArray(value).flatMap((v, idx) => {
+        const content = v?.[titleField] ? (
+          <Preview key={idx} {...this.props} value={castArray(v?.[titleField])} />
+        ) : (
+          <span key={idx}>N/A</span>
+        );
+
+        return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
+      });
+    } else {
+      return <Preview {...this.props} value={castArray(value)} />;
+    }
   }
 }
 

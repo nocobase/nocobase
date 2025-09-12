@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tag, Checkbox } from 'antd';
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
@@ -45,8 +45,8 @@ const fieldNames = {
 export class DisplayEnumFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
-  public render() {
-    const { options = [], value } = this.props;
+  public renderDisplayValue(value) {
+    const { options = [] } = this.props;
     const currentOptions = getCurrentOptions(value, options, fieldNames);
     const content: any =
       value &&
@@ -58,7 +58,9 @@ export class DisplayEnumFieldModel extends InteractiveDisplayFieldModel {
     return content;
   }
 }
-
+DisplayEnumFieldModel.define({
+  label: escapeT('Select'),
+});
 DisplayItemModel.bindModelToInterface(
   'DisplayEnumFieldModel',
   ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'],
