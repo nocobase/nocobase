@@ -80,7 +80,7 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `// 欢迎使用 JavaScript 字段（只读）\n// 你可以通过 ctx.element 操作 DOM，通过 ctx.value 读取当前字段值\n// 在表格或详情中，也可以通过 ctx.record 访问当前记录\n\nconst value = ctx.value;\nctx.element.innerHTML = \`<span style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n// 你也可以使用异步逻辑：\n// await ctx.runjs('return 1+1');\n`,
+          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n// 你也可以使用异步逻辑：\n// await ctx.runjs('return 1+1');\n`,
         };
       },
       async handler(ctx, params) {

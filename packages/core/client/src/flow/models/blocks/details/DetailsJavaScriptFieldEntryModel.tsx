@@ -19,10 +19,24 @@ import { DetailsCustomItemModel } from './DetailsCustomItemModel';
  */
 export class DetailsJavaScriptFieldEntryModel extends DetailsCustomItemModel {
   static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
+    const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'DetailsItemModel',
       fieldUseModel: 'JSFieldModel',
     });
+    const [group] = groups || [];
+    if (!group) return groups;
+    return [
+      {
+        ...group,
+        children: (innerCtx: FlowModelContext) => {
+          const reGroups = buildWrapperFieldChildren(innerCtx, {
+            useModel: 'DetailsItemModel',
+            fieldUseModel: 'JSFieldModel',
+          });
+          return reGroups?.[0]?.children || [];
+        },
+      },
+    ];
   }
 }
 

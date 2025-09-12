@@ -19,10 +19,25 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
  */
 export class TableJavaScriptFieldEntryModel extends TableCustomColumnModel {
   static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
+    const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
     });
+    const [group] = groups || [];
+    if (!group) return groups;
+    // 将子项改为函数，确保每次展开时重新计算 toggle 状态
+    return [
+      {
+        ...group,
+        children: (innerCtx: FlowModelContext) => {
+          const reGroups = buildWrapperFieldChildren(innerCtx, {
+            useModel: 'TableColumnModel',
+            fieldUseModel: 'JSFieldModel',
+          });
+          return reGroups?.[0]?.children || [];
+        },
+      },
+    ];
   }
 }
 
