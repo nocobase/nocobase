@@ -12,6 +12,7 @@ import { Tag, Modal, Typography } from 'antd';
 import { ContextItem as ContextItemType } from '../types';
 import PluginAIClient from '../..';
 import { useApp, usePlugin } from '@nocobase/client';
+import _ from 'lodash';
 const { Paragraph } = Typography;
 
 export const ContextItem: React.FC<{
@@ -37,16 +38,18 @@ export const ContextItem: React.FC<{
   const C = options?.tag?.Component;
   const getContent = options?.getContent;
 
-  const [text, setText] = useState(item.content);
+  const [text, setText] = useState('');
   useEffect(() => {
     if (getContent) {
       getContent(app, item)
         .then((content) => {
-          setText(content);
+          setText(_.isString(content) ? content : JSON.stringify(content, null, 2));
         })
         .catch(() => {
           // ignore
         });
+    } else {
+      setText(_.isString(item.content) ? item.content : JSON.stringify(item.content, null, 2));
     }
   }, [app, getContent, item]);
 

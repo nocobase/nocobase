@@ -118,6 +118,17 @@ export class FlowResource<TData = any> {
     (this.events[event] ||= []).push(callback);
   }
 
+  once(event: string, callback: (...args: any[]) => void) {
+    const wrapper = (...args: any[]) => {
+      // 触发回调
+      callback(...args);
+      // 自动移除监听器
+      this.off(event, wrapper);
+    };
+    // 注册包装后的回调
+    this.on(event, wrapper);
+  }
+
   off(event: string, callback: (...args: any[]) => void) {
     this.events[event] = (this.events[event] || []).filter((fn) => fn !== callback);
   }

@@ -37,6 +37,7 @@ export class JavaScriptBlockModel extends BlockModel {
 }
 
 JavaScriptBlockModel.define({
+  hide: true,
   label: 'JavaScript block',
 });
 

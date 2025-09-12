@@ -16,12 +16,13 @@ import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types/ai-chat-conversation.type';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, WorkContextHandler } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
-import { KnowledgeBaseGroup, KnowledgeBaseType } from '../types';
+import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { createWorkContextHandler } from '../manager/work-context-handler';
 
 type ToolMessage = {
   id: string;
@@ -698,6 +699,7 @@ export class AIEmployee {
     });
 
     const chatContext = await this.aiChatConversation.getChatContext({
+      workContextHandler: this.plugin.workContextHandler,
       provider,
       systemPrompt: await this.getSystemPrompt(),
       tools: await this.getTools(),
@@ -729,6 +731,7 @@ export class AIEmployee {
 
       const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        workContextHandler: this.plugin.workContextHandler,
         provider,
         systemPrompt: await this.getSystemPrompt(),
         tools: await this.getTools(),
@@ -754,6 +757,7 @@ export class AIEmployee {
     try {
       const { provider, model, service } = await this.getLLMService();
       const chatContext = await this.aiChatConversation.getChatContext({
+        workContextHandler: this.plugin.workContextHandler,
         provider,
         systemPrompt: await this.getSystemPrompt(),
         messageId,

@@ -12,7 +12,8 @@ export * from './FilterFormActionModel';
 export * from './FilterFormBlockModel';
 export * from './FilterFormCollapseActionModel';
 export * from './FilterFormGridModel';
+export * from './FilterFormItemModel';
+export * from './FilterFormJSActionModel';
 export * from './FilterFormResetActionModel';
 export * from './FilterFormSubmitActionModel';
-export * from './FilterFormItemModel';
 //

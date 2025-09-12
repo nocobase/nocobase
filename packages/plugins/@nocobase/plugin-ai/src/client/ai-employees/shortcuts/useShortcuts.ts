@@ -26,23 +26,26 @@ export const useShortcuts = () => {
     model: null,
   });
 
-  const loadModel = useCallback(async () => {
-    let model: AIEmployeeShortcutListModel = await flowEngine.loadModel({
-      uid: `ai-shortcuts-${name}`,
-    });
-    if (!model) {
-      model = flowEngine.createModel({
-        parentId: name,
-        subKey: 'ai-shortcuts',
+  const loadModel = useCallback(
+    async (name: string) => {
+      let model: AIEmployeeShortcutListModel = await flowEngine.loadModel({
         uid: `ai-shortcuts-${name}`,
-        use: 'AIEmployeeShortcutListModel',
       });
-      model.isNewModel = true;
-    }
-    setResult({
-      model,
-    });
-  }, [flowEngine, name]);
+      if (!model) {
+        model = flowEngine.createModel({
+          parentId: name,
+          subKey: 'ai-shortcuts',
+          uid: `ai-shortcuts-${name}`,
+          use: 'AIEmployeeShortcutListModel',
+        });
+        model.isNewModel = true;
+      }
+      setResult({
+        model,
+      });
+    },
+    [flowEngine, name],
+  );
 
   useEffect(() => {
     if (pathname === '/admin/settings/data-source-manager/main/collections') {
@@ -72,9 +75,14 @@ export const useShortcuts = () => {
       return;
     }
 
+    if (pathname === '/admin/mail/manager') {
+      loadModel('plugin-mail-manager');
+      return;
+    }
+
     contextAware.setAIEmployees([]);
     if (name) {
-      loadModel();
+      loadModel(name);
       return;
     }
 
