@@ -11,9 +11,9 @@ import React from 'react';
 import { ColorPicker } from 'antd';
 import { css } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
-export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayColorFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['color'];
   public render() {
     const { value } = this.props;
@@ -35,6 +35,6 @@ export class ColorReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-DisplayItemModel.bindModelToInterface('ColorReadPrettyFieldModel', ['color'], {
+DisplayItemModel.bindModelToInterface('DisplayColorFieldModel', ['color'], {
   isDefault: true,
 });

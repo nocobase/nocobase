@@ -10,7 +10,7 @@
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { cx, css } from '@emotion/css';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { FieldModel } from '../base/FieldModel';
 
 const JSONClassName = css`
   margin-bottom: 0;
@@ -18,9 +18,8 @@ const JSONClassName = css`
   font-size: 90%;
 `;
 
-export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayJSONFieldModel extends FieldModel {
   public static readonly supportedFieldInterfaces = ['json'];
-  // @reactive
   public render() {
     const { space, style, className, value } = this.props;
     let content = '';
@@ -40,6 +39,6 @@ export class JsonReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-DisplayItemModel.bindModelToInterface('JsonReadPrettyFieldModel', ['json'], {
+DisplayItemModel.bindModelToInterface('DisplayJSONFieldModel', ['json'], {
   isDefault: true,
 });

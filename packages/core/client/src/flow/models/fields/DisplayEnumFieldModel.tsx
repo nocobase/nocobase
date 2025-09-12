@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { Tag } from 'antd';
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { Tag, Checkbox } from 'antd';
+import { DisplayItemModel } from '@nocobase/flow-engine';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
 interface FieldNames {
   value: string;
@@ -41,10 +42,9 @@ const fieldNames = {
   color: 'color',
 };
 
-export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayEnumFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
-  // @reactive
   public render() {
     const { options = [], value } = this.props;
     const currentOptions = getCurrentOptions(value, options, fieldNames);
@@ -60,9 +60,27 @@ export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
 }
 
 DisplayItemModel.bindModelToInterface(
-  'SelectReadPrettyFieldModel',
+  'DisplayEnumFieldModel',
   ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'],
   {
     isDefault: true,
   },
 );
+
+DisplayItemModel.bindModelToInterface('DisplayEnumFieldModel', ['checkbox'], {
+  isDefault: true,
+  defaultProps: (ctx) => {
+    return {
+      options: [
+        {
+          label: <CheckOutlined style={{ color: '#52c41a' }} />,
+          value: true,
+        },
+        {
+          label: <Checkbox disabled />,
+          value: false,
+        },
+      ],
+    };
+  },
+});

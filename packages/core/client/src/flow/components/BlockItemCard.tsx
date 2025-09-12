@@ -12,7 +12,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
-import { MarkdownReadPretty } from '../internal/components/MarkdownDisplay/MarkdownReadPretty';
+import { DisplayMarkdown } from '../internal/components/Markdown/DisplayMarkdown';
 
 const useBlockHeight = ({ height, heightMode }) => {
   if (heightMode !== 'specifyValue') {
@@ -30,7 +30,7 @@ export const BlockItemCard = React.forwardRef((props: CardProps & { description?
     <div style={{ padding: '8px 0px 8px' }}>
       <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
       {description && (
-        <MarkdownReadPretty
+        <DisplayMarkdown
           value={t(description, { ns: NAMESPACE_UI_SCHEMA })}
           style={{
             overflowWrap: 'break-word',

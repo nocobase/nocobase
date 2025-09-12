@@ -8,7 +8,7 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
+import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
@@ -125,7 +125,7 @@ const Preview = (props) => {
     </Space>
   );
 };
-export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayPreviewFieldModel extends FieldModel {
   static supportedFieldInterfaces = [
     'url',
     'attachment',
@@ -146,7 +146,7 @@ export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-PreviewReadPrettyFieldModel.registerFlow({
+DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
   steps: {
@@ -209,12 +209,12 @@ PreviewReadPrettyFieldModel.registerFlow({
   },
 });
 
-PreviewReadPrettyFieldModel.define({
+DisplayPreviewFieldModel.define({
   label: escapeT('Preview'),
 });
 
 DisplayItemModel.bindModelToInterface(
-  'PreviewReadPrettyFieldModel',
+  'DisplayPreviewFieldModel',
   ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
   {
     isDefault: true,
