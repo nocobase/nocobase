@@ -398,7 +398,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       interface: string;
       getFirstSubclassNameOf: (baseClass: string) => string;
       target?: string;
-      filterable: {
+      filterable?: {
         operators: {
           label: string;
           value: string;
