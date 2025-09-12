@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select, FormInstance } from 'antd';
@@ -424,6 +424,7 @@ const linkageActions = {
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
   const { value: rules, supportedActions } = props;
   const ctx = useFlowContext();
+  const flowEngine = useFlowEngine();
   currentLinkageRules = rules;
 
   // 创建新规则的默认值
@@ -675,9 +676,11 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                         </Tooltip>
                       </div>
                       <div>
-                        {React.createElement(actionDef.component, {
-                          value: action.params,
-                          onChange: (value: any) => handleActionValueChange(index, actionIndex, value),
+                        {flowEngine.flowSettings.renderStepForm({
+                          uiSchema: actionDef.uiSchema,
+                          initialValues: action.params,
+                          flowEngine,
+                          onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),
                         })}
                       </div>
                     </div>
@@ -802,7 +805,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             }
           };
 
-          handler({ ctx, value: action.params, setProps });
+          handler(ctx, { ...action.params, setProps });
         });
       } else {
         // 条件不满足时重置状态
