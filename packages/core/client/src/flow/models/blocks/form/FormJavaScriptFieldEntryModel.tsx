@@ -21,27 +21,15 @@ export class FormJavaScriptFieldEntryModel extends FormCustomItemModel {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'FormItemModel',
       fieldUseModel: 'JSEditableFieldModel',
+      associationPathName: (ctx as any).prefixFieldPath,
     });
-    const [group] = groups || [];
-    if (!group) return groups;
-    return [
-      {
-        ...group,
-        children: (innerCtx: FlowModelContext) => {
-          const reGroups = buildWrapperFieldChildren(innerCtx, {
-            useModel: 'FormItemModel',
-            fieldUseModel: 'JSEditableFieldModel',
-            // 对齐 FormItemModel.defineChildren 的 fullName 行为，保证 toggle 共享
-            associationPathName: (innerCtx as any).prefixFieldPath,
-          });
-          return reGroups?.[0]?.children || [];
-        },
-      },
-    ];
+    return groups?.[0]?.children || [];
   }
 }
 
 FormJavaScriptFieldEntryModel.define({
-  label: escapeT('JavaScript field (editable)'),
+  label: escapeT('JavaScript field'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search fields'),
   sort: 110,
 });

@@ -23,24 +23,13 @@ export class DetailsJavaScriptFieldEntryModel extends DetailsCustomItemModel {
       useModel: 'DetailsItemModel',
       fieldUseModel: 'JSFieldModel',
     });
-    const [group] = groups || [];
-    if (!group) return groups;
-    return [
-      {
-        ...group,
-        children: (innerCtx: FlowModelContext) => {
-          const reGroups = buildWrapperFieldChildren(innerCtx, {
-            useModel: 'DetailsItemModel',
-            fieldUseModel: 'JSFieldModel',
-          });
-          return reGroups?.[0]?.children || [];
-        },
-      },
-    ];
+    return groups?.[0]?.children || [];
   }
 }
 
 DetailsJavaScriptFieldEntryModel.define({
   label: escapeT('JavaScript field'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search fields'),
   sort: 110,
 });

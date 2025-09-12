@@ -23,26 +23,14 @@ export class TableJavaScriptFieldEntryModel extends TableCustomColumnModel {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
     });
-    const [group] = groups || [];
-    if (!group) return groups;
-    // 将子项改为函数，确保每次展开时重新计算 toggle 状态
-    return [
-      {
-        ...group,
-        children: (innerCtx: FlowModelContext) => {
-          const reGroups = buildWrapperFieldChildren(innerCtx, {
-            useModel: 'TableColumnModel',
-            fieldUseModel: 'JSFieldModel',
-          });
-          return reGroups?.[0]?.children || [];
-        },
-      },
-    ];
+    return groups?.[0]?.children || [];
   }
 }
 
 TableJavaScriptFieldEntryModel.define({
   label: escapeT('JavaScript field'),
+  searchable: true,
+  searchPlaceholder: escapeT('Search fields'),
   // 提高排序到“字段类”列表的靠前位置，但不抢默认项
   sort: 110,
 });

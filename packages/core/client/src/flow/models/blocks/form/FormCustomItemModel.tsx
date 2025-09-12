@@ -25,9 +25,11 @@ export class FormCustomItemModel extends FlowModel {
           key: name,
           label: ctx.t(ModelClass.meta.label),
           sort: (ModelClass.meta.sort ?? 999) as number,
+          searchable: !!ModelClass.meta?.searchable,
+          searchPlaceholder: ModelClass.meta?.searchPlaceholder,
         };
         if (hasChildren) {
-          // 子模型自身定义了 children，作为“分组入口”使用；点击展开二级菜单
+          // 子模型自身定义了 children，作为“子菜单入口”使用；点击展开二级菜单
           item.children = (innerCtx: FlowModelContext) => {
             if (typeof ModelClass.defineChildren === 'function') {
               return ModelClass.defineChildren(innerCtx);
