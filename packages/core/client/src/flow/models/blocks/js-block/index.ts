@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AssignFieldsFormModel';
-export * from './AssignFieldGridModel';
-export * from './AssignFormItemModel';
+export * from './JSBlock';

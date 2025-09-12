@@ -18,9 +18,14 @@ import {
   isVariableExpression,
   parseValueToPath,
   EditableItemModel,
+  jioToJoiSchema,
 } from '@nocobase/flow-engine';
-import type { FlowModel, FlowDefinitionOptions, StepDefinition } from '@nocobase/flow-engine';
+// 无需类型导入（避免未使用的类型）
 import { FormItemModel } from '../form/FormItemModel';
+import { EditFormModel } from '../form/EditFormModel';
+import { FieldValidation } from '../../../../collection-manager';
+import { customAlphabet as Alphabet } from 'nanoid';
+import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
@@ -78,33 +83,7 @@ export class AssignFormItemModel extends FormItemModel {
       this.setProps({ label, name: namePath });
     }
 
-    // 针对 AssignFormItemModel：仅覆盖“当前实例”的 editItemSettings 流，隐藏“字段组件切换（fieldComponent）”
-    // 做法：复制类级静态流到实例流后修改（避免修改静态流影响其它模型）
-    const hasInstance =
-      typeof this.flowRegistry?.hasFlow === 'function' && this.flowRegistry.hasFlow('editItemSettings');
-    if (!hasInstance) {
-      const ModelCtor = this.constructor as unknown as typeof FlowModel;
-      const staticFlow = ModelCtor?.globalFlowRegistry?.getFlow?.('editItemSettings');
-      const serialized = typeof staticFlow?.serialize === 'function' ? staticFlow.serialize() : null;
-      if (serialized && typeof serialized === 'object') {
-        const data = serialized as FlowDefinitionOptions;
-        const steps: Record<string, StepDefinition> = { ...(data.steps || {}) };
-        if (steps.model) {
-          steps.model = {
-            ...steps.model,
-            hideInSettings: true,
-            uiSchema: () => ({}),
-          };
-        }
-        const { key: _ignoredKey, steps: _ignoredSteps, ...rest } = data;
-        if (typeof this.flowRegistry?.addFlow === 'function') {
-          this.flowRegistry.addFlow('editItemSettings', {
-            ...rest,
-            steps,
-          });
-        }
-      }
-    }
+    // 取消实例流覆盖：不再在实例级别改写 editItemSettings（改为类级静态流）
   }
 
   get fieldInit() {
@@ -190,6 +169,8 @@ export class AssignFormItemModel extends FormItemModel {
           multiple: multi,
         });
         fm?.applyAutoFlows?.();
+        // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
+        ensureOptionsFromUiSchemaEnumIfAbsent(fm as any, cfForMultiple as any);
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
           const targetCol = cfForMultiple.targetCollection;
           const valueKey = cfForMultiple?.targetKey || targetCol?.filterTargetKey || 'id';
@@ -201,7 +182,7 @@ export class AssignFormItemModel extends FormItemModel {
           created?.subModels?.fields?.forEach?.((m: any) => m?.remove?.());
           created?.remove?.();
         };
-      }, [fieldPath]);
+      }, []);
 
       const ConstantValueEditor: React.FC<any> = (inputProps: any) => {
         React.useEffect(() => {
@@ -219,7 +200,7 @@ export class AssignFormItemModel extends FormItemModel {
               },
             });
           }
-        }, [tempRoot, inputProps]);
+        }, [inputProps]);
         // 占满可用宽度
         return tempRoot ? (
           <div style={{ width: '100%' }}>
@@ -297,4 +278,146 @@ export class AssignFormItemModel extends FormItemModel {
 
 AssignFormItemModel.define({
   label: escapeT('Assign field'),
+});
+
+// 类级静态流：直接注册一个通用的 editItemSettings 流（去掉“字段组件切换（fieldComponent）”步骤）
+AssignFormItemModel.registerFlow({
+  key: 'editItemSettings',
+  sort: 300,
+  title: escapeT('Form item settings'),
+  steps: {
+    label: {
+      title: escapeT('Label'),
+      uiSchema: (ctx) => {
+        return {
+          label: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model as any;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
+          },
+        } as any;
+      },
+      defaultParams: (ctx) => {
+        return {
+          label: (ctx.model as any).collectionField.title,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ label: params.label });
+      },
+    },
+    init: {
+      async handler(ctx) {
+        await ctx.model.applySubModelsAutoFlows('field');
+        const collectionField = (ctx.model as any).collectionField;
+        if (collectionField) {
+          ctx.model.setProps(collectionField.getComponentProps());
+        }
+        const fieldPath = (ctx.model as any).fieldPath as string;
+        const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
+        ctx.model.setProps({
+          name: fullName,
+        });
+      },
+    },
+    showLabel: {
+      title: escapeT('Show label'),
+      uiSchema: {
+        showLabel: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        showLabel: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ showLabel: params.showLabel });
+      },
+    },
+    tooltip: {
+      title: escapeT('Tooltip'),
+      uiSchema: {
+        tooltip: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ tooltip: params.tooltip });
+      },
+    },
+    description: {
+      title: escapeT('Description'),
+      uiSchema: {
+        description: {
+          'x-component': 'Input.TextArea',
+          'x-decorator': 'FormItem',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ extra: params.description });
+      },
+    },
+    required: {
+      title: escapeT('Required'),
+      use: 'required',
+    },
+    validation: {
+      title: escapeT('Validation'),
+      uiSchema: (ctx) => {
+        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+          (ctx.model as any).collectionField.interface,
+        );
+        return {
+          validation: {
+            'x-decorator': 'FormItem',
+            'x-component': FieldValidation,
+            'x-component-props': {
+              type: targetInterface.validationType,
+              availableValidationOptions: [...new Set(targetInterface.availableValidationOptions)],
+              excludeValidationOptions: [...new Set(targetInterface.excludeValidationOptions)],
+              isAssociation: targetInterface.isAssociation,
+            },
+          },
+        } as any;
+      },
+      handler(ctx, params) {
+        if (params.validation) {
+          const rules = ctx.model.getProps().rules || [];
+          const schema = jioToJoiSchema(params.validation);
+          const label = (ctx.model.getProps() as any).label;
+          rules.push({
+            validator: (_, value) => {
+              const { error } = schema.validate(value, {
+                context: { label },
+                abortEarly: false,
+              });
+
+              if (error) {
+                const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
+                return Promise.reject(message);
+              }
+
+              return Promise.resolve();
+            },
+          });
+          ctx.model.setProps({
+            rules,
+          });
+        }
+      },
+    },
+  },
 });

@@ -7,20 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel } from '@nocobase/client';
-import {
-  APIResource,
-  BaseRecordResource,
-  ElementProxy,
-  FlowEngine,
-  MultiRecordResource,
-  SingleRecordResource,
-} from '@nocobase/flow-engine';
+import { ElementProxy } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-import { NAMESPACE } from './locale';
+import { BlockModel } from '../../base/BlockModel';
 
-export class JavaScriptBlockModel extends BlockModel {
+const NAMESPACE = 'client';
+
+export class JSBlockModel extends BlockModel {
   render() {
     return (
       <Card id={`model-${this.uid}`} className="code-block">
@@ -36,12 +30,11 @@ export class JavaScriptBlockModel extends BlockModel {
   }
 }
 
-JavaScriptBlockModel.define({
-  hide: true,
-  label: 'JavaScript block',
+JSBlockModel.define({
+  label: 'JS block',
 });
 
-JavaScriptBlockModel.registerFlow({
+JSBlockModel.registerFlow({
   key: 'jsSettings',
   title: 'JavaScript settings',
   steps: {
@@ -67,6 +60,7 @@ JavaScriptBlockModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
+          version: '1.0.0',
           code:
             `// Welcome to the JavaScript block
 // Create powerful interactive components with JavaScript
@@ -132,11 +126,55 @@ ctx.element.innerHTML = \`
       },
       handler(ctx, params) {
         const { code = '' } = params;
+        // 创建安全的 window 和 document
+        const safeWindow = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowedGlobals = {
+                setTimeout,
+                clearTimeout,
+                setInterval,
+                clearInterval,
+                console,
+                // fetch,
+                Math,
+                Date,
+                // 其他需要的全局对象或方法
+              };
+              if (prop in allowedGlobals) {
+                return allowedGlobals[prop];
+              }
+              throw new Error(`Access to global property "${prop}" is not allowed.`);
+            },
+          },
+        );
+
+        const safeDocument = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowedDocumentMethods = {
+                createElement: document.createElement.bind(document),
+                querySelector: document.querySelector.bind(document),
+                querySelectorAll: document.querySelectorAll.bind(document),
+                // 其他需要的 document 方法
+              };
+              if (prop in allowedDocumentMethods) {
+                return allowedDocumentMethods[prop];
+              }
+              throw new Error(`Access to document property "${prop}" is not allowed.`);
+            },
+          },
+        );
+
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window, document });
+
+          // 使用安全的 window 和 document 执行代码
+          await ctx.runjs(code, { window: safeWindow, document: safeDocument });
         });
       },
     },

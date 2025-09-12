@@ -22,6 +22,7 @@ import {
   parseValueToPath,
   useFlowContext,
   extractPropertyPath,
+  FlowModel,
 } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet, isEqual } from 'lodash';
 import React, { useMemo } from 'react';
@@ -29,6 +30,7 @@ import { Input } from 'antd';
 import { EditableFieldModel } from '../models';
 import { RemoteSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
+import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 
 interface Props {
   value: any;
@@ -73,6 +75,9 @@ function createTempFieldClass(Base: any) {
       if (typeof multiple !== 'undefined') {
         this.setProps({ multiple });
       }
+
+      // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
+      ensureOptionsFromUiSchemaEnumIfAbsent(this as unknown as FlowModel, collectionField);
 
       this.showTitle?.(null);
       this.setDescription?.(null);

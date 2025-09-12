@@ -21,6 +21,7 @@ import {
 } from '@nocobase/flow-engine';
 import { DateFilterDynamicComponent } from '../../../schema-component';
 import { NumberPicker } from '@formily/antd-v5';
+import { normalizeUiSchemaEnumToOptions } from '../../internal/utils/enumOptionsUtils';
 
 export interface LinkageFilterItemValue {
   path: string | null;
@@ -44,6 +45,10 @@ function createStaticInputRenderer(
   const operatorComponentProps = schema?.['x-component-props'] || {};
   const combinedProps = merge({}, fieldComponentProps, operatorComponentProps);
 
+  // 来自字段定义的本地枚举（uiSchema.enum），归一化为 antd Select 可识别的 options
+  const enumFromField = Array.isArray(fieldMeta?.uiSchema?.enum) ? fieldMeta?.uiSchema?.enum : undefined;
+  const optionsFromEnum = enumFromField ? normalizeUiSchemaEnumToOptions(enumFromField as any) : undefined;
+
   const commonProps: any = {
     style: { width: 200, ...(combinedProps?.style || {}) },
     placeholder: combinedProps?.placeholder || t('Enter value'),
@@ -55,7 +60,12 @@ function createStaticInputRenderer(
     if (xComponent === 'InputNumber') return <InputNumber {...commonProps} value={value} onChange={onChange} />;
     if (xComponent === 'NumberPicker') return <NumberPicker {...commonProps} value={value} onChange={onChange} />;
     if (xComponent === 'Switch') return <Switch {...commonProps} checked={!!value} onChange={onChange} />;
-    if (xComponent === 'Select') return <Select {...commonProps} value={value} onChange={onChange} />;
+    if (xComponent === 'Select') {
+      // 若操作符或字段 props 未显式传入 options，则使用枚举兜底
+      const hasOptions = Array.isArray((commonProps as any)?.options) && (commonProps as any).options.length > 0;
+      const finalProps = hasOptions || !optionsFromEnum ? commonProps : { ...commonProps, options: optionsFromEnum };
+      return <Select {...finalProps} value={value} onChange={onChange} />;
+    }
     if (xComponent === 'DateFilterDynamicComponent')
       return <DateFilterDynamicComponent {...commonProps} value={value} onChange={onChange} />;
     return <Input {...commonProps} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;

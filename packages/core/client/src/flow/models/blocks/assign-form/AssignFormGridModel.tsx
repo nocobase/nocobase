@@ -13,7 +13,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import { FormGridModel } from '../form/FormGridModel';
 
 // 使用范型准确标注 subModels.items 的类型
-export class AssignFieldGridModel extends FormGridModel {
+export class AssignFormGridModel extends FormGridModel {
   renderAddSubModelButton() {
     const collection = (this.context as any)?.collection;
     const fields = collection?.getFields?.() || [];
@@ -146,6 +146,6 @@ export class AssignFieldGridModel extends FormGridModel {
   }
 }
 
-AssignFieldGridModel.define({
+AssignFormGridModel.define({
   label: escapeT('Assign grid'),
 });
