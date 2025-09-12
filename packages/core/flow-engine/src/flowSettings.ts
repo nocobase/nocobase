@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
+import { createForm, onFormValuesChange } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
@@ -400,11 +400,13 @@ export class FlowSettings {
     initialValues,
     flowEngine,
     form,
+    onFormValuesChange,
   }: {
     uiSchema: any;
     initialValues: any;
     flowEngine: any;
     form?: any;
+    onFormValuesChange?: (form: any) => void;
   }): React.ReactElement {
     // 获取 scopes 和 components
     const scopes = {
@@ -429,13 +431,9 @@ export class FlowSettings {
     const compiledSchema = compileUiSchema(scopes, formSchema);
     const SchemaField = createSchemaField();
 
-    if (!form) {
-      form = createForm({ initialValues: compileUiSchema(scopes, initialValues) });
-    }
-
     return React.createElement(
-      FormProvider as any,
-      { form },
+      FormProviderWithForm,
+      { form, scopes, initialValues, onFormValuesChange },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
@@ -881,4 +879,32 @@ export class FlowSettings {
     });
   }
   */
+}
+
+function FormProviderWithForm({
+  children,
+  form,
+  scopes,
+  initialValues,
+  onFormValuesChange: _onFormValuesChange,
+}: {
+  children?: React.ReactNode;
+  form?: any;
+  scopes?: Record<string, any>;
+  initialValues?: Record<string, any>;
+  onFormValuesChange?: (form: any) => void;
+}) {
+  const formInstance = React.useMemo(() => {
+    if (!form) {
+      return createForm({
+        initialValues: compileUiSchema(scopes, initialValues),
+        effects() {
+          onFormValuesChange(_onFormValuesChange);
+        },
+      });
+    }
+    return form;
+  }, [_onFormValuesChange, form, initialValues, scopes]);
+
+  return React.createElement(FormProvider as any, { form: formInstance }, children);
 }
