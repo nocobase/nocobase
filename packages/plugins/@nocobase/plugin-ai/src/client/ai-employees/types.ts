@@ -9,7 +9,7 @@
 
 import type { BubbleProps } from '@ant-design/x';
 import { Application } from '@nocobase/client';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowModelContext } from '@nocobase/flow-engine';
 import { ComponentType } from 'react';
 
 export type Selector = {
@@ -46,7 +46,7 @@ export type ContextItem = {
   type: string;
   uid: string;
   title?: string;
-  content?: string;
+  content?: unknown;
 };
 
 export type ToolCall<T> = {
@@ -166,7 +166,12 @@ export type WorkContextOptions = {
     icon?: React.ReactNode;
     label?: React.ReactNode;
     Component?: ComponentType<{ onAdd?: (item: Omit<ContextItem, 'type'>) => void }>;
-    clickHandler?: (props: { flowEngine: FlowEngine; onAdd: (item: Omit<ContextItem, 'type'>) => void }) => () => void;
+    onClick?: (props: {
+      ctx: FlowModelContext;
+      contextItems?: ContextItem[];
+      onAdd: (item: Omit<ContextItem, 'type'>) => void;
+      onRemove: (uid: string) => void;
+    }) => void;
   };
   tag?: {
     Component: ComponentType<{
@@ -175,5 +180,5 @@ export type WorkContextOptions = {
   };
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
-  getContent?: (app: Application, item: ContextItem) => Promise<string>;
+  getContent?: (app: Application, item: ContextItem) => Promise<any>;
 };

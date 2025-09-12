@@ -9,6 +9,8 @@
 
 import { Transaction } from '@nocobase/database';
 import { LLMProvider } from '../llm-providers/provider';
+import { WorkContextHandler } from './work-context-handler.type';
+import { AIMessage, AIToolCall } from './ai-message.type';
 
 export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
   getSessionId(): string;
@@ -44,41 +46,6 @@ export type AIChatContext = {
   };
 };
 
-export type AIMessage = {
-  messageId: string;
-  sessionId: string;
-  role: string;
-  content: AIMessageContent;
-  toolCalls?: AIToolCall[];
-  attachments?: unknown[];
-  workContext?: unknown[];
-  metadata?: AIMessageMetadata;
-};
-
-export type AIMessageContent = {
-  type: string;
-  content: unknown;
-};
-
-export type AIToolCall = {
-  id: string;
-  name: string;
-  type: string;
-  args: unknown;
-};
-
-export type AIMessageMetadata = {
-  model: string;
-  provider: string;
-  usage_metadata?: any;
-  toolCall?: AIToolCall;
-  autoCallTools?: string[];
-  autoCall?: boolean;
-  interrupted?: boolean;
-
-  [key: string]: unknown;
-};
-
 export type AIMessageInput = Omit<AIMessage, 'messageId' | 'sessionId'>;
 
 export type AIMessageQuery = {
@@ -90,6 +57,7 @@ export type AIMessageRemoveOptions = {
 };
 
 export type AIChatContextOptions = {
+  workContextHandler: WorkContextHandler;
   provider: LLMProvider;
   systemPrompt?: string;
   tools?: any[];

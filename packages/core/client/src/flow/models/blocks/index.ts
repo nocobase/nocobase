@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './assign-form';
 export * from './details';
 export * from './filter-form';
 export * from './filter-manager';
 export * from './form';
+export * from './js-block';
 export * from './table';
-export * from './assign-form';
 //

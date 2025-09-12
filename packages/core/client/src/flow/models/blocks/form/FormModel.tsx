@@ -75,11 +75,13 @@ export function FormComponent({
   children,
   layoutProps = {} as any,
   initialValues,
+  ...rest
 }: {
   model: any;
   children: React.ReactNode;
   layoutProps?: any;
   initialValues?: any;
+  onFinish?: (values: any) => void;
 }) {
   return (
     <Form
@@ -90,6 +92,7 @@ export function FormComponent({
       onValuesChange={(changedValues, allValues) => {
         model.dispatchEvent('formValuesChange');
       }}
+      {...rest}
     >
       {children}
     </Form>

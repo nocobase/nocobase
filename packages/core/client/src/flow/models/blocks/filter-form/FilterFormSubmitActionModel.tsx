@@ -37,13 +37,7 @@ FilterFormSubmitActionModel.registerFlow({
   steps: {
     doFilter: {
       async handler(ctx, params) {
-        const blockModel = ctx.model.context.blockModel;
-        const gridModel = blockModel.subModels.grid;
-        const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
-
-        fieldModels.forEach((fieldModel) => {
-          fieldModel.doFilter();
-        });
+        ctx.form.submit();
       },
     },
   },

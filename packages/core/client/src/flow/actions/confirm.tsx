@@ -8,6 +8,7 @@
  */
 
 import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { TextAreaWithContextSelector } from '../components/TextAreaWithContextSelector';
 
 export const confirm = defineAction({
   name: 'confirm',
@@ -23,13 +24,21 @@ export const confirm = defineAction({
       type: 'string',
       title: escapeT('Title'),
       'x-decorator': 'FormItem',
-      'x-component': 'Input.TextArea',
+      // 自定义组件：textArea with Context Selector
+      'x-component': TextAreaWithContextSelector,
+      'x-component-props': {
+        rows: 2,
+      },
     },
     content: {
       type: 'string',
       title: escapeT('Content'),
       'x-decorator': 'FormItem',
-      'x-component': 'Input.TextArea',
+      // 自定义组件：textArea with Context Selector
+      'x-component': TextAreaWithContextSelector,
+      'x-component-props': {
+        rows: 3,
+      },
     },
   },
   defaultParams: {

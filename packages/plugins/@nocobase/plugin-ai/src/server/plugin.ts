@@ -35,6 +35,9 @@ import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { BuiltInManager } from './manager/built-in-manager';
+import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
+import { aiContextDatasources } from './resource/aiContextDatasources';
+import { createWorkContextHandler } from './manager/work-context-handler';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -42,6 +45,8 @@ export class PluginAIServer extends Plugin {
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
   builtInManager = new BuiltInManager(this);
+  aiContextDatasourceManager = new AIContextDatasourceManager(this);
+  workContextHandler = createWorkContextHandler(this);
   snowflake: Snowflake;
 
   async afterAdd() {}
@@ -61,6 +66,7 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.setPermissions();
     this.registerWorkflow();
+    this.registerWorkContextResolveStrategy();
   }
 
   async setupBuiltIn() {
@@ -133,6 +139,7 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
     this.app.resourceManager.define(aiSettings);
+    this.app.resourceManager.define(aiContextDatasources);
 
     this.app.resourceManager.use(
       async (ctx, next) => {
@@ -159,13 +166,16 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-settings`,
       actions: ['aiSettings:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
+    this.app.acl.allow('aiContextDatasources', 'get', 'loggedIn');
+    this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
+    this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
 
@@ -202,6 +212,13 @@ export class PluginAIServer extends Plugin {
     workflow.registerInstruction('llm', LLMInstruction);
   }
 
+  registerWorkContextResolveStrategy() {
+    this.workContextHandler.registerStrategy(
+      'datasource',
+      this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
+    );
+  }
+
   handleSyncMessage(message: any): Promise<void> {
     const { type, payload } = message;
     switch (type) {
@@ -226,6 +243,16 @@ export class PluginAIServer extends Plugin {
   async afterDisable() {}
 
   async remove() {}
+
+  get repositories() {
+    return {
+      aiContextDatasources: this.repository('aiContextDatasources'),
+    };
+  }
+
+  private repository(collectionName: string) {
+    return this.app.db.getRepository(collectionName);
+  }
 }
 
 export default PluginAIServer;
