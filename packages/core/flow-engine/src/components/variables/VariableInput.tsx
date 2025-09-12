@@ -294,7 +294,13 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   return (
     <Space.Compact style={finalStyle}>
-      {showValueComponent && <ValueComponent style={{ width: '100%' }} {...inputProps} />}
+      {showValueComponent && (
+        <ValueComponent
+          // 保证值组件在 Flex 容器中可收缩并占满可用宽度
+          style={{ width: '100%', minWidth: 0, ...inputProps['style'] }}
+          {...inputProps}
+        />
+      )}
       <FlowContextSelector
         metaTree={resolvedMetaTree}
         value={innerValue}
