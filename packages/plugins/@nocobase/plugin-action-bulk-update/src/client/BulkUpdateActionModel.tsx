@@ -89,6 +89,7 @@ BulkUpdateActionModel.define({
       subModels: {
         assignForm: {
           use: 'AssignFormModel',
+          async: true,
           stepParams: { resourceSettings: { init } },
         },
       },

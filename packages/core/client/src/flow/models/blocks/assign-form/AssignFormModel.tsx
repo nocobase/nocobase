@@ -10,8 +10,6 @@
 import React from 'react';
 import { FlowModelRenderer, SingleRecordResource, escapeT } from '@nocobase/flow-engine';
 import { FormComponent, FormModel } from '../form/FormModel';
-import { FormGridModel } from '../form/FormGridModel';
-import { AssignFormGridModel } from './AssignFormGridModel';
 
 /**
  * 赋值配置表单
