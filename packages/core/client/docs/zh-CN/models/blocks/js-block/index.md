@@ -78,3 +78,32 @@ chart.setOption(option);
 chart.resize();
 window.addEventListener('resize', () => chart.resize());
 ```
+
+### 点击弹窗
+
+```ts
+ctx.element.innerHTML = `<button id="myButton">点击我</button>`;
+// 绑定点击事件
+const button = ctx.element.querySelector('#myButton');
+button.addEventListener('click', () => {
+  ctx.runAction('openView', {
+    navigation: false, // 必填
+    mode: 'dialog',
+    collectionName: 'users',
+    dataSourceKey: 'main',
+    filterByTk: 1,
+  });
+});
+```
+
+弹窗的 openView 参数
+
+```ts
+interface OpenViewParams {
+  navigation: boolean;
+  mode?: 'drawer' | 'dialog'; // 默认是 drawer
+  collectionName?: string; // 数据表
+  dataSourceKey?: string; // 数据源
+  filterByTk?: any; // 数据表记录ID
+}
+```
