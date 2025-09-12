@@ -12,6 +12,7 @@ import { FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { DatasourceSettingGrid } from '../components/DatasourceSettingGrid';
 import { namespace } from '../../../../locale';
+import sort from 'packages/plugins/@nocobase/plugin-mock-collections/dist/server/field-interfaces/sort';
 
 export class DatasourceSettingModel extends FlowModel {
   declare resource: MultiRecordResource;
@@ -40,6 +41,9 @@ DatasourceSettingModel.registerFlow({
         const resource = ctx.resource as MultiRecordResource;
         resource.setDataSourceKey(DEFAULT_DATA_SOURCE_KEY);
         resource.setResourceName('aiContextDatasources');
+        resource.setRequestParameters({
+          sort: ['-createdAt'],
+        });
         resource.setPageSize(16);
         await resource.refresh();
       },

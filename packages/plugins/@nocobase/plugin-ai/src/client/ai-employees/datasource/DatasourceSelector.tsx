@@ -123,6 +123,12 @@ DatasourceSelectorModel.registerFlow({
         const resource = ctx.resource as MultiRecordResource;
         resource.setDataSourceKey(DEFAULT_DATA_SOURCE_KEY);
         resource.setResourceName('aiContextDatasources');
+        resource.setRequestParameters({
+          filter: {
+            enabled: true,
+          },
+          sort: ['-createdAt'],
+        });
         resource.setPageSize(10);
         await resource.refresh();
       },
