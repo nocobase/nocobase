@@ -15,4 +15,5 @@ export * from './FormGridModel';
 export * from './FormItemModel';
 export * from './FormModel';
 export * from './QuickEditFormModel';
+export * from './FormJavaScriptFieldEntryModel';
 //
