@@ -56,327 +56,369 @@ interface LinkageActions {
 
 let currentLinkageRules = null;
 
-const linkageActions: LinkageActions = {
-  // 区块属性设置
-  setBlockProps: {
-    title: '区块属性设置',
-    component: (props) => {
-      const { value, onChange } = props;
+export const setBlockProps = defineAction({
+  name: 'setBlockProps',
+  title: '区块属性设置',
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
 
-      return (
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="请选择一个状态"
-          style={{ width: '100%' }}
-          options={[
-            { label: '显示区块', value: 'show' },
-            { label: '隐藏区块', value: 'hide' },
-          ]}
-          allowClear
-        />
-      );
-    },
-    handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hiddenModel: value === 'hide' });
-    },
-  },
-  // 按钮属性设置
-  setActionProps: {
-    title: '按钮属性设置',
-    component: (props) => {
-      const { value, onChange } = props;
-
-      return (
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="请选择一个状态"
-          style={{ width: '100%' }}
-          options={[
-            { label: '显示按钮', value: 'show' },
-            { label: '隐藏按钮', value: 'hide' },
-            { label: '启用按钮', value: 'enable' },
-            { label: '禁用按钮', value: 'disable' },
-          ]}
-          allowClear
-        />
-      );
-    },
-    handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder="请选择一个状态"
+            style={{ width: '100%' }}
+            options={[
+              { label: '显示区块', value: 'show' },
+              { label: '隐藏区块', value: 'hide' },
+            ]}
+            allowClear
+          />
+        );
+      },
     },
   },
-  // 字段属性设置
-  setFieldProps: {
-    title: '字段属性设置',
-    component: (props) => {
-      const { value = { fields: [] }, onChange } = props;
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const ctx = useFlowContext();
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hide' });
+  },
+});
 
-      // 获取表单中所有字段的 model 实例
-      const getFormFields = () => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fields = gridModels;
-          return fields.map((model: any) => ({
-            label: model.props.label || model.props.name,
-            value: model.uid,
-            model,
-          }));
-        } catch (error) {
-          console.warn('Failed to get form fields:', error);
-          return [];
-        }
-      };
+export const setActionProps = defineAction({
+  name: 'setActionProps',
+  title: '按钮属性设置',
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
 
-      const fieldOptions = getFormFields();
-
-      // 状态选项
-      const stateOptions = [
-        { label: '显示', value: 'show' },
-        { label: '隐藏', value: 'hide' },
-        { label: '隐藏（保留值）', value: 'hideKeepValue' },
-        { label: '必填', value: 'required' },
-        { label: '非必填', value: 'optional' },
-        { label: '禁用', value: 'disabled' },
-        { label: '启用', value: 'enabled' },
-      ];
-
-      const handleFieldsChange = (selectedFields: string[]) => {
-        onChange({
-          ...value,
-          fields: selectedFields,
-        });
-      };
-
-      const handleStateChange = (selectedState: string) => {
-        onChange({
-          ...value,
-          state: selectedState,
-        });
-      };
-
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
-            <Select
-              mode="multiple"
-              value={value.fields}
-              onChange={handleFieldsChange}
-              placeholder="请选择字段"
-              style={{ width: '100%' }}
-              options={fieldOptions}
-              showSearch
-              // @ts-ignore
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              allowClear
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>状态</div>
-            <Select
-              value={value.state}
-              onChange={handleStateChange}
-              placeholder="请选择状态"
-              style={{ width: '100%' }}
-              options={stateOptions}
-              allowClear
-            />
-          </div>
-        </div>
-      );
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder="请选择一个状态"
+            style={{ width: '100%' }}
+            options={[
+              { label: '显示按钮', value: 'show' },
+              { label: '隐藏按钮', value: 'hide' },
+              { label: '启用按钮', value: 'enable' },
+              { label: '禁用按钮', value: 'disable' },
+            ]}
+            allowClear
+          />
+        );
+      },
     },
-    handler: ({ ctx, value, setProps }) => {
-      const { fields, state } = value || {};
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
+  },
+});
 
-      if (!fields || !Array.isArray(fields) || !state) {
-        return;
-      }
+export const setFieldProps = defineAction({
+  name: 'setFieldProps',
+  title: '字段属性设置',
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { fields: [] }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
 
-      // 根据 uid 找到对应的字段 model 并设置属性
-      fields.forEach((fieldUid: string) => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
-
-          if (fieldModel) {
-            let props: any = {};
-
-            switch (state) {
-              case 'show':
-                props = { hiddenModel: false };
-                break;
-              case 'hide':
-                props = { hiddenModel: true };
-                break;
-              case 'hideKeepValue':
-                props = { hidden: true };
-                break;
-              case 'required':
-                props = { required: true };
-                break;
-              case 'optional':
-                props = { required: false };
-                break;
-              case 'disabled':
-                props = { disabled: true };
-                break;
-              case 'enabled':
-                props = { disabled: false };
-                break;
-              default:
-                console.warn(`Unknown state: ${state}`);
-                return;
-            }
-
-            setProps(fieldModel as FlowModel, props);
+        // 获取表单中所有字段的 model 实例
+        const getFormFields = () => {
+          try {
+            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+            const fields = gridModels;
+            return fields.map((model: any) => ({
+              label: model.props.label || model.props.name,
+              value: model.uid,
+              model,
+            }));
+          } catch (error) {
+            console.warn('Failed to get form fields:', error);
+            return [];
           }
-        } catch (error) {
-          console.warn(`Failed to set props for field ${fieldUid}:`, error);
-        }
-      });
-    },
-  },
-  // 字段赋值
-  assignField: {
-    title: '字段赋值',
-    component: (props) => {
-      const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const ctx = useFlowContext();
+        };
 
-      // 获取表单中所有字段的 model 实例
-      const getFormFields = () => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fields = gridModels;
-          return fields.map((model: any) => ({
-            label: model.props.label || model.props.name,
-            value: model.uid,
-            model,
-          }));
-        } catch (error) {
-          console.warn('Failed to get form fields:', error);
-          return [];
-        }
-      };
+        const fieldOptions = getFormFields();
 
-      const fieldOptions = getFormFields();
+        // 状态选项
+        const stateOptions = [
+          { label: '显示', value: 'show' },
+          { label: '隐藏', value: 'hide' },
+          { label: '隐藏（保留值）', value: 'hideKeepValue' },
+          { label: '必填', value: 'required' },
+          { label: '非必填', value: 'optional' },
+          { label: '禁用', value: 'disabled' },
+          { label: '启用', value: 'enabled' },
+        ];
 
-      const selectedFieldUid = value.field;
+        const handleFieldsChange = (selectedFields: string[]) => {
+          onChange({
+            ...value,
+            fields: selectedFields,
+          });
+        };
 
-      const handleFieldChange = (selectedField) => {
-        const nextField = selectedField;
-        const changed = nextField !== selectedFieldUid;
-        onChange({
-          ...value,
-          field: nextField,
-          // 切换字段时清空赋值
-          assignValue: changed ? undefined : value.assignValue,
-        });
-      };
+        const handleStateChange = (selectedState: string) => {
+          onChange({
+            ...value,
+            state: selectedState,
+          });
+        };
 
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
-            <Select
-              value={selectedFieldUid}
-              onChange={handleFieldChange}
-              placeholder="请选择字段"
-              style={{ width: '100%' }}
-              options={fieldOptions}
-              showSearch
-              // @ts-ignore
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              allowClear
-            />
-          </div>
-          {selectedFieldUid && (
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
-              <FieldAssignValueInput
-                key={selectedFieldUid}
-                fieldUid={selectedFieldUid}
-                value={value.assignValue}
-                onChange={(v) => onChange({ ...value, assignValue: v })}
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <Select
+                mode="multiple"
+                value={value.fields}
+                onChange={handleFieldsChange}
+                placeholder="请选择字段"
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
               />
             </div>
-          )}
-        </div>
-      );
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>状态</div>
+              <Select
+                value={value.state}
+                onChange={handleStateChange}
+                placeholder="请选择状态"
+                style={{ width: '100%' }}
+                options={stateOptions}
+                allowClear
+              />
+            </div>
+          </div>
+        );
+      },
     },
-    handler: ({ ctx, value, setProps }) => {
-      // 字段赋值处理逻辑
-      const { assignValue, field } = value || {};
-      if (!field) return;
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { fields, state } = value || {};
+
+    if (!fields || !Array.isArray(fields) || !state) {
+      return;
+    }
+
+    // 根据 uid 找到对应的字段 model 并设置属性
+    fields.forEach((fieldUid: string) => {
       try {
         const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-        const fieldModel = gridModels.find((model: any) => model.uid === field);
-        if (!fieldModel) return;
-        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-        if (typeof assignValue === 'undefined') {
-          setProps(fieldModel as FlowModel, {});
-          return;
+        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+
+        if (fieldModel) {
+          let props: any = {};
+
+          switch (state) {
+            case 'show':
+              props = { hiddenModel: false };
+              break;
+            case 'hide':
+              props = { hiddenModel: true };
+              break;
+            case 'hideKeepValue':
+              props = { hidden: true };
+              break;
+            case 'required':
+              props = { required: true };
+              break;
+            case 'optional':
+              props = { required: false };
+              break;
+            case 'disabled':
+              props = { disabled: true };
+              break;
+            case 'enabled':
+              props = { disabled: false };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
+          }
+
+          setProps(fieldModel as FlowModel, props);
         }
-        setProps(fieldModel as FlowModel, { value: assignValue });
       } catch (error) {
-        console.warn(`Failed to assign value to field ${field}:`, error);
+        console.warn(`Failed to set props for field ${fieldUid}:`, error);
       }
+    });
+  },
+});
+
+export const assignField = defineAction({
+  name: 'assignField',
+  title: '字段赋值',
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+
+        // 获取表单中所有字段的 model 实例
+        const getFormFields = () => {
+          try {
+            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+            const fields = gridModels;
+            return fields.map((model: any) => ({
+              label: model.props.label || model.props.name,
+              value: model.uid,
+              model,
+            }));
+          } catch (error) {
+            console.warn('Failed to get form fields:', error);
+            return [];
+          }
+        };
+
+        const fieldOptions = getFormFields();
+
+        const selectedFieldUid = value.field;
+
+        const handleFieldChange = (selectedField) => {
+          const nextField = selectedField;
+          const changed = nextField !== selectedFieldUid;
+          onChange({
+            ...value,
+            field: nextField,
+            // 切换字段时清空赋值
+            assignValue: changed ? undefined : value.assignValue,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <Select
+                value={selectedFieldUid}
+                onChange={handleFieldChange}
+                placeholder="请选择字段"
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            {selectedFieldUid && (
+              <div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
+                <FieldAssignValueInput
+                  key={selectedFieldUid}
+                  fieldUid={selectedFieldUid}
+                  value={value.assignValue}
+                  onChange={(v) => onChange({ ...value, assignValue: v })}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   },
-  // 执行 JavaScript
-  runjs: {
-    title: 'Execute JavaScript',
-    component: (props) => {
-      const { value = { script: '' }, onChange } = props;
-      const handleScriptChange = (script: string) => {
-        onChange({
-          ...value,
-          script,
-        });
-      };
-
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div
-            style={{
-              backgroundColor: '#f6ffed',
-              border: '1px solid #b7eb8f',
-              borderRadius: '6px',
-              padding: '12px',
-            }}
-          >
-            <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>预留一个位置，用于显示一些提示信息</div>
-          </div>
-          <div>
-            <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
-          </div>
-        </div>
-      );
-    },
-    handler: ({ ctx, value }) => {
-      // 执行 JS 脚本处理逻辑
-      const { script } = value || {};
-
-      if (!script || typeof script !== 'string') {
+  handler: (ctx, { value, setProps }) => {
+    // 字段赋值处理逻辑
+    const { assignValue, field } = value || {};
+    if (!field) return;
+    try {
+      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+      const fieldModel = gridModels.find((model: any) => model.uid === field);
+      if (!fieldModel) return;
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof assignValue === 'undefined') {
+        setProps(fieldModel as FlowModel, {});
         return;
       }
+      setProps(fieldModel as FlowModel, { value: assignValue });
+    } catch (error) {
+      console.warn(`Failed to assign value to field ${field}:`, error);
+    }
+  },
+});
 
-      try {
-        ctx.runjs(script);
-      } catch (error) {
-        console.error('Script execution error:', error);
-        // 可以选择显示错误信息给用户
-        if (ctx.app?.message) {
-          ctx.app.message.error(`脚本执行错误: ${error.message}`);
-        }
-      }
+export const runjs = defineAction({
+  name: 'runjs',
+  title: 'Execute JavaScript',
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { script: '' }, onChange } = props;
+        const handleScriptChange = (script: string) => {
+          onChange({
+            ...value,
+            script,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                backgroundColor: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: '6px',
+                padding: '12px',
+              }}
+            >
+              <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>
+                预留一个位置，用于显示一些提示信息
+              </div>
+            </div>
+            <div>
+              <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
+            </div>
+          </div>
+        );
+      },
     },
   },
+  handler: (ctx, { value }) => {
+    // 执行 JS 脚本处理逻辑
+    const { script } = value || {};
+
+    if (!script || typeof script !== 'string') {
+      return;
+    }
+
+    try {
+      ctx.runjs(script);
+    } catch (error) {
+      console.error('Script execution error:', error);
+      // 可以选择显示错误信息给用户
+      if (ctx.app?.message) {
+        ctx.app.message.error(`脚本执行错误: ${error.message}`);
+      }
+    }
+  },
+});
+
+const linkageActions = {
+  // 区块属性设置
+  setBlockProps,
+  // 按钮属性设置
+  setActionProps,
+  // 字段属性设置
+  setFieldProps,
+  // 字段赋值
+  assignField,
+  // 执行 JavaScript
+  runjs,
 };
 
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
