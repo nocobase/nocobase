@@ -117,6 +117,20 @@ export class PluginFlowEngineServer extends Plugin {
     }
   }
 
+  transformSQL(template: string) {
+    let index = 1;
+    const bind = {};
+
+    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
+      const key = `__var${index}`;
+      bind[key] = `{{${expr.trim()}}}`;
+      index++;
+      return `$${key}`;
+    });
+
+    return { sql, bind };
+  }
+
   async load() {
     // Initialize a shared GlobalContext once, using server environment variables
     this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
@@ -201,7 +215,22 @@ export class PluginFlowEngineServer extends Plugin {
           filter: { uid },
         });
         const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
-        ctx.body = await db.runSQL(record.sql, { type, filter, bind });
+        const result = this.transformSQL(record.sql);
+        ctx.body = await db.runSQL(result.sql, {
+          type,
+          filter,
+          bind,
+        });
+        await next();
+      },
+      'flowSql:getBind': async (ctx, next) => {
+        const { uid } = ctx.action.params;
+        const r = this.db.getRepository('flowSql');
+        const record = await r.findOne({
+          filter: { uid },
+        });
+        const { bind } = this.transformSQL(record.sql);
+        ctx.body = bind;
         await next();
       },
       'flowSql:save': async (ctx, next) => {
