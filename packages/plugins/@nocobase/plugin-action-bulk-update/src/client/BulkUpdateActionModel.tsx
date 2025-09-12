@@ -10,21 +10,46 @@
 import React, { useEffect, useRef } from 'react';
 import { Alert } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
-import { escapeT, FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  createCollectionContextMeta,
+  escapeT,
+  FlowModelRenderer,
+  useFlowEngine,
+  useFlowSettingsContext,
+} from '@nocobase/flow-engine';
 import { AssignFormModel, CollectionActionModel, RecordActionModel } from '@nocobase/client';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 
 // 配置态编辑器：渲染 assignForm 子模型
 function AssignFieldsEditor() {
-  const { model, blockModel } = useFlowSettingsContext();
-  const action: any = model;
-  const formModel: AssignFormModel = action?.subModels?.assignForm;
+  const { model: action, blockModel } = useFlowSettingsContext();
+  const engine = useFlowEngine();
   const initializedRef = useRef(false);
+  const [formModel, setFormModel] = React.useState<AssignFormModel | null>(null);
 
-  // 初始化回填
+  // 加载 assignForm 子模型（同一实例）
   useEffect(() => {
-    if (!formModel || initializedRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const loaded = (await engine.loadOrCreateModel({
+        parentId: action.uid,
+        subKey: 'assignForm',
+        use: 'AssignFormModel',
+      })) as AssignFormModel;
+      if (cancelled) return;
+      setFormModel(loaded);
+      action['assignFormUid'] = loaded?.uid || action['assignFormUid'];
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [action, engine]);
+
+  // 初始化回填（在子模型加载完成后）
+  useEffect(() => {
+    if (initializedRef.current) return;
+    if (!formModel) return;
     const prev = action.getStepParams?.(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
     // 注入资源上下文：与所在表格区块一致
     const coll = blockModel?.collection || action?.context?.collection;
@@ -38,12 +63,14 @@ function AssignFieldsEditor() {
     }
     formModel.setInitialAssignedValues(prev?.assignedValues || {});
     // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
-    const isBulk = action instanceof CollectionActionModel && !(action instanceof RecordActionModel);
-    if (isBulk && formModel?.context?.defineProperty) {
-      // 从上下文层面移除 record 的 meta，使其不出现在变量树中
-      formModel.context.defineProperty('record', { get: () => undefined });
-    }
-    // 回填：优先从每个子项自身的 stepParams 读取 assignValue
+    // formModel.context.defineProperty('formValues', { get: () => undefined });
+    // formModel.context.defineProperty('record', {
+    //   get: () => action.context.record,
+    //   meta: createCollectionContextMeta(
+    //               () => action.context.dataSourceManager.getDataSource(dsKey).getCollection(collName),
+    //               action.context.t('Current record'),
+    //             ),
+    // });
     const grid = formModel?.subModels?.grid;
     const items = grid?.subModels?.items || [];
     for (const it of items) {
@@ -54,10 +81,9 @@ function AssignFieldsEditor() {
       }
     }
     initializedRef.current = true;
-  }, [action, formModel, blockModel?.collection]);
+  }, [action, blockModel?.collection, formModel]);
 
-  if (!formModel) return null;
-  return <FlowModelRenderer model={formModel} showFlowSettings={false} />;
+  return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
 export class BulkUpdateActionModel extends CollectionActionModel<{
@@ -65,6 +91,7 @@ export class BulkUpdateActionModel extends CollectionActionModel<{
     assignForm: AssignFormModel;
   };
 }> {
+  assignFormUid?: string;
   // 专用于保存动作配置的属性，避免透传到 Button DOM props
   // 不需要 observe，仅在运行时读取
   actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
@@ -145,9 +172,18 @@ BulkUpdateActionModel.registerFlow({
         };
       },
       async beforeParamsSave(ctx) {
-        const form: AssignFormModel = ctx.model?.subModels?.assignForm;
+        const m = ctx.model as BulkUpdateActionModel;
+        let form: AssignFormModel = (m?.assignFormUid && (ctx.engine.getModel?.(m.assignFormUid) as any)) as any;
+        if (!form && ctx.engine) {
+          form = (await ctx.engine.loadModel({
+            uid: m.assignFormUid || undefined,
+            parentId: ctx.model.uid,
+            subKey: 'assignForm',
+          })) as any;
+        }
+        if (!form) return;
         const assignedValues = form?.getAssignedValues?.() || {};
-        const grid = form?.subModels?.grid;
+        const grid = (form as any)?.subModels?.grid;
         const items = grid?.subModels?.items || [];
         for (const it of items) {
           if (typeof it?.setStepParams === 'function') {

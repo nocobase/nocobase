@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FlowModelRenderer, SingleRecordResource, escapeT } from '@nocobase/flow-engine';
+import { FlowModelRenderer, SingleRecordResource, createCollectionContextMeta, escapeT } from '@nocobase/flow-engine';
 import { FormComponent, FormModel } from '../form/FormModel';
 
 /**
