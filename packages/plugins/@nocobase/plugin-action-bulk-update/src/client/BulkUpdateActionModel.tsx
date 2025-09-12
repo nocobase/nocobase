@@ -92,9 +92,6 @@ export class BulkUpdateActionModel extends CollectionActionModel<{
   };
 }> {
   assignFormUid?: string;
-  // 专用于保存动作配置的属性，避免透传到 Button DOM props
-  // 不需要 observe，仅在运行时读取
-  actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
 
   defaultProps: ButtonProps = {
     title: escapeT('Bulk update'),
@@ -127,19 +124,17 @@ BulkUpdateActionModel.define({
 BulkUpdateActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
+  // 配置流仅用于收集参数，避免自动执行
+  manual: true,
   steps: {
-    showConfirm: {
+    // 二次确认：复用全局 confirm action，支持开关、标题、内容（含变量选择）
+    confirm: {
       title: escapeT('Secondary confirmation'),
-      uiSchema: {
-        value: {
-          type: 'boolean',
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
-      },
-      handler: (ctx, params) => {
-        const m = ctx.model as BulkUpdateActionModel;
-        m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
+      use: 'confirm',
+      defaultParams: {
+        enable: false,
+        title: escapeT('Bulk update'),
+        content: 'Are you sure you want to proceed with this action?',
       },
     },
     updateMode: {
@@ -155,10 +150,6 @@ BulkUpdateActionModel.registerFlow({
           ],
           default: 'selected',
         },
-      },
-      handler: (ctx, params) => {
-        const m = ctx.model as BulkUpdateActionModel;
-        m.actionProps = { ...(m.actionProps || {}), updateMode: (params.value as any) || 'selected' };
       },
     },
     assignFieldValues: {
@@ -206,11 +197,10 @@ BulkUpdateActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        const m = ctx.model as BulkUpdateActionModel;
-        const needConfirm = m.actionProps?.showConfirm === true;
-        if (needConfirm) {
-          await ctx.runAction('confirm');
-        }
+        // 统一接入二次确认：如果启用则弹窗；未配置时默认不启用
+        const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
+        const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
+        await ctx.runAction('confirm', confirmParams);
         const assignedValues = params?.assignedValues || {};
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
@@ -221,7 +211,8 @@ BulkUpdateActionModel.registerFlow({
           ctx.message.error(ctx.t('Collection is required to perform this action'));
           return;
         }
-        const mode = m.actionProps?.updateMode || 'selected';
+        const updateModeParams = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'updateMode') || {};
+        const mode = updateModeParams?.value || 'selected';
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
           if (!rows.length) {
