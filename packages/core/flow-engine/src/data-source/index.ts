@@ -419,7 +419,7 @@ export class Collection {
   }
 
   getToOneAssociationFields(): CollectionField[] {
-    return this.getAssociationFields(['toOne']);
+    return this.getAssociationFields(['one']);
   }
 
   getAssociationFields(types = []): CollectionField[] {
@@ -644,7 +644,7 @@ export class CollectionField {
   }
 
   get interface() {
-    return this.options.interface || 'input';
+    return this.options.interface;
   }
 
   get filterable() {
