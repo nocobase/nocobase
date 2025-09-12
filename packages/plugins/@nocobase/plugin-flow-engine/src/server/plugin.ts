@@ -122,7 +122,7 @@ export class PluginFlowEngineServer extends Plugin {
     const bind = {};
 
     const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `var${index}`;
+      const key = `__var${index}`;
       bind[key] = `{{${expr.trim()}}}`;
       index++;
       return `$${key}`;
