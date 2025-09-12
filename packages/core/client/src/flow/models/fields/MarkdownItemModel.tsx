@@ -24,7 +24,7 @@ export class MarkdownItemModel extends CommonItemModel {
 
 MarkdownItemModel.registerFlow({
   key: 'markdownItemSetting',
-  title: '{{t("Markdown Setting")}}',
+  title: '{{t("Markdown settings")}}',
   steps: {
     content: {
       title: '{{t("Edit content")}}',
@@ -52,5 +52,5 @@ MarkdownItemModel.registerFlow({
 });
 
 MarkdownItemModel.define({
-  label: '{{t("Add Markdown")}}',
+  label: '{{t("Markdown")}}',
 });

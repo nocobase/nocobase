@@ -419,20 +419,20 @@ export class Collection {
   }
 
   getToOneAssociationFields(): CollectionField[] {
-    return this.getAssociationFields(['toOne']);
+    return this.getAssociationFields(['one']);
   }
 
   getAssociationFields(types = []): CollectionField[] {
-    if (types.includes('toNew')) {
+    if (types.includes('new')) {
       return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
     }
-    if (types.includes('toMany') && types.includes('toOne')) {
+    if (types.includes('many') && types.includes('one')) {
       return this.getFields().filter((field) => field.isAssociationField());
     }
-    if (types.includes('toMany')) {
+    if (types.includes('many')) {
       return this.getFields().filter((field) => ['hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type));
     }
-    if (types.includes('toOne')) {
+    if (types.includes('one')) {
       return this.getFields().filter((field) => ['hasOne', 'belongsTo'].includes(field.type));
     }
     return this.getFields().filter((field) => field.isAssociationField());
@@ -644,7 +644,7 @@ export class CollectionField {
   }
 
   get interface() {
-    return this.options.interface || 'input';
+    return this.options.interface;
   }
 
   get filterable() {
