@@ -8,11 +8,11 @@
  */
 
 import {
+  CollectionFieldModel,
   defineAction,
   DisplayItemModel,
   EditableItemModel,
   FlowEngineContext,
-  CollectionFieldModel,
 } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../models/base/FieldModel';
@@ -77,8 +77,8 @@ export const fieldComponent = defineAction({
     };
   },
   async handler(ctx, params) {
-    if (!params.use) {
-      throw new Error('model use is a required parameter');
-    }
+    // if (!params?.use) {
+    //   throw new Error('model use is a required parameter');
+    // }
   },
 });

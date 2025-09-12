@@ -23,6 +23,7 @@ import React from 'react';
 import { FilterBlockModel } from '../../base/BlockModel';
 import { FormComponent } from '../../blocks/form/FormModel';
 import { FilterManager } from '../filter-manager/FilterManager';
+import { FilterFormItemModel } from './FilterFormItemModel';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -56,6 +57,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('blockModel', {
       value: this,
     });
+    this.context.defineMethod('refreshTargets', async () => {
+      const gridModel = this.subModels.grid;
+      const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
+      fieldModels.forEach((fieldModel) => {
+        fieldModel?.doFilter();
+      });
+    });
   }
 
   onMount() {
@@ -81,7 +89,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
-      <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+      <FormComponent
+        model={this}
+        onFinish={() => {
+          this.context.refreshTargets();
+        }}
+        layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
+      >
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <FormButtonGroup align="right">
