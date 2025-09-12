@@ -55,7 +55,6 @@ export class InteractiveDisplayFieldModel extends FieldModel {
     const { clickToOpen = false, displayStyle, titleField, ...restProps } = this.props;
     const result = this.renderDisplayValue(value);
     const display = record ? (value ? result : 'N/A') : result;
-    console.log(this.props);
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
