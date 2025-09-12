@@ -8,23 +8,48 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { ButtonProps, Alert } from 'antd';
-import { escapeT, FlowModelRenderer, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
-import { AssignFieldsFormModel } from '../blocks';
+import { Alert } from 'antd';
+import type { ButtonProps } from 'antd/es/button';
+import {
+  createCollectionContextMeta,
+  escapeT,
+  FlowModelRenderer,
+  useFlowEngine,
+  useFlowSettingsContext,
+} from '@nocobase/flow-engine';
+import { AssignFormModel, CollectionActionModel, RecordActionModel } from '@nocobase/client';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 
 // 配置态编辑器：渲染 assignForm 子模型
 function AssignFieldsEditor() {
-  const { model, blockModel } = useFlowSettingsContext();
-  const action: any = model;
-  const formModel: AssignFieldsFormModel = action?.subModels?.assignForm;
+  const { model: action, blockModel } = useFlowSettingsContext();
+  const engine = useFlowEngine();
   const initializedRef = useRef(false);
+  const [formModel, setFormModel] = React.useState<AssignFormModel | null>(null);
 
-  // 初始化回填
+  // 加载 assignForm 子模型（同一实例）
   useEffect(() => {
-    if (!formModel || initializedRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const loaded = (await engine.loadOrCreateModel({
+        parentId: action.uid,
+        subKey: 'assignForm',
+        use: 'AssignFormModel',
+      })) as AssignFormModel;
+      if (cancelled) return;
+      setFormModel(loaded);
+      action['assignFormUid'] = loaded?.uid || action['assignFormUid'];
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [action, engine]);
+
+  // 初始化回填（在子模型加载完成后）
+  useEffect(() => {
+    if (initializedRef.current) return;
+    if (!formModel) return;
     const prev = action.getStepParams?.(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
     // 注入资源上下文：与所在表格区块一致
     const coll = blockModel?.collection || action?.context?.collection;
@@ -38,155 +63,35 @@ function AssignFieldsEditor() {
     }
     formModel.setInitialAssignedValues(prev?.assignedValues || {});
     // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
-    const isBulk = action instanceof CollectionActionModel && !(action instanceof RecordActionModel);
-    if (isBulk && formModel?.context?.defineProperty) {
-      // 从上下文层面移除 record 的 meta，使其不出现在变量树中
-      formModel.context.defineProperty('record', { get: () => undefined });
-    }
-    // 回填：优先从每个子项自身的 stepParams 读取 assignValue
+    // formModel.context.defineProperty('formValues', { get: () => undefined });
+    // formModel.context.defineProperty('record', {
+    //   get: () => action.context.record,
+    //   meta: createCollectionContextMeta(
+    //               () => action.context.dataSourceManager.getDataSource(dsKey).getCollection(collName),
+    //               action.context.t('Current record'),
+    //             ),
+    // });
     const grid = formModel?.subModels?.grid;
     const items = grid?.subModels?.items || [];
     for (const it of items) {
       const saved =
         typeof it?.getStepParams === 'function' ? it.getStepParams('fieldSettings', 'assignValue')?.value : undefined;
       if (typeof saved !== 'undefined') {
-        it.assignValue = saved;
+        (it as any).assignValue = saved;
       }
     }
     initializedRef.current = true;
-  }, [action, formModel, blockModel?.collection]);
+  }, [action, blockModel?.collection, formModel]);
 
-  if (!formModel) return null;
-  return <FlowModelRenderer model={formModel} showFlowSettings={false} />;
+  return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
-export class RecordAssignActionModel extends RecordActionModel<{
+export class BulkUpdateActionModel extends CollectionActionModel<{
   subModels: {
-    assignForm: AssignFieldsFormModel;
+    assignForm: AssignFormModel;
   };
 }> {
-  // 专用于保存动作配置的属性，避免透传到 Button DOM props
-  actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
-
-  defaultProps: ButtonProps = {
-    title: escapeT('Update record'),
-    type: 'link',
-  };
-
-  getAclActionName() {
-    return 'update';
-  }
-}
-
-RecordAssignActionModel.define({
-  label: escapeT('Update record'),
-  // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
-  createModelOptions: (ctx) => {
-    const dsKey = ctx.collection.dataSourceKey;
-    const collName = ctx.collection.name;
-    const init = dsKey && collName ? { dataSourceKey: dsKey, collectionName: collName } : undefined;
-    return {
-      subModels: {
-        assignForm: {
-          use: 'AssignFieldsFormModel',
-          stepParams: { resourceSettings: { init } },
-        },
-      },
-    };
-  },
-});
-
-RecordAssignActionModel.registerFlow({
-  key: SETTINGS_FLOW_KEY,
-  title: escapeT('Action settings'),
-  steps: {
-    showConfirm: {
-      title: escapeT('Secondary confirmation'),
-      uiSchema: {
-        value: {
-          type: 'boolean',
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
-      },
-      handler: (ctx, params) => {
-        // 存入 actionProps，避免污染按钮 DOM props
-        const m = ctx.model as RecordAssignActionModel;
-        m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
-      },
-    },
-    assignFieldValues: {
-      title: escapeT('Assign field values'),
-      uiSchema() {
-        return {
-          tip: {
-            'x-decorator': 'FormItem',
-            'x-component': () => (
-              <Alert type="info" showIcon message={'点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。'} />
-            ),
-          },
-          editor: {
-            'x-decorator': 'FormItem',
-            'x-component': () => <AssignFieldsEditor />,
-          },
-        };
-      },
-      async beforeParamsSave(ctx) {
-        const form: AssignFieldsFormModel = ctx.model?.subModels?.assignForm;
-        const assignedValues = form?.getAssignedValues?.() || {};
-        const grid = form?.subModels?.grid;
-        const items = grid?.subModels?.items || [];
-        for (const it of items) {
-          if (typeof it?.setStepParams === 'function') {
-            it.setStepParams('fieldSettings', 'assignValue', { value: it.assignValue });
-          }
-        }
-        ctx.model.setStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues', { assignedValues });
-      },
-    },
-  },
-});
-
-RecordAssignActionModel.registerFlow({
-  key: 'apply',
-  on: 'click',
-  steps: {
-    apply: {
-      async defaultParams(ctx) {
-        const step = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues') || {};
-        return { assignedValues: step?.assignedValues || {} };
-      },
-      async handler(ctx, params) {
-        const m = ctx.model as RecordAssignActionModel;
-        const needConfirm = m.actionProps?.showConfirm === true;
-        if (needConfirm) {
-          await ctx.runAction('confirm');
-        }
-        const assignedValues = params?.assignedValues || {};
-        if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
-          ctx.message.warning(ctx.t('No assigned fields configured'));
-          return;
-        }
-        const collection = ctx.collection?.name;
-        const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
-        if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) {
-          ctx.message.error(ctx.t('Record is required to perform this action'));
-          return;
-        }
-        await ctx.api.resource(collection).update({ filterByTk, values: assignedValues });
-        // 刷新与提示
-        ctx.blockModel?.resource?.refresh?.();
-        ctx.message.success(ctx.t('Saved successfully'));
-      },
-    },
-  },
-});
-
-export class BulkAssignActionModel extends CollectionActionModel<{
-  subModels: {
-    assignForm: AssignFieldsFormModel;
-  };
-}> {
+  assignFormUid?: string;
   // 专用于保存动作配置的属性，避免透传到 Button DOM props
   // 不需要 observe，仅在运行时读取
   actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
@@ -200,7 +105,7 @@ export class BulkAssignActionModel extends CollectionActionModel<{
   }
 }
 
-BulkAssignActionModel.define({
+BulkUpdateActionModel.define({
   label: escapeT('Bulk update'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
@@ -210,7 +115,8 @@ BulkAssignActionModel.define({
     return {
       subModels: {
         assignForm: {
-          use: 'AssignFieldsFormModel',
+          use: 'AssignFormModel',
+          async: true,
           stepParams: { resourceSettings: { init } },
         },
       },
@@ -218,7 +124,7 @@ BulkAssignActionModel.define({
   },
 });
 
-BulkAssignActionModel.registerFlow({
+BulkUpdateActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
   steps: {
@@ -232,7 +138,7 @@ BulkAssignActionModel.registerFlow({
         },
       },
       handler: (ctx, params) => {
-        const m = ctx.model as BulkAssignActionModel;
+        const m = ctx.model as BulkUpdateActionModel;
         m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
       },
     },
@@ -251,7 +157,7 @@ BulkAssignActionModel.registerFlow({
         },
       },
       handler: (ctx, params) => {
-        const m = ctx.model as BulkAssignActionModel;
+        const m = ctx.model as BulkUpdateActionModel;
         m.actionProps = { ...(m.actionProps || {}), updateMode: (params.value as any) || 'selected' };
       },
     },
@@ -266,13 +172,22 @@ BulkAssignActionModel.registerFlow({
         };
       },
       async beforeParamsSave(ctx) {
-        const form: AssignFieldsFormModel = ctx.model?.subModels?.assignForm;
+        const m = ctx.model as BulkUpdateActionModel;
+        let form: AssignFormModel = (m?.assignFormUid && (ctx.engine.getModel?.(m.assignFormUid) as any)) as any;
+        if (!form && ctx.engine) {
+          form = (await ctx.engine.loadModel({
+            uid: m.assignFormUid || undefined,
+            parentId: ctx.model.uid,
+            subKey: 'assignForm',
+          })) as any;
+        }
+        if (!form) return;
         const assignedValues = form?.getAssignedValues?.() || {};
-        const grid = form?.subModels?.grid;
+        const grid = (form as any)?.subModels?.grid;
         const items = grid?.subModels?.items || [];
         for (const it of items) {
           if (typeof it?.setStepParams === 'function') {
-            it.setStepParams('fieldSettings', 'assignValue', { value: it.assignValue });
+            it.setStepParams('fieldSettings', 'assignValue', { value: (it as any).assignValue });
           }
         }
         ctx.model.setStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues', { assignedValues });
@@ -281,7 +196,7 @@ BulkAssignActionModel.registerFlow({
   },
 });
 
-BulkAssignActionModel.registerFlow({
+BulkUpdateActionModel.registerFlow({
   key: 'apply',
   on: 'click',
   steps: {
@@ -291,7 +206,7 @@ BulkAssignActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        const m = ctx.model as BulkAssignActionModel;
+        const m = ctx.model as BulkUpdateActionModel;
         const needConfirm = m.actionProps?.showConfirm === true;
         if (needConfirm) {
           await ctx.runAction('confirm');

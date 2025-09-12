@@ -13,7 +13,7 @@ import { FlowEngineContext } from '../flowContext';
 import { BaseRecordResource } from './baseRecordResource';
 
 type SQLRunOptions = {
-  bind?: Record<string, any> | Array<any>;
+  bind?: Record<string, any>;
   type?: 'selectVar' | 'selectRow' | 'selectRows';
   dataSourceKey?: string;
   filter?: Record<string, any>;
@@ -33,7 +33,7 @@ export class FlowSQLRepository {
     const bind = {};
 
     const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `var${index}`;
+      const key = `__var${index}`;
       bind[key] = `{{${expr.trim()}}}`;
       index++;
       return `$${key}`;

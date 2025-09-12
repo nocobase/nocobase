@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, FlowModel, FlowModelContext, DisplayItemModel } from '@nocobase/flow-engine';
+import { Collection, DisplayItemModel, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 
 export class AssociationFieldGroupModel extends FlowModel {
   static itemModelName = 'DetailsItemModel';
