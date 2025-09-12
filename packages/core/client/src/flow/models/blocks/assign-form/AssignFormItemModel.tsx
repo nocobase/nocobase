@@ -25,6 +25,7 @@ import { FormItemModel } from '../form/FormItemModel';
 import { EditFormModel } from '../form/EditFormModel';
 import { FieldValidation } from '../../../../collection-manager';
 import { customAlphabet as Alphabet } from 'nanoid';
+import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
 
 /**
  * 使用 FormItemModel 的“表单项”包装，内部渲染 VariableInput，并将“常量”映射到临时字段模型。
@@ -168,6 +169,8 @@ export class AssignFormItemModel extends FormItemModel {
           multiple: multi,
         });
         fm?.applyAutoFlows?.();
+        // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
+        ensureOptionsFromUiSchemaEnumIfAbsent(fm as any, cfForMultiple as any);
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
           const targetCol = cfForMultiple.targetCollection;
           const valueKey = cfForMultiple?.targetKey || targetCol?.filterTargetKey || 'id';

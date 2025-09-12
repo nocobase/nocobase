@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import { AIEmployeeShortcutListModel } from '../models';
 import { contextAware } from '../../stores/context-aware';
 import { FlowRuntimeContext } from '@nocobase/flow-engine';
+import { dialogController } from '../../stores/dialog-controller';
 
 const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutListModel) => {
   if (!model) {
@@ -54,6 +55,7 @@ BlockModel.registerFlow({
             }
             aiSelection.selector?.onSelect({ uid: ctx.model.uid });
             aiSelection.stopSelect();
+            dialogController.resume();
           },
           onMouseEnter: (e: Event) => {
             onMouseEnter?.(e);

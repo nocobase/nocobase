@@ -29,6 +29,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { aiSelection } from '../stores/ai-selection';
 import { observer } from '@formily/react';
+import { dialogController } from '../stores/dialog-controller';
 
 export const ChatBox: React.FC = () => {
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -145,7 +146,6 @@ export const ChatBox: React.FC = () => {
 };
 
 const ExpandChatBox: React.FC = observer(() => {
-  const selectable = aiSelection.selectable;
   return (
     <Card
       style={{
@@ -155,7 +155,7 @@ const ExpandChatBox: React.FC = observer(() => {
         top: '50%',
         width: '95%',
         height: '95%',
-        zIndex: selectable ? -1 : 1100,
+        zIndex: dialogController.shouldHide ? -1 : 1100,
       }}
       styles={{
         body: {

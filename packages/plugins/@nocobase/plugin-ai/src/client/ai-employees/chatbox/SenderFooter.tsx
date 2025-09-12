@@ -23,12 +23,14 @@ export const SenderFooter: React.FC<{
 
   const loading = useChatMessagesStore.use.responseLoading();
   const addContextItems = useChatMessagesStore.use.addContextItems();
+  const removeContextItem = useChatMessagesStore.use.removeContextItem();
 
   return (
     <Flex justify="space-between" align="center">
       <Flex gap="small" align="center">
         <AddContextButton
           onAdd={addContextItems}
+          onRemove={removeContextItem}
           disabled={!currentEmployee}
           ignore={(key) => key === 'flow-model.variable'}
         />

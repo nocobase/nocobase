@@ -18,6 +18,7 @@ import {
   useFlowContext,
   EditableItemModel,
 } from '@nocobase/flow-engine';
+import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 
 interface Props {
   fieldUid: string;
@@ -116,6 +117,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       multiple,
     });
     fm?.applyAutoFlows?.();
+    // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
+    ensureOptionsFromUiSchemaEnumIfAbsent(fm, cf);
     if (!fm?.props?.fieldNames && cf?.targetCollection) {
       const targetCol = cf.targetCollection;
       const valueKey = cf?.targetKey || targetCol?.filterTargetKey || 'id';
