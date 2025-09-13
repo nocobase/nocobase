@@ -52,14 +52,15 @@ export class TableColumnModel extends DisplayItemModel {
       if (!targetField) return null;
 
       const binding = this.getDefaultBindingByField(ctx, targetField);
-      return binding?.modelName || null;
+      return binding || null;
     };
     const collection = (ctx.model as any).collection || (ctx.collection as Collection);
     return collection
       .getFields()
       .map((field) => {
-        const fieldModel = resolveFieldModel(field);
-        if (!fieldModel) return null;
+        const binding = resolveFieldModel(field);
+        if (!binding) return null;
+        const fieldModel = binding.modelName;
         const fieldPath = field.name;
         return {
           key: field.name,
@@ -80,6 +81,7 @@ export class TableColumnModel extends DisplayItemModel {
             subModels: {
               field: {
                 use: fieldModel,
+                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
               },
             },
           }),

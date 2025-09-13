@@ -72,15 +72,15 @@ export class DetailsItemModel extends DisplayItemModel<{
       if (!targetField) return null;
 
       const binding = this.getDefaultBindingByField(ctx, targetField);
-      return binding?.modelName || null;
+      return binding || null;
     };
 
     return collection
       .getFields()
       .map((field) => {
-        const fieldModel = resolveFieldModel(field);
-        if (!fieldModel) return null;
-
+        const binding = resolveFieldModel(field);
+        if (!binding) return null;
+        const fieldModel = binding.modelName;
         const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
         return {
           key: fullName,
@@ -104,6 +104,7 @@ export class DetailsItemModel extends DisplayItemModel<{
             subModels: {
               field: {
                 use: fieldModel,
+                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
               },
             },
           }),

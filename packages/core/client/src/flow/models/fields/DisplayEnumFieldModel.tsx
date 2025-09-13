@@ -48,14 +48,16 @@ export class DisplayEnumFieldModel extends InteractiveDisplayFieldModel {
   public renderDisplayValue(value) {
     const { options = [] } = this.props;
     const currentOptions = getCurrentOptions(value, options, fieldNames);
-    const content: any =
-      value &&
-      currentOptions.map((option, index) => (
-        <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
-          {option[fieldNames.label]}
-        </Tag>
-      ));
-    return content;
+
+    if (!value || !currentOptions.length) {
+      return null;
+    }
+
+    return currentOptions.map((option) => (
+      <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
+        {option[fieldNames.label]} {/* 这里可以是 string 或 ReactNode */}
+      </Tag>
+    ));
   }
 }
 DisplayEnumFieldModel.define({
@@ -75,11 +77,11 @@ DisplayItemModel.bindModelToInterface('DisplayEnumFieldModel', ['checkbox'], {
     return {
       options: [
         {
-          label: <CheckOutlined style={{ color: '#52c41a' }} />,
+          label: ctx.t('Yes'),
           value: true,
         },
         {
-          label: <Checkbox disabled />,
+          label: ctx.t('No'),
           value: false,
         },
       ],
