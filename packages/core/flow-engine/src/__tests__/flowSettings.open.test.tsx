@@ -142,8 +142,8 @@ describe('FlowSettings.open rendering behavior', () => {
   };
 
   it('renders single-step form directly when flowKey+stepKey provided (no Collapse)', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-1');
     const model = new TestFlowModel({ uid: 'm-open-1', flowEngine: engine });
 
@@ -192,8 +192,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('renders Collapse when only one step matched but no stepKey provided', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-2');
     const model = new TestFlowModel({ uid: 'm-open-2', flowEngine: engine });
 
@@ -241,8 +241,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('shows info when there are no configurable steps (entries length 0)', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-3');
     const model = new TestFlowModel({ uid: 'm-open-none', flowEngine: engine });
 
@@ -265,8 +265,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('uses drawer uiMode when specified', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-4');
     const model = new TestFlowModel({ uid: 'm-open-drawer', flowEngine: engine });
 
@@ -302,8 +302,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('saves successfully and calls hooks, messages, and close', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-5');
     const model = new TestFlowModel({ uid: 'm-open-save', flowEngine: engine });
 
@@ -364,8 +364,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('calls onSaved callback after successful save', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-6');
     const model = new TestFlowModel({ uid: 'm-open-onsaved', flowEngine: engine });
 
@@ -406,8 +406,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('calls onCancel callback when cancel button clicked', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-7');
     const model = new TestFlowModel({ uid: 'm-open-oncancel', flowEngine: engine });
 
@@ -447,8 +447,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('handles save error by showing error message and keeping dialog open', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-8');
     const model = new TestFlowModel({ uid: 'm-open-error', flowEngine: engine });
 
@@ -494,8 +494,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('filters steps by preset when preset=true', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-9');
     const model = new TestFlowModel({ uid: 'm-open-preset', flowEngine: engine });
 
@@ -532,8 +532,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('shows info when preset=true but no step is preset', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-10');
     const model = new TestFlowModel({ uid: 'm-open-preset-none', flowEngine: engine });
 
@@ -556,8 +556,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('shows dialog when preset=true and step has hideInSettings=true', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-open-preset-hidden', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -591,8 +591,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('ignores hideInSettings when preset=true for individual step', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-open-preset-single-hidden', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -628,8 +628,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('respects hideInSettings when preset=false', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-open-normal-hidden', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -662,8 +662,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-11');
     const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-dialog', flowEngine: engine });
 
@@ -715,8 +715,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('accepts uiMode object with type drawer and calls viewer.drawer', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-12');
     const model = new TestFlowModel({ uid: 'm-open-uiMode-obj-drawer', flowEngine: engine });
 
@@ -753,8 +753,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('sets title to step title when flowKey+stepKey are provided and only one step matches', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-13');
     const model = new TestFlowModel({ uid: 'm-open-title-step', flowEngine: engine });
 
@@ -782,8 +782,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('sets title to flow title when only one flow and no stepKey', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-14');
     const model = new TestFlowModel({ uid: 'm-open-title-flow', flowEngine: engine });
 
@@ -811,8 +811,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('sets empty title when rendering multiple flows together', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const TestFlowModel = createIsolatedFlowModel('test-15');
     const model = new TestFlowModel({ uid: 'm-open-title-empty', flowEngine: engine });
 
@@ -842,8 +842,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('resolves function-based step uiMode when single step is rendered', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-step-uimode-function', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -877,8 +877,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('resolves async function-based step uiMode when single step is rendered', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-step-uimode-async-function', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -913,8 +913,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('uses step static uiMode object when single step is rendered', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-step-uimode-static', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -948,8 +948,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('fallbacks to global uiMode when step has no uiMode and single step is rendered', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-step-uimode-fallback', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -988,8 +988,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('ignores step uiMode when multiple steps are rendered', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-multi-step-ignore-uimode', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -1033,8 +1033,8 @@ describe('FlowSettings.open rendering behavior', () => {
   });
 
   it('handles error in function-based step uiMode gracefully', async () => {
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-step-uimode-error', flowEngine: engine });
 
     const M = model.constructor as any;
@@ -1078,8 +1078,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('supports reactive objects in uiMode function and auto-updates dialog props', async () => {
     const { observable } = await import('@formily/reactive');
 
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-reactive-uimode', flowEngine: engine });
 
     // Create reactive state object
@@ -1152,8 +1152,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('properly disposes reactive listener when dialog is closed', async () => {
     const { observable } = await import('@formily/reactive');
 
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-reactive-dispose', flowEngine: engine });
 
     const reactiveState = observable({
@@ -1225,8 +1225,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('handles reactive uiMode when rendering multiple steps (should ignore step-level reactive uiMode)', async () => {
     const { observable } = await import('@formily/reactive');
 
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-multi-reactive', flowEngine: engine });
 
     const reactiveState = observable({
@@ -1288,8 +1288,8 @@ describe('FlowSettings.open rendering behavior', () => {
   it('handles async reactive uiMode function updates', async () => {
     const { observable } = await import('@formily/reactive');
 
-    const flowSettings = new FlowSettings();
     const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
     const model = new FlowModel({ uid: 'm-async-reactive', flowEngine: engine });
 
     const reactiveState = observable({

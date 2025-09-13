@@ -302,7 +302,7 @@ describe('VariableTag', () => {
     );
   });
 
-  it('should truncate long text in tags', async () => {
+  it('should render long text without ellipsis (visual overflow only)', async () => {
     const longValue = 'This is a very long variable name that should be truncated';
     const mockMetaTreeNode = {
       name: 'longName',
@@ -315,10 +315,10 @@ describe('VariableTag', () => {
 
     await waitFor(
       () => {
-        // 根据 truncateText 函数的逻辑 (maxLength = 16)，长文本会被截断
-        const tag = screen.getByText(/This is a very/); // 匹配截断后的文本开头
-        expect(tag).toBeInTheDocument();
-        expect(tag.textContent).toMatch(/\.\.\./); // 确保有省略号
+        const textEl = screen.getByText(longValue);
+        expect(textEl).toBeInTheDocument();
+        // 校验内层 span 具备不换行与隐藏溢出的样式（视觉截断）
+        expect(textEl).toHaveStyle('white-space: nowrap');
       },
       { timeout: 3000 },
     );

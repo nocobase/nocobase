@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext, FlowRuntimeContext } from '../flowContext';
+import { FlowEngine } from '../flowEngine';
+import { FlowModel } from '../models/flowModel';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
