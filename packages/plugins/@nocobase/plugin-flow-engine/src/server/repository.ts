@@ -94,7 +94,7 @@ export class FlowModelRepository extends Repository {
     const node = lodash.cloneDeep(
       lodash.isString(schema)
         ? {
-            'x-uid': schema,
+            uid: schema,
           }
         : schema,
     );
@@ -103,8 +103,8 @@ export class FlowModelRepository extends Repository {
       node.name = uid();
     }
 
-    if (!lodash.get(node, 'x-uid')) {
-      node['x-uid'] = uid();
+    if (!lodash.get(node, 'uid')) {
+      node['uid'] = uid();
     }
 
     if (childOptions) {
@@ -116,8 +116,8 @@ export class FlowModelRepository extends Repository {
     for (const nodeKey of nodeKeys) {
       const nodeProperty = lodash.get(node, nodeKey);
       const childNodeChildOptions = {
-        parentUid: node['x-uid'],
-        parentPath: [node['x-uid'], ...lodash.get(childOptions, 'parentPath', [])],
+        parentUid: node['uid'],
+        parentPath: [node['uid'], ...lodash.get(childOptions, 'parentPath', [])],
         type: nodeKey,
       };
 
@@ -232,7 +232,7 @@ export class FlowModelRepository extends Repository {
       const schema = {
         ...this.ignoreSchemaProperties(lodash.isPlainObject(node.schema) ? node.schema : JSON.parse(node.schema)),
         ...lodash.pick(node, [...nodeKeys, 'name']),
-        ['x-uid']: node['x-uid'],
+        ['uid']: node['uid'],
         ['x-async']: !!node.async,
       };
 
@@ -247,7 +247,7 @@ export class FlowModelRepository extends Repository {
       if (!rootNode) {
         return null;
       }
-      const children = nodes.filter((node) => node.parent == rootNode['x-uid']);
+      const children = nodes.filter((node) => node.parent == rootNode['uid']);
 
       if (children.length > 0) {
         const childrenGroupByType = lodash.groupBy(children, 'type');
@@ -273,7 +273,7 @@ export class FlowModelRepository extends Repository {
       return nodeAttributeSanitize(rootNode);
     };
 
-    return buildTree(nodes.find((node) => node['x-uid'] == rootUid));
+    return buildTree(nodes.find((node) => node['uid'] == rootUid));
   }
 
   @transaction()
@@ -326,7 +326,7 @@ export class FlowModelRepository extends Repository {
   @transaction()
   async patch(newSchema: any, options?) {
     const { transaction } = options;
-    const rootUid = newSchema['x-uid'];
+    const rootUid = newSchema['uid'];
     await this.clearXUidPathCache(rootUid, transaction);
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
@@ -342,7 +342,7 @@ export class FlowModelRepository extends Repository {
     const traverSchemaTree = async (schema, path = []) => {
       const node = schema;
       const oldNode = path.length == 0 ? oldTree : lodash.get(oldTree, path);
-      const oldNodeUid = oldNode['x-uid'];
+      const oldNodeUid = oldNode['uid'];
 
       await this.updateNode(oldNodeUid, node, transaction);
 
@@ -359,7 +359,7 @@ export class FlowModelRepository extends Repository {
 
   @transaction()
   async initializeActionContext(newSchema: any, options: any = {}) {
-    if (!newSchema['x-uid'] || !newSchema['x-action-context']) {
+    if (!newSchema['uid'] || !newSchema['x-action-context']) {
       return;
     }
 
@@ -367,7 +367,7 @@ export class FlowModelRepository extends Repository {
 
     const nodeModel = await this.findOne({
       filter: {
-        'x-uid': newSchema['x-uid'],
+        uid: newSchema['uid'],
       },
       transaction,
     });
@@ -376,7 +376,7 @@ export class FlowModelRepository extends Repository {
       return;
     }
 
-    return this.patch(lodash.pick(newSchema, ['x-uid', 'x-action-context']), options);
+    return this.patch(lodash.pick(newSchema, ['uid', 'x-action-context']), options);
   }
 
   @transaction()
@@ -396,7 +396,7 @@ export class FlowModelRepository extends Repository {
       const parent = await this.isSingleChild(nodeUid, transaction);
 
       if (parent && !this.breakOnMatched(parent, breakRemoveOn)) {
-        await removeParent(parent.get('x-uid') as string);
+        await removeParent(parent.get('uid') as string);
       } else {
         await this.remove(nodeUid, { transaction });
       }
@@ -444,7 +444,7 @@ export class FlowModelRepository extends Repository {
     }
 
     await this.database.sequelize.query(
-      this.sqlAdapter(`DELETE FROM ${this.flowModelsTableName} WHERE "x-uid" IN (
+      this.sqlAdapter(`DELETE FROM ${this.flowModelsTableName} WHERE "uid" IN (
             SELECT descendant FROM ${this.flowModelTreePathTableName} WHERE ancestor = :uid
         )`),
       {
@@ -481,7 +481,7 @@ export class FlowModelRepository extends Repository {
     const { transaction } = options;
 
     // if schema is existed then clear origin path schema cache
-    await this.clearXUidPathCache(schema['x-uid'], transaction);
+    await this.clearXUidPathCache(schema['uid'], transaction);
 
     if (options.wrap) {
       // insert wrap schema using insertNewSchema
@@ -493,23 +493,23 @@ export class FlowModelRepository extends Repository {
       const lastWrapNode = wrapSchemaNodes[wrapSchemaNodes.length - 1];
 
       // insert schema into wrap schema
-      await this.insertAdjacent('afterBegin', lastWrapNode['x-uid'], schema, lodash.omit(options, 'wrap'));
+      await this.insertAdjacent('afterBegin', lastWrapNode['uid'], schema, lodash.omit(options, 'wrap'));
 
-      schema = wrapSchemaNodes[0]['x-uid'];
+      schema = wrapSchemaNodes[0]['uid'];
 
       options.removeParentsIfNoChildren = false;
     } else {
       const schemaExists = await this.schemaExists(schema, { transaction });
 
       if (schemaExists) {
-        schema = lodash.isString(schema) ? schema : schema['x-uid'];
+        schema = lodash.isString(schema) ? schema : schema['uid'];
       } else {
         const insertedSchema = await this.insertNewSchema(schema, {
           transaction,
           returnNode: true,
         });
 
-        schema = insertedSchema[0]['x-uid'];
+        schema = insertedSchema[0]['uid'];
       }
     }
 
@@ -520,7 +520,7 @@ export class FlowModelRepository extends Repository {
     await this.emitAfterSaveEvent(s, options);
 
     // clear target schema path cache
-    await this.clearXUidPathCache(result['x-uid'], transaction);
+    await this.clearXUidPathCache(result['uid'], transaction);
 
     return result;
   }
@@ -528,7 +528,7 @@ export class FlowModelRepository extends Repository {
   @transaction()
   async duplicate(uid: string, options?: Transactionable) {
     const s = await this.getJsonSchema(uid, { ...options, includeAsyncNode: true });
-    if (!s?.['x-uid']) {
+    if (!s?.['uid']) {
       return null;
     }
     this.regenerateUid(s);
@@ -539,10 +539,10 @@ export class FlowModelRepository extends Repository {
   async insert(schema: any, options?: Transactionable) {
     const nodes = FlowModelRepository.schemaToSingleNodes(schema);
     const insertedNodes = await this.insertNodes(nodes, options);
-    const result = await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+    const result = await this.getJsonSchema(insertedNodes[0].get('uid'), {
       transaction: options?.transaction,
     });
-    await this.clearXUidPathCache(result['x-uid'], options?.transaction);
+    await this.clearXUidPathCache(result['uid'], options?.transaction);
     return result;
   }
 
@@ -559,7 +559,7 @@ export class FlowModelRepository extends Repository {
     // insert schema fist
     await this.database.sequelize.query(
       this.sqlAdapter(
-        `INSERT INTO ${this.flowModelsTableName} ("x-uid", "name", "schema") VALUES ${nodes
+        `INSERT INTO ${this.flowModelsTableName} ("uid", "name", "schema") VALUES ${nodes
           .map((n) => '(?)')
           .join(',')};`,
       ),
@@ -603,7 +603,7 @@ export class FlowModelRepository extends Repository {
 
     const rootNode = nodes[0];
     if (rootNode['x-server-hooks']) {
-      const rootModel = await this.findOne({ filter: { 'x-uid': rootNode['x-uid'] }, transaction });
+      const rootModel = await this.findOne({ filter: { uid: rootNode['uid'] }, transaction });
       await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, rootModel, options);
       await this.database.emitAsync(`${this.collection.name}.afterSave`, rootModel, options);
     }
@@ -612,10 +612,10 @@ export class FlowModelRepository extends Repository {
       return nodes;
     }
 
-    const result = await this.getJsonSchema(nodes[0]['x-uid'], {
+    const result = await this.getJsonSchema(nodes[0]['uid'], {
       transaction,
     });
-    await this.clearXUidPathCache(result['x-uid'], transaction);
+    await this.clearXUidPathCache(result['uid'], transaction);
     return result;
   }
 
@@ -630,7 +630,7 @@ export class FlowModelRepository extends Repository {
     // check node exists or not
     const existsNode = await this.findOne({
       filter: {
-        'x-uid': uid,
+        uid: uid,
       },
       transaction,
     });
@@ -707,7 +707,7 @@ export class FlowModelRepository extends Repository {
             type: 'INSERT',
             transaction,
             replacements: {
-              modelKey: savedNode.get('x-uid'),
+              modelKey: savedNode.get('uid'),
               modelParentKey: parentUid,
             },
           },
@@ -721,7 +721,7 @@ export class FlowModelRepository extends Repository {
           {
             type: 'INSERT',
             replacements: {
-              modelKey: savedNode.get('x-uid'),
+              modelKey: savedNode.get('uid'),
               type: childOptions.type,
               async,
             },
@@ -870,7 +870,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         {
           type: 'INSERT',
           replacements: {
-            modelKey: savedNode.get('x-uid'),
+            modelKey: savedNode.get('uid'),
             async,
           },
           transaction,
@@ -884,7 +884,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   protected async updateNode(uid: string, schema: any, transaction?: Transaction) {
     const nodeModel = await this.findOne({
       filter: {
-        'x-uid': uid,
+        uid: uid,
       },
     });
 
@@ -892,7 +892,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       {
         schema: {
           ...(nodeModel.get('schema') as any),
-          ...lodash.omit(schema, ['x-async', 'name', 'x-uid', 'properties']),
+          ...lodash.omit(schema, ['x-async', 'name', 'uid', 'properties']),
         },
       },
       {
@@ -945,7 +945,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   protected async findNodeSchemaWithParent(uid, transaction) {
     const schema = await this.database.getRepository('flowModels').findOne({
       filter: {
-        'x-uid': uid,
+        uid: uid,
       },
       transaction,
     });
@@ -970,7 +970,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     if (parentChildrenCount == 1) {
       const schema = await db.getRepository('flowModels').findOne({
         filter: {
-          'x-uid': parent,
+          uid: parent,
         },
         transaction,
       });
@@ -1017,7 +1017,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     };
 
     const insertedNodes = await this.insertNodes(nodes, options);
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+    return await this.getJsonSchema(insertedNodes[0].get('uid'), {
       transaction,
     });
   }
@@ -1042,7 +1042,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
     const insertedNodes = await this.insertNodes(nodes, options);
 
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+    return await this.getJsonSchema(insertedNodes[0].get('uid'), {
       transaction,
     });
   }
@@ -1091,13 +1091,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const db = this.database;
 
     const rawSql = `
-        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as "name", "SchemaTable"."schema" as "schema",
+        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as "name", "SchemaTable"."schema" as "schema",
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${this.flowModelTreePathTableName} as TreePath
-                 LEFT JOIN ${this.flowModelsTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
-                 LEFT JOIN ${this.flowModelTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-                 LEFT JOIN ${this.flowModelTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
+                 LEFT JOIN ${this.flowModelsTableName} as "SchemaTable" ON "SchemaTable"."uid" =  TreePath.descendant
+                 LEFT JOIN ${this.flowModelTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+                 LEFT JOIN ${this.flowModelTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."uid" AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async = false or TreePath.depth <= 1)`;
 
     const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
@@ -1121,13 +1121,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const treeTable = this.flowModelTreePathTableName;
 
     const rawSql = `
-        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
+        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${treeTable} as TreePath
-                 LEFT JOIN ${this.flowModelsTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
-                 LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-                 LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
+                 LEFT JOIN ${this.flowModelsTableName} as "SchemaTable" ON "SchemaTable"."uid" =  TreePath.descendant
+                 LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+                 LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."uid" AND ParentPath.depth = 1)
         WHERE TreePath.ancestor = :ancestor  ${
           options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true or TreePath.depth = 0)'
         }
@@ -1173,17 +1173,17 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   private async schemaExists(schema: any, options?: Transactionable): Promise<boolean> {
-    if (lodash.isObject(schema) && !schema['x-uid']) {
+    if (lodash.isObject(schema) && !schema['uid']) {
       return false;
     }
 
     const { transaction } = options;
     const result = await this.database.sequelize.query(
-      this.sqlAdapter(`select "x-uid" from ${this.flowModelsTableName} where "x-uid" = :uid`),
+      this.sqlAdapter(`select "uid" from ${this.flowModelsTableName} where "uid" = :uid`),
       {
         type: 'SELECT',
         replacements: {
-          uid: lodash.isString(schema) ? schema : schema['x-uid'],
+          uid: lodash.isString(schema) ? schema : schema['uid'],
         },
         transaction,
       },
@@ -1193,7 +1193,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   private regenerateUid(s: any) {
-    s['x-uid'] = uid();
+    s['uid'] = uid();
     Object.keys(s.properties || {}).forEach((key) => {
       this.regenerateUid(s.properties[key]);
     });
@@ -1203,7 +1203,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const node = await this.create({
       values: {
         name,
-        ['x-uid']: uid,
+        ['uid']: uid,
         schema,
       },
       transaction,
@@ -1216,12 +1216,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   private prepareSingleNodeForInsert(schema: SchemaNode) {
-    const uid = schema['x-uid'];
+    const uid = schema['uid'];
     const name = schema['name'];
     const async = lodash.get(schema, 'x-async', false);
     const childOptions = schema['childOptions'];
 
-    delete schema['x-uid'];
+    delete schema['uid'];
     delete schema['x-async'];
     delete schema['name'];
     delete schema['childOptions'];
@@ -1233,7 +1233,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const { uid: oldUid, async, subModels, ...rest } = _.cloneDeep(model);
     const currentUid = oldUid || uid();
     const node = {
-      'x-uid': currentUid,
+      uid: currentUid,
       'x-async': async || false,
       name: currentUid,
       ...rest,
@@ -1265,7 +1265,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   static nodeToModel(node) {
-    const { 'x-uid': uid, name, schema } = node;
+    const { uid: uid, name, schema } = node;
     const model = {
       uid,
       ...schema,
@@ -1277,7 +1277,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 1. 建立 uid 到 node 的映射
     const nodeMap = new Map<string, any>();
     for (const node of nodes) {
-      nodeMap.set(node['x-uid'], node);
+      nodeMap.set(node['uid'], node);
     }
 
     // 2. 找到 root 节点
@@ -1294,8 +1294,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       const { subKey, subType } = child.schema;
       if (!subKey) continue;
       // 递归处理子节点
-      const model = FlowModelRepository.nodesToModel(nodes, child['x-uid']) || {
-        uid: child['x-uid'],
+      const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
+        uid: child['uid'],
         ...child.schema,
         sortIndex: child.sort,
       };
@@ -1328,7 +1328,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
     // 7. 返回最终 model
     return {
-      uid: rootNode['x-uid'],
+      uid: rootNode['uid'],
       ...rootNode.schema,
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
@@ -1337,14 +1337,14 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   @transaction()
   async insertModel(model: any, options?: Transactionable) {
     const nodes = FlowModelRepository.modelToSingleNodes(model);
-    const rootUid = nodes[0]['x-uid'];
+    const rootUid = nodes[0]['uid'];
     await this.insertNodes(nodes, options);
     return await this.findModelById(rootUid, options);
   }
 
   @transaction()
   async updateSingleNode(node: SchemaNode, options?: Transactionable) {
-    const instance = await this.model.findByPk(node['x-uid'], {
+    const instance = await this.model.findByPk(node['uid'], {
       transaction: options?.transaction,
     });
     if (instance) {
@@ -1353,7 +1353,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         {
           schema: {
             ...(instance.get('schema') as any),
-            ...lodash.omit(node, ['x-async', 'name', 'x-uid', 'childOptions']),
+            ...lodash.omit(node, ['x-async', 'name', 'uid', 'childOptions']),
           },
         },
         {
@@ -1378,7 +1378,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       };
     }
     const nodes = FlowModelRepository.modelToSingleNodes(model, childOptions);
-    const rootUid = nodes[0]['x-uid'];
+    const rootUid = nodes[0]['uid'];
     for (const node of nodes) {
       const exists = await this.updateSingleNode(node, options);
       if (!exists) {
@@ -1424,7 +1424,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   async move(options) {
     const { sourceId, targetId, position } = options;
     return await this.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', targetId, {
-      ['x-uid']: sourceId,
+      ['uid']: sourceId,
     });
   }
 }

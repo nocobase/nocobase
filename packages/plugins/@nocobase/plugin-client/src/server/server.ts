@@ -188,7 +188,7 @@ export class PluginClientServer extends Plugin {
       const r = this.db.getRepository('flowModels');
       await r.destroy({
         filter: {
-          'x-uid': instance.get('schemaUid'),
+          uid: instance.get('schemaUid'),
         },
         transaction,
       });
@@ -198,7 +198,7 @@ export class PluginClientServer extends Plugin {
       await r.create({
         transaction,
         values: {
-          'x-uid': instance.get('schemaUid'),
+          uid: instance.get('schemaUid'),
           name: instance.get('schemaUid'),
           schema: {
             use: 'RouteModel',

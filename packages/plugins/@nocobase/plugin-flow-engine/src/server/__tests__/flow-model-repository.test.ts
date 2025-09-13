@@ -402,7 +402,7 @@ describe('ui_schema repository', () => {
     await repository.insertModel(model1);
     await repository.move({ sourceId: 'sub2-1', targetId: 'sub2-2', position: 'after' });
     // await repository.insertAdjacent('afterEnd', 'sub2-2', {
-    //   ['x-uid']: 'sub2-1',
+    //   ['uid']: 'sub2-1',
     // });
     const model2 = await repository.findModelById('uid1');
     expect(model2.subModels.sub2[0].use).toBe('TestSubModel3');

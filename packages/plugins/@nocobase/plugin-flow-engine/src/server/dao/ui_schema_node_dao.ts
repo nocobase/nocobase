@@ -22,7 +22,7 @@ export interface ChildOptions {
 
 export interface SchemaNode {
   name: string;
-  'x-uid': string;
+  uid: string;
   schema: object;
   'x-async'?: boolean;
   childOptions?: ChildOptions;

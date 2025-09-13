@@ -21,7 +21,7 @@ export default {
   fields: [
     {
       type: 'uid',
-      name: 'x-uid',
+      name: 'uid',
       primaryKey: true,
     },
     {
