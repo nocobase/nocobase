@@ -153,6 +153,10 @@ export default defineConfig({
           link: '/models/fields/js-field-model',
         },
         {
+          title: 'JS Actions',
+          link: '/examples/js-actions',
+        },
+        {
           title: 'CRUD',
           link: '/examples/flow-models/crud',
         },
@@ -606,7 +610,7 @@ export default defineConfig({
           title: '操作',
           type: 'group',
           children: [
-            // 暂无 actions 子项
+            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/models/actions/js-actions' },
           ],
         },
       ],
