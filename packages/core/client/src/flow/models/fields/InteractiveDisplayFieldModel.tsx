@@ -13,7 +13,7 @@ import { escapeT } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
 
 import { FieldModel } from '../base/FieldModel';
-import { openViewFlow } from '../../flows/openViewFlow';
+import { updateOpenViewStepParams, openViewFlow } from '../../flows/openViewFlow';
 
 export interface InteractiveDisplayProps {
   clickToOpen?: boolean; // 是否允许点击打开
@@ -21,6 +21,34 @@ export interface InteractiveDisplayProps {
 }
 
 export class InteractiveDisplayFieldModel extends FieldModel {
+  onInit(options) {
+    super.onInit(options);
+
+    const sourceCollection = this.context.blockModel?.collection;
+    const targetCollection = this.collectionField?.targetCollection;
+
+    let params;
+
+    if (this.collectionField?.isAssociationField()) {
+      params = {
+        collectionName: targetCollection?.name,
+        associationName:
+          sourceCollection?.name && this.collectionField?.name
+            ? `${sourceCollection.name}.${this.collectionField.name}`
+            : undefined,
+        dataSourceKey: targetCollection?.dataSourceKey,
+      };
+    } else {
+      params = {
+        collectionName: this.context.collection?.name,
+        associationName: this.collectionField?.target,
+        dataSourceKey: this.context.collection?.dataSourceKey,
+      };
+    }
+
+    updateOpenViewStepParams(params, this);
+  }
+
   /**
    * 点击打开行为
    */
