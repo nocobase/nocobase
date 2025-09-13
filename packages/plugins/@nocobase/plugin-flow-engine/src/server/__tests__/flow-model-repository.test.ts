@@ -9,12 +9,12 @@
 
 import { Collection, Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import UiSchemaRepository from '../repository';
+import FlowModelRepository from '../repository';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
   let db: Database;
-  let repository: UiSchemaRepository;
+  let repository: FlowModelRepository;
 
   let treePathCollection: Collection;
 
@@ -29,7 +29,7 @@ describe('ui_schema repository', () => {
     });
 
     db = app.db;
-    repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
+    repository = db.getCollection('uiSchemas').repository as FlowModelRepository;
     treePathCollection = db.getCollection('uiSchemaTreePath');
   });
 

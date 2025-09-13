@@ -13,10 +13,8 @@ import { Plugin } from '@nocobase/server';
 import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
-import { UiSchemaModel } from './model';
-import UiSchemaRepository from './repository';
-import { ServerHooks } from './server-hooks';
-import { ServerHookModel } from './server-hooks/model';
+import { FlowSchemaModel } from './model';
+import FlowModelRepository from './repository';
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
@@ -43,40 +41,32 @@ function extractFields(obj) {
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
-  serverHooks: ServerHooks;
-
   registerRepository() {
     this.app.db.registerRepositories({
-      UiSchemaRepository,
+      FlowModelRepository,
     });
   }
 
   async beforeLoad() {
     const db = this.app.db;
     const pm = this.app.pm;
-    this.serverHooks = new ServerHooks(db);
 
-    this.app.db.registerModels({ MagicAttributeModel, UiSchemaModel, ServerHookModel });
+    this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.block-templates`,
-      actions: ['uiSchemaTemplates:*'],
+      name: 'ui.flowModels',
+      actions: ['flowModels:*'],
     });
 
-    this.app.acl.registerSnippet({
-      name: 'ui.uiSchemas',
-      actions: ['uiSchemas:*', 'uiSchemas.roles:list', 'uiSchemas.roles:set'],
-    });
-
-    db.on('uiSchemas.beforeCreate', function setUid(model) {
+    db.on('flowModels.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());
       }
     });
 
-    db.on('uiSchemas.afterSave', async function setUid(model, options) {
+    db.on('flowModels.afterSave', async function setUid(model, options) {
       const localizationPlugin = pm.get('localization') as PluginLocalizationServer;
       const texts = [];
       const changedFields = extractFields(model.toJSON());
@@ -89,9 +79,9 @@ export class PluginUISchemaStorageServer extends Plugin {
       await localizationPlugin?.addNewTexts?.(texts, options);
     });
 
-    db.on('uiSchemas.afterCreate', async function insertSchema(model, options) {
+    db.on('flowModels.afterCreate', async function insertSchema(model, options) {
       const { transaction } = options;
-      const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
+      const uiSchemaRepository = db.getCollection('flowModels').repository as FlowModelRepository;
 
       const context = options.context;
 
@@ -104,93 +94,90 @@ export class PluginUISchemaStorageServer extends Plugin {
       });
     });
 
-    db.on('uiSchemas.afterUpdate', async function patchSchema(model, options) {
+    db.on('flowModels.afterUpdate', async function patchSchema(model, options) {
       const { transaction } = options;
-      const uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
+      const uiSchemaRepository = db.getCollection('flowModels').repository as FlowModelRepository;
 
       await uiSchemaRepository.patch(model.toJSON(), {
         transaction,
       });
     });
 
-    this.app.resourceManager.define({
-      name: 'uiSchemas',
-      actions: uiSchemaActions,
+    db.on('flowModels.afterDestroy', async function patchSchema(model, options) {
+      const { transaction } = options;
+      const uiSchemaRepository = db.getCollection('flowModels').repository as FlowModelRepository;
+
+      await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
-    this.app.acl.allow(
-      'uiSchemas',
-      ['getProperties', 'getJsonSchema', 'getParentJsonSchema', 'initializeActionContext'],
-      'loggedIn',
-    );
-    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
-  }
-
-  async load() {
-    this.db.addMigrations({
-      namespace: 'ui-schema-storage',
-      directory: path.resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
+    this.app.resourceManager.define({
+      name: 'flowModels',
+      actions: {
+        findOne: async (ctx, next) => {
+          const { uid, parentId, subKey } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          if (uid) {
+            ctx.body = await repository.findModelById(uid);
+          } else if (parentId) {
+            ctx.body = await repository.findModelByParentId(parentId, { subKey });
+          }
+          await next();
+        },
+        move: async (ctx, next) => {
+          const { sourceId, targetId, position } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          await repository.move({ sourceId, targetId, position });
+          ctx.body = 'ok';
+          await next();
+        },
+        save: async (ctx, next) => {
+          const { values } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const uid = await repository.upsertModel(values);
+          ctx.body = uid;
+          // ctx.body = await repository.findModelById(uid);
+          await next();
+        },
+        destroy: async (ctx, next) => {
+          const { filterByTk } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          await repository.remove(filterByTk);
+          ctx.body = 'ok';
+          await next();
+        },
       },
     });
 
+    this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
+  }
+
+  async load() {
     const getSourceAndTargetForRemoveAction = async (ctx: any) => {
       const { filterByTk } = ctx.action.params;
       return {
-        targetCollection: 'uiSchemas',
+        targetCollection: 'flowModels',
         targetRecordUK: filterByTk,
       };
     };
 
     const getSourceAndTargetForInsertAdjacentAction = async (ctx: any) => {
       return {
-        targetCollection: 'uiSchemas',
+        targetCollection: 'flowModels',
         targetRecordUK: ctx.request.body?.schema?.['x-uid'],
       };
     };
 
     const getSourceAndTargetForPatchAction = async (ctx: any) => {
       return {
-        targetCollection: 'uiSchemas',
+        targetCollection: 'flowModels',
         targetRecordUK: ctx.request.body?.['x-uid'],
       };
     };
     this.app.auditManager.registerActions([
-      { name: 'uiSchemas:remove', getSourceAndTarget: getSourceAndTargetForRemoveAction },
-      { name: 'uiSchemas:insertAdjacent', getSourceAndTarget: getSourceAndTargetForInsertAdjacentAction },
-      { name: 'uiSchemas:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
+      { name: 'flowModels:remove', getSourceAndTarget: getSourceAndTargetForRemoveAction },
+      { name: 'flowModels:insertAdjacent', getSourceAndTarget: getSourceAndTargetForInsertAdjacentAction },
+      { name: 'flowModels:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
     ]);
-
-    await this.importCollections(resolve(__dirname, 'collections'));
-    // this.registerLocalizationSource();
-  }
-
-  registerLocalizationSource() {
-    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
-    if (!localizationPlugin) {
-      return;
-    }
-    localizationPlugin.sourceManager.registerSource('ui-schema-storage', {
-      title: tval('UiSchema'),
-      sync: async (ctx) => {
-        const uiSchemas = await ctx.db.getRepository('uiSchemas').find({
-          raw: true,
-        });
-        const resources = {};
-        uiSchemas.forEach((route: { schema?: any }) => {
-          const changedFields = extractFields(route.schema);
-          if (changedFields.length) {
-            changedFields.forEach((field) => {
-              resources[field] = '';
-            });
-          }
-        });
-        return {
-          'ui-schema-storage': resources,
-        };
-      },
-    });
   }
 }
 
