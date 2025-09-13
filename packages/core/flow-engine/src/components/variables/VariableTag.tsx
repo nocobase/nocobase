@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { Select, Tag, theme } from 'antd';
-import { cx } from '@emotion/css';
+import { Select, Tag, theme, Tooltip } from 'antd';
+import { cx, css } from '@emotion/css';
 import type { VariableTagProps } from './types';
 import { parseValueToPath } from './utils';
 import { useResolvedMetaTree } from './useResolvedMetaTree';
@@ -43,34 +43,60 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
 
   const { token } = theme.useToken();
 
-  const customTagRender = (props: any) => {
-    const { label, closable, onClose } = props;
+  // 修复 rc-select tags 模式下单个 tag 不能收缩的问题：
+  // 让包裹 tag 的 overflow item 可收缩，从而触发内部文本的省略。
+  const shrinkableOverflowItem = css`
+    /* 选择器容器允许收缩并隐藏超出 */
+    & .ant-select-selector {
+      min-width: 0;
+      overflow: hidden;
+    }
+    /* rc-overflow 只展示单行，避免换行导致容器增高 */
+    & .rc-overflow {
+      flex-wrap: nowrap;
+    }
+  `;
 
-    const truncateText = (text: string, maxLength = 16) => {
-      if (!text || text.length <= maxLength) return text;
-      return text.substring(0, maxLength) + '...';
-    };
+  const customTagRender = (props: any) => {
+    const { label } = props;
+    const fullText = typeof label === 'string' ? label : String(label);
 
     return (
-      <Tag
-        color="blue"
-        style={{
-          margin: `0 ${token.marginXXS || token.marginXS}px`,
-          borderRadius: token.borderRadiusSM,
-          fontSize: token.fontSizeSM,
-          display: 'inline-flex',
-          alignItems: 'center',
-          padding: `0 ${token.paddingXXS}px`,
-        }}
-      >
-        {truncateText(label)}
-      </Tag>
+      <Tooltip title={fullText} placement="top" getPopupContainer={() => document.body}>
+        <Tag
+          color="blue"
+          style={{
+            margin: `0 ${token.marginXXS || token.marginXS}px`,
+            borderRadius: token.borderRadiusSM,
+            fontSize: token.fontSizeSM,
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: `0 ${token.paddingXXS}px`,
+            minWidth: 0,
+            maxWidth: '100%',
+            overflow: 'hidden',
+            width: '100%',
+          }}
+        >
+          <span
+            style={{
+              minWidth: 0,
+              width: '100%',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              display: 'inline-block',
+            }}
+          >
+            {fullText}
+          </span>
+        </Tag>
+      </Tooltip>
     );
   };
 
   return (
     <Select
-      className={cx('variable', className)}
+      className={cx('variable', shrinkableOverflowItem, className)}
       style={{
         // Fill the available width of the surrounding layout.
         // A fixed maxWidth here caused the input to shrink when a variable is selected.
@@ -83,7 +109,6 @@ const VariableTagComponent: React.FC<VariableTagProps> = ({
       mode="tags"
       open={false}
       allowClear={!!onClear}
-      maxTagTextLength={20}
       onClear={onClear}
       disabled={!onClear}
       variant="outlined"

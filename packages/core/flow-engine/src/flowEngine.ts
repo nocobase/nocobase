@@ -112,7 +112,7 @@ export class FlowEngine {
    * Flow settings, including components and form scopes.
    * @public
    */
-  public flowSettings: FlowSettings = new FlowSettings();
+  public flowSettings: FlowSettings;
 
   /**
    * Experimental API: Integrates React view rendering capability into FlowEngine.
@@ -131,6 +131,7 @@ export class FlowEngine {
    */
   constructor() {
     this.reactView = new ReactView(this);
+    this.flowSettings = new FlowSettings(this);
     this.flowSettings.registerScopes({ t: this.translate.bind(this) });
     this.registerModels({ FlowModel }); // 会造成循环依赖问题，移除掉
     this.registerResources({
@@ -295,7 +296,7 @@ export class FlowEngine {
       if (!ResourceClass) {
         throw new Error(`Resource class '${resourceType}' not found. Please register it first.`);
       }
-      return new ResourceClass(options?.context || this.context) as T;
+      return new ResourceClass((options?.context as any) || this.context) as T;
     }
     const R = resourceType;
     return new R(options?.context || this.context) as T;

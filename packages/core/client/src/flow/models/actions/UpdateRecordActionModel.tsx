@@ -84,8 +84,6 @@ export class UpdateRecordActionModel extends RecordActionModel<{
   };
 }> {
   assignFormUid?: string;
-  // 专用于保存动作配置的属性，避免透传到 Button DOM props
-  actionProps: { showConfirm?: boolean; updateMode?: 'selected' | 'all' } = {};
 
   defaultProps: ButtonProps = {
     title: escapeT('Update record'),
@@ -119,20 +117,17 @@ UpdateRecordActionModel.define({
 UpdateRecordActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
+  // 配置流仅用于收集参数，避免作为自动流程执行
+  manual: true,
   steps: {
-    showConfirm: {
+    // 二次确认：复用全局 confirm action，支持开关、标题、内容（含变量选择）
+    confirm: {
       title: escapeT('Secondary confirmation'),
-      uiSchema: {
-        value: {
-          type: 'boolean',
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
-        },
-      },
-      handler: (ctx, params) => {
-        // 存入 actionProps，避免污染按钮 DOM props
-        const m = ctx.model as UpdateRecordActionModel;
-        m.actionProps = { ...(m.actionProps || {}), showConfirm: !!params.value };
+      use: 'confirm',
+      defaultParams: {
+        enable: false,
+        title: escapeT('Perform the Update record'),
+        content: escapeT('Are you sure you want to perform the Update record action?'),
       },
     },
     assignFieldValues: {
@@ -186,11 +181,10 @@ UpdateRecordActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        const m = ctx.model as UpdateRecordActionModel;
-        const needConfirm = m.actionProps?.showConfirm === true;
-        if (needConfirm) {
-          await ctx.runAction('confirm');
-        }
+        // 统一接入二次确认：如果启用则弹窗；未配置时默认不启用
+        const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
+        const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
+        await ctx.runAction('confirm', confirmParams);
         const assignedValues = params?.assignedValues || {};
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
