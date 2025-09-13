@@ -30,7 +30,6 @@ import { TableColumnProps, Tooltip } from 'antd';
 import { get } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ReadPrettyFieldModel } from '../../fields/ReadPrettyField/ReadPrettyFieldModel';
 
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
@@ -46,14 +45,21 @@ export class TableColumnModel extends DisplayItemModel {
   }
 
   static defineChildren(ctx: FlowModelContext) {
+    const resolveFieldModel = (field: any) => {
+      // 如果是关联字段，取目标集合的标题字段
+      const targetField = field.isAssociationField() ? field.targetCollection?.titleCollectionField : field;
+
+      if (!targetField) return null;
+
+      const binding = this.getDefaultBindingByField(ctx, targetField);
+      return binding || null;
+    };
     const collection = (ctx.model as any).collection || (ctx.collection as Collection);
     return collection
       .getFields()
       .map((field) => {
-        const binding = this.getDefaultBindingByField(ctx, field);
-        if (!binding) {
-          return;
-        }
+        const binding = resolveFieldModel(field);
+        if (!binding) return null;
         const fieldModel = binding.modelName;
         const fieldPath = field.name;
         return {
@@ -75,6 +81,7 @@ export class TableColumnModel extends DisplayItemModel {
             subModels: {
               field: {
                 use: fieldModel,
+                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
               },
             },
           }),
@@ -160,7 +167,7 @@ export class TableColumnModel extends DisplayItemModel {
   render(): any {
     return (value, record, index) => (
       <>
-        {this.mapSubModels('field', (field: ReadPrettyFieldModel) => {
+        {this.mapSubModels('field', (field) => {
           const fork = field.createFork({}, `${index}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
@@ -304,7 +311,43 @@ TableColumnModel.registerFlow({
     },
     model: {
       title: escapeT('Field component'),
-      use: 'fieldComponent',
+      use: 'displayFieldComponent',
+    },
+    fieldNames: {
+      use: 'titleField',
+      title: escapeT('Label field'),
+
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        if (!ctx.collectionField.isAssociationField()) {
+          return null;
+        }
+        if (params.label !== previousParams.label) {
+          const targetCollection = ctx.collectionField.targetCollection;
+          const targetCollectionField = targetCollection.getField(params.label);
+          const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
+            const fieldUid = ctx.model.subModels['field']['uid'];
+            await ctx.engine.destroyModel(fieldUid);
+            const model = ctx.model.setSubModel('field', {
+              use: binding.modelName,
+              stepParams: {
+                fieldSettings: {
+                  init: {
+                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                    collectionName: targetCollection.name,
+                    fieldPath: params.label,
+                  },
+                },
+              },
+            });
+            await model.save();
+          }
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+        }
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ titleField: params.label });
+      },
     },
   },
 });

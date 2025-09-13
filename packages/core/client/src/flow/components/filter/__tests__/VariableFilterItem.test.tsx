@@ -83,7 +83,7 @@ describe('VariableFilterItem', () => {
   });
 
   it('renders static right input when rightAsVariable=false and updates value on typing', async () => {
-    const value = { leftValue: '', operator: '', rightValue: '' } as any;
+    const value = { path: '', operator: '', value: '' } as any;
     const model = CreateModel();
 
     render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
@@ -94,11 +94,11 @@ describe('VariableFilterItem', () => {
     // Should render a plain input for right value
     const input = await screen.findByPlaceholderText('Enter value');
     fireEvent.change(input, { target: { value: 'abc' } });
-    expect(value.rightValue).toBe('abc');
+    expect(value.value).toBe('abc');
   });
 
   it('renders right VariableInput when rightAsVariable=true and hides it for noValue operator', async () => {
-    const value = { leftValue: '', operator: '', rightValue: '' } as any;
+    const value = { path: '', operator: '', value: '' } as any;
     const model = CreateModel();
 
     const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable />);

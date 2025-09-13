@@ -13,7 +13,7 @@ import { FlowEngineContext } from '../flowContext';
 import { BaseRecordResource } from './baseRecordResource';
 
 type SQLRunOptions = {
-  bind?: Record<string, any> | Array<any>;
+  bind?: Record<string, any>;
   type?: 'selectVar' | 'selectRow' | 'selectRows';
   dataSourceKey?: string;
   filter?: Record<string, any>;
@@ -28,13 +28,33 @@ type SQLSaveOptions = {
 export class FlowSQLRepository {
   constructor(protected ctx: FlowEngineContext) {}
 
+  transformSQL(template: string) {
+    let index = 1;
+    const bind = {};
+
+    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
+      const key = `__var${index}`;
+      bind[key] = `{{${expr.trim()}}}`;
+      index++;
+      return `$${key}`;
+    });
+
+    return { sql, bind };
+  }
+
   async run(sql: string, options: SQLRunOptions = {}) {
+    const result = this.transformSQL(sql);
+    const bind = await this.ctx.resolveJsonTemplate(result.bind);
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:run',
       data: {
-        sql,
+        sql: result.sql,
         ...options,
+        bind: {
+          ...bind,
+          ...options.bind,
+        },
       },
     });
     return data?.data;
@@ -51,12 +71,24 @@ export class FlowSQLRepository {
   }
 
   async runById(uid: string, options?: SQLRunOptions) {
+    const response = await this.ctx.api.request({
+      method: 'GET',
+      url: 'flowSql:getBind',
+      params: {
+        uid,
+      },
+    });
+    const bind = await this.ctx.resolveJsonTemplate(response.data.data || {});
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:runById',
       data: {
         uid,
         ...options,
+        bind: {
+          ...bind,
+          ...options.bind,
+        },
       },
     });
     return data?.data;
@@ -119,6 +151,21 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
+  async runById() {
+    const { data } = await this.runAction<TData, any>('getBind', {
+      method: 'get',
+      params: {
+        uid: this.request.data.uid,
+      },
+    });
+    const bind = await this.context.resolveJsonTemplate(data);
+    this.setBind(bind);
+    return await this.runAction<TData, any>('runById', {
+      method: 'post',
+      ...this.getRefreshRequestOptions(),
+    });
+  }
+
   /**
    * 在同一个事件循环内多次调用 refresh 方法时，只有最后一次调用会生效。避免触发多次相同的接口请求。
    * @returns
@@ -135,10 +182,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
         try {
           this.clearError();
           this.loading = true;
-          const { data, meta } = await this.runAction<TData, any>('runById', {
-            method: 'post',
-            ...this.getRefreshRequestOptions(),
-          });
+          const { data, meta } = await this.runById();
           this.setData(data).setMeta(meta);
           this.emit('refresh');
           this.loading = false;

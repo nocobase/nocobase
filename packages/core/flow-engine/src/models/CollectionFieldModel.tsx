@@ -81,6 +81,9 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
 
   static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField) {
     const interfaceName = collectionField.interface;
+    if (!interfaceName) {
+      return null;
+    }
 
     // Check if the interface exists in the map
     if (!this.bindings.has(interfaceName)) {

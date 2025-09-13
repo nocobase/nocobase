@@ -8,7 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
-import { FlowContext } from '../flowContext';
+import { FlowContext, FlowEngineContext } from '../flowContext';
 
 interface TDataItem {
   id: string | number;
@@ -116,6 +116,17 @@ export class FlowResource<TData = any> {
 
   on(event: string, callback: (...args: any[]) => void) {
     (this.events[event] ||= []).push(callback);
+  }
+
+  once(event: string, callback: (...args: any[]) => void) {
+    const wrapper = (...args: any[]) => {
+      // 触发回调
+      callback(...args);
+      // 自动移除监听器
+      this.off(event, wrapper);
+    };
+    // 注册包装后的回调
+    this.on(event, wrapper);
   }
 
   off(event: string, callback: (...args: any[]) => void) {

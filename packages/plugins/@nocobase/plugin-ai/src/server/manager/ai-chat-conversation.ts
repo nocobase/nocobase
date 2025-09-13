@@ -16,11 +16,10 @@ import {
   AIMessageInput,
   AIMessageQuery,
   AIMessageRemoveOptions,
-} from '../types/ai-chat-conversation.type';
+} from '../types';
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Filter, Transaction } from '@nocobase/database';
-import { LLMProvider } from '../llm-providers/provider';
 export const createAIChatConversation = (ctx: Context, sessionId: string): AIChatConversation => {
   return new AIChatConversationImpl(ctx, sessionId);
 };
@@ -116,7 +115,7 @@ class AIChatConversationImpl implements AIChatConversation {
 
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
-    const messages = await this.formatMessages(aiMessages, options.provider);
+    const messages = await this.formatMessages(aiMessages, options);
     if (options?.systemPrompt) {
       messages.unshift({
         role: 'system',
@@ -129,8 +128,9 @@ class AIChatConversationImpl implements AIChatConversation {
     };
   }
 
-  private async formatMessages(messages: AIMessage[], provider: LLMProvider) {
+  private async formatMessages(messages: AIMessage[], options: AIChatContextOptions) {
     const formattedMessages = [];
+    const { provider, workContextHandler } = options;
 
     for (const msg of messages) {
       const attachments = msg.attachments;
@@ -143,8 +143,10 @@ class AIChatConversationImpl implements AIChatConversation {
         if (typeof content === 'string') {
           content = `<user_query>${content}</user_query>`;
           if (workContext?.length) {
-            content = `<work_context>${JSON.stringify(workContext)}</work_context>
-${content}`;
+            const workContextStr = (await workContextHandler.resolve(this.ctx, workContext))
+              .map((x) => `<work_context>${x}</work_context>`)
+              .join('\n');
+            content = workContextStr + '\n' + content;
           }
         }
         const contents = [];

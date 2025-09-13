@@ -99,6 +99,7 @@ export default defineConfig({
               ],
             },
             { title: 'SlateVariableEditor', link: '/components/variables/slate-variable-editor' },
+            { title: 'TextArea with Context Selector', link: '/components/variables/text-area-with-context-selector' },
           ],
         },
       ],

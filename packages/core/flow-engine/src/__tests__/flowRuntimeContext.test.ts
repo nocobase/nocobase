@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { ContextPathProxy } from '../ContextPathProxy';
 import { FlowRuntimeContext } from '../flowContext';
+import { FlowEngine } from '../flowEngine';
+import { FlowModel } from '../models/flowModel';
 
 describe('FlowRuntimeContext', () => {
   let engine: FlowEngine;

@@ -21,6 +21,7 @@ import { useField } from '@formily/react';
 import { ArrayField, ObjectField } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
 import { aiSelection } from '../../stores/ai-selection';
+import { dialogController } from '../../stores/dialog-controller';
 
 const { Meta } = Card;
 
@@ -145,7 +146,7 @@ const WorkContext: React.FC = () => {
           <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
         ))}
       </div>
-      <AddContextButton onAdd={onAdd} />
+      <AddContextButton contextItems={field.value} onAdd={onAdd} onRemove={onRemove} />
     </>
   );
 };
@@ -203,8 +204,8 @@ AIEmployeeShortcutModel.registerFlow({
           type: 'dialog',
           props: {
             styles: {
-              mask: { zIndex: aiSelection.selectable ? -1 : 1000 },
-              wrapper: { zIndex: aiSelection.selectable ? -1 : 1000 },
+              mask: { zIndex: dialogController.shouldHide ? -1 : 1000 },
+              wrapper: { zIndex: dialogController.shouldHide ? -1 : 1000 },
             },
           },
         };

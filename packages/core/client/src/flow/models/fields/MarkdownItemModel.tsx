@@ -9,14 +9,14 @@
 
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
-import { MarkdownReadPretty } from '../../internal/components/MarkdownDisplay/MarkdownReadPretty';
+import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { CommonItemModel } from '../base/CommonItemModel';
 
 export class MarkdownItemModel extends CommonItemModel {
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
-        <MarkdownReadPretty value={this.props.content} />
+        <DisplayMarkdown value={this.props.content} />
       </FormItem>
     );
   }
@@ -24,7 +24,7 @@ export class MarkdownItemModel extends CommonItemModel {
 
 MarkdownItemModel.registerFlow({
   key: 'markdownItemSetting',
-  title: '{{t("Markdown Setting")}}',
+  title: '{{t("Markdown settings")}}',
   steps: {
     content: {
       title: '{{t("Edit content")}}',
@@ -52,5 +52,5 @@ MarkdownItemModel.registerFlow({
 });
 
 MarkdownItemModel.define({
-  label: '{{t("Add Markdown")}}',
+  label: '{{t("Markdown")}}',
 });

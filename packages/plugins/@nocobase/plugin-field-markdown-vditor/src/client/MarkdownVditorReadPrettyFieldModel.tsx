@@ -8,12 +8,12 @@
  */
 
 import React from 'react';
-import { largeField, DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel } from '@nocobase/flow-engine';
 
-import { ReadPrettyFieldModel, ApplicationContext, tval } from '@nocobase/client';
+import { FieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
-export class MarkdownVditorReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class MarkdownVditorReadPrettyFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = ['vditor'];
 
   public render() {

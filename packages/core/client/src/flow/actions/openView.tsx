@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 
@@ -51,13 +51,23 @@ export const openView = defineAction({
     size: 'medium',
     pageModelClass: 'ChildPageModel',
   },
-  async handler(ctx, params) {
+  async handler(ctx: FlowModelContext, params) {
+    const inputArgs = ctx.inputArgs || {};
+
+    if (params.filterByTk) {
+      inputArgs.filterByTk = params.filterByTk;
+    }
+
+    if (params.sourceId) {
+      inputArgs.sourceId = params.sourceId;
+    }
+
     if (params.navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view.navigation) {
         ctx.view.navigation.navigateTo({
           viewUid: ctx.model.uid,
-          filterByTk: ctx.inputArgs.filterByTk,
-          sourceId: ctx.inputArgs.sourceId,
+          filterByTk: inputArgs.filterByTk,
+          sourceId: inputArgs.sourceId,
         });
         return;
       }
@@ -87,6 +97,7 @@ export const openView = defineAction({
       type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
       inputArgs: {
         ...ctx.inputArgs,
+        ...inputArgs,
         dataSourceKey: params.dataSourceKey,
         collectionName: params.collectionName,
         associationName: params.associationName,
@@ -102,14 +113,16 @@ export const openView = defineAction({
         if (ctx.inputArgs.updateRef) {
           ctx.inputArgs.updateRef.current = currentView.update;
         }
-
         return (
           <FlowPage
             parentId={ctx.model.uid}
             pageModelClass={pageModelClass}
             onModelLoaded={(uid) => {
               pageModelUid = uid;
-              const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
+              const pageModel = ctx.engine.getModel(pageModelUid);
+              if (params.afterModelInit) {
+                params.afterModelInit(pageModel);
+              }
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
               });
@@ -119,6 +132,7 @@ export const openView = defineAction({
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'embed',
               });
+
               pageModel.invalidateAutoFlowCache(true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}

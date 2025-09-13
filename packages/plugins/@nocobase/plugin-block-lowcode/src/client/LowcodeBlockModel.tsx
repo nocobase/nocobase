@@ -54,6 +54,7 @@ export class LowcodeBlockModel extends BlockModel {
 
 LowcodeBlockModel.define({
   label: 'Code (Deprecated)',
+  hide: true,
   group: 'Content',
   icon: 'CloudOutlined',
   createModelOptions: {

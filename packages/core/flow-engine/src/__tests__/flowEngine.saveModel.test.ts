@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { FlowEngine } from '../flowEngine';
-import { FlowModel } from '../models';
+import { FlowModel } from '../models/flowModel';
 import type { IFlowModelRepository } from '../types';
 
 // Mock repository implementation for testing
