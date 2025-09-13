@@ -7,28 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FilterFormActionModel } from './FilterFormActionModel';
+/**
+ * JS Form Action：表单工具栏按钮点击执行 JS。
+ */
+import { escapeT } from '@nocobase/flow-engine';
+import { FormActionModel } from './FormActionModel';
 
-export class FilterFormJSActionModel extends FilterFormActionModel {}
+export class JSFormActionModel extends FormActionModel {}
 
-FilterFormJSActionModel.define({
-  label: 'JavaScript action',
+JSFormActionModel.define({
+  label: escapeT('JavaScript action'),
+  sort: 9999,
 });
 
-FilterFormJSActionModel.registerFlow({
+JSFormActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
-  title: 'Click settings',
+  title: escapeT('Click settings'),
   steps: {
     runJs: {
-      title: 'Write JavaScript',
+      title: escapeT('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',
-          title: 'Write JavaScript',
+          title: escapeT('Write JavaScript'),
           'x-component': 'CodeEditor',
           'x-component-props': {
-            minHeight: '400px',
+            minHeight: '320px',
             theme: 'light',
             enableLinter: true,
           },
@@ -42,54 +47,45 @@ FilterFormJSActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: '1.0.0',
-          code: '',
+          code: `/** 表单 JS Action 示例 **/
+const values = ctx.form?.getFieldsValue?.() || {};
+ctx.message.success('当前表单值：' + JSON.stringify(values));
+`,
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params;
-        // 创建安全的 window 和 document
+        const { code = '' } = params || {};
+        ctx.defineMethod('refresh', async () => {
+          if (ctx.blockModel?.resource?.refresh) {
+            await ctx.blockModel.resource.refresh();
+          } else if (ctx.resource?.refresh) {
+            await ctx.resource.refresh();
+          }
+        });
         const safeWindow = new Proxy(
           {},
           {
             get(target, prop: string) {
-              const allowedGlobals = {
-                setTimeout,
-                clearTimeout,
-                setInterval,
-                clearInterval,
-                console,
-                // fetch,
-                Math,
-                Date,
-                // 其他需要的全局对象或方法
-              };
-              if (prop in allowedGlobals) {
-                return allowedGlobals[prop];
-              }
+              const allowed = { setTimeout, clearTimeout, setInterval, clearInterval, console, Math, Date } as any;
+              if (prop in allowed) return allowed[prop];
               throw new Error(`Access to global property "${prop}" is not allowed.`);
             },
           },
         );
-
         const safeDocument = new Proxy(
           {},
           {
             get(target, prop: string) {
-              const allowedDocumentMethods = {
+              const allowed = {
                 createElement: document.createElement.bind(document),
                 querySelector: document.querySelector.bind(document),
                 querySelectorAll: document.querySelectorAll.bind(document),
-                // 其他需要的 document 方法
-              };
-              if (prop in allowedDocumentMethods) {
-                return allowedDocumentMethods[prop];
-              }
+              } as any;
+              if (prop in allowed) return allowed[prop];
               throw new Error(`Access to document property "${prop}" is not allowed.`);
             },
           },
         );
-
         await ctx.runjs(code, { window: safeWindow, document: safeDocument });
       },
     },

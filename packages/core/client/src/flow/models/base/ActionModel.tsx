@@ -215,15 +215,216 @@ export class RecordActionModel<T extends DefaultStructure = DefaultStructure> ex
 export class JSCollectionActionModel extends CollectionActionModel {}
 
 JSCollectionActionModel.define({
-  label: escapeT('JS action'),
+  label: escapeT('JavaScript action'),
   sort: 9999,
 });
 
 export class JSRecordActionModel extends RecordActionModel {}
 
 JSRecordActionModel.define({
-  label: escapeT('JS action'),
+  label: escapeT('JavaScript action'),
   sort: 9999,
+});
+
+JSCollectionActionModel.registerFlow({
+  key: 'clickSettings',
+  on: 'click',
+  title: escapeT('Click settings'),
+  steps: {
+    runJs: {
+      title: escapeT('Write JavaScript'),
+      uiSchema: {
+        code: {
+          type: 'string',
+          title: escapeT('Write JavaScript'),
+          'x-component': 'CodeEditor',
+          'x-component-props': {
+            minHeight: '320px',
+            theme: 'light',
+            enableLinter: true,
+          },
+        },
+      },
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: '70%',
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          code: `/**
+ * JS Collection Action 示例
+ * 可用上下文：
+ *  - ctx.collection  当前集合
+ *  - ctx.resource    集合资源（可刷新、取选中行等）
+ *  - ctx.selectedRows / ctx.selectedRowKeys  已选择的数据
+ *  - ctx.message     消息提示（success/warning/error）
+ */
+const rows = ctx.selectedRows || ctx.resource?.getSelectedRows?.() || [];
+if (!rows.length) {
+  ctx.message.warning('请选择数据');
+} else {
+  ctx.message.success('已选择 ' + rows.length + ' 条');
+}
+`,
+        };
+      },
+      async handler(ctx, params) {
+        const { code = '' } = params || {};
+        // 暴露集合级辅助属性（若可获取）
+        ctx.defineProperty('selectedRows', {
+          get: () => ctx.resource?.getSelectedRows?.() || [],
+          cache: false,
+        });
+        ctx.defineProperty('selectedRowKeys', {
+          get: () =>
+            (ctx.resource?.getSelectedRows?.() || []).map((row) =>
+              ctx.collection ? row[ctx.collection.filterTargetKey] : row?.id,
+            ),
+          cache: false,
+        });
+        // 快捷刷新：优先刷新当前区块的资源
+        ctx.defineMethod('refresh', async () => {
+          if (ctx.blockModel?.resource?.refresh) {
+            await ctx.blockModel.resource.refresh();
+          } else if (ctx.resource?.refresh) {
+            await ctx.resource.refresh();
+          }
+        });
+
+        // 安全 window/document 代理
+        const safeWindow = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowedGlobals = {
+                setTimeout,
+                clearTimeout,
+                setInterval,
+                clearInterval,
+                console,
+                Math,
+                Date,
+              } as Record<string, any>;
+              if (prop in allowedGlobals) return allowedGlobals[prop];
+              throw new Error(`Access to global property "${prop}" is not allowed.`);
+            },
+          },
+        );
+        const safeDocument = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowed = {
+                createElement: document.createElement.bind(document),
+                querySelector: document.querySelector.bind(document),
+                querySelectorAll: document.querySelectorAll.bind(document),
+              } as Record<string, any>;
+              if (prop in allowed) return allowed[prop];
+              throw new Error(`Access to document property "${prop}" is not allowed.`);
+            },
+          },
+        );
+
+        await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+      },
+    },
+  },
+});
+
+JSRecordActionModel.registerFlow({
+  key: 'clickSettings',
+  on: 'click',
+  title: escapeT('Click settings'),
+  steps: {
+    runJs: {
+      title: escapeT('Write JavaScript'),
+      uiSchema: {
+        code: {
+          type: 'string',
+          title: escapeT('Write JavaScript'),
+          'x-component': 'CodeEditor',
+          'x-component-props': {
+            minHeight: '320px',
+            theme: 'light',
+            enableLinter: true,
+          },
+        },
+      },
+      uiMode: {
+        type: 'dialog',
+        props: {
+          width: '70%',
+        },
+      },
+      defaultParams(ctx) {
+        return {
+          code: `/**
+ * JS Record Action 示例
+ * 可用上下文：
+ *  - ctx.collection  当前集合
+ *  - ctx.record      当前记录
+ *  - ctx.filterByTk  当前记录主键
+ *  - ctx.resource    集合资源（可刷新）
+ *  - ctx.message     消息提示
+ */
+if (!ctx.record) {
+  ctx.message.error('未获取到记录');
+} else {
+  ctx.message.success('记录ID：' + (ctx.filterByTk ?? ctx.record?.id));
+}
+`,
+        };
+      },
+      async handler(ctx, params) {
+        const { code = '' } = params || {};
+
+        ctx.defineMethod('refresh', async () => {
+          if (ctx.blockModel?.resource?.refresh) {
+            await ctx.blockModel.resource.refresh();
+          } else if (ctx.resource?.refresh) {
+            await ctx.resource.refresh();
+          }
+        });
+
+        const safeWindow = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowedGlobals = {
+                setTimeout,
+                clearTimeout,
+                setInterval,
+                clearInterval,
+                console,
+                Math,
+                Date,
+              } as Record<string, any>;
+              if (prop in allowedGlobals) return allowedGlobals[prop];
+              throw new Error(`Access to global property "${prop}" is not allowed.`);
+            },
+          },
+        );
+        const safeDocument = new Proxy(
+          {},
+          {
+            get(target, prop: string) {
+              const allowed = {
+                createElement: document.createElement.bind(document),
+                querySelector: document.querySelector.bind(document),
+                querySelectorAll: document.querySelectorAll.bind(document),
+              } as Record<string, any>;
+              if (prop in allowed) return allowed[prop];
+              throw new Error(`Access to document property "${prop}" is not allowed.`);
+            },
+          },
+        );
+
+        await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+      },
+    },
+  },
 });
 
 CollectionActionModel.registerFlow({
