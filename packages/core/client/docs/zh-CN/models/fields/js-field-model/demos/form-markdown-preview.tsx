@@ -3,43 +3,13 @@
  * title: 表单：Markdown 实时预览（JSEditableFieldModel）
  */
 import React from 'react';
-import {
-  Application,
-  CreateFormModel,
-  FilterManager,
-  FormGridModel,
-  FormItemModel,
-  FormSubmitActionModel,
-  JSEditableFieldModel,
-  Plugin,
-} from '@nocobase/client';
+import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import {
-  InputFieldModel,
-  NumberFieldModel,
-  SelectFieldModel,
-  DateTimeFieldModel,
-  JsonFieldModel,
-  TextareaFieldModel,
-  PasswordFieldModel,
-  ColorFieldModel,
-  TimeFieldModel,
-  UploadFieldModel,
-  FormCustomItemModel,
-  MarkdownItemModel,
-  DividerItemModel,
-  FormJavaScriptFieldEntryModel,
-} from '@nocobase/client';
 import { Card } from 'antd';
-
-// 安全注册模型：过滤掉 undefined，避免 registerModels 因无效值报错
-function registerModelsSafe(engine: any, models: Record<string, any>) {
-  const filtered = Object.fromEntries(Object.entries(models).filter(([, v]) => !!v));
-  engine.registerModels(filtered);
-}
+import { registerJsFieldDemoModels } from './utils';
 
 class DemoPlugin extends Plugin {
-  form: CreateFormModel;
+  form: any;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     const dsm = this.flowEngine.context.dataSourceManager;
@@ -54,27 +24,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    registerModelsSafe(this.flowEngine, {
-      CreateFormModel,
-      FormGridModel,
-      FormItemModel,
-      JSEditableFieldModel,
-      FormSubmitActionModel,
-      InputFieldModel,
-      NumberFieldModel,
-      SelectFieldModel,
-      DateTimeFieldModel,
-      JsonFieldModel,
-      TextareaFieldModel,
-      PasswordFieldModel,
-      ColorFieldModel,
-      TimeFieldModel,
-      UploadFieldModel,
-      FormCustomItemModel,
-      MarkdownItemModel,
-      DividerItemModel,
-      FormJavaScriptFieldEntryModel,
-    });
+    await registerJsFieldDemoModels(this.flowEngine);
 
     this.form = this.flowEngine.createModel({
       use: 'CreateFormModel',
@@ -128,7 +78,7 @@ mk?.addEventListener('input', ()=> { ctx.setValue(mk.value); pv.innerHTML = md(m
         },
         actions: [{ use: 'FormSubmitActionModel', stepParams: { buttonSettings: { general: { title: 'Submit' } } } }],
       },
-    }) as CreateFormModel;
+    });
 
     this.form.context.defineProperty('filterManager', { value: new FilterManager(this.form) });
 

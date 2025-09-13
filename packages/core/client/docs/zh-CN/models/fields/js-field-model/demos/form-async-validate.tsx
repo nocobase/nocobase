@@ -3,44 +3,14 @@
  * title: 表单：异步校验（JSEditableFieldModel + mock REST）
  */
 import React from 'react';
-import {
-  Application,
-  CreateFormModel,
-  FilterManager,
-  FormGridModel,
-  FormItemModel,
-  FormSubmitActionModel,
-  JSEditableFieldModel,
-  Plugin,
-} from '@nocobase/client';
+import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import {
-  InputFieldModel,
-  NumberFieldModel,
-  SelectFieldModel,
-  DateTimeFieldModel,
-  JsonFieldModel,
-  TextareaFieldModel,
-  PasswordFieldModel,
-  ColorFieldModel,
-  TimeFieldModel,
-  UploadFieldModel,
-  FormCustomItemModel,
-  MarkdownItemModel,
-  DividerItemModel,
-  FormJavaScriptFieldEntryModel,
-} from '@nocobase/client';
 import { Card } from 'antd';
 import { api } from './api';
-
-// 安全注册模型：过滤掉 undefined，避免 registerModels 因无效值报错
-function registerModelsSafe(engine: any, models: Record<string, any>) {
-  const filtered = Object.fromEntries(Object.entries(models).filter(([, v]) => !!v));
-  engine.registerModels(filtered);
-}
+import { registerJsFieldDemoModels } from './utils';
 
 class DemoPlugin extends Plugin {
-  form: CreateFormModel;
+  form: any;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.context.defineProperty('api', { value: api });
@@ -56,27 +26,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    registerModelsSafe(this.flowEngine, {
-      CreateFormModel,
-      FormGridModel,
-      FormItemModel,
-      JSEditableFieldModel,
-      FormSubmitActionModel,
-      InputFieldModel,
-      NumberFieldModel,
-      SelectFieldModel,
-      DateTimeFieldModel,
-      JsonFieldModel,
-      TextareaFieldModel,
-      PasswordFieldModel,
-      ColorFieldModel,
-      TimeFieldModel,
-      UploadFieldModel,
-      FormCustomItemModel,
-      MarkdownItemModel,
-      DividerItemModel,
-      FormJavaScriptFieldEntryModel,
-    });
+    await registerJsFieldDemoModels(this.flowEngine);
 
     this.form = this.flowEngine.createModel({
       use: 'CreateFormModel',
@@ -129,7 +79,7 @@ input?.addEventListener('blur', async () => {
         },
         actions: [{ use: 'FormSubmitActionModel', stepParams: { buttonSettings: { general: { title: 'Submit' } } } }],
       },
-    }) as CreateFormModel;
+    });
 
     this.form.context.defineProperty('filterManager', { value: new FilterManager(this.form) });
 

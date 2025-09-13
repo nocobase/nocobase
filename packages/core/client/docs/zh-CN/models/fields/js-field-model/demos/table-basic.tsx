@@ -3,33 +3,15 @@
  * title: 表格列：按值着色渲染（JSFieldModel）
  */
 import React from 'react';
-import {
-  Application,
-  FilterManager,
-  Plugin,
-  ReadPrettyFieldModel,
-  TableActionsColumnModel,
-  TableBlockModel,
-  TableColumnModel,
-  JSFieldModel,
-  // Display field models for default bindings
-  InputReadPrettyFieldModel,
-  NumberReadPrettyFieldModel,
-  DateTimeReadPrettyFieldModel,
-  JsonReadPrettyFieldModel,
-  MarkdownReadPrettyFieldModel,
-  // Column groups
-  TableAssociationFieldGroupModel,
-  TableCustomColumnModel,
-  TableJavaScriptFieldEntryModel,
-} from '@nocobase/client';
+import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { registerJsFieldDemoModels } from './utils';
 import { Card } from 'antd';
 import { api } from './api';
 import { MockFlowModelRepository } from '@nocobase/client';
 
 class DemoPlugin extends Plugin {
-  table!: TableBlockModel;
+  table: any;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-basic'));
@@ -48,23 +30,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    this.flowEngine.registerModels({
-      TableBlockModel,
-      TableColumnModel,
-      TableActionsColumnModel,
-      ReadPrettyFieldModel,
-      JSFieldModel,
-      // display field models
-      InputReadPrettyFieldModel,
-      NumberReadPrettyFieldModel,
-      DateTimeReadPrettyFieldModel,
-      JsonReadPrettyFieldModel,
-      MarkdownReadPrettyFieldModel,
-      // groups
-      TableAssociationFieldGroupModel,
-      TableCustomColumnModel,
-      TableJavaScriptFieldEntryModel,
-    });
+    await registerJsFieldDemoModels(this.flowEngine);
 
     this.table = this.flowEngine.createModel({
       use: 'TableBlockModel',
@@ -114,7 +80,7 @@ ctx.element.innerHTML =
           },
         ],
       },
-    }) as TableBlockModel;
+    });
 
     // 提供 filterManager，避免刷新流程绑定时报错
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });

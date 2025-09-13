@@ -3,44 +3,14 @@
  * title: 表单：综合示例（多个 JS 可编辑字段联动 + 校验 + 远程建议 + 计算）
  */
 import React from 'react';
-import {
-  Application,
-  CreateFormModel,
-  FilterManager,
-  FormGridModel,
-  FormItemModel,
-  FormSubmitActionModel,
-  JSEditableFieldModel,
-  JSFieldModel,
-  Plugin,
-} from '@nocobase/client';
+import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import {
-  InputFieldModel,
-  NumberFieldModel,
-  SelectFieldModel,
-  JsonFieldModel,
-  TextareaFieldModel,
-  PasswordFieldModel,
-  ColorFieldModel,
-  TimeFieldModel,
-  UploadFieldModel,
-  FormCustomItemModel,
-  MarkdownItemModel,
-  DividerItemModel,
-  FormJavaScriptFieldEntryModel,
-} from '@nocobase/client';
 import { Card } from 'antd';
 import { api } from './api';
-
-// 安全注册模型：过滤掉 undefined，避免 registerModels 因无效值报错
-function registerModelsSafe(engine: any, models: Record<string, any>) {
-  const filtered = Object.fromEntries(Object.entries(models).filter(([, v]) => !!v));
-  engine.registerModels(filtered);
-}
+import { registerJsFieldDemoModels } from './utils';
 
 class DemoPlugin extends Plugin {
-  form!: CreateFormModel;
+  form: any;
   async load() {
     this.flowEngine.flowSettings.enable();
     this.flowEngine.context.defineProperty('api', { value: api });
@@ -67,27 +37,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    registerModelsSafe(this.flowEngine, {
-      CreateFormModel,
-      FormGridModel,
-      FormItemModel,
-      JSEditableFieldModel,
-      JSFieldModel,
-      FormSubmitActionModel,
-      InputFieldModel,
-      NumberFieldModel,
-      SelectFieldModel,
-      JsonFieldModel,
-      TextareaFieldModel,
-      PasswordFieldModel,
-      ColorFieldModel,
-      TimeFieldModel,
-      UploadFieldModel,
-      FormCustomItemModel,
-      MarkdownItemModel,
-      DividerItemModel,
-      FormJavaScriptFieldEntryModel,
-    });
+    await registerJsFieldDemoModels(this.flowEngine);
 
     const calcTotalJS = `function calc(){const up=Number(ctx.form?.getFieldValue?.(['unitPrice'])||0);const qty=Number(ctx.form?.getFieldValue?.(['quantity'])||0);const d=Number(ctx.form?.getFieldValue?.(['discount'])||0);const t=Math.max(0,up*qty*(1-d/100));ctx.form?.setFieldValue?.(['total'],t);}calc();`;
 
@@ -118,7 +68,7 @@ class DemoPlugin extends Plugin {
 '<option value="CN" '+(cur==='CN'?'selected':'')+'>中国 (+86)</option>'+\
 '<option value="US" '+(cur==='US'?'selected':'')+'>美国 (+1)</option>'+\
 '<option value="DE" '+(cur==='DE'?'selected':'')+'>德国 (+49)</option>'+\
-'</select>';const el=document.getElementById('cty');el?.addEventListener('change',()=>{ctx.setValue(el.value);const p=map[el.value];const old=String(ctx.form?.getFieldValue?.(['phone'])||'').replace(/^\+\d+\s*/,'');ctx.form?.setFieldValue?.(['phone'],p+' '+old);});`,
+'</select>';const el=document.getElementById('cty');el?.addEventListener('change',()=>{ctx.setValue(el.value);const p=map[el.value];const old=String(ctx.form?.getFieldValue?.(['phone'])||'').replace(/^[+][0-9]+ */,'');ctx.form?.setFieldValue?.(['phone'],p+' '+old);});`,
                         },
                       },
                     },
@@ -334,7 +284,7 @@ class DemoPlugin extends Plugin {
         },
         actions: [{ use: 'FormSubmitActionModel', stepParams: { buttonSettings: { general: { title: 'Submit' } } } }],
       },
-    }) as CreateFormModel;
+    });
 
     this.form.context.defineProperty('filterManager', { value: new FilterManager(this.form) });
 

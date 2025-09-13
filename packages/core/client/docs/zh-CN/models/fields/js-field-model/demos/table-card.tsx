@@ -3,30 +3,15 @@
  * title: 表格列：摘要卡片（JSFieldModel）
  */
 import React from 'react';
-import {
-  Application,
-  FilterManager,
-  Plugin,
-  ReadPrettyFieldModel,
-  TableBlockModel,
-  TableColumnModel,
-  JSFieldModel,
-  InputReadPrettyFieldModel,
-  NumberReadPrettyFieldModel,
-  DateTimeReadPrettyFieldModel,
-  JsonReadPrettyFieldModel,
-  MarkdownReadPrettyFieldModel,
-  TableAssociationFieldGroupModel,
-  TableCustomColumnModel,
-  TableJavaScriptFieldEntryModel,
-} from '@nocobase/client';
+import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { registerJsFieldDemoModels } from './utils';
 import { Card } from 'antd';
 import { api } from './api';
 import { MockFlowModelRepository } from '@nocobase/client';
 
 class DemoPlugin extends Plugin {
-  table!: TableBlockModel;
+  table: any;
   async load() {
     this.flowEngine.flowSettings.enable();
     this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-card'));
@@ -45,20 +30,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    this.flowEngine.registerModels({
-      TableBlockModel,
-      TableColumnModel,
-      ReadPrettyFieldModel,
-      JSFieldModel,
-      InputReadPrettyFieldModel,
-      NumberReadPrettyFieldModel,
-      DateTimeReadPrettyFieldModel,
-      JsonReadPrettyFieldModel,
-      MarkdownReadPrettyFieldModel,
-      TableAssociationFieldGroupModel,
-      TableCustomColumnModel,
-      TableJavaScriptFieldEntryModel,
-    });
+    await registerJsFieldDemoModels(this.flowEngine);
 
     this.table = this.flowEngine.createModel({
       use: 'TableBlockModel',
@@ -100,7 +72,7 @@ ctx.element.innerHTML = [
           },
         ],
       },
-    }) as TableBlockModel;
+    });
 
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });
 

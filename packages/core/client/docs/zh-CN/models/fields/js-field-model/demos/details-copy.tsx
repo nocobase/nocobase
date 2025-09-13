@@ -3,20 +3,11 @@
  * title: 详情：复制到剪贴板（JSFieldModel）
  */
 import React from 'react';
-import {
-  Application,
-  Plugin,
-  DetailsBlockModel,
-  DetailsGridModel,
-  DetailsItemModel,
-  JSFieldModel,
-  ReadPrettyFieldModel,
-  FilterManager,
-} from '@nocobase/client';
+import { Application, Plugin, FilterManager, DetailsBlockModel } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
-import { DetailsJavaScriptFieldEntryModel } from '@nocobase/client';
 import { Card } from 'antd';
 import { api } from './api';
+import { registerJsFieldDemoModels } from './utils';
 
 class DemoPlugin extends Plugin {
   details: DetailsBlockModel;
@@ -36,22 +27,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    this.flowEngine.registerModels({
-      DetailsBlockModel,
-      DetailsGridModel,
-      DetailsItemModel,
-      JSFieldModel,
-      ReadPrettyFieldModel,
-      InputReadPrettyFieldModel: (await import('@nocobase/client')).InputReadPrettyFieldModel,
-      NumberReadPrettyFieldModel: (await import('@nocobase/client')).NumberReadPrettyFieldModel,
-      DateTimeReadPrettyFieldModel: (await import('@nocobase/client')).DateTimeReadPrettyFieldModel,
-      JsonReadPrettyFieldModel: (await import('@nocobase/client')).JsonReadPrettyFieldModel,
-      MarkdownReadPrettyFieldModel: (await import('@nocobase/client')).MarkdownReadPrettyFieldModel,
-      DetailsCustomItemModel: (await import('@nocobase/client')).DetailsCustomItemModel,
-      MarkdownItemModel: (await import('@nocobase/client')).MarkdownItemModel,
-      DividerItemModel: (await import('@nocobase/client')).DividerItemModel,
-      DetailsJavaScriptFieldEntryModel,
-    } as any);
+    await registerJsFieldDemoModels(this.flowEngine);
 
     this.details = this.flowEngine.createModel({
       use: 'DetailsBlockModel',
@@ -92,7 +68,7 @@ document.getElementById('copy')?.addEventListener('click', async () => {
           },
         },
       },
-    }) as DetailsBlockModel;
+    });
 
     this.details.context.defineProperty('filterManager', { value: new FilterManager(this.details) });
 
