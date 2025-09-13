@@ -126,22 +126,9 @@ const Preview = (props) => {
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
-  static supportedFieldInterfaces = [
-    'url',
-    'attachment',
-    'attachmentURL',
-    'm2m',
-    'm2o',
-    'o2o',
-    'o2m',
-    'oho',
-    'obo',
-    'mbm',
-  ];
-
   render(): any {
     const { value, titleField } = this.props;
-    if (titleField) {
+    if (titleField && this.collectionField?.targetCollection?.template !== 'file') {
       return castArray(value).flatMap((v, idx) => {
         const content = v?.[titleField] ? (
           <Preview key={idx} {...this.props} value={castArray(v?.[titleField])} />
@@ -160,6 +147,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
 DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
+  title: escapeT('Preview Settings'),
   steps: {
     size: {
       title: escapeT('Size'),

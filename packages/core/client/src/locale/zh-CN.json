@@ -1348,5 +1348,6 @@
   "Preview field component": "预览组件",
   "AssociationField component": "关系字段组件",
   "Title field component": "标题字段组件",
-  "Display Field settings":"显示设置"
+  "Display Field settings":"显示设置",
+  "Preview Settings":"预览设置"
 }
