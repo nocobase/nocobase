@@ -11,9 +11,9 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
-export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayDateTimeFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = [
     'date',
     'datetimeNoTz',
@@ -22,8 +22,8 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
     'updatedAt',
     'unixTimestamp',
   ];
-  public render() {
-    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime, utc, value } = this.props;
+  public renderDisplayValue(value) {
+    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     let formattedValue = '';
     if (value) {
@@ -34,7 +34,7 @@ export class DateTimeReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-DateTimeReadPrettyFieldModel.registerFlow({
+DisplayDateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
   sort: 1000,
   title: tval('Datetime settings'),
@@ -59,7 +59,7 @@ DateTimeReadPrettyFieldModel.registerFlow({
 });
 
 DisplayItemModel.bindModelToInterface(
-  'DateTimeReadPrettyFieldModel',
+  'DisplayDateTimeFieldModel',
   ['date', 'datetimeNoTz', 'createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
   {
     isDefault: true,

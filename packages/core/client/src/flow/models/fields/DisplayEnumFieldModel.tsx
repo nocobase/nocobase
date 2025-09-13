@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { Tag } from 'antd';
+import { Tag, Checkbox } from 'antd';
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
 interface FieldNames {
   value: string;
@@ -41,28 +42,49 @@ const fieldNames = {
   color: 'color',
 };
 
-export class SelectReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayEnumFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'];
 
-  // @reactive
-  public render() {
-    const { options = [], value } = this.props;
+  public renderDisplayValue(value) {
+    const { options = [] } = this.props;
     const currentOptions = getCurrentOptions(value, options, fieldNames);
-    const content: any =
-      value &&
-      currentOptions.map((option, index) => (
-        <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
-          {option[fieldNames.label]}
-        </Tag>
-      ));
-    return content;
+
+    if (!value || !currentOptions.length) {
+      return null;
+    }
+
+    return currentOptions.map((option) => (
+      <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
+        {option[fieldNames.label]} {/* 这里可以是 string 或 ReactNode */}
+      </Tag>
+    ));
   }
 }
-
+DisplayEnumFieldModel.define({
+  label: escapeT('Select'),
+});
 DisplayItemModel.bindModelToInterface(
-  'SelectReadPrettyFieldModel',
+  'DisplayEnumFieldModel',
   ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'],
   {
     isDefault: true,
   },
 );
+
+DisplayItemModel.bindModelToInterface('DisplayEnumFieldModel', ['checkbox'], {
+  isDefault: true,
+  defaultProps: (ctx) => {
+    return {
+      options: [
+        {
+          label: ctx.t('Yes'),
+          value: true,
+        },
+        {
+          label: ctx.t('No'),
+          value: false,
+        },
+      ],
+    };
+  },
+});

@@ -10,21 +10,20 @@
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { MarkdownReadPretty } from '../../../internal/components/MarkdownDisplay/MarkdownReadPretty';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
+import { FieldModel } from '../base/FieldModel';
 
-export class RichTextReadPrettyFieldModel extends ReadPrettyFieldModel {
-  public static readonly supportedFieldInterfaces = ['richText'];
-  // @reactive
+export class MarkdownReadPrettyFieldModel extends FieldModel {
+  public static readonly supportedFieldInterfaces = ['markdown'];
   public render() {
     const { textOnly = true, value } = this.props;
-    return <MarkdownReadPretty textOnly={textOnly} value={value} />;
+    return <DisplayMarkdown textOnly={textOnly} value={value} />;
   }
 }
 
-RichTextReadPrettyFieldModel.registerFlow({
-  key: 'richTextSettings',
-  title: tval('Rich text settings'),
+MarkdownReadPrettyFieldModel.registerFlow({
+  key: 'markdownSettings',
+  title: tval('Markdown settings'),
   sort: 200,
   steps: {
     displayMode: {
@@ -33,6 +32,6 @@ RichTextReadPrettyFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('RichTextReadPrettyFieldModel', ['richText'], {
+DisplayItemModel.bindModelToInterface('MarkdownReadPrettyFieldModel', ['markdown', 'richText'], {
   isDefault: true,
 });

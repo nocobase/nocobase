@@ -1,50 +1,9 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowModel, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
-import { FormItemModel } from '../../../blocks/form/FormItemModel';
-import { ObjectNester } from '../../AssociationFieldModel/SubFormFieldModel';
-import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
-
-export class ObjectDetailAssociationFieldModel extends ReadPrettyAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
-
-  onInit(options) {
-    super.onInit(options);
-    this.context.defineProperty('collection', {
-      get: () => this.collectionField.targetCollection,
-    });
-    this.context.defineProperty('prefixFieldPath', {
-      get: () => {
-        return (this.parent as FormItemModel).fieldPath;
-      },
-    });
-  }
-  public render() {
-    return <ObjectNester {...this.props} />;
-  }
-}
-
-ObjectDetailAssociationFieldModel.define({
-  label: escapeT('Sub-detail'),
-  createModelOptions: {
-    use: 'ObjectDetailAssociationFieldModel',
-    subModels: {
-      grid: {
-        use: 'DetailsGridModel',
-      },
-    },
-  },
-});
+import { FormItemModel } from '../../blocks/form/FormItemModel';
+import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
 
 const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
@@ -88,7 +47,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   );
 };
 
-export class ArrayDetailAssociationFieldModel extends ReadPrettyAssociationFieldModel {
+export class DisplaySubListFieldModel extends DisplayAssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
   onInit(options) {
     super.onInit(options);
@@ -106,10 +65,10 @@ export class ArrayDetailAssociationFieldModel extends ReadPrettyAssociationField
   }
 }
 
-ArrayDetailAssociationFieldModel.define({
+DisplaySubListFieldModel.define({
   label: escapeT('Sub-detail'),
   createModelOptions: {
-    use: 'ArrayDetailAssociationFieldModel',
+    use: 'DisplaySubListFieldModel',
     subModels: {
       grid: {
         use: 'DetailsGridModel',
@@ -118,13 +77,4 @@ ArrayDetailAssociationFieldModel.define({
   },
 });
 
-DisplayItemModel.bindModelToInterface('ObjectDetailAssociationFieldModel', [
-  'm2o',
-  'o2o',
-  'oho',
-  'obo',
-  'updatedBy',
-  'createdBy',
-]);
-
-DisplayItemModel.bindModelToInterface('ArrayDetailAssociationFieldModel', ['m2m', 'o2m', 'mbm']);
+DisplayItemModel.bindModelToInterface('DisplaySubListFieldModel', ['m2m', 'o2m', 'mbm']);

@@ -15,7 +15,6 @@ import {
   EditableItemModel,
   FilterableItemModel,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -45,7 +44,7 @@ export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any =
-    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
+    (currentModel.subModels?.field as FlowModel)?.subModels?.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
@@ -53,10 +52,11 @@ export function LabelByField(props) {
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
-  fieldModel.setProps({ value: labelValue });
+  const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
+  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>
-      {labelValue ? fieldModel.render() : tval('N/A')}
+      {labelValue ? fieldModel.render() : 'N/A'}
     </span>
   );
 }

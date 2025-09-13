@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ReadPrettyAssociationFieldModel';
-export * from './TableReadPrettyAssociationFieldModel';
-export * from './TagReadPrettyAssociationFieldModel';
-export * from './SubDetailReadPrettyFieldModel';
+export * from './DisplaySubTableFieldModel';
+export * from './DisplaySubDetailFieldModel';
+export * from './DisplaySubListFieldModel';

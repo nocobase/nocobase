@@ -11,7 +11,7 @@ import React from 'react';
 import * as math from 'mathjs';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { isNum } from '@formily/shared';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
@@ -21,11 +21,10 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-export class PercentReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayPercentFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['percent'];
-  // @reactive
-  public render() {
-    const { prefix = '', suffix = '', value } = this.props;
+  public renderDisplayValue(value) {
+    const { prefix = '', suffix = '' } = this.props;
 
     const content = toValue(value, (v) => v * 100);
     return (
@@ -38,6 +37,6 @@ export class PercentReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-DisplayItemModel.bindModelToInterface('PercentReadPrettyFieldModel', ['percent'], {
+DisplayItemModel.bindModelToInterface('DisplayPercentFieldModel', ['percent'], {
   isDefault: true,
 });
