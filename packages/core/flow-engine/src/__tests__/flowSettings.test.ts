@@ -101,9 +101,11 @@ vi.mock('antd', () => {
 describe('FlowSettings', () => {
   let flowSettings: FlowSettings;
   let consoleSpy: any;
+  let engine: FlowEngine;
 
   beforeEach(() => {
-    flowSettings = new FlowSettings();
+    engine = new FlowEngine();
+    flowSettings = new FlowSettings(engine);
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
