@@ -212,9 +212,9 @@ function clearInputValue(value: any) {
  */
 interface FilterItemProps {
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
 }
 

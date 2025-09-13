@@ -9,9 +9,9 @@
 
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
-export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayTextFieldModel extends InteractiveDisplayFieldModel {
   static supportedFieldInterfaces = [
     'input',
     'email',
@@ -23,10 +23,8 @@ export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
     'nanoid',
   ] as any;
 
-  // @reactive
-  public render() {
-    const { prefix, suffix, value } = this.props;
-
+  public renderDisplayValue(value) {
+    const { prefix, suffix } = this.props;
     return (
       <span>
         {prefix}
@@ -36,11 +34,11 @@ export class InputReadPrettyFieldModel extends ReadPrettyFieldModel {
     );
   }
 }
-InputReadPrettyFieldModel.define({
+DisplayTextFieldModel.define({
   label: escapeT('Text'),
 });
 DisplayItemModel.bindModelToInterface(
-  'InputReadPrettyFieldModel',
+  'DisplayTextFieldModel',
   ['input', 'email', 'phone', 'uuid', 'attachmentURL', 'textarea', 'time', 'nanoid'],
   {
     isDefault: true,

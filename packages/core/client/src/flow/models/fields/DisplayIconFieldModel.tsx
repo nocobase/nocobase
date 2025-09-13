@@ -9,17 +9,16 @@
 
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
-import { Icon } from '../../../../icon';
+import { Icon } from '../../../icon';
+import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
 
-export class IconReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayIconFieldModel extends InteractiveDisplayFieldModel {
   public static readonly supportedFieldInterfaces = ['icon'];
-  public render() {
-    const { value } = this.props;
+  public renderDisplayValue(value) {
     return <Icon type={value} />;
   }
 }
 
-DisplayItemModel.bindModelToInterface('IconReadPrettyFieldModel', ['icon'], {
+DisplayItemModel.bindModelToInterface('DisplayIconFieldModel', ['icon'], {
   isDefault: true,
 });

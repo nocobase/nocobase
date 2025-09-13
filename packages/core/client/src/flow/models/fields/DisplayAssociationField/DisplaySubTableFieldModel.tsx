@@ -11,8 +11,8 @@ import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton, DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
-import { TableColumnModel } from '../../../blocks/table/TableColumnModel';
-import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
+import { TableColumnModel } from '../../blocks/table/TableColumnModel';
+import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -33,7 +33,7 @@ const AddFieldColumn = ({ model }) => {
     </AddSubModelButton>
   );
 };
-export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationFieldModel {
+export class DisplaySubTableFieldModel extends DisplayAssociationFieldModel {
   get collection() {
     return this.context.collectionField.targetCollection;
   }
@@ -87,7 +87,7 @@ export class TableReadPrettyAssociationFieldModel extends ReadPrettyAssociationF
   }
 }
 
-TableReadPrettyAssociationFieldModel.registerFlow({
+DisplaySubTableFieldModel.registerFlow({
   key: 'TableAssociation',
   steps: {
     init: {
@@ -98,8 +98,8 @@ TableReadPrettyAssociationFieldModel.registerFlow({
   },
 });
 
-TableReadPrettyAssociationFieldModel.define({
+DisplaySubTableFieldModel.define({
   label: escapeT('Sub-table'),
 });
 
-DisplayItemModel.bindModelToInterface('TableReadPrettyAssociationFieldModel', ['m2m', 'o2m', 'mbm']);
+DisplayItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);

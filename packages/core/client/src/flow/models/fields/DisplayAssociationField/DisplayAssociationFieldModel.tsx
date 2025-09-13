@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { updateOpenViewStepParams } from '../../../../flows/openViewFlow';
-import { ReadPrettyFieldModel } from '../ReadPrettyFieldModel';
+import { updateOpenViewStepParams } from '../../../flows/openViewFlow';
+import { FieldModel } from '../../base/FieldModel';
 
-export class ReadPrettyAssociationFieldModel extends ReadPrettyFieldModel {
+export class DisplayAssociationFieldModel extends FieldModel {
   public static readonly supportedFieldInterfaces = null;
 
   onInit(options) {

@@ -8,7 +8,7 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
+import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
@@ -125,30 +125,29 @@ const Preview = (props) => {
     </Space>
   );
 };
-export class PreviewReadPrettyFieldModel extends ReadPrettyFieldModel {
-  static supportedFieldInterfaces = [
-    'url',
-    'attachment',
-    'attachmentURL',
-    'm2m',
-    'm2o',
-    'o2o',
-    'o2m',
-    'oho',
-    'obo',
-    'mbm',
-  ];
+export class DisplayPreviewFieldModel extends FieldModel {
+  render(): any {
+    const { value, titleField } = this.props;
+    if (titleField && this.collectionField?.targetCollection?.template !== 'file') {
+      return castArray(value).flatMap((v, idx) => {
+        const content = v?.[titleField] ? (
+          <Preview key={idx} {...this.props} value={castArray(v?.[titleField])} />
+        ) : (
+          <span key={idx}>N/A</span>
+        );
 
-  // @reactive
-  public render() {
-    const { value } = this.props;
-    return <Preview {...this.props} value={castArray(value)} />;
+        return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
+      });
+    } else {
+      return <Preview {...this.props} value={castArray(value)} />;
+    }
   }
 }
 
-PreviewReadPrettyFieldModel.registerFlow({
+DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
+  title: escapeT('Preview Settings'),
   steps: {
     size: {
       title: escapeT('Size'),
@@ -209,12 +208,12 @@ PreviewReadPrettyFieldModel.registerFlow({
   },
 });
 
-PreviewReadPrettyFieldModel.define({
+DisplayPreviewFieldModel.define({
   label: escapeT('Preview'),
 });
 
 DisplayItemModel.bindModelToInterface(
-  'PreviewReadPrettyFieldModel',
+  'DisplayPreviewFieldModel',
   ['url', 'attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
   {
     isDefault: true,

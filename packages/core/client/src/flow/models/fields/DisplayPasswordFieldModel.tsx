@@ -9,9 +9,9 @@
 
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { FieldModel } from '../base/FieldModel';
 
-export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayPasswordFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = ['password'];
 
   public render() {
@@ -23,6 +23,6 @@ export class PasswordReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-DisplayItemModel.bindModelToInterface('PasswordReadPrettyFieldModel', ['password'], {
+DisplayItemModel.bindModelToInterface('DisplayPasswordFieldModel', ['password'], {
   isDefault: true,
 });

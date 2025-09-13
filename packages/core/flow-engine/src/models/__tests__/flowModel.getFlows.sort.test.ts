@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test, beforeEach } from 'vitest';
-import { FlowModel } from '../flowModel';
+import { FlowModel } from '@nocobase/flow-engine';
 
 describe('FlowModel.getFlows sorting and getAutoFlows order', () => {
   let TestFlowModel: typeof FlowModel;

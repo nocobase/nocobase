@@ -11,7 +11,7 @@ import React from 'react';
 import { useParseMarkdown, convertToText } from './util';
 import { useMarkdownStyles } from './style';
 
-export const MarkdownReadPretty = (props) => {
+export const DisplayMarkdown = (props) => {
   const { textOnly } = props;
   const markdownClass = useMarkdownStyles();
   const { html = '' } = useParseMarkdown(props.value);

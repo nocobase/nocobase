@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { FlowModel } from '../models/flowModel';
+import { FlowModel } from '@nocobase/flow-engine';
 
 describe('GlobalFlowRegistry (class-level flows)', () => {
   class BaseModel extends FlowModel {}

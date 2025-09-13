@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ReadPrettyFieldModel, TableColumnModel } from '@nocobase/client';
+import { FieldModel, TableColumnModel } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { MapComponent } from '../../components/MapComponent';
 
@@ -20,7 +20,7 @@ export const PointReadPretty = (props) => {
   }
   return <MapComponent readonly mapType={mapType} {...props} type={type}></MapComponent>;
 };
-export class MapReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class MapReadPrettyFieldModel extends FieldModel {
   getMapFieldType() {
     return null;
   }

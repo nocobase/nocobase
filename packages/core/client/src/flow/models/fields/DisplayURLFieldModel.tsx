@@ -9,9 +9,9 @@
 
 import React from 'react';
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { ReadPrettyFieldModel } from './ReadPrettyFieldModel';
+import { FieldModel } from '../base/FieldModel';
 
-export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
+export class DisplayURLFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = ['url'];
 
   // @reactive
@@ -26,7 +26,7 @@ export class URLReadPrettyFieldModel extends ReadPrettyFieldModel {
   }
 }
 
-URLReadPrettyFieldModel.define({
+DisplayURLFieldModel.define({
   label: escapeT('URL'),
 });
 

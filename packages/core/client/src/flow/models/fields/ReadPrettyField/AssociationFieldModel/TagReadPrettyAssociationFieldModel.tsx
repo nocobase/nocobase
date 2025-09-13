@@ -13,8 +13,9 @@ import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 import { getUniqueKeyFromCollection } from '../../../../../collection-manager/interfaces/utils';
-import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
+// import { ReadPrettyAssociationFieldModel } from './ReadPrettyAssociationFieldModel';
 import { openViewFlow } from '../../../../flows/openViewFlow';
+import { FieldModel } from '../../../base/FieldModel';
 
 const textItemClass = css`
   display: inline-block;
@@ -71,7 +72,7 @@ const LinkToggleWrapper = ({
   );
 };
 
-export class TagReadPrettyAssociationFieldModel extends ReadPrettyAssociationFieldModel {
+export class TagReadPrettyAssociationFieldModel extends FieldModel {
   public static readonly supportedFieldInterfaces = [
     'm2m',
     'm2o',
