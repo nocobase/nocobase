@@ -17,7 +17,7 @@ export default {
   timestamps: false,
   repository: 'FlowModelRepository',
   model: 'FlowSchemaModel',
-  magicAttribute: 'schema',
+  magicAttribute: 'options',
   fields: [
     {
       type: 'uid',
@@ -30,7 +30,7 @@ export default {
     },
     {
       type: 'json',
-      name: 'schema',
+      name: 'options',
       defaultValue: {},
     },
   ],

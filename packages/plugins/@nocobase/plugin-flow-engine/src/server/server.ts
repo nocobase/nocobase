@@ -163,7 +163,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     const getSourceAndTargetForInsertAdjacentAction = async (ctx: any) => {
       return {
         targetCollection: 'flowModels',
-        targetRecordUK: ctx.request.body?.schema?.['uid'],
+        targetRecordUK: ctx.request.body?.options?.['uid'],
       };
     };
 

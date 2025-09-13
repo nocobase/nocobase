@@ -35,11 +35,11 @@ const callRepositoryMethod = (method, paramsKey: 'resourceIndex' | 'values', opt
 };
 
 function parseInsertAdjacentValues(values) {
-  if (lodash.has(values, 'schema')) {
+  if (lodash.has(values, 'options')) {
     return values;
   }
 
-  return { schema: values, wrap: null };
+  return { options: values, wrap: null };
 }
 
 export const uiSchemaActions = {
@@ -91,9 +91,9 @@ function insertPositionActionBuilder(
     } = ctx.action.params;
 
     const repository = getRepositoryFromCtx(ctx);
-    const { schema, wrap } = parseInsertAdjacentValues(values);
+    const { options, wrap } = parseInsertAdjacentValues(values);
 
-    ctx.body = await repository.insertAdjacent(position || positionFromUser, resourceIndex, schema, {
+    ctx.body = await repository.insertAdjacent(position || positionFromUser, resourceIndex, options, {
       removeParentsIfNoChildren,
       breakRemoveOn,
       wrap,

@@ -230,7 +230,7 @@ export class FlowModelRepository extends Repository {
   nodesToSchema(nodes, rootUid) {
     const nodeAttributeSanitize = (node) => {
       const schema = {
-        ...this.ignoreSchemaProperties(lodash.isPlainObject(node.schema) ? node.schema : JSON.parse(node.schema)),
+        ...this.ignoreSchemaProperties(lodash.isPlainObject(node.options) ? node.options : JSON.parse(node.options)),
         ...lodash.pick(node, [...nodeKeys, 'name']),
         ['uid']: node['uid'],
         ['x-async']: !!node.async,
@@ -301,7 +301,7 @@ export class FlowModelRepository extends Repository {
   }
 
   async emitAfterSaveEvent(s, options) {
-    if (!s?.schema) {
+    if (!s?.options) {
       return;
     }
     const keys = [
@@ -313,7 +313,7 @@ export class FlowModelRepository extends Repository {
     ];
     let r = false;
     for (const key of keys) {
-      if (_.get(s?.schema, key)) {
+      if (_.get(s?.options, key)) {
         r = true;
         break;
       }
@@ -330,7 +330,7 @@ export class FlowModelRepository extends Repository {
     await this.clearXUidPathCache(rootUid, transaction);
     if (!newSchema['properties']) {
       const s = await this.model.findByPk(rootUid, { transaction });
-      s.set('schema', { ...s.toJSON(), ...newSchema });
+      s.set('options', { ...s.toJSON(), ...newSchema });
       await s.save({ transaction, hooks: false });
       await this.emitAfterSaveEvent(s, options);
       if (newSchema['x-server-hooks']) {
@@ -372,7 +372,7 @@ export class FlowModelRepository extends Repository {
       transaction,
     });
 
-    if (!lodash.isEmpty(nodeModel?.get('schema')['x-action-context'])) {
+    if (!lodash.isEmpty(nodeModel?.get('options')['x-action-context'])) {
       return;
     }
 
@@ -559,7 +559,7 @@ export class FlowModelRepository extends Repository {
     // insert schema fist
     await this.database.sequelize.query(
       this.sqlAdapter(
-        `INSERT INTO ${this.flowModelsTableName} ("uid", "name", "schema") VALUES ${nodes
+        `INSERT INTO ${this.flowModelsTableName} ("uid", "name", "options") VALUES ${nodes
           .map((n) => '(?)')
           .join(',')};`,
       ),
@@ -890,8 +890,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
     await nodeModel.update(
       {
-        schema: {
-          ...(nodeModel.get('schema') as any),
+        options: {
+          ...(nodeModel.get('options') as any),
           ...lodash.omit(schema, ['x-async', 'name', 'uid', 'properties']),
         },
       },
@@ -1091,7 +1091,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const db = this.database;
 
     const rawSql = `
-        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as "name", "SchemaTable"."schema" as "schema",
+        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as "name", "SchemaTable"."options" as "options",
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${this.flowModelTreePathTableName} as TreePath
@@ -1121,7 +1121,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const treeTable = this.flowModelTreePathTableName;
 
     const rawSql = `
-        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
+        SELECT "SchemaTable"."uid" as "uid", "SchemaTable"."name" as name, "SchemaTable"."options" as "options" ,
                TreePath.depth as depth,
                NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
         FROM ${treeTable} as TreePath
@@ -1204,7 +1204,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       values: {
         name,
         ['uid']: uid,
-        schema,
+        options: schema,
       },
       transaction,
       context: {
@@ -1265,10 +1265,10 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   static nodeToModel(node) {
-    const { uid: uid, name, schema } = node;
+    const { uid: uid, name, options } = node;
     const model = {
       uid,
-      ...schema,
+      ...options,
     };
     return model;
   }
@@ -1291,12 +1291,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const subModels: Record<string, any> = {};
 
     for (const child of children) {
-      const { subKey, subType } = child.schema;
+      const { subKey, subType } = child.options;
       if (!subKey) continue;
       // 递归处理子节点
       const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
         uid: child['uid'],
-        ...child.schema,
+        ...child.options,
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1329,7 +1329,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 7. 返回最终 model
     return {
       uid: rootNode['uid'],
-      ...rootNode.schema,
+      ...rootNode.options,
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
   }
@@ -1351,8 +1351,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       // @ts-ignore
       await instance.update(
         {
-          schema: {
-            ...(instance.get('schema') as any),
+          options: {
+            ...(instance.get('options') as any),
             ...lodash.omit(node, ['x-async', 'name', 'uid', 'childOptions']),
           },
         },
