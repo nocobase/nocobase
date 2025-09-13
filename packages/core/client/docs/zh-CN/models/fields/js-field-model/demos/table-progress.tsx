@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表格列：按值着色渲染（JSFieldModel）
+ * title: 表格列：进度条样式（JSFieldModel）
  */
 import React from 'react';
 import {
@@ -8,17 +8,14 @@ import {
   FilterManager,
   Plugin,
   ReadPrettyFieldModel,
-  TableActionsColumnModel,
   TableBlockModel,
   TableColumnModel,
   JSFieldModel,
-  // Display field models for default bindings
   InputReadPrettyFieldModel,
   NumberReadPrettyFieldModel,
   DateTimeReadPrettyFieldModel,
   JsonReadPrettyFieldModel,
   MarkdownReadPrettyFieldModel,
-  // Column groups
   TableAssociationFieldGroupModel,
   TableCustomColumnModel,
   TableJavaScriptFieldEntryModel,
@@ -32,7 +29,7 @@ class DemoPlugin extends Plugin {
   table!: TableBlockModel;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
-    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-basic'));
+    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-progress'));
     this.flowEngine.context.defineProperty('api', { value: api });
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
@@ -43,7 +40,6 @@ class DemoPlugin extends Plugin {
       fields: [
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
         { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'status', type: 'string', title: 'Status', interface: 'input' },
         { name: 'score', type: 'double', title: 'Score', interface: 'number' },
       ],
     });
@@ -51,16 +47,13 @@ class DemoPlugin extends Plugin {
     this.flowEngine.registerModels({
       TableBlockModel,
       TableColumnModel,
-      TableActionsColumnModel,
       ReadPrettyFieldModel,
       JSFieldModel,
-      // display field models
       InputReadPrettyFieldModel,
       NumberReadPrettyFieldModel,
       DateTimeReadPrettyFieldModel,
       JsonReadPrettyFieldModel,
       MarkdownReadPrettyFieldModel,
-      // groups
       TableAssociationFieldGroupModel,
       TableCustomColumnModel,
       TableJavaScriptFieldEntryModel,
@@ -71,7 +64,6 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         columns: [
-          // 常规列：Name
           {
             use: 'TableColumnModel',
             stepParams: {
@@ -86,25 +78,26 @@ class DemoPlugin extends Plugin {
               },
             },
           },
-          // JS 列：Status → 彩色标签渲染
           {
             use: 'TableColumnModel',
             stepParams: {
-              fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'status' } },
+              fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'score' } },
             },
             subModels: {
               field: {
                 use: 'JSFieldModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'status' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'score' } },
                   jsSettings: {
                     runJs: {
                       code: `
-const v = String(ctx.value || '').toLowerCase();
-const color = v === 'active' ? '#52c41a' : v === 'pending' ? '#faad14' : '#ff4d4f';
-ctx.element.innerHTML = 
-  '<span style="display:inline-block;padding:0 8px;border-radius:10px;background:'+color+'20;color:'+color+';font-weight:600;">'
-  + (ctx.value ?? '') + '</span>';
+const v = Number(ctx.value ?? 0);
+const pct = Math.max(0, Math.min(100, Math.round(v)));
+ctx.element.innerHTML = [
+  '<div style="width:100%;height:10px;background:#f5f5f5;border-radius:6px;overflow:hidden">',
+  '  <div style="height:100%;width:'+pct+'%;background:'+(pct>70?'#52c41a':pct>40?'#faad14':'#ff4d4f')+';"></div>',
+  '</div>'
+].join('');
                       `.trim(),
                     },
                   },
@@ -116,14 +109,13 @@ ctx.element.innerHTML =
       },
     }) as TableBlockModel;
 
-    // 提供 filterManager，避免刷新流程绑定时报错
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });
 
     this.router.add('root', {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Users（JS 列：Status 彩色标签）">
+          <Card style={{ margin: 12 }} title="Users（JS 列：Score 进度条）">
             <FlowModelRenderer model={this.table} showFlowSettings />
           </Card>
         </FlowEngineProvider>

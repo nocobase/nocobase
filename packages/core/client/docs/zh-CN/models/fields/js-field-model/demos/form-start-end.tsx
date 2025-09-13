@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表单：自定义可编辑输入（JSEditableFieldModel）
+ * title: 表单：开始/结束日期互相约束（两个 JS 字段联动）
  */
 import React from 'react';
 import {
@@ -45,13 +45,13 @@ class DemoPlugin extends Plugin {
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
     dsm.getDataSource('main')!.addCollection({
-      name: 'users',
-      title: 'Users',
+      name: 'events',
+      title: 'Events',
       filterTargetKey: 'id',
       fields: [
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
-        { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'code', type: 'string', title: 'Code', interface: 'input' },
+        { name: 'start', type: 'string', title: 'Start', interface: 'date' },
+        { name: 'end', type: 'string', title: 'End', interface: 'date' },
       ],
     });
 
@@ -61,7 +61,6 @@ class DemoPlugin extends Plugin {
       FormItemModel,
       JSEditableFieldModel,
       FormSubmitActionModel,
-      // editable 常用字段（用于 Fields 菜单可选）
       InputFieldModel,
       NumberFieldModel,
       SelectFieldModel,
@@ -72,7 +71,6 @@ class DemoPlugin extends Plugin {
       ColorFieldModel,
       TimeFieldModel,
       UploadFieldModel,
-      // 自定义项/入口（Others 分组 & JS 可编辑入口）
       FormCustomItemModel,
       MarkdownItemModel,
       DividerItemModel,
@@ -81,55 +79,62 @@ class DemoPlugin extends Plugin {
 
     this.form = this.flowEngine.createModel({
       use: 'CreateFormModel',
-      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'events' } } },
       subModels: {
         grid: {
           use: 'FormGridModel',
           subModels: {
             items: [
-              // Name：不写 JS → 默认 Input
+              // 开始日期：若结束 < 开始，则强制把结束设为开始
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'events', fieldPath: 'start' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                      // 未提供 jsSettings → 默认渲染 Input
+                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'events', fieldPath: 'start' } },
+                      jsSettings: {
+                        runJs: {
+                          code: `
+const v = String(ctx.getValue() ?? '');
+ctx.element.innerHTML = '<input id="s" type="date" value="'+v+'" />';
+const s = document.getElementById('s');
+s?.addEventListener('change', ()=>{
+  ctx.setValue(s.value);
+  const end = String(ctx.form?.getFieldValue?.(['end']) || '');
+  if(end && s.value && end < s.value){ ctx.form?.setFieldValue?.(['end'], s.value); }
+});
+                          `.trim(),
+                        },
+                      },
                     },
                   },
                 },
               },
-              // Code：JS 自定义输入（大写掩码 + 长度限制 + 提示）
+              // 结束日期：强制 end >= start
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'events', fieldPath: 'end' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'events', fieldPath: 'end' } },
                       jsSettings: {
                         runJs: {
                           code: `
-// 自定义输入：自动大写 + 长度限制 8 + 实时提示
 const v = String(ctx.getValue() ?? '');
-ctx.element.innerHTML = [
-  '<div>',
-  '  <input id="js-code" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
-  '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
-  '</div>'
-].join('');
-const el = document.getElementById('js-code');
-el?.addEventListener('input', (e) => {
-  const next = String(e.target.value || '').toUpperCase().slice(0, 8);
-  if (next !== e.target.value) e.target.value = next;
-  ctx.setValue(next);
+ctx.element.innerHTML = '<input id="e" type="date" value="'+v+'" />';
+const e = document.getElementById('e');
+e?.addEventListener('change', ()=>{
+  const start = String(ctx.form?.getFieldValue?.(['start']) || '');
+  if(e.value && start && e.value < start){ e.value = start; }
+  ctx.setValue(e.value);
 });
                           `.trim(),
                         },
@@ -151,7 +156,7 @@ el?.addEventListener('input', (e) => {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Create User（JS 可编辑字段：Code）">
+          <Card style={{ margin: 12 }} title="Event（JS：开始/结束日期联动）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>

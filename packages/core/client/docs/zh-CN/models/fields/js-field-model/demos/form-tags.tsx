@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表单：自定义可编辑输入（JSEditableFieldModel）
+ * title: 表单：标签输入（JSEditableFieldModel，数组值）
  */
 import React from 'react';
 import {
@@ -30,6 +30,7 @@ import {
   DividerItemModel,
   FormJavaScriptFieldEntryModel,
 } from '@nocobase/client';
+import { api } from './api';
 import { Card } from 'antd';
 
 // 安全注册模型：过滤掉 undefined，避免 registerModels 因无效值报错
@@ -42,6 +43,8 @@ class DemoPlugin extends Plugin {
   form: CreateFormModel;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
+    // 注入 APIClient，确保资源创建/请求走 mock 基地址
+    this.flowEngine.context.defineProperty('api', { value: api });
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
     dsm.getDataSource('main')!.addCollection({
@@ -49,9 +52,8 @@ class DemoPlugin extends Plugin {
       title: 'Users',
       filterTargetKey: 'id',
       fields: [
-        { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
-        { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'code', type: 'string', title: 'Code', interface: 'input' },
+        { name: 'id', type: 'bigInt', title: 'ID' },
+        { name: 'tags', type: 'json', title: 'Tags' },
       ],
     });
 
@@ -61,7 +63,6 @@ class DemoPlugin extends Plugin {
       FormItemModel,
       JSEditableFieldModel,
       FormSubmitActionModel,
-      // editable 常用字段（用于 Fields 菜单可选）
       InputFieldModel,
       NumberFieldModel,
       SelectFieldModel,
@@ -72,7 +73,6 @@ class DemoPlugin extends Plugin {
       ColorFieldModel,
       TimeFieldModel,
       UploadFieldModel,
-      // 自定义项/入口（Others 分组 & JS 可编辑入口）
       FormCustomItemModel,
       MarkdownItemModel,
       DividerItemModel,
@@ -87,50 +87,32 @@ class DemoPlugin extends Plugin {
           use: 'FormGridModel',
           subModels: {
             items: [
-              // Name：不写 JS → 默认 Input
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'tags' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                      // 未提供 jsSettings → 默认渲染 Input
-                    },
-                  },
-                },
-              },
-              // Code：JS 自定义输入（大写掩码 + 长度限制 + 提示）
-              {
-                use: 'FormItemModel',
-                stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
-                },
-                subModels: {
-                  field: {
-                    use: 'JSEditableFieldModel',
-                    stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'tags' } },
                       jsSettings: {
                         runJs: {
                           code: `
-// 自定义输入：自动大写 + 长度限制 8 + 实时提示
-const v = String(ctx.getValue() ?? '');
+// 轻量标签：Enter 添加、点击删除，保存为数组
+const arr = Array.isArray(ctx.getValue()) ? ctx.getValue() : [];
 ctx.element.innerHTML = [
   '<div>',
-  '  <input id="js-code" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
-  '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
+  '  <div id="chips" style="margin-bottom:6px"></div>',
+  '  <input id="ipt" style="width:100%;padding:4px 8px" placeholder="输入后回车添加" />',
   '</div>'
 ].join('');
-const el = document.getElementById('js-code');
-el?.addEventListener('input', (e) => {
-  const next = String(e.target.value || '').toUpperCase().slice(0, 8);
-  if (next !== e.target.value) e.target.value = next;
-  ctx.setValue(next);
-});
+const chips = document.getElementById('chips');
+const ipt = document.getElementById('ipt');
+function render(){ chips.innerHTML = (ctx.getValue()||[]).map((t,i)=> '<span data-i="'+i+'" style="display:inline-block;margin:2px;padding:2px 6px;background:#f5f5f5;border-radius:10px;cursor:pointer">'+t+' ✕</span>').join(''); Array.from(chips.children).forEach(el=> el.addEventListener('click',()=>{ const i = Number(el.getAttribute('data-i')); const a = (ctx.getValue()||[]).slice(); a.splice(i,1); ctx.setValue(a); render(); })); }
+ctx.setValue(arr); render();
+ipt?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); const v = ipt.value.trim(); if(v){ const a = (ctx.getValue()||[]).slice(); a.push(v); ctx.setValue(a); ipt.value=''; render(); } } });
                           `.trim(),
                         },
                       },
@@ -151,7 +133,7 @@ el?.addEventListener('input', (e) => {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Create User（JS 可编辑字段：Code）">
+          <Card style={{ margin: 12 }} title="Create User（JS 可编辑：标签输入）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>

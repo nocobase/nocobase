@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表格列：按值着色渲染（JSFieldModel）
+ * title: 表格列：摘要卡片（JSFieldModel）
  */
 import React from 'react';
 import {
@@ -8,17 +8,14 @@ import {
   FilterManager,
   Plugin,
   ReadPrettyFieldModel,
-  TableActionsColumnModel,
   TableBlockModel,
   TableColumnModel,
   JSFieldModel,
-  // Display field models for default bindings
   InputReadPrettyFieldModel,
   NumberReadPrettyFieldModel,
   DateTimeReadPrettyFieldModel,
   JsonReadPrettyFieldModel,
   MarkdownReadPrettyFieldModel,
-  // Column groups
   TableAssociationFieldGroupModel,
   TableCustomColumnModel,
   TableJavaScriptFieldEntryModel,
@@ -31,8 +28,8 @@ import { MockFlowModelRepository } from '@nocobase/client';
 class DemoPlugin extends Plugin {
   table!: TableBlockModel;
   async load() {
-    this.flowEngine.flowSettings.forceEnable();
-    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-basic'));
+    this.flowEngine.flowSettings.enable();
+    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-card'));
     this.flowEngine.context.defineProperty('api', { value: api });
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
@@ -41,26 +38,23 @@ class DemoPlugin extends Plugin {
       title: 'Users',
       filterTargetKey: 'id',
       fields: [
-        { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
-        { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'status', type: 'string', title: 'Status', interface: 'input' },
-        { name: 'score', type: 'double', title: 'Score', interface: 'number' },
+        { name: 'id', type: 'bigInt', title: 'ID' },
+        { name: 'name', type: 'string', title: 'Name' },
+        { name: 'status', type: 'string', title: 'Status' },
+        { name: 'meta', type: 'json', title: 'Meta' },
       ],
     });
 
     this.flowEngine.registerModels({
       TableBlockModel,
       TableColumnModel,
-      TableActionsColumnModel,
       ReadPrettyFieldModel,
       JSFieldModel,
-      // display field models
       InputReadPrettyFieldModel,
       NumberReadPrettyFieldModel,
       DateTimeReadPrettyFieldModel,
       JsonReadPrettyFieldModel,
       MarkdownReadPrettyFieldModel,
-      // groups
       TableAssociationFieldGroupModel,
       TableCustomColumnModel,
       TableJavaScriptFieldEntryModel,
@@ -71,7 +65,6 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         columns: [
-          // 常规列：Name
           {
             use: 'TableColumnModel',
             stepParams: {
@@ -79,32 +72,25 @@ class DemoPlugin extends Plugin {
             },
             subModels: {
               field: {
-                use: 'ReadPrettyFieldModel',
-                stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                },
-              },
-            },
-          },
-          // JS 列：Status → 彩色标签渲染
-          {
-            use: 'TableColumnModel',
-            stepParams: {
-              fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'status' } },
-            },
-            subModels: {
-              field: {
                 use: 'JSFieldModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'status' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
                   jsSettings: {
                     runJs: {
                       code: `
-const v = String(ctx.value || '').toLowerCase();
-const color = v === 'active' ? '#52c41a' : v === 'pending' ? '#faad14' : '#ff4d4f';
-ctx.element.innerHTML = 
-  '<span style="display:inline-block;padding:0 8px;border-radius:10px;background:'+color+'20;color:'+color+';font-weight:600;">'
-  + (ctx.value ?? '') + '</span>';
+const name = String(ctx.value ?? '');
+const status = String(ctx.record?.status ?? '').toLowerCase();
+const city = String(ctx.record?.meta?.city ?? '');
+const dot = status==='active'?'#52c41a':status==='pending'?'#faad14':'#ff4d4f';
+ctx.element.innerHTML = [
+  '<div style="display:flex;align-items:center;gap:8px">',
+  '  <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+dot+'"></span>',
+  '  <div style="line-height:1">',
+  '    <div style="font-weight:600">'+name+'</div>',
+  '    <div style="font-size:12px;color:#999">'+(city||'-')+'</div>',
+  '  </div>',
+  '</div>'
+].join('');
                       `.trim(),
                     },
                   },
@@ -116,14 +102,13 @@ ctx.element.innerHTML =
       },
     }) as TableBlockModel;
 
-    // 提供 filterManager，避免刷新流程绑定时报错
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });
 
     this.router.add('root', {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Users（JS 列：Status 彩色标签）">
+          <Card style={{ margin: 12 }} title="Users（JS 列：摘要卡片）">
             <FlowModelRenderer model={this.table} showFlowSettings />
           </Card>
         </FlowEngineProvider>

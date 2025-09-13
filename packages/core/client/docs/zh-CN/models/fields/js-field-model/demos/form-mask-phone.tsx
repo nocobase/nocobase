@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表单：自定义可编辑输入（JSEditableFieldModel）
+ * title: 表单：手机号掩码输入（JSEditableFieldModel）
  */
 import React from 'react';
 import {
@@ -50,8 +50,7 @@ class DemoPlugin extends Plugin {
       filterTargetKey: 'id',
       fields: [
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
-        { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'code', type: 'string', title: 'Code', interface: 'input' },
+        { name: 'phone', type: 'string', title: 'Phone', interface: 'phone' },
       ],
     });
 
@@ -61,7 +60,6 @@ class DemoPlugin extends Plugin {
       FormItemModel,
       JSEditableFieldModel,
       FormSubmitActionModel,
-      // editable 常用字段（用于 Fields 菜单可选）
       InputFieldModel,
       NumberFieldModel,
       SelectFieldModel,
@@ -72,7 +70,6 @@ class DemoPlugin extends Plugin {
       ColorFieldModel,
       TimeFieldModel,
       UploadFieldModel,
-      // 自定义项/入口（Others 分组 & JS 可编辑入口）
       FormCustomItemModel,
       MarkdownItemModel,
       DividerItemModel,
@@ -87,50 +84,26 @@ class DemoPlugin extends Plugin {
           use: 'FormGridModel',
           subModels: {
             items: [
-              // Name：不写 JS → 默认 Input
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'phone' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                      // 未提供 jsSettings → 默认渲染 Input
-                    },
-                  },
-                },
-              },
-              // Code：JS 自定义输入（大写掩码 + 长度限制 + 提示）
-              {
-                use: 'FormItemModel',
-                stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
-                },
-                subModels: {
-                  field: {
-                    use: 'JSEditableFieldModel',
-                    stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'phone' } },
                       jsSettings: {
                         runJs: {
-                          code: `
-// 自定义输入：自动大写 + 长度限制 8 + 实时提示
-const v = String(ctx.getValue() ?? '');
-ctx.element.innerHTML = [
-  '<div>',
-  '  <input id="js-code" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
-  '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
-  '</div>'
-].join('');
-const el = document.getElementById('js-code');
-el?.addEventListener('input', (e) => {
-  const next = String(e.target.value || '').toUpperCase().slice(0, 8);
-  if (next !== e.target.value) e.target.value = next;
-  ctx.setValue(next);
-});
+                          code: String.raw`
+// 掩码：只允许数字，格式 3-4-4，自动插入 '-'
+const raw = String(ctx.getValue() ?? '');
+function formatDigits(s){ return s.replace(/\D/g,'').slice(0,11); }
+function mask(s){ const d = formatDigits(s); return d.replace(/(\d{3})(\d{0,4})(\d{0,4}).*/, (m,a,b,c)=> a + (b?'-'+b:'') + (c?'-'+c:'') ); }
+ctx.element.innerHTML = '<input id="ph" style="width:100%;padding:4px 8px" value="'+ mask(raw).replace(/"/g,'&quot;') +'" />';
+const inp = document.getElementById('ph');
+inp?.addEventListener('input',()=>{ const m = mask(inp.value); if(m!==inp.value) inp.value = m; ctx.setValue(m); });
                           `.trim(),
                         },
                       },
@@ -151,7 +124,7 @@ el?.addEventListener('input', (e) => {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Create User（JS 可编辑字段：Code）">
+          <Card style={{ margin: 12 }} title="Create User（JS 可编辑：手机号掩码）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>

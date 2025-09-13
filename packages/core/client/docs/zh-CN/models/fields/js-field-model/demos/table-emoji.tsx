@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表格列：按值着色渲染（JSFieldModel）
+ * title: 表格列：状态 Emoji（JSFieldModel）
  */
 import React from 'react';
 import {
@@ -8,17 +8,14 @@ import {
   FilterManager,
   Plugin,
   ReadPrettyFieldModel,
-  TableActionsColumnModel,
   TableBlockModel,
   TableColumnModel,
   JSFieldModel,
-  // Display field models for default bindings
   InputReadPrettyFieldModel,
   NumberReadPrettyFieldModel,
   DateTimeReadPrettyFieldModel,
   JsonReadPrettyFieldModel,
   MarkdownReadPrettyFieldModel,
-  // Column groups
   TableAssociationFieldGroupModel,
   TableCustomColumnModel,
   TableJavaScriptFieldEntryModel,
@@ -32,7 +29,7 @@ class DemoPlugin extends Plugin {
   table!: TableBlockModel;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
-    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-basic'));
+    this.flowEngine.setModelRepository(new MockFlowModelRepository('jsfield-demo:table-emoji'));
     this.flowEngine.context.defineProperty('api', { value: api });
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
@@ -44,23 +41,19 @@ class DemoPlugin extends Plugin {
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
         { name: 'name', type: 'string', title: 'Name', interface: 'input' },
         { name: 'status', type: 'string', title: 'Status', interface: 'input' },
-        { name: 'score', type: 'double', title: 'Score', interface: 'number' },
       ],
     });
 
     this.flowEngine.registerModels({
       TableBlockModel,
       TableColumnModel,
-      TableActionsColumnModel,
       ReadPrettyFieldModel,
       JSFieldModel,
-      // display field models
       InputReadPrettyFieldModel,
       NumberReadPrettyFieldModel,
       DateTimeReadPrettyFieldModel,
       JsonReadPrettyFieldModel,
       MarkdownReadPrettyFieldModel,
-      // groups
       TableAssociationFieldGroupModel,
       TableCustomColumnModel,
       TableJavaScriptFieldEntryModel,
@@ -71,7 +64,6 @@ class DemoPlugin extends Plugin {
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       subModels: {
         columns: [
-          // 常规列：Name
           {
             use: 'TableColumnModel',
             stepParams: {
@@ -86,7 +78,6 @@ class DemoPlugin extends Plugin {
               },
             },
           },
-          // JS 列：Status → 彩色标签渲染
           {
             use: 'TableColumnModel',
             stepParams: {
@@ -101,10 +92,8 @@ class DemoPlugin extends Plugin {
                     runJs: {
                       code: `
 const v = String(ctx.value || '').toLowerCase();
-const color = v === 'active' ? '#52c41a' : v === 'pending' ? '#faad14' : '#ff4d4f';
-ctx.element.innerHTML = 
-  '<span style="display:inline-block;padding:0 8px;border-radius:10px;background:'+color+'20;color:'+color+';font-weight:600;">'
-  + (ctx.value ?? '') + '</span>';
+const emoji = v === 'active' ? '✅' : v === 'pending' ? '⏳' : '⛔️';
+ctx.element.innerHTML = '<span>'+emoji+' '+(ctx.value ?? '')+'</span>';
                       `.trim(),
                     },
                   },
@@ -116,14 +105,13 @@ ctx.element.innerHTML =
       },
     }) as TableBlockModel;
 
-    // 提供 filterManager，避免刷新流程绑定时报错
     this.table.context.defineProperty('filterManager', { value: new FilterManager(this.table) });
 
     this.router.add('root', {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Users（JS 列：Status 彩色标签）">
+          <Card style={{ margin: 12 }} title="Users（JS 列：Status Emoji）">
             <FlowModelRenderer model={this.table} showFlowSettings />
           </Card>
         </FlowEngineProvider>

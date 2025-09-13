@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表单：自定义可编辑输入（JSEditableFieldModel）
+ * title: 表单：国家与手机号交互（两个 JS 字段联动）
  */
 import React from 'react';
 import {
@@ -39,19 +39,19 @@ function registerModelsSafe(engine: any, models: Record<string, any>) {
 }
 
 class DemoPlugin extends Plugin {
-  form: CreateFormModel;
+  form!: CreateFormModel;
   async load() {
-    this.flowEngine.flowSettings.forceEnable();
+    this.flowEngine.flowSettings.enable();
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
     dsm.getDataSource('main')!.addCollection({
-      name: 'users',
-      title: 'Users',
+      name: 'profiles',
+      title: 'Profiles',
       filterTargetKey: 'id',
       fields: [
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
-        { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'code', type: 'string', title: 'Code', interface: 'input' },
+        { name: 'country', type: 'string', title: 'Country', interface: 'select' },
+        { name: 'phone', type: 'string', title: 'Phone', interface: 'phone' },
       ],
     });
 
@@ -61,7 +61,6 @@ class DemoPlugin extends Plugin {
       FormItemModel,
       JSEditableFieldModel,
       FormSubmitActionModel,
-      // editable 常用字段（用于 Fields 菜单可选）
       InputFieldModel,
       NumberFieldModel,
       SelectFieldModel,
@@ -72,7 +71,6 @@ class DemoPlugin extends Plugin {
       ColorFieldModel,
       TimeFieldModel,
       UploadFieldModel,
-      // 自定义项/入口（Others 分组 & JS 可编辑入口）
       FormCustomItemModel,
       MarkdownItemModel,
       DividerItemModel,
@@ -81,56 +79,73 @@ class DemoPlugin extends Plugin {
 
     this.form = this.flowEngine.createModel({
       use: 'CreateFormModel',
-      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'profiles' } } },
       subModels: {
         grid: {
           use: 'FormGridModel',
           subModels: {
             items: [
-              // Name：不写 JS → 默认 Input
+              // 国家：选择 +86/+1/+49，变更时自动改写 phone 前缀
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'profiles', fieldPath: 'country' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                      // 未提供 jsSettings → 默认渲染 Input
+                      fieldSettings: {
+                        init: { dataSourceKey: 'main', collectionName: 'profiles', fieldPath: 'country' },
+                      },
+                      jsSettings: {
+                        runJs: {
+                          code: String.raw`
+// 选择国家后自动设置手机号前缀
+const map = { CN: '+86', US: '+1', DE: '+49' };
+const current = String(ctx.getValue() ?? 'CN');
+ctx.element.innerHTML = [
+  '<select id="country" style="width:100%;padding:4px 8px">',
+  '  <option value="CN" '+(current==='CN'?'selected':'')+'>中国 (+86)</option>',
+  '  <option value="US" '+(current==='US'?'selected':'')+'>美国 (+1)</option>',
+  '  <option value="DE" '+(current==='DE'?'selected':'')+'>德国 (+49)</option>',
+  '</select>'
+].join('');
+const sel = document.getElementById('country');
+sel?.addEventListener('change', ()=>{
+  const c = sel.value; ctx.setValue(c);
+  const prefix = map[c];
+  const ph = String(ctx.form?.getFieldValue?.(['phone']) ?? '');
+  // 去掉已有前缀并替换（仅空格，不匹配其它空白，避免转义）
+  const norm = ph.replace(/^[+][0-9]+ */, '');
+  ctx.form?.setFieldValue?.(['phone'], prefix + ' ' + norm);
+});
+                          `.trim(),
+                        },
+                      },
                     },
                   },
                 },
               },
-              // Code：JS 自定义输入（大写掩码 + 长度限制 + 提示）
+              // 手机号：受控输入，不做掩码，依赖国家选项自动改写前缀
               {
                 use: 'FormItemModel',
                 stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'profiles', fieldPath: 'phone' } },
                 },
                 subModels: {
                   field: {
                     use: 'JSEditableFieldModel',
                     stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
+                      fieldSettings: {
+                        init: { dataSourceKey: 'main', collectionName: 'profiles', fieldPath: 'phone' },
+                      },
                       jsSettings: {
                         runJs: {
                           code: `
-// 自定义输入：自动大写 + 长度限制 8 + 实时提示
 const v = String(ctx.getValue() ?? '');
-ctx.element.innerHTML = [
-  '<div>',
-  '  <input id="js-code" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
-  '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
-  '</div>'
-].join('');
-const el = document.getElementById('js-code');
-el?.addEventListener('input', (e) => {
-  const next = String(e.target.value || '').toUpperCase().slice(0, 8);
-  if (next !== e.target.value) e.target.value = next;
-  ctx.setValue(next);
-});
+ctx.element.innerHTML = '<input id="ph" style="width:100%;padding:4px 8px" value="'+v.replace(/"/g,'&quot;')+'" />';
+document.getElementById('ph')?.addEventListener('input', (e)=> ctx.setValue(String(e.target.value||'')) );
                           `.trim(),
                         },
                       },
@@ -151,7 +166,7 @@ el?.addEventListener('input', (e) => {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Create User（JS 可编辑字段：Code）">
+          <Card style={{ margin: 12 }} title="Profile（JS：国家与手机号联动）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>

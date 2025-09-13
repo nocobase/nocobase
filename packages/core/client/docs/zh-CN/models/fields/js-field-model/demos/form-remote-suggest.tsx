@@ -1,6 +1,6 @@
 /**
  * defaultShowCode: true
- * title: 表单：自定义可编辑输入（JSEditableFieldModel）
+ * title: 表单：远程建议（JSEditableFieldModel + mock REST）
  */
 import React from 'react';
 import {
@@ -31,6 +31,7 @@ import {
   FormJavaScriptFieldEntryModel,
 } from '@nocobase/client';
 import { Card } from 'antd';
+import { api } from './api';
 
 // 安全注册模型：过滤掉 undefined，避免 registerModels 因无效值报错
 function registerModelsSafe(engine: any, models: Record<string, any>) {
@@ -42,6 +43,7 @@ class DemoPlugin extends Plugin {
   form: CreateFormModel;
   async load() {
     this.flowEngine.flowSettings.forceEnable();
+    this.flowEngine.context.defineProperty('api', { value: api });
     const dsm = this.flowEngine.context.dataSourceManager;
     dsm.getDataSource('main') || dsm.addDataSource({ key: 'main', displayName: 'Main' });
     dsm.getDataSource('main')!.addCollection({
@@ -51,7 +53,6 @@ class DemoPlugin extends Plugin {
       fields: [
         { name: 'id', type: 'bigInt', title: 'ID', interface: 'id' },
         { name: 'name', type: 'string', title: 'Name', interface: 'input' },
-        { name: 'code', type: 'string', title: 'Code', interface: 'input' },
       ],
     });
 
@@ -61,7 +62,6 @@ class DemoPlugin extends Plugin {
       FormItemModel,
       JSEditableFieldModel,
       FormSubmitActionModel,
-      // editable 常用字段（用于 Fields 菜单可选）
       InputFieldModel,
       NumberFieldModel,
       SelectFieldModel,
@@ -72,7 +72,6 @@ class DemoPlugin extends Plugin {
       ColorFieldModel,
       TimeFieldModel,
       UploadFieldModel,
-      // 自定义项/入口（Others 分组 & JS 可编辑入口）
       FormCustomItemModel,
       MarkdownItemModel,
       DividerItemModel,
@@ -87,7 +86,6 @@ class DemoPlugin extends Plugin {
           use: 'FormGridModel',
           subModels: {
             items: [
-              // Name：不写 JS → 默认 Input
               {
                 use: 'FormItemModel',
                 stepParams: {
@@ -98,38 +96,27 @@ class DemoPlugin extends Plugin {
                     use: 'JSEditableFieldModel',
                     stepParams: {
                       fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
-                      // 未提供 jsSettings → 默认渲染 Input
-                    },
-                  },
-                },
-              },
-              // Code：JS 自定义输入（大写掩码 + 长度限制 + 提示）
-              {
-                use: 'FormItemModel',
-                stepParams: {
-                  fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
-                },
-                subModels: {
-                  field: {
-                    use: 'JSEditableFieldModel',
-                    stepParams: {
-                      fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'code' } },
                       jsSettings: {
                         runJs: {
-                          code: `
-// 自定义输入：自动大写 + 长度限制 8 + 实时提示
+                          code: String.raw`
+// 输入时调用 /suggest，渲染下拉建议列表
 const v = String(ctx.getValue() ?? '');
 ctx.element.innerHTML = [
   '<div>',
-  '  <input id="js-code" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
-  '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
+  '  <input id="ipt" style="width:100%;padding:4px 8px" value="' + v.replace(/"/g, '&quot;') + '" />',
+  '  <ul id="suggest" style="list-style:none;padding-left:0;margin:6px 0 0"></ul>',
   '</div>'
 ].join('');
-const el = document.getElementById('js-code');
-el?.addEventListener('input', (e) => {
-  const next = String(e.target.value || '').toUpperCase().slice(0, 8);
-  if (next !== e.target.value) e.target.value = next;
-  ctx.setValue(next);
+const ipt = document.getElementById('ipt');
+const ul = document.getElementById('suggest');
+ipt?.addEventListener('input', async () => {
+  ctx.setValue(String(ipt.value || ''));
+  try{
+    const { data } = await ctx.api.axios.get('/suggest', { params: { keyword: ipt.value } });
+    const items = (data?.items || []).slice(0,6);
+    ul.innerHTML = items.map(x => '<li style="padding:2px 4px;cursor:pointer;">'+x+'</li>').join('');
+    Array.from(ul.children).forEach((li) => li.addEventListener('click', () => { ipt.value = li.textContent; ctx.setValue(li.textContent); ul.innerHTML=''; }));
+  }catch(e){ ul.innerHTML=''; }
 });
                           `.trim(),
                         },
@@ -151,7 +138,7 @@ el?.addEventListener('input', (e) => {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card style={{ margin: 12 }} title="Create User（JS 可编辑字段：Code）">
+          <Card style={{ margin: 12 }} title="Create User（JS 可编辑：远程建议）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>
