@@ -19,7 +19,14 @@ import {
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
-import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  CopyOutlined,
+  PlusOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
@@ -699,30 +706,100 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   }));
 
   return (
-    <div>
-      {rules.length > 0 ? (
-        <Collapse
-          items={collapseItems}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        maxHeight: '100vh',
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        position: 'relative',
+      }}
+    >
+      {/* 顶部标题栏 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderBottom: '1px solid #f0f0f0',
+          backgroundColor: '#fff',
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>Linkage rules</div>
+        <Button
+          type="text"
           size="small"
-          style={{ marginBottom: 8 }}
-          defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
-          accordion
+          icon={<CloseOutlined />}
+          style={{ color: '#8c8c8c' }}
+          // onClick={onClose} // 暂时不绑定事件
         />
-      ) : (
-        <div
-          style={{
-            border: '1px dashed #d9d9d9',
-            borderRadius: '6px',
-            backgroundColor: '#fafafa',
-            marginBottom: '8px',
-          }}
+      </div>
+
+      {/* 内容区域 */}
+      <div
+        style={{
+          flex: 1,
+          padding: '16px',
+          overflow: 'auto',
+          minHeight: 0,
+        }}
+      >
+        {rules.length > 0 ? (
+          <Collapse
+            items={collapseItems}
+            size="small"
+            style={{ marginBottom: 8 }}
+            defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
+            accordion
+          />
+        ) : (
+          <div
+            style={{
+              border: '1px dashed #d9d9d9',
+              borderRadius: '6px',
+              backgroundColor: '#fafafa',
+              marginBottom: '8px',
+            }}
+          >
+            <Empty description="No linkage rules" style={{ margin: '20px 0' }} />
+          </div>
+        )}
+        <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
+          Add linkage rule
+        </Button>
+      </div>
+
+      {/* 底部按钮区域 */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '8px',
+          padding: '8px 16px',
+          borderTop: '1px solid #f0f0f0',
+          backgroundColor: '#fff',
+          flexShrink: 0,
+        }}
+      >
+        <Button
+        // onClick={onCancel} // 暂时不绑定事件
         >
-          <Empty description="No linkage rules" style={{ margin: '20px 0' }} />
-        </div>
-      )}
-      <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
-        Add linkage rule
-      </Button>
+          Cancel
+        </Button>
+        <Button
+          type="primary"
+          // onClick={onOk} // 暂时不绑定事件
+        >
+          OK
+        </Button>
+      </div>
     </div>
   );
 });
@@ -810,23 +887,24 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   });
 };
 
-const commonUIMode: any = {
-  type: 'drawer',
-  props: {
-    width: 800,
-    closable: true,
-    mask: false,
-    onOpen() {
-      document.body.style.width = document.body.clientWidth - 800 + 'px';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
-    },
-    onClose() {
-      document.body.style.width = 'auto';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+const commonUIMode = (ctx): any => {
+  const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
 
-      currentLinkageRules = null;
+  return {
+    type: 'embed',
+    props: {
+      target,
+      onOpen() {
+        target.style.width = '50%';
+        target.style.maxWidth = '800px';
+      },
+      onClose() {
+        target.style.width = 'auto';
+        target.style.maxWidth = 'none';
+        currentLinkageRules = null;
+      },
     },
-  },
+  };
 };
 
 export const blockLinkageRules = defineAction({
