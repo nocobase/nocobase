@@ -83,8 +83,8 @@ export const displayFieldComponent = defineAction({
     };
   },
   async handler(ctx, params) {
-    if (!params.use) {
-      throw new Error('model use is a required parameter');
-    }
+    // if (!params.use) {
+    //   throw new Error('model use is a required parameter');
+    // }
   },
 });

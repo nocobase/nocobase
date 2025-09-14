@@ -7,15 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
+import { ActionModel, ActionSceneEnum } from '../base';
 
-export class DeleteActionModel extends RecordActionModel {
+export class DeleteActionModel extends ActionModel {
+  static scene = ActionSceneEnum.record;
+
   defaultProps: ButtonProps = {
     type: 'link',
     title: escapeT('Delete'),
   };
+
   getAclActionName() {
     return 'destroy';
   }

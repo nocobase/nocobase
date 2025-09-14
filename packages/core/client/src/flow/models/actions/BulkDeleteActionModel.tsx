@@ -9,9 +9,11 @@
 
 import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { CollectionActionModel } from '../base/ActionModel';
+import { ActionModel, ActionSceneEnum } from '../base';
 
-export class BulkDeleteActionModel extends CollectionActionModel {
+export class BulkDeleteActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
     title: escapeT('Delete'),
     icon: 'DeleteOutlined',

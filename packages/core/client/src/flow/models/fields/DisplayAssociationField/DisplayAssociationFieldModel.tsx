@@ -8,7 +8,7 @@
  */
 
 import { updateOpenViewStepParams } from '../../../flows/openViewFlow';
-import { FieldModel } from '../../base/FieldModel';
+import { FieldModel } from '../../base';
 
 export class DisplayAssociationFieldModel extends FieldModel {
   public static readonly supportedFieldInterfaces = null;
@@ -17,14 +17,14 @@ export class DisplayAssociationFieldModel extends FieldModel {
     super.onInit(options);
 
     const sourceCollection = this.context.blockModel?.collection;
-    const targetCollection = this.collectionField?.targetCollection;
+    const targetCollection = this.context.collectionField?.targetCollection;
 
     updateOpenViewStepParams(
       {
         collectionName: targetCollection?.name,
         associationName:
-          sourceCollection?.name && this.collectionField?.name
-            ? `${sourceCollection.name}.${this.collectionField.name}`
+          sourceCollection?.name && this.context.collectionField?.name
+            ? `${sourceCollection.name}.${this.context.collectionField.name}`
             : undefined,
         dataSourceKey: targetCollection?.dataSourceKey,
       },

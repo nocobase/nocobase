@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { ObjectNester } from '../AssociationFieldModel/SubFormFieldModel';
@@ -19,7 +19,7 @@ export class DisplaySubDetailFieldModel extends DisplayAssociationFieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {
-      get: () => this.collectionField.targetCollection,
+      get: () => this.context.collectionField.targetCollection,
     });
     this.context.defineProperty('prefixFieldPath', {
       get: () => {

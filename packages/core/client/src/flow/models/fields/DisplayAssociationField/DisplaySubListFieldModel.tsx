@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowModel, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
@@ -12,7 +21,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
   const rowIndex = model.context.fieldIndex || [];
-  const collectionName = model.collectionField.name;
+  const collectionName = model.context.collectionField.name;
 
   return (
     value.length > 0 && (
@@ -52,7 +61,7 @@ export class DisplaySubListFieldModel extends DisplayAssociationFieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {
-      get: () => this.collectionField.targetCollection,
+      get: () => this.context.collectionField.targetCollection,
     });
     this.context.defineProperty('prefixFieldPath', {
       get: () => {

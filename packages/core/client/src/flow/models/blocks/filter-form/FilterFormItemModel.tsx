@@ -19,8 +19,7 @@ import { Alert, Empty } from 'antd';
 import _, { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { FieldModel } from '../../base/FieldModel';
+import { CollectionBlockModel, FieldModel } from '../../base';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
@@ -216,14 +215,6 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
         <FieldModelRenderer model={fieldModel} />
-      </FormItem>
-    );
-  }
-  // 设置态隐藏时的占位渲染
-  renderHiddenInConfig(): React.ReactNode | undefined {
-    return (
-      <FormItem {...this.props}>
-        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
       </FormItem>
     );
   }

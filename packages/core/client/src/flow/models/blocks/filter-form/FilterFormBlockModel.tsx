@@ -20,7 +20,7 @@ import {
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
-import { FilterBlockModel } from '../../base/BlockModel';
+import { FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormModel';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';

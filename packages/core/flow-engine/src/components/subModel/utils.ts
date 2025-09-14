@@ -80,6 +80,17 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
   return children;
 }
 
+export function buildItems(subModelBaseClass: string | ModelConstructor) {
+  return async (ctx: FlowModelContext) => {
+    const items = await buildSubModelGroups([subModelBaseClass])(ctx);
+    const children = items.shift().children;
+    if (typeof children === 'function') {
+      return children(ctx);
+    }
+    return children as any;
+  };
+}
+
 export function buildSubModelItems(subModelBaseClass: string | ModelConstructor, exclude = []) {
   return async (ctx: FlowModelContext) => {
     const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);

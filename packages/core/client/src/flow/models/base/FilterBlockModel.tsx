@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel } from '../../base';
+import { DefaultStructure } from '@nocobase/flow-engine';
+import { BlockModel } from './BlockModel';
 
-export class FilterFormActionModel extends ActionModel {}
+export class FilterBlockModel<T = DefaultStructure> extends BlockModel<T> {}
+
+FilterBlockModel.define({ hide: true, label: 'Filter blocks' });

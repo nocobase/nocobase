@@ -12,8 +12,7 @@ export * from './BulkDeleteActionModel';
 export * from './DeleteActionModel';
 export * from './EditActionModel';
 export * from './FilterActionModel';
-export * from './PopupRecordActionModel';
 export * from './RefreshActionModel';
+export * from './UpdateActionModel';
 export * from './ViewActionModel';
-export * from './UpdateRecordActionModel';
 //

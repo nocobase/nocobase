@@ -9,14 +9,15 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { RecordActionModel } from '../base/ActionModel';
-import { openViewFlow } from '../../flows/openViewFlow';
+import { ActionSceneEnum, PopupActionModel } from '../base';
 
-export class EditActionModel extends RecordActionModel {
+export class EditActionModel extends PopupActionModel {
+  static scene = ActionSceneEnum.record;
+
   defaultProps: ButtonProps = {
-    type: 'link',
     title: escapeT('Edit'),
   };
+
   getAclActionName() {
     return 'update';
   }
@@ -25,5 +26,3 @@ export class EditActionModel extends RecordActionModel {
 EditActionModel.define({
   label: escapeT('Edit'),
 });
-
-EditActionModel.registerFlow(openViewFlow);

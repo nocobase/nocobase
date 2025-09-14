@@ -7,13 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
   buildWrapperFieldChildren,
+  CollectionField,
+  DisplayItemModel,
   DragHandler,
   Droppable,
+  EditableItemModel,
   escapeT,
   FieldModelRenderer,
   FlowModelContext,
@@ -22,13 +25,11 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
-  EditableItemModel,
-  DisplayItemModel,
 } from '@nocobase/flow-engine';
-import { Form, TableColumnProps, Tooltip } from 'antd';
-import React, { useEffect, useRef } from 'react';
+import { TableColumnProps, Tooltip } from 'antd';
+import React, { useRef } from 'react';
 import { TableAssociationFieldModel } from '.';
-import { FieldModel } from '../../../base/FieldModel';
+import { FieldModel } from '../../../base';
 import { FormComponent } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 import { FormFieldModel } from '../../FormFieldModel';
@@ -102,10 +103,18 @@ export class SubTableColumnModel<
 > extends FieldModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
 
-  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
+  get collectionField(): CollectionField {
+    return this.context.collectionField;
   }
+
+  renderHiddenInConfig() {
+    return (
+      <Tooltip title={this.context.t('该字段以被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+        <LockOutlined style={{ opacity: '0.45' }} />
+      </Tooltip>
+    );
+  }
+
   static defineChildren(ctx: FlowModelContext) {
     return buildWrapperFieldChildren(ctx, {
       useModel: 'SubTableColumnModel',
@@ -130,20 +139,9 @@ export class SubTableColumnModel<
   onInit(options: any): void {
     super.onInit(options);
 
-    // 为列级模型补充 collectionField（基于 fieldSettings.init 参数解析）
-    this.context.defineProperty('collectionField', {
-      get: () => {
-        const params = this.getFieldSettingsInitParams?.();
-        if (!params || !params.dataSourceKey) return undefined;
-        return this.context.dataSourceManager.getCollectionField(
-          `${params.dataSourceKey}.${params.collectionName}.${params.fieldPath}`,
-        );
-      },
-    });
-
     this.context.defineProperty('resourceName', {
       get: () => {
-        return this.collectionField.collection.name;
+        return this.context.collectionField.collection.name;
       },
       cache: false,
     });
