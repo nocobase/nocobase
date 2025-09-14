@@ -8,6 +8,7 @@
  */
 
 import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
+import { CodeEditor } from '../../../components/code-editor';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormJSActionModel extends FilterFormActionModel {}
@@ -26,8 +27,7 @@ FilterFormJSActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          title: escapeT('Write JavaScript'),
-          'x-component': 'CodeEditor',
+          'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '400px',
             theme: 'light',

@@ -127,7 +127,6 @@ JSEditableFieldModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          title: escapeT('Write JavaScript'),
           'x-decorator': 'FormItem',
           'x-component': CodeEditor,
           'x-component-props': {

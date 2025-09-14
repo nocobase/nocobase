@@ -13,6 +13,7 @@ import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
 import { updateOpenViewStepParams } from '../../flows/openViewFlow';
+import { CodeEditor } from '../../components/code-editor';
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   declare props: ButtonProps;
@@ -236,8 +237,8 @@ JSCollectionActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          title: escapeT('Write JavaScript'),
-          'x-component': 'CodeEditor',
+          // 直接使用组件引用，避免依赖全局注册
+          'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '320px',
             theme: 'light',
@@ -309,8 +310,8 @@ JSRecordActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          title: escapeT('Write JavaScript'),
-          'x-component': 'CodeEditor',
+          // 直接使用组件引用，避免依赖全局注册
+          'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '320px',
             theme: 'light',

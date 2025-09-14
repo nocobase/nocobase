@@ -11,6 +11,7 @@
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
 import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
+import { CodeEditor } from '../../../components/code-editor';
 import { FormActionModel } from './FormActionModel';
 
 export class JSFormActionModel extends FormActionModel {}
@@ -30,8 +31,7 @@ JSFormActionModel.registerFlow({
       uiSchema: {
         code: {
           type: 'string',
-          title: escapeT('Write JavaScript'),
-          'x-component': 'CodeEditor',
+          'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '320px',
             theme: 'light',

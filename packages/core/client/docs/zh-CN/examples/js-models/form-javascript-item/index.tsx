@@ -1,13 +1,13 @@
 /**
  * defaultShowCode: true
- * title: 表单：JavaScript 自定义项（JavaScriptItemModel）
+ * title: 表单：JS 自定义项（JSItemModel）
  */
 import React from 'react';
 import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
-import { registerJsFieldDemoModels } from '../../js-field-model/demos/utils';
 import MockAdapter from 'axios-mock-adapter';
+import { registerJsFieldDemoModels } from '../js-field-model/demos/utils';
 
 class DemoPlugin extends Plugin {
   form: any;
@@ -29,7 +29,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    // 注册系统内常用模型（含：CreateFormModel、FormItemModel、各基础可编辑字段、Markdown/Divider 等、FormJavaScriptFieldItemModel、FormSubmitActionModel、JavaScriptItemModel 等）
+    // 注册系统内常用模型（含：CreateFormModel、FormItemModel、各基础可编辑字段、Markdown/Divider 等、FormJSFieldItemModel、FormSubmitActionModel、JSItemModel 等）
     await registerJsFieldDemoModels(this.flowEngine);
 
     // 创建 CreateFormModel（空表单，使用右上角 Fields 菜单添加项）
