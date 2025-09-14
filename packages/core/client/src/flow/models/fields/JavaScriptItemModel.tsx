@@ -28,7 +28,7 @@ export class JavaScriptItemModel extends CommonItemModel {
 }
 
 JavaScriptItemModel.define({
-  label: escapeT('JavaScript block'),
+  label: escapeT('JS block'),
   // 明确指定 createModelOptions，避免在构建压缩后通过类名推断失败
   createModelOptions: {
     use: 'JavaScriptItemModel',

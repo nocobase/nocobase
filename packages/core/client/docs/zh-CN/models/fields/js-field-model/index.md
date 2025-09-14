@@ -1,6 +1,4 @@
----
-title: JS field
----
+# JS field
 
 > 基于 JSFieldModel / JSEditableFieldModel 的示例，演示在表格与表单中的典型用法。
 
@@ -75,7 +73,6 @@ title: JS field
 ## 表单：综合示例（多个 JS 字段联动 + 校验 + 远程建议 + 计算）
 
 <code src="./demos/form-complex.tsx"></code>
-
 ## 详情：JSON 美化预览（只读）
 
 <code src="./demos/details-json.tsx"></code>
@@ -83,4 +80,3 @@ title: JS field
 ## 详情：复制到剪贴板（只读）
 
 <code src="./demos/details-copy.tsx"></code>
-

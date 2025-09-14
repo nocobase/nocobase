@@ -63,10 +63,7 @@ class DemoPlugin extends Plugin {
       path: '/',
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
-          <Card
-            style={{ margin: 12 }}
-            title="Create User（添加 Fields：普通字段 / JavaScript field / JavaScript block）"
-          >
+          <Card style={{ margin: 12 }} title="Create User（添加 Fields：普通字段 / JS field / JS block）">
             <FlowModelRenderer model={this.form} showFlowSettings />
           </Card>
         </FlowEngineProvider>

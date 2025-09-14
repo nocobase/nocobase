@@ -16,7 +16,7 @@ import { FormActionModel } from './FormActionModel';
 export class JSFormActionModel extends FormActionModel {}
 
 JSFormActionModel.define({
-  label: escapeT('JavaScript action'),
+  label: escapeT('JS action'),
   sort: 9999,
 });
 

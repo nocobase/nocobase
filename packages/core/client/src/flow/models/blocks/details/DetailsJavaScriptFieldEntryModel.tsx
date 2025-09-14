@@ -28,7 +28,7 @@ export class DetailsJavaScriptFieldEntryModel extends DetailsCustomItemModel {
 }
 
 DetailsJavaScriptFieldEntryModel.define({
-  label: escapeT('JavaScript field'),
+  label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),
   sort: 110,

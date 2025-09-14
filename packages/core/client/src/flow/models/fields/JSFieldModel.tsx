@@ -49,7 +49,7 @@ export class JSFieldModel extends FieldModel {
 }
 
 JSFieldModel.define({
-  label: escapeT('JavaScript field'),
+  label: escapeT('JS field'),
 });
 
 JSFieldModel.registerFlow({

@@ -13,7 +13,7 @@ import { FilterFormActionModel } from './FilterFormActionModel';
 export class FilterFormJSActionModel extends FilterFormActionModel {}
 
 FilterFormJSActionModel.define({
-  label: escapeT('JavaScript action'),
+  label: escapeT('JS action'),
 });
 
 FilterFormJSActionModel.registerFlow({

@@ -115,7 +115,7 @@ export class JSEditableFieldModel extends FormFieldModel {
 }
 
 JSEditableFieldModel.define({
-  label: escapeT('JavaScript field'),
+  label: escapeT('JS field'),
 });
 
 JSEditableFieldModel.registerFlow({

@@ -215,14 +215,14 @@ export class RecordActionModel<T extends DefaultStructure = DefaultStructure> ex
 export class JSCollectionActionModel extends CollectionActionModel {}
 
 JSCollectionActionModel.define({
-  label: escapeT('JavaScript action'),
+  label: escapeT('JS action'),
   sort: 9999,
 });
 
 export class JSRecordActionModel extends RecordActionModel {}
 
 JSRecordActionModel.define({
-  label: escapeT('JavaScript action'),
+  label: escapeT('JS action'),
   sort: 9999,
 });
 

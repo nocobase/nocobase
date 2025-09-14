@@ -143,7 +143,7 @@ export default defineConfig({
         {
           title: 'JavaScript 模型',
           children: [
-            { title: 'JavaScript field', link: '/examples/js-models/js-field-model' },
+            { title: 'JS field', link: '/examples/js-models/js-field-model' },
             { title: 'JavaScript item（表单）', link: '/examples/js-models/form-javascript-item' },
             { title: 'JS Actions', link: '/examples/js-models/js-actions' },
           ],

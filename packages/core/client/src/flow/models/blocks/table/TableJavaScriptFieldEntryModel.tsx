@@ -28,7 +28,7 @@ export class TableJavaScriptFieldEntryModel extends TableCustomColumnModel {
 }
 
 TableJavaScriptFieldEntryModel.define({
-  label: escapeT('JavaScript field'),
+  label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),
   // 提高排序到“字段类”列表的靠前位置，但不抢默认项

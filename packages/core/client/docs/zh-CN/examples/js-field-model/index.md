@@ -1,4 +1,4 @@
-# JavaScript field
+# JS field
 
 > 基于 JSFieldModel / JSEditableFieldModel 的示例，演示在表格与表单中的典型用法。
 
