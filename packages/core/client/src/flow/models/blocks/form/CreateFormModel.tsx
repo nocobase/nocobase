@@ -20,12 +20,13 @@ import {
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
+import { BlockSceneEnum } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormComponent, FormModel } from './FormModel';
 
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormModel {
-  static scene = 'new';
+  static scene = BlockSceneEnum.new;
 
   createResource(ctx, params) {
     const resource = this.context.createResource(SingleRecordResource);

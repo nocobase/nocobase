@@ -10,16 +10,7 @@ import { buildSubModelItems, DefaultStructure, escapeT } from '@nocobase/flow-en
 import _ from 'lodash';
 import { BlockModel } from './BlockModel';
 
-export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {
-  static _getScene() {
-    return _.castArray(this['scene'] || []);
-  }
-
-  static _isScene(scene: string) {
-    const scenes = this._getScene();
-    return scenes.includes(scene);
-  }
-}
+export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
 DataBlockModel.define({
   hide: true,
@@ -28,14 +19,14 @@ DataBlockModel.define({
     const children = await buildSubModelItems(DataBlockModel)(ctx);
     const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
     return children.filter((item) => {
-      const M = ctx.engine.getModelClass(item.useModel) as typeof DataBlockModel;
+      const M = ctx.engine.getModelClass(item.useModel);
       if (scene === 'select') {
-        return M._isScene('select');
+        return M['_isScene']?.('select');
       }
       if (scene === 'new' || (collectionName && !filterByTk)) {
-        return M._isScene('new');
+        return M['_isScene']?.('new');
       }
-      return !M._isScene('select');
+      return !M['_isScene'] || !M['_isScene']?.('select');
     });
   },
 });

@@ -9,10 +9,11 @@
 
 import { escapeT, observable } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
+import { BlockSceneEnum } from '../../base';
 import { TableBlockModel } from './TableBlockModel';
 
 export class TableSelectModel extends TableBlockModel {
-  static scene = 'select';
+  static scene = BlockSceneEnum.select;
   rowSelectionProps: any = observable.deep({});
   onInit(options: any) {
     super.onInit(options);

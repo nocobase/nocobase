@@ -82,9 +82,9 @@ window.addEventListener('resize', () => chart.resize());
 ### 点击弹窗
 
 ```ts
-ctx.element.innerHTML = `<button id="myButton">点击我</button>`;
+ctx.element.innerHTML = `<button class="myButton">点击我</button>`;
 // 绑定点击事件
-const button = ctx.element.querySelector('#myButton');
+const button = ctx.element.querySelector('.myButton');
 button.addEventListener('click', () => {
   ctx.runAction('openView', {
     navigation: false, // 必填
@@ -106,4 +106,45 @@ interface OpenViewParams {
   dataSourceKey?: string; // 数据源
   filterByTk?: any; // 数据表记录ID
 }
+```
+
+### Tabulator
+
+```ts
+ctx.element.innerHTML = '';
+const tableContainer = document.createElement('div');
+// tableContainer.style.height = '400px';
+ctx.element.appendChild(tableContainer);
+
+// 动态加载 Tabulator 的 CSS
+await ctx.loadCSS('https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.0/dist/css/tabulator.min.css');
+
+// 动态加载 Tabulator 的 JS
+const Tabulator = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.0/dist/js/tabulator.min.js');
+if (!Tabulator) {
+  return;
+}
+
+// 示例数据
+const tableData = [
+  { id: 1, name: 'Alice', age: 25, gender: 'Female' },
+  { id: 2, name: 'Bob', age: 30, gender: 'Male' },
+  { id: 3, name: 'Charlie', age: 35, gender: 'Male' },
+  { id: 4, name: 'Diana', age: 28, gender: 'Female' },
+];
+
+// 初始化 Tabulator 表格
+const table = new Tabulator(tableContainer, {
+  data: tableData, // 数据源
+  layout: 'fitColumns', // 列宽自适应
+  columns: [
+    { title: 'ID', field: 'id', width: 50 },
+    { title: 'Name', field: 'name', width: 150 },
+    { title: 'Age', field: 'age', width: 100 },
+    { title: 'Gender', field: 'gender', width: 100 },
+  ],
+});
+
+// 监听窗口大小变化，调整表格大小
+window.addEventListener('resize', () => table.redraw());
 ```

@@ -8,18 +8,22 @@
  */
 
 import {
+  ActionModel,
+  ActionSceneEnum,
   BlockModel,
-  CollectionActionModel,
+  BlockSceneEnum,
   CollectionBlockModel,
   DataBlockModel,
+  EditableFieldModel,
+  FieldModel,
+  FilterFormItemModel,
   Plugin,
-  RecordActionModel,
 } from '@nocobase/client';
-import { MultiRecordResource } from '@nocobase/flow-engine';
+import { DisplayItemModel, EditableItemModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import React from 'react';
 
-class HelloBlockModel extends BlockModel {
+class Hello1BlockModel extends BlockModel {
   renderComponent() {
     return (
       <div>
@@ -30,7 +34,7 @@ class HelloBlockModel extends BlockModel {
   }
 }
 
-class HelloDataBlockModel extends DataBlockModel {
+class Hello2BlockModel extends DataBlockModel {
   renderComponent() {
     return (
       <div>
@@ -41,11 +45,8 @@ class HelloDataBlockModel extends DataBlockModel {
   }
 }
 
-HelloDataBlockModel.define({
-  label: 'Hello Data Block Model',
-});
-
-class HelloCollectionBlockModel extends CollectionBlockModel {
+class Hello3BlockModel extends CollectionBlockModel {
+  static scene = BlockSceneEnum.many;
   createResource() {
     return this.context.createResource(MultiRecordResource);
   }
@@ -60,26 +61,121 @@ class HelloCollectionBlockModel extends CollectionBlockModel {
   }
 }
 
-class HelloActionModel extends CollectionActionModel {
+class Hello4BlockModel extends CollectionBlockModel {
+  static scene = BlockSceneEnum.oam;
+  createResource() {
+    return this.context.createResource(MultiRecordResource);
+  }
+  renderComponent() {
+    return (
+      <div>
+        <h1>Hello, NocoBase!</h1>
+        <p>This is a simple block rendered by HelloCollectionBlockModel.</p>
+      </div>
+    );
+  }
+}
+
+class Hello5BlockModel extends CollectionBlockModel {
+  static scene = BlockSceneEnum.new;
+  createResource() {
+    return this.context.createResource(MultiRecordResource);
+  }
+  renderComponent() {
+    return (
+      <div>
+        <h1>Hello, NocoBase!</h1>
+        <p>This is a simple block rendered by HelloCollectionBlockModel.</p>
+      </div>
+    );
+  }
+}
+
+class Hello6BlockModel extends CollectionBlockModel {
+  static scene = BlockSceneEnum.select;
+  createResource() {
+    return this.context.createResource(MultiRecordResource);
+  }
+  renderComponent() {
+    return (
+      <div>
+        <h1>Hello, NocoBase!</h1>
+        <p>This is a simple block rendered by HelloCollectionBlockModel.</p>
+      </div>
+    );
+  }
+}
+
+class Hello7BlockModel extends CollectionBlockModel {
+  static scene = BlockSceneEnum.one;
+  createResource() {
+    return this.context.createResource(MultiRecordResource);
+  }
+  renderComponent() {
+    return (
+      <div>
+        <h1>Hello, NocoBase!</h1>
+        <p>This is a simple block rendered by HelloCollectionBlockModel.</p>
+      </div>
+    );
+  }
+}
+
+class Hello1ActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
-    title: 'Hello Global Action',
+    title: 'Hello1 Action',
   };
 }
 
-class HelloRecordActionModel extends RecordActionModel {
+class Hello2ActionModel extends ActionModel {
+  static scene = ActionSceneEnum.record;
+
   defaultProps: ButtonProps = {
-    title: 'Hello Record Action',
+    title: 'Hello2 Action',
   };
 }
+
+class Hello3ActionModel extends ActionModel {
+  static scene = ActionSceneEnum.all;
+
+  defaultProps: ButtonProps = {
+    title: 'Hello3 Action',
+  };
+}
+
+class Hello1FieldModel extends FieldModel {
+  render() {
+    return <div>aaa</div>;
+  }
+}
+
+class Hello2FieldModel extends FieldModel {
+  render() {
+    return <div>aaa</div>;
+  }
+}
+
+DisplayItemModel.bindModelToInterface('Hello1FieldModel', ['input']);
+EditableItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
+FilterFormItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
 
 export class PluginHelloClient extends Plugin {
   async load() {
     this.flowEngine.registerModels({
-      HelloBlockModel,
-      HelloDataBlockModel,
-      HelloCollectionBlockModel,
-      HelloActionModel,
-      HelloRecordActionModel,
+      Hello1BlockModel,
+      Hello2BlockModel,
+      Hello3BlockModel,
+      Hello4BlockModel,
+      Hello5BlockModel,
+      Hello6BlockModel,
+      Hello7BlockModel,
+      Hello1ActionModel,
+      Hello2ActionModel,
+      Hello3ActionModel,
+      Hello1FieldModel,
+      Hello2FieldModel,
     });
   }
 }

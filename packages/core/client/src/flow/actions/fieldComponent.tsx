@@ -36,7 +36,7 @@ export const fieldComponent = defineAction({
         enum: classes.map((model) => {
           const m = ctx.engine.getModelClass(model.modelName);
           return {
-            label: m.meta.label || model.modelName,
+            label: m.meta?.label || model.modelName,
             value: model.modelName,
           };
         }),

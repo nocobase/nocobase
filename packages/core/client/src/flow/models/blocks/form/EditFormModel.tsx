@@ -23,11 +23,12 @@ import {
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
 import React from 'react';
+import { BlockSceneEnum } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormComponent, FormModel } from './FormModel';
 
 export class EditFormModel extends FormModel {
-  static scene = ['one', 'many'];
+  static scene = BlockSceneEnum.oam;
 
   createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsBlockModel的逻辑

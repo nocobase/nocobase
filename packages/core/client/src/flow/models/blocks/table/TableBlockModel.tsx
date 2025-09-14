@@ -29,7 +29,7 @@ import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel, CollectionActionModel, CollectionBlockModel } from '../../base';
+import { ActionModel, BlockSceneEnum, CollectionActionModel, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
@@ -133,7 +133,7 @@ const AddFieldColumn = ({ model }) => {
 };
 
 export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructure> {
-  static scene = 'many';
+  static scene = BlockSceneEnum.many;
 
   rowSelectionProps = observable.deep({});
 

@@ -28,7 +28,7 @@ import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { BlockGridModel, CollectionBlockModel, RecordActionModel } from '../../base';
+import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
@@ -36,7 +36,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
-  static scene = ['one', 'many'];
+  static scene = BlockSceneEnum.oam;
 
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
