@@ -46,7 +46,7 @@ class DemoPlugin extends Plugin {
                 },
                 subModels: {
                   field: {
-                    use: 'ReadPrettyFieldModel',
+                    use: 'DisplayTextFieldModel',
                     stepParams: {
                       fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
                     },

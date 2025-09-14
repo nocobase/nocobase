@@ -8,7 +8,6 @@ import {
   DetailsGridModel,
   JSRecordActionModel,
   Plugin,
-  ReadPrettyFieldModel,
   RecordActionModel,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
@@ -44,7 +43,6 @@ class DemoPlugin extends Plugin {
       DetailsGridModel,
       RecordActionModel,
       JSRecordActionModel,
-      ReadPrettyFieldModel,
     });
 
     const details = this.flowEngine.createModel({

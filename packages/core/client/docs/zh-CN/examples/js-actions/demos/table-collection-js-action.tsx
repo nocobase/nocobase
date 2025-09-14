@@ -9,7 +9,7 @@ import {
   Plugin,
   TableBlockModel,
   TableColumnModel,
-  ReadPrettyFieldModel,
+  DisplayTextFieldModel,
   FilterManager,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
@@ -42,7 +42,7 @@ class DemoPlugin extends Plugin {
     this.flowEngine.registerModels({
       TableBlockModel,
       TableColumnModel,
-      ReadPrettyFieldModel,
+      DisplayTextFieldModel,
       CollectionActionModel,
       JSCollectionActionModel,
     });
@@ -74,7 +74,7 @@ await ctx.refresh();`,
             },
             subModels: {
               field: {
-                use: 'ReadPrettyFieldModel',
+                use: 'DisplayTextFieldModel',
                 stepParams: {
                   fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'name' } },
                 },

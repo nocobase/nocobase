@@ -11,7 +11,6 @@ export async function registerJsFieldDemoModels(engine: any) {
     TableBlockModel: c.TableBlockModel,
     TableColumnModel: c.TableColumnModel,
     TableActionsColumnModel: c.TableActionsColumnModel,
-    ReadPrettyFieldModel: c.ReadPrettyFieldModel,
     JSFieldModel: c.JSFieldModel,
     TableAssociationFieldGroupModel: c.TableAssociationFieldGroupModel,
     TableCustomColumnModel: c.TableCustomColumnModel,
@@ -50,10 +49,10 @@ export async function registerJsFieldDemoModels(engine: any) {
     DetailsJavaScriptFieldEntryModel: c.DetailsJavaScriptFieldEntryModel,
 
     // 显示字段模型（表格/详情默认绑定依赖）
-    InputReadPrettyFieldModel: c.InputReadPrettyFieldModel,
-    NumberReadPrettyFieldModel: c.NumberReadPrettyFieldModel,
-    DateTimeReadPrettyFieldModel: c.DateTimeReadPrettyFieldModel,
-    JsonReadPrettyFieldModel: c.JsonReadPrettyFieldModel,
+    DisplayTextFieldModel: c.DisplayTextFieldModel,
+    DisplayNumberFieldModel: c.DisplayNumberFieldModel,
+    DisplayDateTimeFieldModel: c.DisplayDateTimeFieldModel,
+    DisplayJSONFieldModel: c.DisplayJSONFieldModel,
     MarkdownReadPrettyFieldModel: c.MarkdownReadPrettyFieldModel,
   };
   const filtered = Object.fromEntries(Object.entries(all).filter(([, v]) => v != null));

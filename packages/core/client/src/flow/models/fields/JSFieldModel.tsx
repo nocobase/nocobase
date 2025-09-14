@@ -10,7 +10,7 @@
 import { ElementProxy, escapeT } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
 import { CodeEditor } from '../../components/code-editor';
-import { ReadPrettyFieldModel } from './ReadPrettyField/ReadPrettyFieldModel';
+import { FieldModel } from '../base/FieldModel';
 
 /**
  * JS 字段（只读形态）：
@@ -19,7 +19,7 @@ import { ReadPrettyFieldModel } from './ReadPrettyField/ReadPrettyFieldModel';
  * - 在只读场景下可通过 ctx.value 读取当前值，ctx.record 读取当前行记录；
  * - 通过 ctx.element 直接操作渲染容器（经过 ElementProxy 包裹，带 XSS 保护）。
  */
-export class JSFieldModel extends ReadPrettyFieldModel {
+export class JSFieldModel extends FieldModel {
   /**
    * 在渲染前注入副作用：当 props.value 变化时，重新执行 jsSettings
    * 说明：fork 实例在表格逐行渲染时会复用该逻辑，确保按值更新。
