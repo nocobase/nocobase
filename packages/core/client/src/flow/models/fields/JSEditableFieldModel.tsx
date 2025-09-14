@@ -20,15 +20,20 @@ const JSFormRuntime: React.FC<{
   disabled?: boolean;
   readOnly?: boolean;
 }> = ({ model, value, onChange, disabled, readOnly }) => {
-  const ref = useRef<HTMLSpanElement>(null);
-  const code = useMemo(() => model.getStepParams('jsSettings', 'runJs')?.code ?? '', [model.stepParams]);
+  const containerRef = useRef<HTMLSpanElement>(null);
+  // 统一获取&裁剪脚本代码，避免重复 trim 判定
+  const scriptCode = useMemo(() => {
+    const raw = model.getStepParams('jsSettings', 'runJs')?.code;
+    return typeof raw === 'string' ? raw.trim() : '';
+  }, [model.stepParams]);
 
+  // 1) 每次渲染仅更新 ctx 能力（元素/读写/状态），不执行脚本
   useEffect(() => {
-    if (!ref.current) return;
-    const element = ref.current;
+    if (!containerRef.current) return;
+    const element = containerRef.current;
     const ctx = model.context;
 
-    // 暴露 element / value 读写能力
+    // 暴露 element / value 读写能力（getValue 始终返回最新值）
     ctx.defineProperty('element', { get: () => new ElementProxy(element) });
     ctx.defineProperty('getValue', {
       value: () => value,
@@ -50,22 +55,31 @@ const JSFormRuntime: React.FC<{
     ctx.defineProperty('namePath', { get: () => model.props?.name });
     ctx.defineProperty('disabled', { get: () => !!disabled });
     ctx.defineProperty('readOnly', { get: () => !!readOnly });
+  }, [value, disabled, readOnly, model, onChange]);
 
-    // 执行脚本（若 code 非空）
-    if (code && String(code).trim()) {
-      (async () => {
-        try {
-          await ctx.runjs(code, { window, document });
-        } catch (e) {
-          // 控制台输出，避免影响表单渲染
-          console.error('JSEditableFieldModel runjs error:', e);
-        }
-      })();
-    }
-  }, [code, value, disabled, readOnly, model, onChange]);
+  // 2) 仅在代码变化时执行脚本，避免输入引发的 DOM 重建导致失焦
+  useEffect(() => {
+    if (!containerRef.current || !scriptCode) return;
+    const ctx = model.context;
+    (async () => {
+      try {
+        await ctx.runjs(scriptCode, { window, document });
+      } catch (e) {
+        // 控制台输出，避免影响表单渲染
+        console.error('JSEditableFieldModel runjs error:', e);
+      }
+    })();
+  }, [scriptCode]);
+
+  // 3) 值变化时派发事件，供脚本按需增量更新 UI
+  useEffect(() => {
+    if (!containerRef.current || !scriptCode) return;
+    const event = new CustomEvent('js-field:value-change', { detail: value });
+    containerRef.current.dispatchEvent(event);
+  }, [value, scriptCode]);
 
   // 无自定义 JS 时默认渲染 Input，保持可用性
-  if (!code || !String(code).trim()) {
+  if (!scriptCode) {
     return (
       <Input
         value={value}
@@ -77,7 +91,7 @@ const JSFormRuntime: React.FC<{
     );
   }
 
-  return <span ref={ref} style={{ display: 'inline-block', width: '100%' }} />;
+  return <span ref={containerRef} style={{ display: 'inline-block', width: '100%' }} />;
 };
 
 /**
