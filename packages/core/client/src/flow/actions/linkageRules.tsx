@@ -421,6 +421,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   currentLinkageRules = rules;
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
+  const [submitLoading, setSubmitLoading] = React.useState(false);
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
@@ -711,10 +712,8 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        maxHeight: '100vh',
         backgroundColor: '#fff',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        borderLeft: '1px solid #e0e0e0',
         position: 'relative',
       }}
     >
@@ -724,7 +723,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 24px',
+          padding: '12px 16px',
           borderBottom: '1px solid #f0f0f0',
           backgroundColor: '#fff',
           borderTopLeftRadius: '8px',
@@ -738,7 +737,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           size="small"
           icon={<CloseOutlined />}
           style={{ color: '#8c8c8c' }}
-          // onClick={onClose} // 暂时不绑定事件
+          onClick={() => ctx.view.destroy()}
         />
       </div>
 
@@ -788,14 +787,16 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           flexShrink: 0,
         }}
       >
-        <Button
-        // onClick={onCancel} // 暂时不绑定事件
-        >
-          Cancel
-        </Button>
+        <Button onClick={() => ctx.view.destroy()}>Cancel</Button>
         <Button
           type="primary"
-          // onClick={onOk} // 暂时不绑定事件
+          loading={submitLoading}
+          onClick={async () => {
+            setSubmitLoading(true);
+            await ctx.view.submit();
+            setSubmitLoading(false);
+            ctx.view.destroy();
+          }}
         >
           OK
         </Button>
