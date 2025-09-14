@@ -80,24 +80,6 @@ export const setDepartments = async (ctx: Context, next: Next) => {
       transaction: t,
     });
 
-    // ensure main exists in m2m if provided
-    if (main) {
-      const existingAssoc = await throughRepo.findOne({
-        filter: { userId, departmentId: main.id },
-        transaction: t,
-      });
-      if (!existingAssoc) {
-        await throughRepo.create({
-          values: {
-            userId,
-            departmentId: main.id,
-            isOwner: main.isOwner || false,
-          },
-          transaction: t,
-        });
-      }
-    }
-
     // owner flags
     if (owners.length) {
       await throughRepo.update({
