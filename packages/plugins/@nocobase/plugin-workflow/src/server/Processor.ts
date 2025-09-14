@@ -116,7 +116,7 @@ export default class Processor {
         plugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
 
-    const nodes = await execution.workflow.getNodes({ transaction });
+    const nodes = execution.workflow.nodes || (await execution.workflow.getNodes({ transaction }));
     execution.workflow.nodes = nodes;
 
     this.makeNodes(nodes);

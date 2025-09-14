@@ -493,7 +493,7 @@ export function WorkflowTasks() {
           <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
         </Layout.Header>
       ) : (
-        <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+        <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
           <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
         </Layout.Sider>
       )}
