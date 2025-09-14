@@ -136,15 +136,19 @@ export default defineConfig({
               title: '可配置的卡片',
               link: '/examples/flow-models/my-card',
             },
-            {
-              title: 'Vditor 集成',
-              link: '/examples/flow-models/vditor',
-            },
-            {
-              title: 'Markdown 解析',
-              link: '/examples/flow-models/markdown',
-            },
-            {
+        {
+          title: 'Vditor 集成',
+          link: '/examples/flow-models/vditor',
+        },
+        {
+          title: 'JavaScript item（表单）',
+          link: '/examples/flow-models/form-javascript-item',
+        },
+        {
+          title: 'Markdown 解析',
+          link: '/examples/flow-models/markdown',
+        },
+        {
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },

@@ -27,7 +27,6 @@ export async function registerJsFieldDemoModels(engine: any) {
     InputFieldModel: c.InputFieldModel,
     NumberFieldModel: c.NumberFieldModel,
     SelectFieldModel: c.SelectFieldModel,
-    DateTimeFieldModel: c.DateTimeFieldModel,
     JsonFieldModel: c.JsonFieldModel,
     TextareaFieldModel: c.TextareaFieldModel,
     PasswordFieldModel: c.PasswordFieldModel,
@@ -36,9 +35,11 @@ export async function registerJsFieldDemoModels(engine: any) {
     UploadFieldModel: c.UploadFieldModel,
 
     // 自定义项/入口
+    CommonItemModel: c.CommonItemModel,
     FormCustomItemModel: c.FormCustomItemModel,
     MarkdownItemModel: c.MarkdownItemModel,
     DividerItemModel: c.DividerItemModel,
+    JavaScriptItemModel: c.JavaScriptItemModel,
     FormJavaScriptFieldEntryModel: c.FormJavaScriptFieldEntryModel,
 
     // Details 相关

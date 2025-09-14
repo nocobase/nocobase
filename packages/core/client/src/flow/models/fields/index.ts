@@ -33,6 +33,7 @@ export * from './JSEditableFieldModel';
 
 export * from './DividerItemModel';
 export * from './MarkdownItemModel';
+export * from './JavaScriptItemModel';
 
 export * from './DisplayAssociationField';
 export * from './DisplayColorFieldModel';
