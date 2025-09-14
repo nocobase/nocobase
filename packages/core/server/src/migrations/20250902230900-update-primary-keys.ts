@@ -63,7 +63,12 @@ export default class extends Migration {
               transaction,
             },
           );
-          await this.db.sequelize.query(`DROP SEQUENCE IF EXISTS "${tableName}_id_seq" CASCADE;`, { transaction });
+          if (this.db.inDialect('postgres')) {
+            const schema = collection.collectionSchema();
+            const table = collection.model.tableName;
+            const seqName = `"${schema}"."${table}_id_seq"`;
+            await this.db.sequelize.query(`DROP SEQUENCE IF EXISTS ${seqName} CASCADE;`, { transaction });
+          }
         });
       }
       const field = await repo.findOne({
