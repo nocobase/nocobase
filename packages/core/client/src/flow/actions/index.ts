@@ -21,5 +21,14 @@ export * from './required';
 export * from './fieldComponent';
 export * from './aclCheck';
 export * from './pattern';
-export { fieldLinkageRules, actionLinkageRules, blockLinkageRules } from './linkageRules';
+export {
+  fieldLinkageRules,
+  actionLinkageRules,
+  blockLinkageRules,
+  linkageSetBlockProps,
+  linkageSetActionProps,
+  linkageSetFieldProps,
+  linkageAssignField,
+  linkageRunjs,
+} from './linkageRules';
 export * from './displayFieldComponent';

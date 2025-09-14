@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
+import {
+  ActionScene,
+  defineAction,
+  escapeT,
+  FlowContext,
+  FlowModel,
+  useFlowContext,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
@@ -37,28 +45,13 @@ interface LinkageRule {
   }[];
 }
 
-interface LinkageActions {
-  [type: string]: {
-    title: string;
-    /** 每个动作的配置组件 */
-    component: (props: { value: any; onChange: (value: any) => void }) => JSX.Element;
-    /** 每个动作的处理函数 */
-    handler: (params: {
-      /** 流上下文 */
-      ctx: FlowContext;
-      /** 当前动作的值 */
-      value: any;
-      /** 封装好的用来更新 model 状态的函数。里面会处理一些额外的逻辑 */
-      setProps: (model: FlowModel, props: any) => void;
-    }) => void;
-  };
-}
-
 let currentLinkageRules = null;
 
-export const setBlockProps = defineAction({
-  name: 'setBlockProps',
+export const linkageSetBlockProps = defineAction({
+  name: 'linkageSetBlockProps',
   title: '区块属性设置',
+  scene: ActionScene.BLOCK_LINKAGE_RULES,
+  sort: 100,
   uiSchema: {
     value: {
       type: 'string',
@@ -86,9 +79,11 @@ export const setBlockProps = defineAction({
   },
 });
 
-export const setActionProps = defineAction({
-  name: 'setActionProps',
+export const linkageSetActionProps = defineAction({
+  name: 'linkageSetActionProps',
   title: '按钮属性设置',
+  scene: ActionScene.ACTION_LINKAGE_RULES,
+  sort: 100,
   uiSchema: {
     value: {
       type: 'string',
@@ -118,9 +113,11 @@ export const setActionProps = defineAction({
   },
 });
 
-export const setFieldProps = defineAction({
-  name: 'setFieldProps',
+export const linkageSetFieldProps = defineAction({
+  name: 'linkageSetFieldProps',
   title: '字段属性设置',
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 100,
   uiSchema: {
     value: {
       type: 'object',
@@ -257,9 +254,11 @@ export const setFieldProps = defineAction({
   },
 });
 
-export const assignField = defineAction({
-  name: 'assignField',
+export const linkageAssignField = defineAction({
+  name: 'linkageAssignField',
   title: '字段赋值',
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 200,
   uiSchema: {
     value: {
       type: 'object',
@@ -351,9 +350,11 @@ export const assignField = defineAction({
   },
 });
 
-export const runjs = defineAction({
-  name: 'runjs',
+export const linkageRunjs = defineAction({
+  name: 'linkageRunjs',
   title: 'Execute JavaScript',
+  scene: [ActionScene.BLOCK_LINKAGE_RULES, ActionScene.FIELD_LINKAGE_RULES, ActionScene.ACTION_LINKAGE_RULES],
+  sort: 300,
   uiSchema: {
     value: {
       type: 'object',
@@ -408,24 +409,13 @@ export const runjs = defineAction({
   },
 });
 
-const linkageActions = {
-  // 区块属性设置
-  setBlockProps,
-  // 按钮属性设置
-  setActionProps,
-  // 字段属性设置
-  setFieldProps,
-  // 字段赋值
-  assignField,
-  // 执行 JavaScript
-  runjs,
-};
-
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
   const { value: rules, supportedActions } = props;
+  currentLinkageRules = rules;
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
-  currentLinkageRules = rules;
+
+  console.log('supportedActions', supportedActions);
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
@@ -486,15 +476,15 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   };
 
   // 获取可用的动作类型
-  const getAvailableActions = () => {
-    return supportedActions.filter((actionType: string) => linkageActions[actionType]);
+  const getActionsDefinition = () => {
+    return supportedActions.map((actionName: string) => ctx.getAction(actionName));
   };
 
   // 添加动作
-  const handleAddAction = (ruleIndex: number, actionType: string) => {
+  const handleAddAction = (ruleIndex: number, actionName: string) => {
     const newAction = {
       key: uid(),
-      name: actionType,
+      name: actionName,
       params: undefined,
     };
     rules[ruleIndex].actions.push(newAction);
@@ -644,7 +634,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             {rule.actions.length > 0 ? (
               <div style={{ marginBottom: 16 }}>
                 {rule.actions.map((action, actionIndex) => {
-                  const actionDef = linkageActions[action.name];
+                  const actionDef = ctx.getAction(action.name);
                   if (!actionDef) return null;
 
                   return (
@@ -692,10 +682,10 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             {/* Add action 按钮 */}
             <Dropdown
               menu={{
-                items: getAvailableActions().map((actionType) => ({
-                  key: actionType,
-                  label: linkageActions[actionType]?.title || actionType,
-                  onClick: () => handleAddAction(index, actionType),
+                items: getActionsDefinition().map((action) => ({
+                  key: action.name,
+                  label: action.title || action.name,
+                  onClick: () => handleAddAction(index, action.name),
                 })),
               }}
               trigger={['hover']}
@@ -767,12 +757,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
-          const handler = linkageActions[action.name]?.handler;
-
-          if (!handler) {
-            throw new Error(`Unknown action type: ${action.name}`);
-          }
-
           const setProps = (
             model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
             props: any,
@@ -803,7 +787,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             }
           };
 
-          handler(ctx, { ...action.params, setProps });
+          ctx.runAction(action.name, { ...action.params, setProps });
         });
       }
     });
@@ -850,14 +834,16 @@ export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
   title: escapeT('Block linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setBlockProps', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.BLOCK_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
@@ -869,14 +855,16 @@ export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
   title: escapeT('Linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setActionProps', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
@@ -888,14 +876,16 @@ export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
   title: escapeT('Field linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setFieldProps', 'assignField', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
@@ -906,3 +896,23 @@ export const fieldLinkageRules = defineAction({
     ctx.model.applyFlow('eventSettings');
   },
 });
+
+function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
+  const result = [...ctx.getActions().values()]
+    .filter((action) => {
+      let scenes = action.scene;
+      if (!scenes) {
+        return false;
+      }
+
+      if (!Array.isArray(scenes)) {
+        scenes = [scenes];
+      }
+
+      return scenes.includes(scene);
+    })
+    .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+    .map((action) => action.name);
+
+  return result;
+}
