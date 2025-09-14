@@ -141,8 +141,12 @@ export default defineConfig({
           link: '/examples/flow-models/vditor',
         },
         {
-          title: 'JavaScript item（表单）',
-          link: '/examples/flow-models/form-javascript-item',
+          title: 'JavaScript 模型',
+          children: [
+            { title: 'JavaScript field', link: '/examples/js-models/js-field-model' },
+            { title: 'JavaScript item（表单）', link: '/examples/js-models/form-javascript-item' },
+            { title: 'JS Actions', link: '/examples/js-models/js-actions' },
+          ],
         },
         {
           title: 'Markdown 解析',
@@ -152,14 +156,7 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-        {
-          title: 'JavaScript field',
-          link: '/models/fields/js-field-model',
-        },
-        {
-          title: 'JS Actions',
-          link: '/examples/js-actions',
-        },
+        
         {
           title: 'CRUD',
           link: '/examples/flow-models/crud',
@@ -614,7 +611,7 @@ export default defineConfig({
           title: '操作',
           type: 'group',
           children: [
-            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/examples/js-actions' },
+            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/examples/js-models/js-actions' },
           ],
         },
       ],

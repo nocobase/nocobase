@@ -6,7 +6,7 @@ import React from 'react';
 import { Application, FilterManager, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Card } from 'antd';
-import { registerJsFieldDemoModels } from '../../../models/fields/js-field-model/demos/utils';
+import { registerJsFieldDemoModels } from '../../js-field-model/demos/utils';
 import MockAdapter from 'axios-mock-adapter';
 
 class DemoPlugin extends Plugin {
