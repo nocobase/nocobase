@@ -410,7 +410,7 @@ export default ValidationPlugin;
 
 在数据表字段中使用自定义验证器：
 
-```typescript
+``typescript
 {
   type: 'string',
   name: 'customField',
@@ -421,6 +421,263 @@ export default ValidationPlugin;
 }
 ```
 
+## 8. SDK 集成插件示例
+
+展示如何在插件中集成和使用 NocoBase SDK。
+
+### 内部 API 调用插件
+
+**插件入口** (`src/server/index.ts`):
+
+```typescript
+import { Plugin } from '@nocobase/server';
+import { APIClient } from '@nocobase/sdk';
+
+export class InternalApiPlugin extends Plugin {
+  private internalClient: APIClient;
+  
+  async load() {
+    // 创建内部 API 客户端
+    this.internalClient = new APIClient({
+      baseURL: this.app.url + '/api',
+    });
+    
+    // 注册定时任务，定期同步数据
+    this.app.schedule.register('data-sync', '0 */30 * * * *', async () => {
+      await this.syncData();
+    });
+    
+    // 添加管理命令
+    this.app.command('sync-posts').action(async () => {
+      await this.syncData();
+    });
+  }
+  
+  private async syncData() {
+    try {
+      // 使用内部客户端调用 API
+      const response = await this.internalClient.resource('posts').list({
+        pageSize: 100,
+        page: 1,
+      });
+      
+      // 处理同步逻辑
+      this.app.logger.info(`Synced ${response.data.data.length} posts`);
+    } catch (error) {
+      this.app.logger.error('Data sync failed:', error);
+    }
+  }
+}
+
+export default InternalApiPlugin;
+```
+
+### 客户端数据管理插件
+
+**数据管理服务** (`src/client/services/data-manager.ts`):
+
+```typescript
+import { APIClient } from '@nocobase/sdk';
+
+export class DataManager {
+  private api: APIClient;
+  
+  constructor(baseURL: string) {
+    this.api = new APIClient({
+      baseURL: `${baseURL}/api`,
+    });
+  }
+  
+  async getPosts(options: { page?: number; pageSize?: number } = {}) {
+    const { page = 1, pageSize = 20 } = options;
+    
+    try {
+      const response = await this.api.resource('posts').list({
+        page,
+        pageSize,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('获取文章列表失败:', error);
+      throw error;
+    }
+  }
+  
+  async createPost(data: any) {
+    try {
+      const response = await this.api.resource('posts').create({
+        values: data,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('创建文章失败:', error);
+      throw error;
+    }
+  }
+  
+  async updatePost(id: number, data: any) {
+    try {
+      const response = await this.api.resource('posts').update({
+        filterByTk: id,
+        values: data,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('更新文章失败:', error);
+      throw error;
+    }
+  }
+  
+  async deletePost(id: number) {
+    try {
+      const response = await this.api.resource('posts').destroy({
+        filterByTk: id,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('删除文章失败:', error);
+      throw error;
+    }
+  }
+}
+```
+
+**插件入口** (`src/client/index.tsx`):
+
+```typescript
+import { Plugin } from '@nocobase/client';
+import { DataManager } from './services/data-manager';
+
+class DataManagerPlugin extends Plugin {
+  async load() {
+    // 创建数据管理服务实例
+    const dataManager = new DataManager(this.app.apiClient.axios.defaults.baseURL);
+    
+    // 将服务添加到应用上下文
+    this.app.dataManager = dataManager;
+    
+    // 添加到全局对象，方便在其他组件中使用
+    if (typeof window !== 'undefined') {
+      (window as any).dataManager = dataManager;
+    }
+  }
+}
+
+// 扩展应用类型定义
+declare module '@nocobase/client' {
+  interface Application {
+    dataManager: DataManager;
+  }
+}
+
+export default DataManagerPlugin;
+```
+
+### 认证集成插件
+
+**认证服务** (`src/client/services/auth-service.ts`):
+
+```typescript
+import { APIClient } from '@nocobase/sdk';
+
+export class AuthService {
+  private api: APIClient;
+  
+  constructor(apiClient: APIClient) {
+    this.api = apiClient;
+  }
+  
+  async login(username: string, password: string, authenticator = 'password') {
+    try {
+      const response = await this.api.auth.signIn(
+        { username, password },
+        authenticator
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('登录失败:', error);
+      throw error;
+    }
+  }
+  
+  async logout() {
+    try {
+      await this.api.auth.signOut();
+    } catch (error) {
+      console.error('登出失败:', error);
+      throw error;
+    }
+  }
+  
+  async register(userData: any, authenticator = 'password') {
+    try {
+      const response = await this.api.auth.signUp(userData, authenticator);
+      return response.data;
+    } catch (error) {
+      console.error('注册失败:', error);
+      throw error;
+    }
+  }
+  
+  isAuthenticated() {
+    return !!this.api.auth.token;
+  }
+  
+  getCurrentUser() {
+    return this.api.request({
+      url: 'users:profile',
+      method: 'get',
+    });
+  }
+}
+```
+
+**插件入口** (`src/client/index.tsx`):
+
+```typescript
+import { Plugin } from '@nocobase/client';
+import { AuthService } from './services/auth-service';
+
+class AuthPlugin extends Plugin {
+  async load() {
+    // 创建认证服务实例
+    const authService = new AuthService(this.app.apiClient);
+    
+    // 将服务添加到应用上下文
+    this.app.authService = authService;
+    
+    // 监听认证状态变化
+    this.app.apiClient.axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // 处理认证失败
+        if (error.response?.status === 401) {
+          // 清除认证信息
+          this.app.authService?.logout();
+          // 重定向到登录页面
+          window.location.href = '/signin';
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+}
+
+// 扩展应用类型定义
+declare module '@nocobase/client' {
+  interface Application {
+    authService: AuthService;
+  }
+}
+
+export default AuthPlugin;
+```
+
 ## 最佳实践
 
 1. **代码复用**：将通用功能提取为独立模块
@@ -429,3 +686,4 @@ export default ValidationPlugin;
 4. **安全性**：验证用户输入，防止安全漏洞
 5. **可测试性**：编写易于测试的代码
 6. **文档化**：为插件提供清晰的文档说明
+7. **SDK 使用**：合理使用 SDK 进行 API 调用，注意错误处理和认证管理

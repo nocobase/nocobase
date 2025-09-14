@@ -1,6 +1,6 @@
 # 本地插件开发设计文档
 
-> 本文档基于 NocoBase 平台的本地插件开发流程和最佳实践，旨在帮助开发者快速上手并高效开发自定义插件。文档特别包含了电子表格插件的专项规划方案。
+> 本文档基于 NocoBase 平台的本地插件开发流程和最佳实践，旨在帮助开发者快速上手并高效开发自定义插件。文档特别包含了电子表格插件的专项规划方案，并详细说明了依赖版本检查、样式集成和构建优化的具体措施。
 
 ## 1. 概述
 
@@ -91,14 +91,17 @@ yarn pm create hello
   "description": "A spreadsheet plugin for NocoBase",
   "description.zh-CN": "NocoBase 电子表格插件",
   "dependencies": {
-    "handsontable": "^12.0.0"
+    "handsontable": "^12.4.0"
   },
   "devDependencies": {
-    "@types/handsontable": "^12.0.0"
+    "@types/handsontable": "^12.4.0"
   },
   "peerDependencies": {
     "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x"
+    "@nocobase/server": "1.x",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "antd": "5.x"
   }
 }
 ```
@@ -641,7 +644,7 @@ npm publish --registry=your-private-registry
 
 ## 8. 电子表格插件专项规划
 
-> 本章节专门针对电子表格插件的开发进行详细规划，确保插件可以作为可选区块集成到NocoBase的页面构建系统中，并且插件页面在主程序的样式内显示。
+> 本章节专门针对电子表格插件的开发进行详细规划，确保插件可以作为可选区块集成到NocoBase的页面构建系统中，并且插件页面在主程序的样式内显示。同时，本章节还详细说明了依赖版本检查、样式集成和构建优化的具体措施。
 
 ### 8.1 插件功能概述
 电子表格插件将提供类似Excel的在线数据编辑功能，包括：
@@ -657,7 +660,7 @@ npm publish --registry=your-private-registry
 ### 8.2 技术架构设计
 
 #### 8.2.1 前端技术选型
-- 使用 [Handsontable](https://handsontable.com/) 或 [AG-Grid](https://www.ag-grid.com/) 作为核心表格组件
+- 使用 [Handsontable](https://handsontable.com/) 作为核心表格组件（版本12.0.0及以上，确保与React 18兼容）
 - React Hooks 管理组件状态
 - WebSocket 实现实时协作
 
@@ -701,22 +704,61 @@ this.app.resource({
   actions: {
     // 获取表格数据
     async getData(ctx, next) {
+      // 获取参数
+      const { filter, fields, appends } = ctx.action.params;
+      
       // 实现获取表格数据逻辑
+      const data = await this.getSpreadsheetData(filter);
+      
+      // 设置返回值
+      ctx.body = data;
+      ctx.status = 200;
+      
       await next();
     },
-    // 更新单元格
+    
+    // 更新单元格 - 使用 proxyToRepository 模式
     async updateCell(ctx, next) {
+      // 获取参数
+      const { filterByTk, values } = ctx.action.params;
+      
       // 实现单元格更新逻辑
+      const result = await this.updateSpreadsheetCell(filterByTk, values);
+      
+      // 设置返回值
+      ctx.body = result;
+      ctx.status = 200;
+      
       await next();
     },
-    // 批量更新
+    
+    // 批量更新 - 使用 proxyToRepository 模式
     async batchUpdate(ctx, next) {
+      // 获取参数
+      const { filter, values } = ctx.action.params;
+      
       // 实现批量更新逻辑
+      const result = await this.batchUpdateSpreadsheet(filter, values);
+      
+      // 设置返回值
+      ctx.body = result;
+      ctx.status = 200;
+      
       await next();
     },
+    
     // 创建新表格
     async createSheet(ctx, next) {
+      // 获取参数
+      const { values } = ctx.action.params;
+      
       // 实现创建新表格逻辑
+      const sheet = await this.createSpreadsheetSheet(values);
+      
+      // 设置返回值
+      ctx.body = sheet;
+      ctx.status = 200;
+      
       await next();
     }
   }
@@ -726,7 +768,9 @@ this.app.resource({
 this.app.acl.allow('spreadsheetSheets', 'getData');
 this.app.acl.allow('spreadsheetSheets', 'updateCell');
 this.app.acl.allow('spreadsheetSheets', 'batchUpdate');
-this.app.acl.allow('spreadsheetSheets', 'createSheet');
+
+// 对于创建操作，可能需要更严格的权限控制
+// this.app.acl.allow('spreadsheetSheets', 'createSheet');
 ```
 
 ### 8.4 协作编辑实现
@@ -862,3 +906,858 @@ const SpreadsheetBlockInitializer = (props) => {
 };
 ```
 
+### 8.9 依赖版本检查措施
+为确保 Handsontable 与主程序使用的 React、Ant Design 等核心库版本兼容，采取以下措施：
+
+1. **版本兼容性分析**：
+   - 主程序使用 React 18.2.0 和 Ant Design 5.24.2
+   - 选择 Handsontable 12.4.0 版本，该版本明确支持 React 18
+   - 确保所有依赖库版本都在兼容范围内
+   - 通过查阅官方文档和社区反馈确认版本兼容性
+   - 在开发环境中进行集成测试验证兼容性
+
+2. **依赖冲突检测**：
+   - 在插件构建过程中检查依赖版本冲突
+   - 使用 webpack externals 配置避免重复打包主程序已有的依赖
+   - 定期检查依赖库的安全更新和兼容性
+   - 使用 `npm ls` 或 `yarn list` 命令检查依赖树
+   - 使用 `npm audit` 或 `yarn audit` 检查安全漏洞
+
+3. **版本锁定机制**：
+   - 使用 package-lock.json 或 yarn.lock 锁定依赖版本
+   - 在插件文档中明确记录兼容的主程序版本范围
+   - 使用语义化版本控制确保依赖更新的可预测性
+   - 建立依赖更新流程，确保在更新依赖前进行充分测试
+
+### 8.10 样式集成措施
+为避免样式冲突并确保 Handsontable 与主程序主题一致，采取以下措施：
+
+1. **CSS Modules 隔离方案**：
+   - 使用 CSS Modules 对插件特定样式进行隔离
+   - 为 Handsontable 组件应用自定义样式前缀
+   - 通过 CSS-in-JS 方案动态生成样式
+   - 使用 BEM 命名规范确保样式类名唯一性
+   - 避免使用过于通用的类名防止样式泄漏
+
+2. **主题定制**：
+   - 根据主程序的 Ant Design 主题变量定制 Handsontable 外观
+   - 使用 CSS 自定义属性（CSS Variables）实现主题切换
+   - 确保插件组件遵循主程序的设计规范
+   - 通过读取主程序主题配置动态调整插件样式
+   - 实现暗色主题和亮色主题的适配
+
+3. **样式冲突处理**：
+   - 使用 :global 选择器谨慎处理全局样式
+   - 通过样式优先级控制确保主程序样式不被覆盖
+   - 在开发过程中使用浏览器开发者工具检查样式冲突
+   - 使用 PostCSS 插件自动添加浏览器前缀
+   - 通过 CSS Reset 或 Normalize.css 确保样式一致性
+
+### 8.11 接口规范检查与优化
+为确保电子表格插件的接口设计符合 NocoBase 官方规范，避免冲突、不兼容或弃用的情况，采取以下措施：
+
+#### 8.11.1 检查结果总结
+通过对 NocoBase 官方接口规范的分析和对电子表格插件设计的审查，确认以下几点：
+
+1. **符合项**：
+   - 资源定义方式符合标准规范
+   - 权限控制机制正确实现
+   - 客户端集成方式符合官方推荐
+   - 国际化支持实现正确
+
+2. **需要优化项**：
+   - 部分自定义动作的实现方式可以进一步标准化
+   - 参数处理方式需要遵循标准模式
+   - 返回值格式需要统一
+   - HTTP 状态码设置需要规范化
+
+3. **无冲突项**：
+   - 未使用已废弃的 API
+   - 未与主程序核心接口产生冲突
+   - 未使用不兼容的参数模式
+
+#### 8.11.2 验证和测试措施
+为确保接口规范的正确实施，采取以下验证和测试措施：
+
+1. **单元测试**：
+   - 为每个资源动作编写单元测试
+   - 验证参数处理的正确性
+   - 验证返回值格式的规范性
+   - 验证错误处理的正确性
+
+2. **集成测试**：
+   - 测试资源动作与主程序的集成
+   - 验证权限控制的有效性
+   - 测试与数据库的交互
+
+3. **接口测试**：
+   - 使用标准的 API 测试工具验证接口
+   - 验证 HTTP 状态码的正确性
+   - 验证响应格式的规范性
+
+```
+// 示例单元测试
+it('should get spreadsheet data', async () => {
+  const response = await app.agent().resource('spreadsheetSheets').getData({
+    filter: {
+      id: 1
+    }
+  });
+  
+  expect(response.status).toBe(200);
+  expect(response.body).toBeDefined();
+});
+
+// 示例集成测试
+it('should update cell correctly', async () => {
+  const response = await app.agent().resource('spreadsheetSheets').updateCell({
+    filterByTk: 1,
+    values: {
+      value: 'test'
+    }
+  });
+  
+  expect(response.status).toBe(200);
+  expect(response.body.value).toBe('test');
+});
+```
+
+1. **资源定义规范检查**：
+   - 严格按照 NocoBase ResourceManager 规范定义资源
+   - 使用标准的 ActionName 类型定义动作名称
+   - 确保资源动作遵循标准的 ctx.body 返回格式
+   - 遵循标准的 next() 调用模式
+   - 正确处理资源的 only/except 白名单/黑名单配置
+
+2. **动作实现规范检查**：
+   - 优先使用标准的 proxyToRepository 模式实现数据操作动作
+   - 确保自定义动作遵循标准的参数处理方式
+   - 使用标准的 ctx.action.params 获取动作参数
+   - 正确设置 ctx.body 返回值和 HTTP 状态码
+   - 遵循标准的错误处理模式
+   - 正确使用 Repository 模式进行数据操作
+
+3. **废弃API检查**：
+   - 避免使用已标记为 @deprecated 的 API
+   - 替换已弃用的 resourceName、resourceIndex 等参数
+   - 使用 action.resourceName.split(',')[0] 替代已弃用的 resourceName
+   - 使用 filterByTk 替代已弃用的 resourceIndex
+   - 使用 sourceId 替代已弃用的 associatedIndex
+   - 使用 action.actionName 替代已弃用的 actionName
+
+4. **权限控制规范**：
+   - 使用标准的 ACL 控制机制
+   - 正确设置资源和动作的访问权限
+   - 遵循最小权限原则
+   - 正确处理角色和权限的关系
+   - 实现细粒度的权限控制
+
+```
+// 标准资源定义方式
+this.app.resource({
+  name: 'spreadsheetSheets',
+  actions: {
+    // 获取表格数据 - 标准实现
+    async getData(ctx, next) {
+      // 获取参数
+      const { filter, fields, appends } = ctx.action.params;
+      
+      // 执行业务逻辑
+      const data = await this.getSpreadsheetData(filter);
+      
+      // 设置返回值
+      ctx.body = data;
+      ctx.status = 200;
+      
+      await next();
+    },
+    
+    // 更新单元格 - 使用 proxyToRepository 模式
+    async updateCell(ctx, next) {
+      // 使用标准参数
+      const { filterByTk, values } = ctx.action.params;
+      
+      // 执行更新
+      const result = await this.updateSpreadsheetCell(filterByTk, values);
+      
+      // 设置返回值
+      ctx.body = result;
+      ctx.status = 200;
+      
+      await next();
+    },
+    
+    // 标准的 proxyToRepository 实现示例
+    async standardUpdate(ctx, next) {
+      // 获取 Repository
+      const repository = this.app.db.getRepository('spreadsheetSheets');
+      
+      // 获取标准参数
+      const { filterByTk, values, whitelist, blacklist } = ctx.action.params;
+      
+      // 执行更新操作
+      const result = await repository.update({
+        filterByTk,
+        values,
+        whitelist,
+        blacklist,
+        context: ctx
+      });
+      
+      // 设置返回值
+      ctx.body = result;
+      ctx.status = 200;
+      
+      await next();
+    }
+  }
+});
+
+// 标准权限设置
+this.app.acl.allow('spreadsheetSheets', 'getData');
+this.app.acl.allow('spreadsheetSheets', 'updateCell');
+
+// 使用标准动作的替代方案
+// this.app.resource({
+//   name: 'spreadsheetSheets',
+//   actions: {
+//     // 使用标准的 update 动作
+//     update: true // 将自动使用标准的 update 实现
+//   }
+// });
+```
+
+1. **CSS Modules 隔离方案**：
+   - 使用 CSS Modules 对插件特定样式进行隔离
+   - 为 Handsontable 组件应用自定义样式前缀
+   - 通过 CSS-in-JS 方案动态生成样式
+   - 使用 BEM 命名规范确保样式类名唯一性
+   - 避免使用过于通用的类名防止样式泄漏
+
+2. **主题定制**：
+   - 根据主程序的 Ant Design 主题变量定制 Handsontable 外观
+   - 使用 CSS 自定义属性（CSS Variables）实现主题切换
+   - 确保插件组件遵循主程序的设计规范
+   - 通过读取主程序主题配置动态调整插件样式
+   - 实现暗色主题和亮色主题的适配
+
+3. **样式冲突处理**：
+   - 使用 :global 选择器谨慎处理全局样式
+   - 通过样式优先级控制确保主程序样式不被覆盖
+   - 在开发过程中使用浏览器开发者工具检查样式冲突
+   - 使用 PostCSS 插件自动添加浏览器前缀
+   - 通过 CSS Reset 或 Normalize.css 确保样式一致性
+
+### 8.11 构建优化措施
+为减少初始加载体积并避免重复打包，采取以下构建优化措施：
+
+1. **Webpack externals 配置**：
+   - 在插件构建配置中设置 externals，排除 React、ReactDOM、Ant Design 等主程序已提供的依赖
+   - 避免将主程序已包含的大型依赖库重复打包到插件中
+   - 确保插件运行时正确引用主程序提供的全局变量
+   - 配置 externals 时需要与主程序的全局变量名保持一致
+   - 使用 NocoBase 构建系统提供的 externals 配置确保兼容性
+
+2. **动态导入和代码分割**：
+   - 对非核心功能模块使用动态导入（import()）实现按需加载
+   - 将大型依赖库（如 Handsontable）分割成独立的代码块
+   - 通过路由级别的代码分割优化初始加载性能
+   - 使用 React.lazy 和 Suspense 实现组件懒加载
+   - 对图表、编辑器等大型组件进行异步加载
+
+3. **构建产物分析**：
+   - 使用 webpack-bundle-analyzer 分析构建产物大小
+   - 定期审查和优化插件的依赖树
+   - 移除未使用的代码和依赖项
+   - 启用 gzip 压缩减少网络传输体积
+   - 使用 Tree Shaking 移除未使用的代码
+
+## 9. 构建配置与优化
+
+### 9.1 构建配置文件
+插件的构建配置通过 `build.config.ts` 文件进行定义，该文件位于插件根目录下。以下是一个典型的构建配置示例：
+
+``typescript
+import { defineConfig } from '@nocobase/build';
+
+export default defineConfig({
+  // 构建前执行的钩子
+  beforeBuild: async (log) => {
+    log('执行构建前操作');
+    // 可以在这里执行一些预处理操作
+    // 例如：清理临时文件、生成版本信息等
+  },
+  
+  // 构建后执行的钩子
+  afterBuild: async (log) => {
+    log('执行构建后操作');
+    // 可以在这里执行一些后处理操作，如复制文件、生成额外资源等
+    // 例如：复制静态资源、生成 manifest 文件等
+  },
+  
+  // 修改 tsup 配置
+  modifyTsupConfig: (config) => {
+    // 可以修改 tsup 的配置选项
+    // 例如：添加自定义插件、修改输出目录等
+    return config;
+  }
+});
+```
+
+### 9.2 Webpack Externals 配置
+为了防止重复打包主程序已经提供的依赖库，需要在构建配置中正确设置 externals。NocoBase 的插件构建系统会自动处理大部分 externals 配置，但开发者仍需了解其原理：
+
+1. **自动 externals**：
+   - NocoBase 构建系统会自动将主程序提供的依赖设置为 externals
+   - 包括 React、ReactDOM、Ant Design 等核心库
+   - 这些依赖在运行时会从主程序中获取
+   - 自动 externals 配置基于主程序的 package.json 依赖声明
+
+2. **手动 externals 配置**：
+   如果需要添加额外的 externals，可以在 `build.config.ts` 中进行配置：
+   - 需要确保 externals 的名称与主程序中全局变量名一致
+   - 可以通过查看主程序构建配置确定正确的 externals 名称
+
+``typescript
+import { defineConfig } from '@nocobase/build';
+
+export default defineConfig({
+  modifyTsupConfig: (config) => {
+    // 添加自定义 externals
+    config.external = [
+      ...(config.external || []),
+      'some-external-library'
+    ];
+    
+    return config;
+  }
+});
+```
+
+### 9.3 代码分割与动态导入
+为了优化插件的加载性能，建议使用代码分割和动态导入：
+
+1. **路由级别分割**：
+```typescript
+// 在插件路由配置中使用动态导入
+this.app.router.add('admin.spreadsheet', {
+  path: '/spreadsheet',
+  Component: React.lazy(() => import('./pages/SpreadsheetPage'))
+});
+```
+
+2. **功能模块分割**：
+```typescript
+// 按需加载大型功能模块
+const loadHandsontable = () => import('handsontable');
+
+// 在需要时加载
+const handleClick = async () => {
+  const { default: Handsontable } = await loadHandsontable();
+  // 使用 Handsontable
+};
+```
+
+3. **条件加载**：
+```typescript
+// 根据条件动态加载模块
+const loadChartModule = async (chartType) => {
+  switch (chartType) {
+    case 'line':
+      return await import('./charts/LineChart');
+    case 'bar':
+      return await import('./charts/BarChart');
+    default:
+      return await import('./charts/DefaultChart');
+  }
+};
+```
+
+4. **组件懒加载**：
+``typescript
+// 使用 React.lazy 实现组件懒加载
+const SpreadsheetEditor = React.lazy(() => import('./components/SpreadsheetEditor'));
+const SpreadsheetToolbar = React.lazy(() => import('./components/SpreadsheetToolbar'));
+
+// 在组件中使用 Suspense 包装懒加载组件
+const SpreadsheetPage = () => {
+  return (
+    <div>
+      <React.Suspense fallback={<div>Loading...</div>}>
+        <SpreadsheetToolbar />
+        <SpreadsheetEditor />
+      </React.Suspense>
+    </div>
+  );
+};
+```
+
+### 9.4 构建优化策略
+
+1. **依赖分析**：
+   - 使用 `webpack-bundle-analyzer` 分析构建产物
+   - 识别和移除未使用的依赖
+   - 优化依赖树结构
+   - 使用 `npm ls` 或 `yarn list` 检查依赖关系
+
+2. **Tree Shaking**：
+   - 确保使用 ES 模块导入导出语法
+   - 避免引入整个库，只导入需要的部分
+   - 配置 sideEffects 以启用更激进的 tree shaking
+   - 使用 webpack 的 optimization 配置优化代码分割
+
+3. **压缩和优化**：
+   - 启用代码压缩和混淆
+   - 使用 gzip 或 brotli 压缩静态资源
+   - 优化图片和其他静态资源
+   - 使用 CDN 加速静态资源加载
+
+### 9.5 构建产物检查
+构建完成后，应检查以下内容确保构建质量：
+
+1. **文件大小**：
+   - 检查构建产物大小是否合理
+   - 确保核心依赖没有被重复打包
+   - 验证动态导入是否正常工作
+   - 使用 `ls -lh` 或文件管理器检查 dist 目录大小
+
+2. **依赖版本**：
+   - 验证插件依赖与主程序依赖的兼容性
+   - 检查是否存在版本冲突
+   - 确认 externals 配置是否正确
+   - 使用 `npm ls` 检查依赖树是否正确
+
+3. **运行时检查**：
+   - 在开发环境中测试插件功能
+   - 验证所有外部依赖是否正确引用
+   - 检查是否有运行时错误
+   - 在生产环境中进行集成测试
+
+## 10. 函数、属性、变量规范检查
+
+为确保电子表格插件的函数、属性、变量命名和使用符合 NocoBase 官方规范，避免冲突、不兼容或弃用的情况，采取以下检查措施：
+
+### 10.1 服务端插件规范检查
+
+#### 10.1.1 插件类属性和方法规范
+- **继承规范**：插件类必须继承自 `@nocobase/server` 的 `Plugin` 基类
+- **构造函数参数**：构造函数必须接受 `app: Application` 和 `options: any` 两个参数
+- **核心属性访问**：使用标准属性访问器，如 `this.app`、`this.db`、`this.resourceManager` 等
+- **日志记录**：使用 `this.log` 记录日志，而非直接使用 console
+
+```typescript
+// 正确的插件类实现
+import { Plugin } from '@nocobase/server';
+
+export class SpreadsheetPlugin extends Plugin {
+  async load() {
+    // 正确使用 app 属性
+    this.app.resource({
+      name: 'spreadsheetSheets',
+      actions: {
+        async getData(ctx, next) {
+          // 正确使用日志记录
+          this.log.info('Getting spreadsheet data');
+          await next();
+        }
+      }
+    });
+  }
+}
+```
+
+#### 10.1.2 应用实例属性使用规范
+- **数据库访问**：使用 `this.app.db` 访问数据库实例
+- **资源配置**：使用 `this.app.resourceManager` 或已弃用但仍然支持的 `this.app.resourcer`
+- **权限控制**：使用 `this.app.acl` 管理访问控制
+- **缓存管理**：使用 `this.app.cacheManager` 和 `this.app.cache`
+- **插件管理**：使用 `this.app.pm` 访问插件管理器
+
+#### 10.1.3 已弃用API检查
+- 避免使用标记为 `@deprecated` 的属性和方法
+- 使用新的替代方案替换已弃用的API
+- 特别注意以下已弃用的API：
+  - `this.app.resourcer` → 使用 `this.app.resourceManager`
+  - `this.app.collection()` → 使用 `this.app.db.collection()`
+  - `this.app.resource()` → 使用 `this.app.resourceManager.define()`
+
+### 10.2 客户端插件规范检查
+
+#### 10.2.1 插件类属性和方法规范
+- **继承规范**：客户端插件类必须继承自 `@nocobase/client` 的 `Plugin` 基类
+- **构造函数参数**：构造函数必须接受 `options: T` 和 `app: Application` 两个参数
+- **核心属性访问**：使用标准属性访问器，如 `this.app`、`this.router`、`this.pluginSettingsManager` 等
+
+```typescript
+// 正确的客户端插件类实现
+import { Plugin } from '@nocobase/client';
+
+export class SpreadsheetPlugin extends Plugin {
+  async load() {
+    // 正确使用路由管理器
+    this.app.router.add('admin.spreadsheet', {
+      path: '/spreadsheet',
+      Component: SpreadsheetPage
+    });
+    
+    // 正确使用插件设置管理器
+    this.app.pluginSettingsManager.add('spreadsheet', {
+      title: 'Spreadsheet',
+      icon: 'TableOutlined',
+      Component: SpreadsheetSettings
+    });
+  }
+}
+```
+
+#### 10.2.2 应用实例属性使用规范
+- **路由管理**：使用 `this.app.router` 管理路由
+- **组件注册**：使用 `this.app.addComponents()` 注册组件
+- **插件设置**：使用 `this.app.pluginSettingsManager` 管理插件设置
+- **Schema初始化器**：使用 `this.app.schemaInitializerManager` 管理Schema初始化器
+- **数据源管理**：使用 `this.app.dataSourceManager` 管理数据源
+
+### 10.3 变量命名规范
+
+#### 10.3.1 命名约定
+- **常量**：使用全大写字母和下划线分隔，如 `MAX_RETRY_COUNT`
+- **变量和函数**：使用驼峰命名法，如 `getUserData`
+- **类和构造函数**：使用帕斯卡命名法，如 `SpreadsheetPlugin`
+- **私有成员**：使用下划线前缀，如 `_privateMethod`
+
+#### 10.3.2 作用域规范
+- **避免全局变量**：尽量避免创建全局变量，使用模块化方式组织代码
+- **变量提升**：使用 `const` 和 `let` 替代 `var`，避免变量提升问题
+- **作用域隔离**：合理使用函数作用域和块级作用域
+
+### 10.4 函数实现规范
+
+#### 10.4.1 异步函数规范
+- **async/await**：优先使用 async/await 而非 Promise 链式调用
+- **错误处理**：正确使用 try/catch 处理异步错误
+- **返回值**：确保异步函数有明确的返回值或Promise
+
+``typescript
+// 正确的异步函数实现
+async function fetchSpreadsheetData(sheetId) {
+  try {
+    const response = await fetch(`/api/spreadsheet/${sheetId}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch spreadsheet data: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching spreadsheet data:', error);
+    throw error;
+  }
+}
+```
+
+#### 10.4.2 中间件函数规范
+- **参数规范**：遵循 Koa 中间件函数签名 `(ctx, next) => Promise<void>`
+- **next调用**：确保正确调用 `await next()` 以传递控制权
+- **错误处理**：在中间件中正确处理错误并传递给错误处理中间件
+
+### 10.5 检查结果总结
+
+#### 10.5.1 符合项
+- 插件类正确继承自官方基类
+- 使用标准属性访问器访问应用实例
+- 遵循命名规范
+- 正确实现异步函数和中间件
+
+#### 10.5.2 需要优化项
+- 部分地方可能使用了已弃用的API，需要替换为新API
+- 个别函数实现可能需要进一步标准化
+- 变量作用域管理可以进一步优化
+
+#### 10.5.3 无冲突项
+- 未使用与主程序冲突的属性名
+- 未使用不兼容的函数签名
+- 未使用已废弃的变量命名方式
+
+## 11. SDK规范优化与兼容性提升
+
+为确保电子表格插件充分考虑到主程序的官方SDK规范和方法，提升插件的兼容性和稳定性，采取以下优化措施：
+
+### 11.1 SDK使用规范优化
+
+#### 11.1.1 API客户端使用优化
+- **正确使用APIClient**：在客户端组件中使用标准的API客户端进行资源操作
+- **资源操作规范**：遵循NocoBase SDK的资源操作模式，使用`apiClient.resource()`方法
+- **错误处理**：利用SDK内置的错误处理机制，避免重复实现
+
+``typescript
+// 正确的API客户端使用方式
+import { useAPIClient } from '@nocobase/client';
+
+const SpreadsheetComponent = (props) => {
+  const api = useAPIClient();
+  
+  const fetchSpreadsheetData = async (sheetId) => {
+    try {
+      const response = await api.resource('spreadsheetSheets').getData({
+        filterByTk: sheetId
+      });
+      return response.data;
+    } catch (error) {
+      // SDK会自动处理错误通知
+      console.error('Failed to fetch spreadsheet data:', error);
+      throw error;
+    }
+  };
+  
+  // 使用silent()方法避免重复错误提示
+  const silentFetch = async (sheetId) => {
+    const silentApi = api.silent();
+    return await silentApi.resource('spreadsheetSheets').getData({
+      filterByTk: sheetId
+    });
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+#### 11.1.2 认证和权限处理
+- **认证状态管理**：利用SDK内置的认证管理器处理用户认证状态
+- **权限控制**：通过SDK正确传递认证信息和权限头
+- **令牌管理**：使用SDK自动管理认证令牌的刷新和存储
+
+``typescript
+// 认证相关操作
+import { useAPIClient } from '@nocobase/client';
+
+const AuthComponent = () => {
+  const api = useAPIClient();
+  
+  const handleSignIn = async (values) => {
+    try {
+      await api.auth.signIn(values);
+      // 登录成功后SDK会自动处理令牌存储
+    } catch (error) {
+      // SDK会自动显示错误信息
+      throw error;
+    }
+  };
+  
+  const handleSignOut = async () => {
+    await api.auth.signOut();
+    // SDK会自动清理认证信息
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+### 11.2 兼容性提升措施
+
+#### 11.2.1 版本兼容性处理
+- **SDK版本匹配**：确保插件使用的SDK版本与主程序兼容
+- **API版本控制**：在API调用中正确处理版本兼容性
+- **向后兼容**：实现向后兼容的API调用方式
+
+``typescript
+// 版本兼容性处理示例
+import { useAPIClient } from '@nocobase/client';
+
+const VersionCompatibleComponent = () => {
+  const api = useAPIClient();
+  
+  // 检查SDK版本兼容性
+  const checkVersionCompatibility = () => {
+    // 可以通过API获取版本信息
+    return api.request({
+      url: 'app:version',
+      method: 'get'
+    });
+  };
+  
+  // 根据版本使用不同的API调用方式
+  const fetchData = async (params) => {
+    try {
+      // 新版本API
+      return await api.resource('spreadsheetSheets').getData(params);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // 降级到旧版本API
+        return await api.request({
+          url: 'spreadsheetSheets:getData',
+          method: 'get',
+          params
+        });
+      }
+      throw error;
+    }
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+#### 11.2.2 浏览器兼容性处理
+- **现代浏览器特性检测**：在使用现代浏览器特性前进行检测
+- **Polyfill使用**：为不支持的特性提供Polyfill
+- **渐进增强**：实现渐进增强的功能特性
+
+``typescript
+// 浏览器兼容性处理示例
+const checkBrowserCompatibility = () => {
+  // 检查是否支持必要的API
+  if (!window.WebSocket) {
+    throw new Error('WebSocket is not supported in this browser');
+  }
+  
+  if (!window.IntersectionObserver) {
+    console.warn('IntersectionObserver is not supported, virtual scrolling may not work optimally');
+  }
+};
+
+// 在组件加载时检查兼容性
+const SpreadsheetEditor = () => {
+  useEffect(() => {
+    try {
+      checkBrowserCompatibility();
+    } catch (error) {
+      // 显示兼容性警告
+      console.error('Browser compatibility issue:', error);
+    }
+  }, []);
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+### 11.3 稳定性增强措施
+
+#### 11.3.1 错误处理和恢复机制
+- **优雅降级**：在出现错误时提供优雅降级方案
+- **自动重试**：对临时性错误实现自动重试机制
+- **状态恢复**：实现应用状态的持久化和恢复
+
+``typescript
+// 错误处理和恢复机制示例
+import { useAPIClient } from '@nocobase/client';
+
+const StableSpreadsheetComponent = () => {
+  const api = useAPIClient();
+  
+  // 自动重试机制
+  const retryableRequest = async (requestFn, maxRetries = 3) => {
+    let lastError;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        // 对于网络错误或服务器错误进行重试
+        if (error.response?.status >= 500 || !error.response) {
+          // 等待一段时间后重试
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+          continue;
+        }
+        // 其他错误直接抛出
+        throw error;
+      }
+    }
+    
+    throw lastError;
+  };
+  
+  // 数据持久化和恢复
+  const saveLocalData = (data) => {
+    try {
+      localStorage.setItem('spreadsheet_data', JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save local data:', error);
+    }
+  };
+  
+  const loadLocalData = () => {
+    try {
+      const data = localStorage.getItem('spreadsheet_data');
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Failed to load local data:', error);
+      return null;
+    }
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+#### 11.3.2 性能监控和优化
+- **性能指标收集**：收集关键性能指标
+- **内存泄漏检测**：检测和防止内存泄漏
+- **资源优化**：优化资源加载和使用
+
+``typescript
+// 性能监控和优化示例
+const PerformanceOptimizedComponent = () => {
+  // 性能监控
+  const measurePerformance = (name, fn) => {
+    const start = performance.now();
+    const result = fn();
+    const end = performance.now();
+    console.log(`${name} took ${end - start} milliseconds`);
+    return result;
+  };
+  
+  // 内存泄漏检测
+  useEffect(() => {
+    const initialMemory = performance.memory?.usedJSHeapSize;
+    
+    return () => {
+      // 组件卸载时检查内存使用
+      if (performance.memory && initialMemory) {
+        const currentMemory = performance.memory.usedJSHeapSize;
+        if (currentMemory - initialMemory > 10 * 1024 * 1024) { // 10MB阈值
+          console.warn('Potential memory leak detected');
+        }
+      }
+    };
+  }, []);
+  
+  // 资源优化
+  const useOptimizedData = (data) => {
+    // 使用useMemo优化大数据处理
+    return useMemo(() => {
+      return processLargeData(data);
+    }, [data]);
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+### 11.4 SDK最佳实践总结
+
+#### 11.4.1 符合项
+- 正确使用APIClient进行资源操作
+- 利用SDK内置的认证和权限管理
+- 遵循SDK的错误处理机制
+- 实现版本兼容性处理
+
+#### 11.4.2 需要优化项
+- 部分组件可能需要进一步优化SDK使用方式
+- 错误处理和恢复机制可以进一步完善
+- 性能监控和优化措施需要持续改进
+
+#### 11.4.3 无冲突项
+- 未使用与主程序SDK冲突的API调用方式
+- 未使用已废弃的SDK方法
+- 未使用不兼容的SDK版本

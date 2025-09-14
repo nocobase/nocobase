@@ -107,7 +107,7 @@ class MyPlugin extends Plugin {
 
 正确处理异步操作：
 
-```typescript
+``typescript
 // 正确：使用 async/await
 async function processData() {
   try {
@@ -133,7 +133,7 @@ async function processMultiple() {
 
 ### 3.1 数据库查询优化
 
-```typescript
+``typescript
 // 正确：使用分页避免大量数据加载
 async function listPosts(ctx, next) {
   const { page = 1, pageSize = 20 } = ctx.action.params;
@@ -165,7 +165,7 @@ async function searchPosts(ctx, next) {
 
 ### 3.2 缓存策略
 
-```typescript
+``typescript
 import { Cache } from '@nocobase/cache';
 
 class MyPlugin extends Plugin {
@@ -201,7 +201,7 @@ class MyPlugin extends Plugin {
 
 ### 4.1 输入验证
 
-```typescript
+``typescript
 // 正确：验证用户输入
 this.app.resource({
   name: 'posts',
@@ -236,7 +236,7 @@ this.app.resource({
 
 ### 4.2 访问控制
 
-```typescript
+``typescript
 class MyPlugin extends Plugin {
   async load() {
     // 正确：设置适当的访问权限
@@ -269,7 +269,7 @@ class MyPlugin extends Plugin {
 
 ### 5.1 提供多语言支持
 
-```typescript
+``typescript
 // src/client/locales/en-US.ts
 export default {
   'my-plugin.title': 'My Plugin',
@@ -299,7 +299,7 @@ class MyPlugin extends Plugin {
 
 ### 5.2 在组件中使用国际化
 
-```typescript
+``typescript
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -320,7 +320,7 @@ export const MyComponent = () => {
 
 ### 6.1 单元测试
 
-```typescript
+``typescript
 // __tests__/server/actions/post-action.test.ts
 import { createMockServer } from '@nocobase/test';
 import { PostAction } from '../../src/server/actions/post-action';
@@ -371,7 +371,7 @@ describe('PostAction', () => {
 
 ### 6.2 集成测试
 
-```typescript
+``typescript
 // __tests__/integration/api.test.ts
 import { createMockServer } from '@nocobase/test';
 
@@ -419,7 +419,7 @@ describe('Post API', () => {
 
 ### 7.1 README 文档
 
-```markdown
+```
 # My Plugin
 
 一个 NocoBase 插件示例。
@@ -461,7 +461,7 @@ yarn nocobase install my-plugin
 
 ### 7.2 TypeScript 声明文件
 
-```typescript
+``typescript
 // src/types/index.ts
 export interface Post {
   id: number;
@@ -485,7 +485,7 @@ export * from './types';
 
 ### 8.1 package.json 配置
 
-```json
+``json
 {
   "name": "@my-org/plugin-custom",
   "version": "1.0.0",
@@ -532,7 +532,7 @@ npm publish
 
 ### 9.1 日志记录
 
-```typescript
+``typescript
 class MyPlugin extends Plugin {
   async load() {
     this.app.logger.info('MyPlugin loaded', {
@@ -567,7 +567,7 @@ class MyPlugin extends Plugin {
 
 ### 9.2 开发环境调试
 
-```typescript
+``typescript
 // 启用调试模式
 process.env.DEBUG = 'nocobase:*';
 
@@ -589,7 +589,7 @@ process.env.DEBUG = 'nocobase:my-plugin:*';
 
 维护 CHANGELOG.md 文件：
 
-```markdown
+```
 # Changelog
 
 ## [1.2.0] - 2023-12-01
@@ -606,6 +606,261 @@ process.env.DEBUG = 'nocobase:my-plugin:*';
 
 ### 新增
 - 初始版本发布
+```
+
+## 11. SDK 使用最佳实践
+
+### 11.1 客户端 SDK 集成
+
+在插件客户端部分正确使用 SDK：
+
+``typescript
+// 正确：在插件中创建和管理 SDK 实例
+import { APIClient } from '@nocobase/sdk';
+
+class MyPlugin extends Plugin {
+  private apiClient: APIClient;
+  
+  async load() {
+    // 使用应用提供的 API 客户端，而不是创建新的实例
+    this.apiClient = this.app.apiClient;
+    
+    // 如果需要自定义配置，基于现有客户端创建
+    if (this.options.customApiConfig) {
+      this.apiClient = new APIClient({
+        ...this.app.apiClient.axios.defaults,
+        ...this.options.customApiConfig
+      });
+    }
+  }
+  
+  // 提供便捷方法给插件组件使用
+  getApiClient() {
+    return this.apiClient;
+  }
+}
+```
+
+### 11.2 错误处理和重试机制
+
+正确处理 SDK 调用中的错误：
+
+``typescript
+// 正确：实现错误处理和重试机制
+import { APIClient } from '@nocobase/sdk';
+
+class ApiErrorHandler {
+  private maxRetries = 3;
+  
+  async requestWithRetry(apiClient: APIClient, config: any, retryCount = 0) {
+    try {
+      return await apiClient.request(config);
+    } catch (error) {
+      // 检查是否应该重试
+      if (this.shouldRetry(error) && retryCount < this.maxRetries) {
+        // 等待一段时间后重试
+        await this.wait(1000 * Math.pow(2, retryCount)); // 指数退避
+        return this.requestWithRetry(apiClient, config, retryCount + 1);
+      }
+      
+      // 记录错误并重新抛出
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+  
+  private shouldRetry(error: any) {
+    // 网络错误或服务器错误时重试
+    return (
+      error.code === 'NETWORK_ERROR' ||
+      (error.response && error.response.status >= 500)
+    );
+  }
+  
+  private wait(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
+```
+
+### 11.3 认证和会话管理
+
+正确管理认证状态：
+
+``typescript
+// 正确：处理认证状态变化
+import { APIClient } from '@nocobase/sdk';
+
+class AuthManager {
+  constructor(private apiClient: APIClient) {
+    // 监听认证状态变化
+    this.setupAuthListeners();
+  }
+  
+  private setupAuthListeners() {
+    // 监听令牌变化
+    this.apiClient.axios.interceptors.response.use(
+      response => response,
+      error => {
+        // 处理认证失败
+        if (error.response?.status === 401) {
+          // 清除本地认证信息
+          this.clearAuth();
+          // 重定向到登录页面
+          this.redirectToLogin();
+        }
+        return Promise.reject(error);
+      }
+    );
+  }
+  
+  async login(credentials: any) {
+    try {
+      const response = await this.apiClient.auth.signIn(credentials);
+      // 存储用户信息
+      this.storeUserInfo(response.data);
+      return response.data;
+    } catch (error) {
+      // 处理登录错误
+      throw this.handleAuthError(error);
+    }
+  }
+  
+  async logout() {
+    try {
+      await this.apiClient.auth.signOut();
+    } finally {
+      this.clearAuth();
+    }
+  }
+  
+  private clearAuth() {
+    // 清除认证信息
+  }
+  
+  private redirectToLogin() {
+    // 重定向到登录页面
+  }
+  
+  private storeUserInfo(userInfo: any) {
+    // 存储用户信息
+  }
+  
+  private handleAuthError(error: any) {
+    // 处理认证错误
+    return error;
+  }
+}
+```
+
+### 11.4 缓存和性能优化
+
+使用 SDK 时考虑性能优化：
+
+``typescript
+// 正确：实现请求缓存
+class ApiCache {
+  private cache = new Map();
+  private cacheTimeout = 5 * 60 * 1000; // 5分钟
+  
+  async getCachedOrFetch(
+    apiClient: APIClient, 
+    cacheKey: string, 
+    requestConfig: any
+  ) {
+    // 检查缓存
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      return cached.data;
+    }
+    
+    // 获取新数据
+    const response = await apiClient.request(requestConfig);
+    const data = response.data;
+    
+    // 存储到缓存
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    return data;
+  }
+  
+  // 清除特定缓存
+  clearCache(cacheKey: string) {
+    this.cache.delete(cacheKey);
+  }
+  
+  // 清除所有缓存
+  clearAllCache() {
+    this.cache.clear();
+  }
+}
+```
+
+### 11.5 类型安全和接口定义
+
+充分利用 TypeScript 提供的类型安全：
+
+``typescript
+// 正确：为 SDK 调用定义类型
+import { APIClient, IResource } from '@nocobase/sdk';
+
+// 定义资源接口
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PostResource extends IResource {
+  list(params?: { 
+    page?: number; 
+    pageSize?: number; 
+    filter?: any 
+  }): Promise<{ data: Post[] }>;
+  
+  get(params?: { 
+    filterByTk?: number 
+  }): Promise<{ data: Post }>;
+  
+  create(params?: { 
+    values: Partial<Post> 
+  }): Promise<{ data: Post }>;
+  
+  update(params?: { 
+    filterByTk?: number; 
+    values: Partial<Post> 
+  }): Promise<{ data: Post }>;
+  
+  destroy(params?: { 
+    filterByTk?: number 
+  }): Promise<void>;
+}
+
+// 使用类型化的资源
+class PostService {
+  private postResource: PostResource;
+  
+  constructor(apiClient: APIClient) {
+    this.postResource = apiClient.resource('posts') as PostResource;
+  }
+  
+  async getPosts(page = 1, pageSize = 20) {
+    return await this.postResource.list({ page, pageSize });
+  }
+  
+  async getPost(id: number) {
+    return await this.postResource.get({ filterByTk: id });
+  }
+  
+  async createPost(data: Partial<Post>) {
+    return await this.postResource.create({ values: data });
+  }
+}
 ```
 
 通过遵循这些最佳实践，您可以创建出高质量、可维护、安全且性能优良的 NocoBase 插件。

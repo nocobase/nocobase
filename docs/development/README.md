@@ -13,6 +13,8 @@ docs/development/
 ├── client-development.md      # 客户端开发
 ├── server-development.md      # 服务端开发
 ├── plugin-api.md              # 插件 API 参考
+├── sdk.md                     # SDK 使用指南
+├── sdk-examples.md            # SDK 使用示例
 └── best-practices.md          # 最佳实践
 ```
 
@@ -25,7 +27,9 @@ docs/development/
 5. [客户端开发](./client-development.md) - 前端 UI 组件开发
 6. [服务端开发](./server-development.md) - 后端逻辑和 API 开发
 7. [插件 API 参考](./plugin-api.md) - 插件开发 API 详细说明
-8. [最佳实践](./best-practices.md) - 插件开发的最佳实践和建议
+8. [SDK 使用指南](./sdk.md) - NocoBase SDK 使用指南
+9. [SDK 使用示例](./sdk-examples.md) - NocoBase SDK 使用示例
+10. [最佳实践](./best-practices.md) - 插件开发的最佳实践和建议
 
 ## 插件架构概述
 

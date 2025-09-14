@@ -556,3 +556,181 @@ class MyPlugin extends Plugin {
   }
 }
 ```
+
+## 19. SDK API 参考
+
+虽然 `@nocobase/sdk` 主要用于客户端开发，但在插件开发中了解其 API 也很重要，特别是在需要进行内部调用或测试时。
+
+### 19.1 APIClient 类
+
+#### 构造函数
+
+```typescript
+new APIClient(options: APIClientOptions)
+```
+
+#### 核心方法
+
+##### request()
+
+发起 HTTP 请求。
+
+```typescript
+api.request(config: AxiosRequestConfig): Promise<AxiosResponse>
+```
+
+##### resource()
+
+获取资源操作对象。
+
+```typescript
+api.resource(name: string, of?: any): IResource
+```
+
+### 19.2 Auth 类
+
+#### 核心方法
+
+##### signIn()
+
+用户登录。
+
+```typescript
+auth.signIn(credentials: any, authenticator?: string): Promise<AxiosResponse>
+```
+
+##### signOut()
+
+用户登出。
+
+```typescript
+auth.signOut(): Promise<AxiosResponse>
+```
+
+##### signUp()
+
+用户注册。
+
+```typescript
+auth.signUp(credentials: any, authenticator?: string): Promise<AxiosResponse>
+```
+
+##### getToken()
+
+获取认证令牌。
+
+```typescript
+auth.getToken(): string
+```
+
+##### setToken()
+
+设置认证令牌。
+
+```typescript
+auth.setToken(token: string): void
+```
+
+### 19.3 IResource 接口
+
+资源操作接口，通过 `api.resource()` 获取。
+
+#### 常用方法
+
+##### list()
+
+获取资源列表。
+
+```typescript
+resource.list(params?: ActionParams): Promise<AxiosResponse>
+```
+
+##### get()
+
+获取单个资源。
+
+```typescript
+resource.get(params?: ActionParams): Promise<AxiosResponse>
+```
+
+##### create()
+
+创建资源。
+
+```typescript
+resource.create(params?: ActionParams): Promise<AxiosResponse>
+```
+
+##### update()
+
+更新资源。
+
+```typescript
+resource.update(params?: ActionParams): Promise<AxiosResponse>
+```
+
+##### destroy()
+
+删除资源。
+
+```typescript
+resource.destroy(params?: ActionParams): Promise<AxiosResponse>
+```
+
+### 19.4 在插件中使用 SDK
+
+#### 内部调用
+
+```
+import { APIClient } from '@nocobase/sdk';
+
+class MyPlugin extends Plugin {
+  private internalClient: APIClient;
+  
+  async load() {
+    // 创建内部客户端用于服务端调用
+    this.internalClient = new APIClient({
+      baseURL: this.app.url + '/api',
+    });
+    
+    // 使用内部客户端
+    this.app.command('sync-posts').action(async () => {
+      const response = await this.internalClient.resource('posts').list();
+      // 处理同步逻辑
+    });
+  }
+}
+```
+
+#### 测试中使用
+
+```
+import { APIClient } from '@nocobase/sdk';
+import { MockServer } from '@nocobase/test';
+
+describe('MyPlugin', () => {
+  let app: MockServer;
+  let api: APIClient;
+  
+  beforeEach(async () => {
+    app = await mockServer();
+    await app.loadPlugin(MyPlugin);
+    
+    api = new APIClient({
+      baseURL: `${await app.listenHttp()}api/`
+    });
+  });
+  
+  test('should create post via API', async () => {
+    const response = await api.resource('posts').create({
+      values: {
+        title: 'Test Post'
+      }
+    });
+    
+    expect(response.status).toBe(200);
+    expect(response.data.data.title).toBe('Test Post');
+  });
+});
+```
+

@@ -175,7 +175,7 @@ const formSchema = {
 
 ### 5.1 页面区块初始化器
 
-```typescript
+``typescript
 import React from 'react';
 import { useSchemaInitializer } from '@nocobase/client';
 import { TableOutlined } from '@ant-design/icons';
@@ -229,7 +229,7 @@ class MyPlugin extends Plugin {
 
 ### 6.1 设置项定义
 
-```typescript
+``typescript
 import { SchemaSettings } from '@nocobase/client';
 
 const myBlockSettings = new SchemaSettings({
@@ -252,7 +252,7 @@ const myBlockSettings = new SchemaSettings({
 
 ### 6.2 注册设置面板
 
-```typescript
+``typescript
 class MyPlugin extends Plugin {
   async load() {
     this.app.schemaSettingsManager.add(myBlockSettings);
@@ -264,7 +264,7 @@ class MyPlugin extends Plugin {
 
 ### 7.1 添加翻译资源
 
-```typescript
+``typescript
 import { Plugin } from '@nocobase/client';
 
 class I18nPlugin extends Plugin {
@@ -284,7 +284,7 @@ class I18nPlugin extends Plugin {
 
 ### 7.2 使用翻译
 
-```typescript
+``typescript
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -304,7 +304,7 @@ export const TranslatedComponent = () => {
 
 ### 8.1 添加路由
 
-```typescript
+``typescript
 class MyPlugin extends Plugin {
   async load() {
     this.app.router.add('my-page', {
@@ -317,7 +317,7 @@ class MyPlugin extends Plugin {
 
 ### 8.2 页面组件
 
-```typescript
+``typescript
 import React from 'react';
 import { PageWrapper } from '@nocobase/client';
 
@@ -334,7 +334,7 @@ export const MyPageComponent = () => {
 
 ### 9.1 使用 Ant Design 组件
 
-```typescript
+``typescript
 import React from 'react';
 import { Card, Button, Space } from 'antd';
 
@@ -353,7 +353,7 @@ export const ThemedComponent = () => {
 
 ### 9.2 自定义样式
 
-```typescript
+``typescript
 import React from 'react';
 import styled from 'styled-components';
 
@@ -383,7 +383,7 @@ export const StyledComponent = () => {
 
 ### 10.2 错误处理
 
-```typescript
+``typescript
 import React from 'react';
 import { useRequest } from '@nocobase/client';
 
@@ -406,7 +406,7 @@ export const ErrorHandlingComponent = () => {
 
 ### 10.3 测试
 
-```typescript
+``typescript
 import { render, screen } from '@testing-library/react';
 import { MyComponent } from './MyComponent';
 
@@ -440,3 +440,55 @@ describe('MyComponent', () => {
 - `this.app.addComponents()` - 添加组件
 - `this.app.router.add()` - 添加路由
 - `this.app.i18n.addResources()` - 添加国际化资源
+
+### 11.4 SDK 使用
+
+NocoBase 提供了 `@nocobase/sdk` 包，用于在客户端进行 HTTP 请求和资源操作。详细使用请参考 [SDK 使用指南](./sdk.md)。
+
+#### APIClient 使用示例
+
+``typescript
+import { APIClient } from '@nocobase/sdk';
+
+// 创建 API 客户端实例
+const apiClient = new APIClient({
+  baseURL: 'http://localhost:13000/api',
+});
+
+// 资源操作
+const posts = await apiClient.resource('posts').list({
+  pageSize: 10,
+  page: 1
+});
+
+// 常规请求
+const response = await apiClient.request({
+  url: 'custom-endpoint',
+  method: 'post',
+  data: { key: 'value' }
+});
+```
+
+#### Auth 认证管理
+
+```typescript
+import { APIClient } from '@nocobase/sdk';
+
+const apiClient = new APIClient({
+  baseURL: 'http://localhost:13000/api',
+});
+
+// 用户登录
+await apiClient.auth.signIn({
+  username: 'admin',
+  password: 'admin'
+});
+
+// 检查认证状态
+if (apiClient.auth.token) {
+  console.log('用户已登录');
+}
+
+// 用户登出
+await apiClient.auth.signOut();
+```

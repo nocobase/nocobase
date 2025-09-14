@@ -10,7 +10,7 @@ NocoBase 使用 OpenAPI 3.0 规范来生成 API 文档，支持自动生成和�
 
 ### 文档结构
 
-```yaml
+```
 openapi: 3.0.0
 info:
   title: NocoBase API
@@ -47,7 +47,7 @@ components:
 
 ### 资源文档生成
 
-```typescript
+```
 // src/server/resources/UserResource.ts
 import { Resource } from '@nocobase/server';
 
@@ -108,7 +108,7 @@ export class UserResource extends Resource {
 
 ### 操作文档生成
 
-```typescript
+```
 // src/server/actions/UserActions.ts
 export class UserActions {
   /**
@@ -173,7 +173,7 @@ export class UserActions {
 
 ### 扩展 OpenAPI 定义
 
-```typescript
+```
 // src/server/swagger/CustomSwagger.ts
 import { SwaggerBuilder } from '@nocobase/plugin-api-doc';
 
@@ -237,7 +237,7 @@ export class CustomSwagger extends SwaggerBuilder {
 
 ### 文档插件实现
 
-```typescript
+```
 // src/server/index.ts
 import { Plugin } from '@nocobase/server';
 import { CustomSwagger } from './swagger/CustomSwagger';
@@ -265,7 +265,7 @@ export class ApiDocPlugin extends Plugin {
 
 ### 文档查看器组件
 
-```typescript
+```
 // src/client/components/ApiDocViewer.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, Tabs, Spin, Alert } from 'antd';
@@ -354,7 +354,7 @@ const RedocViewer: React.FC<{ swaggerDoc: any }> = ({ swaggerDoc }) => {
 
 ### 访问控制中间件
 
-```typescript
+```
 // src/server/middlewares/ApiDocAuthMiddleware.ts
 import { Context, Next } from '@nocobase/server';
 
@@ -407,7 +407,7 @@ export class ApiDocAuthMiddleware {
 
 ### 多版本文档支持
 
-```typescript
+```
 // src/server/swagger/VersionedSwagger.ts
 import { SwaggerBuilder } from '@nocobase/plugin-api-doc';
 
@@ -503,7 +503,7 @@ export class VersionedSwagger extends SwaggerBuilder {
 
 ### 多语言支持
 
-```typescript
+```
 // src/server/i18n/ApiDocI18n.ts
 export class ApiDocI18n {
   private translations: Map<string, any>;
@@ -561,7 +561,7 @@ export class ApiDocI18n {
 
 ### 文档验证中间件
 
-```typescript
+```
 // src/server/middlewares/ApiDocValidationMiddleware.ts
 import { Context, Next } from '@nocobase/server';
 import SwaggerParser from '@apidevtools/swagger-parser';
@@ -593,7 +593,7 @@ export class ApiDocValidationMiddleware {
 
 ### 文档测试用例
 
-```typescript
+```
 // src/server/__tests__/ApiDoc.test.ts
 import { createApp } from '@nocobase/server';
 import request from 'supertest';
@@ -650,11 +650,339 @@ describe('API Documentation', () => {
 });
 ```
 
+## SDK 集成和 API 文档
+
+### SDK 与 API 文档的协同
+
+NocoBase SDK 与 API 文档系统紧密集成，可以自动生成 SDK 使用示例和类型定义。
+
+#### 自动生成 SDK 类型定义
+
+```
+// 通过 API 文档自动生成 SDK 类型
+// src/client/types/api-types.ts
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// API 响应类型
+export interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    total: number;
+    page: number;
+    pageSize: number;
+  };
+}
+
+// SDK 客户端类型扩展
+declare module '@nocobase/sdk' {
+  interface IResource {
+    list(params?: { 
+      page?: number; 
+      pageSize?: number; 
+      filter?: any 
+    }): Promise<ApiResponse<any[]>>;
+    
+    get(params?: { 
+      filterByTk?: number 
+    }): Promise<ApiResponse<any>>;
+    
+    create(params?: { 
+      values: any 
+    }): Promise<ApiResponse<any>>;
+    
+    update(params?: { 
+      filterByTk?: number; 
+      values: any 
+    }): Promise<ApiResponse<any>>;
+    
+    destroy(params?: { 
+      filterByTk?: number 
+    }): Promise<ApiResponse<any>>;
+  }
+}
+```
+
+#### SDK 使用示例生成
+
+```
+// 基于 API 文档自动生成 SDK 使用示例
+// src/client/examples/user-examples.ts
+import { APIClient } from '@nocobase/sdk';
+
+/**
+ * @example
+ * // 获取用户列表
+ * const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+ * const response = await api.resource('users').list({
+ *   page: 1,
+ *   pageSize: 20,
+ *   filter: { status: 'active' }
+ * });
+ * console.log(response.data);
+ */
+export async function listUsersExample() {
+  const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+  return await api.resource('users').list({
+    page: 1,
+    pageSize: 20
+  });
+}
+
+/**
+ * @example
+ * // 创建新用户
+ * const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+ * const response = await api.resource('users').create({
+ *   values: {
+ *     username: 'newuser',
+ *     email: 'newuser@example.com',
+ *     password: 'password123'
+ *   }
+ * });
+ * console.log(response.data);
+ */
+export async function createUserExample() {
+  const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+  return await api.resource('users').create({
+    values: {
+      username: 'newuser',
+      email: 'newuser@example.com',
+      password: 'password123'
+    }
+  });
+}
+
+/**
+ * @example
+ * // 更新用户信息
+ * const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+ * const response = await api.resource('users').update({
+ *   filterByTk: 1,
+ *   values: {
+ *     username: 'updateduser'
+ *   }
+ * });
+ * console.log(response.data);
+ */
+export async function updateUserExample() {
+  const api = new APIClient({ baseURL: 'http://localhost:13000/api' });
+  return await api.resource('users').update({
+    filterByTk: 1,
+    values: {
+      username: 'updateduser'
+    }
+  });
+}
+```
+
+### 在插件中集成 SDK 文档
+
+#### 插件 SDK 文档生成
+
+```
+// src/server/plugin-docs/sdk-docs.ts
+import { Plugin } from '@nocobase/server';
+
+export class SdkDocumentationPlugin extends Plugin {
+  async load() {
+    // 为插件生成 SDK 文档
+    this.app.router.get('/api/sdk-docs/:pluginName', async (ctx) => {
+      const { pluginName } = ctx.params;
+      const plugin = this.app.pm.get(pluginName);
+      
+      if (!plugin) {
+        ctx.status = 404;
+        ctx.body = { error: '插件未找到' };
+        return;
+      }
+      
+      // 生成插件 SDK 文档
+      const sdkDocs = this.generateSdkDocs(plugin);
+      ctx.body = sdkDocs;
+    });
+  }
+  
+  private generateSdkDocs(plugin: Plugin) {
+    // 基于插件的资源和操作生成 SDK 文档
+    const resources = this.extractPluginResources(plugin);
+    const actions = this.extractPluginActions(plugin);
+    
+    return {
+      plugin: plugin.constructor.name,
+      resources,
+      actions,
+      sdkUsage: this.generateSdkUsageExamples(resources, actions)
+    };
+  }
+  
+  private extractPluginResources(plugin: Plugin) {
+    // 提取插件定义的资源
+    return [];
+  }
+  
+  private extractPluginActions(plugin: Plugin) {
+    // 提取插件定义的操作
+    return [];
+  }
+  
+  private generateSdkUsageExamples(resources: any[], actions: any[]) {
+    // 生成 SDK 使用示例
+    return [];
+  }
+}
+```
+
+#### 客户端 SDK 文档展示
+
+```
+// src/client/components/SdkDocumentation.tsx
+import React, { useState, useEffect } from 'react';
+import { Card, Tabs, Spin, Alert, Code } from 'antd';
+import { useAPIClient } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
+
+const { TabPane } = Tabs;
+
+export const SdkDocumentation: React.FC<{ pluginName: string }> = ({ pluginName }) => {
+  const { t } = useTranslation();
+  const api = useAPIClient();
+  const [loading, setLoading] = useState(true);
+  const [sdkDocs, setSdkDocs] = useState(null);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    fetchSdkDocs();
+  }, [pluginName]);
+  
+  const fetchSdkDocs = async () => {
+    try {
+      setLoading(true);
+      const response = await api.request({
+        url: `/api/sdk-docs/${pluginName}`,
+      });
+      setSdkDocs(response.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <Card>
+        <Spin tip={t('加载中...')} />
+      </Card>
+    );
+  }
+  
+  if (error) {
+    return (
+      <Card>
+        <Alert
+          message={t('加载失败')}
+          description={error}
+          type="error"
+          showIcon
+        />
+      </Card>
+    );
+  }
+  
+  return (
+    <Card>
+      <Tabs defaultActiveKey="overview">
+        <TabPane tab={t('概览')} key="overview">
+          <SdkOverview docs={sdkDocs} />
+        </TabPane>
+        <TabPane tab={t('资源')} key="resources">
+          <SdkResources resources={sdkDocs.resources} />
+        </TabPane>
+        <TabPane tab={t('操作')} key="actions">
+          <SdkActions actions={sdkDocs.actions} />
+        </TabPane>
+        <TabPane tab={t('使用示例')} key="examples">
+          <SdkExamples examples={sdkDocs.sdkUsage} />
+        </TabPane>
+      </Tabs>
+    </Card>
+  );
+};
+
+const SdkOverview: React.FC<{ docs: any }> = ({ docs }) => {
+  return (
+    <div>
+      <h2>{docs.plugin} SDK 文档</h2>
+      <p>本文档介绍了如何在客户端使用 {docs.plugin} 插件提供的 API。</p>
+    </div>
+  );
+};
+
+const SdkResources: React.FC<{ resources: any[] }> = ({ resources }) => {
+  return (
+    <div>
+      <h3>可用资源</h3>
+      {resources.map((resource, index) => (
+        <div key={index}>
+          <h4>{resource.name}</h4>
+          <p>{resource.description}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SdkActions: React.FC<{ actions: any[] }> = ({ actions }) => {
+  return (
+    <div>
+      <h3>可用操作</h3>
+      {actions.map((action, index) => (
+        <div key={index}>
+          <h4>{action.name}</h4>
+          <p>{action.description}</p>
+          <Code>{action.signature}</Code>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SdkExamples: React.FC<{ examples: any[] }> = ({ examples }) => {
+  return (
+    <div>
+      <h3>使用示例</h3>
+      {examples.map((example, index) => (
+        <div key={index}>
+          <h4>{example.title}</h4>
+          <Code>{example.code}</Code>
+          <p>{example.description}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
 ## 文档最佳实践
 
 ### 1. 文档维护
 
-```typescript
+```
 // 实现文档维护最佳实践
 class ApiDocMaintenance {
   private readonly docHistory: Map<string, any[]>;
@@ -693,7 +1021,7 @@ class ApiDocMaintenance {
 
 ### 2. 文档质量保证
 
-```typescript
+```
 // 文档质量检查
 class ApiDocQualityChecker {
   async checkDocumentationQuality() {
@@ -743,7 +1071,7 @@ class ApiDocQualityChecker {
 
 ### 3. 文档发布流程
 
-```typescript
+```
 // 文档发布流程
 class ApiDocPublisher {
   async publishDocumentation() {
@@ -782,3 +1110,4 @@ class ApiDocPublisher {
 
 - 学习 [异步任务管理](./async-task-management.md) 示例（如果创建了该文档）
 - 掌握 [通知管理](./notification-management.md) 示例（如果创建了该文档）
+- 了解 [SDK 集成](../development/sdk.md) 的完整指南

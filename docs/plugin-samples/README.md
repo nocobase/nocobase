@@ -31,7 +31,9 @@ docs/plugin-samples/
 ├── auth.md                     # 认证示例
 ├── file-manager.md             # 文件管理器示例
 ├── acl.md                      # 权限控制示例
-└── api-keys.md                 # API 密钥示例
+├── api-keys.md                 # API 密钥示例
+├── sdk-integration.md          # SDK 集成示例
+└── sdk-advanced.md             # SDK 高级使用示例
 ```
 
 ## 示例类别
@@ -110,6 +112,12 @@ docs/plugin-samples/
 
 ### 25. [API 密钥](./api-keys.md)
 介绍如何使用 API 密钥插件进行程序化访问。
+
+### 26. [SDK 集成](./sdk-integration.md)
+展示如何在插件中集成和使用 NocoBase SDK。
+
+### 27. [SDK 高级使用](./sdk-advanced.md)
+介绍 NocoBase SDK 的高级功能和最佳实践。
 
 ## 学习建议
 

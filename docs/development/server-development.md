@@ -348,7 +348,7 @@ export default class CustomInstruction extends Instruction {
 
 ### 7.2 注册节点
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.workflow.registerInstruction(
@@ -363,7 +363,7 @@ class MyPlugin extends Plugin {
 
 ### 8.1 创建迁移文件
 
-```typescript
+```
 export default {
   up: async (db) => {
     // 升级操作
@@ -386,7 +386,7 @@ export default {
 
 ### 8.2 注册迁移
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.db.import({
@@ -402,7 +402,7 @@ class MyPlugin extends Plugin {
 
 创建业务服务：
 
-```typescript
+```
 export class PostService {
   constructor(protected app) {}
   
@@ -424,7 +424,7 @@ export class PostService {
 
 ### 9.2 注册服务
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.registerServices({
@@ -438,7 +438,7 @@ class MyPlugin extends Plugin {
 
 ### 10.1 触发事件
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.resource({
@@ -461,7 +461,7 @@ class MyPlugin extends Plugin {
 
 ### 10.2 监听事件
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.on('post.created', async (data) => {
@@ -476,7 +476,7 @@ class MyPlugin extends Plugin {
 
 ### 11.1 创建定时任务
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     // 每天凌晨执行
@@ -496,7 +496,7 @@ class MyPlugin extends Plugin {
 
 ### 12.1 错误处理
 
-```typescript
+```
 import { CustomError } from '@nocobase/errors';
 
 class MyPlugin extends Plugin {
@@ -526,7 +526,7 @@ class MyPlugin extends Plugin {
 
 ### 12.2 性能优化
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.resource({
@@ -558,7 +558,7 @@ class MyPlugin extends Plugin {
 
 ### 12.3 日志记录
 
-```typescript
+```
 class MyPlugin extends Plugin {
   async load() {
     this.app.resource({
@@ -602,3 +602,69 @@ class MyPlugin extends Plugin {
 - `this.app.on()` - 监听事件
 - `this.app.logger.info()` - 记录日志
 - `this.app.schedule.register()` - 注册定时任务
+
+### 13.4 SDK 集成
+
+虽然 `@nocobase/sdk` 主要用于客户端开发，但在某些场景下，服务端也可能需要使用 SDK 进行内部调用或测试。
+
+#### 服务端使用 SDK
+
+```
+import { APIClient } from '@nocobase/sdk';
+
+class MyPlugin extends Plugin {
+  async load() {
+    // 创建内部 API 客户端用于服务端调用
+    const internalClient = new APIClient({
+      baseURL: this.app.url + '/api',
+    });
+    
+    // 使用内部客户端调用 API
+    this.app.command('sync-data').action(async () => {
+      try {
+        const response = await internalClient.resource('posts').list();
+        // 处理同步逻辑
+      } catch (error) {
+        this.app.logger.error('Data sync failed:', error);
+      }
+    });
+  }
+}
+```
+
+#### 测试中使用 SDK
+
+```
+// __tests__/api.test.ts
+import { APIClient } from '@nocobase/sdk';
+import { MockServer } from '@nocobase/test';
+
+describe('API Tests', () => {
+  let app: MockServer;
+  let api: APIClient;
+  
+  beforeEach(async () => {
+    app = await mockServer();
+    api = new APIClient({
+      baseURL: `${await app.listenHttp()}api/`
+    });
+  });
+  
+  afterEach(async () => {
+    await app.destroy();
+  });
+  
+  test('should create post', async () => {
+    const response = await api.resource('posts').create({
+      values: {
+        title: 'Test Post',
+        content: 'Test Content'
+      }
+    });
+    
+    expect(response.status).toBe(200);
+    expect(response.data.data.title).toBe('Test Post');
+  });
+}
+```
+

@@ -215,251 +215,88 @@ plugin-name/
 └── README.md       # 插件说明文档
 ```
 
-## 8. 多语言支持与翻译
+## 11. SDK 集成
 
-NocoBase 支持多语言本地化，用户可以根据需要切换界面语言。
+NocoBase 提供了官方 SDK (`@nocobase/sdk`)，用于与 NocoBase 应用进行交互。SDK 包含了便捷的 API 客户端和认证管理功能。
 
-### 系统支持的语言
+### 11.1 SDK 安装
 
-NocoBase 默认支持以下语言：
-- 英语 (en-US)
-- 简体中文 (zh-CN)
-- 日语 (ja-JP)
-- 意大利语 (it-IT)
-- 荷兰语 (nl-NL)
-
-### 语言设置
-
-在系统安装完成后，可以通过以下方式设置语言：
-
-1. 登录管理后台
-2. 进入"系统设置" → "语言设置"
-3. 在"启用语言"中选择需要的语言
-4. 第一个选择的语言将作为默认语言
-
-### 自定义翻译
-
-如果需要自定义翻译或添加新的语言支持，可以通过以下方式：
-
-#### 使用本地化管理功能
-
-1. 登录管理后台
-2. 进入"本地化管理"模块
-3. 选择需要翻译的文本
-4. 输入目标语言的翻译内容
-5. 保存更改
-
-#### 通过代码贡献翻译
-
-如果您希望为 NocoBase 贡献翻译，可以按照以下步骤操作：
-
-1. Fork NocoBase 仓库
-2. 克隆您的 fork 到本地：
+在您的项目中安装 NocoBase SDK：
 
 ```bash
-git clone https://github.com/your-username/nocobase.git
+yarn add @nocobase/sdk
+# 或
+npm install @nocobase/sdk
 ```
 
-3. 创建新的分支：
+### 11.2 SDK 基本用法
 
-```bash
-git checkout -b translation/your-language
+``typescript
+import { APIClient } from '@nocobase/sdk';
+
+// 创建 API 客户端实例
+const api = new APIClient({
+  baseURL: 'http://localhost:13000/api',
+});
+
+// 用户登录
+await api.auth.signIn({
+  username: 'admin',
+  password: 'admin'
+});
+
+// 资源操作
+const posts = await api.resource('posts').list({
+  page: 1,
+  pageSize: 20
+});
+
+// 常规 HTTP 请求
+const response = await api.request({
+  url: 'custom-endpoint',
+  method: 'post',
+  data: { key: 'value' }
+});
 ```
 
-4. 在相应的语言文件中添加翻译条目：
-   - 前端翻译文件：`src/locale/${lang}.ts`
-   - 后端翻译文件：`src/locale/${lang}.ts`（在对应的插件目录中）
+详细使用请参考开发文档中的 [SDK 使用指南](./development/sdk.md) 和 [SDK 使用示例](./development/sdk-examples.md)。
 
-5. 提交更改并推送：
+## 12. 故障排除
 
-```bash
-git add .
-git commit -m "Add translation for your-language"
-git push origin translation/your-language
-```
+### 12.1 常见问题
 
-6. 在 GitHub 上创建 Pull Request
-
-### 插件多语言支持
-
-如果您在开发自定义插件，可以通过以下方式添加多语言支持：
-
-1. 在插件目录下创建 `src/locale` 文件夹
-2. 为每种支持的语言创建对应的翻译文件，如：
-   - `en-US.ts` - 英语翻译
-   - `zh-CN.ts` - 简体中文翻译
-   - `ja-JP.ts` - 日语翻译
-
-3. 在翻译文件中导出键值对形式的翻译内容：
-
-```typescript
-// en-US.ts
-export default {
-  "your-plugin.key1": "Translation text 1",
-  "your-plugin.key2": "Translation text 2",
-};
-```
-
-4. 在插件代码中使用翻译：
-
-```typescript
-// 在 React 组件中使用
-import { useTranslation } from 'react-i18next';
-
-const MyComponent = () => {
-  const { t } = useTranslation();
-  return <div>{t("your-plugin.key1")}</div>;
-};
-```
-
-## 生产环境部署
-
-如果要在生产环境部署，需要注意以下几点：
-
-### 环境变量配置
-
-在生产环境中，需要修改 `.env` 文件中的以下配置：
-
-```env
-# 设置为生产环境
-APP_ENV=production
-
-# 生产环境端口
-APP_PORT=80
-
-# 生产环境主机
-APP_HOST=your-domain.com
-
-# 如果使用反向代理
-APP_PROXY=true
-
-# 更安全的应用密钥
-APP_KEY=your-random-string-here
-```
-
-### 子路径部署
-
-如果需要在子路径下部署（例如 http://your-domain.com/nocobase/），需要配置 `APP_PUBLIC_PATH`：
-
-```env
-APP_PUBLIC_PATH=/nocobase/
-```
-
-同时，您可能还需要配置 Web 服务器（如 Nginx）来正确处理子路径请求。
-
-### 构建生产版本
-
-```bash
-yarn build
-```
-
-### 启动生产服务器
-
-```bash
-yarn start
-```
-
-或者在后台运行：
-
-```bash
-yarn start:prod
-```
-
-### 使用 PM2 管理生产进程（推荐）
-
-1. 安装 PM2：
-   ```bash
-   npm install -g pm2
+1. **端口被占用**：如果 13000 端口被占用，可以修改 `.env` 文件中的端口配置：
+   ```env
+   PORT=13001
    ```
 
-2. 使用 PM2 启动应用：
-   ```bash
-   pm2 start yarn --name "nocobase" -- start:prod
-   ```
+2. **数据库连接失败**：检查数据库服务是否启动，以及 `.env` 文件中的数据库配置是否正确。
 
-3. 保存 PM2 配置：
-   ```bash
-   pm2 save
-   ```
-
-4. 设置开机自启：
-   ```bash
-   pm2 startup
-   ```
-
-## 升级 NocoBase
-
-要将 NocoBase 升级到最新版本，请按照以下步骤操作：
-
-### 1. 切换到项目目录
-
-```bash
-cd nocobase
-```
-
-### 2. 拉取最新代码
-
-```bash
-git pull
-```
-
-### 3. 安装新的依赖
-
-```bash
-yarn install
-```
-
-### 4. 执行升级命令
-
-```bash
-yarn nocobase upgrade
-```
-
-该命令会自动处理数据库迁移和其他必要的升级操作。
-
-### 5. 重启服务
-
-升级完成后，重启开发服务器：
-
-```bash
-yarn dev
-```
-
-或者生产服务器：
-
-```bash
-yarn start
-```
-
-如果使用 PM2 管理进程：
-
-```bash
-pm2 restart nocobase
-```
-
-## 故障排除
-
-### 权限问题
-
-在 Windows 系统上，可能需要以管理员身份运行命令提示符来避免权限问题。
-
-### 依赖安装失败
-
-如果遇到依赖安装问题，可以尝试以下方法：
-
-1. 清除缓存：
+3. **依赖安装失败**：尝试清除缓存后重新安装：
    ```bash
    yarn cache clean
-   ```
-
-2. 删除 node_modules 和 yarn.lock 后重新安装：
-   ```bash
-   rm -rf node_modules yarn.lock
    yarn install
    ```
 
-### 数据库连接问题
+### 12.2 日志查看
 
-确保 MySQL 数据库服务正在运行，并且 `.env` 文件中的数据库配置正确。
+查看应用日志可以帮助诊断问题：
 
-修改环境变量后，需要重启应用才能使配置生效。
+```bash
+# 查看实时日志
+yarn dev --log
+
+# 查看错误日志
+tail -f storage/logs/error.log
+```
+
+## 13. 后续步骤
+
+安装完成后，您可以：
+
+1. [开发插件](./development/README.md) - 学习如何开发自定义插件
+2. [使用 SDK](./development/sdk.md) - 了解如何使用 NocoBase SDK 进行开发
+3. [查看示例](./plugin-samples/README.md) - 查看各种插件示例
+4. [生产部署](#9-生产部署) - 将应用部署到生产环境
+
+通过以上步骤，您已经成功安装并运行了 NocoBase 应用。现在可以开始开发您的自定义功能了。

@@ -10,7 +10,8 @@ NocoBase 采用插件化架构，所有功能都可以通过插件来实现。�
 4. [客户端开发](./client-development.md) - 前端 UI 组件开发
 5. [服务端开发](./server-development.md) - 后端逻辑和 API 开发
 6. [插件 API 参考](./plugin-api.md) - 插件开发 API 详细说明
-7. [最佳实践](./best-practices.md) - 插件开发的最佳实践和建议
+7. [SDK 使用指南](./sdk.md) - NocoBase SDK 使用指南
+8. [最佳实践](./best-practices.md) - 插件开发的最佳实践和建议
 
 ## 插件架构概述
 
@@ -79,6 +80,22 @@ NocoBase 支持多种类型的插件：
 4. **集成插件** - 集成第三方服务
 5. **工具插件** - 提供通用工具功能
 
+## SDK 集成
+
+NocoBase SDK (`@nocobase/sdk`) 是一个重要的开发工具，提供了以下功能：
+
+- **APIClient**: 基于 axios 封装的 HTTP 客户端
+- **Auth**: 认证管理功能
+- **资源操作**: 简化 RESTful API 调用
+
+在插件开发中，SDK 可以用于：
+
+1. **客户端集成**: 在插件的客户端部分使用 SDK 进行 API 调用
+2. **服务端测试**: 在插件的测试用例中使用 SDK 验证 API 功能
+3. **内部调用**: 在服务端使用 SDK 进行内部 API 调用
+
+详细使用请参考 [SDK 使用指南](./sdk.md)。
+
 ## 学习路径建议
 
 对于初学者，建议按以下顺序学习：
@@ -88,7 +105,8 @@ NocoBase 支持多种类型的插件：
 3. 查看[插件示例](./plugin-samples.md)，了解不同类型插件的实现
 4. 学习[客户端开发](./client-development.md)和[服务端开发](./server-development.md)
 5. 参考[插件 API 参考](./plugin-api.md)了解详细接口
-6. 遵循[最佳实践](./best-practices.md)提高代码质量
+6. 掌握[SDK 使用](./sdk.md)进行 API 调用
+7. 遵循[最佳实践](./best-practices.md)提高代码质量
 
 ## 贡献插件
 
