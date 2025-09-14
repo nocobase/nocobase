@@ -891,7 +891,12 @@ export const fieldLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: commonLinkageRulesHandler,
+  handler: (ctx, params) => {
+    if (ctx.model.hidden) {
+      return;
+    }
+    commonLinkageRulesHandler(ctx, params);
+  },
 });
 
 function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
