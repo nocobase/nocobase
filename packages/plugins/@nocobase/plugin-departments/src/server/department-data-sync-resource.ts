@@ -275,15 +275,18 @@ export class DepartmentDataSyncResource extends UserDataResource {
       await department.destroy();
       return;
     }
+    let dataChanged = false;
     const filteredSourceDepartment = this.getFlteredSourceDepartment(sourceDepartment);
-    await department.update(filteredSourceDepartment);
-    const parentUid = sourceDepartment.parentUid;
-    if (parentUid) {
-      await this.updateParentDepartment(department, parentUid, sourceName);
-    } else {
-      // Clear parent relationship when parentUid is not provided
-      await department.update({ parentId: null });
+    lodash.forOwn(filteredSourceDepartment, (value, key) => {
+      if (department[key] !== value) {
+        department[key] = value;
+        dataChanged = true;
+      }
+    });
+    if (dataChanged) {
+      await department.save();
     }
+    await this.updateParentDepartment(department, sourceDepartment.parentUid, sourceName);
   }
 
   async createDepartment(sourceDepartment: FormatDepartment, sourceName: string): Promise<string> {
@@ -291,22 +294,45 @@ export class DepartmentDataSyncResource extends UserDataResource {
     const department = await this.deptRepo.create({
       values: filteredSourceDepartment,
     });
-
-    // Handle parent relationship after creation
-    const parentUid = sourceDepartment.parentUid;
-    if (parentUid) {
-      await this.updateParentDepartment(department, parentUid, sourceName);
-    }
-
+    await this.updateParentDepartment(department, sourceDepartment.parentUid, sourceName);
     return department.id;
   }
 
   async updateParentDepartment(department: Model, parentUid: string, sourceName: string) {
-    const parentId = await this.getDepartmentIdBySourceUk(parentUid, sourceName);
-    if (parentId) {
-      await department.update({
-        parentId,
+    if (!parentUid) {
+      const parentDepartment = await department.getParent();
+      if (parentDepartment) {
+        await department.setParent(null);
+      }
+    } else {
+      const syncDepartmentRecord = await this.syncRecordRepo.findOne({
+        filter: {
+          sourceName,
+          dataType: 'department',
+          sourceUk: parentUid,
+          'resources.resource': this.name,
+        },
+        appends: ['resources'],
       });
+      if (syncDepartmentRecord && syncDepartmentRecord.resources?.length) {
+        const parentDepartment = await this.deptRepo.findOne({
+          filterByTk: syncDepartmentRecord.resources[0].resourcePk,
+        });
+        if (!parentDepartment) {
+          await department.setParent(null);
+          return;
+        }
+        const parent = await department.getParent();
+        if (parent) {
+          if (parentDepartment.id !== parent.id) {
+            await department.setParent(parentDepartment);
+          }
+        } else {
+          await department.setParent(parentDepartment);
+        }
+      } else {
+        await department.setParent(null);
+      }
     }
   }
 }
