@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, DisplayItemModel, EditableItemModel } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, DisplayItemModel, EditableItemModel, escapeT } from '@nocobase/flow-engine';
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -65,7 +65,7 @@ export const pattern = defineAction({
   },
 });
 
-async function rebuildFieldSubModel(ctx, model, binding) {
+async function rebuildFieldSubModel(ctx, model, binding: BindingOptions) {
   if (!binding) return;
 
   const fieldUid = model.subModels['field']?.['uid'];
@@ -73,9 +73,12 @@ async function rebuildFieldSubModel(ctx, model, binding) {
     await ctx.engine.destroyModel(fieldUid);
   }
 
+  const defaultProps =
+    typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, {} as any) : binding.defaultProps;
+
   const subModel = model.setSubModel('field', {
     use: binding.modelName,
-    props: binding.defaultProps,
+    props: defaultProps || {},
     stepParams: {
       fieldSettings: {
         init: model.getFieldSettingsInitParams(),

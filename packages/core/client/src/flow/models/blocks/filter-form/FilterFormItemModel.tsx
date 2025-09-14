@@ -77,7 +77,9 @@ const getModelFields = async (model: CollectionBlockModel) => {
             field: {
               use: fieldModel,
               props:
-                typeof binding.defaultProps === 'function' ? binding.defaultProps(model.context) : binding.defaultProp,
+                typeof binding.defaultProps === 'function'
+                  ? binding.defaultProps(model.context, field)
+                  : binding.defaultProps,
             },
           },
         }),
@@ -332,13 +334,11 @@ FilterFormItemModel.registerFlow({
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
     },
-
     model: {
       use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
-        console.log(classes);
         if (classes.length === 1) {
           return null;
         }
@@ -348,14 +348,13 @@ FilterFormItemModel.registerFlow({
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             enum: classes.map((model) => ({
-              label: model,
-              value: model,
+              label: model.modelName,
+              value: model.modelName,
             })),
           },
         };
       },
     },
-
     connectFields: {
       use: 'connectFields',
     },

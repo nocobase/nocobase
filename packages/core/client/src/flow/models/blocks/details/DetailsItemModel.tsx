@@ -103,7 +103,8 @@ export class DetailsItemModel extends DisplayItemModel<{
             subModels: {
               field: {
                 use: fieldModel,
-                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
             },
           }),

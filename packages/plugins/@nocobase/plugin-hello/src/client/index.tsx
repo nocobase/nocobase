@@ -19,7 +19,7 @@ import {
   FilterFormItemModel,
   Plugin,
 } from '@nocobase/client';
-import { DisplayItemModel, EditableItemModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { DisplayItemModel, EditableItemModel, FilterableItemModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import React from 'react';
 
@@ -159,7 +159,7 @@ class Hello2FieldModel extends FieldModel {
 
 DisplayItemModel.bindModelToInterface('Hello1FieldModel', ['input']);
 EditableItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
-FilterFormItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
+FilterableItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
 
 export class PluginHelloClient extends Plugin {
   async load() {

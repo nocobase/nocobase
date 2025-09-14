@@ -40,6 +40,13 @@ export interface FieldSettingsInitParams {
   associationPathName?: string;
 }
 
+export interface BindingOptions {
+  modelName: string;
+  isDefault: boolean;
+  defaultProps: object | ((ctx: FlowEngineContext, fieldInstance: CollectionField) => object) | null;
+  when: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
+}
+
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
 
@@ -81,7 +88,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     return this.context.collectionField as CollectionField;
   }
 
-  static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField) {
+  static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions[] {
     const interfaceName = collectionField.interface;
 
     // Check if the interface exists in the map
@@ -96,7 +103,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     );
   }
 
-  static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField) {
+  static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions | null {
     const interfaceName = collectionField.interface;
     if (!interfaceName) {
       return null;
