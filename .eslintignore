@@ -31,26 +31,3 @@ benchmark
 packages/core/cli/src
 t.js
 packages/**/client.d.ts
-
-# 忽略特定的测试文件
-packages/core/database/src/__tests__/collection-factory.test.ts
-packages/core/database/src/__tests__/field-options/sort-by.test.ts
-packages/core/database/src/__tests__/relation-repository/belongs-to-many-repository.test.ts
-packages/core/database/src/__tests__/sql-parser.test.ts
-packages/core/database/src/fields/encryption-field/utils.ts
-packages/core/server/src/__tests__/gateway/ipc.test.ts
-packages/plugins/@nocobase/plugin-acl/src/server/__tests__/list-action.test.ts
-packages/plugins/@nocobase/plugin-ai/src/client/llm-providers/components/ModelSelect.tsx
-packages/plugins/@nocobase/plugin-auth-sms/src/server/__tests__/migrations/fix-verifier-typo.test.ts
-packages/plugins/@nocobase/plugin-auth/src/server/__tests__/storer.test.ts
-packages/plugins/@nocobase/plugin-data-source-main/src/client/__e2e__/collection-template/general3.test.ts
-packages/plugins/@nocobase/plugin-data-source-manager/src/server/__tests__/data-source-with-acl.test.ts
-packages/plugins/@nocobase/plugin-departments/src/server/__tests__/set-departments-info.test.ts
-packages/plugins/@nocobase/plugin-field-formula/src/client/components/Formula/demos/demo2.tsx
-packages/plugins/@nocobase/plugin-gantt/src/client/demos/demo1.tsx
-packages/plugins/@nocobase/plugin-kanban/src/client/board/demos/demo2.tsx
-packages/plugins/@nocobase/plugin-mobile/src/client/pages/dynamic-page/components/MobilePicker.tsx
-packages/plugins/@nocobase/plugin-public-forms/src/client/components/components/MobilePicker.tsx
-packages/plugins/@nocobase/plugin-users/src/server/__tests__/utils.ts
-# 新添加的文件
-packages/core/acl/src/__tests__/acl.test.ts

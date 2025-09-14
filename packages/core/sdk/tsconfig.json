@@ -1,27 +1,6 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
-    "types": ["vitest/globals"],
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strictFunctionTypes": false,
-    "strictBindCallApply": false,
-    "strictPropertyInitialization": false,
-    "noImplicitThis": false,
-    "alwaysStrict": false,
-    "noImplicitReturns": false,
-    "noImplicitOverride": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
-    "suppressImplicitAnyIndexErrors": true,
-    "noStrictGenericChecks": true,
-    "suppressExcessPropertyErrors": true,
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "noEmit": true,
-    "ignoreDeprecations": "5.0",
-    "moduleResolution": "node"
+    "types": ["vitest/globals"]
   }
 }

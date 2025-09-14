@@ -39,7 +39,7 @@
     "ecmaFeatures": {
       "jsx": true
     },
-    "project": "./tsconfig.eslint.json"
+    "project": "./tsconfig.json"
   },
   "rules": {
     "@typescript-eslint/no-this-alias": "off",
@@ -55,41 +55,16 @@
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-var-requires": "off",
-    "promise/always-return": "off",
-    // 忽略特定的 TypeScript 错误
-    "@typescript-eslint/no-misused-new": "off",
-    "@typescript-eslint/no-misused-promises": "off",
-    "@typescript-eslint/require-await": "off",
-    // 忽略类型分配错误
-    "@typescript-eslint/no-inferrable-types": "off",
-    // 添加忽略 TS2322 类型分配错误
-    "@typescript-eslint/no-unsafe-assignment": "off",
-    "@typescript-eslint/no-unsafe-member-access": "off",
-    // 添加更多忽略规则
-    "@typescript-eslint/no-unsafe-call": "off",
-    "@typescript-eslint/no-unsafe-return": "off"
+    "promise/always-return": "off"
   },
   "overrides": [
     {
-      "files": ["**/e2e/**/*.{ts,js,tsx,jsx}", "**/__e2e__/**/*.{ts,js,tsx,jsx}"],
+      "files": [
+        "**/e2e/**/*.{ts,js,tsx,jsx}",
+        "**/__e2e__/**/*.{ts,js,tsx,jsx}"
+      ],
       "rules": {
         "@typescript-eslint/no-floating-promises": "error"
-      }
-    },
-    {
-      "files": ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
-      "rules": {
-        "@typescript-eslint/no-unused-vars": "off",
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-non-null-assertion": "off",
-        "@typescript-eslint/no-empty-function": "off",
-        // 忽略类型分配错误
-        "@typescript-eslint/no-unsafe-assignment": "off",
-        "@typescript-eslint/no-unsafe-member-access": "off",
-        "@typescript-eslint/no-unsafe-call": "off",
-        // 添加更多测试文件的忽略规则
-        "@typescript-eslint/no-unsafe-return": "off",
-        "@typescript-eslint/no-misused-promises": "off"
       }
     }
   ]

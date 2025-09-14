@@ -34,6 +34,7 @@
 - [sdk.md](./development/sdk.md): SDK 使用指南
 - [sdk-examples.md](./development/sdk-examples.md): SDK 使用示例
 - [best-practices.md](./development/best-practices.md): 最佳实践
+- [ts-error-solutions.md](./development/ts-error-solutions.md): TypeScript 错误解决方案
 
 ### 插件示例文档 (plugin-samples)
 
