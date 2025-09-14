@@ -10,7 +10,7 @@
 import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
-import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select, FormInstance } from 'antd';
+import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
