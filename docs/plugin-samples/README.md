@@ -16,7 +16,22 @@ docs/plugin-samples/
 ├── middleware.md               # 服务器中间件示例
 ├── ui-components.md            # UI 组件示例
 ├── workflow-nodes.md           # 工作流节点示例
-└── plugin-settings.md          # 插件设置示例
+├── plugin-settings.md          # 插件设置示例
+├── custom-fields.md            # 自定义字段示例
+├── file-management.md          # 文件管理示例
+├── authentication.md           # 认证示例
+├── api-documentation.md        # API 文档示例
+├── data-visualization.md       # 数据可视化示例
+├── calendar.md                 # 日历示例
+├── gantt.md                    # 甘特图示例
+├── kanban.md                   # 看板示例
+├── china-region.md             # 中国行政区划字段示例
+├── formula-field.md            # 公式字段示例
+├── workflow.md                 # 工作流示例
+├── auth.md                     # 认证示例
+├── file-manager.md             # 文件管理器示例
+├── acl.md                      # 权限控制示例
+└── api-keys.md                 # API 密钥示例
 ```
 
 ## 示例类别
@@ -50,6 +65,51 @@ docs/plugin-samples/
 
 ### 10. [插件设置](./plugin-settings.md)
 介绍如何为插件添加设置页面和配置选项。
+
+### 11. [自定义字段](./custom-fields.md)
+展示如何创建自定义字段类型以满足特定业务需求。
+
+### 12. [文件管理](./file-management.md)
+介绍如何处理文件上传、存储、权限控制和版本管理。
+
+### 13. [认证](./authentication.md)
+展示如何实现自定义认证机制，包括OAuth2、JWT和多因素认证。
+
+### 14. [API 文档](./api-documentation.md)
+介绍如何生成和自定义 API 文档，包括 OpenAPI 规范和文档安全。
+
+### 15. [数据可视化](./data-visualization.md)
+展示如何使用数据可视化插件创建图表和仪表板。
+
+### 16. [日历](./calendar.md)
+介绍如何使用日历插件管理日期相关数据。
+
+### 17. [甘特图](./gantt.md)
+演示如何使用甘特图插件进行项目管理。
+
+### 18. [看板](./kanban.md)
+展示如何使用看板插件进行任务管理。
+
+### 19. [中国行政区划字段](./china-region.md)
+介绍如何使用中国行政区划字段处理地区信息。
+
+### 20. [公式字段](./formula-field.md)
+演示如何使用公式字段进行数据计算。
+
+### 21. [工作流](./workflow.md)
+展示如何使用工作流插件实现业务自动化。
+
+### 22. [认证](./auth.md)
+介绍如何使用认证插件管理用户认证。
+
+### 23. [文件管理器](./file-manager.md)
+演示如何使用文件管理器插件处理文件存储和访问。
+
+### 24. [权限控制](./acl.md)
+展示如何使用权限控制插件管理访问控制。
+
+### 25. [API 密钥](./api-keys.md)
+介绍如何使用 API 密钥插件进行程序化访问。
 
 ## 学习建议
 
