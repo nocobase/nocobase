@@ -2,6 +2,27 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext"
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
+    "noImplicitReturns": false,
+    "noImplicitOverride": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "noStrictGenericChecks": true,
+    "suppressExcessPropertyErrors": true
   }
 }

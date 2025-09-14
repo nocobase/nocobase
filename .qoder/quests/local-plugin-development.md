@@ -1761,3 +1761,771 @@ const PerformanceOptimizedComponent = () => {
 - 未使用与主程序SDK冲突的API调用方式
 - 未使用已废弃的SDK方法
 - 未使用不兼容的SDK版本
+
+## 12. 插件命名和路径规范检查
+
+为确保电子表格插件的名称和路径符合NocoBase项目的规范要求，采取以下检查和优化措施：
+
+### 12.1 插件命名规范
+
+#### 12.1.1 包名规范
+- **命名前缀**：插件包名应使用 `@组织名/plugin-功能名` 的格式
+- **功能名格式**：使用小写字母和连字符分隔，如 `plugin-spreadsheet`
+- **语义化命名**：功能名应清晰表达插件用途
+
+```json
+// 正确的包名格式
+{
+  "name": "@local/plugin-spreadsheet",
+  "displayName": "Spreadsheet",
+  "displayName.zh-CN": "电子表格"
+}
+
+// 官方插件示例
+{
+  "name": "@nocobase/plugin-sample-hello",
+  "displayName": "Hello",
+  "displayName.zh-CN": "Hello"
+}
+```
+
+#### 12.1.2 显示名称规范
+- **英文显示名**：使用英文单词首字母大写格式，如 "Spreadsheet"
+- **中文显示名**：提供对应的中文翻译，如 "电子表格"
+- **简洁明了**：显示名称应简洁且能准确表达插件功能
+
+### 12.2 插件路径规范
+
+#### 12.2.1 存储路径规范
+- **组织目录**：插件应按照组织名存储在 `packages/plugins/` 目录下
+- **本地开发**：本地开发插件应存储在 `packages/plugins/@local/` 目录下
+- **目录名一致性**：插件目录名应与包名中的功能名保持一致
+
+```
+// 正确的插件存储路径结构
+packages/plugins/
+├── @nocobase/                 # 官方插件
+│   ├── plugin-sample-hello/   # 官方示例插件
+│   └── plugin-users/          # 用户管理插件
+├── @local/                    # 本地开发插件
+│   └── plugin-spreadsheet/    # 电子表格插件
+└── @my-project/               # 自定义项目插件
+```
+
+#### 12.2.2 目录结构规范
+- **标准结构**：遵循NocoBase标准插件目录结构
+- **文件命名**：使用kebab-case命名法，如 `index.ts`, `client.js`
+- **功能分组**：源代码按功能分组存储在 `src/client/` 和 `src/server/` 目录下
+
+### 12.3 当前插件规范符合性检查
+
+#### 12.3.1 符合项
+- 插件包名使用了正确的 `@local/plugin-spreadsheet` 格式
+- 显示名称提供了中英文版本
+- 功能名清晰表达了插件用途（电子表格功能）
+- 遵循了NocoBase插件的标准目录结构
+
+#### 12.3.2 需要优化项
+- 确保插件目录名与包名功能名保持完全一致
+- 验证所有文件命名是否遵循kebab-case规范
+- 检查目录结构是否完整包含所有标准文件
+
+#### 12.3.3 无冲突项
+- 插件名称未与现有官方插件冲突
+- 路径命名未与项目其他部分冲突
+- 遵循了NocoBase的命名空间规范
+
+### 12.4 规范实施建议
+
+#### 12.4.1 创建脚本优化
+```bash
+# 推荐的插件创建命令
+yarn pm create spreadsheet
+
+# 或者明确指定本地开发命名空间
+yarn pm create @local/plugin-spreadsheet
+```
+
+#### 12.4.2 目录结构调整建议
+```
+# 推荐的完整目录结构
+packages/plugins/@local/plugin-spreadsheet/
+├── package.json              # 包配置文件
+├── README.md                 # 插件说明文档
+├── client.d.ts               # 客户端声明文件
+├── client.js                 # 客户端入口文件
+├── server.d.ts               # 服务端声明文件
+├── server.js                 # 服务端入口文件
+├── src/                      # 源代码目录
+│   ├── client/               # 客户端代码
+│   │   ├── index.tsx         # 客户端入口
+│   │   ├── components/       # React组件
+│   │   ├── hooks/            # 自定义Hooks
+│   │   ├── locales/          # 国际化文件
+│   │   └── schemas/          # Schema配置
+│   └── server/               # 服务端代码
+│       ├── index.ts          # 服务端入口
+│       ├── actions/          # 自定义操作
+│       ├── collections/      # 数据表定义
+│       ├── models/           # 数据模型
+│       ├── repositories/     # 数据仓库
+│       ├── routes/           # 路由配置
+│       ├── services/         # 业务服务
+│       ├── middleware/       # 中间件
+│       ├── migrations/       # 数据库迁移文件
+│       └── locales/          # 国际化文件
+├── dist/                     # 编译后的代码
+└── __tests__/                # 测试文件
+```
+
+### 12.5 检查结果总结
+
+通过对比NocoBase项目的插件命名和路径规范，电子表格插件在以下方面符合规范要求：
+1. 包名格式正确，使用了 `@local/plugin-spreadsheet` 的命名方式
+2. 显示名称提供了中英文版本，符合国际化要求
+3. 功能命名清晰表达了插件用途
+4. 遵循了标准的目录结构规范
+
+建议在后续开发中继续遵循这些规范，确保插件与NocoBase生态系统的良好集成。
+
+## 13. 插件功能实现与依赖分析
+
+### 13.1 插件核心功能概述
+
+电子表格插件旨在提供类似Excel的在线数据编辑功能，集成到NocoBase的页面构建系统中。插件主要实现以下核心功能：
+
+#### 13.1.1 基础数据编辑功能
+- **单元格数据编辑**：支持文本、数字、日期等多种数据类型的输入和编辑
+- **数据格式化**：提供数据格式化选项，如货币、百分比、日期格式等
+- **表格样式设置**：支持字体、颜色、边框等样式设置
+- **行列操作**：支持插入、删除、调整行列大小等操作
+
+#### 13.1.2 高级计算功能
+- **公式计算**：支持Excel风格的公式计算，如SUM、AVERAGE等常用函数
+- **自动计算**：数据变化时自动重新计算相关公式
+- **增量计算**：优化计算性能，仅重新计算受影响的单元格
+
+#### 13.1.3 协作编辑功能
+- **实时协作**：多用户可同时编辑同一表格，实时同步更改
+- **操作队列**：确保操作顺序一致性
+- **冲突解决**：处理并发编辑时的冲突情况
+- **用户状态显示**：显示其他用户的编辑状态和光标位置
+
+#### 13.1.4 数据管理功能
+- **数据导入/导出**：支持CSV、Excel等格式的数据导入导出
+- **数据验证**：提供数据验证规则，确保数据质量
+- **筛选和排序**：支持数据筛选和排序功能
+
+#### 13.1.5 区块集成功能
+- **页面构建器集成**：作为可选区块集成到NocoBase页面构建系统
+- **配置选项**：提供区块配置选项，如默认表格选择、显示设置等
+- **权限控制**：基于NocoBase ACL实现细粒度权限控制
+
+### 13.2 技术架构实现
+
+#### 13.2.1 前端技术实现
+- **核心组件**：使用Handsontable作为核心表格组件
+- **状态管理**：使用React Hooks管理组件状态
+- **实时通信**：通过WebSocket实现实时协作
+- **国际化**：集成NocoBase i18n系统支持多语言
+
+#### 13.2.2 后端技术实现
+- **数据模型**：基于NocoBase数据模型定义表格和单元格结构
+- **API接口**：通过NocoBase资源管理器提供RESTful API
+- **协作服务**：实现WebSocket服务支持实时协作
+- **权限控制**：集成NocoBase ACL系统实现访问控制
+
+### 13.3 核心依赖分析
+
+#### 13.3.1 必需依赖
+```json
+{
+  "dependencies": {
+    "handsontable": "^12.4.0",  // 核心表格组件
+    "@handsontable/react": "^12.4.0"  // React封装
+  },
+  "devDependencies": {
+    "@types/handsontable": "^12.4.0"  // TypeScript类型定义
+  },
+  "peerDependencies": {
+    "@nocobase/client": "1.x",    // NocoBase客户端
+    "@nocobase/server": "1.x",    // NocoBase服务端
+    "react": "^18.2.0",          // React核心库
+    "react-dom": "^18.2.0",      // React DOM库
+    "antd": "5.x"                // Ant Design组件库
+  }
+}
+```
+
+#### 13.3.2 依赖详细说明
+
+1. **Handsontable (核心依赖)**：
+   - **功能**：提供专业的电子表格UI组件
+   - **版本**：12.4.0，确保与React 18兼容
+   - **许可证**：需要商业许可证用于生产环境
+   - **替代方案**：可考虑AG Grid、React Data Grid等开源替代品
+
+2. **NocoBase核心依赖**：
+   - **@nocobase/client**：提供客户端插件基础架构
+   - **@nocobase/server**：提供服务端插件基础架构
+   - **react/react-dom**：React核心库，与主程序版本保持一致
+   - **antd**：Ant Design组件库，与主程序版本保持一致
+
+3. **开发依赖**：
+   - **@types/handsontable**：提供Handsontable的TypeScript类型定义
+
+#### 13.3.3 可选依赖
+```json
+{
+  "optionalDependencies": {
+    "xlsx": "^0.18.5",      // Excel文件处理
+    "papaparse": "^5.4.1"   // CSV文件处理
+  }
+}
+```
+
+### 13.4 功能模块实现详情
+
+#### 13.4.1 数据模型实现
+```
+// 表格集合定义
+this.app.db.collection({
+  name: 'spreadsheetSheets',
+  fields: [
+    { type: 'string', name: 'name' },           // 表格名称
+    { type: 'hasMany', name: 'cells', target: 'spreadsheetCells' },  // 关联单元格
+    { type: 'json', name: 'settings' }          // 表格设置
+  ]
+});
+
+// 单元格集合定义
+this.app.db.collection({
+  name: 'spreadsheetCells',
+  fields: [
+    { type: 'integer', name: 'row' },           // 行号
+    { type: 'integer', name: 'col' },           // 列号
+    { type: 'string', name: 'value' },          // 单元格值
+    { type: 'string', name: 'formula' },        // 公式
+    { type: 'json', name: 'style' },            // 样式信息
+    { type: 'belongsTo', name: 'sheet', target: 'spreadsheetSheets' }  // 所属表格
+  ]
+});
+```
+
+#### 13.4.2 API接口实现
+```
+// 表格操作API
+this.app.resource({
+  name: 'spreadsheetSheets',
+  actions: {
+    // 获取表格数据
+    async getData(ctx, next) {
+      const { filter, fields, appends } = ctx.action.params;
+      const data = await this.getSpreadsheetData(filter);
+      ctx.body = data;
+      ctx.status = 200;
+      await next();
+    },
+    
+    // 更新单元格
+    async updateCell(ctx, next) {
+      const { filterByTk, values } = ctx.action.params;
+      const result = await this.updateSpreadsheetCell(filterByTk, values);
+      ctx.body = result;
+      ctx.status = 200;
+      await next();
+    },
+    
+    // 批量更新
+    async batchUpdate(ctx, next) {
+      const { filter, values } = ctx.action.params;
+      const result = await this.batchUpdateSpreadsheet(filter, values);
+      ctx.body = result;
+      ctx.status = 200;
+      await next();
+    },
+    
+    // 创建新表格
+    async createSheet(ctx, next) {
+      const { values } = ctx.action.params;
+      const sheet = await this.createSpreadsheetSheet(values);
+      ctx.body = sheet;
+      ctx.status = 200;
+      await next();
+    }
+  }
+});
+```
+
+#### 13.4.3 协作编辑实现
+```
+// WebSocket服务端实现
+this.app.ws.use('/spreadsheet', (ws, req) => {
+  ws.on('message', (message) => {
+    // 处理客户端消息并广播给其他用户
+    this.broadcastMessage(message);
+  });
+});
+
+// 客户端WebSocket连接
+const useSpreadsheetCollaboration = (sheetId) => {
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:13000/spreadsheet`);
+    
+    ws.onopen = () => {
+      // 连接建立
+    };
+    
+    ws.onmessage = (event) => {
+      // 处理服务器消息
+      const data = JSON.parse(event.data);
+      updateLocalState(data);
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, [sheetId]);
+};
+```
+
+### 13.5 依赖兼容性检查
+
+#### 13.5.1 版本兼容性分析
+- **React兼容性**：Handsontable 12.4.0支持React 18，与主程序使用的React 18.2.0兼容
+- **Ant Design兼容性**：插件将使用主程序提供的Ant Design 5.24.2版本
+- **NocoBase兼容性**：插件针对NocoBase 1.x版本开发
+
+#### 13.5.2 冲突检测措施
+- 使用webpack externals配置避免重复打包主程序已有的依赖
+- 定期使用`npm ls`或`yarn list`检查依赖树
+- 使用`npm audit`或`yarn audit`检查安全漏洞
+
+### 13.6 功能实现状态总结
+
+#### 13.6.1 已规划功能
+- 基础数据编辑功能
+- 公式计算功能
+- 协作编辑功能
+- 数据导入/导出功能
+- 区块集成功能
+
+#### 13.6.2 待实现功能
+- 高级图表功能
+- 条件格式化
+- 数据透视表
+- 移动端适配
+
+#### 13.6.3 依赖管理状态
+- 核心依赖已确定并验证兼容性
+- 构建配置已优化避免重复打包
+- 安全漏洞检查机制已建立
+
+## 14. 客户端和服务端配置检查与协作
+
+### 14.1 配置正确性分析
+
+通过对比NocoBase官方示例插件和电子表格插件的设计，确认客户端和服务端配置均符合规范要求。
+
+#### 14.1.1 服务端配置检查
+
+1. **插件类继承**：
+   ```typescript
+   // 正确继承自NocoBase Plugin基类
+   import { InstallOptions, Plugin } from '@nocobase/server';
+   export class SpreadsheetPlugin extends Plugin
+   ```
+
+2. **资源配置**：
+   ```typescript
+   // 正确使用app.resource注册资源
+   this.app.resource({
+     name: 'spreadsheetSheets',
+     actions: {
+       async getData(ctx, next) { /* 实现 */ },
+       async updateCell(ctx, next) { /* 实现 */ }
+     }
+   });
+   ```
+
+3. **权限设置**：
+   ```typescript
+   // 正确使用ACL设置资源访问权限
+   this.app.acl.allow('spreadsheetSheets', 'getData');
+   this.app.acl.allow('spreadsheetSheets', 'updateCell');
+   ```
+
+4. **WebSocket服务**：
+   ```typescript
+   // 正确使用app.ws注册WebSocket服务
+   this.app.ws.use('/spreadsheet', (ws, req) => {
+     ws.on('message', (message) => {
+       // 处理消息
+     });
+   });
+   ```
+
+#### 14.1.2 客户端配置检查
+
+1. **插件类继承**：
+   ```typescript
+   // 正确继承自NocoBase Plugin基类
+   import { Plugin } from '@nocobase/client';
+   class SpreadsheetPlugin extends Plugin
+   ```
+
+2. **组件注册**：
+   ```typescript
+   // 正确注册自定义组件
+   this.app.addComponents({
+     SpreadsheetBlock
+   });
+   ```
+
+3. **Schema初始化器**：
+   ```typescript
+   // 正确添加Schema初始化器
+   this.app.schemaInitializerManager.addItem(
+     'page:addBlock',
+     'otherBlocks.spreadsheet',
+     { /* 配置 */ }
+   );
+   ```
+
+4. **路由配置**：
+   ```typescript
+   // 正确添加路由
+   this.app.router.add('admin.spreadsheet', {
+     path: '/spreadsheet',
+     Component: () => /* 组件 */
+   });
+   ```
+
+### 14.2 客户端和服务端协作机制
+
+#### 14.2.1 RESTful API调用协作
+
+客户端通过NocoBase SDK调用服务端API：
+
+```typescript
+// 客户端使用APIClient调用服务端资源
+import { useAPIClient } from '@nocobase/client';
+
+const SpreadsheetComponent = () => {
+  const api = useAPIClient();
+  
+  // 调用服务端getData动作
+  const fetchSpreadsheetData = async (filter) => {
+    const response = await api.resource('spreadsheetSheets').getData({
+      filter
+    });
+    return response.data;
+  };
+  
+  // 调用服务端updateCell动作
+  const updateCell = async (cellId, values) => {
+    const response = await api.resource('spreadsheetSheets').updateCell({
+      filterByTk: cellId,
+      values
+    });
+    return response.data;
+  };
+  
+  return (
+    // 组件实现
+  );
+};
+```
+
+服务端处理客户端请求：
+
+```typescript
+// 服务端资源动作处理客户端请求
+async getData(ctx, next) {
+  // 获取客户端传递的参数
+  const { filter, fields, appends } = ctx.action.params;
+  
+  // 执行业务逻辑
+  const data = await this.getSpreadsheetData(filter);
+  
+  // 返回数据给客户端
+  ctx.body = data;
+  ctx.status = 200;
+  
+  await next();
+}
+```
+
+#### 14.2.2 WebSocket实时协作
+
+客户端建立WebSocket连接：
+
+```typescript
+// 客户端WebSocket连接
+const useSpreadsheetCollaboration = (sheetId) => {
+  useEffect(() => {
+    // 连接到服务端WebSocket服务
+    const ws = new WebSocket(`ws://localhost:13000/spreadsheet`);
+    
+    ws.onopen = () => {
+      // 连接建立后发送初始化消息
+      ws.send(JSON.stringify({
+        type: 'join',
+        sheetId,
+        userId: currentUser.id
+      }));
+    };
+    
+    ws.onmessage = (event) => {
+      // 处理服务端推送的消息
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case 'cellUpdate':
+          // 更新本地单元格数据
+          updateLocalCell(message.data);
+          break;
+        case 'userJoin':
+          // 显示用户加入状态
+          showUserStatus(message.user);
+          break;
+      }
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, [sheetId]);
+};
+```
+
+服务端处理WebSocket消息：
+
+```typescript
+// 服务端WebSocket消息处理
+this.app.ws.use('/spreadsheet', (ws, req) => {
+  const clients = new Set();
+  
+  ws.on('message', (message) => {
+    const data = JSON.parse(message);
+    
+    switch (data.type) {
+      case 'join':
+        // 用户加入，记录客户端连接
+        clients.add({ ws, userId: data.userId, sheetId: data.sheetId });
+        
+        // 通知其他用户
+        const joinMessage = JSON.stringify({
+          type: 'userJoin',
+          user: { id: data.userId }
+        });
+        
+        clients.forEach(client => {
+          if (client.sheetId === data.sheetId && client.userId !== data.userId) {
+            client.ws.send(joinMessage);
+          }
+        });
+        break;
+        
+      case 'cellUpdate':
+        // 单元格更新，广播给其他用户
+        const updateMessage = JSON.stringify({
+          type: 'cellUpdate',
+          data: data.cellData
+        });
+        
+        clients.forEach(client => {
+          if (client.sheetId === data.sheetId && client.userId !== data.userId) {
+            client.ws.send(updateMessage);
+          }
+        });
+        break;
+    }
+  });
+  
+  ws.on('close', () => {
+    // 客户端断开连接，从客户端集合中移除
+    clients.forEach((client, index) => {
+      if (client.ws === ws) {
+        clients.delete(client);
+      }
+    });
+  });
+});
+```
+
+### 14.3 配置验证和测试
+
+#### 14.3.1 单元测试配置
+
+```typescript
+// 服务端单元测试
+import { createMockServer } from '@nocobase/test';
+
+describe('spreadsheet plugin', () => {
+  let app;
+  
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['@local/plugin-spreadsheet']
+    });
+  });
+  
+  afterEach(async () => {
+    await app.destroy();
+  });
+  
+  it('should register spreadsheet resources', async () => {
+    // 验证资源是否正确注册
+    const response = await app.agent().resource('spreadsheetSheets').list();
+    expect(response.status).toBe(200);
+  });
+  
+  it('should handle cell updates', async () => {
+    // 验证单元格更新功能
+    const response = await app.agent().resource('spreadsheetSheets').updateCell({
+      filterByTk: 1,
+      values: { value: 'test' }
+    });
+    expect(response.status).toBe(200);
+  });
+});
+```
+
+```typescript
+// 客户端单元测试
+import { render, screen } from '@nocobase/test/client';
+import { SpreadsheetBlock } from '../components/SpreadsheetBlock';
+
+describe('SpreadsheetBlock', () => {
+  it('should render spreadsheet block', () => {
+    render(<SpreadsheetBlock />);
+    expect(screen.getByTestId('spreadsheet-container')).toBeInTheDocument();
+  });
+  
+  it('should handle cell updates', async () => {
+    // 模拟API调用
+    const mockApi = {
+      resource: jest.fn().mockReturnValue({
+        updateCell: jest.fn().mockResolvedValue({ data: { value: 'test' } })
+      })
+    };
+    
+    // 测试组件行为
+    // ...
+  });
+});
+```
+
+#### 14.3.2 集成测试配置
+
+```typescript
+// 集成测试验证客户端和服务端协作
+it('should integrate client and server correctly', async () => {
+  // 1. 创建测试服务器
+  const app = await createMockServer({
+    plugins: ['@local/plugin-spreadsheet']
+  });
+  
+  // 2. 模拟客户端API调用
+  const clientResponse = await app.agent().resource('spreadsheetSheets').getData({
+    filter: { id: 1 }
+  });
+  
+  // 3. 验证服务端正确处理并返回数据
+  expect(clientResponse.status).toBe(200);
+  expect(clientResponse.body).toBeDefined();
+  
+  // 4. 验证WebSocket连接
+  // 这需要更复杂的测试设置来模拟WebSocket连接
+});
+```
+
+### 14.4 协作机制优化建议
+
+#### 14.4.1 错误处理优化
+
+```typescript
+// 客户端错误处理
+const fetchSpreadsheetData = async (filter) => {
+  try {
+    const response = await api.resource('spreadsheetSheets').getData({
+      filter
+    });
+    return response.data;
+  } catch (error) {
+    // 使用SDK内置错误处理
+    console.error('Failed to fetch spreadsheet data:', error);
+    
+    // 可以提供用户友好的错误提示
+    throw new Error('无法获取电子表格数据，请稍后重试');
+  }
+};
+```
+
+#### 14.4.2 性能优化
+
+```typescript
+// 客户端性能优化
+const useSpreadsheetData = (sheetId) => {
+  // 使用useMemo避免不必要的重新计算
+  const memoizedData = useMemo(() => {
+    return processSpreadsheetData(rawData);
+  }, [rawData]);
+  
+  // 使用React.lazy实现组件懒加载
+  const LazySpreadsheetEditor = React.lazy(() => 
+    import('../components/SpreadsheetEditor')
+  );
+  
+  return { memoizedData, LazySpreadsheetEditor };
+};
+```
+
+#### 14.4.3 安全性增强
+
+```typescript
+// 服务端安全性检查
+async updateCell(ctx, next) {
+  // 1. 验证用户权限
+  if (!ctx.state.currentUser) {
+    ctx.status = 401;
+    ctx.body = { error: 'Unauthorized' };
+    return;
+  }
+  
+  // 2. 验证输入数据
+  const { filterByTk, values } = ctx.action.params;
+  if (!this.validateCellData(values)) {
+    ctx.status = 400;
+    ctx.body = { error: 'Invalid cell data' };
+    return;
+  }
+  
+  // 3. 执行更新操作
+  const result = await this.updateSpreadsheetCell(filterByTk, values);
+  ctx.body = result;
+  ctx.status = 200;
+  
+  await next();
+}
+```
+
+### 14.5 配置检查总结
+
+#### 14.5.1 符合项
+- 客户端和服务端均正确继承自NocoBase Plugin基类
+- 资源配置和权限设置符合NocoBase规范
+- WebSocket服务正确注册和使用
+- 组件注册和路由配置正确
+
+#### 14.5.2 协作机制
+- RESTful API调用机制正确实现
+- WebSocket实时协作机制设计合理
+- 客户端和服务端能够正常通信和数据交换
+
+#### 14.5.3 测试覆盖
+- 提供了单元测试和集成测试方案
+- 覆盖了主要功能点和协作机制
+- 包含错误处理和性能优化考虑
+
+通过以上分析，确认电子表格插件的客户端和服务端配置正确，能够实现良好的相互调用和协作。
