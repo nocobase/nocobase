@@ -17,7 +17,7 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
  * - 子项为当前集合可选字段；
  * - 点击后创建 TableColumnModel，并将其 subModels.field 固定为 JSFieldModel。
  */
-export class TableJavaScriptFieldEntryModel extends TableCustomColumnModel {
+export class TableJSFieldItemModel extends TableCustomColumnModel {
   static defineChildren(ctx: FlowModelContext) {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
@@ -27,7 +27,7 @@ export class TableJavaScriptFieldEntryModel extends TableCustomColumnModel {
   }
 }
 
-TableJavaScriptFieldEntryModel.define({
+TableJSFieldItemModel.define({
   label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),

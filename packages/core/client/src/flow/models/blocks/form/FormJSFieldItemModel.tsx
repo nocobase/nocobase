@@ -16,7 +16,7 @@ import { FormCustomItemModel } from './FormCustomItemModel';
  * - 子项列出集合字段；
  * - 点击后创建标准 FormItemModel，并将子字段设置为 JSEditableFieldModel。
  */
-export class FormJavaScriptFieldEntryModel extends FormCustomItemModel {
+export class FormJSFieldItemModel extends FormCustomItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'FormItemModel',
@@ -27,7 +27,7 @@ export class FormJavaScriptFieldEntryModel extends FormCustomItemModel {
   }
 }
 
-FormJavaScriptFieldEntryModel.define({
+FormJSFieldItemModel.define({
   label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),

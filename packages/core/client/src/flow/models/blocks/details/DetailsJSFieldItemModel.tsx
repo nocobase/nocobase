@@ -17,7 +17,7 @@ import { DetailsCustomItemModel } from './DetailsCustomItemModel';
  * - 子项为当前集合可选字段；
  * - 点击后创建 DetailsItemModel，并将其 subModels.field 固定为 JSFieldModel。
  */
-export class DetailsJavaScriptFieldEntryModel extends DetailsCustomItemModel {
+export class DetailsJSFieldItemModel extends DetailsCustomItemModel {
   static defineChildren(ctx: FlowModelContext) {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'DetailsItemModel',
@@ -27,7 +27,7 @@ export class DetailsJavaScriptFieldEntryModel extends DetailsCustomItemModel {
   }
 }
 
-DetailsJavaScriptFieldEntryModel.define({
+DetailsJSFieldItemModel.define({
   label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),

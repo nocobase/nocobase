@@ -15,7 +15,7 @@ export async function registerJsFieldDemoModels(engine: any) {
     JSFieldModel: c.JSFieldModel,
     TableAssociationFieldGroupModel: c.TableAssociationFieldGroupModel,
     TableCustomColumnModel: c.TableCustomColumnModel,
-    TableJavaScriptFieldEntryModel: c.TableJavaScriptFieldEntryModel,
+    TableJavaScriptFieldItemModel: c.TableJavaScriptFieldItemModel,
 
     // Form 相关
     CreateFormModel: c.CreateFormModel,
@@ -41,14 +41,14 @@ export async function registerJsFieldDemoModels(engine: any) {
     MarkdownItemModel: c.MarkdownItemModel,
     DividerItemModel: c.DividerItemModel,
     JavaScriptItemModel: c.JavaScriptItemModel,
-    FormJavaScriptFieldEntryModel: c.FormJavaScriptFieldEntryModel,
+    FormJavaScriptFieldItemModel: c.FormJavaScriptFieldItemModel,
 
     // Details 相关
     DetailsBlockModel: c.DetailsBlockModel,
     DetailsGridModel: c.DetailsGridModel,
     DetailsItemModel: c.DetailsItemModel,
     DetailsCustomItemModel: c.DetailsCustomItemModel,
-    DetailsJavaScriptFieldEntryModel: c.DetailsJavaScriptFieldEntryModel,
+    DetailsJavaScriptFieldItemModel: c.DetailsJavaScriptFieldItemModel,
 
     // 显示字段模型（表格/详情默认绑定依赖）
     DisplayTextFieldModel: c.DisplayTextFieldModel,

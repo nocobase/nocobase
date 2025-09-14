@@ -13,11 +13,11 @@ import { CommonItemModel } from '../base/CommonItemModel';
 import { CodeEditor } from '../../components/code-editor';
 
 /**
- * JavaScriptItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
- * - 行为与 JavaScriptBlockModel 类似，但用于表单网格中的“其他”项
+ * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
+ * - 行为与 JSBlockModel 类似，但用于表单网格中的“其他”项
  * - 默认提供 jsSettings.runJs 自动执行的步骤
  */
-export class JavaScriptItemModel extends CommonItemModel {
+export class JSItemModel extends CommonItemModel {
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
@@ -27,16 +27,16 @@ export class JavaScriptItemModel extends CommonItemModel {
   }
 }
 
-JavaScriptItemModel.define({
+JSItemModel.define({
   label: escapeT('JS block'),
   // 明确指定 createModelOptions，避免在构建压缩后通过类名推断失败
   createModelOptions: {
-    use: 'JavaScriptItemModel',
+    use: 'JSItemModel',
   },
   sort: 120,
 });
 
-JavaScriptItemModel.registerFlow({
+JSItemModel.registerFlow({
   key: 'jsSettings',
   title: escapeT('JavaScript settings'),
   steps: {

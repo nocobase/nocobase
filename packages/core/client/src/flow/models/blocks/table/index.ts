@@ -13,5 +13,5 @@ export * from './TableBlockModel';
 export * from './TableColumnModel';
 export * from './TableCustomColumnModel';
 export * from './TableSelectModel';
-export * from './TableJavaScriptFieldEntryModel';
+export * from './TableJSFieldItemModel';
 //

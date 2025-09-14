@@ -29,7 +29,7 @@ class DemoPlugin extends Plugin {
       ],
     });
 
-    // 注册系统内常用模型（含：CreateFormModel、FormItemModel、各基础可编辑字段、Markdown/Divider 等、FormJavaScriptFieldEntryModel、FormSubmitActionModel、JavaScriptItemModel 等）
+    // 注册系统内常用模型（含：CreateFormModel、FormItemModel、各基础可编辑字段、Markdown/Divider 等、FormJavaScriptFieldItemModel、FormSubmitActionModel、JavaScriptItemModel 等）
     await registerJsFieldDemoModels(this.flowEngine);
 
     // 创建 CreateFormModel（空表单，使用右上角 Fields 菜单添加项）
