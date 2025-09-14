@@ -473,6 +473,7 @@ this.app.router.add('admin.custom', {
 - 实现组件的懒加载以提高页面性能
 - 支持区块配置选项（如默认表格、权限设置等）
 - 实现区块的响应式设计以适配不同屏幕尺寸
+- 确保插件页面在主程序的样式内显示，使用主程序提供的CSS类名和设计规范
 
 ### 5.2 代码组织
 - 客户端和服务端代码严格分离
@@ -640,7 +641,7 @@ npm publish --registry=your-private-registry
 
 ## 8. 电子表格插件专项规划
 
-> 本章节专门针对电子表格插件的开发进行详细规划，确保插件可以作为可选区块集成到NocoBase的页面构建系统中。
+> 本章节专门针对电子表格插件的开发进行详细规划，确保插件可以作为可选区块集成到NocoBase的页面构建系统中，并且插件页面在主程序的样式内显示。
 
 ### 8.1 插件功能概述
 电子表格插件将提供类似Excel的在线数据编辑功能，包括：
@@ -767,7 +768,7 @@ const useSpreadsheetCollaboration = (sheetId) => {
   }, [sheetId]);
 };
 
-// 电子表格区块组件
+// 电子表格区块组件，确保样式与主程序一致
 const SpreadsheetBlock = (props) => {
   const { sheetId } = props;
   
@@ -775,9 +776,9 @@ const SpreadsheetBlock = (props) => {
   useSpreadsheetCollaboration(sheetId);
   
   return (
-    <div className="spreadsheet-block">
+    <div className="spreadsheet-block nb-block-wrapper"> // 使用主程序样式类
       {/* 电子表格编辑器 */}
-      <div id="spreadsheet-container"></div>
+      <div id="spreadsheet-container" className="spreadsheet-editor"></div>
     </div>
   );
 };
@@ -827,6 +828,7 @@ this.app.i18n.addResources('en-US', 'spreadsheet', {
 2. **组件注册**：将电子表格组件注册到应用组件库中
 3. **权限设置**：确保用户有权限访问和使用电子表格区块
 4. **配置选项**：提供区块配置选项，如默认表格选择、显示设置等
+5. **样式集成**：确保插件页面在主程序的样式内显示，使用主程序提供的CSS类名和设计规范
 
 ```
 // 在客户端插件load方法中添加
