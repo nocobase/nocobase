@@ -415,8 +415,6 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
 
-  console.log('supportedActions', supportedActions);
-
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
     key: uid(),
