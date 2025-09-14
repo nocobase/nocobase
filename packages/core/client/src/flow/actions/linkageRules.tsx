@@ -787,7 +787,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             }
           };
 
-          ctx.runAction(action.name, { ...action.params, setProps });
+          // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
+          ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps });
         });
       }
     });
@@ -891,10 +892,6 @@ export const fieldLinkageRules = defineAction({
     value: [],
   },
   handler: commonLinkageRulesHandler,
-  afterParamsSave(ctx) {
-    // 保存后，自动运行一次
-    ctx.model.applyFlow('eventSettings');
-  },
 });
 
 function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
