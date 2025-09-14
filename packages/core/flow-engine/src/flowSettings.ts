@@ -771,6 +771,8 @@ export class FlowSettings {
           }
         };
 
+        currentDialog.submit = onSaveAll;
+
         const stepsEl = renderStepsContainer();
         const footerButtons = React.createElement(
           Space,

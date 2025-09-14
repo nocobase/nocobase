@@ -1357,4 +1357,329 @@ describe('FlowSettings.open rendering behavior', () => {
       width: 750,
     });
   });
+
+  // =============================
+  // Tests for currentDialog.submit method assignment
+  // =============================
+
+  it('assigns submit method to currentDialog and can be called externally', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-1');
+    const model = new TestFlowModel({ uid: 'm-submit-external', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'submitFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    const setStepParams = vi.spyOn(model as any, 'setStepParams');
+    const saveStepParams = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'submitFlow', stepKey: 'step' } as any);
+
+    // Verify that submit method was assigned to dialog
+    expect(typeof capturedDialog.submit).toBe('function');
+
+    // Call submit method externally
+    await capturedDialog.submit();
+
+    // Verify that save flow was executed
+    expect(setStepParams).toHaveBeenCalled();
+    expect(saveStepParams).toHaveBeenCalled();
+    expect(success).toHaveBeenCalledWith('Configuration saved');
+    expect(capturedDialog.close).toHaveBeenCalled();
+  });
+
+  it('submit method handles multiple steps correctly', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-2');
+    const model = new TestFlowModel({ uid: 'm-submit-multi', flowEngine: engine });
+
+    const beforeHook1 = vi.fn();
+    const afterHook1 = vi.fn();
+    const beforeHook2 = vi.fn();
+    const afterHook2 = vi.fn();
+
+    TestFlowModel.registerFlow({
+      key: 'multiStepFlow',
+      steps: {
+        step1: {
+          title: 'Step 1',
+          beforeParamsSave: beforeHook1,
+          afterParamsSave: afterHook1,
+          uiSchema: { field1: { type: 'string', 'x-component': 'Input' } },
+        },
+        step2: {
+          title: 'Step 2',
+          beforeParamsSave: beforeHook2,
+          afterParamsSave: afterHook2,
+          uiSchema: { field2: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    const setStepParams = vi.spyOn(model as any, 'setStepParams');
+    const saveStepParams = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'multiStepFlow' } as any);
+
+    // Call submit method
+    await capturedDialog.submit();
+
+    // Verify both steps were processed
+    expect(setStepParams).toHaveBeenCalledTimes(2);
+    expect(setStepParams).toHaveBeenCalledWith('multiStepFlow', 'step1', expect.any(Object));
+    expect(setStepParams).toHaveBeenCalledWith('multiStepFlow', 'step2', expect.any(Object));
+
+    // Verify hooks were called in correct order
+    expect(beforeHook1).toHaveBeenCalled();
+    expect(beforeHook2).toHaveBeenCalled();
+    expect(saveStepParams).toHaveBeenCalled();
+    expect(afterHook1).toHaveBeenCalled();
+    expect(afterHook2).toHaveBeenCalled();
+
+    expect(capturedDialog.close).toHaveBeenCalled();
+  });
+
+  it('submit method handles FlowExitException by closing dialog without error message', async () => {
+    const { FlowExitException } = await import('../utils/exceptions');
+
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-3');
+    const model = new TestFlowModel({ uid: 'm-submit-exit', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'exitFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          beforeParamsSave: () => {
+            throw new FlowExitException('exitFlow', 'm-submit-exit', 'Exit requested');
+          },
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'exitFlow', stepKey: 'step' } as any);
+
+    // Call submit method
+    await capturedDialog.submit();
+
+    // Verify FlowExitException handling
+    expect(error).not.toHaveBeenCalled(); // Should not show error message
+    expect(success).not.toHaveBeenCalled(); // Should not show success message
+    expect(capturedDialog.close).toHaveBeenCalled(); // Should close dialog
+  });
+
+  it('submit method handles general errors by showing error message and keeping dialog open', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-4');
+    const model = new TestFlowModel({ uid: 'm-submit-error', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'errorFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const info = vi.fn();
+    const error = vi.fn();
+    const success = vi.fn();
+    model.context.defineProperty('message', { value: { info, error, success } });
+
+    // Mock saveStepParams to throw error
+    vi.spyOn(model as any, 'saveStepParams').mockRejectedValue(new Error('Save failed'));
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    // Mock console.error to avoid log noise
+    const originalConsoleError = console.error;
+    console.error = vi.fn();
+
+    await flowSettings.open({ model, flowKey: 'errorFlow', stepKey: 'step' } as any);
+
+    // Call submit method
+    await capturedDialog.submit();
+
+    // Verify error handling
+    expect(error).toHaveBeenCalledWith('Error saving configuration, please check console');
+    expect(success).not.toHaveBeenCalled();
+    expect(capturedDialog.close).not.toHaveBeenCalled(); // Should keep dialog open
+    expect(console.error).toHaveBeenCalledWith('FlowSettings.open: save error', expect.any(Error));
+
+    // Restore console.error
+    console.error = originalConsoleError;
+  });
+
+  it('submit method calls onSaved callback after successful save', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-5');
+    const model = new TestFlowModel({ uid: 'm-submit-callback', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'callbackFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    const onSaved = vi.fn();
+    await flowSettings.open({ model, flowKey: 'callbackFlow', stepKey: 'step', onSaved } as any);
+
+    // Call submit method
+    await capturedDialog.submit();
+
+    // Verify onSaved callback was called
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(capturedDialog.close).toHaveBeenCalled();
+  });
+
+  it('submit method handles onSaved callback errors gracefully', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-submit-6');
+    const model = new TestFlowModel({ uid: 'm-submit-callback-error', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'callbackErrorFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { field: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
+          if (typeof content === 'function') {
+            content(capturedDialog);
+          }
+          return capturedDialog;
+        },
+      },
+    });
+
+    // Mock console.error to avoid log noise
+    const originalConsoleError = console.error;
+    console.error = vi.fn();
+
+    const onSaved = vi.fn().mockRejectedValue(new Error('Callback error'));
+    await flowSettings.open({ model, flowKey: 'callbackErrorFlow', stepKey: 'step', onSaved } as any);
+
+    // Call submit method
+    await capturedDialog.submit();
+
+    // Verify that main save process completed successfully despite callback error
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(capturedDialog.close).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('FlowSettings.open: onSaved callback error', expect.any(Error));
+
+    // Restore console.error
+    console.error = originalConsoleError;
+  });
 });

@@ -19,6 +19,10 @@ export type FlowView = {
   close: () => void;
   update: (newConfig: any) => void;
   navigation?: ViewNavigation;
+  /** 页面的销毁方法 */
+  destroy?: () => void;
+  /** 提交流配置表单里的值。仅流配置视图中可访问到该方法 */
+  submit?: () => Promise<any>;
 };
 
 type TargetProps = {
