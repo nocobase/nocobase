@@ -49,11 +49,21 @@ export default class extends Migration {
       const collection = this.db.getCollection(collectionName);
       if (collection) {
         const tableName = collection.getTableNameWithSchema();
-        await queryInterface.changeColumn(tableName, 'id', {
-          type: DataTypes.BIGINT,
-          primaryKey: true,
-          allowNull: false,
-          autoIncrement: false,
+        await this.db.sequelize.transaction(async (transaction) => {
+          await queryInterface.changeColumn(
+            tableName,
+            'id',
+            {
+              type: DataTypes.BIGINT,
+              primaryKey: true,
+              allowNull: false,
+              autoIncrement: false,
+            },
+            {
+              transaction,
+            },
+          );
+          await this.db.sequelize.query(`DROP SEQUENCE IF EXISTS "${tableName}_id_seq" CASCADE;`, { transaction });
         });
       }
       const field = await repo.findOne({
