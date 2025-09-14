@@ -186,11 +186,18 @@ import { SpreadsheetBlock } from './components/SpreadsheetBlock';
 
 class SpreadsheetPlugin extends Plugin {
   async load() {
-    // 1. 注册插件设置页面
+    // 1. 注册插件设置页面，使用主程序样式
     this.app.pluginSettingsManager.add('spreadsheet', {
       title: 'Spreadsheet',
       icon: 'TableOutlined',
-      Component: () => <div>Spreadsheet Settings</div>,
+      Component: () => (
+        <div className="nb-page-wrapper"> // 使用主程序样式类
+          <div className="spreadsheet-settings-page">
+            <h1>{{t('Spreadsheet Settings')}}</h1>
+            <div>Spreadsheet Settings Content</div>
+          </div>
+        </div>
+      ),
       sort: 100
     });
     
@@ -225,21 +232,32 @@ class SpreadsheetPlugin extends Plugin {
       }
     );
     
-    // 4. 添加路由
+    // 4. 添加路由，确保页面使用主程序样式
     this.app.router.add('admin.spreadsheet', {
       path: '/spreadsheet',
-      Component: () => <div>Spreadsheet Management</div>
+      Component: () => (
+        <div className="nb-page-wrapper"> // 使用主程序样式类
+          <div className="spreadsheet-management-page">
+            <h1>{{t('Spreadsheet Management')}}</h1>
+            <div>Spreadsheet Management Content</div>
+          </div>
+        </div>
+      )
     });
     
     // 5. 国际化支持
     this.app.i18n.addResources('en-US', 'spreadsheet', {
       'Spreadsheet': 'Spreadsheet',
-      'New Sheet': 'New Sheet'
+      'New Sheet': 'New Sheet',
+      'Spreadsheet Settings': 'Spreadsheet Settings',
+      'Spreadsheet Management': 'Spreadsheet Management'
     });
     
     this.app.i18n.addResources('zh-CN', 'spreadsheet', {
       'Spreadsheet': '电子表格',
-      'New Sheet': '新建工作表'
+      'New Sheet': '新建工作表',
+      'Spreadsheet Settings': '电子表格设置',
+      'Spreadsheet Management': '电子表格管理'
     });
   }
 }
