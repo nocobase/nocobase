@@ -753,14 +753,17 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   }
 
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
-  const ruleItemModels: FlowModel[] = ctx.model.__ruleModels || (ctx.model.__ruleModels = {});
+
+  allModels.forEach((model: any) => {
+    // 重置临时属性
+    model.__props = {};
+  });
 
   // 1. 运行所有的联动规则
   linkageRules
     .filter((rule) => rule.enable)
     .forEach((rule) => {
       const { conditions, actions } = rule;
-      const models = ruleItemModels[rule.key] || (ruleItemModels[rule.key] = []);
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
@@ -785,9 +788,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               };
             }
 
-            if (model.__shouldReset) {
+            if (!model.__props) {
               model.__props = {};
-              model.__shouldReset = false;
             }
 
             // 临时存起来，遍历完所有规则后，再统一处理
@@ -796,22 +798,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               ...props,
             };
 
-            if (models.indexOf(model) === -1) {
-              models.push(model);
-            }
-
             if (allModels.indexOf(model) === -1) {
               allModels.push(model);
             }
           };
 
           handler(ctx, { ...action.params, setProps });
-        });
-      } else {
-        // 条件不满足时重置状态
-        models.forEach((model: any) => {
-          model.__props = {};
-          model.__shouldReset = false;
         });
       }
     });
@@ -831,7 +823,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.context.form.setFieldValue(model.props.name, newProps.value);
     }
 
-    model.__shouldReset = true;
+    model.__props = null;
   });
 };
 
