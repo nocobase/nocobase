@@ -17,10 +17,9 @@ import {
 } from '@nocobase/flow-engine';
 import { get } from 'lodash';
 import React from 'react';
-import { FieldModel } from '../../base/FieldModel';
-import { FieldNotAllow } from '../form/FormItemModel';
-import { DetailsGridModel } from './DetailsGridModel';
+import { FieldModel } from '../../base';
 import { DisplayAssociationFieldModel } from '../../fields/DisplayAssociationField/DisplayAssociationFieldModel';
+import { DetailsGridModel } from './DetailsGridModel';
 
 /**
  * 从 record 中取值
@@ -104,7 +103,8 @@ export class DetailsItemModel extends DisplayItemModel<{
             subModels: {
               field: {
                 use: fieldModel,
-                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
             },
           }),
@@ -136,14 +136,6 @@ export class DetailsItemModel extends DisplayItemModel<{
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={modelForRender} />
-      </FormItem>
-    );
-  }
-
-  renderHiddenInConfig(): React.ReactNode | undefined {
-    return (
-      <FormItem {...this.props}>
-        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
       </FormItem>
     );
   }

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from 'antd';
+import { Card, Form } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { CollectionField } from '../data-source';
@@ -16,6 +16,23 @@ import { DefaultStructure } from '../types';
 import { escapeT } from '../utils';
 import { FlowModel } from './flowModel';
 
+export function FieldPlaceholder() {
+  return (
+    <Form.Item>
+      <Card
+        size="small"
+        styles={{
+          body: {
+            color: 'rgba(0,0,0,0.45)',
+          },
+        }}
+      >
+        该字段以被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。
+      </Card>
+    </Form.Item>
+  );
+}
+
 export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
@@ -23,11 +40,18 @@ export interface FieldSettingsInitParams {
   associationPathName?: string;
 }
 
+export interface BindingOptions {
+  modelName: string;
+  isDefault: boolean;
+  defaultProps: object | ((ctx: FlowEngineContext, fieldInstance: CollectionField) => object) | null;
+  when: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
+}
+
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
 
   renderHiddenInConfig(): React.ReactNode | undefined {
-    return <Input variant={'borderless'} value={this.context.t('Permission denied')} readOnly disabled />;
+    return <FieldPlaceholder />;
   }
 
   get title() {
@@ -64,7 +88,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     return this.context.collectionField as CollectionField;
   }
 
-  static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField) {
+  static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions[] {
     const interfaceName = collectionField.interface;
 
     // Check if the interface exists in the map
@@ -79,7 +103,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     );
   }
 
-  static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField) {
+  static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions | null {
     const interfaceName = collectionField.interface;
     if (!interfaceName) {
       return null;

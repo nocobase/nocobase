@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { FieldModel } from '../base/FieldModel';
+import React from 'react';
+import { FieldModel } from '../base';
 
 export class DisplayPasswordFieldModel extends FieldModel {
   static readonly supportedFieldInterfaces = ['password'];

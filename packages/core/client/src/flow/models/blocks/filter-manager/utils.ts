@@ -8,8 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { BlockGridModel } from '../../base/GridModel';
+import { BlockGridModel, CollectionBlockModel } from '../../base';
 
 export function getDefaultOperator(model: any) {
   return model.operator || model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value;

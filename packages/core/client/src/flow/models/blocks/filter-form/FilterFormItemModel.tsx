@@ -19,8 +19,7 @@ import { Alert, Empty } from 'antd';
 import _, { capitalize, debounce } from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { FieldModel } from '../../base/FieldModel';
+import { CollectionBlockModel, FieldModel } from '../../base';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
@@ -78,7 +77,9 @@ const getModelFields = async (model: CollectionBlockModel) => {
             field: {
               use: fieldModel,
               props:
-                typeof binding.defaultProps === 'function' ? binding.defaultProps(model.context) : binding.defaultProp,
+                typeof binding.defaultProps === 'function'
+                  ? binding.defaultProps(model.context, field)
+                  : binding.defaultProps,
             },
           },
         }),
@@ -219,14 +220,6 @@ export class FilterFormItemModel extends FilterableItemModel<{
       </FormItem>
     );
   }
-  // 设置态隐藏时的占位渲染
-  renderHiddenInConfig(): React.ReactNode | undefined {
-    return (
-      <FormItem {...this.props}>
-        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
-      </FormItem>
-    );
-  }
 }
 
 FilterFormItemModel.define({
@@ -341,13 +334,11 @@ FilterFormItemModel.registerFlow({
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
     },
-
     model: {
       use: 'fieldComponent',
       title: escapeT('Field component'),
       uiSchema: (ctx) => {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
-        console.log(classes);
         if (classes.length === 1) {
           return null;
         }
@@ -357,14 +348,13 @@ FilterFormItemModel.registerFlow({
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             enum: classes.map((model) => ({
-              label: model,
-              value: model,
+              label: model.modelName,
+              value: model.modelName,
             })),
           },
         };
       },
     },
-
     connectFields: {
       use: 'connectFields',
     },

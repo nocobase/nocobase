@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
@@ -35,9 +35,12 @@ export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-  // 设置态隐藏时：返回单元格渲染函数，显示“ No permission ”并降低不透明度
-  renderHiddenInConfig(): React.ReactNode | undefined {
-    return <span style={{ opacity: 0.5 }}>{this.context.t('Permission denied')}</span>;
+  renderHiddenInConfig() {
+    return (
+      <Tooltip title={this.context.t('该字段以被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+        <LockOutlined style={{ opacity: '0.45' }} />
+      </Tooltip>
+    );
   }
 
   async afterAddAsSubModel() {
@@ -81,7 +84,8 @@ export class TableColumnModel extends DisplayItemModel {
             subModels: {
               field: {
                 use: fieldModel,
-                props: typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx) : binding.defaultProp,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
             },
           }),

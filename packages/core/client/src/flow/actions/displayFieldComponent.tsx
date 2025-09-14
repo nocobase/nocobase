@@ -16,12 +16,13 @@ export const displayFieldComponent = defineAction({
   uiSchema: (ctx: any) => {
     const { titleField } = ctx.model.props;
     const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+    console.log('Available classes for field component:', classes);
     if (classes.length === 1) return null;
 
     const makeOptions = (list) =>
       list.map((model) => {
         const m = ctx.engine.getModelClass(model.modelName);
-        return { label: m.meta.label || model.modelName, value: model.modelName };
+        return { label: m.meta?.label || model.modelName, value: model.modelName };
       });
 
     let options;
@@ -83,8 +84,8 @@ export const displayFieldComponent = defineAction({
     };
   },
   async handler(ctx, params) {
-    if (!params.use) {
-      throw new Error('model use is a required parameter');
-    }
+    // if (!params.use) {
+    //   throw new Error('model use is a required parameter');
+    // }
   },
 });

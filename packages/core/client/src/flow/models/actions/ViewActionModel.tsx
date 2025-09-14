@@ -9,14 +9,16 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import { openViewFlow } from '../../flows/openViewFlow';
-import { RecordActionModel } from '../base/ActionModel';
+import { ActionSceneEnum, PopupActionModel } from '../base';
 
-export class ViewActionModel extends RecordActionModel {
+export class ViewActionModel extends PopupActionModel {
+  static scene = ActionSceneEnum.record;
+
   defaultProps: ButtonProps = {
     type: 'link',
     title: escapeT('View'),
   };
+
   getAclActionName() {
     return 'view';
   }
@@ -25,5 +27,3 @@ export class ViewActionModel extends RecordActionModel {
 ViewActionModel.define({
   label: escapeT('View'),
 });
-
-ViewActionModel.registerFlow(openViewFlow);

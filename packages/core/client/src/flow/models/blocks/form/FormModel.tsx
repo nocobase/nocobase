@@ -12,8 +12,7 @@ import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocoba
 import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { BlockGridModel } from '../../base/GridModel';
+import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
 

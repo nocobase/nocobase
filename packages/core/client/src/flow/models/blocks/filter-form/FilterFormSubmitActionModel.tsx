@@ -10,7 +10,6 @@
 import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { FilterFormItemModel } from './FilterFormItemModel';
 
 export class FilterFormSubmitActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {

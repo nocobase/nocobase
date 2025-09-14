@@ -8,13 +8,14 @@
  */
 
 import {
+  CollectionField,
+  EditableItemModel,
+  escapeT,
   FlowModel,
   FlowModelRenderer,
   observable,
   useFlowContext,
   useFlowViewContext,
-  escapeT,
-  EditableItemModel,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Select } from 'antd';
@@ -118,6 +119,10 @@ export class RecordPickerFieldModel extends FormFieldModel {
   selectedRows = observable.ref([]);
 
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
+
+  get collectionField(): CollectionField {
+    return this.context.collectionField;
+  }
 
   render() {
     return <RecordPickerField {...this.props} />;

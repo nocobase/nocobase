@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { CollectionField, escapeT } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
-import { escapeT } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
-
-import { FieldModel } from '../base/FieldModel';
-import { updateOpenViewStepParams, openViewFlow } from '../../flows/openViewFlow';
+import React from 'react';
+import { openViewFlow, updateOpenViewStepParams } from '../../flows/openViewFlow';
+import { FieldModel } from '../base';
 
 export interface InteractiveDisplayProps {
   clickToOpen?: boolean; // 是否允许点击打开
@@ -21,6 +20,10 @@ export interface InteractiveDisplayProps {
 }
 
 export class InteractiveDisplayFieldModel extends FieldModel {
+  get collectionField(): CollectionField {
+    return this.context.collectionField;
+  }
+
   onInit(options) {
     super.onInit(options);
 

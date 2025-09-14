@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
-import { ButtonProps, Alert } from 'antd';
 import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { CollectionActionModel, RecordActionModel } from '../base/ActionModel';
+import { Alert, ButtonProps } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { ActionModel, ActionSceneEnum, CollectionActionModel, RecordActionModel } from '../base';
 import { AssignFormModel } from '../blocks';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
@@ -78,15 +78,17 @@ function AssignFieldsEditor() {
   return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
-export class UpdateRecordActionModel extends RecordActionModel<{
+export class UpdateActionModel extends ActionModel<{
   subModels: {
     assignForm: AssignFormModel;
   };
 }> {
+  static scene = ActionSceneEnum.record;
+
   assignFormUid?: string;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Update record'),
+    title: escapeT('Update'),
     type: 'link',
   };
 
@@ -95,8 +97,8 @@ export class UpdateRecordActionModel extends RecordActionModel<{
   }
 }
 
-UpdateRecordActionModel.define({
-  label: escapeT('Update record'),
+UpdateActionModel.define({
+  label: escapeT('Update'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -114,7 +116,7 @@ UpdateRecordActionModel.define({
   },
 });
 
-UpdateRecordActionModel.registerFlow({
+UpdateActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
   // 配置流仅用于收集参数，避免作为自动流程执行
@@ -147,7 +149,7 @@ UpdateRecordActionModel.registerFlow({
         };
       },
       async beforeParamsSave(ctx) {
-        const m = ctx.model as UpdateRecordActionModel;
+        const m = ctx.model as UpdateActionModel;
         let form: AssignFormModel = m?.assignFormUid && ctx.engine.getModel?.(m.assignFormUid);
         if (!form && ctx.engine) {
           form = (await ctx.engine.loadModel({
@@ -171,7 +173,7 @@ UpdateRecordActionModel.registerFlow({
   },
 });
 
-UpdateRecordActionModel.registerFlow({
+UpdateActionModel.registerFlow({
   key: 'apply',
   on: 'click',
   steps: {

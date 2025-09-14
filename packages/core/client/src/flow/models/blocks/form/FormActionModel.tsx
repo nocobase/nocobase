@@ -10,8 +10,7 @@
 import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
-import { ActionModel } from '../../base/ActionModel';
-import { CollectionBlockModel } from '../../base/BlockModel';
+import { ActionModel, CollectionBlockModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 import { FormModel } from './FormModel';
 
