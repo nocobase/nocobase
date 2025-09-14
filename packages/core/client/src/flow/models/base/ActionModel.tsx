@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure, FlowModel, escapeT } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel, escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import React from 'react';
@@ -293,41 +293,7 @@ if (!rows.length) {
           }
         });
 
-        // 安全 window/document 代理
-        const safeWindow = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowedGlobals = {
-                setTimeout,
-                clearTimeout,
-                setInterval,
-                clearInterval,
-                console,
-                Math,
-                Date,
-              } as Record<string, any>;
-              if (prop in allowedGlobals) return allowedGlobals[prop];
-              throw new Error(`Access to global property "${prop}" is not allowed.`);
-            },
-          },
-        );
-        const safeDocument = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowed = {
-                createElement: document.createElement.bind(document),
-                querySelector: document.querySelector.bind(document),
-                querySelectorAll: document.querySelectorAll.bind(document),
-              } as Record<string, any>;
-              if (prop in allowed) return allowed[prop];
-              throw new Error(`Access to document property "${prop}" is not allowed.`);
-            },
-          },
-        );
-
-        await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },
   },
@@ -388,40 +354,7 @@ if (!ctx.record) {
           }
         });
 
-        const safeWindow = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowedGlobals = {
-                setTimeout,
-                clearTimeout,
-                setInterval,
-                clearInterval,
-                console,
-                Math,
-                Date,
-              } as Record<string, any>;
-              if (prop in allowedGlobals) return allowedGlobals[prop];
-              throw new Error(`Access to global property "${prop}" is not allowed.`);
-            },
-          },
-        );
-        const safeDocument = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowed = {
-                createElement: document.createElement.bind(document),
-                querySelector: document.querySelector.bind(document),
-                querySelectorAll: document.querySelectorAll.bind(document),
-              } as Record<string, any>;
-              if (prop in allowed) return allowed[prop];
-              throw new Error(`Access to document property "${prop}" is not allowed.`);
-            },
-          },
-        );
-
-        await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },
   },

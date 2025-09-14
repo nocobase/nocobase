@@ -614,7 +614,7 @@ export default defineConfig({
           title: '操作',
           type: 'group',
           children: [
-            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/models/actions/js-actions' },
+            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/examples/js-actions' },
           ],
         },
       ],

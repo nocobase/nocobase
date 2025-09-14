@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, escapeT } from '@nocobase/flow-engine';
+import { ElementProxy, escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
-import { CodeEditor } from '../../components/code-editor';
 import { FieldModel } from '../base/FieldModel';
+import { CodeEditor } from '../../components/code-editor';
 
 /**
  * JS 字段（只读形态）：
@@ -94,7 +94,7 @@ JSFieldModel.registerFlow({
             get: () => ctx.model.props?.value,
             cache: false,
           });
-          await ctx.runjs(code, { window, document });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
     },

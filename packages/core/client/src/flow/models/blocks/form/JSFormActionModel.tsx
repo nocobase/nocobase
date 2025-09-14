@@ -10,7 +10,7 @@
 /**
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import { FormActionModel } from './FormActionModel';
 
 export class JSFormActionModel extends FormActionModel {}
@@ -62,31 +62,7 @@ ctx.message.success('当前表单值：' + JSON.stringify(values));
             await ctx.resource.refresh();
           }
         });
-        const safeWindow = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowed = { setTimeout, clearTimeout, setInterval, clearInterval, console, Math, Date } as any;
-              if (prop in allowed) return allowed[prop];
-              throw new Error(`Access to global property "${prop}" is not allowed.`);
-            },
-          },
-        );
-        const safeDocument = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowed = {
-                createElement: document.createElement.bind(document),
-                querySelector: document.querySelector.bind(document),
-                querySelectorAll: document.querySelectorAll.bind(document),
-              } as any;
-              if (prop in allowed) return allowed[prop];
-              throw new Error(`Access to document property "${prop}" is not allowed.`);
-            },
-          },
-        );
-        await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },
   },

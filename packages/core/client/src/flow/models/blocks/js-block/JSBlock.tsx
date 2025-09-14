@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy } from '@nocobase/flow-engine';
+import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base/BlockModel';
@@ -31,7 +31,7 @@ export class JSBlockModel extends BlockModel {
 }
 
 JSBlockModel.define({
-  label: 'JS block',
+  label: escapeT('JavaScript block'),
 });
 
 JSBlockModel.registerFlow({
@@ -126,56 +126,13 @@ ctx.element.innerHTML = \`
       },
       handler(ctx, params) {
         const { code = '' } = params;
-        // 创建安全的 window 和 document
-        const safeWindow = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowedGlobals = {
-                setTimeout,
-                clearTimeout,
-                setInterval,
-                clearInterval,
-                console,
-                // fetch,
-                Math,
-                Date,
-                addEventListener: addEventListener.bind(window),
-                // 其他需要的全局对象或方法
-              };
-              if (prop in allowedGlobals) {
-                return allowedGlobals[prop];
-              }
-              throw new Error(`Access to global property "${prop}" is not allowed.`);
-            },
-          },
-        );
-
-        const safeDocument = new Proxy(
-          {},
-          {
-            get(target, prop: string) {
-              const allowedDocumentMethods = {
-                createElement: document.createElement.bind(document),
-                querySelector: document.querySelector.bind(document),
-                querySelectorAll: document.querySelectorAll.bind(document),
-                // 其他需要的 document 方法
-              };
-              if (prop in allowedDocumentMethods) {
-                return allowedDocumentMethods[prop];
-              }
-              throw new Error(`Access to document property "${prop}" is not allowed.`);
-            },
-          },
-        );
-
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
 
-          // 使用安全的 window 和 document 执行代码
-          await ctx.runjs(code, { window: safeWindow, document: safeDocument });
+          // 使用统一的安全 window 和 document 执行代码
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
     },

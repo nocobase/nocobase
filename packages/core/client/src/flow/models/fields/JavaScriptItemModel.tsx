@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, FormItem, escapeT } from '@nocobase/flow-engine';
+import { ElementProxy, FormItem, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
 import React from 'react';
-import { CodeEditor } from '../../components/code-editor';
 import { CommonItemModel } from '../base/CommonItemModel';
+import { CodeEditor } from '../../components/code-editor';
 
 /**
  * JavaScriptItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
@@ -79,7 +79,7 @@ ctx.element.innerHTML = \`
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window, document });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
     },

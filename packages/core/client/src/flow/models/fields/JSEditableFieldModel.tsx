@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, escapeT } from '@nocobase/flow-engine';
+import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
-import { CodeEditor } from '../../components/code-editor';
 import { FormFieldModel } from './FormFieldModel';
+import { CodeEditor } from '../../components/code-editor';
 
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
@@ -63,7 +63,7 @@ const JSFormRuntime: React.FC<{
     const ctx = model.context;
     (async () => {
       try {
-        await ctx.runjs(scriptCode, { window, document });
+        await ctx.runjs(scriptCode, { window: createSafeWindow(), document: createSafeDocument() });
       } catch (e) {
         // 控制台输出，避免影响表单渲染
         console.error('JSEditableFieldModel runjs error:', e);
@@ -156,7 +156,7 @@ JSEditableFieldModel.registerFlow({
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window, document });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
     },

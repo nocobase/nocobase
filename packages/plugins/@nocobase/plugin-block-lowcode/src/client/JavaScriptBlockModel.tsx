@@ -12,6 +12,8 @@ import {
   APIResource,
   BaseRecordResource,
   ElementProxy,
+  createSafeWindow,
+  createSafeDocument,
   FlowEngine,
   MultiRecordResource,
   SingleRecordResource,
@@ -136,7 +138,7 @@ ctx.element.innerHTML = \`
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window, document });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
     },
