@@ -898,17 +898,16 @@ function FormProviderWithForm({
   initialValues?: Record<string, any>;
   onFormValuesChange?: (form: any) => void;
 }) {
-  const formInstance = React.useMemo(() => {
-    if (!form) {
-      return createForm({
-        initialValues: compileUiSchema(scopes, initialValues),
-        effects() {
-          onFormValuesChange(_onFormValuesChange);
-        },
-      });
-    }
-    return form;
-  }, [_onFormValuesChange, form, initialValues, scopes]);
+  const formInstanceRef = React.useRef<any>(form);
 
-  return React.createElement(FormProvider as any, { form: formInstance }, children);
+  if (!formInstanceRef.current) {
+    formInstanceRef.current = createForm({
+      initialValues: compileUiSchema(scopes, initialValues),
+      effects() {
+        onFormValuesChange(_onFormValuesChange);
+      },
+    });
+  }
+
+  return React.createElement(FormProvider as any, { form: formInstanceRef.current }, children);
 }
