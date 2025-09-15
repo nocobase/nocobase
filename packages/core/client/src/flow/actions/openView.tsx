@@ -62,6 +62,10 @@ export const openView = defineAction({
       inputArgs.sourceId = params.sourceId;
     }
 
+    if (params.tabUid) {
+      inputArgs.tabUid = params.tabUid;
+    }
+
     if (params.navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view.navigation) {
         ctx.view.navigation.navigateTo({
