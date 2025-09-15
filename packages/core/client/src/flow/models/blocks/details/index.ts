@@ -12,4 +12,5 @@ export * from './DetailsBlockModel';
 export * from './DetailsCustomItemModel';
 export * from './DetailsGridModel';
 export * from './DetailsItemModel';
+export * from './DetailsJSFieldItemModel';
 //

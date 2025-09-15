@@ -12,6 +12,6 @@ export * from './TableAssociationFieldGroupModel';
 export * from './TableBlockModel';
 export * from './TableColumnModel';
 export * from './TableCustomColumnModel';
-export * from './TableJSColumnModel';
 export * from './TableSelectModel';
+export * from './TableJSFieldItemModel';
 //

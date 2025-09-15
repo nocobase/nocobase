@@ -7,17 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
-import { FilterFormActionModel } from './FilterFormActionModel';
+import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
+import type { ButtonProps } from 'antd/es/button';
+import { CodeEditor } from '../../components/code-editor';
+import { ActionSceneEnum, RecordActionModel } from '../base';
 
-export class FilterFormJSActionModel extends FilterFormActionModel {}
+export class JSRecordActionModel extends RecordActionModel {
+  static scene = ActionSceneEnum.record;
 
-FilterFormJSActionModel.define({
+  defaultProps: ButtonProps = {
+    type: 'link',
+    title: escapeT('JS action'),
+  };
+}
+
+JSRecordActionModel.define({
   label: escapeT('JS action'),
+  sort: 9999,
 });
 
-FilterFormJSActionModel.registerFlow({
+JSRecordActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
   title: escapeT('Click settings'),
@@ -29,7 +38,7 @@ FilterFormJSActionModel.registerFlow({
           type: 'string',
           'x-component': CodeEditor,
           'x-component-props': {
-            minHeight: '400px',
+            minHeight: '320px',
             theme: 'light',
             enableLinter: true,
           },
@@ -43,12 +52,17 @@ FilterFormJSActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: '1.0.0',
-          code: '',
+          code: `
+if (!ctx.record) {
+  ctx.message.error('未获取到记录');
+} else {
+  ctx.message.success('记录ID：' + (ctx.filterByTk ?? ctx.record?.id));
+}
+`,
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params;
+        const { code = '' } = params || {};
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },
