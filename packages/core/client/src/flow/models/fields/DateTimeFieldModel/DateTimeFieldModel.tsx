@@ -11,11 +11,7 @@ import React from 'react';
 import { escapeT } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base';
 
-export class DateTimeFieldModel extends FieldModel {
-  render() {
-    return <DatePicker {...this.props} />;
-  }
-}
+export class DateTimeFieldModel extends FieldModel {}
 
 DateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',

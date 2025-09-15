@@ -47,7 +47,7 @@ export class DateOnlyFieldModel extends DateTimeFieldModel {
     });
   }
   render() {
-    return <DateOnlyPicker {...this.props} />;
+    return <DateOnlyPicker {...this.props} style={{ width: '100%' }} />;
   }
 }
 

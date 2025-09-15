@@ -69,7 +69,7 @@ export class DateTimeTzFieldModel extends DateTimeFieldModel {
     });
   }
   render() {
-    return <DateTimeTzPicker {...this.props} />;
+    return <DateTimeTzPicker {...this.props} style={{ width: '100%' }} />;
   }
 }
 

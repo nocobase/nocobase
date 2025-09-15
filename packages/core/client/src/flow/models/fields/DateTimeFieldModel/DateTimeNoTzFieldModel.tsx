@@ -36,7 +36,7 @@ export const DateTimeNoTzPicker = (props) => {
 
 export class DateTimeNoTzFieldModel extends DateTimeFieldModel {
   render() {
-    return <DateTimeNoTzPicker {...this.props} />;
+    return <DateTimeNoTzPicker {...this.props} style={{ width: '100%' }} />;
   }
 }
 
