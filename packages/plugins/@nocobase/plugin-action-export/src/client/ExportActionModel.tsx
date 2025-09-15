@@ -10,7 +10,7 @@
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { saveAs } from 'file-saver';
-import { CollectionActionModel, Cascader } from '@nocobase/client';
+import { ActionModel, Cascader, ActionSceneEnum } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { useFields } from './useFields';
 import { NAMESPACE } from './locale';
@@ -21,7 +21,9 @@ const initExportSettings = (fields) => {
     .map((f) => ({ dataIndex: [f.name] }));
   return exportSettings;
 };
-export class ExportActionModel extends CollectionActionModel {
+export class ExportActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
     title: escapeT('Export'),
     type: 'default',

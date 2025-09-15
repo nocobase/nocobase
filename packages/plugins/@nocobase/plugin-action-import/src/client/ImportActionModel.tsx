@@ -14,7 +14,7 @@ import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { observer } from '@formily/reactive-react';
-import { Cascader, CollectionActionModel } from '@nocobase/client';
+import { Cascader, ActionModel, ActionSceneEnum } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { Button, Space, Spin, Upload } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -114,7 +114,9 @@ const SchemaField = createSchemaField({
   },
 });
 
-export class ImportActionModel extends CollectionActionModel {
+export class ImportActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
     title: escapeT('Import'),
     type: 'default',
