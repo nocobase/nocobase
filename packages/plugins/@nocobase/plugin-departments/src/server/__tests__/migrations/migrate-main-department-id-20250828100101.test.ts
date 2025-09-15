@@ -17,9 +17,29 @@ describe('migrate mainDepartmentId from departmentsUsers.isMain', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['error-handler', 'field-sort', 'data-source-main', 'users', 'departments'],
+      plugins: ['error-handler', 'field-sort', 'data-source-main', 'users'],
     });
     db = app.db;
+
+    // 使用“老的” collection 定义，手动注册后同步
+    db.collection({
+      name: 'departments',
+      fields: [
+        { type: 'bigInt', name: 'id', primaryKey: true, autoIncrement: true },
+        { type: 'string', name: 'title' },
+      ],
+    });
+    db.collection({
+      name: 'departmentsUsers',
+      fields: [
+        { type: 'bigInt', name: 'departmentId' },
+        { type: 'bigInt', name: 'userId' },
+        { type: 'boolean', name: 'isOwner' },
+        { type: 'boolean', name: 'isMain' }, // 老版本中存在的列
+      ],
+    });
+
+    await db.sync();
   });
 
   afterEach(async () => {
@@ -32,29 +52,18 @@ describe('migrate mainDepartmentId from departmentsUsers.isMain', () => {
     const dept = await db.getRepository('departments').create({ values: { title: 'Dept A' } });
     const user = await db.getRepository('users').create({ values: { username: 'user1' } });
 
-    // Add legacy isMain column to departmentsUsers
-    const throughModel = db.getModel('departmentsUsers');
-    const qi = db.sequelize.getQueryInterface();
-    await qi.addColumn(throughModel.getTableName() as any, 'isMain', {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-    } as any);
+    const usersCollection = db.getCollection('users');
+    usersCollection.addField('mainDepartmentId', { type: 'bigInt' });
+    await usersCollection.sync();
 
-    // Create the join row, then set isMain=true
     await db.getRepository('departmentsUsers').create({
       values: {
         departmentId: dept.get('id'),
         userId: user.get('id'),
         isOwner: false,
+        isMain: true,
       },
     });
-    await qi.bulkUpdate(
-      throughModel.getTableName() as any,
-      { isMain: true },
-      { departmentId: dept.get('id'), userId: user.get('id') },
-      {},
-    );
 
     const fieldsRepo = db.getRepository('fields');
 
