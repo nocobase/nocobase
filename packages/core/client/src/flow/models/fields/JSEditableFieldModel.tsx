@@ -13,6 +13,8 @@ import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
+const DEFAULT_CODE = `const v = ctx.getValue();\n// 在容器内渲染输入框（避免直接使用 document 查询）\nctx.element.innerHTML = \`<input id="js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\n// 使用容器查询子节点，避免 document.getElementById\nconst el = ctx.element.querySelector('#js-input');\n// 绑定输入事件，双向同步到表单值\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n// 监听外部值变更事件，反向更新输入框显示\nctx.element.addEventListener('js-field:value-change', (ev) => {\n  if (el) el.value = ev.detail ?? '';\n});\n`;
+
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
   value?: any;
@@ -23,9 +25,9 @@ const JSFormRuntime: React.FC<{
   const containerRef = useRef<HTMLSpanElement>(null);
   // 统一获取&裁剪脚本代码，避免重复 trim 判定
   const scriptCode = useMemo(() => {
-    const raw = model.getStepParams('jsSettings', 'runJs')?.code;
+    const raw = model.getStepParams('jsSettings', 'runJs')?.code || DEFAULT_CODE;
     return typeof raw === 'string' ? raw.trim() : '';
-  }, [model.stepParams]);
+  }, [model, model.stepParams]);
 
   // 1) 每次渲染仅更新 ctx 能力（元素/读写/状态），不执行脚本
   useEffect(() => {
@@ -55,7 +57,7 @@ const JSFormRuntime: React.FC<{
     ctx.defineProperty('namePath', { get: () => model.props?.name });
     ctx.defineProperty('disabled', { get: () => !!disabled });
     ctx.defineProperty('readOnly', { get: () => !!readOnly });
-  }, [value, disabled, readOnly, model, onChange]);
+  }, [value, disabled, readOnly, model, model.context, onChange]);
 
   // 2) 仅在代码变化时执行脚本，避免输入引发的 DOM 重建导致失焦
   useEffect(() => {
@@ -69,7 +71,7 @@ const JSFormRuntime: React.FC<{
         console.error('JSEditableFieldModel runjs error:', e);
       }
     })();
-  }, [scriptCode]);
+  }, [scriptCode, model.context]);
 
   // 3) 值变化时派发事件，供脚本按需增量更新 UI
   useEffect(() => {
@@ -105,10 +107,10 @@ export class JSEditableFieldModel extends FieldModel {
     return (
       <JSFormRuntime
         model={this as JSEditableFieldModel}
-        value={(this as any).props?.value}
-        onChange={(this as any).props?.onChange}
-        disabled={(this as any).props?.disabled}
-        readOnly={(this as any).props?.readOnly}
+        value={this.props?.value}
+        onChange={this.props?.onChange}
+        disabled={this.props?.disabled}
+        readOnly={this.props?.readOnly}
       />
     );
   }
@@ -145,7 +147,7 @@ JSEditableFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `const v = ctx.getValue();\nctx.element.innerHTML = \`<input id="js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\nconst el = document.getElementById('js-input');\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n`,
+          code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
