@@ -8,12 +8,12 @@
  */
 import { DisplayItemModel } from '@nocobase/flow-engine';
 
-import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
+import { DisplayMapFieldModel } from './DisplayMapFieldModel';
 
-export class CircleReadPrettyFieldModel extends MapReadPrettyFieldModel {
+export class DisplayPolygonFieldModel extends DisplayMapFieldModel {
   getMapFieldType() {
-    return 'circle';
+    return 'polygon';
   }
 }
 
-DisplayItemModel.bindModelToInterface('CircleReadPrettyFieldModel', ['circle'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayPolygonFieldModel', ['polygon'], { isDefault: true });

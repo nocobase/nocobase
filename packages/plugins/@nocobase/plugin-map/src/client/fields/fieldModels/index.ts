@@ -8,10 +8,10 @@
  */
 
 export * from './PointFieldModel';
-export * from './PointReadPrettyFieldModel';
+export * from './DisplayPointFieldModel';
 export * from './CircleFieldModel';
-export * from './CircleReadPrettyFieldModel';
+export * from './DisplayCircleFieldModel';
 export * from './PolygonFieldModel';
-export * from './PolygonReadPrettyFieldModel';
+export * from './DisplayPolygonFieldModel';
 export * from './LineStringFieldModel';
-export * from './LineStringReadPrettyFieldModel';
+export * from './DisplayLineStringFieldModel';

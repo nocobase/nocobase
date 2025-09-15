@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayMapFieldModel } from './DisplayMapFieldModel';
 
-import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
-
-export class PolygonReadPrettyFieldModel extends MapReadPrettyFieldModel {
+export class DisplayLineStringFieldModel extends DisplayMapFieldModel {
   getMapFieldType() {
-    return 'polygon';
+    return 'lineString';
   }
 }
 
-DisplayItemModel.bindModelToInterface('PolygonReadPrettyFieldModel', ['polygon'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayLineStringFieldModel', ['lineString'], { isDefault: true });

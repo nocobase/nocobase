@@ -49,7 +49,7 @@ CollectionSelectorFieldModel.registerFlow({
     init: {
       handler(ctx) {
         const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
-        const defaultOptions = ctx.model.collectionField.uiSchema.enum;
+        const defaultOptions = ctx.model.context.collectionField.uiSchema.enum;
         const options = collections
           .filter((item: any) => !item.options.hidden)
           .map((item: any) => ({

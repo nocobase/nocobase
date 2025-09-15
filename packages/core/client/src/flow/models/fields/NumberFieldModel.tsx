@@ -46,7 +46,7 @@ export const InputNumberField = (props: AntdInputNumberProps) => {
 };
 export class NumberFieldModel extends FieldModel {
   render() {
-    return <InputNumberField {...this.props} />;
+    return <InputNumberField {...this.props} style={{ width: '100%' }} />;
   }
 }
 
