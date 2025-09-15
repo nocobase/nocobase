@@ -668,6 +668,10 @@ export const useMobileLayout = () => {
   return { isMobileLayout, setIsMobileLayout };
 };
 
+const rootStyle = { display: 'flex', height: '100vh' };
+const appContainerStyle = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
+const embedContainerStyle = { width: 'fit-content', position: 'relative' };
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
@@ -748,47 +752,52 @@ export const InternalAdminLayout = () => {
   }, [styles.headerPopup]);
 
   return (
-    <DndContext onDragEnd={onDragEnd}>
-      <ProLayout
-        contentStyle={contentStyle}
-        siderWidth={token.siderWidth || 200}
-        className={resetStyle}
-        location={location}
-        route={route}
-        actionsRender={actionsRender}
-        logo={<NocoBaseLogo />}
-        title={''}
-        layout="mix"
-        splitMenus
-        token={layoutToken}
-        headerRender={headerRender}
-        menuItemRender={menuItemRender}
-        subMenuItemRender={subMenuItemRender}
-        collapsedButtonRender={collapsedButtonRender}
-        onCollapse={onCollapse}
-        collapsed={collapsed}
-        onPageChange={onPageChange}
-        menu={{
-          // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
-          autoClose: false,
-        }}
-        menuProps={menuProps}
-      >
-        <RouteContext.Consumer>
-          {(value: RouteContextType) => {
-            const { isMobile } = value;
+    <div style={rootStyle}>
+      <div id="nocobase-app-container" style={appContainerStyle}>
+        <DndContext onDragEnd={onDragEnd}>
+          <ProLayout
+            contentStyle={contentStyle}
+            siderWidth={token.siderWidth || 200}
+            className={resetStyle}
+            location={location}
+            route={route}
+            actionsRender={actionsRender}
+            logo={<NocoBaseLogo />}
+            title={''}
+            layout="mix"
+            splitMenus
+            token={layoutToken}
+            headerRender={headerRender}
+            menuItemRender={menuItemRender}
+            subMenuItemRender={subMenuItemRender}
+            collapsedButtonRender={collapsedButtonRender}
+            onCollapse={onCollapse}
+            collapsed={collapsed}
+            onPageChange={onPageChange}
+            menu={{
+              // 1.x 暂默认禁用菜单手风琴效果，2.x 支持配置
+              autoClose: false,
+            }}
+            menuProps={menuProps}
+          >
+            <RouteContext.Consumer>
+              {(value: RouteContextType) => {
+                const { isMobile } = value;
 
-            return (
-              <SetIsMobileLayout isMobile={isMobile}>
-                <ConfigProvider theme={isMobile ? mobileTheme : theme}>
-                  <LayoutContent />
-                </ConfigProvider>
-              </SetIsMobileLayout>
-            );
-          }}
-        </RouteContext.Consumer>
-      </ProLayout>
-    </DndContext>
+                return (
+                  <SetIsMobileLayout isMobile={isMobile}>
+                    <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                      <LayoutContent />
+                    </ConfigProvider>
+                  </SetIsMobileLayout>
+                );
+              }}
+            </RouteContext.Consumer>
+          </ProLayout>
+        </DndContext>
+      </div>
+      <div id="nocobase-embed-container" style={embedContainerStyle}></div>
+    </div>
   );
 };
 

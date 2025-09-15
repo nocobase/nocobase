@@ -7,11 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowContext, FlowModel, useFlowContext } from '@nocobase/flow-engine';
+import {
+  ActionScene,
+  defineAction,
+  escapeT,
+  FlowContext,
+  FlowModel,
+  useFlowContext,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
-import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select, FormInstance } from 'antd';
-import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
+import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
+import {
+  DeleteOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  CopyOutlined,
+  PlusOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
@@ -28,368 +43,392 @@ interface LinkageRule {
   /** 是否启用，默认为 true */
   enable: boolean;
   /** 联动规则的条件部分 */
-  conditions: FilterGroupType;
+  condition: FilterGroupType;
   /** 联动规则的动作部分 */
   actions: {
     key: string;
-    type: string;
-    value?: any;
+    name: string;
+    params?: any;
   }[];
-}
-
-interface LinkageActions {
-  [type: string]: {
-    title: string;
-    /** 每个动作的配置组件 */
-    component: (props: { value: any; onChange: (value: any) => void }) => JSX.Element;
-    /** 每个动作的处理函数 */
-    handler: (params: {
-      /** 流上下文 */
-      ctx: FlowContext;
-      /** 当前动作的值 */
-      value: any;
-      /** 封装好的用来更新 model 状态的函数。里面会处理一些额外的逻辑 */
-      setProps: (model: FlowModel, props: any) => void;
-    }) => void;
-  };
 }
 
 let currentLinkageRules = null;
 
-const linkageActions: LinkageActions = {
-  // 区块属性设置
-  setBlockProps: {
-    title: '区块属性设置',
-    component: (props) => {
-      const { value, onChange } = props;
+export const linkageSetBlockProps = defineAction({
+  name: 'linkageSetBlockProps',
+  title: '区块属性设置',
+  scene: ActionScene.BLOCK_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
 
-      return (
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="请选择一个状态"
-          style={{ width: '100%' }}
-          options={[
-            { label: '显示区块', value: 'show' },
-            { label: '隐藏区块', value: 'hide' },
-          ]}
-          allowClear
-        />
-      );
-    },
-    handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hiddenModel: value === 'hide' });
-    },
-  },
-  // 按钮属性设置
-  setActionProps: {
-    title: '按钮属性设置',
-    component: (props) => {
-      const { value, onChange } = props;
-
-      return (
-        <Select
-          value={value}
-          onChange={onChange}
-          placeholder="请选择一个状态"
-          style={{ width: '100%' }}
-          options={[
-            { label: '显示按钮', value: 'show' },
-            { label: '隐藏按钮', value: 'hide' },
-            { label: '启用按钮', value: 'enable' },
-            { label: '禁用按钮', value: 'disable' },
-          ]}
-          allowClear
-        />
-      );
-    },
-    handler: ({ ctx, value, setProps }) => {
-      setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder="请选择一个状态"
+            style={{ width: '100%' }}
+            options={[
+              { label: '显示区块', value: 'show' },
+              { label: '隐藏区块', value: 'hide' },
+            ]}
+            allowClear
+          />
+        );
+      },
     },
   },
-  // 字段属性设置
-  setFieldProps: {
-    title: '字段属性设置',
-    component: (props) => {
-      const { value = { fields: [] }, onChange } = props;
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const ctx = useFlowContext();
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hide' });
+  },
+});
 
-      // 获取表单中所有字段的 model 实例
-      const getFormFields = () => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fields = gridModels;
-          return fields.map((model: any) => ({
-            label: model.props.label || model.props.name,
-            value: model.uid,
-            model,
-          }));
-        } catch (error) {
-          console.warn('Failed to get form fields:', error);
-          return [];
-        }
-      };
+export const linkageSetActionProps = defineAction({
+  name: 'linkageSetActionProps',
+  title: '按钮属性设置',
+  scene: ActionScene.ACTION_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
 
-      const fieldOptions = getFormFields();
-
-      // 状态选项
-      const stateOptions = [
-        { label: '显示', value: 'show' },
-        { label: '隐藏', value: 'hide' },
-        { label: '隐藏（保留值）', value: 'hideKeepValue' },
-        { label: '必填', value: 'required' },
-        { label: '非必填', value: 'optional' },
-        { label: '禁用', value: 'disabled' },
-        { label: '启用', value: 'enabled' },
-      ];
-
-      const handleFieldsChange = (selectedFields: string[]) => {
-        onChange({
-          ...value,
-          fields: selectedFields,
-        });
-      };
-
-      const handleStateChange = (selectedState: string) => {
-        onChange({
-          ...value,
-          state: selectedState,
-        });
-      };
-
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
-            <Select
-              mode="multiple"
-              value={value.fields}
-              onChange={handleFieldsChange}
-              placeholder="请选择字段"
-              style={{ width: '100%' }}
-              options={fieldOptions}
-              showSearch
-              // @ts-ignore
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              allowClear
-            />
-          </div>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>状态</div>
-            <Select
-              value={value.state}
-              onChange={handleStateChange}
-              placeholder="请选择状态"
-              style={{ width: '100%' }}
-              options={stateOptions}
-              allowClear
-            />
-          </div>
-        </div>
-      );
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder="请选择一个状态"
+            style={{ width: '100%' }}
+            options={[
+              { label: '显示按钮', value: 'show' },
+              { label: '隐藏按钮', value: 'hide' },
+              { label: '启用按钮', value: 'enable' },
+              { label: '禁用按钮', value: 'disable' },
+            ]}
+            allowClear
+          />
+        );
+      },
     },
-    handler: ({ ctx, value, setProps }) => {
-      const { fields, state } = value || {};
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
+  },
+});
 
-      if (!fields || !Array.isArray(fields) || !state) {
-        return;
-      }
+export const linkageSetFieldProps = defineAction({
+  name: 'linkageSetFieldProps',
+  title: '字段属性设置',
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { fields: [] }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
 
-      // 根据 uid 找到对应的字段 model 并设置属性
-      fields.forEach((fieldUid: string) => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
-
-          if (fieldModel) {
-            let props: any = {};
-
-            switch (state) {
-              case 'show':
-                props = { hiddenModel: false };
-                break;
-              case 'hide':
-                props = { hiddenModel: true };
-                break;
-              case 'hideKeepValue':
-                props = { hidden: true };
-                break;
-              case 'required':
-                props = { required: true };
-                break;
-              case 'optional':
-                props = { required: false };
-                break;
-              case 'disabled':
-                props = { disabled: true };
-                break;
-              case 'enabled':
-                props = { disabled: false };
-                break;
-              default:
-                console.warn(`Unknown state: ${state}`);
-                return;
-            }
-
-            setProps(fieldModel as FlowModel, props);
+        // 获取表单中所有字段的 model 实例
+        const getFormFields = () => {
+          try {
+            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+            const fields = gridModels;
+            return fields.map((model: any) => ({
+              label: model.props.label || model.props.name,
+              value: model.uid,
+              model,
+            }));
+          } catch (error) {
+            console.warn('Failed to get form fields:', error);
+            return [];
           }
-        } catch (error) {
-          console.warn(`Failed to set props for field ${fieldUid}:`, error);
-        }
-      });
-    },
-  },
-  // 字段赋值
-  assignField: {
-    title: '字段赋值',
-    component: (props) => {
-      const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const ctx = useFlowContext();
+        };
 
-      // 获取表单中所有字段的 model 实例
-      const getFormFields = () => {
-        try {
-          const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-          const fields = gridModels;
-          return fields.map((model: any) => ({
-            label: model.props.label || model.props.name,
-            value: model.uid,
-            model,
-          }));
-        } catch (error) {
-          console.warn('Failed to get form fields:', error);
-          return [];
-        }
-      };
+        const fieldOptions = getFormFields();
 
-      const fieldOptions = getFormFields();
+        // 状态选项
+        const stateOptions = [
+          { label: '显示', value: 'show' },
+          { label: '隐藏', value: 'hide' },
+          { label: '隐藏（保留值）', value: 'hideKeepValue' },
+          { label: '必填', value: 'required' },
+          { label: '非必填', value: 'optional' },
+          { label: '禁用', value: 'disabled' },
+          { label: '启用', value: 'enabled' },
+        ];
 
-      const selectedFieldUid = value.field;
+        const handleFieldsChange = (selectedFields: string[]) => {
+          onChange({
+            ...value,
+            fields: selectedFields,
+          });
+        };
 
-      const handleFieldChange = (selectedField) => {
-        const nextField = selectedField;
-        const changed = nextField !== selectedFieldUid;
-        onChange({
-          ...value,
-          field: nextField,
-          // 切换字段时清空赋值
-          assignValue: changed ? undefined : value.assignValue,
-        });
-      };
+        const handleStateChange = (selectedState: string) => {
+          onChange({
+            ...value,
+            state: selectedState,
+          });
+        };
 
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
-            <Select
-              value={selectedFieldUid}
-              onChange={handleFieldChange}
-              placeholder="请选择字段"
-              style={{ width: '100%' }}
-              options={fieldOptions}
-              showSearch
-              // @ts-ignore
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              allowClear
-            />
-          </div>
-          {selectedFieldUid && (
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
-              <FieldAssignValueInput
-                key={selectedFieldUid}
-                fieldUid={selectedFieldUid}
-                value={value.assignValue}
-                onChange={(v) => onChange({ ...value, assignValue: v })}
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <Select
+                mode="multiple"
+                value={value.fields}
+                onChange={handleFieldsChange}
+                placeholder="请选择字段"
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
               />
             </div>
-          )}
-        </div>
-      );
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>状态</div>
+              <Select
+                value={value.state}
+                onChange={handleStateChange}
+                placeholder="请选择状态"
+                style={{ width: '100%' }}
+                options={stateOptions}
+                allowClear
+              />
+            </div>
+          </div>
+        );
+      },
     },
-    handler: ({ ctx, value, setProps }) => {
-      // 字段赋值处理逻辑
-      const { assignValue, field } = value || {};
-      if (!field) return;
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { fields, state } = value || {};
+
+    if (!fields || !Array.isArray(fields) || !state) {
+      return;
+    }
+
+    // 根据 uid 找到对应的字段 model 并设置属性
+    fields.forEach((fieldUid: string) => {
       try {
         const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-        const fieldModel = gridModels.find((model: any) => model.uid === field);
-        if (!fieldModel) return;
-        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-        if (typeof assignValue === 'undefined') {
-          setProps(fieldModel as FlowModel, {});
-          return;
+        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+
+        if (fieldModel) {
+          let props: any = {};
+
+          switch (state) {
+            case 'show':
+              props = { hiddenModel: false };
+              break;
+            case 'hide':
+              props = { hiddenModel: true };
+              break;
+            case 'hideKeepValue':
+              props = { hidden: true };
+              break;
+            case 'required':
+              props = { required: true };
+              break;
+            case 'optional':
+              props = { required: false };
+              break;
+            case 'disabled':
+              props = { disabled: true };
+              break;
+            case 'enabled':
+              props = { disabled: false };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
+          }
+
+          setProps(fieldModel as FlowModel, props);
         }
-        setProps(fieldModel as FlowModel, { value: assignValue });
       } catch (error) {
-        console.warn(`Failed to assign value to field ${field}:`, error);
+        console.warn(`Failed to set props for field ${fieldUid}:`, error);
       }
+    });
+  },
+});
+
+export const linkageAssignField = defineAction({
+  name: 'linkageAssignField',
+  title: '字段赋值',
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 200,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+
+        // 获取表单中所有字段的 model 实例
+        const getFormFields = () => {
+          try {
+            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+            const fields = gridModels;
+            return fields.map((model: any) => ({
+              label: model.props.label || model.props.name,
+              value: model.uid,
+              model,
+            }));
+          } catch (error) {
+            console.warn('Failed to get form fields:', error);
+            return [];
+          }
+        };
+
+        const fieldOptions = getFormFields();
+
+        const selectedFieldUid = value.field;
+
+        const handleFieldChange = (selectedField) => {
+          const nextField = selectedField;
+          const changed = nextField !== selectedFieldUid;
+          onChange({
+            ...value,
+            field: nextField,
+            // 切换字段时清空赋值
+            assignValue: changed ? undefined : value.assignValue,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <Select
+                value={selectedFieldUid}
+                onChange={handleFieldChange}
+                placeholder="请选择字段"
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            {selectedFieldUid && (
+              <div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
+                <FieldAssignValueInput
+                  key={selectedFieldUid}
+                  fieldUid={selectedFieldUid}
+                  value={value.assignValue}
+                  onChange={(v) => onChange({ ...value, assignValue: v })}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   },
-  // 执行 JavaScript
-  runjs: {
-    title: 'Execute JavaScript',
-    component: (props) => {
-      const { value = { script: '' }, onChange } = props;
-      const handleScriptChange = (script: string) => {
-        onChange({
-          ...value,
-          script,
-        });
-      };
-
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div
-            style={{
-              backgroundColor: '#f6ffed',
-              border: '1px solid #b7eb8f',
-              borderRadius: '6px',
-              padding: '12px',
-            }}
-          >
-            <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>预留一个位置，用于显示一些提示信息</div>
-          </div>
-          <div>
-            <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
-          </div>
-        </div>
-      );
-    },
-    handler: ({ ctx, value }) => {
-      // 执行 JS 脚本处理逻辑
-      const { script } = value || {};
-
-      if (!script || typeof script !== 'string') {
+  handler: (ctx, { value, setProps }) => {
+    // 字段赋值处理逻辑
+    const { assignValue, field } = value || {};
+    if (!field) return;
+    try {
+      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+      const fieldModel = gridModels.find((model: any) => model.uid === field);
+      if (!fieldModel) return;
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof assignValue === 'undefined') {
+        setProps(fieldModel as FlowModel, {});
         return;
       }
+      setProps(fieldModel as FlowModel, { value: assignValue });
+    } catch (error) {
+      console.warn(`Failed to assign value to field ${field}:`, error);
+    }
+  },
+});
 
-      try {
-        ctx.runjs(script);
-      } catch (error) {
-        console.error('Script execution error:', error);
-        // 可以选择显示错误信息给用户
-        if (ctx.app?.message) {
-          ctx.app.message.error(`脚本执行错误: ${error.message}`);
-        }
-      }
+export const linkageRunjs = defineAction({
+  name: 'linkageRunjs',
+  title: 'Execute JavaScript',
+  scene: [ActionScene.BLOCK_LINKAGE_RULES, ActionScene.FIELD_LINKAGE_RULES, ActionScene.ACTION_LINKAGE_RULES],
+  sort: 300,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { script: '' }, onChange } = props;
+        const handleScriptChange = (script: string) => {
+          onChange({
+            ...value,
+            script,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                backgroundColor: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: '6px',
+                padding: '12px',
+              }}
+            >
+              <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>
+                预留一个位置，用于显示一些提示信息
+              </div>
+            </div>
+            <div>
+              <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
+            </div>
+          </div>
+        );
+      },
     },
   },
-};
+  handler: (ctx, { value }) => {
+    // 执行 JS 脚本处理逻辑
+    const { script } = value || {};
+
+    if (!script || typeof script !== 'string') {
+      return;
+    }
+
+    try {
+      ctx.runjs(script);
+    } catch (error) {
+      console.error('Script execution error:', error);
+      // 可以选择显示错误信息给用户
+      if (ctx.app?.message) {
+        ctx.app.message.error(`脚本执行错误: ${error.message}`);
+      }
+    }
+  },
+});
 
 const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
   const { value: rules, supportedActions } = props;
-  const ctx = useFlowContext();
   currentLinkageRules = rules;
+  const ctx = useFlowContext();
+  const flowEngine = useFlowEngine();
+  const [submitLoading, setSubmitLoading] = React.useState(false);
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
     key: uid(),
     title: 'Linkage rule',
     enable: true,
-    conditions: { logic: '$and', items: [] } as FilterGroupType,
+    condition: { logic: '$and', items: [] } as FilterGroupType,
     actions: [],
   });
 
@@ -443,16 +482,16 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   };
 
   // 获取可用的动作类型
-  const getAvailableActions = () => {
-    return supportedActions.filter((actionType: string) => linkageActions[actionType]);
+  const getActionsDefinition = () => {
+    return supportedActions.map((actionName: string) => ctx.getAction(actionName));
   };
 
   // 添加动作
-  const handleAddAction = (ruleIndex: number, actionType: string) => {
+  const handleAddAction = (ruleIndex: number, actionName: string) => {
     const newAction = {
       key: uid(),
-      type: actionType,
-      value: undefined,
+      name: actionName,
+      params: undefined,
     };
     rules[ruleIndex].actions.push(newAction);
   };
@@ -464,7 +503,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
 
   // 更新动作的值
   const handleActionValueChange = (ruleIndex: number, actionIndex: number, value: any) => {
-    rules[ruleIndex].actions[actionIndex].value = value;
+    rules[ruleIndex].actions[actionIndex].params = value;
   };
 
   // 生成折叠面板的自定义标题
@@ -559,7 +598,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           </div>
           <div style={{ paddingLeft: 12 }}>
             <FilterGroup
-              value={rule.conditions}
+              value={rule.condition}
               FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
             />
           </div>
@@ -601,7 +640,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             {rule.actions.length > 0 ? (
               <div style={{ marginBottom: 16 }}>
                 {rule.actions.map((action, actionIndex) => {
-                  const actionDef = linkageActions[action.type];
+                  const actionDef = ctx.getAction(action.name);
                   if (!actionDef) return null;
 
                   return (
@@ -633,9 +672,11 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                         </Tooltip>
                       </div>
                       <div>
-                        {React.createElement(actionDef.component, {
-                          value: action.value,
-                          onChange: (value: any) => handleActionValueChange(index, actionIndex, value),
+                        {flowEngine.flowSettings.renderStepForm({
+                          uiSchema: actionDef.uiSchema,
+                          initialValues: action.params,
+                          flowEngine,
+                          onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),
                         })}
                       </div>
                     </div>
@@ -647,10 +688,10 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             {/* Add action 按钮 */}
             <Dropdown
               menu={{
-                items: getAvailableActions().map((actionType) => ({
-                  key: actionType,
-                  label: linkageActions[actionType]?.title || actionType,
-                  onClick: () => handleAddAction(index, actionType),
+                items: getActionsDefinition().map((action) => ({
+                  key: action.name,
+                  label: action.title || action.name,
+                  onClick: () => handleAddAction(index, action.name),
                 })),
               }}
               trigger={['hover']}
@@ -666,30 +707,100 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   }));
 
   return (
-    <div>
-      {rules.length > 0 ? (
-        <Collapse
-          items={collapseItems}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        backgroundColor: '#fff',
+        borderLeft: '1px solid #e0e0e0',
+        position: 'relative',
+      }}
+    >
+      {/* 顶部标题栏 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          borderBottom: '1px solid #f0f0f0',
+          backgroundColor: '#fff',
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>Linkage rules</div>
+        <Button
+          type="text"
           size="small"
-          style={{ marginBottom: 8 }}
-          defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
-          accordion
+          icon={<CloseOutlined />}
+          style={{ color: '#8c8c8c' }}
+          onClick={() => ctx.view.destroy()}
         />
-      ) : (
-        <div
-          style={{
-            border: '1px dashed #d9d9d9',
-            borderRadius: '6px',
-            backgroundColor: '#fafafa',
-            marginBottom: '8px',
+      </div>
+
+      {/* 内容区域 */}
+      <div
+        style={{
+          flex: 1,
+          padding: '16px',
+          overflow: 'auto',
+          minHeight: 0,
+        }}
+      >
+        {rules.length > 0 ? (
+          <Collapse
+            items={collapseItems}
+            size="small"
+            style={{ marginBottom: 8 }}
+            defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
+            accordion
+          />
+        ) : (
+          <div
+            style={{
+              border: '1px dashed #d9d9d9',
+              borderRadius: '6px',
+              backgroundColor: '#fafafa',
+              marginBottom: '8px',
+            }}
+          >
+            <Empty description="No linkage rules" style={{ margin: '20px 0' }} />
+          </div>
+        )}
+        <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
+          Add linkage rule
+        </Button>
+      </div>
+
+      {/* 底部按钮区域 */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '8px',
+          padding: '8px 16px',
+          borderTop: '1px solid #f0f0f0',
+          backgroundColor: '#fff',
+          flexShrink: 0,
+        }}
+      >
+        <Button onClick={() => ctx.view.destroy()}>Cancel</Button>
+        <Button
+          type="primary"
+          loading={submitLoading}
+          onClick={async () => {
+            setSubmitLoading(true);
+            await ctx.view.submit();
+            setSubmitLoading(false);
+            ctx.view.destroy();
           }}
         >
-          <Empty description="No linkage rules" style={{ margin: '20px 0' }} />
-        </div>
-      )}
-      <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
-        Add linkage rule
-      </Button>
+          OK
+        </Button>
+      </div>
     </div>
   );
 });
@@ -708,23 +819,20 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   }
 
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
-  const ruleItemModels: FlowModel[] = ctx.model.__ruleModels || (ctx.model.__ruleModels = {});
+
+  allModels.forEach((model: any) => {
+    // 重置临时属性
+    model.__props = {};
+  });
 
   // 1. 运行所有的联动规则
   linkageRules
     .filter((rule) => rule.enable)
     .forEach((rule) => {
-      const { conditions, actions } = rule;
-      const models = ruleItemModels[rule.key] || (ruleItemModels[rule.key] = []);
+      const { condition: conditions, actions } = rule;
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
-          const handler = linkageActions[action.type]?.handler;
-
-          if (!handler) {
-            throw new Error(`Unknown action type: ${action.type}`);
-          }
-
           const setProps = (
             model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
             props: any,
@@ -740,9 +848,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               };
             }
 
-            if (model.__shouldReset) {
+            if (!model.__props) {
               model.__props = {};
-              model.__shouldReset = false;
             }
 
             // 临时存起来，遍历完所有规则后，再统一处理
@@ -751,22 +858,13 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               ...props,
             };
 
-            if (models.indexOf(model) === -1) {
-              models.push(model);
-            }
-
             if (allModels.indexOf(model) === -1) {
               allModels.push(model);
             }
           };
 
-          handler({ ctx, value: action.value, setProps });
-        });
-      } else {
-        // 条件不满足时重置状态
-        models.forEach((model: any) => {
-          model.__props = {};
-          model.__shouldReset = false;
+          // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
+          ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps });
         });
       }
     });
@@ -786,41 +884,44 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.context.form.setFieldValue(model.props.name, newProps.value);
     }
 
-    model.__shouldReset = true;
+    model.__props = null;
   });
 };
 
-const commonUIMode: any = {
-  type: 'drawer',
-  props: {
-    width: 800,
-    closable: true,
-    mask: false,
-    onOpen() {
-      document.body.style.width = document.body.clientWidth - 800 + 'px';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'translateX(0)';
-    },
-    onClose() {
-      document.body.style.width = 'auto';
-      document.querySelector<any>('.ant-pro-layout-container').style.transform = 'none';
+const commonUIMode = (ctx): any => {
+  const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
 
-      currentLinkageRules = null;
+  return {
+    type: 'embed',
+    props: {
+      target,
+      onOpen() {
+        target.style.width = '50%';
+        target.style.maxWidth = '800px';
+      },
+      onClose() {
+        target.style.width = 'auto';
+        target.style.maxWidth = 'none';
+        currentLinkageRules = null;
+      },
     },
-  },
+  };
 };
 
 export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
   title: escapeT('Block linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setBlockProps', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.BLOCK_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
@@ -832,14 +933,16 @@ export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
   title: escapeT('Linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setActionProps', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
@@ -851,21 +954,44 @@ export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
   title: escapeT('Field linkage Rules'),
   uiMode: commonUIMode,
-  uiSchema: {
-    value: {
-      type: 'array',
-      'x-component': LinkageRulesUI,
-      'x-component-props': {
-        supportedActions: ['setFieldProps', 'assignField', 'runjs'],
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
+        },
       },
-    },
+    };
   },
   defaultParams: {
     value: [],
   },
-  handler: commonLinkageRulesHandler,
-  afterParamsSave(ctx) {
-    // 保存后，自动运行一次
-    ctx.model.applyFlow('eventSettings');
+  handler: (ctx, params) => {
+    if (ctx.model.hidden) {
+      return;
+    }
+    commonLinkageRulesHandler(ctx, params);
   },
 });
+
+function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
+  const result = [...ctx.getActions().values()]
+    .filter((action) => {
+      let scenes = action.scene;
+      if (!scenes) {
+        return false;
+      }
+
+      if (!Array.isArray(scenes)) {
+        scenes = [scenes];
+      }
+
+      return scenes.includes(scene);
+    })
+    .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+    .map((action) => action.name);
+
+  return result;
+}

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createForm } from '@formily/core';
+import { createForm, onFormValuesChange } from '@formily/core';
 import { createSchemaField, FormProvider, ISchema } from '@formily/react';
-import { autorun, define, observable, reaction } from '@formily/reactive';
+import { define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { DynamicFlowsEditor } from './components/DynamicFlowsEditor';
+
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowRuntimeContext } from './flowContext';
@@ -391,6 +391,62 @@ export class FlowSettings {
   }
 
   /**
+   * 渲染单个步骤的表单
+   * @private
+   * @param {any} uiSchema 步骤的 UI Schema
+   * @param {any} initialValues 表单初始值（在此方法中不直接使用，而是通过 form 实例获取）
+   * @param {any} flowEngine 流引擎实例，用于获取 scopes 和 components
+   * @param {any} form 表单实例（从外部传入以便统一管理）
+   * @returns {React.ReactElement} 渲染的表单元素
+   */
+  public renderStepForm({
+    uiSchema,
+    initialValues,
+    flowEngine,
+    form,
+    onFormValuesChange,
+  }: {
+    uiSchema: any;
+    initialValues: any;
+    flowEngine: any;
+    form?: any;
+    onFormValuesChange?: (form: any) => void;
+  }): React.ReactElement {
+    // 获取 scopes 和 components
+    const scopes = {
+      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
+      useFlowSettingsContext,
+      ...(flowEngine?.flowSettings?.scopes || {}),
+    } as Record<string, any>;
+
+    // 包装为表单 schema（垂直布局），实际渲染时再进行 compile
+    const formSchema = {
+      type: 'object',
+      properties: {
+        layout: {
+          type: 'void',
+          'x-component': 'FormLayout',
+          'x-component-props': { layout: 'vertical' },
+          properties: uiSchema,
+        },
+      },
+    } as ISchema;
+
+    const compiledSchema = compileUiSchema(scopes, formSchema);
+    const SchemaField = createSchemaField();
+
+    return React.createElement(
+      FormProviderWithForm,
+      { form, scopes, initialValues, onFormValuesChange },
+      React.createElement(SchemaField as any, {
+        schema: compiledSchema,
+        components: flowEngine?.flowSettings?.components || {},
+        scope: scopes,
+      }),
+    );
+  }
+
+  /**
    * 打开流程设置入口（聚合渲染多个 flow 的可配置步骤）
    *
    * 行为约定：
@@ -443,7 +499,7 @@ export class FlowSettings {
       flowTitle: string;
       stepKey: string;
       stepTitle: string;
-      formSchema: any; // ISchema 片段（已包装）
+      mergedUiSchema: any; // 合并后的 UI Schema（未包装）
       initialValues: any;
       previousParams: any;
       beforeParamsSave?: Function;
@@ -510,19 +566,6 @@ export class FlowSettings {
           ...modelStepParams,
         };
 
-        // 包装为表单 schema（垂直布局），实际渲染时再进行 compile
-        const formSchema = {
-          type: 'object',
-          properties: {
-            layout: {
-              type: 'void',
-              'x-component': 'FormLayout',
-              'x-component-props': { layout: 'vertical' },
-              properties: mergedUiSchema,
-            },
-          },
-        } as ISchema;
-
         entries.push({
           flowKey: fk,
           flowTitle: t(flow.title) || fk,
@@ -530,7 +573,7 @@ export class FlowSettings {
           stepTitle: t(stepTitle) || sk,
           initialValues,
           previousParams: { ...(modelStepParams || {}) },
-          formSchema,
+          mergedUiSchema, // 存储合并后的 UI Schema，在 renderStepForm 中进行包装
           beforeParamsSave,
           afterParamsSave,
           ctx: flowRuntimeContext,
@@ -547,7 +590,6 @@ export class FlowSettings {
     }
 
     // 渲染视图（对话框/抽屉）
-    const SchemaField = createSchemaField();
     // 兼容新的 uiMode 定义：字符串或 { type, props }
     const viewer = (model as any).context.viewer;
     // 解析 uiMode，支持函数式
@@ -629,24 +671,23 @@ export class FlowSettings {
       onClose: () => dispose.value(),
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
-      content: (currentDialog) => {
-        // 渲染单个 step 表单（无 JSX）：FormProvider + FlowSettingsContextProvider + SchemaField
+      content: (currentView) => {
+        // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
           if (!form) return null;
-          const compiledSchema = compileUiSchema(scopes, entry.formSchema);
+
+          entry.ctx.view = currentView;
+
           return React.createElement(
-            FormProvider as any,
-            { form },
-            React.createElement(
-              FlowSettingsContextProvider as any,
-              { value: entry.ctx },
-              React.createElement(SchemaField as any, {
-                schema: compiledSchema,
-                components: flowEngine?.flowSettings?.components || {},
-                scope: scopes,
-              }),
-            ),
+            FlowSettingsContextProvider as any,
+            { value: entry.ctx },
+            this.renderStepForm({
+              uiSchema: entry.mergedUiSchema,
+              initialValues: entry.initialValues,
+              flowEngine,
+              form,
+            }),
           );
         };
 
@@ -674,13 +715,13 @@ export class FlowSettings {
           // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
             const step = entries[0];
-            autoUpdateViewProps(step, currentDialog);
+            autoUpdateViewProps(step, currentView);
             return renderStepForm(step);
           }
 
           if (!multipleFlows) {
             const step = entries[0];
-            autoUpdateViewProps(step, currentDialog);
+            autoUpdateViewProps(step, currentView);
             // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
             return renderStepForm(entries[0]);
           }
@@ -707,7 +748,7 @@ export class FlowSettings {
               }
             }
 
-            await (model as FlowModel).saveStepParams();
+            await model.saveStepParams();
             message?.success?.(t('Configuration saved'));
 
             for (const e of entries) {
@@ -719,7 +760,7 @@ export class FlowSettings {
               }
             }
 
-            currentDialog.close();
+            currentView.close();
 
             // 触发保存成功回调
             try {
@@ -729,13 +770,15 @@ export class FlowSettings {
             }
           } catch (err) {
             if (err instanceof FlowExitException) {
-              currentDialog.close();
+              currentView.close();
               return;
             }
             console.error('FlowSettings.open: save error', err);
             message?.error?.(t('Error saving configuration, please check console'));
           }
         };
+
+        currentView.submit = onSaveAll;
 
         const stepsEl = renderStepsContainer();
         const footerButtons = React.createElement(
@@ -745,7 +788,7 @@ export class FlowSettings {
             Button,
             {
               onClick: async () => {
-                currentDialog.close();
+                currentView.close();
                 try {
                   await onCancel?.();
                 } catch (cbErr) {
@@ -759,8 +802,8 @@ export class FlowSettings {
         );
 
         let footerEl;
-        if (currentDialog.Footer) {
-          footerEl = React.createElement(currentDialog.Footer, null, footerButtons);
+        if (currentView.Footer) {
+          footerEl = React.createElement(currentView.Footer, null, footerButtons);
         }
 
         return React.createElement(React.Fragment, null, stepsEl, footerEl);
@@ -849,4 +892,31 @@ export class FlowSettings {
     });
   }
   */
+}
+
+function FormProviderWithForm({
+  children,
+  form,
+  scopes,
+  initialValues,
+  onFormValuesChange: _onFormValuesChange,
+}: {
+  children?: React.ReactNode;
+  form?: any;
+  scopes?: Record<string, any>;
+  initialValues?: Record<string, any>;
+  onFormValuesChange?: (form: any) => void;
+}) {
+  const formInstanceRef = React.useRef<any>(form);
+
+  if (!formInstanceRef.current) {
+    formInstanceRef.current = createForm({
+      initialValues: compileUiSchema(scopes, initialValues),
+      effects() {
+        onFormValuesChange(_onFormValuesChange);
+      },
+    });
+  }
+
+  return React.createElement(FormProvider as any, { form: formInstanceRef.current }, children);
 }

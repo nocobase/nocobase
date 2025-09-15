@@ -120,6 +120,10 @@ FormModel.registerFlow({
   steps: {
     linkageRules: {
       use: 'fieldLinkageRules',
+      afterParamsSave(ctx) {
+        // 保存后，自动运行一次
+        ctx.model.applyFlow('eventSettings');
+      },
     },
   },
 });

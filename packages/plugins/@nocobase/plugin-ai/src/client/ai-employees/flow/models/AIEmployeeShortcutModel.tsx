@@ -45,12 +45,13 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
     }
     if (focus || showNotice) {
       return avatars(avatar, {
-        gesture: ['waveLongArm'],
-        gestureProbability: 100,
-        translateX: -15,
+        flip: true,
       });
     }
-    return avatars(avatar);
+    return avatars(avatar, {
+      mouth: undefined,
+      base: ['brown'],
+    });
   }, [aiEmployee, focus, showNotice]);
 
   return (

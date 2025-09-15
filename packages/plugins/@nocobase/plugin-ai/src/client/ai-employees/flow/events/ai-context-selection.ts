@@ -60,7 +60,7 @@ BlockModel.registerFlow({
           onMouseEnter: (e: Event) => {
             onMouseEnter?.(e);
 
-            if (!model || contextAware.isShowed(model.uid)) {
+            if (!model) {
               return;
             }
             const awareModels = getAwareModels(ctx, model);
@@ -68,7 +68,6 @@ BlockModel.registerFlow({
               subModel.setProps('showNotice', true);
             });
             contextAware.setAIEmployees(awareModels.map((model) => model.props.aiEmployee));
-            contextAware.addShowed(model.uid);
           },
           onMouseLeave: (e: Event) => {
             onMouseLeave?.(e);

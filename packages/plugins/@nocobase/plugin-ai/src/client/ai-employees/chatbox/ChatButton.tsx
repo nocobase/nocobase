@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
-import icon from '../icon.png';
+import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { PauseCircleFilled, RightOutlined, LeftOutlined } from '@ant-design/icons';
@@ -18,8 +18,11 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { contextAware } from '../stores/context-aware';
+import { observer } from '@nocobase/flow-engine';
+import { useLocation } from 'react-router-dom';
 
-export const ChatButton: React.FC = () => {
+export const ChatButton: React.FC = observer(() => {
   const { aiEmployees } = useAIEmployeesData();
 
   const open = useChatBoxStore.use.open();
@@ -30,6 +33,28 @@ export const ChatButton: React.FC = () => {
   const { token } = useToken();
 
   const [folded, setFolded] = useState(false);
+
+  const showed = useRef(false);
+
+  const location = useLocation();
+  useEffect(() => {
+    showed.current = false;
+  }, [location]);
+
+  useEffect(() => {
+    if (!contextAware.aiEmployees.length) {
+      return;
+    }
+
+    if (!folded || showed.current) {
+      return;
+    }
+
+    setFolded(false);
+    showed.current = true;
+    const timer = setTimeout(() => setFolded(true), 1500);
+    return () => clearTimeout(timer);
+  }, [contextAware.aiEmployees.length, folded]);
 
   const items = useMemo(() => {
     return aiEmployees?.map((employee) => ({
@@ -45,9 +70,11 @@ export const ChatButton: React.FC = () => {
       ),
     }));
   }, [aiEmployees]);
+
   if (!aiEmployees?.length) {
     return null;
   }
+
   return (
     <div
       className={css`
@@ -107,4 +134,4 @@ export const ChatButton: React.FC = () => {
       )}
     </div>
   );
-};
+});
