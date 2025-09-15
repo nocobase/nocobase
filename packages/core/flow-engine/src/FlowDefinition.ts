@@ -51,6 +51,10 @@ export class FlowDefinition {
     this.options.on = on;
   }
 
+  get defaultParams() {
+    return this.options.defaultParams;
+  }
+
   get manual() {
     return this.options.manual;
   }
