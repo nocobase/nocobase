@@ -22,7 +22,7 @@
     "@langchain/deepseek": "^0.0.2",
     "@langchain/google-genai": "^0.2.16",
     "@langchain/openai": "^0.5.16",
-    "@nocobase/ai-employee-avatars": "^1.0.0",
+    "@nocobase/ai-employee-avatars": "^1.0.2",
     "@xyflow/react": "^12.7.0",
     "echarts": "^5.5.0",
     "echarts-for-react": "3.0.2",
