@@ -671,11 +671,13 @@ export class FlowSettings {
       onClose: () => dispose.value(),
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
-      content: (currentDialog) => {
+      content: (currentView) => {
         // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
           if (!form) return null;
+
+          entry.ctx.view = currentView;
 
           return React.createElement(
             FlowSettingsContextProvider as any,
@@ -713,13 +715,13 @@ export class FlowSettings {
           // 情况 A：明确指定了 flowKey + stepKey 且唯一匹配 => 直出单步表单（不使用折叠面板）
           if (flowKey && stepKey && entries.length === 1) {
             const step = entries[0];
-            autoUpdateViewProps(step, currentDialog);
+            autoUpdateViewProps(step, currentView);
             return renderStepForm(step);
           }
 
           if (!multipleFlows) {
             const step = entries[0];
-            autoUpdateViewProps(step, currentDialog);
+            autoUpdateViewProps(step, currentView);
             // 情况 B：未提供 stepKey 且仅有一个步骤 => 仍保持折叠面板外观（与情况 A 一致）
             return renderStepForm(entries[0]);
           }
@@ -758,7 +760,7 @@ export class FlowSettings {
               }
             }
 
-            currentDialog.close();
+            currentView.close();
 
             // 触发保存成功回调
             try {
@@ -768,7 +770,7 @@ export class FlowSettings {
             }
           } catch (err) {
             if (err instanceof FlowExitException) {
-              currentDialog.close();
+              currentView.close();
               return;
             }
             console.error('FlowSettings.open: save error', err);
@@ -776,7 +778,7 @@ export class FlowSettings {
           }
         };
 
-        currentDialog.submit = onSaveAll;
+        currentView.submit = onSaveAll;
 
         const stepsEl = renderStepsContainer();
         const footerButtons = React.createElement(
@@ -786,7 +788,7 @@ export class FlowSettings {
             Button,
             {
               onClick: async () => {
-                currentDialog.close();
+                currentView.close();
                 try {
                   await onCancel?.();
                 } catch (cbErr) {
@@ -800,8 +802,8 @@ export class FlowSettings {
         );
 
         let footerEl;
-        if (currentDialog.Footer) {
-          footerEl = React.createElement(currentDialog.Footer, null, footerButtons);
+        if (currentView.Footer) {
+          footerEl = React.createElement(currentView.Footer, null, footerButtons);
         }
 
         return React.createElement(React.Fragment, null, stepsEl, footerEl);
