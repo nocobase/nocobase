@@ -289,6 +289,7 @@ export type MockClusterOptions = MockServerOptions & {
   number?: number;
   clusterName?: string;
   appName?: string;
+  mockInstanceId?: boolean;
 };
 
 export type MockCluster = {
@@ -300,6 +301,7 @@ export async function createMockCluster({
   number = 2,
   clusterName = `cluster_${uid()}`,
   appName = `app_${uid()}`,
+  mockInstanceId = true,
   ...options
 }: MockClusterOptions = {}): Promise<MockCluster> {
   const nodes: MockServer[] = [];
@@ -316,7 +318,7 @@ export async function createMockCluster({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      instanceId: i,
+      instanceId: mockInstanceId ? i : undefined,
       pubSubManager: {
         channelPrefix: clusterName,
       },

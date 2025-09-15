@@ -10,6 +10,8 @@
 import Redis from 'ioredis';
 import { Logger } from '@nocobase/logger';
 
+export { Redis };
+
 export interface RedisConfig {
   connectionString: string;
 }
