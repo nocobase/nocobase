@@ -45,6 +45,7 @@ export function usePage() {
           return;
         }
         resolvePromise?.(result);
+        pageRef.current?.destroy();
         closeFunc?.();
       },
       navigation: config.inputArgs?.navigation,

@@ -81,9 +81,9 @@ export function useDialog() {
         if (config.preventClose) {
           return;
         }
-        resolvePromise?.(result);
         dialogRef.current?.destroy();
         closeFunc?.();
+        resolvePromise?.(result);
       },
       Footer: FooterComponent,
       Header: HeaderComponent,

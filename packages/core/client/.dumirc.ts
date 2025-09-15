@@ -476,10 +476,10 @@ export default defineConfig({
               title: '构建可编排的按钮组件',
               link: '/learn',
             },
-            // {
-            //   title: '构建可编排的卡片组件',
-            //   link: '/learn/my-card',
-            // },
+            {
+              title: '扩展指南',
+              link: '/learn/extension-guide',
+            },
           ],
         },
         {
@@ -533,16 +533,20 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'FormBlockModel',
-              link: '/models/blocks/form-block-model',
+              title: 'BlockModel',
+              link: '/models/blocks/block-model',
             },
             {
-              title: 'DetailsBlockModel',
+              title: 'CollectionBlockModel',
+              link: '/models/blocks/collection-block-model',
+            },
+            {
+              title: 'DataBlockModel',
               link: '/models/blocks/details-block-model',
             },
             {
-              title: 'TableBlockModel',
-              link: '/models/blocks/table-block-model',
+              title: 'FilterBlockModel',
+              link: '/models/blocks/filter-block-model',
             },
             {
               title: 'JSBlockModel',
@@ -550,20 +554,44 @@ export default defineConfig({
             },
           ],
         },
-        {
-          title: '过滤器',
-          type: 'group',
-          children: [
-            {
-              title: 'FormFilterModel',
-              link: '/models/filters/form-filter-model',
-            },
-          ],
-        },
+        // {
+        //   title: '过滤器',
+        //   type: 'group',
+        //   children: [
+        //     {
+        //       title: 'FormFilterModel',
+        //       link: '/models/filters/form-filter-model',
+        //     },
+        //   ],
+        // },
         {
           title: '字段',
           type: 'group',
           children: [
+            {
+              title: 'FieldModel',
+              link: '/models/fields/field-model',
+            },
+            {
+              title: 'ClickableFieldModel',
+              link: '/models/fields/clickable-field-model',
+            },
+            {
+              title: 'SubFormFieldModel',
+              link: '/models/fields/sub-form-field-model',
+            },
+            {
+              title: 'JSFieldModel',
+              link: '/models/fields/js-field-model',
+            },
+            {
+              title: 'JSItemModel',
+              link: '/models/fields/js-item-model',
+            },
+            {
+              title: 'JSColumnModel',
+              link: '/models/fields/js-column-model',
+            },
             {
               title: 'SubFormFieldModel',
               link: '/models/fields/sub-form-field-model',
@@ -623,10 +651,17 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'ActionModel',
+              link: '/models/actions/action-model',
+            },
+            {
+              title: 'PopupActionModel',
+              link: '/models/actions/popup-action-model',
+            },
+            {
               title: 'JSActionModel',
               link: '/models/actions/js-action-model',
             },
-            // 暂无 actions 子项
           ],
         },
       ],
