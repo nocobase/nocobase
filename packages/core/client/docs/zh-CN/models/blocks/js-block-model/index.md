@@ -105,6 +105,7 @@ interface OpenViewParams {
   collectionName?: string; // 数据表
   dataSourceKey?: string; // 数据源
   filterByTk?: any; // 数据表记录ID
+  tabUid?: string; // 激活的标签页
 }
 ```
 

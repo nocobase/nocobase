@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, FormItem, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
+import { ElementProxy, FormItem, createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { CommonItemModel } from '../base/CommonItemModel';
 import { CodeEditor } from '../../components/code-editor';
+import { CommonItemModel } from '../base/CommonItemModel';
 
 /**
  * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
@@ -74,7 +74,7 @@ JSItemModel.registerFlow({
         return {
           code: `
 ctx.element.innerHTML = \`
-  <div style="padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
     <h3 style="color: #1890ff; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">JavaScript Item</h3>
     <div style="color:#555">This area is rendered by your JavaScript code.</div>
   </div>
