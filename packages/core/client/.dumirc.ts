@@ -533,6 +533,10 @@ export default defineConfig({
           type: 'group',
           children: [
             {
+              title: 'BlockModel',
+              link: '/models/blocks/block-model',
+            },
+            {
               title: 'CollectionBlockModel',
               link: '/models/blocks/collection-block-model',
             },
@@ -542,11 +546,7 @@ export default defineConfig({
             },
             {
               title: 'FilterBlockModel',
-              link: '/models/blocks/js-block-model',
-            },
-            {
-              title: 'BlockModel',
-              link: '/models/blocks/table-block-model',
+              link: '/models/blocks/filter-block-model',
             },
             {
               title: 'JSBlockModel',

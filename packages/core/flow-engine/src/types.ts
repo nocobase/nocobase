@@ -19,6 +19,7 @@ import {
 import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+import { FilterGroup, FilterGroupOptions } from './resources';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -178,7 +179,10 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEvent<TModel extends FlowModel = FlowModel> = FlowEventName | { eventName: FlowEventName };
+export type FlowEventCondition = FilterGroupOptions | ((ctx: FlowEngineContext) => boolean | Promise<boolean>);
+export type FlowEvent<TModel extends FlowModel = FlowModel> =
+  | FlowEventName
+  | { eventName: FlowEventName; condition?: FlowEventCondition };
 
 /**
  * 事件定义：用于事件注册表（全局/模型类级）。

@@ -33,10 +33,11 @@ export class FilterItem {
   }
 }
 
-type FilterGroupOptions = {
+export type FilterGroupOptions = {
   logic: '$and' | '$or';
   items: Array<FilterItem | FilterOptions | FilterGroup | FilterGroupOptions>;
 };
+
 export class FilterGroup {
   protected options: {
     logic: '$and' | '$or';
