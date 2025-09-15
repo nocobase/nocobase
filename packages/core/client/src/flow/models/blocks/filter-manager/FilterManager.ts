@@ -102,11 +102,13 @@ export class FilterManager {
   async addFilterConfig(filterConfig: FilterConfig) {
     // 1. 验证必填字段
     if (!filterConfig.filterId || !filterConfig.targetId) {
-      throw new Error('FilterConfig must have filterId, targetId, and operator');
+      console.error('FilterConfig must have filterId, targetId, and operator');
+      return;
     }
 
     if (!Array.isArray(filterConfig.filterPaths) || filterConfig.filterPaths.length === 0) {
-      throw new Error('FilterConfig must have non-empty filterPaths array');
+      console.error('FilterConfig must have non-empty filterPaths array');
+      return;
     }
 
     // 2. 检查是否已存在相同的配置（相同的 filterId 和 targetId 组合）
@@ -154,10 +156,20 @@ export class FilterManager {
    * });
    * ```
    */
-  async removeFilterConfig({ filterId, targetId }: { filterId?: string; targetId?: string }): Promise<number> {
+  async removeFilterConfig({
+    filterId,
+    targetId,
+    persist = true,
+  }: {
+    filterId?: string;
+    targetId?: string;
+    /** 是否持久化删除操作 */
+    persist?: boolean;
+  }): Promise<number> {
     // 1. 验证参数：至少需要提供一个参数
     if (!filterId && !targetId) {
-      throw new Error('At least one of filterId or targetId must be provided');
+      console.error('At least one of filterId or targetId must be provided');
+      return 0;
     }
 
     // 2. 记录删除前的配置数量
@@ -187,7 +199,7 @@ export class FilterManager {
     const removedCount = originalLength - this.filterConfigs.length;
 
     // 5. 如果有配置被删除，则保存更改
-    if (removedCount > 0) {
+    if (removedCount > 0 && persist) {
       await this.saveFilterConfigs();
     }
 
@@ -211,7 +223,8 @@ export class FilterManager {
   bindToTarget(targetId: string) {
     // 1. 参数验证
     if (!targetId || typeof targetId !== 'string') {
-      throw new Error('targetId must be a non-empty string');
+      console.error('targetId must be a non-empty string');
+      return;
     }
 
     // 2. 通过 flowEngine 查找目标模型
@@ -219,19 +232,20 @@ export class FilterManager {
 
     // 3. 验证目标模型是否存在
     if (!targetModel) {
-      throw new Error(`Target model with uid "${targetId}" not found`);
+      console.error(`Target model with uid "${targetId}" not found`);
+      return;
     }
 
     // 4. 验证目标模型是否具有 resource 属性
     if (!(targetModel as any).resource || typeof (targetModel as any).resource.addFilterGroup !== 'function') {
-      throw new Error(`Target model with uid "${targetId}" does not have a valid resource with addFilterGroup method`);
+      console.error(`Target model with uid "${targetId}" does not have a valid resource with addFilterGroup method`);
+      return;
     }
 
     // 验证目标模型是否具有 removeFilterGroup 方法
     if (typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
-      throw new Error(
-        `Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`,
-      );
+      console.error(`Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`);
+      return;
     }
 
     // 5. 获取与目标模型相关的筛选配置
@@ -247,11 +261,13 @@ export class FilterManager {
       const filterModel: any = this.gridModel.flowEngine.getModel(config.filterId);
 
       if (!filterModel) {
-        throw new Error(`Filter model with uid "${config.filterId}" not found`);
+        console.error(`Filter model with uid "${config.filterId}" not found`);
+        return;
       }
 
       if (!filterModel.getFilterValue) {
-        throw new Error(`Filter model with uid "${config.filterId}" does not have getFilterValue method`);
+        console.error(`Filter model with uid "${config.filterId}" does not have getFilterValue method`);
+        return;
       }
 
       // 获取筛选值
@@ -263,7 +279,8 @@ export class FilterManager {
         try {
           (targetModel as any).resource.removeFilterGroup(config.filterId);
         } catch (error) {
-          throw new Error(`Failed to remove filter configuration from target model: ${error.message}`);
+          console.error(`Failed to remove filter configuration from target model: ${error.message}`);
+          return;
         }
         return; // 跳过当前配置的处理
       }
@@ -294,7 +311,8 @@ export class FilterManager {
           (targetModel as any).resource.addFilterGroup(config.filterId, new FilterGroup(filterGroup));
         }
       } catch (error) {
-        throw new Error(`Failed to bind filter configuration to target model: ${error.message}`);
+        console.error(`Failed to bind filter configuration to target model: ${error.message}`);
+        return;
       }
     });
   }
@@ -316,7 +334,8 @@ export class FilterManager {
   unbindFromTarget(targetId: string) {
     // 1. 参数验证
     if (!targetId || typeof targetId !== 'string') {
-      throw new Error('targetId must be a non-empty string');
+      console.error('targetId must be a non-empty string');
+      return;
     }
 
     // 2. 通过 flowEngine 查找目标模型
@@ -324,14 +343,14 @@ export class FilterManager {
 
     // 3. 验证目标模型是否存在
     if (!targetModel) {
-      throw new Error(`Target model with uid "${targetId}" not found`);
+      console.error(`Target model with uid "${targetId}" not found`);
+      return;
     }
 
     // 4. 验证目标模型是否具有 resource 属性
     if (!(targetModel as any).resource || typeof (targetModel as any).resource.removeFilterGroup !== 'function') {
-      throw new Error(
-        `Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`,
-      );
+      console.error(`Target model with uid "${targetId}" does not have a valid resource with removeFilterGroup method`);
+      return;
     }
 
     // 5. 获取与目标模型相关的筛选配置
@@ -348,7 +367,8 @@ export class FilterManager {
         // 通过筛选器模型 UID 移除对应的筛选组
         (targetModel as any).resource.removeFilterGroup(config.filterId);
       } catch (error) {
-        throw new Error(`Failed to unbind filter configuration from target model: ${error.message}`);
+        console.error(`Failed to unbind filter configuration from target model: ${error.message}`);
+        return;
       }
     });
   }
@@ -375,13 +395,15 @@ export class FilterManager {
   async refreshTargetsByFilter(filterId: string | string[]): Promise<void> {
     // 1. 参数验证和标准化
     if (!filterId) {
-      throw new Error('filterId must be provided');
+      console.error('filterId must be provided');
+      return;
     }
 
     const filterIds = Array.isArray(filterId) ? filterId : [filterId];
 
     if (filterIds.length === 0 || filterIds.some((uid) => !uid || typeof uid !== 'string')) {
-      throw new Error('filterId must be non-empty string(s)');
+      console.error('filterId must be non-empty string(s)');
+      return;
     }
 
     // 2. 查找相关的筛选配置
@@ -405,18 +427,21 @@ export class FilterManager {
         const targetModel = this.gridModel.flowEngine.getModel(targetId);
 
         if (!targetModel) {
-          throw new Error(`Target model with uid "${targetId}" not found`);
+          console.error(`Target model with uid "${targetId}" not found`);
+          return;
         }
 
         // 4.3 验证目标模型是否有 refresh 方法
         if (!(targetModel as any).resource || typeof (targetModel as any).resource.refresh !== 'function') {
-          throw new Error(`Target model with uid "${targetId}" does not have a valid resource with refresh method`);
+          console.error(`Target model with uid "${targetId}" does not have a valid resource with refresh method`);
+          return;
         }
 
         // 4.4 调用 refresh 方法
         await (targetModel as any).resource.refresh();
       } catch (error) {
-        throw new Error(`Failed to refresh target model "${targetId}": ${error.message}`);
+        console.error(`Failed to refresh target model "${targetId}": ${error.message}`);
+        return;
       }
     });
 

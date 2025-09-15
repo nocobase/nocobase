@@ -100,6 +100,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.setProps('sizes', newSizes);
       }
 
+      // 删除筛选配置
+      this.context.filterManager?.removeFilterConfig({ targetId: modelUid });
+      this.context.filterManager?.removeFilterConfig({ filterId: modelUid });
+
       this.saveStepParams();
     });
     this.emitter.on('onSubModelMoved', () => {

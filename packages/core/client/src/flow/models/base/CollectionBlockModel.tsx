@@ -196,17 +196,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return items;
   }
 
-  async destroy(): Promise<boolean> {
-    const result = await super.destroy();
-
-    const filterManager: FilterManager = this.context.filterManager;
-    if (filterManager) {
-      await filterManager.removeFilterConfig({ targetId: this.uid });
-    }
-
-    return result;
-  }
-
   get dataSource(): DataSource {
     return this.context.dataSource;
   }

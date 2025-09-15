@@ -74,16 +74,13 @@ export class FilterFormBlockModel extends FilterBlockModel<{
   }
 
   async destroy(): Promise<boolean> {
-    const result = await super.destroy();
-
     // 清理所有子模型的筛选配置
     const filterManager: FilterManager = this.context.filterManager;
-    const promises = this.subModels.grid.subModels.items?.map(async (item) => {
-      await filterManager.removeFilterConfig({ filterId: item.uid });
+    this.subModels.grid.subModels.items?.map((item) => {
+      filterManager.removeFilterConfig({ filterId: item.uid, persist: false });
     });
 
-    await Promise.all(promises);
-    return result;
+    return await super.destroy();
   }
 
   renderComponent() {

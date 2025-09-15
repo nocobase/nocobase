@@ -159,16 +159,6 @@ export class FilterFormItemModel extends FilterableItemModel<{
     this.debouncedDoFilter.cancel();
   }
 
-  async destroy(): Promise<boolean> {
-    const result = await super.destroy();
-
-    // 清理筛选配置
-    const filterManager: FilterManager = this.context.filterManager;
-    await filterManager.removeFilterConfig({ filterId: this.uid });
-
-    return result;
-  }
-
   doFilter() {
     this.context.filterManager.refreshTargetsByFilter(this.uid);
   }
