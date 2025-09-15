@@ -376,7 +376,7 @@ export const linkageRunjs = defineAction({
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div
+            {/* <div
               style={{
                 backgroundColor: '#f6ffed',
                 border: '1px solid #b7eb8f',
@@ -387,7 +387,7 @@ export const linkageRunjs = defineAction({
               <div style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>
                 预留一个位置，用于显示一些提示信息
               </div>
-            </div>
+            </div> */}
             <div>
               <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
             </div>

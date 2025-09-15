@@ -21,7 +21,7 @@ export function FieldPlaceholder() {
           },
         }}
       >
-        该字段以被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。
+        该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。
       </Card>
     </Form.Item>
   );
