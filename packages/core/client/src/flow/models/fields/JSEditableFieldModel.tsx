@@ -10,7 +10,7 @@
 import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
 const JSFormRuntime: React.FC<{
@@ -100,7 +100,7 @@ const JSFormRuntime: React.FC<{
  * - 在运行时提供 ctx.getValue/ctx.setValue，实现与表单的双向交互；
  * - 子节点由脚本渲染（DOM 操作），用于完全自定义输入体验。
  */
-export class JSEditableFieldModel extends FormFieldModel {
+export class JSEditableFieldModel extends FieldModel {
   render() {
     return (
       <JSFormRuntime
