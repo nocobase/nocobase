@@ -14,4 +14,5 @@ export * from './TableColumnModel';
 export * from './TableCustomColumnModel';
 export * from './TableSelectModel';
 export * from './TableJSFieldItemModel';
+export * from './JSColumnModel';
 //

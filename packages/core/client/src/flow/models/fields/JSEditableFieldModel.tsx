@@ -13,7 +13,7 @@ import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
-const DEFAULT_CODE = `const v = ctx.getValue();\n// 在容器内渲染输入框（避免直接使用 document 查询）\nctx.element.innerHTML = \`<input id="js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\n// 使用容器查询子节点，避免 document.getElementById\nconst el = ctx.element.querySelector('#js-input');\n// 绑定输入事件，双向同步到表单值\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n// 监听外部值变更事件，反向更新输入框显示\nctx.element.addEventListener('js-field:value-change', (ev) => {\n  if (el) el.value = ev.detail ?? '';\n});\n`;
+const DEFAULT_CODE = `const v = ctx.getValue();\nctx.element.innerHTML = \`<input class="ant-input ant-input-outlined js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\n// 使用容器查询子节点，避免 document.getElementById\nconst el = ctx.element.querySelector('.js-input');\n// 绑定输入事件，双向同步到表单值\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n// 监听外部值变更事件，反向更新输入框显示\nctx.element.addEventListener('js-field:value-change', (ev) => {\n  if (el) el.value = ev.detail ?? '';\n});\n`;
 
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;
