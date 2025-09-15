@@ -9,10 +9,10 @@
 
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
-export class DisplayTimeFieldModel extends InteractiveDisplayFieldModel {
-  public renderDisplayValue(value) {
+export class DisplayTimeFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     const { prefix, suffix } = this.props;
     return (
       <span>

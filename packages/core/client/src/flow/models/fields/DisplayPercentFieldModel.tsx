@@ -11,7 +11,7 @@ import React from 'react';
 import * as math from 'mathjs';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { isNum } from '@formily/shared';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
@@ -21,9 +21,8 @@ const toValue = (value: any, callback: (v: number) => number) => {
   }
   return null;
 };
-export class DisplayPercentFieldModel extends InteractiveDisplayFieldModel {
-  public static readonly supportedFieldInterfaces = ['percent'];
-  public renderDisplayValue(value) {
+export class DisplayPercentFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     const { prefix = '', suffix = '' } = this.props;
 
     const content = toValue(value, (v) => v * 100);

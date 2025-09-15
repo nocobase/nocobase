@@ -95,8 +95,7 @@ export function LazySelect(props) {
   );
 }
 
-export class RemoteSelectFieldModel extends AssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
+export class RecordSelectFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
 
   get collectionField(): CollectionField {
@@ -119,8 +118,8 @@ export class RemoteSelectFieldModel extends AssociationFieldModel {
   getDataSource() {
     return this.props.options;
   }
-  get component() {
-    return [LazySelect, {}];
+  render() {
+    return <LazySelect {...this.props} />;
   }
 }
 
@@ -132,7 +131,7 @@ const paginationState = {
 };
 
 // 事件绑定
-RemoteSelectFieldModel.registerFlow({
+RecordSelectFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 300,
   steps: {
@@ -144,7 +143,7 @@ RemoteSelectFieldModel.registerFlow({
           if (open) {
             ctx.model.dispatchEvent('dropdownOpen', {
               apiClient: ctx.app.apiClient,
-              form: ctx.model.form,
+              form: ctx.model.context.form,
             });
           } else {
             ctx.model.resource.removeFilterGroup(labelFieldName);
@@ -169,7 +168,7 @@ RemoteSelectFieldModel.registerFlow({
 });
 
 //点击打开下拉时加载数据
-RemoteSelectFieldModel.registerFlow({
+RecordSelectFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -199,7 +198,7 @@ RemoteSelectFieldModel.registerFlow({
 });
 
 //鼠标滚动后分页加载数据
-RemoteSelectFieldModel.registerFlow({
+RecordSelectFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -239,7 +238,7 @@ RemoteSelectFieldModel.registerFlow({
   },
 });
 // 模糊搜索
-RemoteSelectFieldModel.registerFlow({
+RecordSelectFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -287,7 +286,7 @@ RemoteSelectFieldModel.registerFlow({
 });
 
 //专有配置项
-RemoteSelectFieldModel.registerFlow({
+RecordSelectFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Association select settings'),
   sort: 200,
@@ -323,18 +322,18 @@ RemoteSelectFieldModel.registerFlow({
   },
 });
 
-RemoteSelectFieldModel.define({
+RecordSelectFieldModel.define({
   label: escapeT('Select'),
 });
 
 EditableItemModel.bindModelToInterface(
-  'RemoteSelectFieldModel',
+  'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   { isDefault: true },
 );
 
 FilterableItemModel.bindModelToInterface(
-  'RemoteSelectFieldModel',
+  'RecordSelectFieldModel',
   ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   { isDefault: true },
 );

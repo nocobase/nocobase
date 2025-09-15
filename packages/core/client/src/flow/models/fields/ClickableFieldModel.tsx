@@ -14,12 +14,7 @@ import React from 'react';
 import { openViewFlow, updateOpenViewStepParams } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
 
-export interface InteractiveDisplayProps {
-  clickToOpen?: boolean; // 是否允许点击打开
-  displayStyle?: 'text' | 'tag';
-}
-
-export class InteractiveDisplayFieldModel extends FieldModel {
+export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
     return this.context.collectionField;
   }
@@ -78,13 +73,13 @@ export class InteractiveDisplayFieldModel extends FieldModel {
     }
   }
 
-  renderDisplayValue(value) {
+  renderComponent(value) {
     return value;
   }
 
   renderInDisplayStyle(value, record?) {
     const { clickToOpen = false, displayStyle, titleField, ...restProps } = this.props;
-    const result = this.renderDisplayValue(value);
+    const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
@@ -140,7 +135,7 @@ export class InteractiveDisplayFieldModel extends FieldModel {
   }
 }
 
-InteractiveDisplayFieldModel.registerFlow({
+ClickableFieldModel.registerFlow({
   key: 'displayFieldSettings',
   title: escapeT('Display Field settings'),
   sort: 200,
@@ -183,4 +178,4 @@ InteractiveDisplayFieldModel.registerFlow({
     },
   },
 });
-InteractiveDisplayFieldModel.registerFlow(openViewFlow);
+ClickableFieldModel.registerFlow(openViewFlow);

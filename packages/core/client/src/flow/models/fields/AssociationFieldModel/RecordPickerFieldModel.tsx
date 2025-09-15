@@ -21,8 +21,8 @@ import { useRequest } from 'ahooks';
 import { Button, Select } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
-import { FormFieldModel } from '../FormFieldModel';
-import { LabelByField } from './RemoteSelectFieldModel';
+import { FieldModel } from '../../base';
+import { LabelByField } from './RecordSelectFieldModel';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -115,10 +115,8 @@ function RecordPickerField(props) {
   );
 }
 
-export class RecordPickerFieldModel extends FormFieldModel {
+export class RecordPickerFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
-
-  static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
 
   get collectionField(): CollectionField {
     return this.context.collectionField;

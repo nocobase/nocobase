@@ -6,15 +6,14 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { FormFieldModel } from '@nocobase/client';
+import { FieldModel } from '@nocobase/client';
+import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { Edit } from './components/Edit';
 @largeField()
-export class MarkdownVditorEditableFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['vditor'];
-
-  get component() {
-    return [Edit, {}];
+export class VditorFieldModel extends FieldModel {
+  render() {
+    return <Edit {...this.props} />;
   }
 }
-EditableItemModel.bindModelToInterface('MarkdownVditorEditableFieldModel', ['vditor'], { isDefault: true });
+EditableItemModel.bindModelToInterface('VditorFieldModel', ['vditor'], { isDefault: true });

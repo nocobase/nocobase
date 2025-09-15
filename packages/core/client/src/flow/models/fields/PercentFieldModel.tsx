@@ -13,7 +13,7 @@ import React from 'react';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
@@ -38,11 +38,9 @@ export const PercentInput = (props) => {
   return <InputNumber {...componentProps} />;
 };
 
-export class PercentFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['percent'];
-
-  get component() {
-    return [PercentInput, {}];
+export class PercentFieldModel extends FieldModel {
+  render() {
+    return <PercentInput {...this.props} />;
   }
 }
 

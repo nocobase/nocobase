@@ -11,18 +11,10 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
-export class DisplayDateTimeFieldModel extends InteractiveDisplayFieldModel {
-  public static readonly supportedFieldInterfaces = [
-    'date',
-    'datetimeNoTz',
-    'createdAt',
-    'datetime',
-    'updatedAt',
-    'unixTimestamp',
-  ];
-  public renderDisplayValue(value) {
+export class DisplayDateTimeFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime } = this.props;
     const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
     let formattedValue = '';

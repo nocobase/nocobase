@@ -39,8 +39,6 @@ export const DateOnlyPicker = (props) => {
 };
 
 export class DateOnlyFieldModel extends DateTimeFieldModel {
-  static supportedFieldInterfaces = ['date'];
-
   setProps(componentProps) {
     super.setProps({
       ...componentProps,
@@ -48,8 +46,8 @@ export class DateOnlyFieldModel extends DateTimeFieldModel {
       utc: false,
     });
   }
-  get component() {
-    return [DateOnlyPicker, {}];
+  render() {
+    return <DateOnlyPicker {...this.props} style={{ width: '100%' }} />;
   }
 }
 

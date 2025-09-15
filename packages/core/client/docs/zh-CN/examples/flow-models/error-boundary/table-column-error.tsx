@@ -8,7 +8,7 @@ import {
   CollectionActionModel,
   FilterManager,
   Plugin,
-  ReadPrettyFieldModel,
+  DisplayTextFieldModel,
   RecordActionModel,
   TableActionsColumnModel,
   TableBlockModel,
@@ -76,7 +76,7 @@ class DemoPlugin extends Plugin {
       TableActionsColumnModel,
       CollectionActionModel,
       RecordActionModel,
-      ReadPrettyFieldModel,
+      DisplayTextFieldModel,
       ThrowTableColumnModel,
     });
 
@@ -93,7 +93,7 @@ class DemoPlugin extends Plugin {
             },
             subModels: {
               field: {
-                use: 'ReadPrettyFieldModel',
+                use: 'DisplayTextFieldModel',
                 stepParams: {
                   fieldSettings: { init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'username' } },
                 },

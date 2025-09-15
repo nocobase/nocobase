@@ -8,15 +8,14 @@
  */
 
 import { Input } from 'antd';
+import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 @largeField()
-export class TextareaFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['textarea', 'markdown'];
-
-  get component() {
-    return [Input.TextArea, {}];
+export class TextareaFieldModel extends FieldModel {
+  render() {
+    return <Input.TextArea {...this.props} />;
   }
 }
 

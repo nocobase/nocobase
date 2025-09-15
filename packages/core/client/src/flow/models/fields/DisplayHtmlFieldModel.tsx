@@ -13,17 +13,16 @@ import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { FieldModel } from '../base';
 
-export class MarkdownReadPrettyFieldModel extends FieldModel {
-  public static readonly supportedFieldInterfaces = ['markdown'];
+export class DisplayHtmlFieldModel extends FieldModel {
   public render() {
     const { textOnly = true, value } = this.props;
     return <DisplayMarkdown textOnly={textOnly} value={value} />;
   }
 }
 
-MarkdownReadPrettyFieldModel.registerFlow({
-  key: 'markdownSettings',
-  title: tval('Markdown settings'),
+DisplayHtmlFieldModel.registerFlow({
+  key: 'htmlFieldSettings',
+  title: tval('Html settings'),
   sort: 200,
   steps: {
     displayMode: {
@@ -32,6 +31,6 @@ MarkdownReadPrettyFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('MarkdownReadPrettyFieldModel', ['markdown', 'richText'], {
+DisplayItemModel.bindModelToInterface('DisplayHtmlFieldModel', ['markdown', 'richText'], {
   isDefault: true,
 });

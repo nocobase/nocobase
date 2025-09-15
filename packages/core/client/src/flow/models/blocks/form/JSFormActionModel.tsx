@@ -7,17 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+/**
+ * JS Form Action：表单工具栏按钮点击执行 JS。
+ */
 import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
-import { FilterFormActionModel } from './FilterFormActionModel';
+import { FormActionModel } from './FormActionModel';
 
-export class FilterFormJSActionModel extends FilterFormActionModel {}
+export class JSFormActionModel extends FormActionModel {}
 
-FilterFormJSActionModel.define({
+JSFormActionModel.define({
   label: escapeT('JS action'),
+  sort: 9999,
 });
 
-FilterFormJSActionModel.registerFlow({
+JSFormActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
   title: escapeT('Click settings'),
@@ -29,7 +33,7 @@ FilterFormJSActionModel.registerFlow({
           type: 'string',
           'x-component': CodeEditor,
           'x-component-props': {
-            minHeight: '400px',
+            minHeight: '320px',
             theme: 'light',
             enableLinter: true,
           },
@@ -43,12 +47,21 @@ FilterFormJSActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: '1.0.0',
-          code: '',
+          code: `
+const values = ctx.form?.getFieldsValue?.() || {};
+ctx.message.success('当前表单值：' + JSON.stringify(values));
+`,
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params;
+        const { code = '' } = params || {};
+        ctx.defineMethod('refresh', async () => {
+          if (ctx.blockModel?.resource?.refresh) {
+            await ctx.blockModel.resource.refresh();
+          } else if (ctx.resource?.refresh) {
+            await ctx.resource.refresh();
+          }
+        });
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },

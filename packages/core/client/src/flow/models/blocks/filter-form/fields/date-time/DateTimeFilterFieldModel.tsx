@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { escapeT } from '@nocobase/flow-engine';
+import React from 'react';
 import { FilterFormFieldModel } from '../FilterFormFieldModel';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
 
 export class DateTimeFilterFieldModel extends FilterFormFieldModel {
-  get component() {
-    return [DateFilterDynamicComponent, {}];
+  render() {
+    return <DateFilterDynamicComponent {...this.props} />;
   }
 }
 

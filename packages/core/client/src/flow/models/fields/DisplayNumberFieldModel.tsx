@@ -18,7 +18,7 @@ import { format } from 'd3-format';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
 import { toString } from 'lodash';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
 function countDecimalPlaces(value) {
   const strValue = toString(value);
@@ -193,9 +193,8 @@ export const DisplayNumber = (props: displayNumberProps) => {
   );
 };
 
-export class DisplayNumberFieldModel extends InteractiveDisplayFieldModel {
-  public static readonly supportedFieldInterfaces = ['number', 'integer', 'id', 'formula'];
-  public renderDisplayValue(value) {
+export class DisplayNumberFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     return (
       <div>
         <DisplayNumber {...this.props} value={value} />

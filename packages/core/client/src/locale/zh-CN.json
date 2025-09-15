@@ -1349,5 +1349,6 @@
   "AssociationField component": "关系字段组件",
   "Title field component": "标题字段组件",
   "Display Field settings":"显示设置",
-  "Preview Settings":"预览设置"
+  "Preview Settings":"预览设置",
+  "Html settings": "Html 设置项"
 }

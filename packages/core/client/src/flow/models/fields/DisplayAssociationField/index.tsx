@@ -8,5 +8,5 @@
  */
 
 export * from './DisplaySubTableFieldModel';
-export * from './DisplaySubDetailFieldModel';
+export * from './DisplaySubItemFieldModel';
 export * from './DisplaySubListFieldModel';

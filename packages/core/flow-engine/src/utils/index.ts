@@ -58,3 +58,6 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 export { setAutoFlowError, getAutoFlowError, clearAutoFlowError, type AutoFlowError } from './autoFlowError';
+
+// 安全全局对象（window/document）
+export { createSafeWindow, createSafeDocument } from './safeGlobals';

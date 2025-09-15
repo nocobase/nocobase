@@ -19,7 +19,6 @@ const JSONClassName = css`
 `;
 
 export class DisplayJSONFieldModel extends FieldModel {
-  public static readonly supportedFieldInterfaces = ['json'];
   public render() {
     const { space, style, className, value } = this.props;
     let content = '';

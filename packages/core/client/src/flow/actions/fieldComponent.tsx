@@ -58,7 +58,7 @@ export const fieldComponent = defineAction({
         props: selected.defaultProps,
         stepParams: {
           fieldSettings: {
-            init: (ctx.model as FieldModel).getFieldSettingsInitParams(),
+            init: (ctx.model as CollectionFieldModel).getFieldSettingsInitParams(),
           },
         },
       });

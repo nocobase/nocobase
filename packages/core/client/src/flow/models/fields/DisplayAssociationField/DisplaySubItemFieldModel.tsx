@@ -11,11 +11,9 @@ import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { ObjectNester } from '../AssociationFieldModel/SubFormFieldModel';
-import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
+import { FieldModel } from '../../base';
 
-export class DisplaySubDetailFieldModel extends DisplayAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
-
+export class DisplaySubItemFieldModel extends FieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {
@@ -32,10 +30,10 @@ export class DisplaySubDetailFieldModel extends DisplayAssociationFieldModel {
   }
 }
 
-DisplaySubDetailFieldModel.define({
+DisplaySubItemFieldModel.define({
   label: escapeT('Sub-detail'),
   createModelOptions: {
-    use: 'DisplaySubDetailFieldModel',
+    use: 'DisplaySubItemFieldModel',
     subModels: {
       grid: {
         use: 'DetailsGridModel',
@@ -44,7 +42,7 @@ DisplaySubDetailFieldModel.define({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplaySubDetailFieldModel', [
+DisplayItemModel.bindModelToInterface('DisplaySubItemFieldModel', [
   'm2o',
   'o2o',
   'oho',

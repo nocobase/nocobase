@@ -8,14 +8,13 @@
  */
 
 import { Radio } from 'antd';
+import React from 'react';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
-export class RadioGroupFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['radioGroup'];
-
-  get component() {
-    return [Radio.Group, {}];
+export class RadioGroupFieldModel extends FieldModel {
+  render() {
+    return <Radio.Group {...this.props} />;
   }
 }
 

@@ -786,6 +786,9 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
+        if (!amap) {
+          return;
+        }
         (window as any).define = _define;
         return requestIdleCallback(() => {
           map.current = new amap.Map(id.current, {

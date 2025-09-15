@@ -13,9 +13,7 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { FieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
-export class MarkdownVditorReadPrettyFieldModel extends FieldModel {
-  static readonly supportedFieldInterfaces = ['vditor'];
-
+export class DisplayVditorFieldModel extends FieldModel {
   public render() {
     const { value } = this.props;
     const app = this.context.app;
@@ -30,7 +28,7 @@ export class MarkdownVditorReadPrettyFieldModel extends FieldModel {
   }
 }
 
-MarkdownVditorReadPrettyFieldModel.registerFlow({
+DisplayVditorFieldModel.registerFlow({
   key: 'markdownVditorSettings',
   title: tval('MarkdownVditor settings'),
   sort: 200,
@@ -41,4 +39,4 @@ MarkdownVditorReadPrettyFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('MarkdownVditorReadPrettyFieldModel', ['vditor'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayVditorFieldModel', ['vditor'], { isDefault: true });

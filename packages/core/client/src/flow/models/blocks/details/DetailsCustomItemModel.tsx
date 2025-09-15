@@ -18,12 +18,27 @@ export class DetailsCustomItemModel extends FlowModel {
     const detailCustomModels = ctx.engine.filterModelClassByParent('DetailsCustomItemModel');
 
     const toChildren = (models: Map<string, any>) =>
-      Array.from(models.entries()).map(([name, ModelClass]) => ({
-        key: name,
-        label: ctx.t(ModelClass.meta.label),
-        createModelOptions: { use: name },
-        sort: (ModelClass.meta.sort ?? 999) as number,
-      }));
+      Array.from(models.entries()).map(([name, ModelClass]) => {
+        const hasChildren = typeof ModelClass.defineChildren === 'function' || !!ModelClass.meta?.children;
+        const item: any = {
+          key: name,
+          label: ctx.t(ModelClass.meta.label),
+          sort: (ModelClass.meta.sort ?? 999) as number,
+          searchable: !!ModelClass.meta?.searchable,
+          searchPlaceholder: ModelClass.meta?.searchPlaceholder,
+        };
+        if (hasChildren) {
+          item.children = (innerCtx: FlowModelContext) => {
+            if (typeof ModelClass.defineChildren === 'function') {
+              return ModelClass.defineChildren(innerCtx);
+            }
+            return ModelClass.meta?.children || [];
+          };
+        } else {
+          item.createModelOptions = { use: name };
+        }
+        return item;
+      });
 
     return _.sortBy([...toChildren(commonModels), ...toChildren(detailCustomModels)], 'sort');
   }

@@ -78,7 +78,7 @@ const useNiceDropdownMaxHeight = () => {
 /**
  * 处理异步菜单项加载的逻辑
  */
-const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
+const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[], resetKey?: any) => {
   const [loadedChildren, setLoadedChildren] = useState<Record<string, Item[]>>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
 
@@ -115,6 +115,12 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[]) => {
     }
     return result;
   };
+
+  // 当 resetKey 变化时，清空所有已加载缓存，确保下一次展开会重新加载所有子菜单
+  useEffect(() => {
+    setLoadedChildren({});
+    setLoadingKeys(new Set());
+  }, [resetKey]);
 
   // 自动加载所有 group 的异步 children；不清空缓存，避免闪烁。
   // 已加载的分支使用 handleLoadChildren(..., true) 原位刷新，界面继续显示旧内容，
@@ -347,7 +353,11 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const t = engine.translate.bind(engine);
 
   // 使用自定义 hooks
-  const { loadedChildren, loadingKeys, handleLoadChildren } = useAsyncMenuItems(menuVisible, rootItems);
+  const { loadedChildren, loadingKeys, handleLoadChildren } = useAsyncMenuItems(
+    menuVisible,
+    rootItems,
+    menu.stateVersion,
+  );
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);

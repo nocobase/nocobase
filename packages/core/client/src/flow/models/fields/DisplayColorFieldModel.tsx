@@ -11,11 +11,10 @@ import React from 'react';
 import { ColorPicker } from 'antd';
 import { css } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
-export class DisplayColorFieldModel extends InteractiveDisplayFieldModel {
-  public static readonly supportedFieldInterfaces = ['color'];
-  public renderDisplayValue(value) {
+export class DisplayColorFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     return (
       <div
         role="button"

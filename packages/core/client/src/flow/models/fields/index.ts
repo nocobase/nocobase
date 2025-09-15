@@ -13,8 +13,6 @@ export * from './CheckboxGroupFieldModel';
 export * from './CollectionSelectorFieldModel';
 export * from './ColorFieldModel';
 export * from './DateTimeFieldModel';
-export * from './EditableFieldModel';
-export * from './FormFieldModel';
 export * from './IconFieldModel';
 export * from './InputFieldModel';
 export * from './JsonFieldModel';
@@ -28,10 +26,12 @@ export * from './TextareaFieldModel';
 export * from './TimeFieldModel';
 export * from './UploadFieldModel';
 export * from './VariableFieldFormModel';
+export * from './JSFieldModel';
+export * from './JSEditableFieldModel';
 
 export * from './DividerItemModel';
-export * from './JSFieldItemModel';
 export * from './MarkdownItemModel';
+export * from './JSItemModel';
 
 export * from './DisplayAssociationField';
 export * from './DisplayColorFieldModel';

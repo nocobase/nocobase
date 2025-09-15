@@ -9,12 +9,13 @@
 
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { Input } from 'antd';
-import { FormFieldModel } from './FormFieldModel';
+import React from 'react';
 
-export class InputFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['input', 'email', 'phone', 'uuid', 'url', 'sequence', 'nanoid'];
-  get component() {
-    return [Input, {}];
+import { FieldModel } from '../base';
+
+export class InputFieldModel extends FieldModel {
+  render() {
+    return <Input {...this.props} />;
   }
 }
 

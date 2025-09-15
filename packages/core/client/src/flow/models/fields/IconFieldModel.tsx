@@ -15,7 +15,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditableItemModel } from '@nocobase/flow-engine';
 import { Icon, hasIcon, icons } from '../../../icon';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 const { Search } = Input;
 interface IconPickerProps {
@@ -159,11 +159,9 @@ function IconPicker(props: IconPickerProps) {
   );
 }
 
-export class IconFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['icon'];
-
-  get component() {
-    return [IconPicker, {}];
+export class IconFieldModel extends FieldModel {
+  render() {
+    return <IconPicker {...this.props} />;
   }
 }
 

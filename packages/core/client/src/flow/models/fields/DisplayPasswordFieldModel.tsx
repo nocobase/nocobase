@@ -12,8 +12,6 @@ import React from 'react';
 import { FieldModel } from '../base';
 
 export class DisplayPasswordFieldModel extends FieldModel {
-  static readonly supportedFieldInterfaces = ['password'];
-
   public render() {
     const { value } = this.props;
     if (!value) {
