@@ -232,6 +232,9 @@ QuickEditFormModel.registerFlow({
               },
             },
           });
+          ctx.model.context.defineProperty('collectionField', {
+            get: () => collectionField,
+          });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
           ctx.model.setProps(collectionField.getComponentProps());
