@@ -48,11 +48,21 @@ class DemoPlugin extends Plugin {
                       jsSettings: {
                         runJs: {
                           code: String.raw`
-// 简易 Markdown 预览（**、__、\n），用于演示
+// 简易 Markdown 预览（支持 **、__、标题、\n）用于演示
 const src = String(ctx.getValue() ?? '');
 function md(s){
-  return s
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  // 基础转义，避免 XSS
+  const esc = String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 极简语法：标题（#~######）、加粗、斜体、换行
+  return esc
+    // 标题，按从长到短匹配，确保优先级
+    .replace(/^######\s+(.*)$/gm,'<h6>$1</h6>')
+    .replace(/^#####\s+(.*)$/gm,'<h5>$1</h5>')
+    .replace(/^####\s+(.*)$/gm,'<h4>$1</h4>')
+    .replace(/^###\s+(.*)$/gm,'<h3>$1</h3>')
+    .replace(/^##\s+(.*)$/gm,'<h2>$1</h2>')
+    .replace(/^#\s+(.*)$/gm,'<h1>$1</h1>')
     .replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')
     .replace(/__(.*?)__/g,'<i>$1</i>')
     .replace(/\n/g,'<br/>');
