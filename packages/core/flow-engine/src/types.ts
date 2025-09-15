@@ -130,6 +130,15 @@ export type ModelConstructor<T extends FlowModel<any> = FlowModel<any>> = (new (
   meta?: FlowModelMeta;
 };
 
+export enum ActionScene {
+  /** 块级联动规则可用 */
+  BLOCK_LINKAGE_RULES = 1,
+  /** 字段级联动规则可用 */
+  FIELD_LINKAGE_RULES,
+  /** 按钮级联动规则可用 */
+  ACTION_LINKAGE_RULES,
+}
+
 /**
  * Defines a reusable action with generic model type support.
  */
@@ -143,6 +152,8 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   useRawParams?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
+  scene?: ActionScene | ActionScene[];
+  sort?: number;
 }
 
 /**

@@ -48,10 +48,15 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
       footer: footer !== undefined ? footer : config.footer ?? null,
     };
 
+    const container = React.useMemo(() => {
+      return document.querySelector('#nocobase-app-container');
+    }, []);
+
     return (
       <Modal
         closable={false}
         rootClassName={hidden ? 'nb-hidden' : ''}
+        getContainer={container}
         {...modalProps}
         open={visible}
         onCancel={(e) => {

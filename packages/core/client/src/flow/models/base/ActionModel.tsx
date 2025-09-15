@@ -107,7 +107,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   protected renderHiddenInConfig(): React.ReactNode | undefined {
     return (
-      <Tooltip title={this.context.t('当前按钮以被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。')}>
+      <Tooltip title={this.context.t('当前按钮已被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。')}>
         <Button type={this.props.type} disabled icon={<LockOutlined />} />
       </Tooltip>
     );

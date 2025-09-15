@@ -16,7 +16,7 @@ export const BlockPlaceholder = () => {
   const { t } = useTranslation();
   return (
     <BlockItemCard>
-      <Result status="403" subTitle={t('当前区块以被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}></Result>
+      <Result status="403" subTitle={t('当前区块已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}></Result>
     </BlockItemCard>
   );
 };
