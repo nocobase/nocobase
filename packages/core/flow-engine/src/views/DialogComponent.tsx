@@ -26,7 +26,10 @@ const DialogComponent = forwardRef<unknown, DialogComponentProps>(
     const [header, setHeader] = useState(initialHeader);
 
     useImperativeHandle(ref, () => ({
-      destroy: () => setVisible(false),
+      destroy: () => {
+        setVisible(false);
+        afterClose?.();
+      },
       update: (newConfig) => setConfig((prev) => ({ ...prev, ...newConfig })),
       setFooter: (newFooter) => {
         setFooter(newFooter);
