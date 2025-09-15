@@ -11,7 +11,7 @@ FilterGroup 的值为一个对象：
 
 - `logic`: `$and | $or`，表示组内条件关系，默认 `$and`
 - `items`: (条件项或子组) 的数组
-  - 条件项形态：`{ leftValue: string; operator: string; rightValue: any }`
+  - 条件项形态：`{ path: string; operator: string; value: any }`
   - 子组形态：`{ logic: '$and' | '$or'; items: [...] }`
 
 配合工具方法 `transformFilter` 可将该结构转换为查询对象。
@@ -23,7 +23,7 @@ FilterGroup 的值为一个对象：
 ## Props
 
 - `value: Record<string, any>` 可观察对象，包含 `logic` 与 `items`
-- `FilterItem?: React.FC<{ value: { leftValue: string; operator: string; rightValue: any } }>` 自定义条件项组件
+- `FilterItem?: React.FC<{ value: { path: string; operator: string; value: any } }>` 自定义条件项组件
 - `showBorder?: boolean` 是否显示组边框（用于嵌套组的视觉区分）
 - `onRemove?: () => void` 移除当前组的回调（仅在作为子组时显示）
 

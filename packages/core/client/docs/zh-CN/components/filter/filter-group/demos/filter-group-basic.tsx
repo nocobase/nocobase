@@ -13,14 +13,14 @@ import { Card, Divider, Input, Select, Space, Typography } from 'antd';
 const { Text } = Typography;
 
 // 一个最简 FilterItem，直接修改传入的响应式 value
-const BasicFilterItem = observer(({ value }: { value: { leftValue: string; operator: string; rightValue: any } }) => {
+const BasicFilterItem = observer(({ value }: { value: { path: string; operator: string; value: any } }) => {
   return (
     <Space size={8}>
       <Input
         placeholder="字段名，如 name"
         style={{ width: 140 }}
-        value={value.leftValue}
-        onChange={(e) => (value.leftValue = e.target.value)}
+        value={value.path}
+        onChange={(e) => (value.path = e.target.value)}
       />
       <Select
         style={{ width: 120 }}
@@ -37,8 +37,8 @@ const BasicFilterItem = observer(({ value }: { value: { leftValue: string; opera
       <Input
         placeholder="值，如 John"
         style={{ width: 160 }}
-        value={value.rightValue}
-        onChange={(e) => (value.rightValue = e.target.value)}
+        value={value.value}
+        onChange={(e) => (value.value = e.target.value)}
       />
     </Space>
   );
@@ -53,8 +53,8 @@ class PluginFilterGroupBasic extends Plugin {
           observable({
             logic: '$and',
             items: [
-              { leftValue: 'name', operator: '$eq', rightValue: 'John' },
-              { leftValue: 'age', operator: '$gt', rightValue: 18 },
+              { path: 'name', operator: '$eq', value: 'John' },
+              { path: 'age', operator: '$gt', value: 18 },
             ],
           }),
         [],
