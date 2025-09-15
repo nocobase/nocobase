@@ -12,8 +12,6 @@ import {
   APIResource,
   BaseRecordResource,
   ElementProxy,
-  createSafeWindow,
-  createSafeDocument,
   FlowEngine,
   MultiRecordResource,
   SingleRecordResource,
@@ -40,7 +38,7 @@ export class JavaScriptBlockModel extends BlockModel {
 
 JavaScriptBlockModel.define({
   hide: true,
-  label: 'JS block',
+  label: 'JavaScript block',
 });
 
 JavaScriptBlockModel.registerFlow({
@@ -70,12 +68,12 @@ JavaScriptBlockModel.registerFlow({
       defaultParams(ctx) {
         return {
           code:
-            `// Welcome to the JS block
+            `// Welcome to the JavaScript block
 // Create powerful interactive components with JavaScript
 ctx.element.innerHTML = \`
   <div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 600px;">
     <h2 style="color: #1890ff; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">
-      🚀 \${ctx.i18n.t('Welcome to JS block', { ns: '` +
+      🚀 \${ctx.i18n.t('Welcome to JavaScript block', { ns: '` +
             NAMESPACE +
             `' })}
     </h2>
@@ -138,7 +136,7 @@ ctx.element.innerHTML = \`
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+          await ctx.runjs(code, { window, document });
         });
       },
     },
