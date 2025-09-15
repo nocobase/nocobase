@@ -669,6 +669,7 @@ export class FlowSettings {
       width: modeProps.width ?? 600,
       destroyOnClose: true,
       onClose: () => dispose.value(),
+      zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       content: (currentView) => {
