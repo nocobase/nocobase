@@ -77,7 +77,7 @@ const ArrayNester = ({ name, value }: any) => {
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
-  const collectionName = model.collectionField.name;
+  const collectionName = model.context.collectionField.name;
   return (
     <Card
       bordered={true}
