@@ -9,14 +9,14 @@
 
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
-import { MarkdownReadPretty } from '../../internal/components/MarkdownDisplay/MarkdownReadPretty';
-import { CommonItemModel } from '../base/CommonItemModel';
+import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
+import { CommonItemModel } from '../base';
 
 export class MarkdownItemModel extends CommonItemModel {
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
-        <MarkdownReadPretty value={this.props.content} />
+        <DisplayMarkdown value={this.props.content} />
       </FormItem>
     );
   }

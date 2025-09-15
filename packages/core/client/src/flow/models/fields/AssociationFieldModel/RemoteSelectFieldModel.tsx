@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import {
+  CollectionField,
+  createCurrentRecordMetaFactory,
+  EditableItemModel,
   escapeT,
+  FilterableItemModel,
   FlowModel,
   MultiRecordResource,
   useFlowModel,
-  createCurrentRecordMetaFactory,
-  EditableItemModel,
-  FilterableItemModel,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -45,7 +45,7 @@ export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any =
-    (currentModel.subModels.field as FlowModel).subModels.field || (currentModel.subModels.field as FlowModel);
+    (currentModel.subModels?.field as FlowModel)?.subModels?.field || (currentModel.subModels.field as FlowModel);
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
@@ -53,10 +53,11 @@ export function LabelByField(props) {
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
-  fieldModel.setProps({ value: labelValue });
+  const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
+  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
   return (
     <span style={{ pointerEvents: 'none' }} key={key}>
-      {labelValue ? fieldModel.render() : tval('N/A')}
+      {labelValue ? fieldModel.render() : 'N/A'}
     </span>
   );
 }
@@ -97,6 +98,10 @@ export function LazySelect(props) {
 export class RemoteSelectFieldModel extends AssociationFieldModel {
   static supportedFieldInterfaces = ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'];
   declare resource: MultiRecordResource;
+
+  get collectionField(): CollectionField {
+    return this.context.collectionField;
+  }
 
   set onPopupScroll(fn) {
     this.setProps({ onPopupScroll: fn });
@@ -290,7 +295,7 @@ RemoteSelectFieldModel.registerFlow({
     init: {
       handler(ctx) {
         const resource = ctx.createResource(MultiRecordResource);
-        const collectionField = ctx.model.collectionField;
+        const collectionField = ctx.model.context.collectionField;
         const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);

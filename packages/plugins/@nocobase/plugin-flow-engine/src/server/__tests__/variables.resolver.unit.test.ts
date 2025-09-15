@@ -178,6 +178,18 @@ describe('variables resolver (no HTTP)', () => {
       const out = await resolveJsonTemplate('sum={{ 1 + 2 }}, arr={{ ctx.a.b.d }}', ctx as any);
       expect(out).toBe('sum=3, arr=[1,2]');
     });
+
+    it('awaits async getter in dot-only chain', async () => {
+      const view = new ServerBaseContext();
+      view.defineProperty('record', {
+        get: async () => ({ id: 1 }),
+        cache: true,
+      });
+      const ctx = new ServerBaseContext();
+      ctx.defineProperty('view', { value: view });
+      const out = await resolveJsonTemplate('{{ ctx.view.record.id }}', ctx as any);
+      expect(out).toBe(1);
+    });
   });
 
   // Note: fallback via current action context is covered by integration tests.

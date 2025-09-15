@@ -11,10 +11,12 @@ import { escapeT, MultiRecordResource, observer, useFlowSettingsContext } from '
 import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
 import { Button, ButtonProps, Popover, Select, Space } from 'antd';
 import React, { FC } from 'react';
-import { CollectionActionModel } from '../base/ActionModel';
-import { VariableFilterItem, FilterGroup, FilterItem } from '../../components/filter';
+import { FilterGroup, FilterItem, VariableFilterItem } from '../../components/filter';
+import { ActionModel } from '../base';
 
-export class FilterActionModel extends CollectionActionModel {
+export class FilterActionModel extends ActionModel {
+  static scene = 'collection';
+
   declare props: ButtonProps & {
     filterValue?: any;
     ignoreFieldsNames?: string[];
@@ -212,9 +214,9 @@ function clearInputValue(value: any) {
  */
 interface FilterItemProps {
   value: {
-    leftValue: string;
+    path: string;
     operator: string;
-    rightValue: string;
+    value: string;
   };
 }
 

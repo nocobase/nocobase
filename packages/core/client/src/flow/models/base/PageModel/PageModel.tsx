@@ -9,6 +9,7 @@
 
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
+import { DragEndEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
@@ -24,7 +25,6 @@ import {
 import { Tabs } from 'antd';
 import _ from 'lodash';
 import React, { ReactNode } from 'react';
-import { DragEndEvent } from '@dnd-kit/core';
 import { BasePageTabModel } from './PageTabModel';
 
 type PageModelStructure = {

@@ -7,17 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { CollectionActionModel } from '../base/ActionModel';
-import { openViewFlow } from '../../flows/openViewFlow';
+import { ActionSceneEnum, PopupActionModel } from '../base';
 
-export class AddNewActionModel extends CollectionActionModel {
+export class AddNewActionModel extends PopupActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
     type: 'primary',
     title: escapeT('Add new'),
     icon: 'PlusOutlined',
   };
+
   getAclActionName() {
     return 'create';
   }
@@ -26,5 +28,3 @@ export class AddNewActionModel extends CollectionActionModel {
 AddNewActionModel.define({
   label: escapeT('Add new'),
 });
-
-AddNewActionModel.registerFlow(openViewFlow);

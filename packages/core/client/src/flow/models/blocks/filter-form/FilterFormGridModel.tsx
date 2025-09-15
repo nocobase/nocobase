@@ -10,8 +10,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import React from 'react';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { GridModel } from '../../base/GridModel';
+import { CollectionBlockModel, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormItemModel } from './FilterFormItemModel';
 

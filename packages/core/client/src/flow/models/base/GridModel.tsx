@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined } from '@ant-design/icons';
 import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
@@ -20,7 +19,6 @@ import {
   findModelUidPosition,
   FlowModel,
   FlowModelRenderer,
-  FlowSettingsButton,
   getMousePositionOnElement,
   moveBlock,
   positionToDirection,
@@ -31,7 +29,6 @@ import React from 'react';
 import { Grid } from '../../components/Grid';
 import JsonEditor from '../../components/JsonEditor';
 import { SkeletonFallback } from '../../components/SkeletonFallback';
-import { FilterManager } from '../blocks/filter-manager/FilterManager';
 
 export const GRID_FLOW_KEY = 'gridSettings';
 export const GRID_STEP = 'grid';
@@ -375,72 +372,6 @@ GridModel.registerFlow({
         ctx.model.setProps('sizes', params.sizes || {});
       },
     },
-  },
-});
-
-export class BlockGridModel extends GridModel {
-  subModelBaseClass = 'BlockModel';
-
-  onInit(options: any): void {
-    super.onInit(options);
-    this.context.defineProperty('blockGridModel', {
-      value: this,
-    });
-    this.context.defineProperty('filterManager', {
-      once: true,
-      get: () => {
-        return new FilterManager(this, options['filterManager']);
-      },
-    });
-  }
-
-  get filterManager(): FilterManager {
-    return this.context.filterManager;
-  }
-
-  serialize() {
-    const data = super.serialize();
-    data['filterManager'] = this.filterManager.getFilterConfigs();
-    return data;
-  }
-
-  renderAddSubModelButton() {
-    const t = this.translate;
-    return (
-      <>
-        <AddSubModelButton
-          model={this}
-          subModelKey="items"
-          // subModelBaseClass={"DataBlockModel"}
-          subModelBaseClasses={['DataBlockModel', 'FilterBlockModel', 'BlockModel']}
-        >
-          <FlowSettingsButton icon={<PlusOutlined />}>{t('Add block')}</FlowSettingsButton>
-        </AddSubModelButton>
-      </>
-    );
-  }
-
-  render() {
-    return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
-  }
-}
-
-BlockGridModel.registerFlow({
-  key: 'blockGridSettings',
-  steps: {
-    grid: {
-      handler(ctx, params) {
-        ctx.model.setProps('rowGap', ctx.themeToken.marginBlock);
-        ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
-      },
-    },
-    // [FILTER_CONFIGS_STEP_KEY]: {
-    //   handler(ctx) {
-    //     ctx.model.context.defineProperty('filterManager', {
-    //       value: new FilterManager(ctx.model),
-    //     });
-    //   },
-    // },
   },
 });
 

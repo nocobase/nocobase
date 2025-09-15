@@ -15,7 +15,7 @@ import { FlowModel } from '../../models';
 import { CreateModelOptions, ModelConstructor } from '../../types';
 import { withFlowDesignMode } from '../common/withFlowDesignMode';
 import LazyDropdown, { Item, ItemsType } from './LazyDropdown';
-import { buildSubModelGroups, buildSubModelItems } from './utils';
+import { buildItems, buildSubModelGroups, buildSubModelItems } from './utils';
 
 // ============================================================================
 // 类型定义
@@ -402,7 +402,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
   const finalItems = useMemo<SubModelItemsType>(() => {
     const sources: (SubModelItemsType | undefined | null)[] = [];
     if (items) sources.push(items);
-    if (subModelBaseClass) sources.push(buildSubModelItems(subModelBaseClass));
+    if (subModelBaseClass) sources.push(buildItems(subModelBaseClass));
     if (subModelBaseClasses && subModelBaseClasses.length > 0) {
       sources.push(buildSubModelGroups(subModelBaseClasses));
     }

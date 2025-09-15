@@ -37,22 +37,22 @@ export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
-    const uiSchemas = this.db.getRepository<any>('uiSchemas');
-    await uiSchemas.insert({
-      type: 'void',
-      'x-uid': 'nocobase-admin-menu',
-      'x-component': 'Menu',
-      'x-designer': 'Menu.Designer',
-      'x-initializer': 'MenuItemInitializers',
-      'x-component-props': {
-        mode: 'mix',
-        theme: 'dark',
-        // defaultSelectedUid: 'u8',
-        onSelect: '{{ onSelect }}',
-        sideMenuRefScopeKey: 'sideMenuRef',
-      },
-      properties: {},
-    });
+    // const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    // await uiSchemas.insert({
+    //   type: 'void',
+    //   'x-uid': 'nocobase-admin-menu',
+    //   'x-component': 'Menu',
+    //   'x-designer': 'Menu.Designer',
+    //   'x-initializer': 'MenuItemInitializers',
+    //   'x-component-props': {
+    //     mode: 'mix',
+    //     theme: 'dark',
+    //     // defaultSelectedUid: 'u8',
+    //     onSelect: '{{ onSelect }}',
+    //     sideMenuRefScopeKey: 'sideMenuRef',
+    //   },
+    //   properties: {},
+    // });
   }
 
   async load() {
@@ -184,7 +184,27 @@ export class PluginClientServer extends Plugin {
         instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
       );
     });
-    this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+    this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      await r.destroy({
+        filter: {
+          uid: instance.get('schemaUid'),
+        },
+        transaction,
+      });
+    });
+    this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      await r.create({
+        transaction,
+        values: {
+          uid: instance.get('schemaUid'),
+          name: instance.get('schemaUid'),
+          schema: {
+            use: 'RouteModel',
+          },
+        },
+      });
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
           allowNewMenu: true,

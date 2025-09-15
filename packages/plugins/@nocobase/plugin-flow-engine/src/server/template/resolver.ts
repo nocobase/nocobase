@@ -83,7 +83,8 @@ async function evaluate(expr: string, ctx: any) {
       const first = segs.shift();
       const base = await ctx[first as string];
       if (!segs.length) return base;
-      return getValuesByPath(base as object, segs.join('.'));
+      // 使用异步版本取值，逐段 await，并保留数组场景下的隐式聚合语义
+      return await asyncGetValuesByPath(base, segs.join('.'));
     }
 
     const transformed = preprocessExpression(raw);
@@ -119,6 +120,64 @@ async function getAtPath(ctx: any, varName: string, path?: string) {
     return current;
   } catch (_) {
     return undefined;
+  }
+}
+
+/**
+ * 异步版本的 getValuesByPath：
+ * - 逐段访问路径，若某段值为 Promise，则 await 后再继续。
+ * - 当中途遇到数组时，对数组进行聚合：对每个元素递归解析剩余路径并扁平合并。
+ * - 返回规则与原 getValuesByPath 尽量一致：
+ *   - 命中数组：返回去除 null 的数组；
+ *   - 非数组：返回首个值；
+ *   - 全部未命中：返回 defaultValue（默认 undefined）。
+ */
+async function asyncGetValuesByPath(obj: any, path: string, defaultValue?: any): Promise<any> {
+  try {
+    // 允许 obj 为 Promise
+    let currentValue: any = await obj;
+    if (!currentValue) return defaultValue;
+
+    const keys = String(path || '').split('.');
+    let result: any[] = [];
+    let shouldReturnArray = false;
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+
+      // 数组：对每个元素递归解析剩余路径并聚合
+      if (Array.isArray(currentValue)) {
+        shouldReturnArray = true;
+        const rest = keys.slice(i).join('.');
+        const parts = await Promise.all(currentValue.map((el) => asyncGetValuesByPath(el, rest, defaultValue)));
+        // 将数组或标量统一拍平一层
+        for (const p of parts) {
+          if (Array.isArray(p)) result.push(...p);
+          else if (typeof p !== 'undefined') result.push(p);
+        }
+        break;
+      }
+
+      // 普通对象属性访问，若为 Promise 则等待
+      let val = currentValue?.[key];
+      if (val && typeof (val as any).then === 'function') {
+        val = await val;
+      }
+      currentValue = val;
+
+      if (i === keys.length - 1) {
+        result.push(currentValue);
+      }
+    }
+
+    // 过滤 undefined
+    result = result.filter((item) => typeof item !== 'undefined');
+
+    if (result.length === 0) return defaultValue;
+    if (shouldReturnArray) return result.filter((item) => item !== null);
+    return result[0];
+  } catch (_) {
+    return defaultValue;
   }
 }
 

@@ -70,11 +70,6 @@ export class PluginUISchemaStorageServer extends Plugin {
       actions: ['uiSchemas:*', 'uiSchemas.roles:list', 'uiSchemas.roles:set'],
     });
 
-    this.app.acl.registerSnippet({
-      name: 'ui.flowModels',
-      actions: ['flowModels:*'],
-    });
-
     db.on('uiSchemas.beforeCreate', function setUid(model) {
       if (!model.get('name')) {
         model.set('name', uid());
@@ -122,46 +117,6 @@ export class PluginUISchemaStorageServer extends Plugin {
       name: 'uiSchemas',
       actions: uiSchemaActions,
     });
-
-    this.app.resourceManager.define({
-      name: 'flowModels',
-      actions: {
-        findOne: async (ctx, next) => {
-          const { uid, parentId, subKey } = ctx.action.params;
-          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
-          if (uid) {
-            ctx.body = await repository.findModelById(uid);
-          } else if (parentId) {
-            ctx.body = await repository.findModelByParentId(parentId, { subKey });
-          }
-          await next();
-        },
-        move: async (ctx, next) => {
-          const { sourceId, targetId, position } = ctx.action.params;
-          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
-          await repository.move({ sourceId, targetId, position });
-          ctx.body = 'ok';
-          await next();
-        },
-        save: async (ctx, next) => {
-          const { values } = ctx.action.params;
-          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
-          const uid = await repository.upsertModel(values);
-          ctx.body = uid;
-          // ctx.body = await repository.findModelById(uid);
-          await next();
-        },
-        destroy: async (ctx, next) => {
-          const { filterByTk } = ctx.action.params;
-          const repository = ctx.db.getRepository('uiSchemas') as UiSchemaRepository;
-          await repository.remove(filterByTk);
-          ctx.body = 'ok';
-          await next();
-        },
-      },
-    });
-
-    this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
 
     this.app.acl.allow(
       'uiSchemas',

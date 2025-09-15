@@ -9,10 +9,17 @@
 
 export * from './ActionModel';
 export * from './AssociationFieldGroupModel';
+export * from './BlockGridModel';
 export * from './BlockModel';
+export * from './CollectionActionModel';
+export * from './CollectionBlockModel';
 export * from './CommonItemModel';
+export * from './DataBlockModel';
 export * from './FieldModel';
+export * from './FilterBlockModel';
 export * from './GridModel';
 export * from './PageModel';
+export * from './PopupActionModel';
+export * from './RecordActionModel';
 export * from './RouteModel';
 //

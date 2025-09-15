@@ -10,18 +10,18 @@
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
+  createRecordMetaFactory,
   DragHandler,
   Droppable,
   FlowModelRenderer,
   FlowsFloatContextMenu,
 } from '@nocobase/flow-engine';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createRecordMetaFactory } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel, RecordActionModel } from '../../base/ActionModel';
+import { ActionModel, RecordActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
@@ -55,7 +55,7 @@ const Columns = observer<any>(({ record, model, index }) => {
           meta: recordMeta,
         });
         fork.context.defineProperty('recordIndex', {
-          get: () => index
+          get: () => index,
         });
         return (
           <FlowModelRenderer

@@ -29,9 +29,20 @@ export * from './TimeFieldModel';
 export * from './UploadFieldModel';
 export * from './VariableFieldFormModel';
 
-export * from './ReadPrettyField';
-
 export * from './DividerItemModel';
 export * from './JSFieldItemModel';
 export * from './MarkdownItemModel';
+
+export * from './DisplayAssociationField';
+export * from './DisplayColorFieldModel';
+export * from './DisplayDateTimeFieldModel';
+export * from './DisplayEnumFieldModel';
+export * from './DisplayHtmlFieldModel';
+export * from './DisplayIconFieldModel';
+export * from './DisplayJSONFieldModel';
+export * from './DisplayNumberFieldModel';
+export * from './DisplayPasswordFieldModel';
+export * from './DisplayPercentFieldModel';
+export * from './DisplayTextFieldModel';
+export * from './DisplayURLFieldModel';
 //

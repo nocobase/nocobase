@@ -379,6 +379,12 @@ export class Collection {
     return this.options.title ? this.flowEngine.translate(this.options.title) : this.name;
   }
 
+  get titleCollectionField() {
+    const titleFieldName = this.options.titleField || this.filterTargetKey;
+    const titleCollectionField = this.getField(titleFieldName);
+    return titleCollectionField;
+  }
+
   initInherits() {
     this.inherits.clear();
     for (const inherit of this.options.inherits || []) {

@@ -8,6 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   DndProvider,
@@ -18,19 +19,16 @@ import {
   FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
-  escapeT,
   buildRecordMeta,
+  createCurrentRecordMetaFactory,
+  escapeT,
   inferRecordRef,
 } from '@nocobase/flow-engine';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { RecordActionModel } from '../../base/ActionModel';
-import { CollectionBlockModel } from '../../base/BlockModel';
-import { BlockGridModel } from '../../base/GridModel';
+import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
@@ -38,7 +36,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   parent?: BlockGridModel;
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
-  static scene = ['one', 'many'];
+  static scene = BlockSceneEnum.oam;
 
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {

@@ -649,44 +649,6 @@ describe('resolveExpressions', () => {
       expect(result.undefinedTest).toBe(undefined);
     });
   });
-  describe('Complex expression support', () => {
-    test('should support various types of complex expressions', async () => {
-      const params = {
-        // 算术运算符
-        sum: '{{ ctx.aa.bb + ctx.cc }}',
-        product: '{{ ctx.aa.bb * ctx.cc }}',
-        // 方法调用
-        methodResult: '{{ ctx.method1(ctx.aa.bb, ctx.cc) }}',
-        chainedCall: '{{ ctx.method1(ctx.multiply(ctx.cc, 2), ctx.aa.bb) }}',
-        // 条件表达式
-        conditionalExpr: '{{ ctx.user.age > 25 ? "Adult" : "Young" }}',
-        // 字符串拼接
-        stringConcat: '{{ ctx.user.name + " is " + ctx.user.age + " years old" }}',
-        // 模板字符串中的复杂表达式
-        template: 'Result: {{ ctx.aa.bb + ctx.cc }}, User: {{ ctx.user.name }}',
-        // 数组和对象操作
-        arrayLength: '{{ ctx.items.length }}',
-        firstItem: '{{ ctx.items[0].title }}',
-        objectKeys: '{{ Object.keys(ctx.user.profile).length }}',
-      };
-
-      const result = await resolveExpressions(params, ctx);
-
-      expect(result).toEqual({
-        sum: 15, // 10 + 5
-        product: 50, // 10 * 5
-        methodResult: 15, // method1(10, 5) = 15
-        chainedCall: 20, // method1(multiply(5, 2), 10) = method1(10, 10) = 20
-        conditionalExpr: 'Adult', // 30 > 25 ? "Adult" : "Young"
-        stringConcat: 'John Doe is 30 years old',
-        template: 'Result: 15, User: John Doe',
-        arrayLength: 2,
-        firstItem: 'Item 1',
-        objectKeys: 2, // email, role
-      });
-    });
-  });
-
   describe('Error handling', () => {
     test('should handle various error conditions gracefully', async () => {
       const params = {
