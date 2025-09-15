@@ -61,10 +61,9 @@ export default defineCollection({
   logging: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       primaryKey: true,
-      autoIncrement: true,
       interface: 'id',
       uiSchema: {
         type: 'number',

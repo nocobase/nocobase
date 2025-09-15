@@ -71,13 +71,15 @@ describe('actions of verifiers', async () => {
     let app: MockServer;
     let agent: any;
     let manager: VerificationManager;
+    let user;
 
     beforeEach(async () => {
       app = await createMockServer({
         acl: true,
         plugins: ['verification', 'users', 'field-sort', 'auth'],
       });
-      agent = await app.agent().login(1);
+      user = await app.db.getRepository('users').findOne();
+      agent = await app.agent().login(user.id);
       const plugin = app.pm.get('verification') as PluginVerficationServer;
       manager = plugin.verificationManager;
     });
@@ -224,11 +226,11 @@ describe('actions of verifiers', async () => {
         },
       });
       expect(res1.status).toBe(200);
-      const record = await manager.getBoundRecord(1, 'test');
+      const record = await manager.getBoundRecord(user.id, 'test');
       expect(record).toBeDefined();
       expect(record.uuid).toBe('test-uuid');
       expect(record.verifier).toBe('test');
-      expect(record.userId).toBe(1);
+      expect(record.userId).toBe(user.id);
       const res2 = await agent.resource('verifiers').bind({
         values: {
           verifier: 'test',

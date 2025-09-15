@@ -18,7 +18,7 @@ export default {
   shared: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       interface: 'id',
       uiSchema: {
@@ -29,7 +29,7 @@ export default {
         'x-read-pretty': true,
       },
       primaryKey: true,
-      autoIncrement: true,
+      allowNull: false,
     },
     {
       type: 'belongsTo',
