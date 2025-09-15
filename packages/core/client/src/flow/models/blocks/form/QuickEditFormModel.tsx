@@ -26,7 +26,8 @@ import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
 import { Button, Skeleton, Space, Form } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FormFieldModel } from '../../fields';
+import { FieldModel } from '../../base';
+
 import { FormComponent } from './FormModel';
 
 export class QuickEditFormModel extends FlowModel {
@@ -214,7 +215,7 @@ QuickEditFormModel.registerFlow({
             return;
           }
           const use = binding.modelName;
-          const fieldModel = ctx.model.addSubModel<FormFieldModel>('fields', {
+          const fieldModel = ctx.model.addSubModel<FieldModel>('fields', {
             use,
             stepParams: {
               fieldSettings: {
@@ -230,6 +231,9 @@ QuickEditFormModel.registerFlow({
                 },
               },
             },
+          });
+          ctx.model.context.defineProperty('collectionField', {
+            get: () => collectionField,
           });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);

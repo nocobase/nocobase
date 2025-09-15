@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Input } from '@formily/antd-v5';
-import { FormFieldModel } from '@nocobase/client';
+import { Input } from 'antd';
+import React from 'react';
+import { FieldModel } from '@nocobase/client';
 import { EditableItemModel } from '@nocobase/flow-engine';
 
-export class SequenceFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['sequence'];
-
-  get component() {
-    return [Input, {}];
+export class SequenceFieldModel extends FieldModel {
+  render() {
+    return <Input {...this.props} />;
   }
 }
 

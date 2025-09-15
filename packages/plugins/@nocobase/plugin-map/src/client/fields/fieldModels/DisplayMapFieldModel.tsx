@@ -20,7 +20,7 @@ export const PointReadPretty = (props) => {
   }
   return <MapComponent readonly mapType={mapType} {...props} type={type}></MapComponent>;
 };
-export class MapReadPrettyFieldModel extends FieldModel {
+export class DisplayMapFieldModel extends FieldModel {
   getMapFieldType() {
     return null;
   }
@@ -32,14 +32,14 @@ export class MapReadPrettyFieldModel extends FieldModel {
       <PointReadPretty
         {...this.props}
         value={value}
-        collectionField={this.collectionField}
+        collectionField={this.context.collectionField}
         type={this.getMapFieldType()}
       />
     );
   }
 }
 
-MapReadPrettyFieldModel.registerFlow({
+DisplayMapFieldModel.registerFlow({
   key: 'mapFieldSetting',
   title: escapeT('Map field setting'),
   steps: {

@@ -8,14 +8,14 @@
  */
 
 import { Input } from 'antd';
+import React from 'react';
 import { tval } from '@nocobase/utils/client';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
-export class PasswordFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['password'];
-  get component() {
-    return [Input.Password, {}];
+export class PasswordFieldModel extends FieldModel {
+  render() {
+    return <Input.Password {...this.props} />;
   }
 }
 

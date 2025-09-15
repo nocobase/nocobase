@@ -9,21 +9,10 @@
 
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { InteractiveDisplayFieldModel } from './InteractiveDisplayFieldModel';
+import { ClickableFieldModel } from './ClickableFieldModel';
 
-export class DisplayTextFieldModel extends InteractiveDisplayFieldModel {
-  static supportedFieldInterfaces = [
-    'input',
-    'email',
-    'phone',
-    'uuid',
-    'attachmentURL',
-    'textarea',
-    'time',
-    'nanoid',
-  ] as any;
-
-  public renderDisplayValue(value) {
+export class DisplayTextFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     const { prefix, suffix } = this.props;
     return (
       <span>

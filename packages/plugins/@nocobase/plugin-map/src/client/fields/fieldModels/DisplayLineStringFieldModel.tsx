@@ -7,14 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayMapFieldModel } from './DisplayMapFieldModel';
 
-import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
-
-export class LineStringReadPrettyFieldModel extends MapReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['lineString'];
+export class DisplayLineStringFieldModel extends DisplayMapFieldModel {
   getMapFieldType() {
     return 'lineString';
   }
 }
 
-DisplayItemModel.bindModelToInterface('LineStringReadPrettyFieldModel', ['lineString'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayLineStringFieldModel', ['lineString'], { isDefault: true });

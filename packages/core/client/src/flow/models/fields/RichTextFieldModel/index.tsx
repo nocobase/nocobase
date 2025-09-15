@@ -11,7 +11,7 @@ import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { lazy } from '../../../../lazy-helper';
 import { useRichTextStyles } from './style';
-import { FormFieldModel } from '../FormFieldModel';
+import { FieldModel } from '../../base';
 
 const ReactQuill = lazy(() => import('react-quill'));
 
@@ -53,11 +53,9 @@ export const RichTextField = (props) => {
 };
 
 @largeField()
-export class RichTextFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['richText'];
-
-  get component() {
-    return [RichTextField, {}];
+export class RichTextFieldModel extends FieldModel {
+  render() {
+    return <RichTextField {...this.props} />;
   }
 }
 

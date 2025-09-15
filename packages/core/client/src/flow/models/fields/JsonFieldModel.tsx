@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
+import React from 'react';
 import { JsonInput } from '../../components';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 @largeField()
-export class JsonFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['json'];
-
-  get component() {
-    return [JsonInput, {}];
+export class JsonFieldModel extends FieldModel {
+  render() {
+    return <JsonInput {...this.props} />;
   }
 }
 

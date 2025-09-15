@@ -34,7 +34,7 @@ const AddFieldColumn = ({ model }) => {
       afterSubModelAdd={async (column: SubTableColumnModel) => {
         const currentBlockModel = model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${model.fieldPath}.${column.fieldPath}`, true);
+          currentBlockModel.addAppends(`${model.context.fieldPath}.${column.context.fieldPath}`, true);
         }
       }}
       keepDropdownOpen
@@ -60,11 +60,10 @@ const HeaderWrapperComponent = React.memo((props) => {
   );
 });
 
-export class TableAssociationFieldModel extends AssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+export class SubTableFieldModel extends AssociationFieldModel {
   updateAssociation = true;
   get collection() {
-    return this.collectionField.targetCollection;
+    return this.context.collection;
   }
 
   getColumns() {
@@ -93,23 +92,29 @@ export class TableAssociationFieldModel extends AssociationFieldModel {
     ].filter(Boolean) as any;
   }
 
-  get component() {
+  render() {
     const columns = this.getColumns();
-    return [
-      SubTableField,
-      {
-        columns,
-        components: {
-          header: {
-            wrapper: HeaderWrapperComponent,
-          },
-        },
+    const components = {
+      header: {
+        wrapper: HeaderWrapperComponent,
       },
-    ];
+    };
+
+    return <SubTableField {...this.props} columns={columns} components={components} />;
+  }
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineProperty('resourceName', {
+      get: () => this.context.collectionField.target,
+      cache: false,
+    });
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField.targetCollection,
+    });
   }
 }
 
-TableAssociationFieldModel.registerFlow({
+SubTableFieldModel.registerFlow({
   key: 'loadTableColumns',
   title: escapeT('Association table settings'),
   sort: 300,
@@ -167,12 +172,12 @@ TableAssociationFieldModel.registerFlow({
   },
 });
 
-TableAssociationFieldModel.define({
+SubTableFieldModel.define({
   label: escapeT('Sub-table'),
 });
 export { SubTableColumnModel };
 
-EditableItemModel.bindModelToInterface('TableAssociationFieldModel', ['m2m', 'o2m', 'mbm'], {
+EditableItemModel.bindModelToInterface('SubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

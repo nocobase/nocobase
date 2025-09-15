@@ -59,10 +59,8 @@ const CardUpload = (props) => {
   );
 };
 export class AttachmentURLFieldModel extends UploadFieldModel {
-  static supportedFieldInterfaces = ['attachmentURL'];
-
-  get component() {
-    return [CardUpload, {}];
+  render() {
+    return <CardUpload {...this.props} />;
   }
 }
 

@@ -13,7 +13,7 @@ import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 function toSafeNumber(value) {
   if (!value) {
@@ -44,11 +44,9 @@ export const InputNumberField = (props: AntdInputNumberProps) => {
   }
   return <NumberPicker {...inputNumberProps} />;
 };
-export class NumberFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['number', 'integer', 'id'];
-
-  get component() {
-    return [InputNumberField, {}];
+export class NumberFieldModel extends FieldModel {
+  render() {
+    return <InputNumberField {...this.props} style={{ width: '100%' }} />;
   }
 }
 

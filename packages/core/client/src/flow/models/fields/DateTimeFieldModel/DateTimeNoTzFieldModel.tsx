@@ -35,9 +35,8 @@ export const DateTimeNoTzPicker = (props) => {
 };
 
 export class DateTimeNoTzFieldModel extends DateTimeFieldModel {
-  static supportedFieldInterfaces = ['datetimeNoTz'];
-  get component() {
-    return [DateTimeNoTzPicker, {}];
+  render() {
+    return <DateTimeNoTzPicker {...this.props} style={{ width: '100%' }} />;
   }
 }
 

@@ -11,7 +11,6 @@ import { EditableItemModel } from '@nocobase/flow-engine';
 import { MapFieldModel } from './MapFieldModel';
 
 export class LineStringFieldModel extends MapFieldModel {
-  static supportedFieldInterfaces = ['lineString'];
   getMapFieldType() {
     return 'lineString';
   }

@@ -8,10 +8,8 @@
  */
 import { SingleRecordResource } from '@nocobase/flow-engine';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
-import { FormFieldModel } from '../FormFieldModel';
-export class AssociationFieldModel extends FormFieldModel {
-  public static readonly supportedFieldInterfaces = null;
-}
+import { FieldModel } from '../../base';
+export class AssociationFieldModel extends FieldModel {}
 
 AssociationFieldModel.registerFlow({
   key: 'AssociationFieldInit',

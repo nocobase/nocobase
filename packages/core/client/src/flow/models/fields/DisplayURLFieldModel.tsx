@@ -12,8 +12,6 @@ import React from 'react';
 import { FieldModel } from '../base';
 
 export class DisplayURLFieldModel extends FieldModel {
-  static readonly supportedFieldInterfaces = ['url'];
-
   // @reactive
   public render() {
     const { value } = this.props;

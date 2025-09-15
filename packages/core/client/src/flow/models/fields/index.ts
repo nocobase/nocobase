@@ -13,8 +13,6 @@ export * from './CheckboxGroupFieldModel';
 export * from './CollectionSelectorFieldModel';
 export * from './ColorFieldModel';
 export * from './DateTimeFieldModel';
-export * from './EditableFieldModel';
-export * from './FormFieldModel';
 export * from './IconFieldModel';
 export * from './InputFieldModel';
 export * from './JsonFieldModel';

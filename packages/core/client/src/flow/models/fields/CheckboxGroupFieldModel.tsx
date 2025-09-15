@@ -8,14 +8,13 @@
  */
 
 import { Checkbox } from 'antd';
+import React from 'react';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
-export class CheckboxGroupFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['checkboxGroup'];
-
-  get component() {
-    return [Checkbox.Group, {}];
+export class CheckboxGroupFieldModel extends FieldModel {
+  render() {
+    return <Checkbox.Group {...this.props} />;
   }
 }
 

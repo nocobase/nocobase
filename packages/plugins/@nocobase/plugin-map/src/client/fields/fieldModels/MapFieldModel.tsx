@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { escapeT, largeField } from '@nocobase/flow-engine';
-import { css, FormFieldModel } from '@nocobase/client';
+import { css, FieldModel } from '@nocobase/client';
 import React from 'react';
 import { MapComponent } from './MapComponent';
 
@@ -28,17 +28,12 @@ const InternalMap = (props) => {
 };
 
 @largeField()
-export class MapFieldModel extends FormFieldModel {
+export class MapFieldModel extends FieldModel {
   getMapFieldType() {
     return null;
   }
-  get component() {
-    return [
-      InternalMap,
-      {
-        type: this.getMapFieldType(),
-      },
-    ];
+  render() {
+    return <InternalMap {...this.props} type={this.getMapFieldType()} />;
   }
 }
 

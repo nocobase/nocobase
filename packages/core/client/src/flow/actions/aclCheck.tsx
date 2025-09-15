@@ -8,7 +8,6 @@
  */
 
 import { defineAction } from '@nocobase/flow-engine';
-import { FieldModel } from '../models/base/FieldModel';
 
 export const aclCheck = defineAction({
   name: 'aclCheck',
@@ -17,7 +16,7 @@ export const aclCheck = defineAction({
       dataSourceKey: ctx.model.context.dataSource?.key,
       resourceName: ctx.model.context.resourceName,
       actionName: ctx.model.context.actionName,
-      fields: (ctx.model as FieldModel)?.collectionField && [(ctx.model as FieldModel).collectionField.name],
+      fields: ctx.model.context?.collectionField && [ctx.model.context.collectionField.name],
     });
 
     if (!result) {

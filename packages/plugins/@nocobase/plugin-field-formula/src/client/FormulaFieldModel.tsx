@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
 import { EditableItemModel } from '@nocobase/flow-engine';
 import { Form } from 'antd';
-import { Checkbox, DatePicker, FormFieldModel, InputNumber, Input as InputString } from '@nocobase/client';
+import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import _ from 'lodash';
@@ -119,17 +119,9 @@ export function FormulaResult(props) {
   );
 }
 
-export class FormulaFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['formula'];
-
-  get component() {
-    return [
-      FormulaResult,
-      {
-        collectionField: this.collectionField,
-        form: this.form,
-      },
-    ];
+export class FormulaFieldModel extends FieldModel {
+  render() {
+    return <FormulaResult {...this.props} collectionField={this.context.collectionField} form={this.context.form} />;
   }
 }
 

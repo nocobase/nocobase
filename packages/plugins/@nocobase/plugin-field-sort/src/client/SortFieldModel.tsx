@@ -8,14 +8,13 @@
  */
 
 import { InputNumber } from 'antd';
+import React from 'react';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from '@nocobase/client';
+import { FieldModel } from '@nocobase/client';
 
-export class SortFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['sort'];
-
-  get component() {
-    return [InputNumber, {}];
+export class SortFieldModel extends FieldModel {
+  render() {
+    return <InputNumber {...this.props} style={{ width: '100%' }} />;
   }
 }
 

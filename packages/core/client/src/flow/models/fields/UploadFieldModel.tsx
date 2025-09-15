@@ -12,7 +12,7 @@ import { Upload } from 'antd';
 import { castArray } from 'lodash';
 import { largeField, EditableItemModel, escapeT } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 export const CardUpload = (props) => {
   const [fileList, setFileList] = useState(castArray(props.value || []));
@@ -38,24 +38,12 @@ export const CardUpload = (props) => {
 };
 
 @largeField()
-export class UploadFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = [
-    'attachment',
-    'm2m',
-    'm2o',
-    'o2o',
-    'o2m',
-    'oho',
-    'obo',
-    'updatedBy',
-    'createdBy',
-    'mbm',
-  ];
+export class UploadFieldModel extends FieldModel {
   set customRequest(fn) {
     this.setProps({ customRequest: fn });
   }
-  get component() {
-    return [CardUpload, {}];
+  render() {
+    return <CardUpload {...this.props} />;
   }
 }
 

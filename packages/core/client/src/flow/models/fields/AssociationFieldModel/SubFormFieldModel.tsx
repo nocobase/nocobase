@@ -48,21 +48,20 @@ export const ObjectNester = (props) => {
     </Card>
   );
 };
-export class ObjectFormAssociationFieldModel extends FormAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'];
+export class SubFormFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
   }
-  get component() {
-    return [ObjectNester, {}];
+  render() {
+    return <ObjectNester {...this.props} />;
   }
 }
 
-ObjectFormAssociationFieldModel.define({
+SubFormFieldModel.define({
   label: escapeT('Sub-form'),
   createModelOptions: {
-    use: 'ObjectFormAssociationFieldModel',
+    use: 'SubFormFieldModel',
     subModels: {
       grid: {
         use: 'FormGridModel',
@@ -78,7 +77,7 @@ const ArrayNester = ({ name, value }: any) => {
   const rowIndex = model.context.fieldIndex || [];
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
-  const collectionName = model.collectionField.name;
+  const collectionName = model.context.collectionField.name;
   return (
     <Card
       bordered={true}
@@ -133,21 +132,20 @@ const ArrayNester = ({ name, value }: any) => {
   );
 };
 
-export class ArrayFormAssociationFieldModel extends FormAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+export class SubFormListFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
   }
-  get component() {
-    return [ArrayNester, {}];
+  render() {
+    return <ArrayNester {...this.props} />;
   }
 }
 
-ArrayFormAssociationFieldModel.define({
+SubFormListFieldModel.define({
   label: escapeT('Sub-form'),
   createModelOptions: {
-    use: 'ArrayFormAssociationFieldModel',
+    use: 'SubFormListFieldModel',
     subModels: {
       grid: {
         use: 'FormGridModel',
@@ -156,20 +154,16 @@ ArrayFormAssociationFieldModel.define({
   },
 });
 
-EditableItemModel.bindModelToInterface(
-  'ObjectFormAssociationFieldModel',
-  ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'],
-  {
-    when: (ctx, field) => {
-      if (field.targetCollection) {
-        return field.targetCollection.template !== 'file';
-      }
-      return true;
-    },
+EditableItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'], {
+  when: (ctx, field) => {
+    if (field.targetCollection) {
+      return field.targetCollection.template !== 'file';
+    }
+    return true;
   },
-);
+});
 
-EditableItemModel.bindModelToInterface('ArrayFormAssociationFieldModel', ['m2m', 'o2m', 'mbm'], {
+EditableItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';
