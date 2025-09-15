@@ -25,6 +25,16 @@ export class JSItemModel extends CommonItemModel {
       </FormItem>
     );
   }
+
+  /**
+   * 组件挂载后，如果容器引用已就绪，强制重跑一次自动流程以把 HTML 写入当前 DOM。
+   * 解决某些情况下命中旧缓存导致新节点未写入而显示空白的问题。
+   */
+  protected onMount() {
+    if (this.context.ref?.current) {
+      this.rerender();
+    }
+  }
 }
 
 JSItemModel.define({
