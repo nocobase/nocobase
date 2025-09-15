@@ -22,7 +22,7 @@ export const AIEmployeesProvider: React.FC<{
     <AISelectionProvider>
       <AISettingsProvider>
         <ChatBoxLayout>{props.children}</ChatBoxLayout>
-        <ContextAwareTooltip />
+        {/* <ContextAwareTooltip /> */}
         <AISelection />
         <AISelectionControl />
       </AISettingsProvider>

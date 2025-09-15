@@ -43,6 +43,7 @@ export const useShortcuts = () => {
       setResult({
         model,
       });
+      return model;
     },
     [flowEngine, name],
   );
@@ -76,7 +77,14 @@ export const useShortcuts = () => {
     }
 
     if (pathname === '/admin/mail/manager') {
-      loadModel('plugin-mail-manager');
+      loadModel('plugin-mail-manager')
+        .then((shortcutListModel) => {
+          shortcutListModel.mapSubModels('shortcuts', (subModel) => {
+            subModel.setProps('showNotice', true);
+          });
+        })
+        .catch(console.error);
+
       return;
     }
 
