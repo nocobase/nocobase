@@ -8,10 +8,9 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { AddSubModelButton, DisplayItemModel, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
-import { TableColumnModel } from '../../blocks/table/TableColumnModel';
 import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
 
 const AddFieldColumn = ({ model }) => {

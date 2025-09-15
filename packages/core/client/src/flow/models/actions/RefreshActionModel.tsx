@@ -9,9 +9,11 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { CollectionActionModel } from '../base/ActionModel';
+import { ActionModel, ActionSceneEnum } from '../base';
 
-export class RefreshActionModel extends CollectionActionModel {
+export class RefreshActionModel extends ActionModel {
+  static scene = ActionSceneEnum.collection;
+
   defaultProps: ButtonProps = {
     title: escapeT('Refresh'),
     icon: 'ReloadOutlined',

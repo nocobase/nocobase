@@ -507,6 +507,18 @@ export default defineConfig({
               title: 'Define Collection',
               link: '/learn/define-collection',
             },
+            {
+              title: '区块扩展',
+              link: '/learn/block',
+            },
+            {
+              title: '操作扩展',
+              link: '/learn/action',
+            },
+            {
+              title: '字段扩展',
+              link: '/learn/field',
+            },
           ],
         },
         {
@@ -540,6 +552,10 @@ export default defineConfig({
             {
               title: 'TableBlockModel',
               link: '/models/blocks/table-block-model',
+            },
+            {
+              title: 'JSBlockModel',
+              link: '/models/blocks/js-block-model',
             },
           ],
         },
@@ -605,13 +621,21 @@ export default defineConfig({
               title: 'UploadFieldModel',
               link: '/models/fields/upload-field-model',
             },
+            {
+              title: 'JSFieldModel',
+              link: '/models/fields/js-field-model',
+            },
           ],
         },
         {
           title: '操作',
           type: 'group',
           children: [
-            { title: 'JSCollectionActionModel / JSRecordActionModel', link: '/examples/js-models/js-actions' },
+            {
+              title: 'JSActionModel',
+              link: '/models/actions/js-action-model',
+            },
+            // 暂无 actions 子项
           ],
         },
       ],

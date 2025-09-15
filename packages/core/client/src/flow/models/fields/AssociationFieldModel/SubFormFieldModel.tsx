@@ -9,7 +9,7 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowModel, EditableItemModel, escapeT } from '@nocobase/flow-engine';
+import { EditableItemModel, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {
-      get: () => this.collectionField.targetCollection,
+      get: () => this.context.collectionField.targetCollection,
     });
     this.context.defineProperty('prefixFieldPath', {
       get: () => {

@@ -10,7 +10,7 @@
 import { FormItem } from '@nocobase/flow-engine';
 import { Divider } from 'antd';
 import React from 'react';
-import { CommonItemModel } from '../base/CommonItemModel';
+import { CommonItemModel } from '../base';
 import { NBColorPicker } from '../fields/ColorFieldModel';
 
 export class DividerItemModel extends CommonItemModel {

@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import { css, cx } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { cx, css } from '@emotion/css';
-import { FieldModel } from '../base/FieldModel';
+import React from 'react';
+import { FieldModel } from '../base';
 
 const JSONClassName = css`
   margin-bottom: 0;

@@ -10,7 +10,7 @@
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
-import { CommonItemModel } from '../base/CommonItemModel';
+import { CommonItemModel } from '../base';
 
 export class MarkdownItemModel extends CommonItemModel {
   render() {

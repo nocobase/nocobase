@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel } from '../../base/ActionModel';
+import { ActionModel } from '../../base';
 
 export class FilterFormActionModel extends ActionModel {}

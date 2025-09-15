@@ -7,16 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LockOutlined } from '@ant-design/icons';
 import { DefaultStructure, FlowModel, escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
+import _ from 'lodash';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
-import { updateOpenViewStepParams } from '../../flows/openViewFlow';
+
+export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
+
+export const ActionSceneEnum = {
+  collection: 'collection' as ActionSceneType,
+  record: 'record' as ActionSceneType,
+  all: ['collection', 'record'] as ActionSceneType,
+};
 import { CodeEditor } from '../../components/code-editor';
+import { updateOpenViewStepParams } from '../../flows/openViewFlow';
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   declare props: ButtonProps;
+  declare scene: ActionSceneType;
 
   defaultProps: ButtonProps = {
     type: 'default',
@@ -27,6 +38,15 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditIcon = true;
   enableEditType = true;
   enableEditDanger = true;
+
+  static _getScene() {
+    return _.castArray(this['scene'] || []);
+  }
+
+  static _isScene(scene: ActionSceneType) {
+    const scenes = this._getScene();
+    return scenes.includes(scene);
+  }
 
   getAclActionName() {
     return 'view';
@@ -42,8 +62,28 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     });
   }
 
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   onClick(event) {
-    this.dispatchEvent('click', { event });
+    this.dispatchEvent('click', {
+      event,
+      ...this.getInputArgs(),
+    });
   }
 
   render() {
@@ -68,20 +108,10 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    const merged: ButtonProps = this.props;
-    const { onClick, style, icon, type, children, title, ...rest } = merged;
-    const btnStyle: React.CSSProperties = {
-      ...(style || {}),
-      opacity: 0.5,
-      cursor: 'default',
-    };
-    const iconNode = icon ? typeof icon === 'string' ? <Icon type={icon} /> : icon : undefined;
-    const isLink = type === 'link';
-    const linkStyle = isLink ? { padding: 0, height: 'auto' } : undefined;
     return (
-      <Button {...rest} type={type} icon={iconNode} style={{ ...linkStyle, ...btnStyle }}>
-        {children || title}
-      </Button>
+      <Tooltip title={this.context.t('当前按钮以被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。')}>
+        <Button type={this.props.type} disabled icon={<LockOutlined />} />
+      </Tooltip>
     );
   }
 }
@@ -142,6 +172,9 @@ ActionModel.registerFlow({
           ...rest,
         });
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     linkageRules: {
       use: 'actionLinkageRules',

@@ -11,7 +11,7 @@ import { DefaultStructure } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormGridModel, FormModel } from '../..';
 import { JsonInput } from '../../components';
-import { FieldModel } from '../base/FieldModel';
+import { FieldModel } from '../base';
 
 type FieldComponentTuple = [component: React.ElementType, props: Record<string, any>] | any[];
 

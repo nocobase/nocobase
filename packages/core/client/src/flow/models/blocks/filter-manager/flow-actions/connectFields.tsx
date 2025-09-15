@@ -13,7 +13,7 @@ import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flo
 import { Button, Dropdown, Segmented, Select, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
-import { CollectionBlockModel } from '../../../base/BlockModel';
+import { CollectionBlockModel } from '../../../base';
 import { FilterFormFieldModel } from '../../filter-form/fields';
 import { ConnectFieldsConfig } from '../FilterManager';
 import { getAllDataModels } from '../utils';

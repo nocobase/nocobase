@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { DisplayItemModel } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
-import { DisplayItemModel } from '@nocobase/flow-engine';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
-import { FieldModel } from '../base/FieldModel';
+import { FieldModel } from '../base';
 
 export class MarkdownReadPrettyFieldModel extends FieldModel {
   public static readonly supportedFieldInterfaces = ['markdown'];

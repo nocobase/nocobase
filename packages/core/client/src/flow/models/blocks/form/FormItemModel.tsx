@@ -17,28 +17,15 @@ import {
   FormItem,
   jioToJoiSchema,
 } from '@nocobase/flow-engine';
-import { Alert } from 'antd';
+import { Alert, Card, Form, Input, Result } from 'antd';
 import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldValidation } from '../../../../collection-manager';
-import { FieldModel } from '../../base/FieldModel';
+import { FieldPlaceholder } from '../../../components/placeholders/FieldPlaceholder';
+import { FieldModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
-
-export const FieldNotAllow = ({ actionName, FieldTitle }) => {
-  const { t } = useTranslation();
-  const messageValue = useMemo(() => {
-    return t(
-      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
-      {
-        actionName: t(capitalize(actionName)),
-        name: FieldTitle,
-      },
-    ).replaceAll('&gt;', '>');
-  }, [FieldTitle, actionName, t]);
-  return <Alert type="warning" message={messageValue} showIcon />;
-};
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -127,14 +114,6 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     return (
       <FormItem {...this.props} name={namePath}>
         <FieldModelRenderer model={modelForRender} name={namePath} />
-      </FormItem>
-    );
-  }
-  // 设置态隐藏时的占位渲染
-  renderHiddenInConfig(): React.ReactNode | undefined {
-    return (
-      <FormItem {...this.props}>
-        <FieldNotAllow actionName={this.context.actionName} FieldTitle={this.props.label} />
       </FormItem>
     );
   }

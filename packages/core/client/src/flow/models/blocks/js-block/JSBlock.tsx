@@ -10,7 +10,7 @@
 import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
-import { BlockModel } from '../../base/BlockModel';
+import { BlockModel } from '../../base';
 
 const NAMESPACE = 'client';
 
