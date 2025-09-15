@@ -43,7 +43,7 @@ interface LinkageRule {
   /** 是否启用，默认为 true */
   enable: boolean;
   /** 联动规则的条件部分 */
-  conditions: FilterGroupType;
+  condition: FilterGroupType;
   /** 联动规则的动作部分 */
   actions: {
     key: string;
@@ -428,7 +428,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
     key: uid(),
     title: 'Linkage rule',
     enable: true,
-    conditions: { logic: '$and', items: [] } as FilterGroupType,
+    condition: { logic: '$and', items: [] } as FilterGroupType,
     actions: [],
   });
 
@@ -598,7 +598,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           </div>
           <div style={{ paddingLeft: 12 }}>
             <FilterGroup
-              value={rule.conditions}
+              value={rule.condition}
               FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
             />
           </div>
@@ -829,7 +829,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   linkageRules
     .filter((rule) => rule.enable)
     .forEach((rule) => {
-      const { conditions, actions } = rule;
+      const { condition: conditions, actions } = rule;
 
       if (evaluateConditions(conditions, evaluator)) {
         actions.forEach((action) => {
