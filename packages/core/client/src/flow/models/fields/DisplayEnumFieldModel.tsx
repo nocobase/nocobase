@@ -8,9 +8,8 @@
  */
 
 import React from 'react';
-import { Tag, Checkbox } from 'antd';
+import { Tag } from 'antd';
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 interface FieldNames {
@@ -53,7 +52,7 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
 
     return currentOptions.map((option) => (
       <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
-        {option[fieldNames.label]} {/* 这里可以是 string 或 ReactNode */}
+        {this.translate(option[fieldNames.label])}
       </Tag>
     ));
   }
@@ -75,11 +74,11 @@ DisplayItemModel.bindModelToInterface('DisplayEnumFieldModel', ['checkbox'], {
     return {
       options: [
         {
-          label: ctx.t('Yes'),
+          label: '{{t("Yes")}}',
           value: true,
         },
         {
-          label: ctx.t('No'),
+          label: '{{t("No")}}',
           value: false,
         },
       ],

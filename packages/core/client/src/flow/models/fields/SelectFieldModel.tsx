@@ -14,7 +14,13 @@ import { FieldModel } from '../base';
 
 export class SelectFieldModel extends FieldModel {
   render() {
-    return <Select {...this.props} />;
+    const options = this.props.options.map((v) => {
+      return {
+        ...v,
+        label: this.translate(v.label),
+      };
+    });
+    return <Select {...this.props} options={options} />;
   }
 }
 
@@ -48,11 +54,11 @@ FilterableItemModel.bindModelToInterface('SelectFieldModel', ['checkbox'], {
       multiple: false,
       options: [
         {
-          label: ctx.t('Yes'),
+          label: '{{t("Yes")}}',
           value: true,
         },
         {
-          label: ctx.t('No'),
+          label: '{{t("No")}}',
           value: false,
         },
       ],
