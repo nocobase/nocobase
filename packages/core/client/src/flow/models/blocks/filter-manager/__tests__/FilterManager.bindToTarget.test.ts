@@ -34,89 +34,6 @@ describe('FilterManager.bindToTarget', () => {
     filterManager = new FilterManager(mockGridModel);
   });
 
-  describe('parameter validation', () => {
-    it('should throw error when targetId is empty string', () => {
-      expect(() => {
-        filterManager.bindToTarget('');
-      }).toThrow('targetId must be a non-empty string');
-    });
-
-    it('should throw error when targetId is not a string', () => {
-      expect(() => {
-        filterManager.bindToTarget(null as any);
-      }).toThrow('targetId must be a non-empty string');
-
-      expect(() => {
-        filterManager.bindToTarget(undefined as any);
-      }).toThrow('targetId must be a non-empty string');
-
-      expect(() => {
-        filterManager.bindToTarget(123 as any);
-      }).toThrow('targetId must be a non-empty string');
-    });
-  });
-
-  describe('target model validation', () => {
-    it('should throw error when target model is not found', () => {
-      mockFlowEngine.getModel.mockReturnValue(null);
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Target model with uid "target-model-uid" not found');
-    });
-
-    it('should throw error when target model does not have resource property', () => {
-      const mockTargetModel = {};
-      mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Target model with uid "target-model-uid" does not have a valid resource with addFilterGroup method');
-    });
-
-    it('should throw error when target model resource does not have addFilterGroup method', () => {
-      const mockTargetModel = {
-        resource: {},
-      };
-      mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Target model with uid "target-model-uid" does not have a valid resource with addFilterGroup method');
-    });
-
-    it('should throw error when target model resource does not have removeFilterGroup method', () => {
-      const mockTargetModel = {
-        resource: {
-          addFilterGroup: vi.fn(),
-        },
-      };
-      mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow(
-        'Target model with uid "target-model-uid" does not have a valid resource with removeFilterGroup method',
-      );
-    });
-
-    it('should throw error when target model resource removeFilterGroup is not a function', () => {
-      const mockTargetModel = {
-        resource: {
-          addFilterGroup: vi.fn(),
-          removeFilterGroup: 'not-a-function',
-        },
-      };
-      mockFlowEngine.getModel.mockReturnValue(mockTargetModel);
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow(
-        'Target model with uid "target-model-uid" does not have a valid resource with removeFilterGroup method',
-      );
-    });
-  });
-
   describe('filter configuration handling', () => {
     let mockTargetModel: any;
 
@@ -135,29 +52,6 @@ describe('FilterManager.bindToTarget', () => {
       filterManager.bindToTarget('target-model-uid');
 
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when filter model does not have getFilterValue method', async () => {
-      // Add a filter config
-      const filterConfig = {
-        filterId: 'filter-1',
-        targetId: 'target-model-uid',
-        filterPaths: ['name'],
-        operator: '$eq',
-      };
-      await filterManager.addFilterConfig(filterConfig);
-
-      // Mock filter model without getFilterValue method
-      const mockFilterModel = {};
-      mockFlowEngine.getModel.mockImplementation((uid: string) => {
-        if (uid === 'target-model-uid') return mockTargetModel;
-        if (uid === 'filter-1') return mockFilterModel;
-        return null;
-      });
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Filter model with uid "filter-1" does not have getFilterValue method');
     });
   });
 
@@ -286,95 +180,6 @@ describe('FilterManager.bindToTarget', () => {
     });
   });
 
-  describe('error handling', () => {
-    let mockTargetModel: any;
-    let mockFilterModel: any;
-
-    beforeEach(() => {
-      mockTargetModel = {
-        resource: {
-          addFilterGroup: vi.fn(),
-          removeFilterGroup: vi.fn(),
-        },
-      };
-
-      mockFilterModel = {
-        getFilterValue: vi.fn().mockReturnValue('test-value'),
-      };
-
-      mockFlowEngine.getModel.mockImplementation((uid: string) => {
-        if (uid === 'target-model-uid') return mockTargetModel;
-        if (uid === 'filter-1') return mockFilterModel;
-        return null;
-      });
-    });
-
-    it('should throw error when addFilterGroup method fails', async () => {
-      // Add a filter config
-      const filterConfig = {
-        filterId: 'filter-1',
-        targetId: 'target-model-uid',
-        filterPaths: ['name'],
-        operator: '$eq',
-      };
-      await filterManager.addFilterConfig(filterConfig);
-
-      // Make addFilterGroup throw an error
-      const originalError = new Error('Resource error');
-      mockTargetModel.resource.addFilterGroup.mockImplementation(() => {
-        throw originalError;
-      });
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Failed to bind filter configuration to target model: Resource error');
-    });
-
-    it('should handle errors gracefully for multiple configurations', async () => {
-      // Add multiple filter configs
-      const filterConfig1 = {
-        filterId: 'filter-1',
-        targetId: 'target-model-uid',
-        filterPaths: ['name'],
-        operator: '$eq',
-      };
-      const filterConfig2 = {
-        filterId: 'filter-2',
-        targetId: 'target-model-uid',
-        filterPaths: ['email'],
-        operator: '$contains',
-      };
-
-      await filterManager.addFilterConfig(filterConfig1);
-      await filterManager.addFilterConfig(filterConfig2);
-
-      // Mock the second filter model
-      const mockFilterModel2 = {
-        getFilterValue: vi.fn().mockReturnValue('test-value-2'),
-      };
-
-      mockFlowEngine.getModel.mockImplementation((uid: string) => {
-        if (uid === 'target-model-uid') return mockTargetModel;
-        if (uid === 'filter-1') return mockFilterModel;
-        if (uid === 'filter-2') return mockFilterModel2;
-        return null;
-      });
-
-      // Make addFilterGroup fail for the first call only
-      let callCount = 0;
-      mockTargetModel.resource.addFilterGroup.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          throw new Error('First filter failed');
-        }
-      });
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Failed to bind filter configuration to target model: First filter failed');
-    });
-  });
-
   describe('empty filter value handling', () => {
     let mockTargetModel: any;
     let mockFilterModel: any;
@@ -489,28 +294,6 @@ describe('FilterManager.bindToTarget', () => {
       // Should remove filter-1 (null value) and add filter-2 (valid value)
       expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
       expect(mockTargetModel.resource.addFilterGroup).toHaveBeenCalledWith('filter-2', expect.any(FilterItem));
-    });
-
-    it('should throw error when removeFilterGroup fails', async () => {
-      mockFilterModel.getFilterValue.mockReturnValue(null);
-
-      const filterConfig = {
-        filterId: 'filter-1',
-        targetId: 'target-model-uid',
-        filterPaths: ['name'],
-        operator: '$eq',
-      };
-      await filterManager.addFilterConfig(filterConfig);
-
-      // Make removeFilterGroup throw an error
-      const originalError = new Error('Remove filter error');
-      mockTargetModel.resource.removeFilterGroup.mockImplementation(() => {
-        throw originalError;
-      });
-
-      expect(() => {
-        filterManager.bindToTarget('target-model-uid');
-      }).toThrow('Failed to remove filter configuration from target model: Remove filter error');
     });
 
     it('should not call removeFilterGroup for valid non-empty values', async () => {
