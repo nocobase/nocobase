@@ -19,7 +19,7 @@ import { FieldModel } from '../models/base/FieldModel';
 const SelectOptions = (props) => {
   const flowContext = useFlowSettingsContext<FieldModel>();
   const compile = useCompile();
-  const collectionField = flowContext.model.collectionField;
+  const collectionField = flowContext.model.context.collectionField;
   const app = flowContext.app;
   const collectionManager = collectionField?.collection?.collectionManager;
   const dataSourceManager = app.dataSourceManager;

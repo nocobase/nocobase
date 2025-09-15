@@ -11,7 +11,6 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
 
 export class PointReadPrettyFieldModel extends MapReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['point'];
   getMapFieldType() {
     return 'point';
   }

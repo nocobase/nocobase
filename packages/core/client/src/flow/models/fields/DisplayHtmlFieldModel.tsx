@@ -14,7 +14,6 @@ import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkd
 import { FieldModel } from '../base';
 
 export class MarkdownReadPrettyFieldModel extends FieldModel {
-  public static readonly supportedFieldInterfaces = ['markdown'];
   public render() {
     const { textOnly = true, value } = this.props;
     return <DisplayMarkdown textOnly={textOnly} value={value} />;

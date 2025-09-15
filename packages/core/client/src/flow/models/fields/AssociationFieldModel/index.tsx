@@ -8,7 +8,7 @@
  */
 
 export * from './AssociationFieldModel';
-export * from './RemoteSelectFieldModel';
-export * from './TableAssociationFieldModel';
+export * from './RecordSelectFieldModel';
+export * from './SubTableFieldModel';
 export * from './SubFormFieldModel';
 export * from './RecordPickerFieldModel';

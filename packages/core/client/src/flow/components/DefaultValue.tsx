@@ -27,8 +27,8 @@ import {
 import { get as lodashGet, set as lodashSet, isEqual } from 'lodash';
 import React, { useMemo } from 'react';
 import { Input } from 'antd';
-import { EditableFieldModel } from '../models';
-import { RemoteSelectFieldModel } from '../models/fields/AssociationFieldModel';
+import { FieldModel } from '../models';
+import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 
@@ -36,7 +36,7 @@ interface Props {
   value: any;
   onChange: (value: any) => void;
   metaTree: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
-  model: EditableFieldModel;
+  model: FieldModel;
 }
 
 function createTempFieldClass(Base: any) {
@@ -244,7 +244,7 @@ export const DefaultValue = connect((props: Props) => {
     const host = model;
     const origin = host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
-    // 如果是关系的对多字段，统一使用 RemoteSelectFieldModel 作为默认值渲染模型
+    // 如果是关系的对多字段，统一使用 RecordSelectFieldModel 作为默认值渲染模型
     const collectionField = origin?.collectionField;
     const relationType = collectionField?.type;
     const relationInterface = collectionField?.interface;
@@ -256,7 +256,7 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
     // 优先用原字段模型；无法解析时回退到 InputFieldModel，避免误用区块模型（会依赖 dataSource/collection）
-    const fieldModelClass = isToManyRelation ? RemoteSelectFieldModel : origin?.constructor || InputFieldModel;
+    const fieldModelClass = isToManyRelation ? RecordSelectFieldModel : origin?.constructor || InputFieldModel;
     const TempFieldClass = createTempFieldClass(fieldModelClass);
     const fieldSub = {
       use: TempFieldClass,

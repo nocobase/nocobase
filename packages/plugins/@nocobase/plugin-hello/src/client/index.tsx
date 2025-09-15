@@ -14,7 +14,6 @@ import {
   BlockSceneEnum,
   CollectionBlockModel,
   DataBlockModel,
-  EditableFieldModel,
   FieldModel,
   FilterBlockModel,
   FilterFormItemModel,

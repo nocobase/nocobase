@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { DatePicker } from 'antd';
+import React from 'react';
 import { escapeT } from '@nocobase/flow-engine';
-import { FormFieldModel } from '../FormFieldModel';
+import { FieldModel } from '../../base';
 
-export class DateTimeFieldModel extends FormFieldModel {
-  get component() {
-    return [DatePicker, {}];
+export class DateTimeFieldModel extends FieldModel {
+  render() {
+    return <DatePicker {...this.props} />;
   }
 }
 

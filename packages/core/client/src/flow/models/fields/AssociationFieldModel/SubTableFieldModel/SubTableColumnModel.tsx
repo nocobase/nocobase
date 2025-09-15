@@ -12,7 +12,6 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
   buildWrapperFieldChildren,
-  CollectionField,
   DisplayItemModel,
   DragHandler,
   Droppable,
@@ -28,11 +27,10 @@ import {
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
-import { TableAssociationFieldModel } from '.';
+import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { FormComponent } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
-import { FormFieldModel } from '../../FormFieldModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -92,20 +90,16 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 });
 
 export interface SubTableColumnModelStructor {
-  parent: TableAssociationFieldModel;
+  parent: SubTableFieldModel;
   subModels: {
-    field: FormFieldModel;
+    field: FieldModel;
   };
 }
 
 export class SubTableColumnModel<
   T extends SubTableColumnModelStructor = SubTableColumnModelStructor,
-> extends FieldModel<T> {
+> extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
-
-  get collectionField(): CollectionField {
-    return this.context.collectionField;
-  }
 
   renderHiddenInConfig() {
     return (
@@ -138,7 +132,6 @@ export class SubTableColumnModel<
 
   onInit(options: any): void {
     super.onInit(options);
-
     this.context.defineProperty('resourceName', {
       get: () => {
         return this.context.collectionField.collection.name;
@@ -219,7 +212,7 @@ export class SubTableColumnModel<
           }}
           title={value}
         >
-          {this.mapSubModels('field', (action: FormFieldModel) => {
+          {this.mapSubModels('field', (action: FieldModel) => {
             const fork: any = action.createFork({}, `${id}`);
             if (this.props.readPretty) {
               fork.setProps({
@@ -231,7 +224,7 @@ export class SubTableColumnModel<
                 <FormItem
                   {...this.props}
                   key={id}
-                  name={[(this.parent as FormFieldModel).fieldPath, rowIdx, action.fieldPath]}
+                  name={[(this.parent as FieldModel).context.fieldPath, rowIdx, action.context.fieldPath]}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
                 >
@@ -239,13 +232,13 @@ export class SubTableColumnModel<
                     <LargeFieldEdit
                       model={fork}
                       params={{
-                        fieldPath: [(this.parent as FormFieldModel).fieldPath, rowIdx, action.fieldPath],
+                        fieldPath: [(this.parent as FieldModel).context.fieldPath, rowIdx, action.context.fieldPath],
                         index: id,
                       }}
                       defaultValue={value}
                     />
                   ) : (
-                    <FieldModelRenderer model={fork} id={[(this.parent as FormFieldModel).fieldPath, rowIdx]} />
+                    <FieldModelRenderer model={fork} id={[(this.parent as FieldModel).context.fieldPath, rowIdx]} />
                   )}
                 </FormItem>
               );
@@ -283,7 +276,7 @@ SubTableColumnModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).fieldPath}.${ctx.model.fieldPath}`);
+          currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).context.fieldPath}.${ctx.model.fieldPath}`);
         }
       },
     },

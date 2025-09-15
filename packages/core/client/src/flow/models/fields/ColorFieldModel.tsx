@@ -11,7 +11,7 @@ import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 export const NBColorPicker = (props) => {
   const componentProps = {
@@ -46,11 +46,9 @@ export const NBColorPicker = (props) => {
   return <AntdColorPicker {...componentProps} />;
 };
 
-export class ColorFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['color'];
-
-  get component() {
-    return [NBColorPicker, {}];
+export class ColorFieldModel extends FieldModel {
+  render() {
+    return <NBColorPicker {...this.props} />;
   }
 }
 

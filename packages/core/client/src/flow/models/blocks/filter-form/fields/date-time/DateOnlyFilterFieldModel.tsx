@@ -25,8 +25,6 @@ const DateOnlyPicker = (props) => {
 };
 
 export class DateOnlyFilterFieldModel extends DateTimeFilterFieldModel {
-  static readonly supportedFieldInterfaces = ['date'];
-
   setProps(componentProps) {
     super.setProps({
       ...componentProps,
@@ -34,9 +32,8 @@ export class DateOnlyFilterFieldModel extends DateTimeFilterFieldModel {
       utc: false,
     });
   }
-
-  get component() {
-    return [DateOnlyPicker, {}];
+  render() {
+    return <DateOnlyPicker {...this.props} />;
   }
 }
 

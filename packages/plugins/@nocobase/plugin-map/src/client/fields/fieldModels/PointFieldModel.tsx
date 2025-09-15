@@ -10,7 +10,6 @@ import { EditableItemModel } from '@nocobase/flow-engine';
 import { MapFieldModel } from './MapFieldModel';
 
 export class PointFieldModel extends MapFieldModel {
-  static supportedFieldInterfaces = ['point'];
   getMapFieldType() {
     return 'point';
   }

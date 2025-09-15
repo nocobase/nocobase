@@ -24,8 +24,6 @@ const DateTimeTzPicker = (props) => {
 };
 
 export class DateTimeTzFilterFieldModel extends DateTimeFilterFieldModel {
-  static readonly supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
-
   setProps(componentProps) {
     super.setProps({
       ...componentProps,
@@ -33,8 +31,8 @@ export class DateTimeTzFilterFieldModel extends DateTimeFilterFieldModel {
     });
   }
 
-  get component() {
-    return [DateTimeTzPicker, {}];
+  render() {
+    return <DateTimeTzPicker {...this.props} />;
   }
 }
 

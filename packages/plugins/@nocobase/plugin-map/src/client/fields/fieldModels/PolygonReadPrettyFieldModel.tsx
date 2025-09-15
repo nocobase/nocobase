@@ -11,7 +11,6 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
 
 export class PolygonReadPrettyFieldModel extends MapReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['polygon'];
   getMapFieldType() {
     return 'polygon';
   }

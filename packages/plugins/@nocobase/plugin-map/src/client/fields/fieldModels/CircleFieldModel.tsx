@@ -10,7 +10,6 @@ import { EditableItemModel } from '@nocobase/flow-engine';
 import { MapFieldModel } from './MapFieldModel';
 
 export class CircleFieldModel extends MapFieldModel {
-  static supportedFieldInterfaces = ['circle'];
   getMapFieldType() {
     return 'circle';
   }

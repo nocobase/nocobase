@@ -8,14 +8,13 @@
  */
 
 import { Select } from 'antd';
+import React from 'react';
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
-export class SelectFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['select', 'multipleSelect'];
-
-  get component() {
-    return [Select, {}];
+export class SelectFieldModel extends FieldModel {
+  render() {
+    return <Select {...this.props} />;
   }
 }
 

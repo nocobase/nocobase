@@ -62,15 +62,14 @@ export const DateTimeTzPicker = (props) => {
 };
 
 export class DateTimeTzFieldModel extends DateTimeFieldModel {
-  static supportedFieldInterfaces = ['createdAt', 'datetime', 'updatedAt', 'unixTimestamp'];
   setProps(componentProps) {
     super.setProps({
       ...componentProps,
       utc: true,
     });
   }
-  get component() {
-    return [DateTimeTzPicker, {}];
+  render() {
+    return <DateTimeTzPicker {...this.props} />;
   }
 }
 

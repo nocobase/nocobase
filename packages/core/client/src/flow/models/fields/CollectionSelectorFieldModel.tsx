@@ -11,7 +11,7 @@ import React, { useCallback } from 'react';
 import { Select } from 'antd';
 import { EditableItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import { FormFieldModel } from './FormFieldModel';
+import { FieldModel } from '../base';
 
 const CollectionSelector = (props) => {
   const { filter, options, ...others } = props;
@@ -37,11 +37,9 @@ const CollectionSelector = (props) => {
   );
 };
 
-export class CollectionSelectorFieldModel extends FormFieldModel {
-  static supportedFieldInterfaces = ['collection'];
-
-  get component() {
-    return [CollectionSelector, {}];
+export class CollectionSelectorFieldModel extends FieldModel {
+  render() {
+    return <CollectionSelector {...this.props} />;
   }
 }
 CollectionSelectorFieldModel.registerFlow({

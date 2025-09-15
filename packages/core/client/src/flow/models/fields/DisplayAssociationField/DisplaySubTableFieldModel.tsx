@@ -11,7 +11,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, DisplayItemModel, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
-import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
+import { FieldModel } from '../../base';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -32,9 +32,9 @@ const AddFieldColumn = ({ model }) => {
     </AddSubModelButton>
   );
 };
-export class DisplaySubTableFieldModel extends DisplayAssociationFieldModel {
+export class DisplaySubTableFieldModel extends FieldModel {
   get collection() {
-    return this.context.collectionField.targetCollection;
+    return this.context.collection;
   }
   onInit(options: any): void {
     super.onInit(options);
@@ -42,8 +42,10 @@ export class DisplaySubTableFieldModel extends DisplayAssociationFieldModel {
       get: () => this.context.collectionField.target,
       cache: false,
     });
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField.targetCollection,
+    });
   }
-  public static readonly supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
 
   getColumns() {
     const { enableIndexColumn = true } = this.props;

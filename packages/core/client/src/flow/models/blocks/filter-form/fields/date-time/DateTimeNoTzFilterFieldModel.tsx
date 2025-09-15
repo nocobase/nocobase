@@ -17,10 +17,8 @@ const DateTimeNoTzPicker = (props) => {
 };
 
 export class DateTimeNoTzFilterFieldModel extends DateTimeFilterFieldModel {
-  static readonly supportedFieldInterfaces = ['datetimeNoTz'];
-
-  get component() {
-    return [DateTimeNoTzPicker, {}];
+  render() {
+    return <DateTimeNoTzPicker {...this.props} />;
   }
 }
 

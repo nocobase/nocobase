@@ -11,7 +11,6 @@ import { DisplayItemModel } from '@nocobase/flow-engine';
 import { MapReadPrettyFieldModel } from './MapReadPrettyFieldModel';
 
 export class CircleReadPrettyFieldModel extends MapReadPrettyFieldModel {
-  static supportedFieldInterfaces = ['circle'];
   getMapFieldType() {
     return 'circle';
   }

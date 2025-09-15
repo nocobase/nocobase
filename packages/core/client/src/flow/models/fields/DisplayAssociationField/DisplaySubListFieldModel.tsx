@@ -12,7 +12,7 @@ import { DisplayItemModel, escapeT, FlowModelRenderer, useFlowModel } from '@noc
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
-import { DisplayAssociationFieldModel } from './DisplayAssociationFieldModel';
+import { FieldModel } from '../../base';
 
 const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
@@ -56,8 +56,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   );
 };
 
-export class DisplaySubListFieldModel extends DisplayAssociationFieldModel {
-  static supportedFieldInterfaces = ['m2m', 'o2m', 'mbm'];
+export class DisplaySubListFieldModel extends FieldModel {
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {

@@ -67,6 +67,12 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
         ) as CollectionField;
         return collectionField;
       },
+      cache: false,
+    });
+    this.context.defineProperty('fieldPath', {
+      get: () => {
+        return this.fieldPath;
+      },
     });
     this.context.blockModel.addAppends(this.fieldPath);
     this.context.blockModel.addAppends(this.associationPathName);

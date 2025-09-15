@@ -18,7 +18,6 @@ import {
 import { get } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
-import { DisplayAssociationFieldModel } from '../../fields/DisplayAssociationField/DisplayAssociationFieldModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
 /**
@@ -245,10 +244,7 @@ DetailsItemModel.registerFlow({
         if (!ctx.collectionField.isAssociationField()) {
           return null;
         }
-        if (
-          params.label !== previousParams.label &&
-          !(ctx.model.subModels.field instanceof DisplayAssociationFieldModel)
-        ) {
+        if (params.label !== previousParams.label) {
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
           const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
