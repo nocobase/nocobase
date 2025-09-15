@@ -55,8 +55,13 @@ class DemoPlugin extends Plugin {
                           code: `
 const text = String(ctx.value ?? '');
 ctx.element.innerHTML = '<span>'+text+'</span> <button id="copy">复制</button>';
-document.getElementById('copy')?.addEventListener('click', async () => {
-  try{ await navigator.clipboard.writeText(text); alert('已复制: '+text); }catch(e){ alert('复制失败'); }
+ctx.element.querySelector('#copy')?.addEventListener('click', async () => {
+  try {
+    await ctx.copyToClipboard(text);
+    ctx.message?.success?.('已复制');
+  } catch (e) {
+    ctx.message?.error?.('复制失败');
+  }
 });
                           `.trim(),
                         },

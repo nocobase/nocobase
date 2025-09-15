@@ -59,8 +59,8 @@ ctx.element.innerHTML = [
   '  <input id="ipt" style="width:100%;padding:4px 8px" placeholder="输入后回车添加" />',
   '</div>'
 ].join('');
-const chips = document.getElementById('chips');
-const ipt = document.getElementById('ipt');
+const chips = ctx.element.querySelector('#chips');
+const ipt = ctx.element.querySelector('#ipt');
 function render(){ chips.innerHTML = (ctx.getValue()||[]).map((t,i)=> '<span data-i="'+i+'" style="display:inline-block;margin:2px;padding:2px 6px;background:#f5f5f5;border-radius:10px;cursor:pointer">'+t+' ✕</span>').join(''); Array.from(chips.children).forEach(el=> el.addEventListener('click',()=>{ const i = Number(el.getAttribute('data-i')); const a = (ctx.getValue()||[]).slice(); a.splice(i,1); ctx.setValue(a); render(); })); }
 ctx.setValue(arr); render();
 ipt?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); const v = ipt.value.trim(); if(v){ const a = (ctx.getValue()||[]).slice(); a.push(v); ctx.setValue(a); ipt.value=''; render(); } } });

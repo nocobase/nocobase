@@ -63,8 +63,8 @@ ctx.element.innerHTML = [
   '  <div id="pv" style="width:50%;padding:8px;border:1px solid #eee;border-radius:6px;min-height:120px"></div>',
   '</div>'
 ].join('');
-const mk = document.getElementById('mk');
-const pv = document.getElementById('pv');
+const mk = ctx.element.querySelector('#mk');
+const pv = ctx.element.querySelector('#pv');
 pv.innerHTML = md(src);
 mk?.addEventListener('input', ()=> { ctx.setValue(mk.value); pv.innerHTML = md(mk.value); });
                           `.trim(),

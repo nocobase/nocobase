@@ -53,7 +53,7 @@ const raw = String(ctx.getValue() ?? '');
 function formatDigits(s){ return s.replace(/\D/g,'').slice(0,11); }
 function mask(s){ const d = formatDigits(s); return d.replace(/(\d{3})(\d{0,4})(\d{0,4}).*/, (m,a,b,c)=> a + (b?'-'+b:'') + (c?'-'+c:'') ); }
 ctx.element.innerHTML = '<input id="ph" style="width:100%;padding:4px 8px" value="'+ mask(raw).replace(/"/g,'&quot;') +'" />';
-const inp = document.getElementById('ph');
+const inp = ctx.element.querySelector('#ph');
 inp?.addEventListener('input',()=>{ const m = mask(inp.value); if(m!==inp.value) inp.value = m; ctx.setValue(m); });
                           `.trim(),
                         },

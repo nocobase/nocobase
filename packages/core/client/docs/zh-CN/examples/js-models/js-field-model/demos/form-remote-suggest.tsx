@@ -58,8 +58,8 @@ ctx.element.innerHTML = [
   '  <ul id="suggest" style="list-style:none;padding-left:0;margin:6px 0 0"></ul>',
   '</div>'
 ].join('');
-const ipt = document.getElementById('ipt');
-const ul = document.getElementById('suggest');
+const ipt = ctx.element.querySelector('#ipt');
+const ul = ctx.element.querySelector('#suggest');
 ipt?.addEventListener('input', async () => {
   ctx.setValue(String(ipt.value || ''));
   try{

@@ -58,8 +58,8 @@ ctx.element.innerHTML = [
   '  <div id="msg" style="font-size:12px;margin-top:6px;color:#999">仅允许大写字母与数字，长度 4-8</div>',
   '</div>'
 ].join('');
-const input = document.getElementById('code');
-const msg = document.getElementById('msg');
+const input = ctx.element.querySelector('#code');
+const msg = ctx.element.querySelector('#msg');
 input?.addEventListener('input', (e) => ctx.setValue(String(e.target.value || '')));
 input?.addEventListener('blur', async () => {
   try{

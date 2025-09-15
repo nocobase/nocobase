@@ -74,7 +74,7 @@ ctx.element.innerHTML = [
   '  <div style="color:#999;font-size:12px;margin-top:6px">长度 ≤ 8，自动大写</div>',
   '</div>'
 ].join('');
-const el = document.getElementById('js-code');
+const el = ctx.element.querySelector('#js-code');
 el?.addEventListener('input', (e) => {
   const next = String(e.target.value || '').toUpperCase().slice(0, 8);
   if (next !== e.target.value) e.target.value = next;

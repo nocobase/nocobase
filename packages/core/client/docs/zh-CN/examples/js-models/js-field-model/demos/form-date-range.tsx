@@ -57,7 +57,7 @@ ctx.element.innerHTML = [
   '  <input id="d2" type="date" value="'+end+'" />',
   '</div>'
 ].join('');
-const d1 = document.getElementById('d1'); const d2 = document.getElementById('d2');
+const d1 = ctx.element.querySelector('#d1'); const d2 = ctx.element.querySelector('#d2');
 function sync(){ ctx.setValue({ start: d1.value || null, end: d2.value || null }); }
 d1?.addEventListener('change', sync); d2?.addEventListener('change', sync);
                           `.trim(),

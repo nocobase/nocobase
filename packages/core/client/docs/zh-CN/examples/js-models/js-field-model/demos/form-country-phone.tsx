@@ -62,7 +62,7 @@ ctx.element.innerHTML = [
   '  <option value="DE" '+(current==='DE'?'selected':'')+'>德国 (+49)</option>',
   '</select>'
 ].join('');
-const sel = document.getElementById('country');
+const sel = ctx.element.querySelector('#country');
 sel?.addEventListener('change', ()=>{
   const c = sel.value; ctx.setValue(c);
   const prefix = map[c];
@@ -96,7 +96,7 @@ sel?.addEventListener('change', ()=>{
                           code: `
 const v = String(ctx.getValue() ?? '');
 ctx.element.innerHTML = '<input id="ph" style="width:100%;padding:4px 8px" value="'+v.replace(/"/g,'&quot;')+'" />';
-document.getElementById('ph')?.addEventListener('input', (e)=> ctx.setValue(String(e.target.value||'')) );
+ctx.element.querySelector('#ph')?.addEventListener('input', (e)=> ctx.setValue(String(e.target.value||'')) );
                           `.trim(),
                         },
                       },

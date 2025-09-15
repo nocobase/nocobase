@@ -52,7 +52,7 @@ class DemoPlugin extends Plugin {
                           code: `
 const v = String(ctx.getValue() ?? '');
 ctx.element.innerHTML = '<input id="s" type="date" value="'+v+'" />';
-const s = document.getElementById('s');
+const s = ctx.element.querySelector('#s');
 s?.addEventListener('change', ()=>{
   ctx.setValue(s.value);
   const end = String(ctx.form?.getFieldValue?.(['end']) || '');
@@ -81,7 +81,7 @@ s?.addEventListener('change', ()=>{
                           code: `
 const v = String(ctx.getValue() ?? '');
 ctx.element.innerHTML = '<input id="e" type="date" value="'+v+'" />';
-const e = document.getElementById('e');
+const e = ctx.element.querySelector('#e');
 e?.addEventListener('change', ()=>{
   const start = String(ctx.form?.getFieldValue?.(['start']) || '');
   if(e.value && start && e.value < start){ e.value = start; }
