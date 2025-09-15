@@ -154,7 +154,16 @@ export class FilterManager {
    * });
    * ```
    */
-  async removeFilterConfig({ filterId, targetId }: { filterId?: string; targetId?: string }): Promise<number> {
+  async removeFilterConfig({
+    filterId,
+    targetId,
+    persist = true,
+  }: {
+    filterId?: string;
+    targetId?: string;
+    /** 是否持久化删除操作 */
+    persist?: boolean;
+  }): Promise<number> {
     // 1. 验证参数：至少需要提供一个参数
     if (!filterId && !targetId) {
       throw new Error('At least one of filterId or targetId must be provided');
@@ -187,7 +196,7 @@ export class FilterManager {
     const removedCount = originalLength - this.filterConfigs.length;
 
     // 5. 如果有配置被删除，则保存更改
-    if (removedCount > 0) {
+    if (removedCount > 0 && persist) {
       await this.saveFilterConfigs();
     }
 
