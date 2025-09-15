@@ -145,7 +145,7 @@ JSEditableFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `// 可编辑的 JavaScript 字段示例\n// 通过 ctx.getValue()/ctx.setValue() 与表单交互\n\nconst v = ctx.getValue();\nctx.element.innerHTML = \`<input id="js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\nconst el = document.getElementById('js-input');\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n`,
+          code: `const v = ctx.getValue();\nctx.element.innerHTML = \`<input id="js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\nconst el = document.getElementById('js-input');\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n`,
         };
       },
       async handler(ctx, params) {

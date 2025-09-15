@@ -7,21 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * JS Form Action：表单工具栏按钮点击执行 JS。
- */
-import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
-import { FormActionModel } from './FormActionModel';
+import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
+import type { ButtonProps } from 'antd/es/button';
+import { CodeEditor } from '../../components/code-editor';
+import { ActionSceneEnum, CollectionActionModel } from '../base';
 
-export class JSFormActionModel extends FormActionModel {}
+export class JSCollectionActionModel extends CollectionActionModel {
+  static scene = ActionSceneEnum.collection;
 
-JSFormActionModel.define({
+  defaultProps: ButtonProps = {
+    title: escapeT('JS action'),
+  };
+}
+
+JSCollectionActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
 });
 
-JSFormActionModel.registerFlow({
+JSCollectionActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
   title: escapeT('Click settings'),
@@ -48,20 +52,17 @@ JSFormActionModel.registerFlow({
       defaultParams(ctx) {
         return {
           code: `
-const values = ctx.form?.getFieldsValue?.() || {};
-ctx.message.success('当前表单值：' + JSON.stringify(values));
+const rows = ctx.resource?.getSelectedRows?.() || [];
+if (!rows.length) {
+  ctx.message.warning('请选择数据');
+} else {
+  ctx.message.success('已选择 ' + rows.length + ' 条');
+}
 `,
         };
       },
       async handler(ctx, params) {
         const { code = '' } = params || {};
-        ctx.defineMethod('refresh', async () => {
-          if (ctx.blockModel?.resource?.refresh) {
-            await ctx.blockModel.resource.refresh();
-          } else if (ctx.resource?.refresh) {
-            await ctx.resource.refresh();
-          }
-        });
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },

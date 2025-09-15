@@ -79,7 +79,7 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n// 你也可以使用异步逻辑：\n// await ctx.runjs('return 1+1');\n`,
+          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n`,
         };
       },
       async handler(ctx, params) {

@@ -15,4 +15,6 @@ export * from './FilterActionModel';
 export * from './RefreshActionModel';
 export * from './UpdateActionModel';
 export * from './ViewActionModel';
+export * from './JSCollectionActionModel';
+export * from './JSRecordActionModel';
 //

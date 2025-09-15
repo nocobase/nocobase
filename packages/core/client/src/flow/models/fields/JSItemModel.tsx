@@ -72,8 +72,7 @@ JSItemModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          code: `// Welcome to the JavaScript item (form)
-// You can manipulate the DOM via ctx.element safely.
+          code: `
 ctx.element.innerHTML = \`
   <div style="padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
     <h3 style="color: #1890ff; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">JavaScript Item</h3>

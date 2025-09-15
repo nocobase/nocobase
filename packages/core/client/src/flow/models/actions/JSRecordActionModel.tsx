@@ -7,21 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * JS Form Action：表单工具栏按钮点击执行 JS。
- */
-import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
-import { CodeEditor } from '../../../components/code-editor';
-import { FormActionModel } from './FormActionModel';
+import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
+import type { ButtonProps } from 'antd/es/button';
+import { CodeEditor } from '../../components/code-editor';
+import { ActionSceneEnum, RecordActionModel } from '../base';
 
-export class JSFormActionModel extends FormActionModel {}
+export class JSRecordActionModel extends RecordActionModel {
+  static scene = ActionSceneEnum.record;
 
-JSFormActionModel.define({
+  defaultProps: ButtonProps = {
+    type: 'link',
+    title: escapeT('JS action'),
+  };
+}
+
+JSRecordActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
 });
 
-JSFormActionModel.registerFlow({
+JSRecordActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
   title: escapeT('Click settings'),
@@ -48,20 +53,16 @@ JSFormActionModel.registerFlow({
       defaultParams(ctx) {
         return {
           code: `
-const values = ctx.form?.getFieldsValue?.() || {};
-ctx.message.success('当前表单值：' + JSON.stringify(values));
+if (!ctx.record) {
+  ctx.message.error('未获取到记录');
+} else {
+  ctx.message.success('记录ID：' + (ctx.filterByTk ?? ctx.record?.id));
+}
 `,
         };
       },
       async handler(ctx, params) {
         const { code = '' } = params || {};
-        ctx.defineMethod('refresh', async () => {
-          if (ctx.blockModel?.resource?.refresh) {
-            await ctx.blockModel.resource.refresh();
-          } else if (ctx.resource?.refresh) {
-            await ctx.resource.refresh();
-          }
-        });
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
       },
     },
