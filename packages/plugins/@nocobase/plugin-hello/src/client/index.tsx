@@ -16,11 +16,13 @@ import {
   DataBlockModel,
   EditableFieldModel,
   FieldModel,
+  FilterBlockModel,
   FilterFormItemModel,
   Plugin,
+  PopupActionModel,
 } from '@nocobase/client';
 import { DisplayItemModel, EditableItemModel, FilterableItemModel, MultiRecordResource } from '@nocobase/flow-engine';
-import { ButtonProps } from 'antd';
+import { ButtonProps, Input } from 'antd';
 import React from 'react';
 
 class Hello1BlockModel extends BlockModel {
@@ -121,6 +123,17 @@ class Hello7BlockModel extends CollectionBlockModel {
   }
 }
 
+class Hello8BlockModel extends FilterBlockModel {
+  renderComponent() {
+    return (
+      <div>
+        <h1>Hello, NocoBase!</h1>
+        <p>This is a simple block rendered by HelloCollectionBlockModel.</p>
+      </div>
+    );
+  }
+}
+
 class Hello1ActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
 
@@ -145,6 +158,14 @@ class Hello3ActionModel extends ActionModel {
   };
 }
 
+class Hello4ActionModel extends PopupActionModel {
+  static scene = ActionSceneEnum.all;
+
+  defaultProps: ButtonProps = {
+    title: 'Hello4 Popup Action',
+  };
+}
+
 class Hello1FieldModel extends FieldModel {
   render() {
     return <div>aaa</div>;
@@ -153,7 +174,7 @@ class Hello1FieldModel extends FieldModel {
 
 class Hello2FieldModel extends FieldModel {
   render() {
-    return <div>aaa</div>;
+    return <Input {...this.props} />;
   }
 }
 
@@ -171,9 +192,11 @@ export class PluginHelloClient extends Plugin {
       Hello5BlockModel,
       Hello6BlockModel,
       Hello7BlockModel,
+      Hello8BlockModel,
       Hello1ActionModel,
       Hello2ActionModel,
       Hello3ActionModel,
+      Hello4ActionModel,
       Hello1FieldModel,
       Hello2FieldModel,
     });
