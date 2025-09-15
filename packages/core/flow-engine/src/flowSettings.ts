@@ -18,7 +18,7 @@ import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/D
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { FlowRuntimeContext } from './flowContext';
 import { FlowEngine } from './flowEngine';
-import { useFlowSettingsContext } from './hooks/useFlowSettingsContext';
+import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
@@ -676,12 +676,17 @@ export class FlowSettings {
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
           if (!form) return null;
-          return this.renderStepForm({
-            uiSchema: entry.mergedUiSchema,
-            initialValues: entry.initialValues,
-            flowEngine,
-            form,
-          });
+
+          return React.createElement(
+            FlowSettingsContextProvider as any,
+            { value: entry.ctx },
+            this.renderStepForm({
+              uiSchema: entry.mergedUiSchema,
+              initialValues: entry.initialValues,
+              flowEngine,
+              form,
+            }),
+          );
         };
 
         const renderStepPanels = (steps: StepEntry[]) =>
