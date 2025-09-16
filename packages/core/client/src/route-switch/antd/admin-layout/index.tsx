@@ -668,9 +668,9 @@ export const useMobileLayout = () => {
   return { isMobileLayout, setIsMobileLayout };
 };
 
-const rootStyle = { display: 'flex', height: '100vh' };
-const appContainerStyle = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
-const embedContainerStyle = { width: 'fit-content', position: 'relative' };
+const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
+const appContainerStyle: React.CSSProperties = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
+const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
