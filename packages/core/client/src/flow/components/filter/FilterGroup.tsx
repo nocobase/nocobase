@@ -12,7 +12,6 @@ import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { FC } from 'react';
-import { Trans } from 'react-i18next';
 
 /**
  * 筛选项组件的属性接口
