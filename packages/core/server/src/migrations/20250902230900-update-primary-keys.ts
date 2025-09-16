@@ -49,27 +49,24 @@ export default class extends Migration {
       const collection = this.db.getCollection(collectionName);
       if (collection) {
         const tableName = collection.getTableNameWithSchema();
-        await this.db.sequelize.transaction(async (transaction) => {
-          await queryInterface.changeColumn(
-            tableName,
-            'id',
-            {
-              type: DataTypes.BIGINT,
-              primaryKey: true,
-              allowNull: false,
-              autoIncrement: false,
-            },
-            {
-              transaction,
-            },
-          );
-          if (this.db.inDialect('postgres')) {
+        if (this.db.isPostgresCompatibleDialect()) {
+          await this.db.sequelize.transaction(async (transaction) => {
             const schema = collection.collectionSchema();
             const table = collection.model.tableName;
             const seqName = `"${schema}"."${table}_id_seq"`;
+            await this.db.sequelize.query(`ALTER TABLE "${schema}"."${table}" ALTER COLUMN id DROP DEFAULT;`, {
+              transaction,
+            });
             await this.db.sequelize.query(`DROP SEQUENCE IF EXISTS ${seqName} CASCADE;`, { transaction });
-          }
-        });
+          });
+        } else {
+          await queryInterface.changeColumn(tableName, 'id', {
+            type: DataTypes.BIGINT,
+            primaryKey: true,
+            allowNull: false,
+            autoIncrement: false,
+          });
+        }
       }
       const field = await repo.findOne({
         filter: {
