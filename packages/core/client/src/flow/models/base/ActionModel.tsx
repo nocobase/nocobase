@@ -179,3 +179,7 @@ ActionModel.registerFlow({
     },
   },
 });
+
+ActionModel.registerEvents({
+  click: { label: escapeT('Click'), name: 'click' },
+});

@@ -12,7 +12,6 @@ import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { FC } from 'react';
-import { Trans } from 'react-i18next';
 
 /**
  * 筛选项组件的属性接口
@@ -37,6 +36,7 @@ interface FilterGroupProps {
   showBorder?: boolean;
   /** 移除当前组的回调 */
   onRemove?: () => void;
+  onChange?: (value: any) => void;
 }
 
 /**
@@ -71,7 +71,7 @@ interface FilterGroupProps {
  */
 export const FilterGroup: FC<FilterGroupProps> = observer(
   (props) => {
-    const { value, FilterItem, showBorder = false, onRemove } = props;
+    const { value, FilterItem, showBorder = false, onRemove, onChange } = props;
     const { token } = theme.useToken();
     const { t } = useTranslation();
 
@@ -108,6 +108,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         operator: '',
         value: '',
       });
+      onChange?.(value);
     };
 
     const handleAddConditionGroup = () => {
@@ -115,10 +116,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         logic: '$and',
         items: [],
       });
+      onChange?.(value);
     };
 
     const handleRemoveItem = (index: number) => {
       items.splice(index, 1);
+      onChange?.(value);
     };
 
     const isConditionItem = (item: any) => {
@@ -174,6 +177,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   FilterItem={FilterItem}
                   showBorder={true}
                   onRemove={() => handleRemoveItem(index)}
+                  onChange={onChange}
                 />
               );
             } else if (isConditionItem(item)) {
