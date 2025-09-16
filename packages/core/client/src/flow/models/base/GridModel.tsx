@@ -50,6 +50,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   onInit(options: any): void {
     super.onInit(options);
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
+      if (!model.isNew) {
+        return;
+      }
       this.resetRows(true);
 
       // 在 sizes 中新加一行
