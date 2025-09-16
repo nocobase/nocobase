@@ -593,7 +593,7 @@ export class FlowEngine {
       if (subModel) {
         return model;
       }
-      if (model.subKey === 'array') {
+      if (model.subType === 'array') {
         model.parent.addSubModel(model.subKey, model);
       } else {
         model.parent.setSubModel(model.subKey, model);
