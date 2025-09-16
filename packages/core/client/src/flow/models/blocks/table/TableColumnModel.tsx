@@ -245,14 +245,21 @@ TableColumnModel.registerFlow({
     },
     title: {
       title: escapeT('Column title'),
-      uiSchema: {
-        title: {
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            placeholder: escapeT('Column title'),
+      uiSchema: (ctx) => {
+        return {
+          title: {
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-reactions': (field) => {
+              const model = ctx.model;
+              const originTitle = model.collectionField?.title;
+              field.decoratorProps = {
+                ...field.decoratorProps,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
+              };
+            },
           },
-        },
+        };
       },
       defaultParams: (ctx) => ({
         title: ctx.model.collectionField?.title,
