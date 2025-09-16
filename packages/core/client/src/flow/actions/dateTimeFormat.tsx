@@ -16,6 +16,44 @@ export const dateTimeFormat = defineAction({
   title: tval('Date display format'),
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
+    const { collectionField } = ctx.model.context as any;
+    const type = collectionField.type;
+    const timeFormatField = {
+      type: 'string',
+      title: '{{t("Time format")}}',
+      'x-component': ExpiresRadio,
+      'x-decorator': 'FormItem',
+      'x-component-props': {
+        className: css`
+          .ant-radio-wrapper {
+            display: flex;
+            margin: 5px 0px;
+          }
+        `,
+        defaultValue: 'h:mm a',
+        formats: ['hh:mm:ss a', 'HH:mm:ss'],
+        timeFormat: true,
+      },
+      enum: [
+        { label: DateFormatCom({ format: 'hh:mm:ss a' }), value: 'hh:mm:ss a' },
+        { label: DateFormatCom({ format: 'HH:mm:ss' }), value: 'HH:mm:ss' },
+        { label: tval('Custom'), value: 'custom' },
+      ],
+      'x-reactions': [
+        (field) => {
+          if (type !== 'time') {
+            const { showTime, picker } = field.form.values || {};
+            field.hidden = !showTime || picker !== 'date';
+          }
+        },
+      ],
+    };
+
+    if (type === 'time') {
+      return {
+        timeFormat: timeFormatField,
+      };
+    }
     return {
       picker: {
         type: 'string',
@@ -108,7 +146,7 @@ export const dateTimeFormat = defineAction({
             },
           },
           (field) => {
-            const { collectionField } = ctx.model as any;
+            const { collectionField } = ctx.model.context as any;
             const { picker } = field.form.values || {};
             field.hidden = collectionField.type === 'dateOnly' || picker !== 'date';
             if (picker !== 'date') {
@@ -117,64 +155,31 @@ export const dateTimeFormat = defineAction({
           },
         ],
       },
-      timeFormat: {
-        type: 'string',
-        title: '{{t("Time format")}}',
-        'x-component': ExpiresRadio,
-        'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          className: css`
-            margin-bottom: 0px;
-          `,
-        },
-        'x-component-props': {
-          className: css`
-            color: red;
-            .ant-radio-wrapper {
-              display: flex;
-              margin: 5px 0px;
-            }
-          `,
-          defaultValue: 'h:mm a',
-          formats: ['hh:mm:ss a', 'HH:mm:ss'],
-          timeFormat: true,
-        },
-        'x-reactions': [
-          (field) => {
-            const { showTime, picker } = field.form.values || {};
-            field.hidden = !showTime || picker !== 'date';
-          },
-        ],
-        enum: [
-          {
-            label: DateFormatCom({ format: 'hh:mm:ss a' }),
-            value: 'hh:mm:ss a',
-          },
-          {
-            label: DateFormatCom({ format: 'HH:mm:ss' }),
-            value: 'HH:mm:ss',
-          },
-          {
-            label: tval('Custom'),
-            value: 'custom',
-          },
-        ],
-      },
+      timeFormat: timeFormatField,
     };
   },
   defaultParams: (ctx: any) => {
-    const { showTime, dateFormat, timeFormat, picker } = ctx.model.collectionField.getComponentProps() || {};
+    const { showTime, dateFormat, timeFormat, picker } = ctx.model.context.collectionField.getComponentProps() || {};
     return {
       picker: picker || 'date',
       dateFormat: dateFormat || 'YYYY-MM-DD',
-      timeFormat: timeFormat,
+      timeFormat: timeFormat || 'HH:mm:ss',
       showTime,
     };
   },
   handler(ctx: any, params) {
-    ctx.model.setProps({
-      ...params,
-      format: params?.showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
-    });
+    const { collectionField } = ctx.model.context as any;
+    const type = collectionField.type;
+    if (type === 'time') {
+      ctx.model.setProps({
+        ...params,
+        format: params?.timeFormat,
+      });
+    } else {
+      ctx.model.setProps({
+        ...params,
+        format: params?.showTime ? `${params.dateFormat} ${params.timeFormat}` : params.dateFormat,
+      });
+    }
   },
 });

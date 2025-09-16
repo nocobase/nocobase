@@ -9,13 +9,13 @@
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { TimePicker } from 'antd';
 import React from 'react';
-import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, escapeT } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { FieldModel } from '../base';
 
 export class TimeFieldModel extends FieldModel {
   setProps(props) {
-    const format = props['format'] || 'HH:mm:ss';
+    const format = props['timeFormat'] || 'HH:mm:ss';
     const onChange = props.onChange;
     const componentProps = {
       ...props,
@@ -38,6 +38,18 @@ export class TimeFieldModel extends FieldModel {
     return <TimePicker {...this.props} style={{ width: '100%' }} />;
   }
 }
+
+TimeFieldModel.registerFlow({
+  key: 'timeSettings',
+  sort: 3000,
+  title: escapeT('Time settings'),
+  steps: {
+    dateFormat: {
+      use: 'dateDisplayFormat',
+      title: escapeT('Time format'),
+    },
+  },
+});
 
 EditableItemModel.bindModelToInterface('TimeFieldModel', ['time'], {
   isDefault: true,
