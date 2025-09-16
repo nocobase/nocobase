@@ -9,7 +9,7 @@
 
 import { FlowModelRenderer, FlowModelRendererProps } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
   'model',
@@ -29,11 +29,33 @@ const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
 
 export function FieldModelRenderer(props: any) {
   const { model, ...rest } = props;
-  const modelProps = _.omit(rest, flowModelRendererPropKeys);
+  const composingRef = useRef(false);
 
-  useEffect(() => {
-    model.setProps(modelProps);
-  }, [model, modelProps]);
+  const handleChange = (e: any) => {
+    const val = e?.target?.value || e;
+    if (!composingRef.current) {
+      props.onChange(e);
+    } else {
+      model.setProps({ value: val });
+    }
+  };
+
+  const handleCompositionStart = () => {
+    composingRef.current = true;
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    composingRef.current = false;
+    props.onChange(e);
+  };
+
+  const modelProps = {
+    ...rest,
+    onChange: handleChange,
+    onCompositionStart: handleCompositionStart,
+    onCompositionEnd: handleCompositionEnd,
+  };
+  model.setProps(modelProps);
 
   return <FlowModelRenderer model={model} {...rest} />;
 }
