@@ -65,7 +65,10 @@ export class DetailsItemModel extends DisplayItemModel<{
 
     const resolveFieldModel = (field: any) => {
       // 如果是关联字段，取目标集合的标题字段
-      const targetField = field.isAssociationField() ? field.targetCollection?.titleCollectionField : field;
+      const targetField =
+        field.isAssociationField() && field.interface !== 'attachment'
+          ? field.targetCollection?.titleCollectionField
+          : field;
 
       if (!targetField) return null;
 
