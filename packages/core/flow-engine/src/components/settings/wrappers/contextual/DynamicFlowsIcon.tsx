@@ -299,7 +299,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 color: '#262626',
               }}
             >
-              步骤
+              {model.translate('Steps')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
