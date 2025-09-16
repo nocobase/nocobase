@@ -581,6 +581,15 @@ const subMenuItemRender = (item, dom) => {
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   const { token } = useToken();
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setContainer(document.querySelector<HTMLDivElement>('#nocobase-app-container'));
+  }, []);
+
+  if (!container) {
+    return null;
+  }
 
   return (
     <RouteContext.Consumer>
@@ -602,7 +611,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
             >
               {props.children}
             </div>,
-            document.body,
+            container,
           )
         )
       }
