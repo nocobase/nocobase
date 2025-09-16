@@ -103,7 +103,7 @@ export class TableColumnModel extends DisplayItemModel {
           model={this}
           containerStyle={{ display: 'block', padding: '11px 7px', margin: '-11px -7px' }}
           showBorder={false}
-          settingsMenuLevel={3}
+          settingsMenuLevel={2}
           extraToolbarItems={[
             {
               key: 'drag-handler',
