@@ -931,7 +931,7 @@ export const blockLinkageRules = defineAction({
 
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
-  title: escapeT('Linkage Rules'),
+  title: escapeT('Linkage rules'),
   uiMode: commonUIMode,
   uiSchema(ctx) {
     return {
