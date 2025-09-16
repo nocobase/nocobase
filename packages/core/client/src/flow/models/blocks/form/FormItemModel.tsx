@@ -165,7 +165,6 @@ FormItemModel.registerFlow({
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
-        console.log(888);
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
