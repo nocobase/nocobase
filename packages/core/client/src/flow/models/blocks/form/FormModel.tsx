@@ -11,6 +11,7 @@ import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { Form, FormInstance } from 'antd';
+import { omit } from 'lodash';
 import React from 'react';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
@@ -94,7 +95,7 @@ export function FormComponent({
     <Form
       form={model.form}
       initialValues={model.context.record || initialValues}
-      {...layoutProps}
+      {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
         model.dispatchEvent('formValuesChange');
