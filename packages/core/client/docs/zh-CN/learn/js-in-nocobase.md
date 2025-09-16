@@ -1,8 +1,6 @@
 # 在线编写 & 运行 JS
 
-
-
-所有 runjs 的地方都是调用的 [ctx.runjs()](/examples/flow-context/runjs)，目前支持 runjs 的场景有：
+提供一种轻量级的扩展方式，适合快速实验、简单逻辑的场景，无需编写插件。所有 runjs 的地方都是调用的 [ctx.runjs()](/examples/flow-context/runjs)，目前支持 runjs 的场景有：
 
 ## JSBlock
 
