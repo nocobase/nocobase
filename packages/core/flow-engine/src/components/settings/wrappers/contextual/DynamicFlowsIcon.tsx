@@ -55,10 +55,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
   const refresh = useUpdate();
+  const t = model.translate.bind(model);
 
   // 创建新流的默认值
   const createNewFlow = (): any => ({
-    title: 'Event flow',
+    title: t('Event flow'),
     on: {
       condition: { logic: '$and', items: [] },
     },
@@ -122,7 +123,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   };
 
   const getEventList = () => {
-    return [...model.getEvents().values()].map((event) => ({ label: model.translate(event.label), value: event.name }));
+    return [...model.getEvents().values()].map((event) => ({ label: t(event.label), value: event.name }));
   };
 
   // 添加步骤
@@ -230,17 +231,17 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 color: '#262626',
               }}
             >
-              {model.translate('Event')}
+              {t('Event')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
             {/* 触发事件 */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-                {model.translate('Trigger event')}
+                {t('Trigger event')}
               </div>
               <Select
-                placeholder={model.translate('Select trigger event')}
+                placeholder={t('Select trigger event')}
                 style={{ width: '100%' }}
                 value={(flow.on as any)?.eventName}
                 onChange={(value) => {
@@ -259,7 +260,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
             {(flow.on as any)?.eventName && (
               <div>
                 <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-                  {model.translate('Trigger condition')}
+                  {t('Trigger condition')}
                 </div>
                 <FilterGroup
                   value={(flow.on as any)?.condition}
@@ -299,7 +300,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 color: '#262626',
               }}
             >
-              {model.translate('Steps')}
+              {t('Steps')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
@@ -327,8 +328,8 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                         marginBottom: '8px',
                       }}
                     >
-                      <span style={{ fontWeight: 500, color: '#262626' }}>{model.translate(actionDef.title)}</span>
-                      <Tooltip title="Delete step">
+                      <span style={{ fontWeight: 500, color: '#262626' }}>{t(actionDef.title)}</span>
+                      <Tooltip title={t('Delete step')}>
                         <Button
                           type="text"
                           size="small"
@@ -355,14 +356,14 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               menu={{
                 items: getActionList().map((action) => ({
                   key: action.name,
-                  label: model.translate(action.title) || action.name,
+                  label: t(action.title) || action.name,
                   onClick: () => handleAddStep(flow, action),
                 })),
               }}
               trigger={['hover']}
             >
               <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
-                Add step
+                {t('Add step')}
               </Button>
             </Dropdown>
           </div>
@@ -396,7 +397,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>Flows</div>
+        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t('Edit event flows')}</div>
         <Button
           type="text"
           size="small"
@@ -432,11 +433,11 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               marginBottom: '8px',
             }}
           >
-            <Empty description="No flows" style={{ margin: '20px 0' }} />
+            <Empty description={t('No event flows')} style={{ margin: '20px 0' }} />
           </div>
         )}
         <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddFlow} style={{ width: '100%' }}>
-          Add flow
+          {t('Add event flow')}
         </Button>
       </div>
 
@@ -452,7 +453,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           flexShrink: 0,
         }}
       >
-        <Button onClick={() => ctx.view.destroy()}>Cancel</Button>
+        <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
         <Button
           type="primary"
           loading={submitLoading}
@@ -463,7 +464,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
             ctx.view.destroy();
           }}
         >
-          OK
+          {t('Save')}
         </Button>
       </div>
     </div>
