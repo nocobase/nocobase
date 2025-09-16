@@ -54,7 +54,7 @@ export type UploadFileOptions = {
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
-  storagesCache = new Map<number, StorageModel>();
+  storagesCache = new Map<number | string, StorageModel>();
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
