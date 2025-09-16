@@ -48,6 +48,16 @@ export class JSFieldModel extends FieldModel {
   render() {
     return <span ref={this.context.ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
   }
+
+  /**
+   * 组件挂载后，如果容器引用已就绪，强制重跑一次自动流程以把 HTML 写入当前 DOM。
+   * 解决新增后因命中缓存或执行时机导致内容未写入的问题（与 JSBlock/JSItem 一致处理）。
+   */
+  protected onMount() {
+    if (this.context.ref?.current) {
+      this.rerender();
+    }
+  }
 }
 
 JSFieldModel.define({
