@@ -164,6 +164,7 @@ FormItemModel.registerFlow({
         await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
         if (collectionField) {
+          console.log(collectionField.getComponentProps());
           ctx.model.setProps(collectionField.getComponentProps());
         }
         const fieldPath = ctx.model.fieldPath;

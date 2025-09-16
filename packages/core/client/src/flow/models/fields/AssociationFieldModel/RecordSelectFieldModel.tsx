@@ -133,7 +133,7 @@ const paginationState = {
 // 事件绑定
 RecordSelectFieldModel.registerFlow({
   key: 'eventSettings',
-  sort: 300,
+  sort: 900,
   steps: {
     bindEvent: {
       handler(ctx, params) {
@@ -285,10 +285,8 @@ RecordSelectFieldModel.registerFlow({
   },
 });
 
-//专有配置项
 RecordSelectFieldModel.registerFlow({
-  key: 'selectSettings',
-  title: escapeT('Association select settings'),
+  key: 'recordSelectSettings',
   sort: 200,
   steps: {
     init: {
@@ -310,6 +308,15 @@ RecordSelectFieldModel.registerFlow({
         ctx.model.resource = resource;
       },
     },
+  },
+});
+
+//专有配置项
+RecordSelectFieldModel.registerFlow({
+  key: 'selectSettings',
+  title: escapeT('Association select settings'),
+  sort: 800,
+  steps: {
     fieldNames: {
       use: 'titleField',
     },
@@ -318,6 +325,32 @@ RecordSelectFieldModel.registerFlow({
     },
     sortingRule: {
       use: 'sortingRule',
+    },
+    allowMultiple: {
+      title: escapeT('Allow multiple'),
+      uiSchema(ctx) {
+        if (['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type)) {
+          return {
+            multiple: {
+              'x-component': 'Switch',
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+            },
+          };
+        } else {
+          return null;
+        }
+      },
+      defaultParams(ctx) {
+        return {
+          multiple: ['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          multiple: params?.multiple,
+        });
+      },
     },
   },
 });
