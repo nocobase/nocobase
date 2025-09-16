@@ -230,15 +230,17 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                 color: '#262626',
               }}
             >
-              事件
+              {model.translate('Event')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
             {/* 触发事件 */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>触发事件</div>
+              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                {model.translate('Trigger event')}
+              </div>
               <Select
-                placeholder="选择触发事件"
+                placeholder={model.translate('Select trigger event')}
                 style={{ width: '100%' }}
                 value={(flow.on as any)?.eventName}
                 onChange={(value) => {
@@ -256,7 +258,9 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
             {/* 触发条件 */}
             {(flow.on as any)?.eventName && (
               <div>
-                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>触发条件</div>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
+                  {model.translate('Trigger condition')}
+                </div>
                 <FilterGroup
                   value={(flow.on as any)?.condition}
                   FilterItem={(props) => <LinkageFilterItem model={model} value={props.value} />}
