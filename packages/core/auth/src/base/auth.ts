@@ -67,7 +67,7 @@ export class BaseAuth extends Auth {
    * @internal
    */
   validateUsername(username: string) {
-    return /^[^@.<>"'/]{1,50}$/.test(username);
+    return /^[^@<>"'/]{1,50}$/.test(username);
   }
 
   async checkToken(): Promise<{
