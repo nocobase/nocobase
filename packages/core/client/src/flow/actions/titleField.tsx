@@ -51,9 +51,9 @@ export const titleField = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const targetCollection = ctx.model.collectionField.targetCollection;
+    const titleField = ctx.model.collectionField.targetCollectionTitleFieldName;
     return {
-      label: targetCollection.options.titleField || targetCollection.filterTargetKey,
+      label: titleField,
     };
   },
   async handler(ctx: any, params) {
