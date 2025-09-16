@@ -42,11 +42,9 @@ export class BlockGridModel extends GridModel {
 
   renderAddSubModelButton() {
     return (
-      <>
-        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={this.subModelBaseClasses}>
-          <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add block')}</FlowSettingsButton>
-        </AddSubModelButton>
-      </>
+      <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={this.subModelBaseClasses}>
+        <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add block')}</FlowSettingsButton>
+      </AddSubModelButton>
     );
   }
 

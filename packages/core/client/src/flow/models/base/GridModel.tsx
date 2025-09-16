@@ -10,7 +10,6 @@
 import { DragMoveEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
-  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
