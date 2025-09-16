@@ -910,7 +910,7 @@ const commonUIMode = (ctx): any => {
 
 export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
-  title: escapeT('Block linkage Rules'),
+  title: escapeT('Block linkage rules'),
   uiMode: commonUIMode,
   uiSchema(ctx) {
     return {
@@ -931,7 +931,7 @@ export const blockLinkageRules = defineAction({
 
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
-  title: escapeT('Linkage Rules'),
+  title: escapeT('Linkage rules'),
   uiMode: commonUIMode,
   uiSchema(ctx) {
     return {
@@ -952,7 +952,7 @@ export const actionLinkageRules = defineAction({
 
 export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
-  title: escapeT('Field linkage Rules'),
+  title: escapeT('Field linkage rules'),
   uiMode: commonUIMode,
   uiSchema(ctx) {
     return {

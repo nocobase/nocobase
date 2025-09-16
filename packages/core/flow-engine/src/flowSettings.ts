@@ -98,6 +98,9 @@ export class FlowSettings {
     this.toolbarItems.push({
       key: 'dynamic-flows-editor',
       component: DynamicFlowsIcon,
+      visible(model) {
+        return model.getEvents().size > 0;
+      },
       sort: 0,
     });
   }

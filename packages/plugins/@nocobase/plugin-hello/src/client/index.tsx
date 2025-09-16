@@ -167,7 +167,7 @@ class Hello4ActionModel extends PopupActionModel {
 
 class Hello1FieldModel extends FieldModel {
   render() {
-    return <div>aaa</div>;
+    return <div>{this.props.value}</div>;
   }
 }
 

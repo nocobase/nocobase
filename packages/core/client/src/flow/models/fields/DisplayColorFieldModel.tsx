@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { ColorPicker } from 'antd';
 import { css } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
+import { ColorPicker } from 'antd';
+import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayColorFieldModel extends ClickableFieldModel {

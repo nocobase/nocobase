@@ -473,6 +473,10 @@ export default defineConfig({
           link: '/learn',
         },
         {
+          title: '在线编写 & 运行 JS',
+          link: '/learn/js-in-nocobase',
+        },
+        {
           title: 'Quick start',
           type: 'group',
           children: [
@@ -506,10 +510,7 @@ export default defineConfig({
               title: 'Observable',
               link: '/learn/observable',
             },
-            {
-              title: '在线编写 & 运行 JS',
-              link: '/learn/js-in-nocobase',
-            },
+
             // {
             //   title: 'Define Collection',
             //   link: '/learn/define-collection',
@@ -529,16 +530,12 @@ export default defineConfig({
           ],
         },
         {
-          title: '最佳实践',
+          title: '升级指南',
           type: 'group',
           children: [
             {
-              title: 'FlowModel 使用指南',
-              link: '/learn/best-practices/flow-model',
-            },
-            {
               title: '1.0 vs 2.0',
-              link: '/learn/best-practices/1-0-vs-2-0',
+              link: '/learn/1-0-vs-2-0',
             }
           ]
         }

@@ -10,7 +10,7 @@
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
-import { Form } from 'antd';
+import { Form, FormInstance } from 'antd';
 import React from 'react';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
@@ -25,7 +25,15 @@ export class FormModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
   get form() {
-    return this.context.form;
+    return this.context.form as FormInstance;
+  }
+
+  setFieldsValue(values: any) {
+    this.form.setFieldsValue(values);
+  }
+
+  setFieldValue(fieldName: string, value: any) {
+    this.form.setFieldValue(fieldName, value);
   }
 
   useHooksBeforeRender() {
