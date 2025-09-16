@@ -13,7 +13,7 @@ import React from 'react';
 import { Icon } from '../../../../icon';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { RemoteFlowModelRenderer } from '../../../FlowPage';
-import { BlockGridModel } from '../GridModel';
+import { BlockGridModel } from '../BlockGridModel';
 
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(
