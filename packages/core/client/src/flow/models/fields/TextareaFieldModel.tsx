@@ -15,7 +15,9 @@ import { FieldModel } from '../base';
 @largeField()
 export class TextareaFieldModel extends FieldModel {
   render() {
-    return <Input.TextArea {...this.props} />;
+    const { value, onChange, ...rest } = this.props;
+
+    return <Input.TextArea {...rest} defaultValue={value} onChange={onChange} />;
   }
 }
 

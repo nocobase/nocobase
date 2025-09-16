@@ -15,7 +15,8 @@ import { FieldModel } from '../base';
 
 export class InputFieldModel extends FieldModel {
   render() {
-    return <Input {...this.props} />;
+    const { value, onChange, ...rest } = this.props;
+    return <Input {...rest} defaultValue={value} onChange={onChange} />;
   }
 }
 
