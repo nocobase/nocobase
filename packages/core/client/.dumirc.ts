@@ -507,7 +507,7 @@ export default defineConfig({
               link: '/learn/observable',
             },
             {
-              title: '可以在线写 JS 的地方',
+              title: '在线编写 & 运行 JS',
               link: '/learn/js-in-nocobase',
             },
             // {
