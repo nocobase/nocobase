@@ -700,12 +700,12 @@ export const InternalAdminLayout = () => {
         colorHeaderTitle: token.colorTextHeaderMenu,
       },
       sider: {
-        colorMenuBackground: token.colorBgContainer,
-        colorTextMenu: token.colorText,
-        colorTextMenuSelected: token.colorPrimary,
-        colorBgMenuItemSelected: token.colorPrimaryBg,
-        colorBgMenuItemActive: token.colorPrimaryBg,
-        colorBgMenuItemHover: token.colorBgTextHover,
+        colorMenuBackground: token.colorBgSider,
+        colorTextMenu: token.colorTextSiderMenu,
+        colorTextMenuSelected: token.colorTextSiderMenuActive,
+        colorBgMenuItemSelected: token.colorBgSiderMenuActive,
+        colorBgMenuItemActive: token.colorBgSiderMenuActive,
+        colorBgMenuItemHover: token.colorBgSiderMenuHover,
       },
       bgLayout: token.colorBgLayout,
     };
