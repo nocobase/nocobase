@@ -8,6 +8,7 @@
  */
 
 import * as React from 'react';
+import DOMPurify from 'dompurify';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
@@ -115,7 +116,13 @@ export function useDialog() {
       () => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
-        const content = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
+        const rawContent = typeof config.content === 'function' ? config.content(currentDialog, ctx) : config.content;
+        const content =
+          typeof rawContent === 'string' ? (
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rawContent) }} />
+          ) : (
+            rawContent
+          );
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
         React.useEffect(() => {

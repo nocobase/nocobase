@@ -8,6 +8,7 @@
  */
 
 import { Popover } from 'antd';
+import DOMPurify from 'dompurify';
 import * as React from 'react';
 import usePatchElement from './usePatchElement';
 
@@ -89,7 +90,13 @@ export function usePopover() {
         popoverRef.current?.close(result);
       },
     };
-    const children = typeof content === 'function' ? content(currentPopover) : content;
+    const rawChildren = typeof content === 'function' ? content(currentPopover) : content;
+    const children =
+      typeof rawChildren === 'string' ? (
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(rawChildren) }} />
+      ) : (
+        rawChildren
+      );
 
     const popover = (
       <PopoverComponent
