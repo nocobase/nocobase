@@ -9,14 +9,7 @@
 
 import React from 'react';
 import { ThunderboltOutlined, DeleteOutlined, PlusOutlined, CloseOutlined } from '@ant-design/icons';
-import {
-  ActionDefinition,
-  ActionScene,
-  FlowModel,
-  observable,
-  StepDefinition,
-  useFlowContext,
-} from '@nocobase/flow-engine';
+import { ActionDefinition, ActionScene, FlowModel, StepDefinition, useFlowContext } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
@@ -358,7 +351,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               trigger={['hover']}
             >
               <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
-                Add action
+                Add step
               </Button>
             </Dropdown>
           </div>
