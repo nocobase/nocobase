@@ -13,20 +13,17 @@ import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-
-function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
+function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'file' {
   let mimetype = '';
   let ext = '';
 
   if (typeof file === 'string') {
-    // 是字符串（直接是 URL）
     const cleanUrl = file.split('?')[0].split('#')[0];
     const lastDotIndex = cleanUrl.lastIndexOf('.');
     if (lastDotIndex !== -1) {
       ext = cleanUrl.substring(lastDotIndex).toLowerCase();
     }
   } else if (typeof file === 'object' && file !== null) {
-    // 是对象
     mimetype = file.mimetype || '';
     ext = (file.extname || '').toLowerCase();
     if (!ext && file.url) {
@@ -44,6 +41,7 @@ function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
     if (mimetype.startsWith('video/')) return 'video';
     if (mimetype.startsWith('audio/')) return 'audio';
     if (mimetype === 'application/pdf') return 'pdf';
+    if (mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'excel';
   }
 
   // 判断扩展名
@@ -51,6 +49,7 @@ function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'file' {
   if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'].includes(ext)) return 'video';
   if (['.mp3', '.wav', '.aac', '.ogg'].includes(ext)) return 'audio';
   if (['.pdf'].includes(ext)) return 'pdf';
+  if (['.xlsx'].includes(ext)) return 'excel';
 
   return 'file';
 }
@@ -69,9 +68,19 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     mov: '/file-placeholder/video-200-200.png',
     doc: '/file-placeholder/word-200-200.png',
     docx: '/file-placeholder/word-200-200.png',
+    xls: '/file-placeholder/xlsx-200-200.png',
+    xlsx: '/file-placeholder/xlsx-200-200.png',
+    ppt: '/file-placeholder/ppt-200-200.png',
+    pptx: '/file-placeholder/ppt-200-200.png',
+    jpg: '/file-placeholder/image-200-200.png',
+    jpeg: '/file-placeholder/image-200-200.png',
+    png: '/file-placeholder/image-200-200.png',
+    gif: '/file-placeholder/image-200-200.png',
     default: '/file-placeholder/file-200-200.png',
   };
+
   const type = getFileType(file);
+
   const fallback = fallbackMap[ext] || fallbackMap.default;
   const imageNode = (
     <Image
