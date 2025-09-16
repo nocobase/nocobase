@@ -12,6 +12,8 @@ import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
+const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span class="nb-js-field-value">${'${'}String(value ?? '')}</span>\`;\n\n`;
+
 /**
  * JS 字段（只读形态）：
  * - 通过 jsSettings.runJs 配置并执行 JS 代码；
@@ -79,11 +81,11 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span class="nb-js-field-value" style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n`,
+          code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
+        const { code = DEFAULT_CODE } = params || {};
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {

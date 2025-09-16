@@ -142,7 +142,7 @@ JSColumnModel.registerFlow({
       },
       defaultParams() {
         return {
-          code: `ctx.element.innerHTML = \`<span class="nb-js-column" style="color:#1890ff;">JS column</span>\`;`,
+          code: `ctx.element.innerHTML = \`<span class="nb-js-column">JS column</span>\`;`,
         };
       },
       async handler(ctx, params) {
