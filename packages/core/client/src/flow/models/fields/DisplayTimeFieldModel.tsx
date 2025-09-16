@@ -9,20 +9,36 @@
 
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
+import dayjs from 'dayjs';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { prefix, suffix } = this.props;
+    const format = this.props['format'] || 'HH:mm:ss';
+    const result = value && dayjs(value, 'HH:mm:ss').format(format);
     return (
       <span>
         {prefix}
-        {this.translate(value)}
+        {result}
         {suffix}
       </span>
     );
   }
 }
+
+DisplayTimeFieldModel.registerFlow({
+  key: 'timeSettings',
+  sort: 1000,
+  title: escapeT('Time settings'),
+  steps: {
+    dateFormat: {
+      title: escapeT('Time format'),
+      use: 'dateDisplayFormat',
+    },
+  },
+});
+
 DisplayTimeFieldModel.define({
   label: escapeT('Time'),
 });

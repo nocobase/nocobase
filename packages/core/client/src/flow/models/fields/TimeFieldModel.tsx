@@ -15,7 +15,7 @@ import { FieldModel } from '../base';
 
 export class TimeFieldModel extends FieldModel {
   setProps(props) {
-    const format = props['timeFormat'] || 'HH:mm:ss';
+    const format = props['format'] || 'HH:mm:ss';
     const onChange = props.onChange;
     const componentProps = {
       ...props,

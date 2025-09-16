@@ -35,7 +35,7 @@ DisplayDateTimeFieldModel.registerFlow({
       use: 'dateDisplayFormat',
       title: tval('Date display format'),
       defaultParams: (ctx) => {
-        const { showTime, dateFormat, timeFormat, picker } = ctx.model.props;
+        const { showTime, dateFormat, timeFormat, picker } = ctx.model.context.collectionField.getComponentProps();
         return {
           picker: picker || 'date',
           dateFormat: dateFormat || 'YYYY-MM-DD',

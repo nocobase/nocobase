@@ -45,4 +45,5 @@ export * from './DisplayPasswordFieldModel';
 export * from './DisplayPercentFieldModel';
 export * from './DisplayTextFieldModel';
 export * from './DisplayURLFieldModel';
+export * from './DisplayTimeFieldModel';
 //

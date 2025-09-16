@@ -17,6 +17,7 @@ export const dateTimeFormat = defineAction({
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
     const { collectionField } = ctx.model.context as any;
+    console.log(collectionField);
     const type = collectionField.type;
     const timeFormatField = {
       type: 'string',
