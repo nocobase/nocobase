@@ -15,8 +15,7 @@ import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayDateTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { dateFormat = 'YYYY-MM-DD', timeFormat = 'HH:mm:ss', showTime } = this.props;
-    const finalFormat = showTime ? `${dateFormat} ${timeFormat}` : dateFormat;
+    const finalFormat = this.props.format;
     let formattedValue = '';
     if (value) {
       const day = dayjs(value);
@@ -34,18 +33,6 @@ DisplayDateTimeFieldModel.registerFlow({
     dateFormat: {
       use: 'dateDisplayFormat',
       title: tval('Date display format'),
-      defaultParams: (ctx) => {
-        const { showTime, dateFormat, timeFormat, picker } = ctx.model.context.collectionField.getComponentProps();
-        return {
-          picker: picker || 'date',
-          dateFormat: dateFormat || 'YYYY-MM-DD',
-          timeFormat: timeFormat,
-          showTime,
-        };
-      },
-      handler(ctx: any, params) {
-        ctx.model.setProps?.({ ...params });
-      },
     },
   },
 });
