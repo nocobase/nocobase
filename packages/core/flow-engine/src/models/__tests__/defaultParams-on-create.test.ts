@@ -13,15 +13,13 @@ import { FlowEngine } from '../../flowEngine';
 import { defineFlow, FlowModel } from '../flowModel';
 
 describe('FlowDefinition.defaultParams applied at createModel', () => {
-  it('fills missing stepParams on createModel (flowKey present in returned object)', async () => {
+  it('fills missing stepParams on createModel', async () => {
     class ModelA extends FlowModel {}
     ModelA.registerFlow(
       defineFlow({
         key: 'alpha',
         steps: { s1: {} },
-        defaultParams: () => ({
-          alpha: { s1: { a: 1 } },
-        }),
+        defaultParams: () => ({ s1: { a: 1 } }),
       }),
     );
 
@@ -40,7 +38,7 @@ describe('FlowDefinition.defaultParams applied at createModel', () => {
       defineFlow({
         key: 'alpha',
         steps: { s1: {} },
-        defaultParams: () => ({ alpha: { s1: { a: 1 } } }),
+        defaultParams: () => ({ s1: { a: 1 } }),
       }),
     );
 
@@ -57,24 +55,7 @@ describe('FlowDefinition.defaultParams applied at createModel', () => {
     });
   });
 
-  it('accepts defaultParams without outer flowKey (applies to current flow)', async () => {
-    class ModelC extends FlowModel {}
-    ModelC.registerFlow(
-      defineFlow({
-        key: 'beta',
-        steps: { s1: {} },
-        defaultParams: () => ({ s1: { b: 2 } }),
-      }),
-    );
-
-    const engine = new FlowEngine();
-    engine.registerModels({ ModelC });
-    const m = engine.createModel<ModelC>({ use: 'ModelC', uid: 'm-gamma' });
-
-    await waitFor(() => {
-      expect(m.getStepParams('beta', 's1')).toEqual({ b: 2 });
-    });
-  });
+  // only step-level shape is supported; flowKey wrapping is not needed
 
   it('partially fills only missing steps', async () => {
     class ModelD extends FlowModel {}
@@ -82,7 +63,7 @@ describe('FlowDefinition.defaultParams applied at createModel', () => {
       defineFlow({
         key: 'theta',
         steps: { s1: {}, s2: {} },
-        defaultParams: () => ({ theta: { s1: { a: 1 }, s2: { b: 2 } } }),
+        defaultParams: () => ({ s1: { a: 1 }, s2: { b: 2 } }),
       }),
     );
 
@@ -97,38 +78,6 @@ describe('FlowDefinition.defaultParams applied at createModel', () => {
     await waitFor(() => {
       expect(m.getStepParams('theta', 's1')).toEqual({ a: 99 }); // unchanged
       expect(m.getStepParams('theta', 's2')).toEqual({ b: 2 }); // filled
-    });
-  });
-
-  it('supports multi-flow shape and only applies to current flowKey', async () => {
-    class ModelE extends FlowModel {}
-    // register two flows with same default provider returning both keys
-    const defaults = () => ({
-      foo: { s1: { x: 1 } },
-      bar: { s2: { y: 2 } },
-    });
-    ModelE.registerFlow(
-      defineFlow({
-        key: 'foo',
-        steps: { s1: {} },
-        defaultParams: defaults,
-      }),
-    );
-    ModelE.registerFlow(
-      defineFlow({
-        key: 'bar',
-        steps: { s2: {} },
-        defaultParams: defaults,
-      }),
-    );
-
-    const engine = new FlowEngine();
-    engine.registerModels({ ModelE });
-    const m = engine.createModel<ModelE>({ use: 'ModelE', uid: 'm-e' });
-
-    await waitFor(() => {
-      expect(m.getStepParams('foo', 's1')).toEqual({ x: 1 });
-      expect(m.getStepParams('bar', 's2')).toEqual({ y: 2 });
     });
   });
 });

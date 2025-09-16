@@ -434,24 +434,13 @@ export class FlowEngine {
 
         if (!resolved || typeof resolved !== 'object') continue;
 
-        // 允许两种返回形状：
-        // A) 全量 StepParams（{ [flowKey]: { [stepKey]: {} } }）
-        // B) 仅当前 flow 的 steps（{ [stepKey]: {} }）
+        // 仅支持：返回当前 flow 的步骤对象 { [stepKey]: params }
         const stepsMap = (flowDef as any).getSteps?.() as Map<string, any> | undefined;
         const stepKeys = stepsMap ? Array.from(stepsMap.keys()) : Object.keys(flowDef.steps || {});
+        const entries = Object.entries(resolved).filter(([k]) => stepKeys.includes(k));
+        if (entries.length === 0) continue;
 
-        let flowLevelParams: any = undefined;
-        if (Object.prototype.hasOwnProperty.call(resolved, flowKey)) {
-          flowLevelParams = resolved[flowKey];
-        } else {
-          const keys = Object.keys(resolved || {});
-          const looksLikeSteps = keys.length > 0 && keys.every((k) => stepKeys.includes(k));
-          if (looksLikeSteps) flowLevelParams = resolved;
-        }
-
-        if (!flowLevelParams || typeof flowLevelParams !== 'object') continue;
-
-        for (const [stepKey, params] of Object.entries(flowLevelParams)) {
+        for (const [stepKey, params] of entries) {
           const exists = model.getStepParams(flowKey, stepKey as string);
           if (exists === undefined && params && typeof params === 'object') {
             model.setStepParams(flowKey, stepKey as string, params as any);
