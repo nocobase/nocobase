@@ -315,7 +315,6 @@ AssignFormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = (ctx.model as any).collectionField;
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());

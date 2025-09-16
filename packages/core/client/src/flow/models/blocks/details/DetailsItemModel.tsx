@@ -185,7 +185,6 @@ DetailsItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
         const { collectionField } = ctx.model;
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());

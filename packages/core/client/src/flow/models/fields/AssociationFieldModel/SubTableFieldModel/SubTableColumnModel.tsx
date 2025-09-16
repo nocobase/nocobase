@@ -273,7 +273,6 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps(collectionField.getComponentProps());
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
-        await ctx.model.applySubModelsAutoFlows('field');
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
           currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).context.fieldPath}.${ctx.model.fieldPath}`);
