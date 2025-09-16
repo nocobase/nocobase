@@ -38,7 +38,7 @@ export class JSItemModel extends CommonItemModel {
 }
 
 JSItemModel.define({
-  label: escapeT('JS block'),
+  label: escapeT('JS item'),
   // 明确指定 createModelOptions，避免在构建压缩后通过类名推断失败
   createModelOptions: {
     use: 'JSItemModel',
@@ -75,7 +75,7 @@ JSItemModel.registerFlow({
           code: `
 ctx.element.innerHTML = \`
   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
-    <h3 style="color: #1890ff; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">JavaScript Item</h3>
+    <h3 style="color: #1890ff; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">JS Item</h3>
     <div style="color:#555">This area is rendered by your JavaScript code.</div>
   </div>
 \`;`.trim(),

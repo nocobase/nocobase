@@ -506,6 +506,10 @@ export default defineConfig({
               title: 'Observable',
               link: '/learn/observable',
             },
+            {
+              title: '可以在线写 JS 的地方',
+              link: '/learn/js-in-nocobase',
+            },
             // {
             //   title: 'Define Collection',
             //   link: '/learn/define-collection',
@@ -599,6 +603,18 @@ export default defineConfig({
               extra: '基类',
             },
             {
+              title: 'DisplayItemModel',
+              link: '/models/fields/display-item-model',
+            },
+            {
+              title: 'EditableItemModel',
+              link: '/models/fields/editable-item-model',
+            },
+            {
+              title: 'FilterableItemModel',
+              link: '/models/fields/filterable-item-model',
+            },
+            {
               title: 'JSFieldModel',
               link: '/models/fields/js-field-model',
             },
@@ -624,6 +640,16 @@ export default defineConfig({
             {
               title: 'PopupActionModel',
               link: '/models/actions/popup-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FormActionModel',
+              link: '/models/actions/form-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FilterFormActionModel',
+              link: '/models/actions/filter-form-action-model',
               extra: '基类',
             },
             {
