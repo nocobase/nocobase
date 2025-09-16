@@ -25,7 +25,28 @@ EditableItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
 FilterableItemModel.bindModelToInterface('Hello2FieldModel', ['input']);
 ```
 
-## 定义的字段 Model 需要和对应的 Interface 绑定，相关场景有：
+## bindModelToInterface
+
+定义的字段 Model 需要和对应的 Interface 绑定
+
+```ts
+interface BindModelToInterfaceOptions {
+  isDefault?: boolean;
+  defaultProps?: object | ((ctx: FlowEngineContext, fieldInstance: CollectionField) => object);
+  when?: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
+}
+
+static bindModelToInterface(
+  // 字段 Model 的类名
+  modelName: string,
+  // 需要绑定的 interface
+  interfaceName: string | string[],
+  // 当前字段实例
+  options: BindModelToInterfaceOptions,
+);
+```
+
+相关场景有：
 
 - DisplayItemModel：展示类字段
 - EditableItemModel：可编辑类字段
