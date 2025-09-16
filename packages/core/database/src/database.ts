@@ -847,7 +847,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
     const { retry = 9, ...others } = options;
-    const startingDelay = 50;
+    const startingDelay = 200;
     const timeMultiple = 2;
 
     let attemptNumber = 1; // To track the current attempt number
