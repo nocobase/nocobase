@@ -4,10 +4,10 @@
 
 ### 展示类字段
 
-```ts | pure
+```tsx | pure
 class Hello1FieldModel extends FieldModel {
   render() {
-    return <div>Hello, NocoBase Field</div>;
+    return <span>{this.props.value}</span>;
   }
 }
 DisplayItemModel.bindModelToInterface('Hello1FieldModel', ['input']);
