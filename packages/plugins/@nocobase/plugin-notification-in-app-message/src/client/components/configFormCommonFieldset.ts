@@ -49,7 +49,7 @@ export function getConfigFormCommonFieldset({ variableOptions }) {
           'x-component-props': {
             scope: variableOptions,
             useTypedConstant: ['string'],
-            delimiters: ['{{{', '}}}'],
+            // delimiters: ['{{{', '}}}'],
           },
           description: tval(
             'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
@@ -65,7 +65,7 @@ export function getConfigFormCommonFieldset({ variableOptions }) {
           'x-component-props': {
             scope: variableOptions,
             useTypedConstant: ['string'],
-            delimiters: ['{{{', '}}}'],
+            // delimiters: ['{{{', '}}}'],
           },
           description: tval(
             'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
