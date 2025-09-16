@@ -47,12 +47,10 @@ export const openViewFlow = defineFlow<FlowModel>({
     }
 
     return {
-      popupSettings: {
-        openView: {
-          collectionName,
-          associationName,
-          dataSourceKey,
-        },
+      openView: {
+        collectionName,
+        associationName,
+        dataSourceKey,
       },
     };
   },

@@ -10,10 +10,16 @@
 interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // 流唯一标识
   title?: string; // 可选：流显示名称
-  auto?: boolean; // 可选：是否自动运行
+  // 注意：自动执行策略：未配置 on 且未显式 manual: true 的流，视为自动执行
+  manual?: boolean; // 可选：是否仅手动执行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
   on?: { eventName: string }; // 可选：事件触发配置
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
+  /**
+   * Flow 级默认参数：在模型创建（createModel）时填充步骤参数，仅填补缺失、不覆盖已有。
+   * 固定返回形状：仅当前 Flow 的步骤对象：{ [stepKey]: params }
+   */
+  defaultParams?: StepParam | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
 }
 
 // 步骤定义支持两种类型：ActionStepDefinition 和 InlineStepDefinition
@@ -218,14 +224,14 @@ await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排�
 
 ### FlowDefinition 配置速查表
 
-| 字段          | 类型                               | 说明                                 |
-| ----------- | -------------------------------- | ---------------------------------- |
-| `key`       | `string`                         | 流唯一标识，必须配置                        |
-| `title`     | `string`                         | （可选）流显示名称                         |
-| `on`        | `{ eventName: string }`          | （可选）事件触发配置                         |
-| `auto`      | `boolean`                        | （可选）是否在 `applyAutoFlows()` 中自动执行流 |
-| `sort`      | `number`                         | （可选）流执行排序，数字越小越先执行，默认为 0，可为负数   |
-| `steps`     | `Record<string, StepDefinition>` | 步骤集合，键为步骤名，值为步骤定义                  |
+| 字段             | 类型                                                                                              | 说明                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `key`            | `string`                                                                                          | 流唯一标识，必须配置                                   |
+| `title`          | `string`                                                                                          | （可选）流显示名称                                    |
+| `on`             | `{ eventName: string }`                                                                           | （可选）事件触发配置                                  |
+| `sort`           | `number`                                                                                          | （可选）流执行排序，数字越小越先执行，默认为 0，可为负数       |
+| `steps`          | `Record<string, StepDefinition>`                                                                  | 步骤集合，键为步骤名，值为步骤定义                         |
+| `defaultParams`  | `StepParam` \| `(ctx: FlowModelContext) => StepParam \| Promise<StepParam>` | Flow 级默认参数（仅返回当前 Flow 的步骤对象），创建模型时填补缺失步骤参数 |
 
 ### StepDefinition 配置速查表
 
@@ -239,5 +245,3 @@ await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排�
 | `paramsRequired`| `boolean`                              | （可选）是否需要参数配置，为 true 时添加模型前会打开配置对话框 |
 | `hideInSettings`| `boolean`                              | （可选）是否在设置菜单中隐藏该步骤                   |
 | `handler`       | `(ctx, params) => Promise<any>` | （可选）步骤执行逻辑，若未定义则使用 `use` 指定的全局 Action |
-
----

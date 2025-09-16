@@ -112,11 +112,10 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
 
   steps: Record<string, StepDefinition<TModel>>;
   /**
-   * Flow 级默认参数：用于在模型实例化（createModel）时，基于上下文为该 flow 写入初始的 stepParams。
-   * 注意：只会对“尚未存在”的步骤参数进行填充，不会覆盖已存在的 stepParams。
-   * 形状为 StepParams；通常仅返回当前 flowKey 对应的对象即可。
+   * Flow 级默认参数：在模型实例化（createModel）时，为“当前 Flow”的步骤参数填充初始值。
+   * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
    */
-  defaultParams?: StepParams | ((ctx: FlowModelContext) => StepParams | Promise<StepParams>);
+  defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
 }
 
 export interface IModelComponentProps {
@@ -264,12 +263,15 @@ export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R 
  * }
  * ```
  */
-export type StepParams = {
-  [flowKey: string]: {
-    [stepKey: string]: {
-      [paramKey: string]: any;
-    };
+
+type StepParam = {
+  [stepKey: string]: {
+    [paramKey: string]: any;
   };
+};
+
+export type StepParams = {
+  [flowKey: string]: StepParam;
 };
 
 export type ParamObject = {
