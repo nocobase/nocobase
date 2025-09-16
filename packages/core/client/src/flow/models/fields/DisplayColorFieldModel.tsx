@@ -11,10 +11,11 @@ import { css } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ColorPicker } from 'antd';
 import React from 'react';
-import { ClickableFieldModel } from './ClickableFieldModel';
+import { FieldModel } from '../base';
 
-export class DisplayColorFieldModel extends ClickableFieldModel {
-  public renderComponent(value) {
+export class DisplayColorFieldModel extends FieldModel {
+  public render() {
+    const { value } = this.props;
     return (
       <div
         role="button"

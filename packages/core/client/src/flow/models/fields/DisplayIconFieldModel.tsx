@@ -10,10 +10,11 @@
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { Icon } from '../../../icon';
-import { ClickableFieldModel } from './ClickableFieldModel';
+import { FieldModel } from '../base';
 
-export class DisplayIconFieldModel extends ClickableFieldModel {
-  public renderComponent(value) {
+export class DisplayIconFieldModel extends FieldModel {
+  public render() {
+    const { value } = this.props;
     return <Icon type={value} />;
   }
 }
