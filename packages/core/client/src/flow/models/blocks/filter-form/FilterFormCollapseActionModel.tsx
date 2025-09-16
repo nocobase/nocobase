@@ -115,3 +115,10 @@ FilterFormCollapseActionModel.define({
   toggleable: true,
   sort: 300,
 });
+
+FilterFormCollapseActionModel.registerEvents({
+  collapseToggle: {
+    label: tval('Collapse / Expand toggle'),
+    name: 'collapseToggle',
+  },
+});

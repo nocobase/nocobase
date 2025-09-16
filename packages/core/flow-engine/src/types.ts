@@ -143,6 +143,8 @@ export enum ActionScene {
   FIELD_LINKAGE_RULES,
   /** 按钮级联动规则可用 */
   ACTION_LINKAGE_RULES,
+  /** 动态事件流可用 */
+  DYNAMIC_EVENT_FLOW,
 }
 
 /**

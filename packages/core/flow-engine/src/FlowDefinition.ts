@@ -208,7 +208,7 @@ export class FlowDefinition {
   }
 }
 
-class FlowStep {
+export class FlowStep {
   protected options: StepDefinition;
 
   constructor(
@@ -244,6 +244,10 @@ class FlowStep {
 
   get defaultParams() {
     return this.options.defaultParams || {};
+  }
+
+  set defaultParams(params: Record<string, any>) {
+    this.options.defaultParams = params;
   }
 
   get use() {
