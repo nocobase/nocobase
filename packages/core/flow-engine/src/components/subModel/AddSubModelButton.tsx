@@ -473,6 +473,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
         subType: subModelType,
       });
 
+      addedModel.isNew = true; // 强制标记为新建状态
       addedModel.setParent(model);
 
       const toAdd = async () => {
@@ -494,6 +495,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
           await addedModel.afterAddAsSubModel();
 
           await addedModel.save();
+          addedModel.isNew = false;
           // Force refresh items so toggle state recalculates while dropdown stays open
           setRefreshTick((x) => x + 1);
         } catch (error) {

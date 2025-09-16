@@ -87,6 +87,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
   protected _title: string;
+  public isNew = false; // 标记是否为新建状态
 
   /**
    * 所有 fork 实例的引用集合。

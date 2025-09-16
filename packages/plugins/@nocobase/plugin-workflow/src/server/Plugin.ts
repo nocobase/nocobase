@@ -231,6 +231,8 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.checker) {
       clearInterval(this.checker);
     }
+
+    this.loggerCache.clear();
   };
 
   async handleSyncMessage(message) {

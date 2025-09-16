@@ -581,6 +581,15 @@ const subMenuItemRender = (item, dom) => {
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   const { token } = useToken();
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setContainer(document.querySelector<HTMLDivElement>('#nocobase-app-container'));
+  }, []);
+
+  if (!container) {
+    return null;
+  }
 
   return (
     <RouteContext.Consumer>
@@ -602,7 +611,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
             >
               {props.children}
             </div>,
-            document.body,
+            container,
           )
         )
       }
@@ -668,9 +677,9 @@ export const useMobileLayout = () => {
   return { isMobileLayout, setIsMobileLayout };
 };
 
-const rootStyle = { display: 'flex', height: '100vh' };
-const appContainerStyle = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
-const embedContainerStyle = { width: 'fit-content', position: 'relative' };
+const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
+const appContainerStyle: React.CSSProperties = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
+const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -705,12 +714,12 @@ export const InternalAdminLayout = () => {
         colorHeaderTitle: token.colorTextHeaderMenu,
       },
       sider: {
-        colorMenuBackground: token.colorBgContainer,
-        colorTextMenu: token.colorText,
-        colorTextMenuSelected: token.colorPrimary,
-        colorBgMenuItemSelected: token.colorPrimaryBg,
-        colorBgMenuItemActive: token.colorPrimaryBg,
-        colorBgMenuItemHover: token.colorBgTextHover,
+        colorMenuBackground: token.colorBgSider,
+        colorTextMenu: token.colorTextSiderMenu,
+        colorTextMenuSelected: token.colorTextSiderMenuActive,
+        colorBgMenuItemSelected: token.colorBgSiderMenuActive,
+        colorBgMenuItemActive: token.colorBgSiderMenuActive,
+        colorBgMenuItemHover: token.colorBgSiderMenuHover,
       },
       bgLayout: token.colorBgLayout,
     };
