@@ -18,6 +18,8 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   private refreshTimer: NodeJS.Timeout | null = null;
   protected createActionOptions = {};
   protected updateActionOptions = {};
+  protected _refreshActionName = 'list';
+
   // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     // url: null as string | null,
@@ -190,7 +192,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
         try {
           this.clearError();
           this.loading = true;
-          const { data, meta } = await this.runAction<TDataItem[], any>('list', {
+          const { data, meta } = await this.runAction<TDataItem[], any>(this._refreshActionName, {
             method: 'get',
             ...this.getRefreshRequestOptions(),
           });

@@ -14,6 +14,7 @@ import { BaseRecordResource } from './baseRecordResource';
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
   isNewRecord = false;
   protected saveActionOptions = {};
+  protected _refreshActionName = 'get';
 
   get supportsFilter() {
     return !this.isNewRecord;
@@ -68,7 +69,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       return;
     }
     try {
-      const { data, meta } = await this.runAction<TData, any>('get', {
+      const { data, meta } = await this.runAction<TData, any>(this._refreshActionName, {
         method: 'get',
         ...this.getRefreshRequestOptions(),
       });

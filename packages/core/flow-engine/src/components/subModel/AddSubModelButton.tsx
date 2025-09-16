@@ -22,6 +22,10 @@ import { buildItems, buildSubModelGroups, buildSubModelItems } from './utils';
 // ============================================================================
 
 type CreateModelOptionsStringUse = Omit<CreateModelOptions, 'use'> & { use?: string };
+type CreateModelOptionsFn = (
+  ctx: FlowModelContext,
+  extra?: any,
+) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>;
 
 export interface SubModelItem {
   key?: string;
@@ -30,9 +34,7 @@ export interface SubModelItem {
   disabled?: boolean;
   icon?: React.ReactNode;
   children?: false | SubModelItemsType;
-  createModelOptions?:
-    | CreateModelOptionsStringUse
-    | ((ctx: FlowModelContext, extra?: any) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>);
+  createModelOptions?: CreateModelOptionsStringUse | CreateModelOptionsFn;
   searchable?: boolean;
   searchPlaceholder?: string;
   keepDropdownOpen?: boolean;

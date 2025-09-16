@@ -7,9 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { SettingOutlined } from '@ant-design/icons';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createCurrentRecordMetaFactory, createRecordMetaFactory } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import {
+  AddSubModelButton,
+  createCurrentRecordMetaFactory,
+  createRecordMetaFactory,
+  escapeT,
+  FlowSettingsButton,
+} from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
@@ -27,6 +33,31 @@ export class FormModel<
 > extends CollectionBlockModel<T> {
   get form() {
     return this.context.form as FormInstance;
+  }
+
+  subModelBaseClasses = {
+    action: 'FormActionModel' as any,
+    field: ['FormItemModel', 'FormCustomItemModel'] as any,
+  };
+
+  getAddSubModelButtonProps(type: 'action' | 'field') {
+    const subClass = this.subModelBaseClasses[type];
+    if (Array.isArray(subClass)) {
+      return {
+        subModelBaseClasses: subClass,
+      };
+    }
+    return {
+      subModelBaseClass: subClass,
+    };
+  }
+
+  renderConfigureActions() {
+    return (
+      <AddSubModelButton model={this} subModelKey="actions" {...this.getAddSubModelButtonProps('action')}>
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
   }
 
   setFieldsValue(values: any) {
@@ -113,18 +144,18 @@ FormModel.define({
 
 FormModel.registerFlow({
   key: 'formModelSettings',
-  title: tval('Form settings'),
+  title: escapeT('Form settings'),
   steps: {
     layout: {
       use: 'layout',
-      title: tval('Layout'),
+      title: escapeT('Layout'),
     },
   },
 });
 
 FormModel.registerFlow({
   key: 'eventSettings',
-  title: tval('Event settings'),
+  title: escapeT('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {
@@ -138,5 +169,5 @@ FormModel.registerFlow({
 });
 
 FormModel.registerEvents({
-  formValuesChange: { label: tval('Form values change'), name: 'formValuesChange' },
+  formValuesChange: { label: escapeT('Form values change'), name: 'formValuesChange' },
 });

@@ -39,8 +39,14 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
 
   protected filterGroups = new Map<string, any>();
 
+  protected _refreshActionName = 'list';
+
   get supportsFilter() {
     return true;
+  }
+
+  setRefreshAction(refreshActionName: string) {
+    this._refreshActionName = refreshActionName;
   }
 
   mergeRequestConfig(...args: AxiosRequestConfig[]): AxiosRequestConfig {

@@ -33,6 +33,7 @@ export class CreateFormModel extends FormModel {
     resource.isNewRecord = true; // 明确标记为新记录
     return resource;
   }
+
   getAclActionName() {
     return 'create';
   }
@@ -60,9 +61,7 @@ export class CreateFormModel extends FormModel {
                 />
               </Droppable>
             ))}
-            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
-              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-            </AddSubModelButton>
+            {this.renderConfigureActions()}
           </Space>
         </DndProvider>
       </FormComponent>

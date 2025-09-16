@@ -1,12 +1,6 @@
 import { Application, BlockModel, Plugin } from '@nocobase/client';
-import {
-  AddSubModelButton,
-  buildSubModelItem,
-  FlowModel,
-  FlowModelContext,
-  FlowModelRenderer,
-} from '@nocobase/flow-engine';
-import { Button, Form, Space } from 'antd';
+import { AddSubModelButton, FlowModel, FlowModelContext, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Button, Space } from 'antd';
 import React from 'react';
 
 class HelloBlockModel extends FlowModel {
@@ -69,6 +63,10 @@ class Hello2CollectionModel extends BaseCollectionModel {
     );
   }
 }
+
+Hello2CollectionModel.define({
+  children: false,
+});
 
 class PluginHelloModel extends Plugin {
   async load() {

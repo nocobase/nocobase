@@ -29,7 +29,13 @@ import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import { ActionModel, BlockSceneEnum, CollectionActionModel, CollectionBlockModel } from '../../base';
+import {
+  ActionModel,
+  BlockSceneEnum,
+  CollectionActionModel,
+  CollectionBlockModel,
+  RecordActionModel,
+} from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
@@ -136,6 +142,11 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   static scene = BlockSceneEnum.many;
 
   rowSelectionProps = observable.deep({});
+
+  subModelBaseClasses = {
+    collectionAction: CollectionActionModel as any,
+    recordAction: RecordActionModel as any,
+  };
 
   get resource() {
     return super.resource as MultiRecordResource;
@@ -321,6 +332,21 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     );
   };
 
+  renderConfiguireActions() {
+    const subClass = this.subModelBaseClasses.collectionAction;
+    const props = {};
+    if (Array.isArray(subClass)) {
+      props['subModelBaseClasses'] = subClass;
+    } else {
+      props['subModelBaseClass'] = subClass;
+    }
+    return (
+      <AddSubModelButton key={'table-column-add-actions'} model={this} {...props} subModelKey="actions">
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
   renderComponent() {
     return (
       <>
@@ -367,14 +393,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
                 return null;
               })}
-              <AddSubModelButton
-                key={'table-column-add-actions'}
-                model={this}
-                subModelBaseClass={CollectionActionModel}
-                subModelKey="actions"
-              >
-                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-              </AddSubModelButton>
+              {this.renderConfiguireActions()}
             </Space>
           </div>
         </DndProvider>

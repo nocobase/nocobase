@@ -91,9 +91,7 @@ export class EditFormModel extends FormModel {
                 />
               </Droppable>
             ))}
-            <AddSubModelButton model={this} subModelKey="actions" subModelBaseClass={FormActionModel}>
-              <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-            </AddSubModelButton>
+            {this.renderConfigureActions()}
           </Space>
         </DndProvider>
         {this.isMultiRecordResource() && (

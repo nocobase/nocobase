@@ -10,9 +10,9 @@
 import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { CodeEditor } from '../../components/code-editor';
-import { ActionSceneEnum, CollectionActionModel } from '../base';
+import { ActionModel, ActionSceneEnum } from '../base';
 
-export class JSCollectionActionModel extends CollectionActionModel {
+export class JSCollectionActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {

@@ -44,6 +44,9 @@ function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModel
 function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
   let children: any;
+  if (meta.children === false) {
+    return false;
+  }
   if (meta.children) {
     children = meta.children;
   }
