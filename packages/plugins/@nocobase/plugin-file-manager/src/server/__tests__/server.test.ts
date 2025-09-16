@@ -26,6 +26,7 @@ describe('file manager > server', () => {
   let StorageRepo;
   let AttachmentRepo;
   let local;
+  let defaultStorage;
 
   beforeEach(async () => {
     app = await getApp();
@@ -35,6 +36,7 @@ describe('file manager > server', () => {
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
+    defaultStorage = await StorageRepo.findOne();
     local = await StorageRepo.findOne({
       filter: {
         type: STORAGE_TYPE_LOCAL,
@@ -59,7 +61,7 @@ describe('file manager > server', () => {
           path: '',
           // size: 13,
           meta: {},
-          storageId: 1,
+          storageId: defaultStorage.id,
         };
         expect(model.toJSON()).toMatchObject(matcher);
       });
@@ -106,7 +108,7 @@ describe('file manager > server', () => {
           path: '',
           size: 22,
           meta: {},
-          storageId: 1,
+          storageId: defaultStorage.id,
         };
         expect(model.toJSON()).toMatchObject(matcher);
       });
@@ -123,7 +125,7 @@ describe('file manager > server', () => {
           extname: '.txt',
           path: '',
           meta: {},
-          storageId: 1,
+          storageId: defaultStorage.id,
         };
         expect(data).toMatchObject(matcher);
       });

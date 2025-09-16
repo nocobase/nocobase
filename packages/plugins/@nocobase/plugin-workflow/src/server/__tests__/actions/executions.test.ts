@@ -27,8 +27,10 @@ describe('workflow > actions > executions', () => {
       plugins: ['users', 'acl', 'auth', 'data-source-manager', 'system-settings'],
       acl: true,
     });
-    agent = await app.agent().loginUsingId(1);
     db = app.db;
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.findOne();
+    agent = await app.agent().loginUsingId(user.id);
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
 
@@ -40,7 +42,6 @@ describe('workflow > actions > executions', () => {
         collection: 'posts',
       },
     });
-    const UserRepo = db.getCollection('users').repository;
     users = await UserRepo.createMany({
       records: [
         { id: 2, nickname: 'a', roles: ['admin'] },

@@ -861,7 +861,9 @@ describe('acl', () => {
 
   it('should destroy new role when user are root user', async () => {
     const rootUser = await db.getRepository('users').findOne({
-      filterByTk: 1,
+      filter: {
+        username: 'nocobase',
+      },
     });
 
     const rootAgent = await app.agent().login(rootUser);

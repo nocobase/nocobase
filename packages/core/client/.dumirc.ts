@@ -88,8 +88,8 @@ export default defineConfig({
               title: 'FlowContextSelector',
               link: '/components/variables/flow-context-selector',
             },
-            { 
-              title: 'VariableInput', 
+            {
+              title: 'VariableInput',
               children: [
                 { title: '基础用法', link: '/components/variables/variable-input' },
                 { title: '筛选条件', link: '/components/variables/variable-input/scenarios/filter' },
@@ -148,24 +148,24 @@ export default defineConfig({
               title: 'LiquidJS 集成',
               link: '/examples/flow-models/liquidjs',
             },
-        {
-          title: 'CRUD',
-          link: '/examples/flow-models/crud',
+            {
+              title: 'CRUD',
+              link: '/examples/flow-models/crud',
+            },
+            {
+              title: '错误回退',
+              link: '/examples/flow-models/error-boundary',
+            },
+            {
+              title: '生命周期',
+              link: '/examples/flow-models/lifecycle',
+            },
+            {
+              title: 'hidden 属性演示',
+              link: '/examples/flow-model-hidden',
+            },
+          ],
         },
-        {
-          title: '错误回退',
-          link: '/examples/flow-models/error-boundary',
-        },
-        {
-          title: '生命周期',
-          link: '/examples/flow-models/lifecycle',
-        },
-        {
-          title: 'hidden 属性演示',
-          link: '/examples/flow-model-hidden',
-        },
-      ],
-    },
         {
           title: 'FlowDefinition',
           type: 'group',
@@ -469,16 +469,20 @@ export default defineConfig({
       ],
       '/learn': [
         {
+          title: '扩展指南',
+          link: '/learn',
+        },
+        {
           title: 'Quick start',
           type: 'group',
           children: [
             {
-              title: '构建可编排的按钮组件',
-              link: '/learn',
+              title: '编写第一个 FlowModel 插件',
+              link: '/learn/flow-model-plugin',
             },
             {
-              title: '扩展指南',
-              link: '/learn/extension-guide',
+              title: '构建可编排的按钮组件',
+              link: '/learn/quickstart',
             },
           ],
         },
@@ -487,29 +491,41 @@ export default defineConfig({
           type: 'group',
           children: [
             {
-              title: 'FlowModel',
-              link: '/learn/flow-model',
+              title: '创建一个 FlowModel',
+              link: '/learn/create-flow-model',
+            },
+            {
+              title: '什么是 FlowModel',
+              link: '/learn/what-is-flow-model',
+            },
+            {
+              title: 'FlowModel 的生命周期',
+              link: '/learn/lifecycle',
             },
             {
               title: 'Observable',
               link: '/learn/observable',
             },
             {
-              title: 'Define Collection',
-              link: '/learn/define-collection',
+              title: '可以在线写 JS 的地方',
+              link: '/learn/js-in-nocobase',
             },
-            {
-              title: '区块扩展',
-              link: '/learn/block',
-            },
-            {
-              title: '操作扩展',
-              link: '/learn/action',
-            },
-            {
-              title: '字段扩展',
-              link: '/learn/field',
-            },
+            // {
+            //   title: 'Define Collection',
+            //   link: '/learn/define-collection',
+            // },
+            // {
+            //   title: '区块扩展',
+            //   link: '/learn/block',
+            // },
+            // {
+            //   title: '操作扩展',
+            //   link: '/learn/action',
+            // },
+            // {
+            //   title: '字段扩展',
+            //   link: '/learn/field',
+            // },
           ],
         },
         {
@@ -529,24 +545,32 @@ export default defineConfig({
       ],
       '/models': [
         {
+          title: 'Overview',
+          link: '/models',
+        },
+        {
           title: '区块',
           type: 'group',
           children: [
             {
               title: 'BlockModel',
               link: '/models/blocks/block-model',
+              extra: '基类',
             },
             {
               title: 'CollectionBlockModel',
               link: '/models/blocks/collection-block-model',
+              extra: '基类',
             },
             {
               title: 'DataBlockModel',
-              link: '/models/blocks/details-block-model',
+              link: '/models/blocks/data-block-model',
+              extra: '基类',
             },
             {
               title: 'FilterBlockModel',
               link: '/models/blocks/filter-block-model',
+              extra: '基类',
             },
             {
               title: 'JSBlockModel',
@@ -571,14 +595,24 @@ export default defineConfig({
             {
               title: 'FieldModel',
               link: '/models/fields/field-model',
+              extra: '基类',
             },
             {
               title: 'ClickableFieldModel',
               link: '/models/fields/clickable-field-model',
+              extra: '基类',
             },
             {
-              title: 'SubFormFieldModel',
-              link: '/models/fields/sub-form-field-model',
+              title: 'DisplayItemModel',
+              link: '/models/fields/display-item-model',
+            },
+            {
+              title: 'EditableItemModel',
+              link: '/models/fields/editable-item-model',
+            },
+            {
+              title: 'FilterableItemModel',
+              link: '/models/fields/filterable-item-model',
             },
             {
               title: 'JSFieldModel',
@@ -592,58 +626,6 @@ export default defineConfig({
               title: 'JSColumnModel',
               link: '/models/fields/js-column-model',
             },
-            {
-              title: 'SubFormFieldModel',
-              link: '/models/fields/sub-form-field-model',
-            },
-            {
-              title: 'SubTableFieldModel',
-              link: '/models/fields/sub-table-field-model',
-            },
-            {
-              title: 'DisplayFieldModel',
-              link: '/models/fields/display-field-model',
-            },
-            {
-              title: 'DisplayDateFieldModel',
-              link: '/models/fields/display-date-field-model',
-            },
-            {
-              title: 'DisplayNumberFieldModel',
-              link: '/models/fields/display-number-field-model',
-            },
-            {
-              title: 'InputFieldModel',
-              link: '/models/fields/input-field-model',
-            },
-            {
-              title: 'InputNumberFieldModel',
-              link: '/models/fields/input-number-field-model',
-            },
-            {
-              title: 'PercentFieldModel',
-              link: '/models/fields/percent-field-model',
-            },
-            {
-              title: 'SelectFieldModel',
-              link: '/models/fields/select-field-model',
-            },
-            {
-              title: 'JSONFieldModel',
-              link: '/models/fields/json-field-model',
-            },
-            {
-              title: 'DateFieldModel',
-              link: '/models/fields/date-field-model',
-            },
-            {
-              title: 'UploadFieldModel',
-              link: '/models/fields/upload-field-model',
-            },
-            {
-              title: 'JSFieldModel',
-              link: '/models/fields/js-field-model',
-            },
           ],
         },
         {
@@ -653,10 +635,22 @@ export default defineConfig({
             {
               title: 'ActionModel',
               link: '/models/actions/action-model',
+              extra: '基类',
             },
             {
               title: 'PopupActionModel',
               link: '/models/actions/popup-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FormActionModel',
+              link: '/models/actions/form-action-model',
+              extra: '基类',
+            },
+            {
+              title: 'FilterFormActionModel',
+              link: '/models/actions/filter-form-action-model',
+              extra: '基类',
             },
             {
               title: 'JSActionModel',
