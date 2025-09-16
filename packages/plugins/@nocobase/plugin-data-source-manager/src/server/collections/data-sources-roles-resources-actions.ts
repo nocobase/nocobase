@@ -16,6 +16,12 @@ export default defineCollection({
   model: 'DataSourcesRolesResourcesActionModel',
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       type: 'belongsTo',
       name: 'resource',
       foreignKey: 'rolesResourceId',

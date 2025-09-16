@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { defineFlow, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 
 export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
@@ -18,17 +18,43 @@ export const openViewFlow = defineFlow<FlowModel>({
       use: 'openView',
     },
   },
-});
+  // 基于上下文推导 openView 的默认参数：在模型实例化时写入（仅填充缺失项）
+  defaultParams: (ctx: FlowModelContext) => {
+    let collectionName: string | undefined;
+    let dataSourceKey: string | undefined;
+    let associationName: string | undefined;
 
-export const updateOpenViewStepParams = async (
-  params: { collectionName: string; associationName: string; dataSourceKey: string },
-  model: FlowModel,
-) => {
-  const settingsParams = model.getStepParams('popupSettings', 'openView');
-  if (!settingsParams?.collectionName) {
-    model.setStepParams('popupSettings', 'openView', params);
-  }
-};
+    // 字段上下文：兼容关联字段/普通字段
+    const field = ctx.collectionField;
+    const blockModel = ctx.blockModel;
+
+    if (field?.isAssociationField?.()) {
+      const targetCollection = field.targetCollection;
+      const sourceCollection = blockModel?.collection;
+      collectionName = targetCollection?.name;
+      dataSourceKey = targetCollection?.dataSourceKey;
+      associationName = sourceCollection?.name && field?.name ? `${sourceCollection.name}.${field.name}` : undefined;
+    } else if (field) {
+      // 非关联字段：用当前集合 + 字段 target
+      collectionName = ctx.collection?.name;
+      dataSourceKey = ctx.collection?.dataSourceKey;
+      associationName = field?.target;
+    } else {
+      // 非字段上下文，例如按钮/动作
+      collectionName = ctx.collection?.name;
+      dataSourceKey = ctx.collection?.dataSourceKey;
+      associationName = ctx.association?.resourceName;
+    }
+
+    return {
+      openView: {
+        collectionName,
+        associationName,
+        dataSourceKey,
+      },
+    };
+  },
+});
 
 export const getOpenViewStepParams = (
   model: FlowModel,

@@ -9,7 +9,7 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { openViewFlow, updateOpenViewStepParams } from '../../flows/openViewFlow';
+import { openViewFlow } from '../../flows/openViewFlow';
 import { ActionModel, ActionSceneEnum } from './ActionModel';
 
 export class PopupActionModel extends ActionModel {
@@ -18,18 +18,6 @@ export class PopupActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     title: escapeT('Popup'),
   };
-
-  onInit(options) {
-    super.onInit(options);
-    updateOpenViewStepParams(
-      {
-        collectionName: this.context.collection?.name,
-        associationName: this.context.association?.resourceName,
-        dataSourceKey: this.context.collection?.dataSourceKey,
-      },
-      this,
-    );
-  }
 }
 
 PopupActionModel.define({

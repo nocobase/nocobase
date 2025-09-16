@@ -11,40 +11,12 @@ import { CollectionField, escapeT } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-import { openViewFlow, updateOpenViewStepParams } from '../../flows/openViewFlow';
+import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
 
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
     return this.context.collectionField;
-  }
-
-  onInit(options) {
-    super.onInit(options);
-
-    const sourceCollection = this.context.blockModel?.collection;
-    const targetCollection = this.collectionField?.targetCollection;
-
-    let params;
-
-    if (this.collectionField?.isAssociationField()) {
-      params = {
-        collectionName: targetCollection?.name,
-        associationName:
-          sourceCollection?.name && this.collectionField?.name
-            ? `${sourceCollection.name}.${this.collectionField.name}`
-            : undefined,
-        dataSourceKey: targetCollection?.dataSourceKey,
-      };
-    } else {
-      params = {
-        collectionName: this.context.collection?.name,
-        associationName: this.collectionField?.target,
-        dataSourceKey: this.context.collection?.dataSourceKey,
-      };
-    }
-
-    updateOpenViewStepParams(params, this);
   }
 
   /**

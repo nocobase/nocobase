@@ -15,6 +15,12 @@ export default defineCollection({
   name: 'dataSourcesRolesResourcesScopes',
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       type: 'uid',
       name: 'key',
     },

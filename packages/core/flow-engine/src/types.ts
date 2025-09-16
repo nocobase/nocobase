@@ -111,6 +111,11 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
   on?: FlowEvent<TModel>;
 
   steps: Record<string, StepDefinition<TModel>>;
+  /**
+   * Flow 级默认参数：在模型实例化（createModel）时，为“当前 Flow”的步骤参数填充初始值。
+   * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
+   */
+  defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
 }
 
 export interface IModelComponentProps {
@@ -260,12 +265,15 @@ export interface ActionOptions<TModel extends FlowModel = FlowModel, P = any, R 
  * }
  * ```
  */
-export type StepParams = {
-  [flowKey: string]: {
-    [stepKey: string]: {
-      [paramKey: string]: any;
-    };
+
+type StepParam = {
+  [stepKey: string]: {
+    [paramKey: string]: any;
   };
+};
+
+export type StepParams = {
+  [flowKey: string]: StepParam;
 };
 
 export type ParamObject = {

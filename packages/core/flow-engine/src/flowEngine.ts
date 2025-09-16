@@ -400,9 +400,56 @@ export class FlowEngine {
 
     modelInstance.onInit(options);
 
+    // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
+    // 不阻塞创建流程：允许 defaultParams 为异步函数
+    this.#applyFlowDefinitionDefaultParams(modelInstance as FlowModel).catch((err) => {
+      console.warn('FlowEngine: apply flow defaultParams failed:', err);
+    });
+
     modelInstance._createSubModels(options.subModels);
 
     return modelInstance as T;
+  }
+
+  /**
+   * 尝试应用当前模型可用 flow 的 defaultParams（如果存在）到 model.stepParams。
+   * 仅对尚未存在的步骤参数进行填充，不覆盖已有值。
+   */
+  async #applyFlowDefinitionDefaultParams(model: FlowModel) {
+    try {
+      const flows = model.getFlows();
+      if (!flows || flows.size === 0) return;
+      const ctx = model.context;
+      for (const [flowKey, flowDef] of flows.entries()) {
+        const dp = flowDef.defaultParams;
+        if (!dp) continue;
+
+        let resolved: any;
+        try {
+          resolved = typeof dp === 'function' ? await dp(ctx) : dp;
+        } catch (e) {
+          console.warn(`FlowEngine: resolve defaultParams of flow '${flowKey}' failed:`, e);
+          continue;
+        }
+
+        if (!resolved || typeof resolved !== 'object') continue;
+
+        // 仅支持：返回当前 flow 的步骤对象 { [stepKey]: params }
+        const stepsMap = (flowDef as any).getSteps?.() as Map<string, any> | undefined;
+        const stepKeys = stepsMap ? Array.from(stepsMap.keys()) : Object.keys(flowDef.steps || {});
+        const entries = Object.entries(resolved).filter(([k]) => stepKeys.includes(k));
+        if (entries.length === 0) continue;
+
+        for (const [stepKey, params] of entries) {
+          const exists = model.getStepParams(flowKey, stepKey as string);
+          if (exists === undefined && params && typeof params === 'object') {
+            model.setStepParams(flowKey, stepKey as string, params as any);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('FlowEngine: apply flow defaultParams error:', error);
+    }
   }
 
   /**

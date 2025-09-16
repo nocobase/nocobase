@@ -331,6 +331,7 @@ export class EventQueue {
   ) {
     if (app.serving()) {
       this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
+
       app.on('afterStart', async () => {
         await this.connect();
       });

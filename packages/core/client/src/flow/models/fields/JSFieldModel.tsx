@@ -79,7 +79,7 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n`,
+          code: `const value = ctx.value;\nctx.element.innerHTML = \`<span class="nb-js-field-value" style="color:#1890ff;">${'${'}String(value ?? '')}</span>\`;\n\n`,
         };
       },
       async handler(ctx, params) {
