@@ -63,11 +63,12 @@ export function LabelByField(props) {
 }
 
 export function LazySelect(props) {
-  const { fieldNames, value, multiple, options = [], ...others } = props;
+  const { fieldNames, value, multiple, allowMultiple, options = [], ...others } = props;
+  const isMultiple = multiple && allowMultiple;
   const realOptions =
     options && options.length
       ? options
-      : multiple
+      : isMultiple
         ? Array.isArray(value)
           ? value.filter(Boolean)
           : []
@@ -83,8 +84,8 @@ export function LazySelect(props) {
       labelInValue
       fieldNames={fieldNames}
       options={realOptions}
-      value={toValue(value, fieldNames, multiple)}
-      mode={multiple ? 'multiple' : undefined}
+      value={toValue(value, fieldNames, isMultiple)}
+      mode={isMultiple ? 'multiple' : undefined}
       onChange={(value, option) => {
         props.onChange(option);
       }}
@@ -331,7 +332,7 @@ RecordSelectFieldModel.registerFlow({
       uiSchema(ctx) {
         if (['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type)) {
           return {
-            multiple: {
+            allowMultiple: {
               'x-component': 'Switch',
               type: 'boolean',
               'x-decorator': 'FormItem',
@@ -343,12 +344,12 @@ RecordSelectFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          multiple: ['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type),
+          allowMultiple: ['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type),
         };
       },
       handler(ctx, params) {
         ctx.model.setProps({
-          multiple: params?.multiple,
+          allowMultiple: params?.allowMultiple,
         });
       },
     },

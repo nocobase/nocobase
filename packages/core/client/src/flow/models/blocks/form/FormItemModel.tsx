@@ -161,11 +161,11 @@ FormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('field');
         const collectionField = ctx.model.collectionField;
         if (collectionField) {
           ctx.model.setProps(collectionField.getComponentProps());
         }
+        console.log(888);
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
