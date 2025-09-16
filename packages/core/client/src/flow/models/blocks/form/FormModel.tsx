@@ -127,3 +127,7 @@ FormModel.registerFlow({
     },
   },
 });
+
+FormModel.registerEvents({
+  formValuesChange: { label: tval('Form values change'), name: 'formValuesChange' },
+});

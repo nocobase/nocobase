@@ -37,6 +37,7 @@ interface FilterGroupProps {
   showBorder?: boolean;
   /** 移除当前组的回调 */
   onRemove?: () => void;
+  onChange?: (value: any) => void;
 }
 
 /**
@@ -71,7 +72,7 @@ interface FilterGroupProps {
  */
 export const FilterGroup: FC<FilterGroupProps> = observer(
   (props) => {
-    const { value, FilterItem, showBorder = false, onRemove } = props;
+    const { value, FilterItem, showBorder = false, onRemove, onChange } = props;
     const { token } = theme.useToken();
     const { t } = useTranslation();
 
@@ -108,6 +109,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         operator: '',
         value: '',
       });
+      onChange?.(value);
     };
 
     const handleAddConditionGroup = () => {
@@ -115,10 +117,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         logic: '$and',
         items: [],
       });
+      onChange?.(value);
     };
 
     const handleRemoveItem = (index: number) => {
       items.splice(index, 1);
+      onChange?.(value);
     };
 
     const isConditionItem = (item: any) => {
@@ -174,6 +178,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   FilterItem={FilterItem}
                   showBorder={true}
                   onRemove={() => handleRemoveItem(index)}
+                  onChange={onChange}
                 />
               );
             } else if (isConditionItem(item)) {

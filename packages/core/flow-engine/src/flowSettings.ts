@@ -30,6 +30,7 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
+import { DynamicFlowsIcon } from './components/settings/wrappers/contextual/DynamicFlowsIcon';
 
 const Panel = Collapse.Panel;
 
@@ -91,6 +92,13 @@ export class FlowSettings {
       key: 'settings-menu',
       component: DefaultSettingsIcon,
       sort: 0, // 默认为0，作为第一个添加的项目
+    });
+
+    // 动态流程编辑器入口
+    this.toolbarItems.push({
+      key: 'dynamic-flows-editor',
+      component: DynamicFlowsIcon,
+      sort: 0,
     });
   }
 
