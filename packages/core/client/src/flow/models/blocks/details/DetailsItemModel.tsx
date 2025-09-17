@@ -63,23 +63,10 @@ export class DetailsItemModel extends DisplayItemModel<{
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
 
-    const resolveFieldModel = (field: any) => {
-      // 如果是关联字段，取目标集合的标题字段
-      const targetField =
-        field.isAssociationField() && field.interface !== 'attachment'
-          ? field.targetCollection?.titleCollectionField
-          : field;
-
-      if (!targetField) return null;
-
-      const binding = this.getDefaultBindingByField(ctx, targetField);
-      return binding || null;
-    };
-
     return collection
       .getFields()
       .map((field) => {
-        const binding = resolveFieldModel(field);
+        const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
         const fieldModel = binding.modelName;
         const fullName = ctx.prefixFieldPath ? `${ctx.prefixFieldPath}.${field.name}` : field.name;
