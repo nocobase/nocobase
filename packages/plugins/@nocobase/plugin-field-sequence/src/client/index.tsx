@@ -10,7 +10,7 @@
 import { Plugin } from '@nocobase/client';
 import { SequenceFieldProvider } from './SequenceFieldProvider';
 import { SequenceFieldInterface } from './sequence';
-import { SequenceFieldModel } from './SequenceFieldModel';
+import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
 
 export class PluginFieldSequenceClient extends Plugin {
   async load() {
@@ -19,9 +19,8 @@ export class PluginFieldSequenceClient extends Plugin {
     const calendarPlugin: any = this.app.pm.get('calendar');
     // 注册标题字段
     calendarPlugin.registerTitleFieldInterface('sequence');
-    this.flowEngine.registerModels({
-      SequenceFieldModel,
-    });
+    EditableItemModel.bindModelToInterface('InputFieldModel', ['sequence'], { isDefault: true });
+    DisplayItemModel.bindModelToInterface('DisplayTextFieldModel', ['sequence'], { isDefault: true });
   }
 }
 
