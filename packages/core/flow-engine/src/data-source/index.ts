@@ -302,7 +302,10 @@ export class CollectionManager {
   }
 
   getCollections(): Collection[] {
-    return _.sortBy(Array.from(this.collections.values()), 'sort');
+    return _.sortBy(
+      Array.from(this.collections.values()).filter((collection) => !collection.hidden),
+      'sort',
+    );
   }
 
   clearCollections() {
@@ -347,6 +350,10 @@ export class Collection {
       return record[this.filterTargetKey];
     }
     return _.pick(record, this.filterTargetKey);
+  }
+
+  get hidden() {
+    return this.options.hidden || false;
   }
 
   get flowEngine() {
