@@ -86,6 +86,7 @@ console.log(sub.getEvent('click')?.label); // 'Click (sub override)'
 ## 与 FlowDefinition 的关系
 
 - FlowDefinition 的触发条件 `on` 使用事件名；`model.dispatchEvent(eventName, payload)` 会根据当前模型可见的事件进行匹配与触发对应流
+- 若 `on.condition` 配置过滤器或函数，事件会在匹配事件名后进一步校验条件；条件依赖的变量同样从流上下文 (`ctx.model`、`ctx.event.args`、`ctx.inputArgs` 等) 中解析
 
 ---
 

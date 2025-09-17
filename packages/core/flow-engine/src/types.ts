@@ -19,7 +19,7 @@ import {
 import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
-import { FilterGroup, FilterGroupOptions } from './resources';
+import type { FilterGroupType } from '@nocobase/utils/client';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -186,7 +186,7 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupOptions | ((ctx: FlowEngineContext) => boolean | Promise<boolean>);
+export type FlowEventCondition = FilterGroupType | ((ctx: FlowEngineContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
   | { eventName: FlowEventName; condition?: FlowEventCondition };
