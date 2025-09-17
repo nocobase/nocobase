@@ -19,7 +19,8 @@ import {
 import { Form, FormInstance } from 'antd';
 import { debounce, omit } from 'lodash';
 import React, { useMemo } from 'react';
-import { BlockGridModel, CollectionBlockModel } from '../../base';
+import { BlockGridModel } from '../../base/BlockGridModel';
+import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';

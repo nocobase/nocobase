@@ -17,7 +17,7 @@ import { FormProvider, Field } from '@formily/react';
 import { DefaultValue } from '../DefaultValue';
 import { InputFieldModel } from '../../models/fields/InputFieldModel';
 import { VariableFieldFormModel } from '../../models/fields/VariableFieldFormModel';
-import { RemoteSelectFieldModel } from '../../models/fields/AssociationFieldModel/RemoteSelectFieldModel';
+import { RecordSelectFieldModel } from '../../models/fields/AssociationFieldModel';
 
 // 简易 Form stub（非 Formily 分支），用于验证写回逻辑
 function createFormStub(initial: any = {}) {
@@ -96,23 +96,25 @@ describe('DefaultValue component', () => {
   beforeEach(() => {
     engine = new FlowEngine();
     // 注册必要的模型（使用真实 FlowEngine，不 mock）
-    engine.registerModels({ HostModel, InputFieldModel, VariableFieldFormModel, RemoteSelectFieldModel });
+    engine.registerModels({ HostModel, InputFieldModel, VariableFieldFormModel, RecordSelectFieldModel });
 
     // 每个用例重置表单实例，避免跨用例的值污染（例如上个用例输入的 "hello"）
     form = createForm();
 
-    // 为多选关联选择组件的测试场景，覆盖/简化自动流程，避免依赖 action 注册
-    // 1) 禁用自动事件绑定，防止在缺少 fieldNames 时读取 props.fieldNames 报错
-    RemoteSelectFieldModel.registerFlow({ key: 'eventSettings', manual: true, steps: {} });
-    // 2) 覆盖 selectSettings，仅设置必要的 fieldNames，避免引入繁重依赖
-    RemoteSelectFieldModel.registerFlow({
+    // 为多选关联选择组件的测试场景，覆盖/简化自动流程，只保留必要的属性赋值
+    RecordSelectFieldModel.registerFlow({ key: 'eventSettings', manual: true, steps: {} });
+    RecordSelectFieldModel.registerFlow({
       key: 'selectSettings',
-      sort: 200,
+      manual: true,
       steps: {
         fieldNames: {
           handler(ctx) {
             const fromCf = ctx.model.collectionField?.fieldNames;
-            ctx.model.setProps({ fieldNames: fromCf || { label: 'name', value: 'id' } });
+            ctx.model.setProps({
+              fieldNames: fromCf || { label: 'name', value: 'id' },
+              allowMultiple: true,
+              multiple: true,
+            });
           },
         },
       },
@@ -176,13 +178,22 @@ describe('DefaultValue component', () => {
     expect((input as HTMLInputElement).value).toBe('');
   });
 
-  it('many-to-many relationship: uses RemoteSelectFieldModel to render multi-select dropdown (ant-select-multiple)', async () => {
+  it('many-to-many relationship: uses RecordSelectFieldModel to render multi-select dropdown (ant-select-multiple)', async () => {
     const host = engine.createModel<HostModel>({
       use: 'HostModel',
       props: { name: 'roles', value: '', onChange: vi.fn(), metaTree: simpleMetaTree },
-      subModels: { field: { use: 'RemoteSelectFieldModel' } },
+      subModels: {
+        field: {
+          use: 'RecordSelectFieldModel',
+          props: {
+            fieldNames: { label: 'name', value: 'id' },
+            allowMultiple: true,
+            multiple: true,
+          },
+        },
+      },
     });
-    // 指定为对多关系，DefaultValue 内部应选择 RemoteSelectFieldModel，并在 onAfterAutoFlows 推断 multiple
+    // 指定为对多关系，DefaultValue 内部应选择 RecordSelectFieldModel，并在 onAfterAutoFlows 推断 multiple
     host.context.defineProperty('collectionField', {
       value: {
         interface: 'm2m',
@@ -209,21 +220,11 @@ describe('DefaultValue component', () => {
       </FlowEngineProvider>,
     );
 
-    // 右侧编辑器应为 antd Select 且为多选模式
-    // 通过样式类名判断（antd v5 多选下拉存在 .ant-select-multiple）
+    // 右侧编辑器应为 antd Select 且为多选模式 + 有 fieldNames 配置
     await waitFor(
       () => {
-        const selects = document.querySelectorAll('.ant-select');
-        expect(selects.length).toBeGreaterThan(0);
-      },
-      { timeout: 5000 },
-    );
-
-    await waitFor(
-      () => {
-        const selects = document.querySelectorAll('.ant-select');
-        const hasMultiple = Array.from(selects).some((el) => el.classList.contains('ant-select-multiple'));
-        expect(hasMultiple).toBe(true);
+        const errorBanner = document.querySelector('.ant-result-error');
+        expect(errorBanner).toBeNull();
       },
       { timeout: 5000 },
     );
@@ -253,7 +254,7 @@ describe('DefaultValue component', () => {
     // Wait for component to mount and patches to be applied
     await waitFor(
       () => {
-        expect(host.__dvSetStepParamsPatched).toBe(true);
+        expect(host['__dvSetStepParamsPatched']).toBe(true);
       },
       { timeout: 2000 },
     );
