@@ -32,6 +32,7 @@ export * from './JSEditableFieldModel';
 export * from './DividerItemModel';
 export * from './MarkdownItemModel';
 export * from './JSItemModel';
+export * from './ClickableFieldModel';
 
 export * from './DisplayAssociationField';
 export * from './DisplayColorFieldModel';
@@ -46,4 +47,5 @@ export * from './DisplayPercentFieldModel';
 export * from './DisplayTextFieldModel';
 export * from './DisplayURLFieldModel';
 export * from './DisplayTimeFieldModel';
+
 //
