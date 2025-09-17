@@ -125,16 +125,6 @@ export class FilterFormItemModel extends FilterableItemModel<{
     });
   }
 
-  private readonly debouncedDispatchEvent: ReturnType<typeof debounce>;
-
-  constructor(options: any) {
-    super(options);
-    // 创建防抖的 dispatchEvent 方法
-    this.debouncedDispatchEvent = debounce((eventName: string, payload: any) => {
-      this.dispatchEvent(eventName, payload);
-    }, DEBOUNCE_WAIT);
-  }
-
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
@@ -205,7 +195,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
         {...this.props}
         getValueProps={this.getValueProps.bind(this)}
         onChange={(event) => {
-          this.debouncedDispatchEvent('formItemChange', { value: event.target?.value });
+          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={fieldModel} />

@@ -124,12 +124,6 @@ export function FormComponent({
   initialValues?: any;
   onFinish?: (values: any) => void;
 }) {
-  const debouncedDispatchEvent = useMemo(() => {
-    return debounce((eventName: string, payload?: any) => {
-      model.dispatchEvent(eventName, payload);
-    }, DEBOUNCE_WAIT);
-  }, [model]);
-
   return (
     <Form
       form={model.form}
@@ -137,7 +131,7 @@ export function FormComponent({
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
-        debouncedDispatchEvent('formValuesChange', { changedValues, allValues });
+        model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
       }}
       {...rest}
     >
