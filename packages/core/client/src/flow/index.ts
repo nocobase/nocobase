@@ -16,6 +16,7 @@ import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
+import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -32,6 +33,16 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
+    });
+
+    // 动态流编辑入口
+    this.flowEngine.flowSettings.addToolbarItem({
+      key: 'dynamic-flows-editor',
+      component: DynamicFlowsIcon,
+      visible(model) {
+        return model.getEvents().size > 0;
+      },
+      sort: 0,
     });
   }
 }
