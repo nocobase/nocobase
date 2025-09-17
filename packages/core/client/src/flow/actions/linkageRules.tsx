@@ -54,9 +54,25 @@ interface LinkageRule {
 
 let currentLinkageRules = null;
 
+// 获取表单中所有字段的 model 实例的通用函数
+const getFormFields = (ctx: any) => {
+  try {
+    const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+    const fields = gridModels;
+    return fields.map((model: any) => ({
+      label: model.props.label || model.props.name,
+      value: model.uid,
+      model,
+    }));
+  } catch (error) {
+    console.warn('Failed to get form fields:', error);
+    return [];
+  }
+};
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
-  title: '区块属性设置',
+  title: 'Block properties',
   scene: ActionScene.BLOCK_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -64,16 +80,19 @@ export const linkageSetBlockProps = defineAction({
       type: 'string',
       'x-component': (props) => {
         const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
 
         return (
           <Select
             value={value}
             onChange={onChange}
-            placeholder="请选择一个状态"
+            placeholder={t('Please select a state')}
             style={{ width: '100%' }}
             options={[
-              { label: '显示区块', value: 'show' },
-              { label: '隐藏区块', value: 'hide' },
+              { label: t('Show block'), value: 'show' },
+              { label: t('Hide block'), value: 'hide' },
             ]}
             allowClear
           />
@@ -88,7 +107,7 @@ export const linkageSetBlockProps = defineAction({
 
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
-  title: '按钮属性设置',
+  title: 'Button properties',
   scene: ActionScene.ACTION_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -96,18 +115,21 @@ export const linkageSetActionProps = defineAction({
       type: 'string',
       'x-component': (props) => {
         const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
 
         return (
           <Select
             value={value}
             onChange={onChange}
-            placeholder="请选择一个状态"
+            placeholder={t('Please select a state')}
             style={{ width: '100%' }}
             options={[
-              { label: '显示按钮', value: 'show' },
-              { label: '隐藏按钮', value: 'hide' },
-              { label: '启用按钮', value: 'enable' },
-              { label: '禁用按钮', value: 'disable' },
+              { label: t('Show button'), value: 'show' },
+              { label: t('Hide button'), value: 'hide' },
+              { label: t('Enable button'), value: 'enable' },
+              { label: t('Disable button'), value: 'disable' },
             ]}
             allowClear
           />
@@ -122,7 +144,7 @@ export const linkageSetActionProps = defineAction({
 
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
-  title: '字段属性设置',
+  title: 'Field properties',
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -132,34 +154,19 @@ export const linkageSetFieldProps = defineAction({
         const { value = { fields: [] }, onChange } = props;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
 
-        // 获取表单中所有字段的 model 实例
-        const getFormFields = () => {
-          try {
-            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-            const fields = gridModels;
-            return fields.map((model: any) => ({
-              label: model.props.label || model.props.name,
-              value: model.uid,
-              model,
-            }));
-          } catch (error) {
-            console.warn('Failed to get form fields:', error);
-            return [];
-          }
-        };
-
-        const fieldOptions = getFormFields();
+        const fieldOptions = getFormFields(ctx);
 
         // 状态选项
         const stateOptions = [
-          { label: '显示', value: 'show' },
-          { label: '隐藏', value: 'hide' },
-          { label: '隐藏（保留值）', value: 'hideKeepValue' },
-          { label: '必填', value: 'required' },
-          { label: '非必填', value: 'optional' },
-          { label: '禁用', value: 'disabled' },
-          { label: '启用', value: 'enabled' },
+          { label: t('Show'), value: 'show' },
+          { label: t('Hide'), value: 'hide' },
+          { label: t('Hide (keep value)'), value: 'hideKeepValue' },
+          { label: t('Required'), value: 'required' },
+          { label: t('Optional'), value: 'optional' },
+          { label: t('Disabled'), value: 'disabled' },
+          { label: t('Enabled'), value: 'enabled' },
         ];
 
         const handleFieldsChange = (selectedFields: string[]) => {
@@ -179,12 +186,12 @@ export const linkageSetFieldProps = defineAction({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
               <Select
                 mode="multiple"
                 value={value.fields}
                 onChange={handleFieldsChange}
-                placeholder="请选择字段"
+                placeholder={t('Please select fields')}
                 style={{ width: '100%' }}
                 options={fieldOptions}
                 showSearch
@@ -194,11 +201,11 @@ export const linkageSetFieldProps = defineAction({
               />
             </div>
             <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>状态</div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
               <Select
                 value={value.state}
                 onChange={handleStateChange}
-                placeholder="请选择状态"
+                placeholder={t('Please select state')}
                 style={{ width: '100%' }}
                 options={stateOptions}
                 allowClear
@@ -263,34 +270,19 @@ export const linkageSetFieldProps = defineAction({
 
 export const linkageAssignField = defineAction({
   name: 'linkageAssignField',
-  title: '字段赋值',
+  title: 'Field assignment',
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 200,
   uiSchema: {
     value: {
       type: 'object',
       'x-component': (props) => {
-        const { value = { field: undefined, assignValue: undefined }, onChange } = props as any;
+        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
 
-        // 获取表单中所有字段的 model 实例
-        const getFormFields = () => {
-          try {
-            const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-            const fields = gridModels;
-            return fields.map((model: any) => ({
-              label: model.props.label || model.props.name,
-              value: model.uid,
-              model,
-            }));
-          } catch (error) {
-            console.warn('Failed to get form fields:', error);
-            return [];
-          }
-        };
-
-        const fieldOptions = getFormFields();
+        const fieldOptions = getFormFields(ctx);
 
         const selectedFieldUid = value.field;
 
@@ -308,11 +300,11 @@ export const linkageAssignField = defineAction({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <div style={{ marginBottom: '4px', fontSize: '14px' }}>字段</div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
               <Select
                 value={selectedFieldUid}
                 onChange={handleFieldChange}
-                placeholder="请选择字段"
+                placeholder={t('Please select field')}
                 style={{ width: '100%' }}
                 options={fieldOptions}
                 showSearch
@@ -323,7 +315,7 @@ export const linkageAssignField = defineAction({
             </div>
             {selectedFieldUid && (
               <div>
-                <div style={{ marginBottom: '4px', fontSize: '14px' }}>赋值</div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
                 <FieldAssignValueInput
                   key={selectedFieldUid}
                   fieldUid={selectedFieldUid}
@@ -410,7 +402,7 @@ export const linkageRunjs = defineAction({
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户
       if (ctx.app?.message) {
-        ctx.app.message.error(`脚本执行错误: ${error.message}`);
+        ctx.app.message.error(`Script execution error: ${error.message}`);
       }
     }
   },
@@ -422,11 +414,12 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
   const ctx = useFlowContext();
   const flowEngine = useFlowEngine();
   const [submitLoading, setSubmitLoading] = React.useState(false);
+  const t = ctx.model.translate.bind(ctx.model);
 
   // 创建新规则的默认值
   const createNewRule = (): LinkageRule => ({
     key: uid(),
-    title: 'Linkage rule',
+    title: t('Linkage rule'),
     enable: true,
     condition: { logic: '$and', items: [] } as FilterGroupType,
     actions: [],
@@ -546,8 +539,8 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           size="small"
           checked={rule.enable}
           onChange={(checked) => handleToggleEnable(index, checked)}
-          checkedChildren="启用"
-          unCheckedChildren="禁用"
+          checkedChildren={t('Enable')}
+          unCheckedChildren={t('Disable')}
         />
       </Space>
     </div>
@@ -593,7 +586,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                 color: '#262626',
               }}
             >
-              条件
+              {t('Condition')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
@@ -632,7 +625,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
                 color: '#262626',
               }}
             >
-              动作
+              {t('Actions')}
             </h4>
           </div>
           <div style={{ paddingLeft: 12 }}>
@@ -697,7 +690,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
               trigger={['hover']}
             >
               <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
-                Add action
+                {t('Add action')}
               </Button>
             </Dropdown>
           </div>
@@ -731,7 +724,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           flexShrink: 0,
         }}
       >
-        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>Linkage rules</div>
+        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t('Linkage rules')}</div>
         <Button
           type="text"
           size="small"
@@ -767,11 +760,11 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
               marginBottom: '8px',
             }}
           >
-            <Empty description="No linkage rules" style={{ margin: '20px 0' }} />
+            <Empty description={t('No linkage rules')} style={{ margin: '20px 0' }} />
           </div>
         )}
         <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
-          Add linkage rule
+          {t('Add linkage rule')}
         </Button>
       </div>
 
@@ -787,7 +780,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
           flexShrink: 0,
         }}
       >
-        <Button onClick={() => ctx.view.destroy()}>Cancel</Button>
+        <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
         <Button
           type="primary"
           loading={submitLoading}
@@ -798,7 +791,7 @@ const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; support
             ctx.view.destroy();
           }}
         >
-          OK
+          {t('OK')}
         </Button>
       </div>
     </div>
@@ -863,7 +856,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             }
           };
 
-          // TODO: 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
+          // 需要改成 runAction 的写法。但 runAction 是异步的，用在这里会不符合预期。后面需要解决这个问题
           ctx.getAction(action.name)?.handler(ctx, { ...action.params, setProps });
         });
       }
