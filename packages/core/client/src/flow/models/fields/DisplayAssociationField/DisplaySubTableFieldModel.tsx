@@ -8,10 +8,11 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, DisplayItemModel, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base';
+import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -103,4 +104,4 @@ DisplaySubTableFieldModel.define({
   label: escapeT('Sub-table'),
 });
 
-DisplayItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);
+DetailsItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);

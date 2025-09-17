@@ -8,11 +8,12 @@
  */
 
 import { css } from '@emotion/css';
-import { DisplayItemModel, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base';
+import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 
 const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
@@ -85,4 +86,4 @@ DisplaySubListFieldModel.define({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplaySubListFieldModel', ['m2m', 'o2m', 'mbm']);
+DetailsItemModel.bindModelToInterface('DisplaySubListFieldModel', ['m2m', 'o2m', 'mbm']);

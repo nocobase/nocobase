@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { ObjectNester } from '../AssociationFieldModel/SubFormFieldModel';
 import { FieldModel } from '../../base';
+import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 
 export class DisplaySubItemFieldModel extends FieldModel {
   onInit(options) {
@@ -42,7 +43,7 @@ DisplaySubItemFieldModel.define({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplaySubItemFieldModel', [
+DetailsItemModel.bindModelToInterface('DisplaySubItemFieldModel', [
   'm2o',
   'o2o',
   'oho',

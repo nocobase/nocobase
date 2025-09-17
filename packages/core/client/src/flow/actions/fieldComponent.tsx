@@ -7,15 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CollectionFieldModel,
-  defineAction,
-  DisplayItemModel,
-  EditableItemModel,
-  FlowEngineContext,
-} from '@nocobase/flow-engine';
+import { CollectionFieldModel, defineAction, FlowEngineContext } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../models/base/FieldModel';
+import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const fieldComponent = defineAction({
   title: tval('Field component'),
@@ -23,8 +18,8 @@ export const fieldComponent = defineAction({
   uiSchema: (ctx: FlowEngineContext) => {
     const classes =
       ctx.model.getProps().pattern === 'readPretty'
-        ? DisplayItemModel.getBindingsByField(ctx, ctx.collectionField)
-        : EditableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        ? DetailsItemModel.getBindingsByField(ctx, ctx.collectionField)
+        : ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     if (classes.length === 1) {
       return null;
     }
@@ -46,8 +41,8 @@ export const fieldComponent = defineAction({
   beforeParamsSave: async (ctx, params, previousParams) => {
     const classes =
       ctx.model.getProps().pattern === 'readPretty'
-        ? DisplayItemModel.getBindingsByField(ctx, ctx.collectionField)
-        : EditableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        ? DetailsItemModel.getBindingsByField(ctx, ctx.collectionField)
+        : ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     // 找到选中的那条
     const selected = classes.find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {
@@ -69,8 +64,8 @@ export const fieldComponent = defineAction({
   defaultParams: (ctx: any) => {
     const defaultModel =
       ctx.model.getProps().pattern === 'readPretty'
-        ? DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField)
-        : EditableItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+        ? DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField)
+        : ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
 
     return {
       use: (ctx.model.subModels.field as FieldModel).use || defaultModel.modelName,

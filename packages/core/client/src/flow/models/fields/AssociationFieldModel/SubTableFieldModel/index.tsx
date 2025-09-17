@@ -8,16 +8,9 @@
  */
 import { SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
-import {
-  AddSubModelButton,
-  DndProvider,
-  FlowSettingsButton,
-  EditableItemModel,
-  escapeT,
-  useFlowEngine,
-} from '@nocobase/flow-engine';
+import { AddSubModelButton, DndProvider, FlowSettingsButton, escapeT, useFlowEngine } from '@nocobase/flow-engine';
 import React from 'react';
-import { EditFormModel } from '../../../blocks/form/EditFormModel';
+import { EditFormModel, FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
@@ -177,7 +170,7 @@ SubTableFieldModel.define({
 });
 export { SubTableColumnModel };
 
-EditableItemModel.bindModelToInterface('SubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
+FormItemModel.bindModelToInterface('SubTableFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

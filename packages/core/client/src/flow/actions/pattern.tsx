@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, DisplayItemModel, EditableItemModel, escapeT } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, EditableItemModel, escapeT } from '@nocobase/flow-engine';
+import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -42,10 +43,10 @@ export const pattern = defineAction({
     const { model } = ctx;
 
     if (params.pattern === 'readPretty') {
-      const binding = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
       await rebuildFieldSubModel(ctx, model, binding);
     } else {
-      const binding = EditableItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {
         await rebuildFieldSubModel(ctx, model, binding);
       }
