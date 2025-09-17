@@ -22,11 +22,11 @@ export class DisplayHtmlFieldModel extends FieldModel {
 
 DisplayHtmlFieldModel.registerFlow({
   key: 'htmlFieldSettings',
-  title: tval('Html settings'),
+  title: tval('Content settings'),
   sort: 200,
   steps: {
-    displayMode: {
-      use: 'displayMode',
+    renderMode: {
+      use: 'renderMode',
     },
   },
 });

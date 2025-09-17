@@ -10,9 +10,9 @@
 import { defineAction } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 
-export const displayMode = defineAction({
-  title: tval('Display mode'),
-  name: 'displayMode',
+export const renderMode = defineAction({
+  title: tval('Render mode'),
+  name: 'renderMode',
   uiSchema: {
     textOnly: {
       type: 'string',
