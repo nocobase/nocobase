@@ -883,30 +883,10 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   });
 };
 
-const commonUIMode = (ctx): any => {
-  const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
-
-  return {
-    type: 'embed',
-    props: {
-      target,
-      onOpen() {
-        target.style.width = '50%';
-        target.style.maxWidth = '800px';
-      },
-      onClose() {
-        target.style.width = 'auto';
-        target.style.maxWidth = 'none';
-        currentLinkageRules = null;
-      },
-    },
-  };
-};
-
 export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
   title: escapeT('Block linkage rules'),
-  uiMode: commonUIMode,
+  uiMode: 'embed',
   uiSchema(ctx) {
     return {
       value: {
@@ -928,7 +908,7 @@ export const blockLinkageRules = defineAction({
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
   title: escapeT('Linkage rules'),
-  uiMode: commonUIMode,
+  uiMode: 'embed',
   uiSchema(ctx) {
     return {
       value: {
@@ -950,7 +930,7 @@ export const actionLinkageRules = defineAction({
 export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
   title: escapeT('Field linkage rules'),
-  uiMode: commonUIMode,
+  uiMode: 'embed',
   uiSchema(ctx) {
     return {
       value: {

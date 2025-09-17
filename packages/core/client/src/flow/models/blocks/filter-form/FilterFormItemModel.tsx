@@ -21,6 +21,8 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { DEBOUNCE_WAIT } from '../../../../variables';
+import { tval } from '@nocobase/utils/client';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
@@ -123,6 +125,16 @@ export class FilterFormItemModel extends FilterableItemModel<{
     });
   }
 
+  private readonly debouncedDispatchEvent: ReturnType<typeof debounce>;
+
+  constructor(options: any) {
+    super(options);
+    // 创建防抖的 dispatchEvent 方法
+    this.debouncedDispatchEvent = debounce((eventName: string, payload: any) => {
+      this.dispatchEvent(eventName, payload);
+    }, DEBOUNCE_WAIT);
+  }
+
   operator: string;
 
   private debouncedDoFilter: ReturnType<typeof debounce>;
@@ -189,7 +201,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
-      <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
+      <FormItem
+        {...this.props}
+        getValueProps={this.getValueProps.bind(this)}
+        onChange={(event) => {
+          this.debouncedDispatchEvent('formItemChange', { value: event.target?.value });
+        }}
+      >
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -346,5 +364,12 @@ FilterFormItemModel.registerFlow({
       // 筛选这里 dataSourceKey, collectionName, fieldPath 不是必须的
       handler(ctx, params) {},
     },
+  },
+});
+
+FilterFormItemModel.registerEvents({
+  formItemChange: {
+    label: tval('Field value change'),
+    name: 'formItemChange',
   },
 });
