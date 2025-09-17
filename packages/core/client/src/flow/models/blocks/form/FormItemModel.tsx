@@ -17,13 +17,9 @@ import {
   FormItem,
   jioToJoiSchema,
 } from '@nocobase/flow-engine';
-import { Alert, Card, Form, Input, Result } from 'antd';
-import { capitalize } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { FieldValidation } from '../../../../collection-manager';
-import { FieldPlaceholder } from '../../../components/placeholders/FieldPlaceholder';
 import { FieldModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 
