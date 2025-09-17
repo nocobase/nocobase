@@ -297,7 +297,6 @@ export const Calendar: any = withDynamicSchemaProps(
         'en-US': enUS,
       };
       const locale = apiClient.auth.locale || 'en-US';
-      // formats 根据 localizer 和 locale 动态显示
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
@@ -320,11 +319,7 @@ export const Calendar: any = withDynamicSchemaProps(
             )}`;
           },
           weekdayFormat: (date, culture, local) => {
-            if (view === 'week') {
-              return localizer.format(date, 'd eee', locale);
-            } else {
-              return local.format(date, 'eee', locale);
-            }
+            return local.format(date, 'eee', locale);
           },
         };
       }, [locale, view]);
@@ -345,7 +340,9 @@ export const Calendar: any = withDynamicSchemaProps(
         return {
           toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
           week: {
-            header: (props) => <Header {...props} type="week" showLunar={showLunar} formats={formats} />,
+            header: (props) => (
+              <Header {...props} type="week" showLunar={showLunar} localizer={localizer} locale={locale} />
+            ),
           },
           month: {
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
