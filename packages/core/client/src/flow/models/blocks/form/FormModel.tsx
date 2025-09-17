@@ -17,11 +17,12 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
-import { omit } from 'lodash';
-import React from 'react';
+import { debounce, omit } from 'lodash';
+import React, { useMemo } from 'react';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { DEBOUNCE_WAIT } from '../../../../variables';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -122,6 +123,12 @@ export function FormComponent({
   initialValues?: any;
   onFinish?: (values: any) => void;
 }) {
+  const debouncedDispatchEvent = useMemo(() => {
+    return debounce((eventName: string, payload?: any) => {
+      model.dispatchEvent(eventName, payload);
+    }, DEBOUNCE_WAIT);
+  }, [model]);
+
   return (
     <Form
       form={model.form}
@@ -129,7 +136,7 @@ export function FormComponent({
       {...omit(layoutProps, 'labelWidth')}
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
-        model.dispatchEvent('formValuesChange');
+        debouncedDispatchEvent('formValuesChange', { changedValues, allValues });
       }}
       {...rest}
     >
