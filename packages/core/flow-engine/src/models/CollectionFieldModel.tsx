@@ -112,21 +112,21 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
   static getDefaultBindingByField(
     ctx: FlowEngineContext,
     collectionField: CollectionField,
-    options: { fallbackToTargetTitleField?: boolean } = {},
+    options: { useStrict?: boolean; fallbackToTargetTitleField?: boolean } = {},
   ): BindingOptions | null {
     if (options.fallbackToTargetTitleField) {
-      const binding = this.getDefaultBindingByField(ctx, collectionField);
+      const binding = this.getDefaultBindingByField(ctx, collectionField, { useStrict: true });
       if (!binding) {
         if (collectionField.isAssociationField() && collectionField.targetCollectionTitleField) {
           return this.getDefaultBindingByField(ctx, collectionField.targetCollectionTitleField);
         }
       }
+      return binding;
     }
     const interfaceName = collectionField.interface;
     if (!interfaceName) {
       return null;
     }
-
     // Check if the interface exists in the map
     if (!this.bindings.has(interfaceName)) {
       return null;
@@ -139,6 +139,9 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     );
     if (defaultBinding) {
       return defaultBinding;
+    }
+    if (options.useStrict) {
+      return null;
     }
     return bindings.find(
       (binding) => ctx.engine.getModelClass(binding.modelName) && binding.when(ctx, collectionField),
