@@ -68,6 +68,9 @@
 ## 示例：级联下拉（父子联动 + 监听表单变更）
 <code src="./demos/cascading-select.tsx"></code>
 
+## 示例：跨区块联动（Block 间同步）
+<code src="./demos/cross-block-linkage.tsx"></code>
+
 ## 示例：多选标签（可创建）
 <code src="./demos/tags-creatable.tsx"></code>
 
