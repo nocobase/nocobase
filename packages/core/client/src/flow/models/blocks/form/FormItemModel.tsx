@@ -18,10 +18,12 @@ import {
   jioToJoiSchema,
 } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
+import { debounce } from 'lodash';
 import React from 'react';
 import { FieldValidation } from '../../../../collection-manager';
 import { FieldModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
+import { DEBOUNCE_WAIT } from '../../../../variables';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -45,6 +47,16 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
 }
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
+  private readonly debouncedDispatchEvent: ReturnType<typeof debounce>;
+
+  constructor(options: any) {
+    super(options);
+    // 创建防抖的 dispatchEvent 方法
+    this.debouncedDispatchEvent = debounce((eventName: string, payload: any) => {
+      this.dispatchEvent(eventName, payload);
+    }, DEBOUNCE_WAIT);
+  }
+
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection
@@ -104,7 +116,13 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         : fieldModel;
     const namePath = buildDynamicName(this.props.name, idx);
     return (
-      <FormItem {...this.props} name={namePath}>
+      <FormItem
+        {...this.props}
+        name={namePath}
+        onChange={(event) => {
+          this.debouncedDispatchEvent('formItemChange', { value: event.target?.value });
+        }}
+      >
         <FieldModelRenderer model={modelForRender} name={namePath} />
       </FormItem>
     );
@@ -297,4 +315,8 @@ FormItemModel.registerFlow({
       },
     },
   },
+});
+
+FormItemModel.registerEvents({
+  formItemChange: { label: escapeT('Filed value change'), name: 'formItemChange' },
 });
