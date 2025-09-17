@@ -11,32 +11,46 @@ import { CollectionFieldModel, defineAction, FlowEngineContext } from '@nocobase
 import { tval } from '@nocobase/utils/client';
 import { FieldModel } from '../models/base/FieldModel';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
+import { buildAssociationOptions } from './displayFieldComponent';
 
 export const fieldComponent = defineAction({
   title: tval('Field component'),
   name: 'fieldComponent',
   uiSchema: (ctx: FlowEngineContext) => {
-    const classes =
-      ctx.model.getProps().pattern === 'readPretty'
-        ? DetailsItemModel.getBindingsByField(ctx, ctx.collectionField)
-        : ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-    if (classes.length === 1) {
-      return null;
+    if (ctx.model.getProps().pattern === 'readPretty') {
+      const { titleField } = ctx.model.props;
+      const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+      if (classes.length === 1 && !titleField) return null;
+
+      const options = buildAssociationOptions(ctx, DetailsItemModel, titleField);
+      return {
+        use: {
+          type: 'string',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: options,
+        },
+      };
+    } else {
+      const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+      if (classes.length === 1) {
+        return null;
+      }
+      return {
+        use: {
+          type: 'string',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: classes.map((model) => {
+            const m = ctx.engine.getModelClass(model.modelName);
+            return {
+              label: m.meta?.label || model.modelName,
+              value: model.modelName,
+            };
+          }),
+        },
+      };
     }
-    return {
-      use: {
-        type: 'string',
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: classes.map((model) => {
-          const m = ctx.engine.getModelClass(model.modelName);
-          return {
-            label: m.meta?.label || model.modelName,
-            value: model.modelName,
-          };
-        }),
-      },
-    };
   },
   beforeParamsSave: async (ctx, params, previousParams) => {
     const classes =

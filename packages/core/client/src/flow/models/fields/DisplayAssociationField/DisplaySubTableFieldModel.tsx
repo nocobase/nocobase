@@ -25,7 +25,7 @@ const AddFieldColumn = ({ model }) => {
       }}
       afterSubModelAdd={async (column: any) => {
         const currentBlockModel = model.context.blockModel;
-        currentBlockModel.addAppends(`${model.collectionField.name}.${column.fieldPath}`, true);
+        currentBlockModel.addAppends(`${model.context.collectionField.name}.${column.fieldPath}`, true);
       }}
       keepDropdownOpen
     >
@@ -36,6 +36,9 @@ const AddFieldColumn = ({ model }) => {
 export class DisplaySubTableFieldModel extends FieldModel {
   get collection() {
     return this.context.collection;
+  }
+  get collectionField() {
+    return this.context.collectionField;
   }
   onInit(options: any): void {
     super.onInit(options);
@@ -94,7 +97,7 @@ DisplaySubTableFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        // await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },

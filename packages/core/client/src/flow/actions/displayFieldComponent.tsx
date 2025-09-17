@@ -10,6 +10,28 @@
 import { defineAction, escapeT } from '@nocobase/flow-engine';
 import { FieldModel } from '../models/base/FieldModel';
 
+export function buildAssociationOptions(ctx: any, itemModel, titleField?: string) {
+  const { collectionField } = ctx;
+  const classes = itemModel.getBindingsByField(ctx, collectionField);
+
+  const makeOptions = (list: any[]) =>
+    list.map((model) => {
+      const m = ctx.engine.getModelClass(model.modelName);
+      return { label: m.meta?.label || model.modelName, value: model.modelName };
+    });
+
+  if (titleField) {
+    const titleFieldClasses = itemModel.getBindingsByField(ctx, collectionField.targetCollection.getField(titleField));
+
+    return [
+      classes.length && { label: escapeT('AssociationField component'), options: makeOptions(classes) },
+      { label: escapeT('Title field component'), options: makeOptions(titleFieldClasses) },
+    ].filter(Boolean);
+  }
+
+  return makeOptions(classes);
+}
+
 export const displayFieldComponent = defineAction({
   name: 'displayFieldComponent',
   title: escapeT('Field component'),
@@ -17,26 +39,8 @@ export const displayFieldComponent = defineAction({
     const { titleField } = ctx.model.props;
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     if (classes.length === 1 && !titleField) return null;
-    const makeOptions = (list) =>
-      list.map((model) => {
-        const m = ctx.engine.getModelClass(model.modelName);
-        return { label: m.meta?.label || model.modelName, value: model.modelName };
-      });
 
-    let options;
-    if (titleField) {
-      const titleFieldClasses = ctx.model.constructor.getBindingsByField(
-        ctx,
-        ctx.collectionField.targetCollection.getField(titleField),
-      );
-      console.log(titleFieldClasses);
-      options = [
-        classes.length && { label: escapeT('AssociationField component'), options: makeOptions(classes) },
-        { label: escapeT('Title field component'), options: makeOptions(titleFieldClasses) },
-      ].filter(Boolean);
-    } else {
-      options = makeOptions(classes);
-    }
+    const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
     return {
       use: {
         type: 'string',
