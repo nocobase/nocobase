@@ -9,13 +9,11 @@
 
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-
-import { FieldModel, ApplicationContext, tval } from '@nocobase/client';
+import { ClickableFieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
-export class DisplayVditorFieldModel extends FieldModel {
-  public render() {
-    const { value } = this.props;
+export class DisplayVditorFieldModel extends ClickableFieldModel {
+  public renderComponent(value) {
     const app = this.context.app;
     if (!value) {
       return <div></div>;

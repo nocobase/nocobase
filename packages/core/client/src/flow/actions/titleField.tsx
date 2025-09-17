@@ -11,21 +11,19 @@ import { defineAction, DisplayItemModel, useFlowSettingsContext } from '@nocobas
 import { tval } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import React from 'react';
-import { getUniqueKeyFromCollection } from '../../collection-manager/interfaces/utils';
 import { isTitleField } from '../../data-source';
 import { useCompile } from '../../schema-component';
 import { FieldModel } from '../models/base/FieldModel';
 
-const SelectOptions = (props) => {
+export const SelectOptions = (props) => {
   const flowContext = useFlowSettingsContext<FieldModel>();
   const compile = useCompile();
   const collectionField = flowContext.model.context.collectionField;
   const app = flowContext.app;
-  const collectionManager = collectionField?.collection?.collectionManager;
   const dataSourceManager = app.dataSourceManager;
-  const target = collectionField?.options?.target;
-  if (!collectionManager || !target) return;
-  const targetCollection = collectionManager.getCollection(target);
+  const target = collectionField?.target;
+  if (!target) return;
+  const targetCollection = collectionField.targetCollection;
   const targetFields = targetCollection?.getFields?.() ?? [];
   const options = targetFields
     .filter((field) => isTitleField(dataSourceManager, field.options))
@@ -51,7 +49,7 @@ export const titleField = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const titleField = ctx.model.collectionField.targetCollectionTitleFieldName;
+    const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
     return {
       label: titleField,
     };
@@ -59,8 +57,8 @@ export const titleField = defineAction({
   async handler(ctx: any, params) {
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
-    const filterKey = getUniqueKeyFromCollection(targetCollection.options as any);
-    const label = params.label || targetCollection.options.titleField || filterKey;
+    const filterKey = targetCollection.filterTargetKey;
+    const label = params.label || ctx.model.collectionField.targetCollectionTitleFieldName || filterKey;
     const newFieldNames = {
       value: filterKey,
       label,

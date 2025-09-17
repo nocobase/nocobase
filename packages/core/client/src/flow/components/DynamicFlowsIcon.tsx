@@ -16,12 +16,13 @@ import {
   StepDefinition,
   untracked,
   useFlowContext,
+  FlowDefinition,
+  FlowStep,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
 import { FilterGroup, LinkageFilterItem } from '@nocobase/client';
-import { FlowDefinition, FlowStep } from '../../../../FlowDefinition';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 

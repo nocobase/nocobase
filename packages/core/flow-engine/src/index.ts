@@ -34,3 +34,5 @@ export * from './FlowContextProvider';
 export * from './JSRunner';
 
 export * from './views';
+
+export * from './FlowDefinition';

@@ -8,7 +8,7 @@
  */
 
 import { ActionModel, CollectionActionModel, TableBlockModel } from '@nocobase/client';
-import { buildSubModelItems, FlowModelContext, MultiRecordResource } from '@nocobase/flow-engine';
+import { MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 
 export class CustomTableBlockModel extends TableBlockModel {
@@ -32,13 +32,7 @@ export class HelloCustomActionModel extends CustomActionModel {
   };
 }
 
-export class CustomCollectionActionModel extends CollectionActionModel {
-  static async defineChildren(ctx: FlowModelContext) {
-    const children1 = await super.defineChildren(ctx);
-    const children2 = await buildSubModelItems(CustomActionModel)(ctx);
-    return [...children1, ...children2];
-  }
-}
+export class CustomCollectionActionModel extends CollectionActionModel {}
 
 CustomTableBlockModel.define({
   hide: true,

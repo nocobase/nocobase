@@ -19,6 +19,7 @@ export class TimeFieldModel extends FieldModel {
     const onChange = props.onChange;
     const componentProps = {
       ...props,
+      picker: 'time',
       format,
       inputReadOnly: true,
       value: dayjsable(props.value, 'HH:mm:ss'),
@@ -35,6 +36,7 @@ export class TimeFieldModel extends FieldModel {
   }
 
   render() {
+    console.log(this.props);
     return <TimePicker {...this.props} style={{ width: '100%' }} />;
   }
 }

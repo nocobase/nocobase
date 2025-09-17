@@ -30,7 +30,6 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
-import { DynamicFlowsIcon } from './components/settings/wrappers/contextual/DynamicFlowsIcon';
 
 const Panel = Collapse.Panel;
 
@@ -52,7 +51,18 @@ export interface FlowSettingsOpenOptions {
   uiMode?:
     | 'dialog'
     | 'drawer'
-    | { type?: 'dialog' | 'drawer'; props?: { title?: string; width?: number; [key: string]: any } };
+    | 'embed'
+    | {
+        type?: 'dialog' | 'drawer' | 'embed';
+        props?: {
+          title?: string;
+          width?: number;
+          target?: any;
+          onOpen?: () => void;
+          onClose?: () => void;
+          [key: string]: any;
+        };
+      };
   /** 点击取消按钮后触发的回调（关闭后调用） */
   onCancel?: () => void | Promise<void>;
   /** 配置保存成功后触发的回调 */
@@ -92,16 +102,6 @@ export class FlowSettings {
       key: 'settings-menu',
       component: DefaultSettingsIcon,
       sort: 0, // 默认为0，作为第一个添加的项目
-    });
-
-    // 动态流程编辑器入口
-    this.toolbarItems.push({
-      key: 'dynamic-flows-editor',
-      component: DynamicFlowsIcon,
-      visible(model) {
-        return model.getEvents().size > 0;
-      },
-      sort: 0,
     });
   }
 
@@ -478,7 +478,7 @@ export class FlowSettings {
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
-   * - options.uiMode?: 'dialog' | 'drawer' ｜ { type: 'dialog' | 'drawer'; props?: { title: string; width: number; [key: string]: any } }，默认 'dialog'。
+   * - options.uiMode?: 'dialog' | 'drawer' | 'embed' ｜ { type?: 'dialog' | 'drawer' | 'embed'; props?: { title?: string; width?: number; target?: any; onOpen?: () => void; onClose?: () => void; [key: string]: any } }，默认 'dialog'。
    * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
@@ -606,10 +606,30 @@ export class FlowSettings {
     // 解析 uiMode，支持函数式
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
-    const modeType: 'dialog' | 'drawer' =
-      typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
-    const modeProps: Record<string, any> =
+    const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    let modeProps: Record<string, any> =
       typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
+
+    if (modeType === 'embed') {
+      const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
+      const onOpen = modeProps.onOpen;
+      const onClose = modeProps.onClose;
+      modeProps = {
+        target,
+        ...modeProps,
+        onOpen() {
+          target.style.width = modeProps.width || '50%';
+          target.style.maxWidth = modeProps.maxWidth || '800px';
+          onOpen?.();
+        },
+        onClose() {
+          target.style.width = 'auto';
+          target.style.maxWidth = 'none';
+          onClose?.();
+        },
+      };
+    }
+
     const openView = viewer[modeType || 'dialog'].bind(viewer);
     const flowEngine = (model as any).flowEngine;
     const scopes = {
