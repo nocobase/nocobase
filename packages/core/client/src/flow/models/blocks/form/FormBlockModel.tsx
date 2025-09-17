@@ -28,7 +28,7 @@ type DefaultCollectionBlockModelStructure = {
   subModels?: { grid: FormGridModel; actions?: FormActionModel[] };
 };
 
-export class FormModel<
+export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
   get form() {
@@ -138,11 +138,11 @@ export function FormComponent({
   );
 }
 
-FormModel.define({
+FormBlockModel.define({
   hide: true,
 });
 
-FormModel.registerFlow({
+FormBlockModel.registerFlow({
   key: 'formModelSettings',
   title: escapeT('Form settings'),
   steps: {
@@ -153,7 +153,7 @@ FormModel.registerFlow({
   },
 });
 
-FormModel.registerFlow({
+FormBlockModel.registerFlow({
   key: 'eventSettings',
   title: escapeT('Event settings'),
   on: 'formValuesChange',
@@ -168,6 +168,12 @@ FormModel.registerFlow({
   },
 });
 
-FormModel.registerEvents({
+FormBlockModel.registerEvents({
   formValuesChange: { label: escapeT('Form values change'), name: 'formValuesChange' },
 });
+
+/**
+ * 兼容旧版本
+ * @deprecated use FormBlockModel instead
+ */
+export class FormModel extends FormBlockModel {}

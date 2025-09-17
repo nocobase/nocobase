@@ -35,7 +35,7 @@ import {
   RecordActionGroupModel,
   RecordActionModel,
 } from '../../base';
-import { FormComponent } from '../form/FormModel';
+import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
 export class DetailsBlockModel extends CollectionBlockModel<{

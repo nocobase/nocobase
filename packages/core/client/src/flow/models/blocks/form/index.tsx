@@ -11,11 +11,11 @@ export * from './CreateFormModel';
 export * from './EditFormModel';
 export * from './FormActionGroupModel';
 export * from './FormActionModel';
+export * from './FormBlockModel';
 export * from './FormCustomItemModel';
 export * from './FormGridModel';
 export * from './FormItemModel';
 export * from './FormJSFieldItemModel';
-export * from './FormModel';
 export * from './JSFormActionModel';
 export * from './QuickEditFormModel';
 //

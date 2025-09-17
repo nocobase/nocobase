@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import { FlowModelRenderer, SingleRecordResource, createCollectionContextMeta, escapeT } from '@nocobase/flow-engine';
-import { FormComponent, FormModel } from '../form/FormModel';
+import React from 'react';
+import { FormBlockModel, FormComponent } from '../form/FormBlockModel';
 
 /**
  * 赋值配置表单
  */
 // 使用范型标注 subModels.grid 的类型，提升类型提示与可读性
-export class AssignFormModel extends FormModel<{ subModels: { grid: any } }> {
+export class AssignFormModel extends FormBlockModel<{ subModels: { grid: any } }> {
   createResource(ctx: any, params: any) {
     const resource = this.context.createResource(SingleRecordResource);
     // 行为与 CreateFormModel 一致：视为新记录，避免额外 GET
