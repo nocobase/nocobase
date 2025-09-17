@@ -186,7 +186,7 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupType | ((ctx: FlowEngineContext) => boolean | Promise<boolean>);
+export type FlowEventCondition = FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
   | { eventName: FlowEventName; condition?: FlowEventCondition };

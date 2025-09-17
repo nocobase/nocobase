@@ -133,6 +133,292 @@ describe('FlowExecutor', () => {
     expect(submitHandler).not.toHaveBeenCalled();
   });
 
+  it('dispatchEvent respects filter group conditions', async () => {
+    const matchedHandler = vi.fn().mockResolvedValue('matched');
+    const skippedHandler = vi.fn().mockResolvedValue('skipped');
+
+    const flows = {
+      shouldRun: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$and',
+            items: [
+              {
+                path: '{{ ctx.model.props.status }}',
+                operator: '$eq',
+                value: 'active',
+              },
+            ],
+          },
+        },
+        steps: { step: { handler: matchedHandler } },
+      },
+      shouldSkip: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$and',
+            items: [
+              {
+                path: '{{ ctx.model.props.status }}',
+                operator: '$eq',
+                value: 'inactive',
+              },
+            ],
+          },
+        },
+        steps: { step: { handler: skippedHandler } },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = new FlowModel({
+      uid: 'm-conditional',
+      flowEngine: engine,
+      props: { status: 'active' },
+      stepParams: {},
+      subModels: {},
+      flowRegistry: flows,
+    } as FlowModelOptions);
+
+    // 提供最小 jsonLogic 实现，确保条件可计算
+    model.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply(logic: any) {
+            const op = Object.keys(logic)[0];
+            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
+            const [a, b] = values;
+            switch (op) {
+              case '$eq':
+                return a === b;
+              default:
+                return false;
+            }
+          },
+        },
+      },
+    });
+
+    await engine.executor.dispatchEvent(model, 'click');
+
+    expect(matchedHandler).toHaveBeenCalledTimes(1);
+    expect(skippedHandler).not.toHaveBeenCalled();
+  });
+
+  it('dispatchEvent supports function conditions', async () => {
+    const handler = vi.fn().mockResolvedValue('fn-matched');
+    const conditionFn = vi.fn().mockReturnValue(true);
+
+    const flows = {
+      fnFlow: {
+        on: {
+          eventName: 'click',
+          condition: conditionFn,
+        },
+        steps: { step: { handler } },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-function', flows);
+
+    await engine.executor.dispatchEvent(model, 'click');
+
+    expect(conditionFn).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatchEvent evaluates nested groups and $or checks', async () => {
+    const matchedHandler = vi.fn().mockResolvedValue('nested-ok');
+    const fallbackHandler = vi.fn().mockResolvedValue('fallback');
+
+    const flows = {
+      nestedMatch: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$or',
+            items: [
+              {
+                path: '{{ ctx.event.args.type }}',
+                operator: '$eq',
+                value: 'primary',
+              },
+              {
+                logic: '$and',
+                items: [
+                  {
+                    path: '{{ ctx.model.props.role }}',
+                    operator: '$eq',
+                    value: 'admin',
+                  },
+                  {
+                    path: '{{ ctx.model.props.count }}',
+                    operator: '$gt',
+                    value: 10,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        steps: { step: { handler: matchedHandler } },
+      },
+      nestedSkip: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$and',
+            items: [
+              {
+                path: '{{ ctx.event.args.type }}',
+                operator: '$eq',
+                value: 'secondary',
+              },
+            ],
+          },
+        },
+        steps: { step: { handler: fallbackHandler } },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = new FlowModel({
+      uid: 'm-nested',
+      flowEngine: engine,
+      props: { role: 'member', count: 5 },
+      stepParams: {},
+      subModels: {},
+      flowRegistry: flows,
+    } as FlowModelOptions);
+
+    model.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply(logic: any) {
+            const op = Object.keys(logic)[0];
+            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
+            const [a, b] = values;
+            switch (op) {
+              case '$eq':
+                return a === b;
+              case '$gt':
+                return a > b;
+              default:
+                return false;
+            }
+          },
+        },
+      },
+    });
+
+    await engine.executor.dispatchEvent(model, 'click', { type: 'primary' });
+
+    expect(matchedHandler).toHaveBeenCalledTimes(1);
+    expect(fallbackHandler).not.toHaveBeenCalled();
+  });
+
+  it('dispatchEvent handles unary operators like $notEmpty', async () => {
+    const handler = vi.fn().mockResolvedValue('not-empty');
+
+    const flows = {
+      nonEmptyTags: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$and',
+            items: [
+              {
+                path: '{{ ctx.model.props.tags }}',
+                operator: '$notEmpty',
+                value: '',
+              },
+            ],
+          },
+        },
+        steps: { step: { handler } },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = new FlowModel({
+      uid: 'm-unary',
+      flowEngine: engine,
+      props: { tags: ['a', 'b'] },
+      stepParams: {},
+      subModels: {},
+      flowRegistry: flows,
+    } as FlowModelOptions);
+
+    model.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply(logic: any) {
+            const op = Object.keys(logic)[0];
+            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
+            const [a] = values;
+            switch (op) {
+              case '$notEmpty':
+                return Array.isArray(a) ? a.length > 0 : !!a;
+              default:
+                return false;
+            }
+          },
+        },
+      },
+    });
+
+    await engine.executor.dispatchEvent(model, 'click');
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatchEvent skips flows when condition evaluates to false', async () => {
+    const handler = vi.fn().mockResolvedValue('should-not-run');
+
+    const flows = {
+      invalidCondition: {
+        on: {
+          eventName: 'click',
+          condition: {
+            logic: '$and',
+            items: [
+              {
+                path: '{{ ctx.event.args.type }}',
+                operator: '$eq',
+                value: 'never',
+              },
+            ],
+          },
+        },
+        steps: { step: { handler } },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-invalid', flows);
+
+    // 注入最小 jsonLogic，确保 $eq 可用
+    model.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply(logic: any) {
+            const op = Object.keys(logic)[0];
+            const values = Array.isArray(logic[op]) ? logic[op] : [logic[op]];
+            const [a, b] = values;
+            switch (op) {
+              case '$eq':
+                return a === b;
+              default:
+                return false;
+            }
+          },
+        },
+      },
+    });
+
+    await engine.executor.dispatchEvent(model, 'click');
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('instance flow overrides global flow with same key', async () => {
     class MyModel extends FlowModel {}
 
