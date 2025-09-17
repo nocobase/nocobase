@@ -204,9 +204,10 @@ export interface EventDefinition<TModel extends FlowModel = FlowModel> {
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
+  | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
