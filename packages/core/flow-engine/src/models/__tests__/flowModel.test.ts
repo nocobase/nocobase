@@ -792,6 +792,201 @@ describe('FlowModel', () => {
         expect(eventFlow1.steps.eventStep.handler).toHaveBeenCalled();
         expect(eventFlow2.steps.eventStep.handler).toHaveBeenCalled();
       });
+
+      describe('debounce functionality', () => {
+        test('should use debounced dispatch when debounce option is true', async () => {
+          const eventFlow = createEventFlowDefinition('debouncedEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const _dispatchEventSpy = vi.spyOn(model as any, '_dispatchEvent');
+          const _dispatchEventWithDebounceSpy = vi.spyOn(model as any, '_dispatchEventWithDebounce');
+
+          // Test with debounce enabled
+          await model.dispatchEvent('debouncedEvent', { data: 'test' }, { debounce: true });
+
+          expect(_dispatchEventWithDebounceSpy).toHaveBeenCalledWith('debouncedEvent', { data: 'test' });
+          expect(_dispatchEventSpy).not.toHaveBeenCalled();
+
+          _dispatchEventSpy.mockRestore();
+          _dispatchEventWithDebounceSpy.mockRestore();
+        });
+
+        test('should use normal dispatch when debounce option is false', async () => {
+          const eventFlow = createEventFlowDefinition('normalEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const _dispatchEventSpy = vi.spyOn(model as any, '_dispatchEvent');
+          const _dispatchEventWithDebounceSpy = vi.spyOn(model as any, '_dispatchEventWithDebounce');
+
+          // Test with debounce disabled
+          await model.dispatchEvent('normalEvent', { data: 'test' }, { debounce: false });
+
+          expect(_dispatchEventSpy).toHaveBeenCalledWith('normalEvent', { data: 'test' });
+          expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
+
+          _dispatchEventSpy.mockRestore();
+          _dispatchEventWithDebounceSpy.mockRestore();
+        });
+
+        test('should use normal dispatch when debounce option is not provided', async () => {
+          const eventFlow = createEventFlowDefinition('defaultEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const _dispatchEventSpy = vi.spyOn(model as any, '_dispatchEvent');
+          const _dispatchEventWithDebounceSpy = vi.spyOn(model as any, '_dispatchEventWithDebounce');
+
+          // Test without debounce option
+          await model.dispatchEvent('defaultEvent', { data: 'test' });
+
+          expect(_dispatchEventSpy).toHaveBeenCalledWith('defaultEvent', { data: 'test' });
+          expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
+
+          _dispatchEventSpy.mockRestore();
+          _dispatchEventWithDebounceSpy.mockRestore();
+        });
+
+        test('should use normal dispatch when options is undefined', async () => {
+          const eventFlow = createEventFlowDefinition('undefinedOptionsEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const _dispatchEventSpy = vi.spyOn(model as any, '_dispatchEvent');
+          const _dispatchEventWithDebounceSpy = vi.spyOn(model as any, '_dispatchEventWithDebounce');
+
+          // Test with undefined options
+          await model.dispatchEvent('undefinedOptionsEvent', { data: 'test' }, undefined);
+
+          expect(_dispatchEventSpy).toHaveBeenCalledWith('undefinedOptionsEvent', { data: 'test' });
+          expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
+
+          _dispatchEventSpy.mockRestore();
+          _dispatchEventWithDebounceSpy.mockRestore();
+        });
+
+        test('should debounce multiple rapid calls when debounce is true', async () => {
+          const eventFlow = createEventFlowDefinition('rapidEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const handlerSpy = eventFlow.steps.eventStep.handler as any;
+          handlerSpy.mockClear();
+
+          // Make multiple rapid calls with debounce enabled
+          model.dispatchEvent('rapidEvent', { call: 1 }, { debounce: true });
+          model.dispatchEvent('rapidEvent', { call: 2 }, { debounce: true });
+          model.dispatchEvent('rapidEvent', { call: 3 }, { debounce: true });
+
+          // Wait for debounce timeout (100ms + buffer)
+          await new Promise((resolve) => setTimeout(resolve, 150));
+
+          // Only the last call should be executed due to debouncing
+          expect(handlerSpy).toHaveBeenCalledTimes(1);
+          expect(handlerSpy).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+              inputArgs: { call: 3 },
+            }),
+            expect.any(Object),
+          );
+        });
+
+        test('should not debounce calls when debounce is false', async () => {
+          const eventFlow = createEventFlowDefinition('nonDebouncedEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const handlerSpy = eventFlow.steps.eventStep.handler as any;
+          handlerSpy.mockClear();
+
+          // Make multiple rapid calls with debounce disabled
+          await model.dispatchEvent('nonDebouncedEvent', { call: 1 }, { debounce: false });
+          await model.dispatchEvent('nonDebouncedEvent', { call: 2 }, { debounce: false });
+          await model.dispatchEvent('nonDebouncedEvent', { call: 3 }, { debounce: false });
+
+          // All calls should be executed
+          expect(handlerSpy).toHaveBeenCalledTimes(3);
+          expect(handlerSpy).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+              inputArgs: { call: 1 },
+            }),
+            expect.any(Object),
+          );
+          expect(handlerSpy).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({
+              inputArgs: { call: 2 },
+            }),
+            expect.any(Object),
+          );
+          expect(handlerSpy).toHaveBeenNthCalledWith(
+            3,
+            expect.objectContaining({
+              inputArgs: { call: 3 },
+            }),
+            expect.any(Object),
+          );
+        });
+
+        test('should handle mixed debounced and non-debounced calls correctly', async () => {
+          const eventFlow = createEventFlowDefinition('mixedEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const handlerSpy = eventFlow.steps.eventStep.handler as any;
+          handlerSpy.mockClear();
+
+          // Make a non-debounced call
+          await model.dispatchEvent('mixedEvent', { type: 'immediate' }, { debounce: false });
+
+          // Make rapid debounced calls
+          model.dispatchEvent('mixedEvent', { type: 'debounced', call: 1 }, { debounce: true });
+          model.dispatchEvent('mixedEvent', { type: 'debounced', call: 2 }, { debounce: true });
+
+          // Wait for debounce timeout
+          await new Promise((resolve) => setTimeout(resolve, 150));
+
+          // Should have immediate call + one debounced call
+          expect(handlerSpy).toHaveBeenCalledTimes(2);
+          expect(handlerSpy).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+              inputArgs: { type: 'immediate' },
+            }),
+            expect.any(Object),
+          );
+          expect(handlerSpy).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({
+              inputArgs: { type: 'debounced', call: 2 },
+            }),
+            expect.any(Object),
+          );
+        });
+
+        test('should pass correct arguments to debounced function', async () => {
+          const eventFlow = createEventFlowDefinition('argumentsEvent');
+          TestFlowModel.registerFlow(eventFlow);
+
+          const handlerSpy = eventFlow.steps.eventStep.handler as any;
+          handlerSpy.mockClear();
+
+          const inputArgs = {
+            userId: 123,
+            action: 'click',
+            timestamp: Date.now(),
+            metadata: { source: 'test' },
+          };
+
+          model.dispatchEvent('argumentsEvent', inputArgs, { debounce: true });
+
+          // Wait for debounce timeout
+          await new Promise((resolve) => setTimeout(resolve, 150));
+
+          expect(handlerSpy).toHaveBeenCalledTimes(1);
+          expect(handlerSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              inputArgs,
+            }),
+            expect.any(Object),
+          );
+        });
+      });
     });
   });
 

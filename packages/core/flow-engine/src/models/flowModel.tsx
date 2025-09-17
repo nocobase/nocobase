@@ -632,7 +632,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
-  async dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
+  private async _dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -646,6 +646,27 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }, targetIsFork=${(target as any)?.isFork === true}`,
     );
     await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs);
+  }
+
+  private _dispatchEventWithDebounce = _.debounce(async (eventName: string, inputArgs?: Record<string, any>) => {
+    return this._dispatchEvent(eventName, inputArgs);
+  }, 100);
+
+  async dispatchEvent(
+    eventName: string,
+    inputArgs?: Record<string, any>,
+    options?: {
+      /**
+       * 是否要开启防抖功能
+       */
+      debounce: boolean;
+    },
+  ): Promise<void> {
+    if (options?.debounce) {
+      return this._dispatchEventWithDebounce(eventName, inputArgs);
+    }
+
+    return this._dispatchEvent(eventName, inputArgs);
   }
 
   /**
