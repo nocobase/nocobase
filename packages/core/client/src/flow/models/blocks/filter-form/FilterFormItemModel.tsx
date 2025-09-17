@@ -15,28 +15,12 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { Alert, Empty } from 'antd';
-import _, { capitalize, debounce } from 'lodash';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Empty } from 'antd';
+import _, { debounce } from 'lodash';
+import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
-import { FilterManager } from '../filter-manager/FilterManager';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
-
-const FieldNotAllow = ({ actionName, FieldTitle }) => {
-  const { t } = useTranslation();
-  const messageValue = useMemo(() => {
-    return t(
-      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
-      {
-        actionName: t(capitalize(actionName)),
-        name: FieldTitle,
-      },
-    ).replaceAll('&gt;', '>');
-  }, [FieldTitle, actionName, t]);
-  return <Alert type="warning" message={messageValue} showIcon />;
-};
 
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
