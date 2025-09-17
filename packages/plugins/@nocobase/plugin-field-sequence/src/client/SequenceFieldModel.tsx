@@ -10,7 +10,7 @@
 import { Input } from 'antd';
 import React from 'react';
 import { FieldModel } from '@nocobase/client';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
 
 export class SequenceFieldModel extends FieldModel {
   render() {
@@ -19,3 +19,4 @@ export class SequenceFieldModel extends FieldModel {
 }
 
 EditableItemModel.bindModelToInterface('SequenceFieldModel', ['sequence'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayTextFieldModel', ['sequence'], { isDefault: true });

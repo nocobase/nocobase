@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, EditableItemModel, escapeT } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, escapeT } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const pattern = defineAction({

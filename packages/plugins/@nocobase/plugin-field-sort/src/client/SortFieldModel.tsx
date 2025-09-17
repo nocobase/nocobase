@@ -9,7 +9,7 @@
 
 import { InputNumber } from 'antd';
 import React from 'react';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
 import { FieldModel } from '@nocobase/client';
 
 export class SortFieldModel extends FieldModel {
@@ -19,3 +19,4 @@ export class SortFieldModel extends FieldModel {
 }
 
 EditableItemModel.bindModelToInterface('SortFieldModel', ['sort'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['sort'], { isDefault: true });
