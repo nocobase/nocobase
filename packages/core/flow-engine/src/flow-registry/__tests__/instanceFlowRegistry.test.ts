@@ -19,9 +19,9 @@ describe('InstanceFlowRegistry', () => {
     return engine.createModel({ use: 'MyModel' });
   }
 
-  test('saveFlow calls model.save via FlowDefinition.save', async () => {
+  test('saveFlow calls model.saveStepParams via FlowDefinition.save', async () => {
     const model = createModel();
-    const saveSpy = vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     const flow = model.flowRegistry.addFlow('flow1', {
       title: 'Flow 1',
@@ -29,12 +29,12 @@ describe('InstanceFlowRegistry', () => {
     });
 
     await flow.save();
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
   });
 
-  test('destroyFlow removes flow and calls model.save', async () => {
+  test('destroyFlow removes flow and calls model.saveStepParams', async () => {
     const model = createModel();
-    const saveSpy = vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     const flow = model.flowRegistry.addFlow('toRemove', {
       title: 'Remove me',
@@ -43,13 +43,13 @@ describe('InstanceFlowRegistry', () => {
     expect(model.flowRegistry.hasFlow('toRemove')).toBe(true);
 
     await flow.destroy();
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
     expect(model.flowRegistry.hasFlow('toRemove')).toBe(false);
   });
 
   test('moveStep reorders steps and persists', async () => {
     const model = createModel();
-    const saveSpy = vi.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vi.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     const flow = model.flowRegistry.addFlow('reorder', {
       title: 'Reorder',
@@ -62,7 +62,7 @@ describe('InstanceFlowRegistry', () => {
 
     await model.flowRegistry.moveStep('reorder', 'c', 'b');
 
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
     // Ensure integer sorts in new order
     expect(flow.getStep('a')?.serialize().sort).toBe(1);
     expect(flow.getStep('c')?.serialize().sort).toBe(2);

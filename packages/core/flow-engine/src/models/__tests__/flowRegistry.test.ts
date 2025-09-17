@@ -79,9 +79,9 @@ describe('InstanceFlowRegistry (extended)', () => {
     });
   });
 
-  test('saveFlow/saveStep/destroyStep/destroyFlow call model.save()', async () => {
+  test('saveFlow/saveStep/destroyStep/destroyFlow call model.saveStepParams()', async () => {
     const model = createModel();
-    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vitest.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     const flow = model.flowRegistry.addFlow('flow1', {
       title: 'Flow 1',
@@ -92,14 +92,14 @@ describe('InstanceFlowRegistry (extended)', () => {
     });
 
     await flow.save();
-    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
 
     await flow.destroyStep('step2');
-    expect(saveSpy).toHaveBeenCalledTimes(2);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(2);
     expect(flow.hasStep('step2')).toBe(false);
 
     await flow.destroy();
-    expect(saveSpy).toHaveBeenCalledTimes(3);
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(3);
     expect(model.flowRegistry.hasFlow('flow1')).toBe(false);
   });
 
@@ -128,9 +128,9 @@ describe('InstanceFlowRegistry (extended)', () => {
     expect(flow.getStep('step2')?.serialize().sort).toBe(3);
   });
 
-  test('moveStep calls model.save after reordering', async () => {
+  test('moveStep calls model.saveStepParams after reordering', async () => {
     const model = createModel();
-    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vitest.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     model.flowRegistry.addFlow('testFlow', {
       title: 'Test Flow',
@@ -142,25 +142,25 @@ describe('InstanceFlowRegistry (extended)', () => {
 
     await model.flowRegistry.moveStep('testFlow', 'step1', 'step2');
 
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    saveSpy.mockRestore();
+    expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
+    saveStepParamsSpy.mockRestore();
   });
 
   test('moveStep throws error for non-existent flow', async () => {
     const model = createModel();
-    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vitest.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     await expect(model.flowRegistry.moveStep('nonExistentFlow', 'step1', 'step2')).rejects.toThrow(
       "Flow 'nonExistentFlow' not found",
     );
 
-    expect(saveSpy).not.toHaveBeenCalled();
-    saveSpy.mockRestore();
+    expect(saveStepParamsSpy).not.toHaveBeenCalled();
+    saveStepParamsSpy.mockRestore();
   });
 
   test('moveStep throws error for non-existent steps', async () => {
     const model = createModel();
-    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vitest.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     model.flowRegistry.addFlow('testFlow', {
       title: 'Test Flow',
@@ -174,8 +174,8 @@ describe('InstanceFlowRegistry (extended)', () => {
       "Source step 'nonExistentStep' not found",
     );
 
-    expect(saveSpy).not.toHaveBeenCalled();
-    saveSpy.mockRestore();
+    expect(saveStepParamsSpy).not.toHaveBeenCalled();
+    saveStepParamsSpy.mockRestore();
   });
 
   test('toData merges steps into options snapshot', () => {
@@ -457,7 +457,7 @@ describe('InstanceFlowRegistry (extended)', () => {
   // FlowStep 的异步方法
   test('FlowStep async methods call flowDef methods', async () => {
     const model = createModel();
-    const saveSpy = vitest.spyOn(model as any, 'save').mockResolvedValue(undefined);
+    const saveStepParamsSpy = vitest.spyOn(model as any, 'saveStepParams').mockResolvedValue(undefined);
 
     const flow = model.flowRegistry.addFlow('test', {
       title: 'Test',
@@ -469,7 +469,7 @@ describe('InstanceFlowRegistry (extended)', () => {
     // 测试 step.save()
     if (step) {
       await step.save();
-      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(saveStepParamsSpy).toHaveBeenCalledTimes(1);
 
       // 测试 step.remove()
       step.remove();
@@ -482,7 +482,7 @@ describe('InstanceFlowRegistry (extended)', () => {
 
     if (step2) {
       await step2.destroy();
-      expect(saveSpy).toHaveBeenCalledTimes(2);
+      expect(saveStepParamsSpy).toHaveBeenCalledTimes(2);
       expect(flow.hasStep('step2')).toBe(false);
     }
   });

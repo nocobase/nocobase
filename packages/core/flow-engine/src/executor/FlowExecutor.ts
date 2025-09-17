@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
 import type { FlowDefinition } from '../FlowDefinition';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
@@ -242,7 +241,6 @@ export class FlowExecutor {
         matched = on.eventName === eventName;
         if (matched && on.condition) {
           matched = await evaluateFlowCondition({
-            engine: this.engine,
             model,
             flowKey: flow.key,
             condition: on.condition,
