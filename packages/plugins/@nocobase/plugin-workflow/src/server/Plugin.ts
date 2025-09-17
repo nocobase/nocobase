@@ -80,7 +80,7 @@ export default class PluginWorkflowServer extends Plugin {
     const execution = await ExecutionRepo.findOne({
       filterByTk: event.executionId,
     });
-    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
+    if (!execution || execution.dispatched) {
       this.getLogger('dispatcher').info(
         `execution (${event.executionId}) from queue not found or not in queueing status, skip`,
       );
@@ -231,6 +231,8 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.checker) {
       clearInterval(this.checker);
     }
+
+    this.loggerCache.clear();
   };
 
   async handleSyncMessage(message) {
@@ -349,12 +351,11 @@ export default class PluginWorkflowServer extends Plugin {
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
 
-    if (this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
-      this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-        idle: () => !this.executing && !this.pending.length && !this.events.length,
-        process: this.onQueueExecution,
-      });
-    }
+    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
+      idle: () =>
+        this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && !this.executing && !this.pending.length && !this.events.length,
+      process: this.onQueueExecution,
+    });
   }
 
   /**
@@ -559,7 +560,7 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    */
   public async start(execution: ExecutionModel) {
-    if (execution.status !== EXECUTION_STATUS.STARTED) {
+    if (execution.status) {
       return;
     }
     this.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
@@ -620,7 +621,7 @@ export default class PluginWorkflowServer extends Plugin {
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
           stack: options.stack,
-          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+          dispatched: deferred ?? false,
         },
         { transaction },
       );
@@ -676,7 +677,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (execution?.status === EXECUTION_STATUS.QUEUEING) {
+      if (!execution?.dispatched) {
         if (!this.executing && !this.pending.length) {
           logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
           this.pending.push([execution]);
@@ -741,9 +742,7 @@ export default class PluginWorkflowServer extends Plugin {
             async (transaction) => {
               const execution = (await this.db.getRepository('executions').findOne({
                 filter: {
-                  status: {
-                    [Op.is]: EXECUTION_STATUS.QUEUEING,
-                  },
+                  dispatched: false,
                   'workflow.enabled': true,
                 },
                 sort: 'id',
@@ -753,6 +752,7 @@ export default class PluginWorkflowServer extends Plugin {
                 this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
                 await execution.update(
                   {
+                    dispatched: true,
                     status: EXECUTION_STATUS.STARTED,
                   },
                   { transaction },
@@ -786,9 +786,9 @@ export default class PluginWorkflowServer extends Plugin {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     const logger = this.getLogger(execution.workflowId);
-    if (execution.status === EXECUTION_STATUS.QUEUEING) {
+    if (!execution.dispatched) {
       const transaction = await this.useDataSourceTransaction('main', options.transaction);
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
+      await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
       logger.info(`execution (${execution.id}) from pending list updated to started`);
     }
     const processor = this.createProcessor(execution, options);

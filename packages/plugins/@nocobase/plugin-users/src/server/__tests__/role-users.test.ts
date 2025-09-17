@@ -44,10 +44,11 @@ describe('actions', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBe(1);
 
+    const user = await db.getRepository('users').findOne();
     res = await agent.resource('users').listExcludeRole({
       roleName: ['test'],
       filter: {
-        id: 1,
+        id: user.id,
       },
     });
     expect(res.status).toBe(200);

@@ -29,7 +29,7 @@ import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { WorkflowLink } from './WorkflowLink';
 import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
-import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
+import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin from '.';
 import { RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
@@ -136,7 +136,6 @@ export function WorkflowPane() {
           ExecutionResourceProvider,
           ExecutionLink,
           OpenDrawer,
-          ExecutionStatusSelect,
           SyncOptionSelect,
           ExecutionStatusColumn,
           Tooltip,

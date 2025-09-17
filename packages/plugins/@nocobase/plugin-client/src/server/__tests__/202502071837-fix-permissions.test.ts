@@ -72,11 +72,12 @@ describe('202502071837-fix-permissions', () => {
       appends: ['desktopRoutes'],
     });
 
+    const routes = await app.db.getRepository('desktopRoutes').find();
     // 验证应该添加的权限
     const routeIds = updatedRole.desktopRoutes.map((r) => r.id);
-    expect(routeIds).toContain(1); // page1 已存在
-    expect(routeIds).toContain(2); // tabs1 应该被添加
-    expect(routeIds).not.toContain(3); // page2 不应该被添加
+    expect(routeIds).toContain(routes[0].id); // page1 已存在
+    expect(routeIds).toContain(routes[1].id); // tabs1 应该被添加
+    expect(routeIds).not.toContain(routes[2].id); // page2 不应该被添加
   });
 
   test('should handle empty desktop routes', async () => {

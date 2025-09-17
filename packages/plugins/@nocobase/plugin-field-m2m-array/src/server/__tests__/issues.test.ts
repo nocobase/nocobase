@@ -420,6 +420,103 @@ describe('issues', () => {
       }),
     ).resolves.toBeTruthy();
   });
+
+  test('filtering by m2m array fields in a relation collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'projects',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'users',
+            type: 'belongsTo',
+            foreignKey: 'user_id',
+            target: 'users',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('tags').create({
+      values: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+    });
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    await db.getRepository('projects').create({
+      values: { id: 1, title: 'p1', user_id: 1 },
+    });
+    await expect(
+      db.getRepository('projects').count({
+        filter: {
+          $and: [
+            {
+              users: {
+                tags: {
+                  title: 'a',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).resolves.not.toThrow();
+  });
 });
 
 describe('issues with users', () => {

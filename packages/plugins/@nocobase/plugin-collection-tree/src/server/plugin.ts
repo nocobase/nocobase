@@ -62,7 +62,7 @@ class PluginCollectionTreeServer extends Plugin {
               values: {
                 nodePk: model.get(tk),
                 path: path,
-                rootPk: rootPk ? Number(rootPk) : null,
+                rootPk: rootPk ? rootPk : null,
               },
               transaction,
             });
@@ -113,19 +113,26 @@ class PluginCollectionTreeServer extends Plugin {
               throw new Error('Cannot set itself as the parent node');
             }
           });
+
+          this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
+            const name = `main_${collection.get('name')}_path`;
+            if (!condition(collection.options)) {
+              return;
+            }
+
+            const collectionTree = this.db.getCollection(name);
+            if (collectionTree) {
+              await this.db.getCollection(name).removeFromDb({ transaction });
+
+              collectionManager.db.removeAllListeners(`${collection.name}.afterSync`);
+              this.db.removeAllListeners(`${collection.name}.afterCreate`);
+              this.db.removeAllListeners(`${collection.name}.afterUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterBulkUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterDestroy`);
+              this.db.removeAllListeners(`${collection.name}.beforeSave`);
+            }
+          });
         });
-      }
-    });
-
-    this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
-      const name = `main_${collection.get('name')}_path`;
-      if (!condition(collection.options)) {
-        return;
-      }
-
-      const collectionTree = this.db.getCollection(name);
-      if (collectionTree) {
-        await this.db.getCollection(name).removeFromDb({ transaction });
       }
     });
   }
@@ -136,9 +143,9 @@ class PluginCollectionTreeServer extends Plugin {
       autoGenId: false,
       timestamps: false,
       fields: [
-        { type: 'integer', name: 'nodePk' },
+        { type: 'bigInt', name: 'nodePk' },
         { type: 'string', name: 'path', length: 1024 },
-        { type: 'integer', name: 'rootPk' },
+        { type: 'bigInt', name: 'rootPk' },
       ],
       indexes: [
         {
@@ -222,7 +229,7 @@ class PluginCollectionTreeServer extends Plugin {
       await this.app.db.getRepository(pathCollectionName).update({
         values: {
           path: newPath,
-          rootPk: rootPk ? Number(rootPk) : null,
+          rootPk: rootPk ? rootPk : null,
         },
         filter: {
           [nodePkColumnName]: node.get('nodePk'),

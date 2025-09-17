@@ -280,12 +280,9 @@ function TaskPageContent() {
 
   useEffect(() => {
     if (!taskType) {
-      navigate(
-        mobilePage
-          ? `/page/workflow-tasks/${items[0].key}/${status}`
-          : `/admin/workflow/tasks/${items[0].key}/${status}`,
-        { replace: true },
-      );
+      navigate(`${items[0].key}/${status}`, {
+        replace: true,
+      });
     }
   }, [items, mobilePage, navigate, status, taskType]);
 
@@ -496,7 +493,7 @@ export function WorkflowTasks() {
           <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
         </Layout.Header>
       ) : (
-        <Layout.Sider theme="light" breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+        <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
           <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
         </Layout.Sider>
       )}
@@ -530,7 +527,7 @@ function WorkflowTasksLink() {
   return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
-        <Link to={`/admin/workflow/tasks/${items[0].key}/${TASK_STATUS.PENDING}`} onClick={reload}>
+        <Link to={`/admin/workflow/tasks`} onClick={reload}>
           <Badge count={total} size="small">
             <CheckCircleOutlined />
           </Badge>

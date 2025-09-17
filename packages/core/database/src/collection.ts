@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
 import safeJsonStringify from 'safe-json-stringify';
 import {
+  DataTypes,
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,

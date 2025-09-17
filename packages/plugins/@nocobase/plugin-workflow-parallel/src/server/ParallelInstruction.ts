@@ -66,7 +66,7 @@ const Modes = {
       return true;
     },
     getStatus(result) {
-      if (result.some((status) => status === JOB_STATUS.PENDING)) {
+      if (result.some((status) => !status)) {
         return JOB_STATUS.PENDING;
       }
       return JOB_STATUS.RESOLVED;

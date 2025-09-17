@@ -107,8 +107,8 @@ export default class PostgresQueryInterface extends QueryInterface {
     return results[0]['exists'];
   }
 
-  async listViews() {
-    const targetSchema = this.db.options?.schema || 'public';
+  async listViews(options?: { schema?: string }) {
+    const targetSchema = options?.schema || this.db.options?.schema || 'public';
 
     const sql = targetSchema
       ? `

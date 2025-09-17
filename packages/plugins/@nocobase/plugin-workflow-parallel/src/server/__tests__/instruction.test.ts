@@ -329,6 +329,57 @@ describe('workflow > instructions > parallel', () => {
       expect(jobs.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
       expect(jobs.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.ERROR);
     });
+
+    it('wait till all done', async () => {
+      const n1 = await workflow.createNode({
+        type: 'parallel',
+        config: {
+          mode: 'allSettled',
+        },
+      });
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+      const n3 = await workflow.createNode({
+        type: 'asyncResume',
+        config: {
+          duration: 500,
+        },
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n3.id,
+      });
+      await n3.setDownstream(n4);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(300);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      const j1s = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j1s.length).toBe(3);
+      expect(j1s.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.PENDING);
+      expect(j1s.find((item) => item.nodeId === n1.id).result).toEqual([JOB_STATUS.RESOLVED, null]);
+      expect(j1s.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(j1s.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(300);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const j2s = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(j2s.length).toBe(4);
+      expect(j2s.find((item) => item.nodeId === n1.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2s.find((item) => item.nodeId === n2.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2s.find((item) => item.nodeId === n3.id).status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2s.find((item) => item.nodeId === n4.id).status).toBe(JOB_STATUS.RESOLVED);
+    });
   });
 
   describe('branch and join', () => {
