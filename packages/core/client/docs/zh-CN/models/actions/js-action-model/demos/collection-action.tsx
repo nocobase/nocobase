@@ -12,6 +12,8 @@ import {
   TableBlockModel,
   TableColumnModel,
   DisplayTextFieldModel,
+  JSCollectionActionModel,
+  JSRecordActionModel,
 } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
@@ -69,13 +71,49 @@ class DemoPlugin extends Plugin {
       use: 'TableBlockModel',
       stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
       subModels: {
+        actions: [
+          {
+            use: 'JSCollectionActionModel',
+            stepParams: {
+              buttonSettings: {
+                general: {
+                  title: '{{t("查看详情")}}',
+                  type: 'link',
+                },
+              },
+              clickSettings: {
+                runJs: {
+                  code: `
+const rows = ctx.resource?.getSelectedRows?.() || [];
+if (!rows.length) {
+  (ctx.message?.warning ?? console.warn)('请至少勾选一条记录');
+  return;
+}
+const ids = rows.map((item) => item.id).join(', ');
+if (ctx.viewer?.drawer) {
+  await ctx.viewer.drawer({
+    width: '40%',
+    content: '<div style="padding:16px;font:14px/1.6 -apple-system,BlinkMacSystemFont,&#39;Segoe UI&#39;,Roboto,sans-serif;">'
+      + '<h3 style="margin:0 0 12px;">批量操作</h3>'
+      + '<div>勾选的 ID：' + ids + '</div>'
+      + '<div style="color:#999;margin-top:12px;">实际项目中可以在这里调用 ctx.api 或 ctx.resource 执行批量更新。</div>'
+      + '</div>',
+  });
+}
+(ctx.message?.success ?? console.log)('演示完成，共选中 ' + rows.length + ' 条');
+                `.trim(),
+                },
+              },
+            },
+          } as any,
+        ],
         columns: [
           {
             use: 'TableActionsColumnModel',
             subModels: {
               actions: [
                 {
-                  use: 'JSCollectionActionModel',
+                  use: 'JSRecordActionModel',
                   stepParams: {
                     buttonSettings: {
                       general: {

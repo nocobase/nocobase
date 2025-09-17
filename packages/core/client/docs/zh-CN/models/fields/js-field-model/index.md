@@ -6,7 +6,7 @@
 
 支持在“JavaScript settings”中编写并运行脚本，脚本通过 `ctx` 上下文读写容器、读取当前字段值与记录，并可结合视图能力（drawer/dialog）实现交互扩展。
 
-## 可用上下文（常用）
+## JSFieldModel 可用上下文（常用）
 - `ctx.element`：ElementProxy（安全封装的 DOM 容器）。常用 `innerHTML` 写入内容，或 `addEventListener` 绑定事件。
 - `ctx.value`：当前字段值（只读形态）。
 - `ctx.record`：当前记录数据对象（在表格/详情中可用）。
@@ -43,7 +43,7 @@
 
 可在“JavaScript settings”中编写脚本，运行时通过 `ctx` 上下文读写容器与表单值。
 
-## 可用上下文（常用）
+## JSEditableFieldModel 可用上下文（常用）
 - `ctx.element`：ElementProxy（容器），脚本内用它读写 DOM。
 - `ctx.getValue()` / `ctx.setValue(v)`：获取/设置当前字段值（与表单双向绑定）。
 - `ctx.namePath`：当前字段的 `namePath`。
@@ -58,6 +58,18 @@
 
 ## 示例：通过 API 加载下拉可选项
 <code src="./demos/remote-select.tsx"></code>
+
+## 示例：远程搜索（防抖 + 实时建议）
+<code src="./demos/remote-search.tsx"></code>
+
+## 示例：远程搜索（虚拟滚动列表）
+<code src="./demos/remote-search-virtual.tsx"></code>
+
+## 示例：级联下拉（父子联动 + 监听表单变更）
+<code src="./demos/cascading-select.tsx"></code>
+
+## 示例：多选标签（可创建）
+<code src="./demos/tags-creatable.tsx"></code>
 
 ## 相关
 - 只读展示：参见 JSFieldModel。

@@ -11,6 +11,7 @@ import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@no
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
+import { CodeEditor } from '../../../components/code-editor';
 
 const NAMESPACE = 'client';
 
@@ -44,7 +45,7 @@ JSBlockModel.registerFlow({
         code: {
           type: 'string',
           title: 'Write JavaScript',
-          'x-component': 'CodeEditor',
+          'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '400px',
             theme: 'light',

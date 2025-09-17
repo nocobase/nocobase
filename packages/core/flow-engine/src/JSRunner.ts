@@ -19,7 +19,22 @@ export class JSRunner {
   private timeoutMs: number;
 
   constructor(options: JSRunnerOptions = {}) {
-    this.globals = { console, setTimeout, clearTimeout, ...(options.globals || {}) };
+    const bindWindowFn = (key: 'setTimeout' | 'clearTimeout' | 'setInterval' | 'clearInterval') => {
+      if (typeof window !== 'undefined' && typeof window[key] === 'function') {
+        return window[key].bind(window);
+      }
+      const fn = globalThis[key];
+      return typeof fn === 'function' ? fn.bind(globalThis) : fn;
+    };
+
+    this.globals = {
+      console,
+      setTimeout: bindWindowFn('setTimeout'),
+      clearTimeout: bindWindowFn('clearTimeout'),
+      setInterval: bindWindowFn('setInterval'),
+      clearInterval: bindWindowFn('clearInterval'),
+      ...(options.globals || {}),
+    };
     this.timeoutMs = options.timeoutMs ?? 5000; // 默认 5 秒超时
   }
 

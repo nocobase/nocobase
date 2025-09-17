@@ -16,10 +16,11 @@
 
 export function createSafeWindow(extra?: Record<string, any>) {
   const allowedGlobals: Record<string, any> = {
-    setTimeout,
-    clearTimeout,
-    setInterval,
-    clearInterval,
+    // 需绑定到原始 window，避免严格模式下触发 Illegal invocation
+    setTimeout: window.setTimeout.bind(window),
+    clearTimeout: window.clearTimeout.bind(window),
+    setInterval: window.setInterval.bind(window),
+    clearInterval: window.clearInterval.bind(window),
     console,
     Math,
     Date,

@@ -109,6 +109,17 @@ interface OpenViewParams {
 }
 ```
 
+## 示例：编辑弹窗提交后自动关闭并回调代码块
+
+下面这个 Demo 展示了一个常见的 JS 代码区块场景：在区块内以按钮打开系统内部的“编辑弹窗（抽屉）”，提交后自动关闭弹窗，并回调到代码区块内的某个函数以刷新看板或执行其他逻辑。
+
+<code src="./demos/jsblock-open-edit-after-submit-callback.tsx"></code>
+
+要点说明：
+- 弹窗通过 `ctx.runAction('openView', {...})` 打开，使用 `afterModelInit(pageModel)` 在子页面里即时创建 `EditFormModel`（包含提交按钮）。
+- 通过给提交按钮的 `submitSettings` 增加一个后置步骤，在保存成功后调用父级代码块上下文中的回调函数（例如 `ctx.onLeadSaved`）。
+- `FormSubmitActionModel` 的默认行为已包含保存成功后自动关闭视图，因此无需重复手动关闭；如仍需拦截关闭，可在 `pageModel.context.currentView` 上做进一步控制。
+
 ### Tabulator
 
 ```ts

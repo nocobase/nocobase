@@ -10,6 +10,7 @@ import {
   FormItemModel,
   JSItemModel,
   JSEditableFieldModel,
+  NumberFieldModel,
   FilterManager,
   MockFlowModelRepository,
   Plugin,
@@ -168,34 +169,41 @@ class DemoPlugin extends Plugin {
                     runJs: {
                       code: `
 const render = (values) => {
-  const data = values || (ctx.form && ctx.form.getFieldsValue ? ctx.form.getFieldsValue() : defaults) || defaults;
+  const data = values || (ctx.form && ctx.form.getFieldsValue ? ctx.form.getFieldsValue() : {}) || {};
   const price = Number(data.price) || 0;
   const quantity = Number(data.quantity) || 1;
   const discount = Number(data.discount) || 0;
   const total = price * quantity;
   const final = total * (1 - discount);
   const fmt = (n) => '¥' + (Number(n) || 0).toFixed(2);
-  const html = '<div style="padding:8px 12px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;">'
-    + '<div style="font-weight:600;color:#389e0d;">预计实付：' + fmt(final) + '</div>'
-    + '<div style="color:#999">小计 ' + fmt(total) + '，折扣 ' + Math.round(discount * 100) + '%</div>'
-    + '</div>';
-  ctx.element.innerHTML = html;
+  ctx.element.innerHTML =
+    '<div style="padding:8px 12px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;">' +
+    '  <div style="font-weight:600;color:#389e0d;">预计实付：' + fmt(final) + '</div>' +
+    '  <div style="color:#999">小计 ' + fmt(total) + '，折扣 ' + Math.round(discount * 100) + '%</div>' +
+    '</div>';
 };
+
 render(ctx.form?.getFieldsValue?.());
-// 添加新flow来监听事件
-ctx.blockModel.flowRegistry.addFlow('jsItemPreview_' + ctx.model.uid, {
-  title: 'JS item preview',
-  on: 'formValuesChange',
-  steps: {
-    preview: {
-      async handler(flowCtx) {
-        const form = flowCtx.form;
-        const values = form?.getFieldsValue?.() ?? {};
-        render(values);
+
+var registerPreviewFlow = function(){
+  if (!ctx.blockModel || !ctx.model) return;
+  var flowKey = 'jsItemPreview_' + ctx.model.uid;
+  ctx.blockModel.registerFlow(flowKey, {
+    title: '实时预览刷新',
+    on: 'formValuesChange',
+    steps: {
+      preview: {
+        async handler(flowCtx) {
+          var form = flowCtx.form;
+          var values = form && form.getFieldsValue ? form.getFieldsValue() : {};
+          render(values);
+        },
       },
     },
-  },
-});
+  });
+};
+
+registerPreviewFlow();
                  `.trim(),
                     },
                   },
