@@ -14,9 +14,9 @@ import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
 
-function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModelItem {
+export function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext, skipHide = false): SubModelItem {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
-  if (meta.hide) {
+  if (meta.hide && !skipHide) {
     return;
   }
   // 判断是否为 CollectionBlockModel 的子类（用于集合选择层开启搜索）
@@ -33,6 +33,7 @@ function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext): SubModel
     // Use the model class name for toggle detection (engine.getModelClass)
     // This is required by AddSubModelButton to locate existing instances
     useModel: M.name,
+    sort: meta.sort || 1000,
     children: buildSubModelChildren(M, ctx),
   };
   item['createModelOptions'] = meta.createModelOptions || {

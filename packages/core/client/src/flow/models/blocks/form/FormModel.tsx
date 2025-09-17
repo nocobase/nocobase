@@ -17,13 +17,11 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
-import { debounce, omit } from 'lodash';
-import React, { useMemo } from 'react';
-import { BlockGridModel } from '../../base/BlockGridModel';
-import { CollectionBlockModel } from '../../base/CollectionBlockModel';
+import { omit } from 'lodash';
+import React from 'react';
+import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
-import { DEBOUNCE_WAIT } from '../../../../variables';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -38,7 +36,7 @@ export class FormModel<
   }
 
   subModelBaseClasses = {
-    action: 'FormActionModel' as any,
+    action: 'FormActionGroupModel' as any,
     field: ['FormItemModel', 'FormCustomItemModel'] as any,
   };
 

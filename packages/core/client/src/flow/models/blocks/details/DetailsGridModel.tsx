@@ -35,7 +35,7 @@ export class DetailsGridModel extends GridModel<{
       <AddSubModelButton
         model={this}
         subModelKey={'items'}
-        subModelBaseClasses={['DetailsItemModel', 'DetailsAssociationFieldGroupModel', 'DetailsCustomItemModel']}
+        {...this.parent.getAddSubModelButtonProps('field')}
         afterSubModelInit={async (item: DetailsItemModel) => {
           const field: any = item.subModels.field;
           if (field) {

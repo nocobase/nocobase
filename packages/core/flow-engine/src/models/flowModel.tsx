@@ -45,6 +45,7 @@ import {
 // import { FlowExitAllException } from '../utils/exceptions';
 import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
+import { buildSubModelItem } from '../components/subModel/utils';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
@@ -339,6 +340,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     events: Record<string, EventDefinition<TModel>>,
   ): void {
     this.eventRegistry.registerEvents(events);
+  }
+
+  static buildChildrenFromModels(ctx, Models: Array<any>) {
+    return Models.map((M) => buildSubModelItem(M, ctx, true));
   }
 
   get title() {

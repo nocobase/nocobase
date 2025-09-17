@@ -40,6 +40,7 @@ export interface SubModelItem {
   keepDropdownOpen?: boolean;
   toggleable?: boolean | ((model: FlowModel) => boolean); // 是否支持切换
   useModel?: string;
+  sort?: number;
   toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
   customRemove?: (ctx: FlowModelContext, item: SubModelItem) => Promise<void>;
 }
