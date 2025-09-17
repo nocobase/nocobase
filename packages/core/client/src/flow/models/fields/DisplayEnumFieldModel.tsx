@@ -67,21 +67,3 @@ DisplayItemModel.bindModelToInterface(
     isDefault: true,
   },
 );
-
-DisplayItemModel.bindModelToInterface('DisplayEnumFieldModel', ['checkbox'], {
-  isDefault: true,
-  defaultProps: (ctx) => {
-    return {
-      options: [
-        {
-          label: '{{t("Yes")}}',
-          value: true,
-        },
-        {
-          label: '{{t("No")}}',
-          value: false,
-        },
-      ],
-    };
-  },
-});
