@@ -408,395 +408,397 @@ export const linkageRunjs = defineAction({
   },
 });
 
-const LinkageRulesUI = observer((props: { readonly value: LinkageRule[]; supportedActions: string[] }) => {
-  const { value: rules, supportedActions } = props;
-  currentLinkageRules = rules;
-  const ctx = useFlowContext();
-  const flowEngine = useFlowEngine();
-  const [submitLoading, setSubmitLoading] = React.useState(false);
-  const t = ctx.model.translate.bind(ctx.model);
+const LinkageRulesUI = observer(
+  (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
+    const { value: rules, supportedActions, title = 'Linkage rules' } = props;
+    currentLinkageRules = rules;
+    const ctx = useFlowContext();
+    const flowEngine = useFlowEngine();
+    const [submitLoading, setSubmitLoading] = React.useState(false);
+    const t = ctx.model.translate.bind(ctx.model);
 
-  // 创建新规则的默认值
-  const createNewRule = (): LinkageRule => ({
-    key: uid(),
-    title: t('Linkage rule'),
-    enable: true,
-    condition: { logic: '$and', items: [] } as FilterGroupType,
-    actions: [],
-  });
-
-  // 添加新规则
-  const handleAddRule = () => {
-    rules.push(createNewRule());
-  };
-
-  // 删除规则
-  const handleDeleteRule = (index: number) => {
-    rules.splice(index, 1);
-  };
-
-  // 上移规则
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      const rule = rules[index];
-      rules.splice(index, 1);
-      rules.splice(index - 1, 0, rule);
-    }
-  };
-
-  // 下移规则
-  const handleMoveDown = (index: number) => {
-    if (index < rules.length - 1) {
-      const rule = rules[index];
-      rules.splice(index, 1);
-      rules.splice(index + 1, 0, rule);
-    }
-  };
-
-  // 复制规则
-  const handleCopyRule = (index: number) => {
-    const originalRule = rules[index];
-    const newRule: LinkageRule = {
-      ...originalRule,
+    // 创建新规则的默认值
+    const createNewRule = (): LinkageRule => ({
       key: uid(),
-      title: `${originalRule.title} (Copy)`,
+      title: t('Linkage rule'),
+      enable: true,
+      condition: { logic: '$and', items: [] } as FilterGroupType,
+      actions: [],
+    });
+
+    // 添加新规则
+    const handleAddRule = () => {
+      rules.push(createNewRule());
     };
-    rules.splice(index + 1, 0, newRule);
-  };
 
-  // 更新规则标题
-  const handleTitleChange = (index: number, title: string) => {
-    rules[index].title = title;
-  };
-
-  // 切换规则启用状态
-  const handleToggleEnable = (index: number, enable: boolean) => {
-    rules[index].enable = enable;
-  };
-
-  // 获取可用的动作类型
-  const getActionsDefinition = () => {
-    return supportedActions.map((actionName: string) => ctx.getAction(actionName));
-  };
-
-  // 添加动作
-  const handleAddAction = (ruleIndex: number, actionName: string) => {
-    const newAction = {
-      key: uid(),
-      name: actionName,
-      params: undefined,
+    // 删除规则
+    const handleDeleteRule = (index: number) => {
+      rules.splice(index, 1);
     };
-    rules[ruleIndex].actions.push(newAction);
-  };
 
-  // 删除动作
-  const handleDeleteAction = (ruleIndex: number, actionIndex: number) => {
-    rules[ruleIndex].actions.splice(actionIndex, 1);
-  };
+    // 上移规则
+    const handleMoveUp = (index: number) => {
+      if (index > 0) {
+        const rule = rules[index];
+        rules.splice(index, 1);
+        rules.splice(index - 1, 0, rule);
+      }
+    };
 
-  // 更新动作的值
-  const handleActionValueChange = (ruleIndex: number, actionIndex: number, value: any) => {
-    rules[ruleIndex].actions[actionIndex].params = value;
-  };
+    // 下移规则
+    const handleMoveDown = (index: number) => {
+      if (index < rules.length - 1) {
+        const rule = rules[index];
+        rules.splice(index, 1);
+        rules.splice(index + 1, 0, rule);
+      }
+    };
 
-  // 生成折叠面板的自定义标题
-  const renderPanelHeader = (rule: LinkageRule, index: number) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-      <div style={{ flex: 1, marginRight: 16 }}>
-        <Input
-          value={rule.title}
-          onChange={(e) => handleTitleChange(index, e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          placeholder="Enter rule title"
-        />
-      </div>
-      <Space onClick={(e) => e.stopPropagation()}>
-        <Tooltip title="Delete">
-          <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteRule(index)} />
-        </Tooltip>
-        <Tooltip title="Move up">
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowUpOutlined />}
-            onClick={() => handleMoveUp(index)}
-            disabled={index === 0}
+    // 复制规则
+    const handleCopyRule = (index: number) => {
+      const originalRule = rules[index];
+      const newRule: LinkageRule = {
+        ...originalRule,
+        key: uid(),
+        title: `${originalRule.title} (Copy)`,
+      };
+      rules.splice(index + 1, 0, newRule);
+    };
+
+    // 更新规则标题
+    const handleTitleChange = (index: number, title: string) => {
+      rules[index].title = title;
+    };
+
+    // 切换规则启用状态
+    const handleToggleEnable = (index: number, enable: boolean) => {
+      rules[index].enable = enable;
+    };
+
+    // 获取可用的动作类型
+    const getActionsDefinition = () => {
+      return supportedActions.map((actionName: string) => ctx.getAction(actionName));
+    };
+
+    // 添加动作
+    const handleAddAction = (ruleIndex: number, actionName: string) => {
+      const newAction = {
+        key: uid(),
+        name: actionName,
+        params: undefined,
+      };
+      rules[ruleIndex].actions.push(newAction);
+    };
+
+    // 删除动作
+    const handleDeleteAction = (ruleIndex: number, actionIndex: number) => {
+      rules[ruleIndex].actions.splice(actionIndex, 1);
+    };
+
+    // 更新动作的值
+    const handleActionValueChange = (ruleIndex: number, actionIndex: number, value: any) => {
+      rules[ruleIndex].actions[actionIndex].params = value;
+    };
+
+    // 生成折叠面板的自定义标题
+    const renderPanelHeader = (rule: LinkageRule, index: number) => (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div style={{ flex: 1, marginRight: 16 }}>
+          <Input
+            value={rule.title}
+            onChange={(e) => handleTitleChange(index, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Enter rule title"
           />
-        </Tooltip>
-        <Tooltip title="Move down">
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowDownOutlined />}
-            onClick={() => handleMoveDown(index)}
-            disabled={index === rules.length - 1}
-          />
-        </Tooltip>
-        <Tooltip title="Copy">
-          <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyRule(index)} />
-        </Tooltip>
-        <Switch
-          size="small"
-          checked={rule.enable}
-          onChange={(checked) => handleToggleEnable(index, checked)}
-          checkedChildren={t('Enable')}
-          unCheckedChildren={t('Disable')}
-        />
-      </Space>
-    </div>
-  );
-
-  // 生成折叠面板项
-  const collapseItems = rules.map((rule, index) => ({
-    key: rule.key,
-    label: renderPanelHeader(rule, index),
-    styles: {
-      header: {
-        display: 'flex',
-        alignItems: 'center',
-      },
-    },
-    children: (
-      <div>
-        {/* 条件部分 */}
-        <div style={{ marginBottom: 32 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 16,
-              paddingBottom: 8,
-              borderBottom: '1px solid #f0f0f0',
-            }}
-          >
-            <div
-              style={{
-                width: '4px',
-                height: '16px',
-                backgroundColor: '#1890ff',
-                borderRadius: '2px',
-                marginRight: 8,
-              }}
-            ></div>
-            <h4
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 500,
-                color: '#262626',
-              }}
-            >
-              {t('Condition')}
-            </h4>
-          </div>
-          <div style={{ paddingLeft: 12 }}>
-            <FilterGroup
-              value={rule.condition}
-              FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
-            />
-          </div>
         </div>
+        <Space onClick={(e) => e.stopPropagation()}>
+          <Tooltip title="Delete">
+            <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteRule(index)} />
+          </Tooltip>
+          <Tooltip title="Move up">
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowUpOutlined />}
+              onClick={() => handleMoveUp(index)}
+              disabled={index === 0}
+            />
+          </Tooltip>
+          <Tooltip title="Move down">
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowDownOutlined />}
+              onClick={() => handleMoveDown(index)}
+              disabled={index === rules.length - 1}
+            />
+          </Tooltip>
+          <Tooltip title="Copy">
+            <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyRule(index)} />
+          </Tooltip>
+          <Switch
+            size="small"
+            checked={rule.enable}
+            onChange={(checked) => handleToggleEnable(index, checked)}
+            checkedChildren={t('Enable')}
+            unCheckedChildren={t('Disable')}
+          />
+        </Space>
+      </div>
+    );
 
-        {/* 动作部分 */}
+    // 生成折叠面板项
+    const collapseItems = rules.map((rule, index) => ({
+      key: rule.key,
+      label: renderPanelHeader(rule, index),
+      styles: {
+        header: {
+          display: 'flex',
+          alignItems: 'center',
+        },
+      },
+      children: (
         <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 16,
-              paddingBottom: 8,
-              borderBottom: '1px solid #f0f0f0',
-            }}
-          >
+          {/* 条件部分 */}
+          <div style={{ marginBottom: 32 }}>
             <div
               style={{
-                width: '4px',
-                height: '16px',
-                backgroundColor: '#52c41a',
-                borderRadius: '2px',
-                marginRight: 8,
-              }}
-            ></div>
-            <h4
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 500,
-                color: '#262626',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+                paddingBottom: 8,
+                borderBottom: '1px solid #f0f0f0',
               }}
             >
-              {t('Actions')}
-            </h4>
+              <div
+                style={{
+                  width: '4px',
+                  height: '16px',
+                  backgroundColor: '#1890ff',
+                  borderRadius: '2px',
+                  marginRight: 8,
+                }}
+              ></div>
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#262626',
+                }}
+              >
+                {t('Condition')}
+              </h4>
+            </div>
+            <div style={{ paddingLeft: 12 }}>
+              <FilterGroup
+                value={rule.condition}
+                FilterItem={(props) => <LinkageFilterItem model={ctx.model} value={props.value} />}
+              />
+            </div>
           </div>
-          <div style={{ paddingLeft: 12 }}>
-            {/* 渲染已有的动作 */}
-            {rule.actions.length > 0 ? (
-              <div style={{ marginBottom: 16 }}>
-                {rule.actions.map((action, actionIndex) => {
-                  const actionDef = ctx.getAction(action.name);
-                  if (!actionDef) return null;
 
-                  return (
-                    <div
-                      key={action.key}
-                      style={{
-                        border: '1px solid #f0f0f0',
-                        borderRadius: '6px',
-                        padding: '12px',
-                        marginBottom: '8px',
-                      }}
-                    >
+          {/* 动作部分 */}
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+                paddingBottom: 8,
+                borderBottom: '1px solid #f0f0f0',
+              }}
+            >
+              <div
+                style={{
+                  width: '4px',
+                  height: '16px',
+                  backgroundColor: '#52c41a',
+                  borderRadius: '2px',
+                  marginRight: 8,
+                }}
+              ></div>
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#262626',
+                }}
+              >
+                {t('Actions')}
+              </h4>
+            </div>
+            <div style={{ paddingLeft: 12 }}>
+              {/* 渲染已有的动作 */}
+              {rule.actions.length > 0 ? (
+                <div style={{ marginBottom: 16 }}>
+                  {rule.actions.map((action, actionIndex) => {
+                    const actionDef = ctx.getAction(action.name);
+                    if (!actionDef) return null;
+
+                    return (
                       <div
+                        key={action.key}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
+                          border: '1px solid #f0f0f0',
+                          borderRadius: '6px',
+                          padding: '12px',
                           marginBottom: '8px',
                         }}
                       >
-                        <span style={{ fontWeight: 500, color: '#262626' }}>{actionDef.title}</span>
-                        <Tooltip title="Delete action">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDeleteAction(index, actionIndex)}
-                          />
-                        </Tooltip>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '8px',
+                          }}
+                        >
+                          <span style={{ fontWeight: 500, color: '#262626' }}>{actionDef.title}</span>
+                          <Tooltip title="Delete action">
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleDeleteAction(index, actionIndex)}
+                            />
+                          </Tooltip>
+                        </div>
+                        <div>
+                          {flowEngine.flowSettings.renderStepForm({
+                            uiSchema: actionDef.uiSchema,
+                            initialValues: action.params,
+                            flowEngine,
+                            onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),
+                          })}
+                        </div>
                       </div>
-                      <div>
-                        {flowEngine.flowSettings.renderStepForm({
-                          uiSchema: actionDef.uiSchema,
-                          initialValues: action.params,
-                          flowEngine,
-                          onFormValuesChange: (form: any) => handleActionValueChange(index, actionIndex, form.values),
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
+                    );
+                  })}
+                </div>
+              ) : null}
 
-            {/* Add action 按钮 */}
-            <Dropdown
-              menu={{
-                items: getActionsDefinition().map((action) => ({
-                  key: action.name,
-                  label: action.title || action.name,
-                  onClick: () => handleAddAction(index, action.name),
-                })),
-              }}
-              trigger={['hover']}
-            >
-              <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
-                {t('Add action')}
-              </Button>
-            </Dropdown>
+              {/* Add action 按钮 */}
+              <Dropdown
+                menu={{
+                  items: getActionsDefinition().map((action) => ({
+                    key: action.name,
+                    label: action.title || action.name,
+                    onClick: () => handleAddAction(index, action.name),
+                  })),
+                }}
+                trigger={['hover']}
+              >
+                <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
+                  {t('Add action')}
+                </Button>
+              </Dropdown>
+            </div>
           </div>
         </div>
-      </div>
-    ),
-  }));
+      ),
+    }));
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#fff',
-        borderLeft: '1px solid #e0e0e0',
-        position: 'relative',
-      }}
-    >
-      {/* 顶部标题栏 */}
+    return (
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderBottom: '1px solid #f0f0f0',
+          flexDirection: 'column',
+          height: '100vh',
           backgroundColor: '#fff',
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          flexShrink: 0,
+          borderLeft: '1px solid #e0e0e0',
+          position: 'relative',
         }}
       >
-        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t('Linkage rules')}</div>
-        <Button
-          type="text"
-          size="small"
-          icon={<CloseOutlined />}
-          style={{ color: '#8c8c8c' }}
-          onClick={() => ctx.view.destroy()}
-        />
-      </div>
-
-      {/* 内容区域 */}
-      <div
-        style={{
-          flex: 1,
-          padding: '16px',
-          overflow: 'auto',
-          minHeight: 0,
-        }}
-      >
-        {rules.length > 0 ? (
-          <Collapse
-            items={collapseItems}
-            size="small"
-            style={{ marginBottom: 8 }}
-            defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
-            accordion
-          />
-        ) : (
-          <div
-            style={{
-              border: '1px dashed #d9d9d9',
-              borderRadius: '6px',
-              backgroundColor: '#fafafa',
-              marginBottom: '8px',
-            }}
-          >
-            <Empty description={t('No linkage rules')} style={{ margin: '20px 0' }} />
-          </div>
-        )}
-        <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
-          {t('Add linkage rule')}
-        </Button>
-      </div>
-
-      {/* 底部按钮区域 */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '8px',
-          padding: '8px 16px',
-          borderTop: '1px solid #f0f0f0',
-          backgroundColor: '#fff',
-          flexShrink: 0,
-        }}
-      >
-        <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
-        <Button
-          type="primary"
-          loading={submitLoading}
-          onClick={async () => {
-            setSubmitLoading(true);
-            await ctx.view.submit();
-            setSubmitLoading(false);
-            ctx.view.destroy();
+        {/* 顶部标题栏 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderBottom: '1px solid #f0f0f0',
+            backgroundColor: '#fff',
+            borderTopLeftRadius: '8px',
+            borderTopRightRadius: '8px',
+            flexShrink: 0,
           }}
         >
-          {t('OK')}
-        </Button>
+          <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t(title)}</div>
+          <Button
+            type="text"
+            size="small"
+            icon={<CloseOutlined />}
+            style={{ color: '#8c8c8c' }}
+            onClick={() => ctx.view.destroy()}
+          />
+        </div>
+
+        {/* 内容区域 */}
+        <div
+          style={{
+            flex: 1,
+            padding: '16px',
+            overflow: 'auto',
+            minHeight: 0,
+          }}
+        >
+          {rules.length > 0 ? (
+            <Collapse
+              items={collapseItems}
+              size="small"
+              style={{ marginBottom: 8 }}
+              defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
+              accordion
+            />
+          ) : (
+            <div
+              style={{
+                border: '1px dashed #d9d9d9',
+                borderRadius: '6px',
+                backgroundColor: '#fafafa',
+                marginBottom: '8px',
+              }}
+            >
+              <Empty description={t('No linkage rules')} style={{ margin: '20px 0' }} />
+            </div>
+          )}
+          <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
+            {t('Add linkage rule')}
+          </Button>
+        </div>
+
+        {/* 底部按钮区域 */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '8px',
+            padding: '8px 16px',
+            borderTop: '1px solid #f0f0f0',
+            backgroundColor: '#fff',
+            flexShrink: 0,
+          }}
+        >
+          <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
+          <Button
+            type="primary"
+            loading={submitLoading}
+            onClick={async () => {
+              setSubmitLoading(true);
+              await ctx.view.submit();
+              setSubmitLoading(false);
+              ctx.view.destroy();
+            }}
+          >
+            {t('Save')}
+          </Button>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const evaluator = (path: string, operator: string, value: any) => {
@@ -912,6 +914,7 @@ export const blockLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.BLOCK_LINKAGE_RULES),
+          title: escapeT('Block linkage rules'),
         },
       },
     };
@@ -933,6 +936,7 @@ export const actionLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
+          title: escapeT('Linkage rules'),
         },
       },
     };
@@ -954,6 +958,7 @@ export const fieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
+          title: escapeT('Field linkage rules'),
         },
       },
     };
