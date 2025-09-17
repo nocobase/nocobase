@@ -149,3 +149,10 @@ FilterFormBlockModel.registerFlow({
     },
   },
 });
+
+FilterFormBlockModel.registerEvents({
+  formValuesChange: {
+    label: tval('Form values change'),
+    name: 'formValuesChange',
+  },
+});
