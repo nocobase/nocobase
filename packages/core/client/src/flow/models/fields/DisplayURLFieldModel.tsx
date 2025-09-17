@@ -28,6 +28,6 @@ DisplayURLFieldModel.define({
   label: escapeT('URL'),
 });
 
-DisplayItemModel.bindModelToInterface('URLReadPrettyFieldModel', ['url'], {
+DisplayItemModel.bindModelToInterface('DisplayURLFieldModel', ['url'], {
   isDefault: true,
 });
