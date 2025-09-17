@@ -109,7 +109,19 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     );
   }
 
-  static getDefaultBindingByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions | null {
+  static getDefaultBindingByField(
+    ctx: FlowEngineContext,
+    collectionField: CollectionField,
+    options: { fallbackToTargetTitleField?: boolean } = {},
+  ): BindingOptions | null {
+    if (options.fallbackToTargetTitleField) {
+      const binding = this.getDefaultBindingByField(ctx, collectionField);
+      if (!binding) {
+        if (collectionField.isAssociationField() && collectionField.targetCollectionTitleField) {
+          return this.getDefaultBindingByField(ctx, collectionField.targetCollectionTitleField);
+        }
+      }
+    }
     const interfaceName = collectionField.interface;
     if (!interfaceName) {
       return null;

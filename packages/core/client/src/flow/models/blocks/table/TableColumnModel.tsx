@@ -9,7 +9,7 @@
 
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import type { CollectionField, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   Collection,
   createRecordMetaFactory,
@@ -48,22 +48,11 @@ export class TableColumnModel extends DisplayItemModel {
   }
 
   static defineChildren(ctx: FlowModelContext) {
-    const resolveFieldModel = (field: any) => {
-      // 如果是关联字段，取目标集合的标题字段
-      const targetField =
-        field.isAssociationField() && field.interface !== 'attachment'
-          ? field.targetCollection?.titleCollectionField
-          : field;
-      if (!targetField) return null;
-
-      const binding = this.getDefaultBindingByField(ctx, targetField);
-      return binding || null;
-    };
     const collection = (ctx.model as any).collection || (ctx.collection as Collection);
     return collection
       .getFields()
-      .map((field) => {
-        const binding = resolveFieldModel(field);
+      .map((field: CollectionField) => {
+        const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
         const fieldModel = binding.modelName;
         const fieldPath = field.name;

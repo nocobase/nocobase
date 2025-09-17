@@ -584,6 +584,10 @@ export class CollectionField {
     return this.targetCollection?.titleCollectionField?.name;
   }
 
+  get targetCollectionTitleField() {
+    return this.targetCollection?.titleCollectionField;
+  }
+
   get flowEngine() {
     return this.collection.flowEngine;
   }
