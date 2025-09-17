@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip, Space } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -60,6 +60,7 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { useApplications } from './useApplications';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -680,6 +681,7 @@ export const InternalAdminLayout = () => {
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
   const { styles } = useHeaderStyle();
+  const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
     return {
@@ -755,7 +757,12 @@ export const InternalAdminLayout = () => {
         location={location}
         route={route}
         actionsRender={actionsRender}
-        logo={<NocoBaseLogo />}
+        logo={
+          <Space>
+            {AppsComponent && <AppsComponent />}
+            <NocoBaseLogo />
+          </Space>
+        }
         title={''}
         layout="mix"
         splitMenus

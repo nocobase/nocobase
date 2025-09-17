@@ -139,6 +139,11 @@ export class Application {
 
   private wsAuthorized = false;
   private variables: Variable[] = [];
+  apps: {
+    Component?: ComponentType;
+  } = {
+    Component: null,
+  };
 
   get pm() {
     return this.pluginManager;
@@ -586,5 +591,9 @@ export class Application {
    */
   getVariables() {
     return this.variables;
+  }
+
+  setAppsComponent({ Component }: { Component: ComponentType }) {
+    this.apps.Component = Component;
   }
 }
