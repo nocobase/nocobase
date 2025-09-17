@@ -86,10 +86,6 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       .filter(Boolean);
   }
 
-  onInit(options: any) {
-    super.onInit(options);
-  }
-
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
