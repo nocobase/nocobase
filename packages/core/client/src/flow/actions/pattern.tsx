@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, escapeT } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const pattern = defineAction({
@@ -39,11 +39,13 @@ export const pattern = defineAction({
   defaultParams: (ctx) => ({
     pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
   }),
-  beforeParamsSave: async (ctx, params, previousParams) => {
+  afterParamsSave: async (ctx, params, previousParams) => {
     const { model } = ctx;
 
     if (params.pattern === 'readPretty') {
-      const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
+        fallbackToTargetTitleField: true,
+      });
       await rebuildFieldSubModel(ctx, model, binding);
     } else {
       const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
@@ -53,7 +55,7 @@ export const pattern = defineAction({
     }
   },
 
-  async handler(ctx, params) {
+  handler(ctx, params) {
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
         pattern: 'readPretty',

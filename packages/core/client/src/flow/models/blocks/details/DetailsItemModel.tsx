@@ -236,7 +236,7 @@ DetailsItemModel.registerFlow({
         if (params.label !== previousParams.label) {
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
-          const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          const binding = ctx.model.constructor.getDefaultBindingByField(ctx, targetCollectionField);
           if (binding.modelName !== ctx.model.subModels.field.use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
