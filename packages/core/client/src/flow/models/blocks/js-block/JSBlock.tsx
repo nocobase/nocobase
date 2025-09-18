@@ -12,6 +12,7 @@ import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { CodeEditor } from '../../../components/code-editor';
+import { InjectableRendingEventTrigger } from '../../../components/decorator';
 
 const NAMESPACE = 'client';
 
@@ -45,6 +46,7 @@ JSBlockModel.registerFlow({
         code: {
           type: 'string',
           title: 'Write JavaScript',
+          'x-decorator': InjectableRendingEventTrigger,
           'x-component': CodeEditor,
           'x-component-props': {
             minHeight: '400px',

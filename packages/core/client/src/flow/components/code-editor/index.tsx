@@ -45,6 +45,7 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  rightExtra?: React.ReactNode[];
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -56,6 +57,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  rightExtra,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -202,6 +204,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         overflow: 'hidden',
       }}
     >
+      {rightExtra ? <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}>{rightExtra}</div> : null}
       <div ref={editorRef} />
       {placeholder && !value && (
         <div

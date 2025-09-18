@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { Plugin, lazy } from '@nocobase/client';
+import { JSBlockModel, Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
@@ -42,6 +43,8 @@ const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
+import { Button } from 'antd';
+import { FlowModel } from '@nocobase/flow-engine';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -69,6 +72,43 @@ export class PluginAIClient extends Plugin {
     this.addPluginSettings();
     this.setupAIFeatures();
     this.setupWorkflow();
+
+    FlowModel.registerFlow({
+      key: 'AIEmployeeHandleInjectableRending',
+      on: 'InjectableRending',
+      steps: {
+        injectAIEmployeeShortcut: {
+          handler(ctx) {
+            const settingContext = ctx.inputArgs.ctx;
+            const setProps = ctx.inputArgs.setProps;
+            if (!(settingContext.model instanceof JSBlockModel)) {
+              console.debug('not a JSBlockModel');
+              return;
+            }
+            if (settingContext.flowKey !== 'jsSettings') {
+              console.debug('not jsSettings flow');
+              return;
+            }
+
+            setProps((prev) => ({
+              ...prev,
+              rightExtra: (
+                <Button
+                  shape="circle"
+                  onClick={() => {
+                    ctx.message.success({
+                      content: 'Click from AI Plugin',
+                    });
+                  }}
+                >
+                  AI
+                </Button>
+              ),
+            }));
+          },
+        },
+      },
+    });
   }
 
   addPluginSettings() {
