@@ -31,28 +31,8 @@ export interface ResourceSettingsInitParams {
   filterByTk?: string;
 }
 
-export type BlockSceneType = 'new' | 'one' | 'many' | 'select' | BlockSceneType[];
-
-export const BlockSceneEnum = {
-  new: 'new' as BlockSceneType,
-  one: 'one' as BlockSceneType,
-  many: 'many' as BlockSceneType,
-  select: 'select' as BlockSceneType,
-  oam: ['one', 'many'] as BlockSceneType,
-};
-
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
-  static scene: BlockSceneType;
-
-  static _getScene() {
-    return _.castArray(this['scene'] || []);
-  }
-
-  static _isScene(scene: BlockSceneType) {
-    const scenes = this._getScene();
-    return scenes.includes(scene);
-  }
 
   static async defineChildren(ctx: FlowModelContext) {
     const createModelOptions = (options) => {
