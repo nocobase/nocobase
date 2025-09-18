@@ -36,7 +36,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
-  console.log(field);
   const fieldModel = field?.createFork({}, `${index}`);
   fieldModel.setProps({
     value: defaultValue,
@@ -190,6 +189,7 @@ export class SubTableColumnModel<
       onCell: (record, recordIndex) => ({
         record,
         recordIndex,
+        key: recordIndex,
         width: this.props.width,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
