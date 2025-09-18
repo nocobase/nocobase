@@ -16,14 +16,14 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { customAlphabet as Alphabet } from 'nanoid';
 import { debounce } from 'lodash';
+import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { FieldModel } from '../../base';
-import { EditFormModel } from './EditFormModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';
 import { SelectOptions } from '../../../actions/titleField';
+import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
+import { EditFormModel } from './EditFormModel';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -86,6 +86,15 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         };
       })
       .filter(Boolean);
+  }
+
+  onInit(options: any) {
+    super.onInit(options);
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      if (this.collectionField) {
+        subModel.setProps(this.collectionField.getComponentProps());
+      }
+    });
   }
 
   render() {
@@ -161,10 +170,10 @@ FormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        const collectionField = ctx.model.collectionField;
-        if (collectionField) {
-          ctx.model.setProps(collectionField.getComponentProps());
-        }
+        // const collectionField = ctx.model.collectionField;
+        // if (collectionField) {
+        //   ctx.model.setProps(collectionField.getComponentProps());
+        // }
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
