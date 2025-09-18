@@ -110,7 +110,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...this.props}
         name={namePath}
         onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
+          this.dispatchEvent('formItemChange', { value: event?.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={modelForRender} name={namePath} />
