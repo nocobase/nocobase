@@ -45,6 +45,7 @@ const { AIResourceContextCollector } = lazy(
 );
 import { Button } from 'antd';
 import { FlowModel } from '@nocobase/flow-engine';
+import { AICodingButton } from './ai-employees/AICodingButton';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -92,18 +93,7 @@ export class PluginAIClient extends Plugin {
 
             setProps((prev) => ({
               ...prev,
-              rightExtra: (
-                <Button
-                  shape="circle"
-                  onClick={() => {
-                    ctx.message.success({
-                      content: 'Click from AI Plugin',
-                    });
-                  }}
-                >
-                  AI
-                </Button>
-              ),
+              rightExtra: <AICodingButton />,
             }));
           },
         },

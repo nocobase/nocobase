@@ -32,7 +32,7 @@ export const InjectableRendingEventTrigger: React.FC<PropsWithChildren<Injectabl
 };
 
 export const SettingsTrigger: React.FC<PropsWithChildren<{ name: string }>> = ({ children, name }) => {
-  const ctx = useFlowContext<FlowRuntimeContext>();
+  const ctx = useFlowSettingsContext();
   const props = useInjectableProps(ctx, name, children);
   return React.cloneElement(children, props);
 };
