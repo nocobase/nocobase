@@ -234,7 +234,7 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any) {
+  defineMethod(name: string, fn: (...args: any[]) => any, des?: string) {
     this._methods[name] = fn;
     Object.defineProperty(this, name, {
       configurable: true,
@@ -873,6 +873,30 @@ export class FlowContext {
   }
 }
 
+export class FlowRunjsContext extends FlowContext {
+  constructor(delegate: FlowContext) {
+    super();
+    this.addDelegate(delegate);
+    this.defineMethod(
+      'dispatchModelEvent',
+      async (modelOrUid: FlowModel | string, eventName: string, inputArgs?: Record<string, any>) => {
+        let model: FlowModel | null = null;
+        if (typeof modelOrUid === 'string') {
+          model = await this.engine.loadModel({ uid: modelOrUid });
+        } else if (modelOrUid instanceof FlowModel) {
+          model = modelOrUid;
+        }
+        if (model) {
+          model.context.addDelegate(this);
+          model.dispatchEvent(eventName, inputArgs);
+        } else {
+          this.message.error(this.t('Model with ID {{uid}} not found', { uid: modelOrUid }));
+        }
+      },
+    );
+  }
+}
+
 class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
@@ -1209,9 +1233,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return _buildServerContextParams(this, input);
     });
     this.defineMethod('runjs', function (code, variables) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1402,9 +1427,11 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1461,9 +1488,11 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });
