@@ -124,10 +124,7 @@ ChartBlockModel.registerFlow({
     configure: {
       title: escapeT('Configure chart'),
       uiMode: {
-        type: 'dialog',
-        props: {
-          width: '95%',
-        },
+        type: 'drawer',
       },
       uiSchema: {
         configuration: {

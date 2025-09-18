@@ -22,6 +22,8 @@ import { ChartBlockModel } from './ChartBlockModel';
 import { ResultPanel } from './ResultPanel';
 import { AxiosError } from 'axios';
 import { EventsPanel } from './EventsPanel';
+import { uid } from '@nocobase/utils/client';
+import { onFormValuesChange } from '@formily/core';
 
 const RunButton: React.FC = memo(() => {
   const t = useT();
@@ -63,6 +65,18 @@ export const ConfigPanel: React.FC = () => {
   const t = useT();
   const ctx = useFlowSettingsContext<ChartBlockModel>();
   const form = useForm();
+
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      onFormValuesChange((form) => {
+        ctx.model.setStepParams('chartSettings', 'configure', form.values);
+        ctx.model.applyFlow('chartSettings');
+      });
+    });
+
+    return () => form.removeEffects(id);
+  }, [ctx.model, form]);
 
   useEffect(() => {
     const uid = ctx.model.uid;
