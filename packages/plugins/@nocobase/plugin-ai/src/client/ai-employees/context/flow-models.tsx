@@ -9,13 +9,13 @@
 
 import React from 'react';
 import { ContextItem, WorkContextOptions } from '../types';
-import { BuildOutlined, PicLeftOutlined } from '@ant-design/icons';
+import { BuildOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
 import { FlowModel, FlowModelContext, useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { aiSelection } from '../stores/ai-selection';
-import { CollectionBlockModel, FieldModel, FormModel } from '@nocobase/client';
+import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/client';
 import { FlowUtils } from '../flow';
 import { Space } from 'antd';
 import { dialogController } from '../stores/dialog-controller';
@@ -32,7 +32,7 @@ const parseFlowModel = async (model: FlowModel) => {
   if (!model) {
     return {};
   }
-  if (model instanceof FormModel) {
+  if (model instanceof FormBlockModel) {
     return toSimplifyForm(model);
   } else if (model instanceof CollectionBlockModel) {
     return await toCollectionWithData(model);
@@ -41,14 +41,14 @@ const parseFlowModel = async (model: FlowModel) => {
   }
 };
 
-const toSimplifyForm = (model: FormModel) => {
+const toSimplifyForm = (model: FormBlockModel) => {
   const result = {
     uid: model.uid,
     fields: [],
   };
   const duplicateFields = new Set();
   FlowUtils.walkthrough(model, (model) => {
-    if (model instanceof FieldModel && !duplicateFields.has(model.collectionField.name)) {
+    if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
       const collectionField = model.collectionField;
       result.fields.push({
         name: collectionField.name,
@@ -85,7 +85,7 @@ const toSimplifyComponentTree = (model: FlowModel) => {
     component: model.use,
   };
 
-  if (model instanceof FieldModel) {
+  if (model instanceof FormItemModel) {
     const collectionField = model.collectionField;
     result.props = {
       readonly: collectionField.readonly,

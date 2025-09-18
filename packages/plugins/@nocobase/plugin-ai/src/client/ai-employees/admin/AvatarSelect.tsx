@@ -25,7 +25,6 @@ export const Avatar: React.FC<{
 }> = ({ srcs, size = 'large', selectable, highlightItem, onClick }) => {
   const { token } = useToken();
   const { wrapSSR, hashId, componentCls: prefixCls } = useUploadStyles();
-  console.log(srcs);
 
   const list =
     srcs?.map(([src, name], index) => (
@@ -62,37 +61,33 @@ export const Avatar: React.FC<{
 
   return (
     <List
+      grid={{ gutter: 16, column: 10 }}
       itemLayout="horizontal"
       dataSource={srcs}
       renderItem={([src, name]) => {
         return (
-          <AntdAvatar
-            size={size === 'small' ? 40 : 80}
-            className={cls(
-              css`
-                margin: 2px;
-                border-radius: ${size === 'small' ? '4px' : '8px'};
-                border: 1px solid ${token.colorBorder};
-                padding: 1px;
-              `,
-              highlightItem === name
-                ? css`
-                    border-color: ${token.colorPrimary} !important;
-                  `
-                : '',
-              selectable
-                ? css`
-                    cursor: pointer;
-                    &:hover {
-                      border-color: ${token.colorPrimary} !important;
-                    }
-                  `
-                : '',
-            )}
-            src={src}
-            shape="square"
-            onClick={() => onClick && onClick(name)}
-          />
+          <List.Item>
+            <AntdAvatar
+              size={size === 'small' ? 45 : 80}
+              className={cls(
+                highlightItem === name
+                  ? css`
+                      border: 2px solid ${token.colorPrimary} !important;
+                    `
+                  : '',
+                selectable
+                  ? css`
+                      cursor: pointer;
+                      &:hover {
+                        border: 2px solid ${token.colorPrimary} !important;
+                      }
+                    `
+                  : '',
+              )}
+              src={src}
+              onClick={() => onClick && onClick(name)}
+            />
+          </List.Item>
         );
       }}
     />
