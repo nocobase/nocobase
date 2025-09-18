@@ -53,18 +53,32 @@ export const fieldComponent = defineAction({
     }
   },
   beforeParamsSave: async (ctx, params, previousParams) => {
-    const classes =
-      ctx.model.getProps().pattern === 'readPretty'
-        ? DetailsItemModel.getBindingsByField(ctx, ctx.collectionField)
-        : ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+    let classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+    let titleFieldClasses = [];
+
+    if (ctx.model.getProps().pattern === 'readPretty') {
+      const { titleField } = ctx.model.props;
+      classes = DetailsItemModel.getBindingsByField(ctx, ctx.collectionField);
+      if (titleField) {
+        titleFieldClasses = DetailsItemModel.getBindingsByField(
+          ctx,
+          ctx.collectionField.targetCollection.getField(titleField),
+        );
+      }
+    }
+
     // 找到选中的那条
-    const selected = classes.find((model) => model.modelName === params.use);
+    const selected = classes.concat(titleFieldClasses).find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {
       const fieldUid = ctx.model.subModels['field']['uid'];
       await ctx.engine.destroyModel(fieldUid);
       ctx.model.setSubModel('field', {
         use: params.use,
-        props: selected.defaultProps,
+        props:
+          typeof selected.defaultProps === 'function'
+            ? selected.defaultProps(ctx, ctx.collectionField)
+            : selected.defaultProps,
+
         stepParams: {
           fieldSettings: {
             init: (ctx.model as CollectionFieldModel).getFieldSettingsInitParams(),
@@ -80,7 +94,6 @@ export const fieldComponent = defineAction({
       ctx.model.getProps().pattern === 'readPretty'
         ? DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField)
         : ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
-
     return {
       use: (ctx.model.subModels.field as FieldModel).use || defaultModel.modelName,
     };

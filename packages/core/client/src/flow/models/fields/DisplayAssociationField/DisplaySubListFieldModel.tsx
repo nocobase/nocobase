@@ -58,6 +58,22 @@ const ArrayNester = ({ name, value = [] }: any) => {
 };
 
 export class DisplaySubListFieldModel extends FieldModel {
+  subModelBaseClasses = {
+    action: 'RecordActionGroupModel' as any,
+    field: ['DetailsItemModel'] as any,
+  };
+
+  getAddSubModelButtonProps(type: 'action' | 'field') {
+    const subClass = this.subModelBaseClasses[type];
+    if (Array.isArray(subClass)) {
+      return {
+        subModelBaseClasses: subClass,
+      };
+    }
+    return {
+      subModelBaseClass: subClass,
+    };
+  }
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {

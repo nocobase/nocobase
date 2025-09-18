@@ -7,22 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/server';
+import { ModelConstructor } from '@nocobase/flow-engine';
+import { SimpleBlockModel } from './SimpleBlockModel';
 
-export class PluginHelloServer extends Plugin {
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
-  async load() {}
-
-  async install() {}
-
-  async afterEnable() {}
-
-  async afterDisable() {}
-
-  async remove() {}
-}
-
-export default PluginHelloServer;
+export default {
+  SimpleBlockModel,
+} as Record<string, ModelConstructor>;

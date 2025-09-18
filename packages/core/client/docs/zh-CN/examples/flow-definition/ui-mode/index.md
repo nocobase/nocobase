@@ -55,3 +55,7 @@ interface StepDefinition {
 - **动态配置**: 支持函数式配置，可根据上下文动态决定 UI 模式
 - **属性传递**: 支持向对话框/抽屉传递自定义属性（宽度、样式等）
 - **异步支持**: 函数式 uiMode 支持异步操作
+
+### embed 效果
+
+<code src="./embed.tsx"></code>

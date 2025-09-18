@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase-example/plugin-block-simple",
+  "displayName": "Plugin example: Simple block",
+  "displayName.zh-CN": "插件示例: 简易区块",
+  "description": "A simple block plugin example for NocoBase.",
+  "description.zh-CN": "NocoBase 的一个简易区块插件示例。",
+  "version": "1.9.0-alpha.15",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}

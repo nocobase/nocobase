@@ -9,18 +9,19 @@
 
 import { BlockModel } from '@nocobase/client';
 import React from 'react';
+import { tExpr } from '../locale';
 
-export class HelloBlockModel extends BlockModel {
+export class SimpleBlockModel extends BlockModel {
   renderComponent() {
     return (
       <div>
         <h1>Hello, NocoBase!</h1>
-        <p>This is a simple block rendered by HelloBlockModel.</p>
+        <p>This is a simple block rendered by SimpleBlockModel.</p>
       </div>
     );
   }
 }
 
-HelloBlockModel.define({
-  hide: true,
+SimpleBlockModel.define({
+  label: tExpr('Simple block'),
 });

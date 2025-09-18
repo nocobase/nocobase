@@ -15,8 +15,8 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
-import qs from 'qs';
 import pino from 'pino';
+import qs from 'qs';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
@@ -37,18 +37,18 @@ import {
 } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
+  escapeT,
   extractPropertyPath,
+  extractUsedVariablePaths,
   FlowExitException,
   resolveDefaultParams,
   resolveExpressions,
-  extractUsedVariablePaths,
-  escapeT,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { JSONValue, enqueueVariablesResolve } from './utils/params-resolvers';
-import { FlowView, FlowViewer } from './views/FlowView';
-import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
+import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { FlowView, FlowViewer } from './views/FlowView';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -234,7 +234,7 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any) {
+  defineMethod(name: string, fn: (...args: any[]) => any, des?: string) {
     this._methods[name] = fn;
     Object.defineProperty(this, name, {
       configurable: true,
@@ -873,6 +873,30 @@ export class FlowContext {
   }
 }
 
+export class FlowRunjsContext extends FlowContext {
+  constructor(delegate: FlowContext) {
+    super();
+    this.addDelegate(delegate);
+    this.defineMethod(
+      'dispatchModelEvent',
+      async (modelOrUid: FlowModel | string, eventName: string, inputArgs?: Record<string, any>) => {
+        let model: FlowModel | null = null;
+        if (typeof modelOrUid === 'string') {
+          model = await this.engine.loadModel({ uid: modelOrUid });
+        } else if (modelOrUid instanceof FlowModel) {
+          model = modelOrUid;
+        }
+        if (model) {
+          model.context.addDelegate(this);
+          model.dispatchEvent(eventName, inputArgs);
+        } else {
+          this.message.error(this.t('Model with ID {{uid}} not found', { uid: modelOrUid }));
+        }
+      },
+    );
+  }
+}
+
 class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
@@ -1209,9 +1233,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return _buildServerContextParams(this, input);
     });
     this.defineMethod('runjs', function (code, variables) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1402,9 +1427,11 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1421,6 +1448,7 @@ export class FlowRuntimeContext<
   stepResults: Record<string, any> = {};
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare setStepParams: (stepKey: string, params?: any) => void;
   declare getStepResults: (stepKey: string) => any;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   constructor(
@@ -1432,6 +1460,9 @@ export class FlowRuntimeContext<
     this.addDelegate(this.model.context);
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
+    });
+    this.defineMethod('setStepParams', (stepKey: string, params) => {
+      return model.setStepParams(flowKey, stepKey, params);
     });
     this.defineMethod('getStepResults', (stepKey: string) => {
       return _.get(this.steps, [stepKey, 'result']);
@@ -1461,9 +1492,11 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });

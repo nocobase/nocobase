@@ -7,8 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './CustomFormBlockModel';
-export * from './CustomTableBlockModel';
-export * from './HelloBlockModel';
-export * from './SubMenuBlockModel';
-//
+import { ModelConstructor } from '@nocobase/flow-engine';
+
+export default {} as Record<string, ModelConstructor>;
