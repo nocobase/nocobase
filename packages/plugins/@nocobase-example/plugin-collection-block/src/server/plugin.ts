@@ -9,7 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 
-export class PluginBlockSimpleServer extends Plugin {
+export class PluginCollectionBlockServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
@@ -25,4 +25,4 @@ export class PluginBlockSimpleServer extends Plugin {
   async remove() {}
 }
 
-export default PluginBlockSimpleServer;
+export default PluginCollectionBlockServer;

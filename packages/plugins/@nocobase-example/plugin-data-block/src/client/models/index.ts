@@ -7,13 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client';
-import models from './models';
+import { ModelConstructor } from '@nocobase/flow-engine';
 
-export class PluginBlockSimpleClient extends Plugin {
-  async load() {
-    this.flowEngine.registerModels(models);
-  }
-}
-
-export default PluginBlockSimpleClient;
+export default {} as Record<string, ModelConstructor>;
