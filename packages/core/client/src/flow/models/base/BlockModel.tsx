@@ -8,14 +8,34 @@
  */
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
-import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { buildSubModelItems, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { BlockItemCard } from '../../components';
 import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
+export type BlockSceneType = 'new' | 'one' | 'many' | 'select' | BlockSceneType[];
+
+export const BlockSceneEnum = {
+  new: 'new' as BlockSceneType,
+  one: 'one' as BlockSceneType,
+  many: 'many' as BlockSceneType,
+  select: 'select' as BlockSceneType,
+  oam: ['one', 'many'] as BlockSceneType,
+};
+
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
+  static scene: BlockSceneType;
+
+  static _getScene() {
+    return _.castArray(this['scene'] || []);
+  }
+
+  static _isScene(scene: BlockSceneType) {
+    const scenes = this._getScene();
+    return scenes.includes(scene);
+  }
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
@@ -132,4 +152,21 @@ BlockModel.registerFlow({
   },
 });
 
-BlockModel.define({ hide: true, label: escapeT('Other blocks') });
+BlockModel.define({
+  hide: true,
+  label: escapeT('Other blocks'),
+  // async children(ctx) {
+  //   const children = await buildSubModelItems(BlockModel)(ctx);
+  //   const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
+  //   return children.filter((item) => {
+  //     const M = ctx.engine.getModelClass(item.useModel);
+  //     if (scene === 'select') {
+  //       return M['_isScene']?.('select');
+  //     }
+  //     if (scene === 'new' || (collectionName && !filterByTk)) {
+  //       return M['_isScene']?.('new');
+  //     }
+  //     return !M['_isScene'] || !M['_isScene']?.('select');
+  //   });
+  // },
+});
