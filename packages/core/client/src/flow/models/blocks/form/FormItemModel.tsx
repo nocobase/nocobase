@@ -15,12 +15,10 @@ import {
   FieldModelRenderer,
   FlowModelContext,
   FormItem,
-  jioToJoiSchema,
 } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { debounce } from 'lodash';
 import React from 'react';
-import { FieldValidation } from '../../../../collection-manager';
 import { FieldModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';
