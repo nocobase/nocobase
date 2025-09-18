@@ -838,8 +838,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
-    const { retry = 9, ...others } = options;
-    const startingDelay = 200;
+    const { retry = 10, ...others } = options;
+    const startingDelay = 1000;
     const timeMultiple = 2;
 
     let attemptNumber = 1; // To track the current attempt number
@@ -866,6 +866,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         numOfAttempts: retry as number,
         startingDelay: startingDelay,
         timeMultiple: timeMultiple,
+        maxDelay: 30 * 1000,
       });
     } catch (error) {
       throw new Error(`Unable to connect to the database`, { cause: error });
