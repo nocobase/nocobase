@@ -9,17 +9,15 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { openViewFlow } from '../../flows/openViewFlow';
-import { ActionModel } from './ActionModel';
+import { ActionSceneEnum, PopupActionModel } from '../base';
 
-export class PopupActionModel extends ActionModel {
+export class PopupCollectionActionModel extends PopupActionModel {
+  static scene = ActionSceneEnum.all;
   defaultProps: ButtonProps = {
     title: escapeT('Popup'),
   };
 }
 
-PopupActionModel.define({
+PopupCollectionActionModel.define({
   label: escapeT('Popup'),
 });
-
-PopupActionModel.registerFlow(openViewFlow);

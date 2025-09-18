@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   BaseRecordResource,
   Collection,
   CollectionField,
+  EditableItemModel,
   FieldModelRenderer,
   FlowEngine,
   FlowModel,
@@ -18,17 +20,15 @@ import {
   FormItem,
   SingleRecordResource,
   buildRecordMeta,
+  createCurrentRecordMetaFactory,
   inferRecordRef,
-  EditableItemModel,
 } from '@nocobase/flow-engine';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import { createCurrentRecordMetaFactory } from '@nocobase/flow-engine';
-import { Button, Skeleton, Space, Form } from 'antd';
+import { Button, Form, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
 
-import { FormComponent } from './FormModel';
+import { FormComponent } from './FormBlockModel';
 
 export class QuickEditFormModel extends FlowModel {
   fieldPath: string;

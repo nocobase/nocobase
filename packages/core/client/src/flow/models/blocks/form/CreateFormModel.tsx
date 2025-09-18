@@ -21,11 +21,10 @@ import {
 import { Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
-import { FormActionModel } from './FormActionModel';
-import { FormComponent, FormModel } from './FormModel';
+import { FormBlockModel, FormComponent } from './FormBlockModel';
 
 // CreateFormModel - 专门用于新增记录
-export class CreateFormModel extends FormModel {
+export class CreateFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.new;
 
   createResource(ctx, params) {

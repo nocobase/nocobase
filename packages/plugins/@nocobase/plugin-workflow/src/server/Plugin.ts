@@ -351,12 +351,11 @@ export default class PluginWorkflowServer extends Plugin {
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
 
-    if (this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
-      this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-        idle: () => !this.executing && !this.pending.length && !this.events.length,
-        process: this.onQueueExecution,
-      });
-    }
+    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
+      idle: () =>
+        this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && !this.executing && !this.pending.length && !this.events.length,
+      process: this.onQueueExecution,
+    });
   }
 
   /**

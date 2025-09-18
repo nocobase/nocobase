@@ -49,16 +49,6 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
 }
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
-  private readonly debouncedDispatchEvent: ReturnType<typeof debounce>;
-
-  constructor(options: any) {
-    super(options);
-    // 创建防抖的 dispatchEvent 方法
-    this.debouncedDispatchEvent = debounce((eventName: string, payload: any) => {
-      this.dispatchEvent(eventName, payload);
-    }, DEBOUNCE_WAIT);
-  }
-
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection
@@ -122,7 +112,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...this.props}
         name={namePath}
         onChange={(event) => {
-          this.debouncedDispatchEvent('formItemChange', { value: event.target?.value });
+          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={modelForRender} name={namePath} />

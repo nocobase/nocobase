@@ -8,6 +8,7 @@
  */
 
 export * from './fields';
+export * from './FilterFormActionGroupModel';
 export * from './FilterFormActionModel';
 export * from './FilterFormBlockModel';
 export * from './FilterFormCollapseActionModel';

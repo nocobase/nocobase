@@ -75,8 +75,11 @@
 - **applyFlow(flowKey: string, inputArgs?: Record<string, any>): Promise\<any\>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void**  
-  触发事件，自动匹配并执行相关流。
+- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce: boolean }): Promise\<void\>**  
+  触发事件，自动匹配并执行相关流。支持防抖功能，防止快速连续触发。
+  - `eventName`: 要触发的事件名称
+  - `inputArgs`: 可选的事件参数  
+  - `options.debounce`: 是否启用防抖功能，默认为 `false`。当设为 `true` 时，100ms 内的重复调用会被防抖处理
 
 - **applyAutoFlows(inputArgs?: Record<string, any>): Promise\<any[]\>**  
   执行所有自动流。
@@ -203,7 +206,12 @@ await model.save();
 // 执行流
 await model.applyFlow('default');
 await model.applyAutoFlows();
-await model.dispatchEvent('event');
+
+// 触发事件（立即执行）
+await model.dispatchEvent('click');
+
+// 触发事件（防抖执行，100ms内重复调用会被合并）
+await model.dispatchEvent('search', { query: 'text' }, { debounce: true });
 ```
 
 ### 泛型支持

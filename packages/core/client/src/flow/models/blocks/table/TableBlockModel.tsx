@@ -32,9 +32,9 @@ import React, { useRef } from 'react';
 import {
   ActionModel,
   BlockSceneEnum,
-  CollectionActionModel,
+  CollectionActionGroupModel,
   CollectionBlockModel,
-  RecordActionModel,
+  RecordActionGroupModel,
 } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
@@ -144,8 +144,8 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   rowSelectionProps = observable.deep({});
 
   subModelBaseClasses = {
-    collectionAction: CollectionActionModel as any,
-    recordAction: RecordActionModel as any,
+    collectionAction: CollectionActionGroupModel as any,
+    recordAction: RecordActionGroupModel as any,
   };
 
   get resource() {
