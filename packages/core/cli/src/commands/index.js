@@ -24,6 +24,7 @@ module.exports = (cli) => {
   require('./dev')(cli);
   require('./start')(cli);
   require('./e2e')(cli);
+  require('./perf')(cli);
   require('./clean')(cli);
   require('./doc')(cli);
   require('./pm2')(cli);
