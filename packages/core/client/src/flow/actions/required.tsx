@@ -8,14 +8,16 @@
  */
 
 import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { uid } from '@formily/shared';
 
 export const required = defineAction({
   title: escapeT('Required'),
   name: 'required',
-  uiSchema: (ctx) => {
+  uiSchema: async (ctx) => {
     const joiRules: any[] = (ctx.model as any).collectionField?.validation?.rules || [];
-    // 检查 collectionField.validation 是否已有 required
-    const hasRequiredInCollection = joiRules.some((rule) => rule.name === 'required');
+    const rules = ctx.model.props.validation?.rules || [];
+    // 检查 validation 是否已有 required
+    const hasRequiredInCollection = joiRules.concat(rules).some((rule) => rule.name === 'required');
     return {
       required: {
         'x-component': 'Switch',

@@ -57,6 +57,7 @@ export const validation = defineAction({
       ctx.model.setProps({
         rules,
         required: hasRequiredInCollection,
+        validation: params.validation,
       });
     }
   },
