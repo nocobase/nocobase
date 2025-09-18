@@ -15,6 +15,7 @@ coverage
 .umi-production
 /uploads
 .env.test
+.env.perf
 docs-dist/
 .npmrc
 dist/
