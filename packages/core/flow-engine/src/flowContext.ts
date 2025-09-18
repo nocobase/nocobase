@@ -15,8 +15,8 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
-import qs from 'qs';
 import pino from 'pino';
+import qs from 'qs';
 import { createRef } from 'react';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
@@ -37,18 +37,18 @@ import {
 } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
+  escapeT,
   extractPropertyPath,
+  extractUsedVariablePaths,
   FlowExitException,
   resolveDefaultParams,
   resolveExpressions,
-  extractUsedVariablePaths,
-  escapeT,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { JSONValue, enqueueVariablesResolve } from './utils/params-resolvers';
-import { FlowView, FlowViewer } from './views/FlowView';
-import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
+import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { FlowView, FlowViewer } from './views/FlowView';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1421,6 +1421,7 @@ export class FlowRuntimeContext<
   stepResults: Record<string, any> = {};
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare setStepParams: (stepKey: string, params?: any) => void;
   declare getStepResults: (stepKey: string) => any;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   constructor(
@@ -1432,6 +1433,9 @@ export class FlowRuntimeContext<
     this.addDelegate(this.model.context);
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
+    });
+    this.defineMethod('setStepParams', (stepKey: string, params) => {
+      return model.setStepParams(flowKey, stepKey, params);
     });
     this.defineMethod('getStepResults', (stepKey: string) => {
       return _.get(this.steps, [stepKey, 'result']);

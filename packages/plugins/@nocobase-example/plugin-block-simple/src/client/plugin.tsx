@@ -8,19 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import * as models from './models';
+import models from './models';
 
-export class PluginHelloClient extends Plugin {
-  async afterAdd() {
-    // await this.app.pm.add()
-  }
-
-  async beforeLoad() {}
-
-  // You can get and modify the app instance here
+export class PluginBlockSimpleClient extends Plugin {
   async load() {
     this.flowEngine.registerModels(models);
   }
 }
 
-export default PluginHelloClient;
+export default PluginBlockSimpleClient;
