@@ -8,5 +8,15 @@
  */
 
 import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
+export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
+  private defaultProps: Partial<T> = {};
 
-export class FieldModel<T = DefaultStructure> extends FlowModel<T> {}
+  setDefaultProps(defaultProps: Partial<T>) {
+    this.defaultProps = { ...this.defaultProps, ...defaultProps };
+    this.mergeProps();
+  }
+
+  private mergeProps() {
+    this.props = { ...this.defaultProps, ...this.props };
+  }
+}
