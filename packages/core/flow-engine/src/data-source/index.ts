@@ -302,7 +302,10 @@ export class CollectionManager {
   }
 
   getCollections(): Collection[] {
-    return _.sortBy(Array.from(this.collections.values()), 'sort');
+    return _.sortBy(
+      Array.from(this.collections.values()).filter((collection) => !collection.hidden),
+      'sort',
+    );
   }
 
   clearCollections() {
@@ -347,6 +350,10 @@ export class Collection {
       return record[this.filterTargetKey];
     }
     return _.pick(record, this.filterTargetKey);
+  }
+
+  get hidden() {
+    return this.options.hidden || false;
   }
 
   get flowEngine() {
@@ -684,8 +691,8 @@ export class CollectionField {
         ...(this.options.uiSchema?.['x-component-props'] || {}),
         options: this.enum.length ? this.enum : undefined,
         mode: this.type === 'array' ? 'multiple' : undefined,
-        multiple: target ? ['belongsToMany', 'hasMany'].includes(type) : undefined,
-        maxCount: target && !['belongsToMany', 'hasMany'].includes(type) ? 1 : undefined,
+        multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
+        maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         valuePropName: this.interface === 'checkbox' ? 'checked' : 'value',
         target: target,
       },

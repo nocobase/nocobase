@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine, FlowModel, observable, ViewParam } from '@nocobase/flow-engine';
-import { RouteModel } from './models';
+import { RouteModel } from './models/base/RouteModel';
 
 export interface ViewItem {
   params: ViewParam;

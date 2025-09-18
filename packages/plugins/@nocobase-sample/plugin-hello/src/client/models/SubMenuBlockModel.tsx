@@ -10,7 +10,7 @@
 import { BlockModel } from '@nocobase/client';
 
 export class SubMenuBlockModel extends BlockModel {
-  static defineChildren() {
+  static defineChildren(ctx) {
     return [
       {
         key: 'item1',

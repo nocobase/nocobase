@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './ActionGroupModel';
 export * from './ActionModel';
 export * from './AssociationFieldGroupModel';
 export * from './BlockGridModel';

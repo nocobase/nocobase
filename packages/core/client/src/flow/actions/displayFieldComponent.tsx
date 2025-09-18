@@ -7,37 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { defineAction, escapeT } from '@nocobase/flow-engine';
 import { FieldModel } from '../models/base/FieldModel';
+
+export function buildAssociationOptions(ctx: any, itemModel, titleField?: string) {
+  const { collectionField } = ctx;
+  const classes = itemModel.getBindingsByField(ctx, collectionField);
+
+  const makeOptions = (list: any[]) =>
+    list.map((model) => {
+      const m = ctx.engine.getModelClass(model.modelName);
+      return { label: m.meta?.label || model.modelName, value: model.modelName };
+    });
+
+  if (titleField) {
+    const titleFieldClasses = itemModel.getBindingsByField(ctx, collectionField.targetCollection.getField(titleField));
+
+    return [
+      classes.length && { label: escapeT('AssociationField component'), options: makeOptions(classes) },
+      { label: escapeT('Title field component'), options: makeOptions(titleFieldClasses) },
+    ].filter(Boolean);
+  }
+
+  return makeOptions(classes);
+}
 
 export const displayFieldComponent = defineAction({
   name: 'displayFieldComponent',
   title: escapeT('Field component'),
   uiSchema: (ctx: any) => {
     const { titleField } = ctx.model.props;
-    const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
-    console.log('Available classes for field component:', classes);
-    if (classes.length === 1) return null;
+    const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+    if (classes.length === 1 && !titleField) return null;
 
-    const makeOptions = (list) =>
-      list.map((model) => {
-        const m = ctx.engine.getModelClass(model.modelName);
-        return { label: m.meta?.label || model.modelName, value: model.modelName };
-      });
-
-    let options;
-    if (titleField) {
-      const titleFieldClasses = DisplayItemModel.getBindingsByField(
-        ctx,
-        ctx.collectionField.targetCollection.getField(titleField),
-      );
-      options = [
-        { label: escapeT('AssociationField component'), options: makeOptions(classes) },
-        { label: escapeT('Title field component'), options: makeOptions(titleFieldClasses) },
-      ];
-    } else {
-      options = makeOptions(classes);
-    }
+    const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
     return {
       use: {
         type: 'string',
@@ -49,11 +52,11 @@ export const displayFieldComponent = defineAction({
   },
 
   beforeParamsSave: async (ctx, params, previousParams) => {
-    const classes = DisplayItemModel.getBindingsByField(ctx, ctx.collectionField);
+    const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     const { titleField } = ctx.model.props;
     let titleFieldClasses = [];
     if (titleField) {
-      titleFieldClasses = DisplayItemModel.getBindingsByField(
+      titleFieldClasses = ctx.model.constructor.getBindingsByField(
         ctx,
         ctx.collectionField.targetCollection.getField(titleField),
       );
@@ -78,7 +81,7 @@ export const displayFieldComponent = defineAction({
     }
   },
   defaultParams: (ctx: any) => {
-    const defaultModel = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+    const defaultModel = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
     return {
       use: (ctx.model.subModels.field as FieldModel)?.use || defaultModel.modelName,
     };

@@ -15,7 +15,7 @@ import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 
 // 被测组件
 import { FlowRoute } from '../FlowPage';
-import { RouteModel } from '../models';
+import { RouteModel } from '../models/base/RouteModel';
 
 // mock 路由相关 hooks
 vi.mock('../../route-switch', () => ({

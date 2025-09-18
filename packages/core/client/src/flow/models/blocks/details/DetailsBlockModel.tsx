@@ -28,8 +28,14 @@ import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
-import { FormComponent } from '../form/FormModel';
+import {
+  BlockGridModel,
+  BlockSceneEnum,
+  CollectionBlockModel,
+  RecordActionGroupModel,
+  RecordActionModel,
+} from '../../base';
+import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
 export class DetailsBlockModel extends CollectionBlockModel<{
@@ -37,6 +43,23 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
   static scene = BlockSceneEnum.oam;
+
+  subModelBaseClasses = {
+    action: 'RecordActionGroupModel' as any,
+    field: ['DetailsItemModel', 'DetailsAssociationFieldGroupModel', 'DetailsCustomItemModel'] as any,
+  };
+
+  getAddSubModelButtonProps(type: 'action' | 'field') {
+    const subClass = this.subModelBaseClasses[type];
+    if (Array.isArray(subClass)) {
+      return {
+        subModelBaseClasses: subClass,
+      };
+    }
+    return {
+      subModelBaseClass: subClass,
+    };
+  }
 
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
@@ -140,7 +163,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                 key="details-actions-add"
                 model={this}
                 subModelKey="actions"
-                subModelBaseClass={RecordActionModel}
+                {...this.getAddSubModelButtonProps('action')}
                 afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}

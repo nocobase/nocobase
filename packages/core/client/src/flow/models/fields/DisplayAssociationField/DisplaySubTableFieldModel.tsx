@@ -8,10 +8,11 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, DisplayItemModel, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base';
+import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -24,7 +25,7 @@ const AddFieldColumn = ({ model }) => {
       }}
       afterSubModelAdd={async (column: any) => {
         const currentBlockModel = model.context.blockModel;
-        currentBlockModel.addAppends(`${model.collectionField.name}.${column.fieldPath}`, true);
+        currentBlockModel.addAppends(`${model.context.collectionField.name}.${column.fieldPath}`, true);
       }}
       keepDropdownOpen
     >
@@ -35,6 +36,9 @@ const AddFieldColumn = ({ model }) => {
 export class DisplaySubTableFieldModel extends FieldModel {
   get collection() {
     return this.context.collection;
+  }
+  get collectionField() {
+    return this.context.collectionField;
   }
   onInit(options: any): void {
     super.onInit(options);
@@ -93,7 +97,7 @@ DisplaySubTableFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        // await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsAutoFlows('columns');
       },
     },
   },
@@ -103,4 +107,4 @@ DisplaySubTableFieldModel.define({
   label: escapeT('Sub-table'),
 });
 
-DisplayItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);
+DetailsItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);

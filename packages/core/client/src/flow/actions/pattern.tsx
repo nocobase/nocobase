@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, DisplayItemModel, EditableItemModel, escapeT } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -38,21 +39,23 @@ export const pattern = defineAction({
   defaultParams: (ctx) => ({
     pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
   }),
-  beforeParamsSave: async (ctx, params, previousParams) => {
+  afterParamsSave: async (ctx, params, previousParams) => {
     const { model } = ctx;
 
     if (params.pattern === 'readPretty') {
-      const binding = DisplayItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
+        fallbackToTargetTitleField: true,
+      });
       await rebuildFieldSubModel(ctx, model, binding);
     } else {
-      const binding = EditableItemModel.getDefaultBindingByField(ctx, ctx.collectionField);
+      const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {
         await rebuildFieldSubModel(ctx, model, binding);
       }
     }
   },
 
-  async handler(ctx, params) {
+  handler(ctx, params) {
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
         pattern: 'readPretty',

@@ -9,7 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
 import { Form } from 'antd';
 import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -126,3 +126,43 @@ export class FormulaFieldModel extends FieldModel {
 }
 
 EditableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], { isDefault: true });
+
+DisplayItemModel.bindModelToInterface('DisplayCheckboxFieldModel', ['formula'], {
+  isDefault: true,
+  when(ctx, fieldInstance) {
+    if (fieldInstance.type === 'formula') {
+      return fieldInstance.dataType === 'boolean';
+    }
+    return true;
+  },
+});
+
+DisplayItemModel.bindModelToInterface('DisplayDateTimeFieldModel', ['formula'], {
+  isDefault: true,
+  when(ctx, fieldInstance) {
+    if (fieldInstance.type === 'formula') {
+      return fieldInstance.dataType === 'date';
+    }
+    return true;
+  },
+});
+
+DisplayItemModel.bindModelToInterface('DisplayTextFieldModel', ['formula'], {
+  isDefault: true,
+  when(ctx, fieldInstance) {
+    if (fieldInstance.type === 'formula') {
+      return fieldInstance.dataType === 'string';
+    }
+    return true;
+  },
+});
+
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['formula'], {
+  isDefault: true,
+  when(ctx, fieldInstance) {
+    if (fieldInstance.type === 'formula') {
+      return ['double', 'bigint', 'integer'].includes(fieldInstance.dataType);
+    }
+    return true;
+  },
+});

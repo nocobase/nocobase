@@ -91,7 +91,8 @@ export class ClickableFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, displayStyle, titleField } = this.props;
+    const { value, displayStyle, fieldNames } = this.props;
+    const titleField = this.props.titleField || fieldNames?.label;
     if (titleField) {
       if (displayStyle === 'tag') {
         return castArray(value).map((v, idx) => (

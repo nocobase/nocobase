@@ -82,7 +82,7 @@ vi.mock('antd', () => {
       Paragraph: ({ children }: any) => children ?? 'Paragraph',
       Text: ({ children }: any) => children ?? 'Text',
     },
-  } as any;
+  };
 });
 
 // helper to locate the primary Button element in a React element tree
@@ -1030,6 +1030,195 @@ describe('FlowSettings.open rendering behavior', () => {
 
     expect(dialog).toHaveBeenCalledTimes(1);
     expect(drawer).not.toHaveBeenCalled();
+  });
+
+  it('uses embed uiMode with target element and callbacks', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const model = new FlowModel({ uid: 'm-embed-mode', flowEngine: engine });
+
+    // Create mock DOM element for embed target
+    const mockTarget = document.createElement('div');
+    mockTarget.id = 'nocobase-embed-container';
+    mockTarget.style.width = 'auto';
+    mockTarget.style.maxWidth = 'none';
+    document.body.appendChild(mockTarget);
+
+    // Mock querySelector to return our mock element
+    const originalQuerySelector = document.querySelector;
+    document.querySelector = vi.fn((selector) => {
+      if (selector === '#nocobase-embed-container') {
+        return mockTarget;
+      }
+      return originalQuerySelector.call(document, selector);
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'embedFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const onOpenSpy = vi.fn();
+    const onCloseSpy = vi.fn();
+    const embed = vi.fn((opts: any) => {
+      expect(opts.target).toBe(mockTarget);
+      expect(opts.width).toBe('60%');
+      expect(opts.maxWidth).toBe('900px');
+      expect(typeof opts.onOpen).toBe('function');
+      expect(typeof opts.onClose).toBe('function');
+
+      // Test onOpen callback
+      opts.onOpen();
+      expect(mockTarget.style.width).toBe('60%');
+      expect(mockTarget.style.maxWidth).toBe('900px');
+      expect(onOpenSpy).toHaveBeenCalled();
+
+      // Test onClose callback
+      opts.onClose();
+      expect(mockTarget.style.width).toBe('auto');
+      expect(mockTarget.style.maxWidth).toBe('none');
+      expect(onCloseSpy).toHaveBeenCalled();
+
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+    const dialog = vi.fn();
+    const drawer = vi.fn();
+
+    model.context.defineProperty('viewer', { value: { embed, dialog, drawer } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'embedFlow',
+      stepKey: 'step',
+      uiMode: {
+        type: 'embed',
+        props: {
+          width: '60%',
+          maxWidth: '900px',
+          onOpen: onOpenSpy,
+          onClose: onCloseSpy,
+        },
+      },
+    } as any);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+    expect(dialog).not.toHaveBeenCalled();
+    expect(drawer).not.toHaveBeenCalled();
+
+    // Cleanup
+    document.body.removeChild(mockTarget);
+    document.querySelector = originalQuerySelector;
+  });
+
+  it('uses embed uiMode with default props when target element exists', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const model = new FlowModel({ uid: 'm-embed-default', flowEngine: engine });
+
+    // Create mock DOM element for embed target
+    const mockTarget = document.createElement('div');
+    mockTarget.id = 'nocobase-embed-container';
+    document.body.appendChild(mockTarget);
+
+    // Mock querySelector
+    const originalQuerySelector = document.querySelector;
+    document.querySelector = vi.fn((selector) => {
+      if (selector === '#nocobase-embed-container') {
+        return mockTarget;
+      }
+      return originalQuerySelector.call(document, selector);
+    });
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'embedDefaultFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const embed = vi.fn((opts: any) => {
+      expect(opts.target).toBe(mockTarget);
+      // Test default width and maxWidth
+      opts.onOpen();
+      expect(mockTarget.style.width).toBe('50%'); // default width
+      expect(mockTarget.style.maxWidth).toBe('800px'); // default maxWidth
+
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { embed } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'embedDefaultFlow',
+      stepKey: 'step',
+      uiMode: 'embed',
+    } as any);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+
+    // Cleanup
+    document.body.removeChild(mockTarget);
+    document.querySelector = originalQuerySelector;
+  });
+
+  it('handles embed uiMode when target element is not found', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const model = new FlowModel({ uid: 'm-embed-no-target', flowEngine: engine });
+
+    // Mock querySelector to return null (target not found)
+    const originalQuerySelector = document.querySelector;
+    document.querySelector = vi.fn(() => null);
+
+    const M = model.constructor as any;
+    M.registerFlow({
+      key: 'embedNoTargetFlow',
+      steps: {
+        step: {
+          title: 'Step',
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    const embed = vi.fn((opts: any) => {
+      expect(opts.target).toBeNull();
+      const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
+      if (typeof opts.content === 'function') opts.content(dlg);
+      return dlg;
+    });
+
+    model.context.defineProperty('viewer', { value: { embed } });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+
+    await flowSettings.open({
+      model,
+      flowKey: 'embedNoTargetFlow',
+      stepKey: 'step',
+      uiMode: 'embed',
+    } as any);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+
+    // Restore querySelector
+    document.querySelector = originalQuerySelector;
   });
 
   it('handles error in function-based step uiMode gracefully', async () => {

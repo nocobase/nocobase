@@ -12,7 +12,6 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
   buildWrapperFieldChildren,
-  DisplayItemModel,
   DragHandler,
   Droppable,
   EditableItemModel,
@@ -288,7 +287,7 @@ SubTableColumnModel.registerFlow({
         if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
           return null;
         }
-        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.model.collectionField);
+        const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.model.collectionField);
         if (classes.length === 1) {
           return null;
         }
@@ -309,7 +308,7 @@ SubTableColumnModel.registerFlow({
         };
       },
       defaultParams: (ctx) => {
-        const model = DisplayItemModel.getDefaultBindingByField(ctx, ctx.model.collectionField);
+        const model = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.model.collectionField);
         return {
           use: model.modelName,
         };

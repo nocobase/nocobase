@@ -25,9 +25,9 @@ import { Pagination, Space } from 'antd';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
 import { FormActionModel } from './FormActionModel';
-import { FormComponent, FormModel } from './FormModel';
+import { FormBlockModel, FormComponent } from './FormBlockModel';
 
-export class EditFormModel extends FormModel {
+export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
 
   createResource(_ctx: FlowModelContext, params: any) {

@@ -45,6 +45,7 @@ import {
 // import { FlowExitAllException } from '../utils/exceptions';
 import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
+import { buildSubModelItem } from '../components/subModel/utils';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
@@ -341,6 +342,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.eventRegistry.registerEvents(events);
   }
 
+  static buildChildrenFromModels(ctx, Models: Array<any>) {
+    return Models.map((M) => buildSubModelItem(M, ctx, true));
+  }
+
   get title() {
     // model 可以通过 setTitle 来自定义title， 具有更高的优先级
     return this.translate(this._title) || this.translate(this.constructor['meta']?.label);
@@ -632,7 +637,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
-  async dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
+  private async _dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -646,6 +651,27 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }, targetIsFork=${(target as any)?.isFork === true}`,
     );
     await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs);
+  }
+
+  private _dispatchEventWithDebounce = _.debounce(async (eventName: string, inputArgs?: Record<string, any>) => {
+    return this._dispatchEvent(eventName, inputArgs);
+  }, 100);
+
+  async dispatchEvent(
+    eventName: string,
+    inputArgs?: Record<string, any>,
+    options?: {
+      /**
+       * 是否要开启防抖功能
+       */
+      debounce: boolean;
+    },
+  ): Promise<void> {
+    if (options?.debounce) {
+      return this._dispatchEventWithDebounce(eventName, inputArgs);
+    }
+
+    return this._dispatchEvent(eventName, inputArgs);
   }
 
   /**

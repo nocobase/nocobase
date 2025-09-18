@@ -49,4 +49,19 @@ export class TableSelectModel extends TableBlockModel {
 TableSelectModel.define({
   label: escapeT('Table'),
   children: false,
+  useModel: 'TableSelectModel',
+  createModelOptions: async (ctx) => {
+    const { dataSourceKey, collectionName } = ctx.view.inputArgs;
+    return {
+      use: 'TableSelectModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey,
+            collectionName,
+          },
+        },
+      },
+    };
+  },
 });

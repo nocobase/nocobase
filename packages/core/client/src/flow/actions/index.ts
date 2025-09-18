@@ -15,7 +15,7 @@ export * from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';
 export * from './dataLoadingMode';
-export * from './displayMode';
+export * from './renderMode';
 export * from './layout';
 export * from './required';
 export * from './fieldComponent';

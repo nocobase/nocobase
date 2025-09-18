@@ -39,8 +39,14 @@ DisplayDateTimeFieldModel.registerFlow({
 
 DisplayItemModel.bindModelToInterface(
   'DisplayDateTimeFieldModel',
-  ['date', 'datetimeNoTz', 'createdAt', 'datetime', 'updatedAt', 'unixTimestamp'],
+  ['date', 'datetimeNoTz', 'createdAt', 'datetime', 'updatedAt', 'unixTimestamp', 'formula'],
   {
     isDefault: true,
+    when(ctx, fieldInstance) {
+      if (fieldInstance.type === 'formula') {
+        return fieldInstance.dataType === 'date';
+      }
+      return true;
+    },
   },
 );

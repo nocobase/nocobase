@@ -168,6 +168,10 @@ export class FlowEngine {
     return this.#flowContext;
   }
 
+  get dataSourceManager() {
+    return this.context.dataSourceManager;
+  }
+
   /**
    * Get the flow application cache.
    * @returns {Map<string, ApplyFlowCacheEntry>} Flow application cache map

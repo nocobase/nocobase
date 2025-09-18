@@ -345,6 +345,6 @@ DisplayNumberFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id', 'formula'], {
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id'], {
   isDefault: true,
 });

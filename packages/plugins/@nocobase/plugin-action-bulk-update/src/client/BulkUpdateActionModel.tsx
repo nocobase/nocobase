@@ -7,17 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
-import { Alert } from 'antd';
+import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
+import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
-import {
-  createCollectionContextMeta,
-  escapeT,
-  FlowModelRenderer,
-  useFlowEngine,
-  useFlowSettingsContext,
-} from '@nocobase/flow-engine';
-import { AssignFormModel, CollectionActionModel, RecordActionModel } from '@nocobase/client';
+import React, { useEffect, useRef } from 'react';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 
@@ -86,11 +79,12 @@ function AssignFieldsEditor() {
   return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
-export class BulkUpdateActionModel extends CollectionActionModel<{
+export class BulkUpdateActionModel extends ActionModel<{
   subModels: {
     assignForm: AssignFormModel;
   };
 }> {
+  static scene = ActionSceneEnum.collection;
   assignFormUid?: string;
 
   defaultProps: ButtonProps = {

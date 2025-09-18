@@ -8,6 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import type { FilterGroupType } from '@nocobase/utils/client';
 import { SubModelItem, SubModelItemsType } from './components';
 import {
   FlowContext,
@@ -19,7 +20,6 @@ import {
 import type { FlowDefinition } from './FlowDefinition';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
-import { FilterGroup, FilterGroupOptions } from './resources';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -186,7 +186,7 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupOptions | ((ctx: FlowEngineContext) => boolean | Promise<boolean>);
+export type FlowEventCondition = FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
   | { eventName: FlowEventName; condition?: FlowEventCondition };
@@ -204,9 +204,10 @@ export interface EventDefinition<TModel extends FlowModel = FlowModel> {
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
+  | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -398,7 +399,15 @@ export type FlowModelMeta =
   // 从 SubModelItem 选取的属性，保持原始类型
   Pick<
     SubModelItem,
-    'key' | 'label' | 'icon' | 'children' | 'createModelOptions' | 'toggleable' | 'searchable' | 'searchPlaceholder'
+    | 'key'
+    | 'label'
+    | 'icon'
+    | 'children'
+    | 'useModel'
+    | 'createModelOptions'
+    | 'toggleable'
+    | 'searchable'
+    | 'searchPlaceholder'
   > & {
     // FlowModelMeta 独有的属性
     group?: string;

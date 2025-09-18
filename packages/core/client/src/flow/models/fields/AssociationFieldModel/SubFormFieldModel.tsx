@@ -9,7 +9,7 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { EditableItemModel, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -154,7 +154,7 @@ SubFormListFieldModel.define({
   },
 });
 
-EditableItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'], {
+FormItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'], {
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';
@@ -163,7 +163,7 @@ EditableItemModel.bindModelToInterface('SubFormFieldModel', ['m2o', 'o2o', 'oho'
   },
 });
 
-EditableItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
+FormItemModel.bindModelToInterface('SubFormListFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => {
     if (field.targetCollection) {
       return field.targetCollection.template !== 'file';

@@ -8,7 +8,7 @@
  */
 import { SingleRecordResource } from '@nocobase/flow-engine';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
-import { FieldModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
 export class AssociationFieldModel extends FieldModel {}
 
 AssociationFieldModel.registerFlow({

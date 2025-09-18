@@ -21,6 +21,8 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { DEBOUNCE_WAIT } from '../../../../variables';
+import { tval } from '@nocobase/utils/client';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
@@ -189,7 +191,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
-      <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
+      <FormItem
+        {...this.props}
+        getValueProps={this.getValueProps.bind(this)}
+        onChange={(event) => {
+          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
+        }}
+      >
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -346,5 +354,12 @@ FilterFormItemModel.registerFlow({
       // 筛选这里 dataSourceKey, collectionName, fieldPath 不是必须的
       handler(ctx, params) {},
     },
+  },
+});
+
+FilterFormItemModel.registerEvents({
+  formItemChange: {
+    label: tval('Field value change'),
+    name: 'formItemChange',
   },
 });

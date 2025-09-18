@@ -109,16 +109,16 @@ interface OpenViewParams {
 }
 ```
 
-## 示例：编辑弹窗提交后自动关闭并回调代码块
+## 示例：JSBlock 打开预配置的编辑弹窗
 
-下面这个 Demo 展示了一个常见的 JS 代码区块场景：在区块内以按钮打开系统内部的“编辑弹窗（抽屉）”，提交后自动关闭弹窗，并回调到代码区块内的某个函数以刷新看板或执行其他逻辑。
+以下 Demo 展示了更贴近实际的做法：弹窗（含表单与提交流程）提前在插件中配置好，JS 代码区块只负责渲染列表并在点击时调用 `openView`。保存成功后，提交按钮内预置的 `afterSaved` 步骤会回调代码区块刷新数据。
 
-<code src="./demos/jsblock-open-edit-after-submit-callback.tsx"></code>
+<code src="./demos/jsblock-open-edit-after-submit-external.tsx"></code>
 
 要点说明：
-- 弹窗通过 `ctx.runAction('openView', {...})` 打开，使用 `afterModelInit(pageModel)` 在子页面里即时创建 `EditFormModel`（包含提交按钮）。
-- 通过给提交按钮的 `submitSettings` 增加一个后置步骤，在保存成功后调用父级代码块上下文中的回调函数（例如 `ctx.onLeadSaved`）。
-- `FormSubmitActionModel` 的默认行为已包含保存成功后自动关闭视图，因此无需重复手动关闭；如仍需拦截关闭，可在 `pageModel.context.currentView` 上做进一步控制。
+- 插件加载时就使用 `flowEngine.loadOrCreateModel` 预置了 ChildPage + EditForm，表单的 `resourceSettings` 写成 `{{ ctx.view.inputArgs.filterByTk }}`，因此每次弹窗都会根据当前点击的记录自动拉取数据。
+- 弹窗通过 `ctx.runAction('openView', {...})` 打开，JSBlock 只传入主键；保存动作的 `submitSettings` 追加 `afterSaved` 步骤，调用父区块的 `ctx.onLeadSaved` 完成刷新。
+- JSBlock 中仅保留列表渲染、按钮绑定和本地增删逻辑，便于普通开发者聚焦在数据展示与交互。
 
 ### Tabulator
 

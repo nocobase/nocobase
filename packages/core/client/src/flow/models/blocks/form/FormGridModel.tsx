@@ -11,10 +11,10 @@ import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FieldModel, GridModel } from '../../base';
-import { FormModel } from './FormModel';
+import { FormBlockModel } from './FormBlockModel';
 
 export type DefaultFormGridStructure = {
-  parent: FormModel;
+  parent: FormBlockModel;
   subModels: { items: FieldModel[] };
 };
 
@@ -34,7 +34,7 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
       <AddSubModelButton
         subModelKey="items"
         subModelBaseClasses={['FormItemModel', 'FormCustomItemModel']}
-        {...this.parent.getAddSubModelButtonProps('field')}
+        {...this.parent?.getAddSubModelButtonProps?.('field')}
         model={this}
         keepDropdownOpen
       >

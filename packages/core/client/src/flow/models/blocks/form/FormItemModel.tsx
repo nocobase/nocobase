@@ -24,6 +24,8 @@ import { FieldValidation } from '../../../../collection-manager';
 import { FieldModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';
+import { SelectOptions } from '../../../actions/titleField';
+import { DetailsItemModel } from '../details/DetailsItemModel';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -47,16 +49,6 @@ function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
 }
 
 export class FormItemModel<T extends DefaultStructure = DefaultStructure> extends EditableItemModel<T> {
-  private readonly debouncedDispatchEvent: ReturnType<typeof debounce>;
-
-  constructor(options: any) {
-    super(options);
-    // 创建防抖的 dispatchEvent 方法
-    this.debouncedDispatchEvent = debounce((eventName: string, payload: any) => {
-      this.dispatchEvent(eventName, payload);
-    }, DEBOUNCE_WAIT);
-  }
-
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.collection as Collection;
     return collection
@@ -120,7 +112,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...this.props}
         name={namePath}
         onChange={(event) => {
-          this.debouncedDispatchEvent('formItemChange', { value: event.target?.value });
+          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={modelForRender} name={namePath} />
@@ -269,6 +261,7 @@ FormItemModel.registerFlow({
       title: escapeT('Display mode'),
       use: 'pattern',
     },
+
     validation: {
       title: escapeT('Validation'),
       uiSchema: (ctx) => {
@@ -311,6 +304,55 @@ FormItemModel.registerFlow({
           ctx.model.setProps({
             rules,
           });
+        }
+      },
+    },
+    fieldNames: {
+      use: 'titleField',
+      uiSchema: async (ctx) => {
+        const isAssociationReadPretty = ctx.collectionField.isAssociationField() && ctx.model.getProps().titleField;
+        if (!isAssociationReadPretty) {
+          return null;
+        }
+        return {
+          label: {
+            'x-component': SelectOptions,
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      beforeParamsSave: async (ctx, params, previousParams) => {
+        const isAssociationReadPretty = ctx.collectionField.isAssociationField() && ctx.model.props.titleField;
+        if (!isAssociationReadPretty) {
+          return null;
+        }
+        if (params.label !== previousParams.label) {
+          const targetCollection = ctx.collectionField.targetCollection;
+          const targetCollectionField = targetCollection.getField(params.label);
+          const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          if (binding.modelName !== ctx.model.subModels.field.use) {
+            const fieldUid = ctx.model.subModels['field']['uid'];
+            await ctx.engine.destroyModel(fieldUid);
+            const model = ctx.model.setSubModel('field', {
+              use: binding.modelName,
+              stepParams: {
+                fieldSettings: {
+                  init: {
+                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
+                    collectionName: targetCollection.name,
+                    fieldPath: params.label,
+                  },
+                },
+              },
+            });
+            await model.save();
+          }
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+        }
+      },
+      async handler(ctx, params) {
+        if (ctx.model.props.pattern === 'readPretty') {
+          ctx.model.setProps({ titleField: params?.label });
         }
       },
     },

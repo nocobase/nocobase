@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import _ from 'lodash';
+import type { FlowDefinition } from '../FlowDefinition';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
-import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
+import type { ActionDefinition, ApplyFlowCacheEntry, FlowEventCondition, StepDefinition } from '../types';
 import { FlowExitException, resolveDefaultParams } from '../utils';
+import { evaluateFlowCondition } from '../utils/evaluateFlowCondition';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 
@@ -227,13 +228,32 @@ export class FlowExecutor {
    * Dispatch an event to flows bound via flow.on and execute them.
    */
   async dispatchEvent(model: FlowModel, eventName: string, inputArgs?: Record<string, any>): Promise<void> {
-    const flows = Array.from(model.getFlows().values()).filter((flow) => {
+    const flows: FlowDefinition[] = [];
+    for (const flow of model.getFlows().values()) {
       const on = flow.on;
-      if (!on) return false;
-      if (typeof on === 'string') return on === eventName;
-      if (typeof on === 'object') return on.eventName === eventName;
-      return false;
-    });
+      if (!on) {
+        continue;
+      }
+      let matched = false;
+      if (typeof on === 'string') {
+        matched = on === eventName;
+      } else if (typeof on === 'object') {
+        matched = on.eventName === eventName;
+        if (matched && on.condition) {
+          matched = await evaluateFlowCondition({
+            model,
+            flowKey: flow.key,
+            condition: on.condition,
+            eventName,
+            inputArgs,
+          });
+        }
+      }
+
+      if (matched) {
+        flows.push(flow);
+      }
+    }
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
     const promises = flows.map((flow) => {

@@ -12,7 +12,7 @@ import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
 import { ActionModel, CollectionBlockModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
-import { FormModel } from './FormModel';
+import { FormBlockModel } from './FormBlockModel';
 
 export class FormActionModel extends ActionModel {}
 
@@ -51,7 +51,7 @@ FormSubmitActionModel.registerFlow({
           throw new Error('Block model is not initialized');
         }
         const resource = ctx.resource;
-        const blockModel = ctx.blockModel as FormModel;
+        const blockModel = ctx.blockModel as FormBlockModel;
         try {
           await blockModel.form.validateFields();
           const values = blockModel.form.getFieldsValue();
