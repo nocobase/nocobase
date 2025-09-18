@@ -101,7 +101,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
                 <FlowModelRenderer
                   key={action.uid}
                   model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                   extraToolbarItems={[
                     {
                       key: 'drag-handler',

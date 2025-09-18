@@ -360,7 +360,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <FlowModelRenderer
                       key={action.uid}
                       model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                     />
                   );
                 }
@@ -378,7 +378,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <Droppable model={action} key={action.uid}>
                       <FlowModelRenderer
                         model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                         extraToolbarItems={[
                           {
                             key: 'drag-handler',

@@ -146,7 +146,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
                       model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                       extraToolbarItems={[
                         {
                           key: 'drag-handler',
