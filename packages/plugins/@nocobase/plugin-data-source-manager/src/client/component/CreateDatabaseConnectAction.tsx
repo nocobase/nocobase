@@ -44,7 +44,7 @@ const useCreateAction = (actionCallback?: (values: any) => void) => {
         const res = await resource.create({
           values: {
             ...form.values,
-            collections: collections.filter((c) => c.selected).map((c) => ({ name: c.name })),
+            collections: collections.filter((c) => c.selected).map((c) => c.name),
           },
         });
         ctx.setVisible(false);

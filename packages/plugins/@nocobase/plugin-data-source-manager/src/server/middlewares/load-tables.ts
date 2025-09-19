@@ -14,15 +14,16 @@ import { ALLOW_MAX_COLLECTIONS_COUNT } from '../constants';
 export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Next) {
   const { actionName, resourceName, params } = ctx.action;
   if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
-    const { filterByTk: dataSourceKey } = params;
-    const { options, type, collections } = params.values || {};
+    const { options, type, collections, key } = params.values || {};
     let dataSource: DatabaseDataSource;
     if (actionName === 'create') {
       dataSource = ctx.app.dataSourceManager.factory.create(type, {
-        name: dataSourceKey,
+        name: key,
         ...options,
       }) as DatabaseDataSource;
+      dataSource.setLogger(ctx.logger);
     } else {
+      const { filterByTk: dataSourceKey } = params;
       dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey) as DatabaseDataSource;
       if (!dataSource) {
         throw new Error(`dataSource ${dataSourceKey} not found`);
