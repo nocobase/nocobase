@@ -22,7 +22,7 @@
   "Failed to import FormDialog or FormStep": "Failed to import FormDialog or FormStep",
   "UID copied to clipboard": "UID copied to clipboard",
   "Copy failed": "Copy failed",
-  "Copy failed, please try again": "Copy failed, please try again",
+  "Copy failed, please copy [{{uid}}] manually.": "Copy failed, please copy [{{uid}}] manually.",
   "Confirm delete": "Confirm delete",
   "Are you sure you want to delete this item? This action cannot be undone.": "Are you sure you want to delete this item? This action cannot be undone.",
   "Delete operation failed": "Delete operation failed",
