@@ -36,7 +36,7 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
 export const EventsPanel: React.FC = () => {
   return (
     <ObjectField name="chart.events">
-      <div
+      {/* <div
         style={{
           marginBottom: '8px',
         }}
@@ -61,7 +61,7 @@ export const EventsPanel: React.FC = () => {
           initialValue="custom"
         />
       </div>
-      <Field name="basic" />
+      <Field name="basic" /> */}
       <Field
         name="raw"
         component={[ChartEventsEditor]}
