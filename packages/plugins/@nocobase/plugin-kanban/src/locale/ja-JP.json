@@ -4,5 +4,7 @@
   "Create sort field": "並べ替えフィールドを作成する",
   "Convert the following integer fields to sorting fields": "以下の整数フィールドを並べ替えフィールドに変換します",
   "Sorting field": "並べ替えフィールド",
-  "Grouped sorting based on": "グループ化に基づく並べ替え"
+  "Grouped sorting based on": "グループ化に基づく並べ替え",
+  "Enable drag and drop sorting": "ドラッグアンドドロップソートを有効化",
+  "Set column width": "列幅を設定"
 }
