@@ -117,7 +117,7 @@ export const SenderHeader: React.FC = () => {
                   style={{
                     margin: '4px 8px 4px 0',
                   }}
-                  shape="square"
+                  shape="circle"
                   size={48}
                   src={avatar}
                 />

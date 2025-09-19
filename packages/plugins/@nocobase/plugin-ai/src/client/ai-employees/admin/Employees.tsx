@@ -242,6 +242,9 @@ export const Employees: React.FC = () => {
                         avatar: {
                           type: 'string',
                           'x-component': 'Avatar',
+                          'x-component-props': {
+                            shape: 'circle',
+                          },
                         },
                       },
                     },
