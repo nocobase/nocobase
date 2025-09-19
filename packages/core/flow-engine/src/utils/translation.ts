@@ -33,3 +33,5 @@ export function escapeT(text: TFuncKey | TFuncKey[], options?: TOptions) {
   }
   return `{{t(${JSON.stringify(text)})}}`;
 }
+
+export { escapeT as tExpr };
