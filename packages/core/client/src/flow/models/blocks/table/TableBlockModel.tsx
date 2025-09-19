@@ -274,16 +274,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     }
     return (
       <td className={classNames(className)} {...restProps}>
-        <div
-          className={css`
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: calc(${width}px - 16px);
-          `}
-        >
-          {children}
-        </div>
+        {children}
       </td>
     );
   });
