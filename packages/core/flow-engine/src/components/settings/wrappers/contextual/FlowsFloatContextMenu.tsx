@@ -102,7 +102,11 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
 
   > .nb-toolbar-container {
     transition: opacity 0.2s ease;
-    position: fixed;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 999;
     opacity: 0;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
@@ -542,33 +546,6 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }
     }, []);
 
-    const handleMouseEnter = useCallback(
-      (e: React.MouseEvent) => {
-        const targetRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-
-        const styleTop = toolbarContainerStyle.top || 0;
-        const styleLeft = toolbarContainerStyle.left || 0;
-        const styleRight = toolbarContainerStyle.right || 0;
-        const styleBottom = toolbarContainerStyle.bottom || 0;
-
-        const top = targetRect.top + styleTop;
-        const left = targetRect.left + styleLeft;
-        const width = targetRect.width - styleRight - styleLeft;
-        const height = targetRect.height - styleBottom - styleTop;
-
-        toolbarContainerRef.current.style.top = `${top}px`;
-        toolbarContainerRef.current.style.left = `${left}px`;
-        toolbarContainerRef.current.style.width = `${width}px`;
-        toolbarContainerRef.current.style.height = `${height}px`;
-      },
-      [
-        toolbarContainerStyle.bottom,
-        toolbarContainerStyle.left,
-        toolbarContainerStyle.right,
-        toolbarContainerStyle.top,
-      ],
-    );
-
     if (!model) {
       const t = getT(model || ({} as FlowModel));
       return <Alert message={t('Invalid model provided')} type="error" />;
@@ -588,7 +565,6 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         style={containerStyle}
         data-has-float-menu="true"
         onMouseMove={handleChildHover}
-        onMouseEnter={handleMouseEnter}
       >
         {children}
 
