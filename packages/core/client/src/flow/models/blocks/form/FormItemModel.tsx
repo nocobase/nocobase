@@ -162,7 +162,7 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        ctx.model.setProps({ label: params.label || ctx.collectionField.title });
       },
     },
     aclCheck: {
