@@ -27,6 +27,7 @@
   "Enable cache": "Enable cache",
   "TTL (second)": "TTL (second)",
   "Field": "Field",
+  "Select Field": "Select Field",
   "Aggregation": "Aggregation",
   "Alias": "Alias",
   "Format": "Format",
