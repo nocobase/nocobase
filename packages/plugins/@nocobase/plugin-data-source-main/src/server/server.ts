@@ -35,18 +35,15 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import mainDataSourceResource from './resourcers/main-data-source';
 import { TableInfo } from '@nocobase/database';
 import { ColumnsDescription } from 'sequelize';
 import { PRESET_FIELDS_INTERFACES } from './constants';
-
-type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
 
   private db2cmCollections: string[] = [];
-
-  status: DataSourceState = 'loaded';
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
@@ -509,24 +506,9 @@ export class PluginDataSourceMainServer extends Plugin {
       }
       await next();
     });
-    const plugin = this;
-    this.app.resource(viewResourcer);
-    this.app.actions(collectionActions);
-    this.app.resource({
-      name: 'mainDataSource',
-      actions: {
-        async refresh(ctx, next) {
-          if (plugin.status === 'loaded') {
-            await plugin.app.db.getRepository<CollectionRepository>('collections').load({
-              filter: plugin.loadFilter,
-            });
-          }
-          ctx.body = {
-            status: plugin.status,
-          };
-        },
-      },
-    });
+    this.app.resourceManager.define(viewResourcer);
+    this.app.resourceManager.registerActionHandlers(collectionActions);
+    this.app.resourceManager.define(mainDataSourceResource);
 
     const handleFieldSource = (fields, rawFields?: ColumnsDescription) => {
       for (const field of lodash.castArray(fields)) {

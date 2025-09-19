@@ -42,7 +42,9 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
 
   const getSelectableCollections = useCallback(async () => {
     try {
-      const response = await resource.selectable();
+      const response = await api.resource('dataSources').readTables({
+        values: { dataSourceKey: 'main' },
+      });
       const collections = response.data?.data || [];
       return collections.map((item) => ({
         key: item.name,
@@ -50,7 +52,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
         title: item.title || item.name,
       }));
     } catch (error) {
-      console.error('Failed to fetch selectable collections:', error);
+      console.error('Failed to fetch selectable tables:', error);
       return [];
     }
   }, [api]);
@@ -82,7 +84,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
 
   const handleSubmit = useCallback(async () => {
     if (targetKeys.length === 0) {
-      message.warning(t('Please select at least one collection'));
+      message.warning(t('Please select at least one table'));
       return;
     }
 
@@ -90,27 +92,31 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
       setLoading(true);
 
       modal.confirm({
-        title: t('Confirm Load Collections'),
-        content: t('Are you sure you want to load {{count}} collection(s)?', { count: targetKeys.length }),
+        title: t('Confirm load tables'),
+        content: t('Are you sure you want to load {{count}} table(s)?', { count: targetKeys.length }),
         onOk: async () => {
           try {
-            await resource.add({
-              values: targetKeys,
+            await api.resource('dataSources').loadTables({
+              values: {
+                dataSourceKey: 'main',
+                tables: targetKeys,
+              },
             });
 
-            message.success(t('Collections loaded successfully'));
+            message.success(t('Tables loaded successfully'));
             setOpen(false);
             setTargetKeys([]);
             setSelectedKeys([]);
             setSearchValue('');
+            refresh();
           } catch (error) {
-            console.error('Failed to load collections:', error);
-            message.error(t('Failed to load collections'));
+            console.error('Failed to load tables:', error);
+            message.error(t('Failed to load tables'));
           }
         },
       });
     } catch (error) {
-      message.error(t('Failed to load collections'));
+      message.error(t('Failed to load tables'));
     } finally {
       setLoading(false);
     }
@@ -142,11 +148,11 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
   return (
     <>
       <Button type="default" icon={<ImportOutlined style={{ marginRight: 4 }} />} onClick={showDrawer} {...restProps}>
-        {t('Load collections')}
+        {t('Load tables')}
       </Button>
 
       <Drawer
-        title={t('Load collections')}
+        title={t('Load tables')}
         placement="right"
         onClose={handleCancel}
         open={open}
@@ -166,7 +172,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
           <Spin spinning={loading} style={{ height: '100%' }}>
             <Transfer
               dataSource={filteredDataSource}
-              titles={[t('Available Collections'), t('Selected Collections')]}
+              titles={[t('Available tables'), t('Selected tables')]}
               targetKeys={targetKeys}
               selectedKeys={selectedKeys}
               onChange={handleChange}
