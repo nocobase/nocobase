@@ -45,6 +45,7 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  ICON_POPUP_Z_INDEX,
   SchemaSettingsItemType,
   SchemaToolbarVisibleContext,
   VariablesContext,
@@ -939,7 +940,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                                       <APIClientProvider apiClient={apiClient}>
                                                         <ConfigProvider locale={locale}>
                                                           {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
-                                                          <zIndexContext.Provider value={2000}>
+                                                          <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
                                                             <SchemaComponent
                                                               components={components}
                                                               scope={scope}
