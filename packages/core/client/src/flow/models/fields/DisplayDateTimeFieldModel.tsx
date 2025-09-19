@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -35,6 +35,9 @@ DisplayDateTimeFieldModel.registerFlow({
       title: tval('Date display format'),
     },
   },
+});
+DisplayDateTimeFieldModel.define({
+  label: escapeT('Datetime'),
 });
 
 DisplayItemModel.bindModelToInterface(
