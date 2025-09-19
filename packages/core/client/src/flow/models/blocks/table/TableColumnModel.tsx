@@ -60,9 +60,9 @@ export class TableColumnModel extends DisplayItemModel {
           key: field.name,
           label: field.title,
           toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-          useModel: 'TableColumnModel',
+          useModel: this.name,
           createModelOptions: () => ({
-            use: 'TableColumnModel',
+            use: this.name,
             stepParams: {
               fieldSettings: {
                 init: {
@@ -283,6 +283,11 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: escapeT('Enable quick edit'),
       uiSchema: (ctx) => {
+        const blockCollectionName = ctx.model.context.blockModel.collection.name;
+        const fieldCollectionName = ctx.model.collectionField.collectionName;
+        if (blockCollectionName !== fieldCollectionName) {
+          return;
+        }
         return {
           editable: {
             'x-component': 'Switch',

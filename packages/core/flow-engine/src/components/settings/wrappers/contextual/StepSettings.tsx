@@ -51,7 +51,7 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
   const resolvedUiMode = await resolveUiMode(step.uiMode, ctx);
 
   // 提取模式和属性
-  let settingMode: 'dialog' | 'drawer';
+  let settingMode: 'dialog' | 'drawer' | 'embed';
   let uiModeProps: Record<string, any> = {};
   let cleanup: () => void;
 

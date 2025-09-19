@@ -8,33 +8,42 @@
  */
 
 import { UploadOutlined } from '@ant-design/icons';
-import { Upload } from 'antd';
+import { Upload } from '@formily/antd-v5';
 import { castArray } from 'lodash';
 import { largeField, escapeT } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
+import { FieldContext } from '@formily/react';
 import { FormItemModel } from '../blocks/form/FormItemModel';
 import { FieldModel } from '../base';
 
 export const CardUpload = (props) => {
   const [fileList, setFileList] = useState(castArray(props.value || []));
   return (
-    <Upload
-      {...props}
-      listType="picture-card"
-      fileList={fileList}
-      onChange={({ fileList: newFileList }) => {
-        setFileList(newFileList);
-        const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
-        if (props.maxCount === 1) {
-          const firstFile = doneFiles[0];
-          props.onChange(firstFile ? firstFile.response : null);
-        } else {
-          props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
-        }
-      }}
+    <FieldContext.Provider
+      value={
+        {
+          value: fileList,
+        } as any
+      }
     >
-      <UploadOutlined style={{ fontSize: 20 }} />
-    </Upload>
+      <Upload
+        {...props}
+        listType="picture-card"
+        fileList={fileList}
+        onChange={(newFileList) => {
+          setFileList(newFileList);
+          const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
+          if (props.maxCount === 1) {
+            const firstFile = doneFiles[0];
+            props.onChange(firstFile ? firstFile.response : null);
+          } else {
+            props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
+          }
+        }}
+      >
+        <UploadOutlined style={{ fontSize: 20 }} />
+      </Upload>
+    </FieldContext.Provider>
   );
 };
 

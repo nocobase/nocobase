@@ -162,7 +162,7 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        ctx.model.setProps({ label: params.label || ctx.collectionField.title });
       },
     },
     aclCheck: {
@@ -296,7 +296,7 @@ FormItemModel.registerFlow({
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-          if (binding.modelName !== ctx.model.subModels.field.use) {
+          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
             const model = ctx.model.setSubModel('field', {
