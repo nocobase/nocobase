@@ -177,3 +177,7 @@ FormBlockModel.registerEvents({
  * @deprecated use FormBlockModel instead
  */
 export class FormModel extends FormBlockModel {}
+
+FormModel.define({
+  hide: true,
+});

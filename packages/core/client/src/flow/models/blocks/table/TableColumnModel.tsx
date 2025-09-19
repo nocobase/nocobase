@@ -60,9 +60,9 @@ export class TableColumnModel extends DisplayItemModel {
           key: field.name,
           label: field.title,
           toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-          useModel: 'TableColumnModel',
+          useModel: this.name,
           createModelOptions: () => ({
-            use: 'TableColumnModel',
+            use: this.name,
             stepParams: {
               fieldSettings: {
                 init: {
@@ -203,12 +203,7 @@ export class TableColumnModel extends DisplayItemModel {
 }
 
 TableColumnModel.define({
-  label: escapeT('Table column'),
-  icon: 'TableColumn',
-  createModelOptions: {
-    use: 'TableColumnModel',
-  },
-  sort: 0,
+  label: escapeT('Display collection fields'),
 });
 
 TableColumnModel.registerFlow({
@@ -288,6 +283,11 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: escapeT('Enable quick edit'),
       uiSchema: (ctx) => {
+        const blockCollectionName = ctx.model.context.blockModel.collection.name;
+        const fieldCollectionName = ctx.model.collectionField.collectionName;
+        if (blockCollectionName !== fieldCollectionName) {
+          return;
+        }
         return {
           editable: {
             'x-component': 'Switch',
@@ -325,7 +325,10 @@ TableColumnModel.registerFlow({
         if (params.label !== previousParams.label) {
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
-          const binding = ctx.model.constructor.getDefaultBindingByField(ctx, targetCollectionField);
+          const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
+            ctx,
+            targetCollectionField,
+          );
           if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);

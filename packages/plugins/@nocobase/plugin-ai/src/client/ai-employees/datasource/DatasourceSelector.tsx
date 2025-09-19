@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Button, Divider, Flex, Layout, Space } from 'antd';
+import { Button, Divider, Empty, Flex, Layout, Space } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import { DatasourceList } from './DatasourceList';
@@ -39,6 +39,8 @@ export type DatasourceSelectorProps = {
 export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observer(
   ({ contextItems, onAdd, onRemove }) => {
     const ctx = useFlowViewContext<FlowModelContext>();
+    const resourceCtx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+    const dataSource = resourceCtx.resource.getData();
     const { Header } = ctx.view;
     const [collection, setCollection] = useState<Collection | null>(null);
     const [formData, setFormData] = useState<Record<string, any> | null>(null);
@@ -76,19 +78,25 @@ export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observ
               </>
             }
           />
-          <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5' }}>
-            <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
-              <Flex align="center" vertical>
-                <DatasourceList onSelect={onSelect} contextItems={contextItems} onAdd={onAdd} onRemove={onRemove} />
-              </Flex>
-            </Sider>
-            <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
-            <Content style={{ backgroundColor: 'transparent' }}>
-              <CollectionContext.Provider value={new CurrentCollection(collection)}>
-                {formData && <Preview formData={formData} show={true} />}
-              </CollectionContext.Provider>
-            </Content>
-          </Layout>
+          {dataSource.length ? (
+            <Layout style={{ height: '80vh', backgroundColor: '#f5f5f5' }}>
+              <Sider width={300} style={{ paddingLeft: 20, backgroundColor: 'transparent' }}>
+                <Flex align="center" vertical>
+                  <DatasourceList onSelect={onSelect} contextItems={contextItems} onAdd={onAdd} onRemove={onRemove} />
+                </Flex>
+              </Sider>
+              <Divider type="vertical" variant="dashed" style={{ height: '95%', margin: 'auto 0px auto 10px' }} />
+              <Content style={{ backgroundColor: 'transparent' }}>
+                <CollectionContext.Provider value={new CurrentCollection(collection)}>
+                  {formData && <Preview formData={formData} show={true} />}
+                </CollectionContext.Provider>
+              </Content>
+            </Layout>
+          ) : (
+            <Flex style={{ height: '80vh' }} justify="center" align="center" vertical>
+              <Empty description={ctx.t('No datasource settings')} />
+            </Flex>
+          )}
         </div>
       </>
     );

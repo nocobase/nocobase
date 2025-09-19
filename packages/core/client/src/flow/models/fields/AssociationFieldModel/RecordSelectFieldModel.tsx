@@ -8,6 +8,7 @@
  */
 import {
   CollectionField,
+  createCollectionContextMeta,
   createCurrentRecordMetaFactory,
   EditableItemModel,
   escapeT,
@@ -80,6 +81,7 @@ export function LazySelect(props) {
       {...others}
       allowClear
       showSearch
+      maxTagCount="responsive"
       filterOption={false}
       labelInValue
       fieldNames={fieldNames}
@@ -101,6 +103,18 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
 
   get collectionField(): CollectionField {
     return this.context.collectionField;
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    // For association fields, expose target collection to variable selectors
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField?.targetCollection,
+      meta: createCollectionContextMeta(
+        () => this.context.collectionField?.targetCollection,
+        this.context.t('Current collection'),
+      ),
+    });
   }
 
   set onPopupScroll(fn) {
@@ -330,7 +344,7 @@ RecordSelectFieldModel.registerFlow({
     allowMultiple: {
       title: escapeT('Allow multiple'),
       uiSchema(ctx) {
-        if (['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type)) {
+        if (['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type)) {
           return {
             allowMultiple: {
               'x-component': 'Switch',
@@ -344,7 +358,9 @@ RecordSelectFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          allowMultiple: ['belongsToMany', 'hasMany'].includes(ctx.model.context.collectionField.type),
+          allowMultiple: ['belongsToMany', 'hasMany', 'belongsToArray'].includes(
+            ctx.model.context.collectionField.type,
+          ),
         };
       },
       handler(ctx, params) {

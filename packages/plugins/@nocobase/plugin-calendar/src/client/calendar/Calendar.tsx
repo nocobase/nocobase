@@ -30,6 +30,7 @@ import {
   useProps,
   withDynamicSchemaProps,
   withSkeletonComponent,
+  useAPIClient,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -50,6 +51,7 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
+import zhCN from 'date-fns/locale/zh-CN';
 
 interface Event {
   id: string;
@@ -267,18 +269,6 @@ export const Calendar: any = withDynamicSchemaProps(
         () => import('react-big-calendar/lib/utils/dates'),
         'eq',
       );
-
-      const localizer = useMemo(() => {
-        return dateFnsLocalizer({
-          format,
-          parse,
-          startOfWeek: (date) => {
-            return startOfWeek(date, { locale: { options: { weekStartsOn: props.weekStart || '1' } } });
-          },
-          getDay,
-          locales: { 'en-US': enUS },
-        });
-      }, [props.weekStart]);
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
         useProps(props);
@@ -301,8 +291,47 @@ export const Calendar: any = withDynamicSchemaProps(
       const ctx = useActionContext();
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
-      const colorCollectionField = collection.getField(fieldNames.colorFieldName);
+      const apiClient = useAPIClient();
+      const locales = {
+        'zh-CN': zhCN,
+        'en-US': enUS,
+      };
+      const locale = apiClient.auth.locale || 'en-US';
+      const formats = useMemo(() => {
+        return {
+          monthHeaderFormat: (date, culture, local) =>
+            local.format(date, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locales[locale]),
+          dayHeaderFormat: (date, culture, local) => {
+            return local.format(date, props.locale === 'zh-CN' ? 'eee, M/d' : 'EEE, MMM d', locales[locale]);
+          },
+          agendaDateFormat: (date, culture, local) => {
+            return local.format(date, props.locale === 'zh-CN' ? 'M月d日' : 'M-dd', locales[locale]);
+          },
 
+          dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+            if (start.getMonth() === end.getMonth()) {
+              return local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale);
+            }
+            return `${local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale)} - ${local.format(
+              end,
+              locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy',
+              locale,
+            )}`;
+          },
+          weekdayFormat: (date, culture, local) => {
+            return local.format(date, 'eee', locale);
+          },
+        };
+      }, [locale, view]);
+      const localizer = useMemo(() => {
+        return dateFnsLocalizer({
+          format,
+          parse,
+          startOfWeek: (date) => startOfWeek(date, { locale: locales[locale], weekStartsOn: props.weekStart ?? 1 }),
+          getDay,
+          locales,
+        });
+      }, [locale, props.weekStart]);
       useEffect(() => {
         setView(props.defaultView);
       }, [props.defaultView]);
@@ -310,9 +339,11 @@ export const Calendar: any = withDynamicSchemaProps(
       const components = useMemo(() => {
         return {
           toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-          // week: {
-          //   header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-          // },
+          week: {
+            header: (props) => (
+              <Header {...props} type="week" showLunar={showLunar} localizer={localizer} locale={locale} />
+            ),
+          },
           month: {
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
           },
@@ -459,17 +490,18 @@ export const Calendar: any = withDynamicSchemaProps(
                   customActionSchema: findEventSchema(fieldSchema),
                 });
               }}
-              formats={{
-                monthHeaderFormat: 'yyyy-M',
-                agendaDateFormat: 'M-dd',
-                dayHeaderFormat: 'yyyy-M-dd',
-                dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-                  if (eq(start, end, 'month')) {
-                    return local.format(start, 'yyyy-M', culture);
-                  }
-                  return `${local.format(start, 'yyyy-M', culture)} - ${local.format(end, 'yyyy-M', culture)}`;
-                },
-              }}
+              formats={formats}
+              // formats={{
+              //   monthHeaderFormat: 'yyyy-M',
+              //   agendaDateFormat: 'M-dd',
+              //   dayHeaderFormat: 'yyyy-M-dd',
+              //   dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+              //     if (eq(start, end, 'month')) {
+              //       return local.format(start, 'yyyy-M', culture);
+              //     }
+              //     return `${local.format(start, 'yyyy-M', culture)} - ${local.format(end, 'yyyy-M', culture)}`;
+              //   },
+              // }}
               components={components}
               localizer={localizer}
               tooltipAccessor={(val) => {

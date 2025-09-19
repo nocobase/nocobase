@@ -61,7 +61,7 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
         <Avatar
           src={currentAvatar}
           size={52}
-          shape="square"
+          shape="circle"
           style={{
             cursor: 'pointer',
           }}

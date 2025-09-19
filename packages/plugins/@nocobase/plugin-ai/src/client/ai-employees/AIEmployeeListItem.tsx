@@ -27,7 +27,7 @@ export const AIEmployeeListItem: React.FC<{
           style={{
             marginRight: '8px',
           }}
-          shape="square"
+          shape="circle"
           size="large"
           src={avatars(aiEmployee.avatar)}
         />

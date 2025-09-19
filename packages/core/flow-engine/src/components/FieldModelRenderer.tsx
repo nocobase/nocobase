@@ -33,10 +33,9 @@ export function FieldModelRenderer(props: any) {
 
   const handleChange = (e: any) => {
     const val = e?.target?.value || e;
+    model.setProps({ value: val });
     if (!composingRef.current) {
       props.onChange(e);
-    } else {
-      model.setProps({ value: val });
     }
   };
 
@@ -50,12 +49,14 @@ export function FieldModelRenderer(props: any) {
   };
 
   const modelProps = {
-    ...rest,
+    ..._.omit(rest, flowModelRendererPropKeys),
     onChange: handleChange,
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd,
   };
-  model.setProps(modelProps);
+  useEffect(() => {
+    model.setProps(modelProps);
+  }, [modelProps]);
 
   return <FlowModelRenderer model={model} {...rest} />;
 }

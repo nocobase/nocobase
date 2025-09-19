@@ -9,6 +9,7 @@
 
 import {
   CollectionField,
+  createCollectionContextMeta,
   EditableItemModel,
   escapeT,
   FlowModel,
@@ -127,6 +128,14 @@ export class RecordPickerFieldModel extends FieldModel {
   }
   onInit(option) {
     super.onInit(option);
+    // For association fields, expose target collection to variable selectors
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField?.targetCollection,
+      meta: createCollectionContextMeta(
+        () => this.context.collectionField?.targetCollection,
+        this.context.t('Current collection'),
+      ),
+    });
     this.onClick = (e) => {
       this.dispatchEvent('openView', {
         event: e,

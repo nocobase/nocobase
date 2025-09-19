@@ -21,6 +21,7 @@ export * from './required';
 export * from './fieldComponent';
 export * from './aclCheck';
 export * from './pattern';
+export * from './validation';
 export {
   fieldLinkageRules,
   actionLinkageRules,

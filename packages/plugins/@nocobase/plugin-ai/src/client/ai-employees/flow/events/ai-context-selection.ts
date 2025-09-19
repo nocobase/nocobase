@@ -19,8 +19,8 @@ const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutL
   if (!model) {
     return [];
   }
-  const subModels = model.subModels['shortcuts'] || [];
-  return subModels.filter((model) => {
+
+  return model.filterSubModels('shortcuts', (model) => {
     const tasks = model.props.tasks;
     if (!tasks?.length) {
       return false;

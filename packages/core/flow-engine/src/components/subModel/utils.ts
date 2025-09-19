@@ -87,6 +87,9 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
 export function buildItems(subModelBaseClass: string | ModelConstructor) {
   return async (ctx: FlowModelContext) => {
     const items = await buildSubModelGroups([subModelBaseClass])(ctx);
+    if (items.length === 0) {
+      return [];
+    }
     const children = items.shift().children;
     if (typeof children === 'function') {
       return children(ctx);
@@ -192,40 +195,42 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
     const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FieldModel';
-    const stepPayload = {
-      dataSourceKey: collection.dataSourceKey,
-      collectionName: collection.name,
-      fieldPath: f.name,
-      associationPathName,
-    };
+    if (childUse) {
+      const stepPayload = {
+        dataSourceKey: collection.dataSourceKey,
+        collectionName: collection.name,
+        fieldPath: f.name,
+        associationPathName,
+      };
 
-    children.push({
-      key: fieldPath,
-      label: f.title,
-      toggleable: (subModel) => {
-        const { associationPathName, fieldPath: fieldName } = subModel.getStepParams('fieldSettings', 'init') || {};
-        return (associationPathName ? `${associationPathName}.${fieldName}` : fieldName) === fieldPath;
-      },
-      useModel: useModel,
-      createModelOptions: () => ({
-        use: useModel,
-        stepParams: {
-          fieldSettings: {
-            init: stepPayload,
-          },
+      children.push({
+        key: fieldPath,
+        label: f.title,
+        toggleable: (subModel) => {
+          const { associationPathName, fieldPath: fieldName } = subModel.getStepParams('fieldSettings', 'init') || {};
+          return (associationPathName ? `${associationPathName}.${fieldName}` : fieldName) === fieldPath;
         },
-        subModels: {
-          field: {
-            use: childUse,
-            stepParams: {
-              fieldSettings: {
-                init: stepPayload,
+        useModel: useModel,
+        createModelOptions: () => ({
+          use: useModel,
+          stepParams: {
+            fieldSettings: {
+              init: stepPayload,
+            },
+          },
+          subModels: {
+            field: {
+              use: childUse,
+              stepParams: {
+                fieldSettings: {
+                  init: stepPayload,
+                },
               },
             },
           },
-        },
-      }),
-    });
+        }),
+      });
+    }
   }
 
   const groupKey = `addField_${collection.name}`;
@@ -237,7 +242,7 @@ export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildF
       type: 'group' as const,
       searchable: true,
       searchPlaceholder: finalSearchPlaceholder,
-      children,
+      children: children.filter(Boolean),
     },
   ];
 }

@@ -76,7 +76,8 @@ export function SubTableField(props) {
           );
         },
       },
-    ]);
+    ])
+    .filter(Boolean);
   return (
     <Form.Item>
       <Table

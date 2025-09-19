@@ -15,17 +15,15 @@ import {
   FieldModelRenderer,
   FlowModelContext,
   FormItem,
-  jioToJoiSchema,
 } from '@nocobase/flow-engine';
-import { customAlphabet as Alphabet } from 'nanoid';
 import { debounce } from 'lodash';
+import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { FieldValidation } from '../../../../collection-manager';
-import { FieldModel } from '../../base';
-import { EditFormModel } from './EditFormModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';
 import { SelectOptions } from '../../../actions/titleField';
+import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
+import { EditFormModel } from './EditFormModel';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -90,6 +88,15 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       .filter(Boolean);
   }
 
+  onInit(options: any) {
+    super.onInit(options);
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      if (this.collectionField) {
+        subModel.setProps(this.collectionField.getComponentProps());
+      }
+    });
+  }
+
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
@@ -112,7 +119,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...this.props}
         name={namePath}
         onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
+          this.dispatchEvent('formItemChange', { value: event?.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={modelForRender} name={namePath} />
@@ -155,7 +162,7 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        ctx.model.setProps({ label: params.label || ctx.collectionField.title });
       },
     },
     aclCheck: {
@@ -163,10 +170,10 @@ FormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        const collectionField = ctx.model.collectionField;
-        if (collectionField) {
-          ctx.model.setProps(collectionField.getComponentProps());
-        }
+        // const collectionField = ctx.model.collectionField;
+        // if (collectionField) {
+        //   ctx.model.setProps(collectionField.getComponentProps());
+        // }
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
@@ -264,48 +271,7 @@ FormItemModel.registerFlow({
 
     validation: {
       title: escapeT('Validation'),
-      uiSchema: (ctx) => {
-        const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-          ctx.model.collectionField.interface,
-        );
-        return {
-          validation: {
-            'x-decorator': 'FormItem',
-            'x-component': FieldValidation,
-            'x-component-props': {
-              type: targetInterface.validationType,
-              availableValidationOptions: [...new Set(targetInterface.availableValidationOptions)],
-              excludeValidationOptions: [...new Set(targetInterface.excludeValidationOptions)],
-              isAssociation: targetInterface.isAssociation,
-            },
-          },
-        };
-      },
-      handler(ctx, params) {
-        if (params.validation) {
-          const rules = ctx.model.getProps().rules || [];
-          const schema = jioToJoiSchema(params.validation);
-          const label = ctx.model.props.label;
-          rules.push({
-            validator: (_, value) => {
-              const { error } = schema.validate(value, {
-                context: { label },
-                abortEarly: false,
-              });
-
-              if (error) {
-                const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
-                return Promise.reject(message);
-              }
-
-              return Promise.resolve();
-            },
-          });
-          ctx.model.setProps({
-            rules,
-          });
-        }
-      },
+      use: 'validation',
     },
     fieldNames: {
       use: 'titleField',
@@ -330,7 +296,7 @@ FormItemModel.registerFlow({
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-          if (binding.modelName !== ctx.model.subModels.field.use) {
+          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
             const model = ctx.model.setSubModel('field', {
