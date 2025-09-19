@@ -21,6 +21,8 @@ export class CustomTable3ColumnModel extends TableColumnModel {}
 
 export class CustomTable3NicknameFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
+    console.log('当前记录：', this.context.record);
+    console.log('当前记录 index：', this.context.recordIndex);
     return <span>[{value}]</span>;
   }
 }

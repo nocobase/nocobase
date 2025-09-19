@@ -28,6 +28,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
   static scene: BlockSceneType;
 
+  _defaultCustomModelClasses = {} as any;
+  customModelClasses = {} as any;
+
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }
@@ -35,6 +38,13 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   static _isScene(scene: BlockSceneType) {
     const scenes = this._getScene();
     return scenes.includes(scene);
+  }
+
+  getModelClassName(className: string) {
+    if (Object.keys(this.customModelClasses).includes(className)) {
+      return this.customModelClasses[className];
+    }
+    return this._defaultCustomModelClasses[className] || className;
   }
 
   // 设置态隐藏时的占位渲染

@@ -8,5 +8,8 @@
  */
 
 import { ModelConstructor } from '@nocobase/flow-engine';
+import { CustomDetailsBlockModel } from './CustomDetailsBlockModel';
 
-export default {} as Record<string, ModelConstructor>;
+export default {
+  CustomDetailsBlockModel,
+} as Record<string, ModelConstructor>;

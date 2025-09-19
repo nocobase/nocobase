@@ -136,7 +136,7 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
   );
 };
 
-type CustomModelClassesEnum = {
+type CustomTableBlockModelClassesEnum = {
   CollectionActionGroupModel?: string;
   RecordActionGroupModel?: string;
   TableColumnModel?: string;
@@ -157,20 +157,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     TableCustomColumnModel: 'TableCustomColumnModel',
   };
 
-  customModelClasses: CustomModelClassesEnum = {
-    CollectionActionGroupModel: 'CollectionActionGroupModel' as string,
-    RecordActionGroupModel: 'RecordActionGroupModel' as string,
-    TableColumnModel: 'TableColumnModel' as string,
-    TableAssociationFieldGroupModel: 'TableAssociationFieldGroupModel' as string,
-    TableCustomColumnModel: 'TableCustomColumnModel' as string,
-  };
-
-  getModelClassName(className: string) {
-    if (Object.keys(this.customModelClasses).includes(className)) {
-      return this.customModelClasses[className];
-    }
-    return this._defaultCustomModelClasses[className] || className;
-  }
+  customModelClasses: CustomTableBlockModelClassesEnum = {};
 
   get resource() {
     return super.resource as MultiRecordResource;

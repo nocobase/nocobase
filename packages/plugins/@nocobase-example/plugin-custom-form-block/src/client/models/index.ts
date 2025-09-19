@@ -8,5 +8,9 @@
  */
 
 import { ModelConstructor } from '@nocobase/flow-engine';
+import { CustomCreateFormBlockModel, CustomEditFormBlockModel } from './CustomFormBlockModel';
 
-export default {} as Record<string, ModelConstructor>;
+export default {
+  CustomCreateFormBlockModel,
+  CustomEditFormBlockModel,
+} as Record<string, ModelConstructor>;
