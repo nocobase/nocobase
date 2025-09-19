@@ -17,7 +17,8 @@ import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
 import pino from 'pino';
 import qs from 'qs';
-import { createRef } from 'react';
+import React, { createRef } from 'react';
+import * as antd from 'antd';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -331,7 +332,7 @@ export class FlowContext {
    * // 获取多层级属性的子树
    * const profileTree = flowContext.getPropertyMetaTree("{{ ctx.user.profile }}");
    */
-  getPropertyMetaTree(value?: string): MetaTreeNode[] {
+  getPropertyMetaTree(value?: string, options?: { flatten?: boolean }): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
 
     // 如果有 value 参数，尝试返回对应属性的子树
@@ -380,6 +381,10 @@ export class FlowContext {
           }
 
           if (typeof metaOrFactory === 'function') {
+            if (options?.flatten) {
+              // 统一语义：当请求子层路径且 flatten=true 时，直接返回其 children 列表
+              return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+            }
             const parentTitles = this.#buildParentTitles(fullPath);
             return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
           }
@@ -448,14 +453,25 @@ export class FlowContext {
       return this.#findMetaInProperty(firstKey, ownProperty.meta, remainingPath, [firstKey]);
     }
 
-    // 2. 查找委托链中的属性
-    for (const delegate of this._delegates) {
-      const delegateProperty = delegate._props[firstKey];
-      if (delegateProperty?.meta) {
-        return this.#findMetaInProperty(firstKey, delegateProperty.meta, remainingPath, [firstKey]);
-      }
+    // 2 进一步递归查找更深层委托链（_getPropertiesMeta 会递归收集，但此处原来仅检查了一层，导致不一致）
+    const deepMeta = this.#findMetaInDelegatesDeep(this._delegates, firstKey);
+    if (deepMeta) {
+      return this.#findMetaInProperty(firstKey, deepMeta, remainingPath, [firstKey]);
     }
 
+    return null;
+  }
+
+  /**
+   * 递归在委托链中查找指定 key 的 meta（只返回 metaOrFactory，不解析路径）。
+   */
+  #findMetaInDelegatesDeep(delegates: FlowContext[], key: string): PropertyMetaOrFactory | null {
+    for (const delegate of delegates) {
+      const prop = delegate._props[key];
+      if (prop?.meta) return prop.meta;
+      const deeper = this.#findMetaInDelegatesDeep(delegate._delegates, key);
+      if (deeper) return deeper;
+    }
     return null;
   }
 
@@ -877,6 +893,10 @@ export class FlowRunjsContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    // Expose React and antd only within runjs context
+    // This keeps the scope minimal while enabling React/AntD rendering in scripts
+    this.defineProperty('React', { value: React });
+    this.defineProperty('antd', { value: antd });
     this.defineMethod(
       'dispatchModelEvent',
       async (modelOrUid: FlowModel | string, eventName: string, inputArgs?: Record<string, any>) => {
