@@ -59,7 +59,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         });
         return (
           <FlowModelRenderer
-            showFlowSettings={{ showBorder: false }}
+            showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
             key={fork.uid}
             model={fork}
             fallback={<Skeleton.Button size="small" />}

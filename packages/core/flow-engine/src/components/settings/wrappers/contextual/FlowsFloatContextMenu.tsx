@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Alert, Space } from 'antd';
 import { observer } from '@formily/react';
 import { css } from '@emotion/css';
@@ -81,7 +81,7 @@ const renderToolbarItems = (
 };
 
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
+const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition }) => css`
   position: relative;
   display: inline;
 
@@ -91,23 +91,23 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
   }
 
   /* 正常的hover行为 */
-  &:hover > .general-schema-designer {
+  &:hover > .nb-toolbar-container {
     opacity: 1;
   }
 
   /* 当有.hide-parent-menu类时隐藏菜单 */
-  &.hide-parent-menu > .general-schema-designer {
+  &.hide-parent-menu > .nb-toolbar-container {
     opacity: 0 !important;
   }
 
-  > .general-schema-designer {
+  > .nb-toolbar-container {
     transition: opacity 0.2s ease;
     position: absolute;
-    z-index: 999;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
+    z-index: 999;
     opacity: 0;
     background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
@@ -118,7 +118,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
       background: var(--colorTemplateBgSettingsHover);
     }
 
-    > .general-schema-designer-title {
+    > .nb-toolbar-container-title {
       pointer-events: none;
       position: absolute;
       font-size: 12px;
@@ -139,10 +139,11 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx }) => css`
       }
     }
 
-    > .general-schema-designer-icons {
+    > .nb-toolbar-container-icons {
       position: absolute;
       right: 2px;
-      top: 2px;
+      top: ${toolbarPosition === 'inside' ? '2px' : '-2px'};
+      ${toolbarPosition === 'inside' ? '' : 'transform: translateY(-100%);'}
       line-height: 16px;
       pointer-events: all;
 
@@ -287,6 +288,10 @@ interface ModelProvidedProps {
    * Extra toolbar items to add to this context menu instance
    */
   extraToolbarItems?: ToolbarItemConfig[];
+  /**
+   * @default 'inside'
+   */
+  toolbarPosition?: 'inside' | 'above';
 }
 
 interface ModelByIdProps {
@@ -318,6 +323,10 @@ interface ModelByIdProps {
    * Extra toolbar items to add to this context menu instance
    */
   extraToolbarItems?: ToolbarItemConfig[];
+  /**
+   * @default 'inside'
+   */
+  toolbarPosition?: 'inside' | 'above';
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -484,12 +493,15 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     settingsMenuLevel,
     extraToolbarItems,
     toolbarStyle,
+    toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const flowEngine = useFlowEngine();
     const [style, setStyle] = useState<React.CSSProperties>({});
+    const toolbarContainerRef = useRef<HTMLDivElement>(null);
+    const toolbarContainerStyle: any = useMemo(() => ({ ...toolbarStyle, ...style }), [style, toolbarStyle]);
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -547,7 +559,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context })} ${
+        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context, toolbarPosition })} ${
           hideMenu ? 'hide-parent-menu' : ''
         } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
@@ -557,13 +569,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         {children}
 
         {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div className="general-schema-designer" style={{ ...toolbarStyle, ...style }}>
+        <div ref={toolbarContainerRef} className="nb-toolbar-container" style={toolbarContainerStyle}>
           {showTitle && model.title && (
-            <div className="general-schema-designer-title">
+            <div className="nb-toolbar-container-title">
               <span className="title-tag">{model.title}</span>
             </div>
           )}
-          <div className="general-schema-designer-icons">
+          <div className="nb-toolbar-container-icons">
             <Space size={3} align="center">
               {renderToolbarItems(
                 model,
@@ -603,6 +615,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     showTitle = false,
     settingsMenuLevel,
     extraToolbarItems: extraToolbarItems,
+    toolbarPosition,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
     const flowEngine = useFlowEngine();
@@ -622,6 +635,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         showTitle={showTitle}
         settingsMenuLevel={settingsMenuLevel}
         extraToolbarItems={extraToolbarItems}
+        toolbarPosition={toolbarPosition}
       >
         {children}
       </FlowsFloatContextMenuWithModel>

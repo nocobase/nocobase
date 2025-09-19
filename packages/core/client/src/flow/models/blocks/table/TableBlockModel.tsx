@@ -298,16 +298,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     }
     return (
       <td className={classNames(className)} {...restProps}>
-        <div
-          className={css`
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: calc(${width}px - 16px);
-          `}
-        >
-          {children}
-        </div>
+        {children}
       </td>
     );
   });
@@ -382,7 +373,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <FlowModelRenderer
                       key={action.uid}
                       model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                     />
                   );
                 }
@@ -400,7 +391,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <Droppable model={action} key={action.uid}>
                       <FlowModelRenderer
                         model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                         extraToolbarItems={[
                           {
                             key: 'drag-handler',
