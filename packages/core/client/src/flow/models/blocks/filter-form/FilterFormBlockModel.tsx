@@ -116,7 +116,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
               key="filter-form-actions-add"
               model={this}
               subModelKey="actions"
-              subModelBaseClass={'FilterFormActionModel'}
+              subModelBaseClass={'FilterFormActionGroupModel'}
             >
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>
