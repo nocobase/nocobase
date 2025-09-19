@@ -60,9 +60,9 @@ export class TableColumnModel extends DisplayItemModel {
           key: field.name,
           label: field.title,
           toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-          useModel: 'TableColumnModel',
+          useModel: this.name,
           createModelOptions: () => ({
-            use: 'TableColumnModel',
+            use: this.name,
             stepParams: {
               fieldSettings: {
                 init: {
