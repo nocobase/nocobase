@@ -16,8 +16,8 @@ import {
   joinCollectionName,
   RemoteSelect,
   SchemaSettingsActionModalItem,
+  useCollection,
   useCollection_deprecated,
-  useCollectionManager_deprecated,
   useCompile,
   useDataSourceKey,
   useDesignable,
@@ -30,11 +30,17 @@ import { Alert, Flex, Tag } from 'antd';
 function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
+  const row = ArrayTable.useRecord();
   const { setValuesIn } = useForm();
-  const baseCollection = useCollection_deprecated();
-  const { getCollection } = useCollectionManager_deprecated();
+  const baseCollection = useCollection();
   const dataSourceKey = useDataSourceKey();
-  const [workflowCollection, setWorkflowCollection] = useState(joinCollectionName(dataSourceKey, baseCollection.name));
+  const [workflowCollection, setWorkflowCollection] = useState(() => {
+    const { target } = baseCollection.getField(row.context) || {};
+    return joinCollectionName(
+      dataSourceKey,
+      target ? baseCollection.collectionManager.getCollection(target).name : baseCollection.name,
+    );
+  });
   const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
@@ -58,7 +64,7 @@ function WorkflowSelect({ formAction, buttonAction, actionType, ...props }) {
           const path = paths[i];
           const associationField = collection.fields.find((f) => f.name === path);
           if (associationField) {
-            collection = getCollection(associationField.target, dataSourceKey);
+            collection = baseCollection.collectionManager.getCollection(associationField.target);
           }
         }
       }
