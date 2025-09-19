@@ -22,7 +22,7 @@
   "Failed to import FormDialog or FormStep": "导入 FormDialog 或 FormStep 失败",
   "UID copied to clipboard": "UID 已复制到剪贴板",
   "Copy failed": "复制失败",
-  "Copy failed, please try again": "复制失败，请重试",
+  "Copy failed, please copy [{{uid}}] manually.": "复制失败，请手动复制 [{{uid}}]。",
   "Confirm delete": "确认删除",
   "Are you sure you want to delete this item? This action cannot be undone.": "确定要删除此项吗？此操作不可撤销。",
   "Delete operation failed": "删除操作失败",
