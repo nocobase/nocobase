@@ -16,6 +16,10 @@ import { useRecord } from '../../../record-provider';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+import { useIsShowTableSelectRecord } from '../../../schema-component';
+import { useCollection } from '../../../data-source';
+import { useContextAssociationFields } from '../../../schema-settings';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
 export const getVariableComponentWithScope = (Com, data = []) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
@@ -44,10 +48,27 @@ const useEvnVariable = () => {
   return null;
 };
 
+const useTableSelectVariable = () => {
+  const collection = useCollection<InheritanceCollectionMixin>();
+  const shouldShowTableSelectVariable = useIsShowTableSelectRecord();
+  // 区块还可以嵌入在页面中，所以 collection 可能为空
+  const contextVariable = useContextAssociationFields({ maxDepth: 2, contextCollectionName: collection?.name });
+  // 如果当前不是在表格中弹出的弹窗中，则不展示入口，最终也不会调用 loadChildren 方法去加载数据
+  return useMemo(() => {
+    return shouldShowTableSelectVariable && collection
+      ? { ...contextVariable, name: '$nSelectedRecord', title: contextVariable.label }
+      : null;
+  }, [collection, contextVariable, shouldShowTableSelectVariable]);
+};
+
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
   const environmentVariables = useEvnVariable();
-  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
+  const tableSelectVariable = useTableSelectVariable();
+  const variableScope = useMemo(() => {
+    return [environmentVariables, tableSelectVariable].filter(Boolean);
+  }, [environmentVariables, tableSelectVariable]);
+  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, variableScope), [variableScope]);
 
   const urlSchema = useMemo(() => {
     return {
