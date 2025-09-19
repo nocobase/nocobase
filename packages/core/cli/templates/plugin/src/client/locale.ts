@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, useFlowEngine } from '@nocobase/flow-engine';
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
 // @ts-ignore
 import pkg from './../../package.json';
 
@@ -17,5 +17,5 @@ export function useT() {
 }
 
 export function tExpr(key: string) {
-  return escapeT(key, { ns: [pkg.name, 'client'] });
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
 }

@@ -203,12 +203,7 @@ export class TableColumnModel extends DisplayItemModel {
 }
 
 TableColumnModel.define({
-  label: escapeT('Table column'),
-  icon: 'TableColumn',
-  createModelOptions: {
-    use: 'TableColumnModel',
-  },
-  sort: 0,
+  label: escapeT('Display collection fields'),
 });
 
 TableColumnModel.registerFlow({
@@ -325,7 +320,10 @@ TableColumnModel.registerFlow({
         if (params.label !== previousParams.label) {
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
-          const binding = ctx.model.constructor.getDefaultBindingByField(ctx, targetCollectionField);
+          const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
+            ctx,
+            targetCollectionField,
+          );
           if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);

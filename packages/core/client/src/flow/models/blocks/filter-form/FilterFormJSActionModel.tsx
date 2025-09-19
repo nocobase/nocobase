@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
+import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
@@ -15,6 +15,7 @@ export class FilterFormJSActionModel extends FilterFormActionModel {}
 
 FilterFormJSActionModel.define({
   label: escapeT('JS action'),
+  sort: 9999,
 });
 
 FilterFormJSActionModel.registerFlow({

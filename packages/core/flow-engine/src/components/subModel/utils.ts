@@ -87,6 +87,9 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
 export function buildItems(subModelBaseClass: string | ModelConstructor) {
   return async (ctx: FlowModelContext) => {
     const items = await buildSubModelGroups([subModelBaseClass])(ctx);
+    if (items.length === 0) {
+      return [];
+    }
     const children = items.shift().children;
     if (typeof children === 'function') {
       return children(ctx);
