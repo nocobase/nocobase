@@ -19,6 +19,11 @@ import { basicSetup, EditorView } from 'codemirror';
 import completions from './completions';
 import { createJavaScriptLinter } from './linter';
 
+export interface EditorRef {
+  write(document: string): void;
+  read(): string;
+}
+
 // 自定义自动补全函数
 const createCustomCompletion = () => {
   return (context: CompletionContext): CompletionResult | null => {
@@ -45,7 +50,7 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: React.ReactNode[];
+  rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -196,6 +201,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [value]);
 
+  const extraEditorRef: EditorRef = {
+    write(document) {
+      if (viewRef?.current && viewRef?.current.state.doc.toString() !== document) {
+        viewRef.current.dispatch({
+          changes: {
+            from: 0,
+            to: viewRef.current.state.doc.length,
+            insert: document,
+          },
+        });
+      }
+    },
+
+    read() {
+      return viewRef?.current.state.doc.toString() ?? '';
+    },
+  };
+
   return (
     <div
       style={{
@@ -204,7 +227,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         overflow: 'hidden',
       }}
     >
-      {rightExtra ? <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}>{rightExtra}</div> : null}
+      {rightExtra ? (
+        <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}>
+          {<div style={{ margin: '8px 18px' }}>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
+        </div>
+      ) : null}
       <div ref={editorRef} />
       {placeholder && !value && (
         <div

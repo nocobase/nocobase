@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './form-filler';
-export * from './workflow-caller';
-export * from './data-modeling';
-export * from './coding/editor-filler';
+import { ToolOptions } from '../../../manager/ai-manager';
+import { codeEditorStore } from '../stores';
+
+export const editorFillerTool: [string, string, ToolOptions] = [
+  'aiCoding',
+  'editorFiller',
+  {
+    invoke: (app, { code }) => {
+      codeEditorStore.write(code);
+    },
+  },
+];

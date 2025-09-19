@@ -7,7 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './form-filler';
-export * from './workflow-caller';
-export * from './data-modeling';
-export * from './coding/editor-filler';
+export * from './editor-filler';

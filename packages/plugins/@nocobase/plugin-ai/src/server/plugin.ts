@@ -29,6 +29,7 @@ import {
   getCollectionMetadata,
   getCollectionNames,
   getWorkflowCallers,
+  editorFiller,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -87,6 +88,7 @@ export class PluginAIServer extends Plugin {
     const frontendGroupName = 'frontend';
     const dataModelingGroupName = 'dataModeling';
     const workflowGroupName = 'workflowCaller';
+    const aiCodingGroupName = 'aiCoding';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
@@ -101,6 +103,11 @@ export class PluginAIServer extends Plugin {
       groupName: workflowGroupName,
       title: '{{t("Workflow caller")}}',
       description: '{{t("Use workflow as a tool")}}',
+    });
+    toolManager.registerToolGroup({
+      groupName: aiCodingGroupName,
+      title: '{{t("AI Coding")}}',
+      description: '{{t("AI coding tools")}}',
     });
 
     this.aiManager.toolManager.registerTools([
@@ -123,6 +130,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
+      },
+      {
+        groupName: aiCodingGroupName,
+        tool: editorFiller,
       },
     ]);
 

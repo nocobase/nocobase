@@ -51,7 +51,7 @@ export const ContextItem: React.FC<{
     } else {
       setText(_.isString(item.content) ? item.content : JSON.stringify(item.content, null, 2));
     }
-  }, [app, getContent, item]);
+  }, [app, getContent, item, showContent]);
 
   return (
     <>

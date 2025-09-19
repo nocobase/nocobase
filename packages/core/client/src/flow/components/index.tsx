@@ -12,4 +12,5 @@ export * from './drag-drop';
 export * from './EllipsisWithTooltip';
 export * from './ExpiresRadio';
 export * from './JsonInput';
+export * from './code-editor';
 //

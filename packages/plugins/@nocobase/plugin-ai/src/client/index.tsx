@@ -45,7 +45,9 @@ const { AIResourceContextCollector } = lazy(
 );
 import { Button } from 'antd';
 import { FlowModel } from '@nocobase/flow-engine';
-import { AICodingButton } from './ai-employees/AICodingButton';
+import { AICodingButton } from './ai-employees/ai-coding/AICodingButton';
+import { editorFillerTool } from './ai-employees/ai-coding/tools';
+import { CodeEditorContext } from './ai-employees/context/code-editor';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -81,6 +83,7 @@ export class PluginAIClient extends Plugin {
         injectAIEmployeeShortcut: {
           handler(ctx) {
             const settingContext = ctx.inputArgs.ctx;
+            const name = ctx.inputArgs.name;
             const setProps = ctx.inputArgs.setProps;
             if (!(settingContext.model instanceof JSBlockModel)) {
               console.debug('not a JSBlockModel');
@@ -91,9 +94,10 @@ export class PluginAIClient extends Plugin {
               return;
             }
 
+            const uid = `${settingContext.model.uid}-${settingContext.flowKey}-${name}`;
             setProps((prev) => ({
               ...prev,
-              rightExtra: <AICodingButton />,
+              rightExtra: [(editorRef) => <AICodingButton uid={uid} editorRef={editorRef} />],
             }));
           },
         },
@@ -160,8 +164,10 @@ export class PluginAIClient extends Plugin {
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
+    this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
+    this.aiManager.registerTool(...editorFillerTool);
   }
 
   setupWorkflow() {
