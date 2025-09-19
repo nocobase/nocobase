@@ -14,7 +14,6 @@ import {
   TableBlockModel,
   TableColumnModel,
 } from '@nocobase/client';
-import { MultiRecordResource } from '@nocobase/flow-engine';
 
 export class CustomTableBlockModel extends TableBlockModel {
   customModelClasses = {
@@ -24,11 +23,6 @@ export class CustomTableBlockModel extends TableBlockModel {
     TableAssociationFieldGroupModel: null,
     // TableAssociationFieldGroupModel: 'TableAssociationFieldGroupModel',
   };
-
-  createResource() {
-    const resource = this.context.createResource(MultiRecordResource);
-    return resource;
-  }
 }
 
 export class CustomTableCollectionActionGroupModel extends CollectionActionGroupModel {}
