@@ -80,6 +80,7 @@ export function LazySelect(props) {
       {...others}
       allowClear
       showSearch
+      maxTagCount="responsive"
       filterOption={false}
       labelInValue
       fieldNames={fieldNames}

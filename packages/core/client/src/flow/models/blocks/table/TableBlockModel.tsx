@@ -29,13 +29,7 @@ import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
-import {
-  ActionModel,
-  BlockSceneEnum,
-  CollectionActionGroupModel,
-  CollectionBlockModel,
-  RecordActionGroupModel,
-} from '../../base';
+import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
@@ -114,13 +108,17 @@ const HeaderWrapperComponent = React.memo((props) => {
   );
 });
 
-const AddFieldColumn = ({ model }) => {
+const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
   return (
     <AddSubModelButton
       model={model}
       subModelKey={'columns'}
       key={'table-add-columns'}
-      subModelBaseClasses={['TableColumnModel', 'TableAssociationFieldGroupModel', 'TableCustomColumnModel']}
+      subModelBaseClasses={[
+        model.getModelClassName('TableColumnModel'),
+        model.getModelClassName('TableAssociationFieldGroupModel'),
+        model.getModelClassName('TableCustomColumnModel'),
+      ].filter(Boolean)}
       afterSubModelInit={async (column: TableColumnModel) => {
         await column.applyAutoFlows();
       }}
@@ -138,15 +136,41 @@ const AddFieldColumn = ({ model }) => {
   );
 };
 
+type CustomModelClassesEnum = {
+  CollectionActionGroupModel?: string;
+  RecordActionGroupModel?: string;
+  TableColumnModel?: string;
+  TableAssociationFieldGroupModel?: string;
+  TableCustomColumnModel?: string;
+};
+
 export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructure> {
   static scene = BlockSceneEnum.many;
 
   rowSelectionProps = observable.deep({});
 
-  subModelBaseClasses = {
-    collectionAction: CollectionActionGroupModel as any,
-    recordAction: RecordActionGroupModel as any,
+  _defaultCustomModelClasses = {
+    CollectionActionGroupModel: 'CollectionActionGroupModel',
+    RecordActionGroupModel: 'RecordActionGroupModel',
+    TableColumnModel: 'TableColumnModel',
+    TableAssociationFieldGroupModel: 'TableAssociationFieldGroupModel',
+    TableCustomColumnModel: 'TableCustomColumnModel',
   };
+
+  customModelClasses: CustomModelClassesEnum = {
+    CollectionActionGroupModel: 'CollectionActionGroupModel' as string,
+    RecordActionGroupModel: 'RecordActionGroupModel' as string,
+    TableColumnModel: 'TableColumnModel' as string,
+    TableAssociationFieldGroupModel: 'TableAssociationFieldGroupModel' as string,
+    TableCustomColumnModel: 'TableCustomColumnModel' as string,
+  };
+
+  getModelClassName(className: string) {
+    if (Object.keys(this.customModelClasses).includes(className)) {
+      return this.customModelClasses[className];
+    }
+    return this._defaultCustomModelClasses[className] || className;
+  }
 
   get resource() {
     return super.resource as MultiRecordResource;
@@ -333,15 +357,13 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   };
 
   renderConfiguireActions() {
-    const subClass = this.subModelBaseClasses.collectionAction;
-    const props = {};
-    if (Array.isArray(subClass)) {
-      props['subModelBaseClasses'] = subClass;
-    } else {
-      props['subModelBaseClass'] = subClass;
-    }
     return (
-      <AddSubModelButton key={'table-column-add-actions'} model={this} {...props} subModelKey="actions">
+      <AddSubModelButton
+        key={'table-column-add-actions'}
+        model={this}
+        subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
+        subModelKey="actions"
+      >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
     );

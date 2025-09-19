@@ -21,6 +21,7 @@ export const ActionSceneEnum = {
   collection: 'collection' as ActionSceneType,
   record: 'record' as ActionSceneType,
   all: ['collection', 'record'] as ActionSceneType,
+  both: ['collection', 'record'] as ActionSceneType,
 };
 
 export class ActionModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {

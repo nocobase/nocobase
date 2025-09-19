@@ -36,7 +36,6 @@ export class TimeFieldModel extends FieldModel {
   }
 
   render() {
-    console.log(this.props);
     return <TimePicker {...this.props} style={{ width: '100%' }} />;
   }
 }

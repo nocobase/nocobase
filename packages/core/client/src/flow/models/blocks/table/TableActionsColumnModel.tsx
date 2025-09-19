@@ -71,18 +71,11 @@ const Columns = observer<any>(({ record, model, index }) => {
 });
 
 const AddActionToolbarComponent = ({ model }) => {
-  const subClass = model.parent?.subModelBaseClasses?.recordAction || RecordActionModel;
-  const props = {};
-  if (Array.isArray(subClass)) {
-    props['subModelBaseClasses'] = subClass;
-  } else {
-    props['subModelBaseClass'] = subClass;
-  }
   return (
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      {...props}
+      subModelBaseClass={model.parent.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });

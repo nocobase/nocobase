@@ -18,7 +18,7 @@ import _ from 'lodash';
 import { ActionModel, ActionSceneEnum, ActionSceneType } from './ActionModel';
 
 export class ActionGroupModel extends FlowModel {
-  static baseClass = ActionModel as any;
+  static baseClass?: string | ModelConstructor;
   static scene: ActionSceneType;
   private static _models: Map<string, typeof ActionModel>;
 
@@ -36,7 +36,7 @@ export class ActionGroupModel extends FlowModel {
     return parentClasses;
   }
 
-  private static get currentModels() {
+  static get currentModels() {
     if (!Object.prototype.hasOwnProperty.call(this, '_models') || !this._models) {
       this._models = new Map();
     }
@@ -72,7 +72,7 @@ export class ActionGroupModel extends FlowModel {
   }
 
   static async defineChildren(ctx: FlowModelContext) {
-    const children = await buildSubModelItems(this.baseClass)(ctx);
+    const children = this.baseClass ? await buildSubModelItems(this.baseClass)(ctx) : [];
     const extra = [];
 
     const items = children.filter((item) => {
