@@ -36,7 +36,7 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
       type: 'embed',
       target,
       onOpen() {
-        target.style.width = '50%';
+        target.style.width = '33.3%';
         target.style.maxWidth = '800px';
       },
       onClose() {

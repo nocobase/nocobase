@@ -618,7 +618,7 @@ export class FlowSettings {
         target,
         ...modeProps,
         onOpen() {
-          target.style.width = modeProps.width || '50%';
+          target.style.width = modeProps.width || '33.3%';
           target.style.maxWidth = modeProps.maxWidth || '800px';
           onOpen?.();
         },
