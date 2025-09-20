@@ -152,6 +152,20 @@ export const collectionTableSchema: ISchema = {
           },
           'x-align': 'left',
         },
+        refresh: {
+          type: 'void',
+          title: '{{ t("Refresh") }}',
+          'x-component': 'Action',
+          'x-use-component-props': 'useRefreshActionProps',
+          'x-component-props': {
+            icon: 'ReloadOutlined',
+          },
+        },
+        loadCollections: {
+          type: 'void',
+          title: '{{ t("Load collection") }}',
+          'x-component': 'LoadCollection',
+        },
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',

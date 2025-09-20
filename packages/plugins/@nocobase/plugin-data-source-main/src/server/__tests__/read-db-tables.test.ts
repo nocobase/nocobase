@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
-import Application, { Plugin } from '@nocobase/server';
+import Database, { createMockDatabase } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import { createApp } from '.';
+import { DataTypes, Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
   let app: any;
 
-  afterEach(async () => {
-    await app.destroy();
-  });
-
   describe('uiManageable test', async () => {
+    afterEach(async () => {
+      await app.destroy();
+    });
     class Plugin1 extends Plugin {
       static collection = {
         name: 'hello',
@@ -85,6 +85,104 @@ describe('db2cm test', () => {
       expect(response.status).toBe(500);
       const fields = await db.getRepository('fields').find({ filter: { collectionName: 'hello' } });
       expect(fields.some((c) => c.name === 'name')).toBeTruthy();
+    });
+  });
+
+  describe.skipIf(process.env.DB_DIALECT === 'sqlite')('read db tables', async () => {
+    let sequelize: Sequelize;
+
+    beforeEach(async () => {
+      app = await createApp();
+      db = app.db;
+
+      const queryInterface = db.sequelize.getQueryInterface();
+
+      const schema = (db.sequelize as any).options?.schema;
+
+      const getTableName = (tableName: string) => {
+        return {
+          tableName,
+          schema: schema || undefined,
+        };
+      };
+
+      await queryInterface.createTable(getTableName('table1'), {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        name: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+      });
+
+      await queryInterface.createTable(getTableName('table2'), {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        description: {
+          type: DataTypes.TEXT,
+        },
+      });
+
+      await queryInterface.createTable(getTableName('table3'), {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        createdAt: {
+          type: DataTypes.DATE,
+          defaultValue: DataTypes.NOW,
+        },
+      });
+    });
+
+    afterEach(async () => {
+      if (sequelize) {
+        await sequelize.close();
+      }
+      await app.destroy();
+    });
+
+    it('get selectable tables', async () => {
+      const response = await app.agent().resource('collections').selectable();
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data.some((x) => x.name === 'table1')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table2')).toBeTruthy();
+      expect(response.body.data.some((x) => x.name === 'table3')).toBeTruthy();
+    });
+
+    it('add tables to collections', async () => {
+      const tableNames = ['table1', 'table2', 'table3'];
+
+      let collections = await db.getRepository('collections').find({
+        where: { name: tableNames },
+      });
+      expect(collections.length).toBe(0);
+
+      const response = await app.agent().resource('collections').add({
+        values: tableNames,
+      });
+      expect(response.status).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      collections = await db.getRepository('collections').find({
+        where: { name: tableNames },
+      });
+
+      expect(collections.length).toBe(3);
+      const listReponse = await app.agent().resource('collections').list();
+      expect(listReponse.status).toBe(200);
+
+      tableNames.forEach((tableName) => {
+        expect(listReponse.body.data.some((x) => x.name === tableName)).toBeTruthy();
+      });
     });
   });
 });
