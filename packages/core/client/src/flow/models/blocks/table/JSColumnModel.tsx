@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
@@ -27,6 +27,14 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
 
 export class JSColumnModel extends TableCustomColumnModel {
+  renderHiddenInConfig() {
+    return (
+      <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+        <LockOutlined style={{ opacity: '0.45' }} />
+      </Tooltip>
+    );
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>
@@ -55,6 +63,10 @@ export class JSColumnModel extends TableCustomColumnModel {
         </FlowsFloatContextMenu>
       </Droppable>
     );
+
+    if (this.hidden && !this.flowEngine.flowSettings.enabled) {
+      return null;
+    }
 
     return {
       ...this.props,
