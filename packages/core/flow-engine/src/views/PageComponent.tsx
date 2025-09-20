@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import classNames from 'classnames';
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { useFlowEngine } from '../provider';
 
@@ -45,7 +46,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
   if (!visible) return null;
 
   return (
-    <div style={style} className={hidden ? 'nb-hidden' : ''}>
+    <div className={classNames('nb-embed', hidden ? 'nb-hidden' : '')} style={style}>
       {children}
     </div>
   );
