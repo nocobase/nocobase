@@ -8,8 +8,8 @@
  */
 
 import { useField, useFieldSchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import React, { useCallback, useRef, useState } from 'react';
+import { cloneDeep, debounce } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionContextProvider, SchemaComponentOptions, useActionContext, useDesignable } from '../../';
 import { PopupVisibleProvider } from '../../antd/page/PagePopups';
 import { usePopupUtils } from '../../antd/page/pagePopupUtils';
@@ -50,14 +50,18 @@ const FieldLink = (props: any) => {
   const insertPopup = useInsertSchema();
   const fieldSchemaRef = useRef(fieldSchema);
   fieldSchemaRef.current = fieldSchema;
+  const insertPopupRef = useRef(insertPopup);
+  insertPopupRef.current = insertPopup;
+  const openPopupRef = useRef(openPopup);
+  openPopupRef.current = openPopup;
 
   const getCustomActionSchema = useCallback(() => {
     return fieldSchemaRef.current;
   }, []);
 
   const handleClick = useCallback(() => {
-    if (!fieldSchema.properties) {
-      insertPopup(popupSchema);
+    if (!fieldSchemaRef.current.properties) {
+      insertPopupRef.current(popupSchema);
       needWaitForFieldSchemaUpdatedRef.current = true;
     }
 
@@ -65,18 +69,31 @@ const FieldLink = (props: any) => {
       // When first inserting, the fieldSchema instance will be updated to a new instance.
       // We need to wait for the instance update before opening the popup to prevent configuration loss.
       setTimeout(() => {
-        openPopup({ customActionSchema: getCustomActionSchema() });
+        openPopupRef.current({ customActionSchema: getCustomActionSchema() });
       });
       needWaitForFieldSchemaUpdatedRef.current = false;
 
       // Only open the popup when the popup schema exists
-    } else if (fieldSchema.properties) {
-      openPopup();
+    } else if (fieldSchemaRef.current.properties) {
+      openPopupRef.current();
     }
-  }, [fieldSchema, insertPopup, openPopup, getCustomActionSchema]);
+  }, [getCustomActionSchema]);
+
+  // Add debounce for handleClick
+  const debouncedHandleClick = useMemo(
+    () => debounce(handleClick, 600, { leading: true, trailing: false }),
+    [handleClick],
+  );
+
+  useEffect(() => {
+    // cancel on unmount to avoid memory leaks and stray executions
+    return () => {
+      debouncedHandleClick.cancel();
+    };
+  }, [debouncedHandleClick]);
 
   return (
-    <a onClick={handleClick}>
+    <a onClick={debouncedHandleClick}>
       <WrappedComponent {...rest} />
     </a>
   );

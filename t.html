@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>RequireJS 加载两个不同版本的 ECharts</title>
+  <style>
+    .chart {
+      width: 600px;
+      height: 400px;
+      border: 1px solid #ccc;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="chart_v4" class="chart"></div>
+<div id="chart_v5" class="chart"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js"></script>
+<script>
+//   require.config({
+//     paths: {
+//       echarts_v4: 'https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min',
+//       echarts_v5: 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min'
+//     }
+//   });
+
+  require(['https://cdn.jsdelivr.net/npm/echarts@4.9.0/dist/echarts.min.js', 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js'], function(echarts4, echarts5) {
+    // 使用 ECharts v4 渲染图表
+    var chart1 = echarts4.init(document.getElementById('chart_v4'));
+    chart1.setOption({
+      title: { text: 'ECharts v4 - 柱状图' },
+      tooltip: {},
+      xAxis: { data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'] },
+      yAxis: {},
+      series: [{ type: 'bar', data: [5, 20, 36, 10, 10, 20] }]
+    });
+
+    // 使用 ECharts v5 渲染图表
+    var chart2 = echarts5.init(document.getElementById('chart_v5'));
+    chart2.setOption({
+      title: { text: 'ECharts v5 - 饼图', left: 'center' },
+      tooltip: { trigger: 'item' },
+      legend: { orient: 'vertical', left: 'left' },
+      series: [{
+        name: '访问来源',
+        type: 'pie',
+        radius: '50%',
+        data: [
+          { value: 1048, name: '搜索引擎' },
+          { value: 735, name: '直接访问' },
+          { value: 580, name: '邮件营销' },
+          { value: 484, name: '联盟广告' },
+          { value: 300, name: '视频广告' }
+        ],
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }]
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -27,6 +27,7 @@
   "Enable cache": "启用缓存",
   "TTL (second)": "缓存时间 (秒)",
   "Field": "字段",
+  "Select Field": "选择字段",
   "Aggregation": "聚合",
   "Alias": "别名",
   "Format": "格式",

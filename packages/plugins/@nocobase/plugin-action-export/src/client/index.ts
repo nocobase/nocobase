@@ -14,6 +14,7 @@ export * from './useExportAction';
 import { Plugin, useCollection, useActionAvailable } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
+import { ExportActionModel } from './ExportActionModel';
 
 export class PluginActionExportClient extends Plugin {
   async load() {
@@ -36,6 +37,9 @@ export class PluginActionExportClient extends Plugin {
     tableActionInitializers?.add('enableActions.export', initializerData);
     this.app.schemaInitializerManager.addItem('gantt:configureActions', 'enableActions.export', initializerData);
     this.app.schemaSettingsManager.add(exportActionSchemaSettings);
+    this.app.flowEngine.registerModels({
+      ExportActionModel,
+    });
   }
 }
 

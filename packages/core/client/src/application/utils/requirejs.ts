@@ -11,7 +11,7 @@
 // @ts-nocheck
 /* eslint-disable */
 /* prettier-ignore */
-import type { Require, RequireDefine } from './types'
+import type { Require, RequireDefine } from './types';
 
 export interface RequireJS {
   require: Require

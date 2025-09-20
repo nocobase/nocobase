@@ -99,7 +99,7 @@ function openCustomPreview(src: string) {
 
 export const Display = withDynamicSchemaProps((props) => {
   const field = useField<Field>();
-  const value = props.value ?? field.value;
+  const value = props.value ?? field?.value;
   const cdn = useCDN();
 
   const containerRef = useRef<HTMLDivElement>();
@@ -111,7 +111,7 @@ export const Display = withDynamicSchemaProps((props) => {
 
   const elRef = useRef<HTMLDivElement>();
   useEffect(() => {
-    if (!props.value || !field.value) return;
+    if (!props.value || (field && !field?.value)) return;
     if (props.ellipsis) {
       Vditor.md2html(props.value, {
         mode: 'light',
@@ -122,12 +122,12 @@ export const Display = withDynamicSchemaProps((props) => {
         })
         .catch(() => setText(''));
     } else {
-      Vditor.preview(containerRef.current, props.value ?? field.value, {
+      Vditor.preview(containerRef.current, props.value ?? field?.value, {
         mode: 'light',
         cdn,
       });
     }
-  }, [props.value, props.ellipsis, field.value]);
+  }, [props.value, props.ellipsis, field?.value]);
 
   const isOverflowTooltip = useCallback(() => {
     if (!elRef.current) return false;

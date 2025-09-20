@@ -26,6 +26,9 @@ export const Search = (props: SearchProps) => {
 
   useEffect(() => {
     aMap?.plugin('AMap.PlaceSearch', () => {
+      if (!aMap) {
+        return;
+      }
       placeSearch.current = new aMap.PlaceSearch({
         city: '全国',
         pageSize: 30,
