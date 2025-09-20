@@ -8,18 +8,16 @@
  */
 
 import { useMemo } from 'react';
-import { FormCollapse } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
 import { theme } from 'antd';
-import { useT } from '../../locale';
-import { DEFAULT_DATA_SOURCE_KEY, useDataSourceManager } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY, useDataSourceManager, useCompile } from '@nocobase/client';
 import { formatters } from '../utils';
 
 export const useQueryBuilderLogic = () => {
-  const t = useT();
   const form = useForm();
   const { token } = theme.useToken();
   const dm = useDataSourceManager();
+  const compile = useCompile();
 
   // 读取当前选择的数据源与集合
   const collectionPath: string[] | undefined = form?.values?.settings?.collection;
@@ -35,13 +33,13 @@ export const useQueryBuilderLogic = () => {
       .filter(({ key, isDBInstance }) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
       .map(({ key, displayName, collections }) => ({
         value: key,
-        label: displayName,
+        label: compile(displayName),
         children: (collections || []).map((c) => ({
           value: c.name,
-          label: c.title ?? c.name,
+          label: compile(c.title ?? c.name),
         })),
       }));
-  }, [dm]);
+  }, [dm, compile]);
 
   // 工具：拼接级联字段别名
   const aliasOf = (val: any): string => {
@@ -62,7 +60,7 @@ export const useQueryBuilderLogic = () => {
       const value = prefix ? `${prefix}.${field.name}` : field.name;
       const opt: any = {
         name: field.name,
-        title: field?.uiSchema?.title || field.name,
+        title: compile(field?.uiSchema?.title ?? field.name),
         key: value,
         value: field.name,
       };
@@ -74,6 +72,7 @@ export const useQueryBuilderLogic = () => {
         if (children.length) {
           opt.children = children.map((c: any) => ({
             ...c,
+            title: compile(c?.title ?? c?.name),
             key: `${field.name}.${c.name}`,
             value: c.name,
           }));
@@ -90,7 +89,7 @@ export const useQueryBuilderLogic = () => {
     };
 
     return collectionFields.map((f) => toOption(f, 0)).filter(Boolean);
-  }, [cm, fim, collectionName, form?.values?.settings?.collection]);
+  }, [cm, fim, collectionName, compile, form?.values?.settings?.collection]);
 
   // 过滤器字段与操作符（Filter 用）：最多两层关联
   const filterOptions = useMemo(() => {
@@ -106,7 +105,7 @@ export const useQueryBuilderLogic = () => {
 
       const opt: any = {
         name: field.name,
-        title: field?.uiSchema?.title || field.name,
+        title: compile(field?.uiSchema?.title ?? field.name),
         schema: field?.uiSchema,
         operators: ops,
         interface: field.interface,
@@ -116,7 +115,10 @@ export const useQueryBuilderLogic = () => {
 
       // children: filterable.children（虚拟）
       if (iface.filterable?.children?.length) {
-        opt.children = iface.filterable.children;
+        opt.children = iface.filterable.children.map((c: any) => ({
+          ...c,
+          title: compile(c?.title ?? c?.name),
+        }));
       }
 
       // 嵌套关联
@@ -130,7 +132,7 @@ export const useQueryBuilderLogic = () => {
     };
 
     return fields.map((f) => toOption(f, 0)).filter(Boolean);
-  }, [cm, fim, collectionName, form?.values?.settings?.collection]);
+  }, [cm, fim, collectionName, compile, form?.values?.settings?.collection]);
 
   // 根据字段别名推断 interface（仅处理实际字段/一层关联）
   const getInterfaceByAlias = (alias: string): string | undefined => {
@@ -254,34 +256,21 @@ export const useQueryBuilderLogic = () => {
     }
   };
 
-  // 切换集合：清空 builder 配置
+  // 切换collection：清空 builder 配置
   const onCollectionChange = (value: string[]) => {
-    form.setValues({
-      ...form.values,
-      settings: {
-        ...(form.values?.settings || {}),
-        collection: value,
-      },
-      query: {
-        ...(form.values?.query || {}),
-        builder: {
-          measures: [],
-          dimensions: [],
-          filter: undefined,
-          orders: [],
-        },
-      },
-    });
+    form.setValuesIn('settings.collection', value);
+    form.setValuesIn('query.measures', []);
+    form.setValuesIn('query.dimensions', []);
+    form.setValuesIn('query.filter', undefined);
+    form.setValuesIn('query.orders', []);
   };
 
   return {
-    t,
     token,
     // 暴露给 UI 的数据与 reactions
     collectionOptions,
     fieldOptions,
     filterOptions,
-    formCollapse: FormCollapse.createFormCollapse(['measures', 'dimensions', 'filter', 'sort']),
     useFormatterOptions,
     useOrderOptions,
     useOrderReactionHook,
