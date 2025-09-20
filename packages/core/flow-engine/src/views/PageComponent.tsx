@@ -65,6 +65,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
       // backgroundColor: flowEngine.context.themeToken.colorBgLayout,
       display: 'flex',
       flexDirection: 'column',
+      height: '100%',
     }),
     [],
   );
@@ -146,7 +147,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
   if (!visible) return null;
 
   return (
-    <div className={classNames('nb-embed', hidden ? 'nb-hidden' : '')} style={{ ...style, ...styles.content }}>
+    <div className={hidden ? 'nb-hidden' : ''} style={{ ...style, ...styles.content }}>
       {HeaderComponent}
       <div style={{ flex: 1, overflowY: 'auto', ...styles.body }}>{children}</div>
       {FooterComponent}
