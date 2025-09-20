@@ -835,7 +835,7 @@ export class FlowSettings {
             },
             t('Cancel'),
           ),
-          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
+          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('Save')),
         );
 
         let footerEl;
