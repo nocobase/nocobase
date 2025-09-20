@@ -36,6 +36,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
+import { BaseDialect } from './dialects/base-dialect';
 import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -85,7 +86,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -559,8 +559,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (this.options.underscored) {
-      options.underscored = true;
+    if (typeof options.underscored !== 'boolean') {
+      if (this.options.underscored) {
+        options.underscored = true;
+      }
     }
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
