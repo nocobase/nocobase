@@ -7,17 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined } from '@ant-design/icons';
-import { FormButtonGroup } from '@formily/antd-v5';
 import {
-  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelContext,
   FlowModelRenderer,
-  FlowSettingsButton,
+  MemoFlowModelRenderer,
   MultiRecordResource,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
@@ -29,6 +26,15 @@ import { FormBlockModel, FormComponent } from './FormBlockModel';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
+
+  private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
+  private actionExtraToolbarItems = [
+    {
+      key: 'drag-handler',
+      component: DragHandler,
+      sort: 1,
+    },
+  ];
 
   createResource(_ctx: FlowModelContext, params: any) {
     // 完全借鉴DetailsBlockModel的逻辑
@@ -77,17 +83,11 @@ export class EditFormModel extends FormBlockModel {
           <Space>
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
-                <FlowModelRenderer
+                <MemoFlowModelRenderer
                   key={action.uid}
                   model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                  extraToolbarItems={[
-                    {
-                      key: 'drag-handler',
-                      component: DragHandler,
-                      sort: 1,
-                    },
-                  ]}
+                  showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
+                  extraToolbarItems={this.actionExtraToolbarItems}
                 />
               </Droppable>
             ))}

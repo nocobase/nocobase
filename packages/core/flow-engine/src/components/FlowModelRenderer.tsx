@@ -70,6 +70,8 @@ export interface FlowModelRendererProps {
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** 自定义工具栏样式 */
+        style?: React.CSSProperties;
         /**
          * @default 'inside'
          */
@@ -111,6 +113,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
     | {
         showBackground?: boolean;
         showBorder?: boolean;
+        showDragHandle?: boolean;
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -175,6 +178,7 @@ const FlowModelRendererWithoutAutoFlows: React.FC<{
     | {
         showBackground?: boolean;
         showBorder?: boolean;
+        showDragHandle?: boolean;
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -266,7 +270,7 @@ const FlowModelRendererCore: React.FC<{
       const rendered = model.render();
       // RenderFunction 模式：render 返回函数，作为组件类型渲染，避免函数作为子节点的警告
       if (typeof rendered === 'function') {
-        return React.createElement(rendered as any);
+        return React.createElement(rendered as React.ComponentType<any>);
       }
       return <>{rendered}</>;
     };
@@ -417,3 +421,8 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     return content;
   },
 );
+
+// 为需要进一步优化渲染的场景提供一个 Memo 包装版本
+// 仅在父级重渲且 props 浅比较未变时跳过渲染；不影响内部响应式更新
+export const MemoFlowModelRenderer = React.memo(FlowModelRenderer);
+MemoFlowModelRenderer.displayName = 'MemoFlowModelRenderer';
