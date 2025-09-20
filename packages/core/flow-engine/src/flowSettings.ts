@@ -622,6 +622,9 @@ export class FlowSettings {
       const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
       const onOpen = modeProps.onOpen;
       const onClose = modeProps.onClose;
+
+      target.innerHTML = ''; // 清空容器内原有内容
+
       modeProps = {
         target,
         styles: {
