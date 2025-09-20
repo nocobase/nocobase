@@ -8,13 +8,16 @@
  */
 
 import classNames from 'classnames';
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../provider';
 
 export const PageComponent = forwardRef((props: any, ref) => {
-  const { visible = true, afterClose, children, hidden } = props;
+  const [newConfig, setNewConfig] = React.useState<any>({});
+  const { visible = true, footer: _footer, header: _header, afterClose, children, hidden } = { ...props, ...newConfig };
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
+  const [footer, setFooter] = useState(_footer);
+  const [header, setHeader] = useState(_header);
 
   // 提供 destroy 和 update 能力
   useImperativeHandle(ref, () => ({
@@ -25,7 +28,17 @@ export const PageComponent = forwardRef((props: any, ref) => {
       }
     },
     update: (newConfig: any) => {
-      // 这里可以实现 props 更新逻辑（如 setState），视你的需求
+      setNewConfig(newConfig);
+    },
+    setFooter: (newFooter) => {
+      setFooter(newFooter);
+    },
+    setHeader: (newHeader) => {
+      if (Object.values(newHeader || {}).length === 0) {
+        setHeader(null);
+      } else {
+        setHeader(newHeader);
+      }
     },
   }));
 
@@ -47,7 +60,9 @@ export const PageComponent = forwardRef((props: any, ref) => {
 
   return (
     <div className={classNames('nb-embed', hidden ? 'nb-hidden' : '')} style={style}>
+      {header && <div></div>}
       {children}
+      {footer && <div></div>}
     </div>
   );
 });
