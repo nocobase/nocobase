@@ -607,6 +607,14 @@ export class FlowSettings {
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    const openView = viewer[modeType || 'dialog'].bind(viewer);
+    const flowEngine = (model as any).flowEngine as FlowEngine;
+    const scopes = {
+      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
+      useFlowSettingsContext,
+      ...(flowEngine?.flowSettings?.scopes || {}),
+    } as Record<string, any>;
+
     let modeProps: Record<string, any> =
       typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
 
@@ -616,6 +624,11 @@ export class FlowSettings {
       const onClose = modeProps.onClose;
       modeProps = {
         target,
+        styles: {
+          body: {
+            padding: flowEngine.context.themeToken?.padding,
+          },
+        },
         ...modeProps,
         onOpen() {
           target.style.width = modeProps.width || '33.3%';
@@ -629,14 +642,6 @@ export class FlowSettings {
         },
       };
     }
-
-    const openView = viewer[modeType || 'dialog'].bind(viewer);
-    const flowEngine = (model as any).flowEngine;
-    const scopes = {
-      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
-      useFlowSettingsContext,
-      ...(flowEngine?.flowSettings?.scopes || {}),
-    } as Record<string, any>;
 
     // 将步骤分组到 flow 下，用于 Collapse 分组展示
     const grouped: Record<string, { title: string; steps: StepEntry[] }> = {};
