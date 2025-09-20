@@ -77,6 +77,39 @@ describe('ForkFlowModel', () => {
     });
   });
 
+  // ==================== HIDDEN STATE ====================
+  describe('Hidden State', () => {
+    test('should initialize hidden from master', () => {
+      mockMaster.hidden = true;
+      const fork = new ForkFlowModel(mockMaster);
+
+      expect(fork.hidden).toBe(true);
+    });
+
+    test('should keep hidden independent between master and fork', () => {
+      mockMaster.hidden = true;
+      const fork = new ForkFlowModel(mockMaster);
+
+      // initial copy from master
+      expect(fork.hidden).toBe(true);
+
+      // change fork.hidden should not affect master
+      fork.hidden = false;
+      expect(fork.hidden).toBe(false);
+      expect(mockMaster.hidden).toBe(true);
+
+      // change master.hidden should not affect existing fork
+      mockMaster.hidden = false;
+      expect(mockMaster.hidden).toBe(false);
+      expect(fork.hidden).toBe(false);
+
+      // toggle master again; fork remains unchanged
+      mockMaster.hidden = true;
+      expect(mockMaster.hidden).toBe(true);
+      expect(fork.hidden).toBe(false);
+    });
+  });
+
   // ==================== PROXY GET MECHANISM ====================
   describe('Proxy Get Mechanism', () => {
     let fork: ForkFlowModel;
