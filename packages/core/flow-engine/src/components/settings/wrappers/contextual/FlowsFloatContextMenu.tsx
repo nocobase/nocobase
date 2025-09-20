@@ -114,6 +114,29 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
     border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
 
+    /* 主动激活时强制可见，避免间隙导致闪烁 */
+    &.nb-toolbar-visible {
+      opacity: 1;
+      z-index: 10000;
+    }
+
+    /* 当工具栏在上方时，使用伪元素作为“悬停桥接区”，避免鼠标从容器移动到图标时丢失父容器 :hover */
+    ${toolbarPosition === 'inside'
+      ? ''
+      : `
+      &::before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: -12px;
+        width: 96px;
+        height: 14px;
+        pointer-events: all;
+        background: transparent;
+        z-index: 998;
+      }
+    `}
+
     &.nb-in-template {
       background: var(--colorTemplateBgSettingsHover);
     }
@@ -146,6 +169,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
       ${toolbarPosition === 'inside' ? '' : 'transform: translateY(-100%);'}
       line-height: 16px;
       pointer-events: all;
+      z-index: 1001; /* 高于 ::before 悬停桥接区，保证可点击 */
 
       .ant-space-item {
         background-color: var(--colorSettings);
@@ -250,6 +274,18 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
           4px 0 0 rgba(255, 255, 255, 0.9),
           8px 0 0 rgba(255, 255, 255, 0.9);
       }
+    }
+    /* 当工具栏显示于上方时，添加一块“悬停桥接区”，
+       用于让鼠标从容器移动到上方图标时保持父容器的 :hover 状态，避免相邻项抢占 */
+    > .nb-toolbar-hover-bridge {
+      position: absolute;
+      right: 0;
+      top: -12px;
+      width: 96px; /* 覆盖图标区域的水平范围 */
+      height: 14px; /* 轻微覆盖在容器之上 */
+      pointer-events: all; /* 让该区域成为父容器的可交互后代，维持 :hover */
+      background: transparent;
+      z-index: 998; /* 低于工具栏本体 */
     }
   }
 `;
@@ -496,6 +532,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
+    const [active, setActive] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const flowEngine = useFlowEngine();
@@ -546,6 +583,20 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }
     }, []);
 
+    // 简化的进入/离开逻辑：进入时激活，离开时轻微延迟关闭，结合伪元素桥接提升稳定性
+    const leaveTimerRef = useRef<number | null>(null);
+    const handleMouseEnter = useCallback(() => {
+      if (leaveTimerRef.current) {
+        window.clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+      setActive(true);
+    }, []);
+    const handleMouseLeave = useCallback(() => {
+      if (leaveTimerRef.current) window.clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = window.setTimeout(() => setActive(false), 120) as unknown as number;
+    }, []);
+
     if (!model) {
       const t = getT(model || ({} as FlowModel));
       return <Alert message={t('Invalid model provided')} type="error" />;
@@ -565,17 +616,23 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         style={containerStyle}
         data-has-float-menu="true"
         onMouseMove={handleChildHover}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {children}
 
         {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div ref={toolbarContainerRef} className="nb-toolbar-container" style={toolbarContainerStyle}>
+        <div
+          ref={toolbarContainerRef}
+          className={`nb-toolbar-container ${active ? 'nb-toolbar-visible' : ''}`}
+          style={toolbarContainerStyle}
+        >
           {showTitle && model.title && (
             <div className="nb-toolbar-container-title">
               <span className="title-tag">{model.title}</span>
             </div>
           )}
-          <div className="nb-toolbar-container-icons">
+          <div className="nb-toolbar-container-icons" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             <Space size={3} align="center">
               {renderToolbarItems(
                 model,
