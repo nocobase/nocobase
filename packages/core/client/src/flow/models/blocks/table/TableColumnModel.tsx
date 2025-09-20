@@ -59,6 +59,7 @@ export class TableColumnModel extends DisplayItemModel {
         return {
           key: field.name,
           label: field.title,
+          refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
           toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
           useModel: this.name,
           createModelOptions: () => ({

@@ -22,6 +22,7 @@ export class DetailsJSFieldItemModel extends DetailsCustomItemModel {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'DetailsItemModel',
       fieldUseModel: 'JSFieldModel',
+      refreshTargets: ['DetailsItemModel'],
     });
     return groups?.[0]?.children || [];
   }

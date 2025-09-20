@@ -73,6 +73,7 @@ export class DetailsItemModel extends DisplayItemModel<{
         return {
           key: fullName,
           label: field.title,
+          refreshTargets: ['DetailsCustomItemModel/DetailsJSFieldItemModel'],
           toggleable: (subModel) => {
             const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
             return fieldPath === fullName;

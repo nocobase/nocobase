@@ -61,6 +61,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         return {
           key: fullName,
           label: field.title,
+          refreshTargets: ['FormCustomItemModel/FormJSFieldItemModel'],
           toggleable: (subModel) => {
             const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
             return fieldPath === fullName;

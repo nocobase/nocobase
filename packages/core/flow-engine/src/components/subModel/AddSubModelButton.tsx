@@ -43,6 +43,8 @@ export interface SubModelItem {
   sort?: number;
   toggleDetector?: (ctx: FlowModelContext) => boolean | Promise<boolean>;
   customRemove?: (ctx: FlowModelContext, item: SubModelItem) => Promise<void>;
+  // 点击该项后，还需联动刷新的其他菜单路径前缀（由具体定义方提供）
+  refreshTargets?: string[];
 }
 
 export type SubModelItemsType = SubModelItem[] | ((ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>);
@@ -174,7 +176,21 @@ const createSwitchLabel = (originalLabel: string, isToggled: boolean) => (
  * 检查是否包含可切换项
  */
 const hasToggleItems = (items: SubModelItem[]): boolean => {
-  return items.some((item) => item.toggleDetector && !item.children);
+  // 递归检查静态 children 是否包含 toggleable 项；
+  // children 为函数时无法预判，出于正确性优先，视为可能包含 toggleable，从而禁用缓存。
+  const walk = (nodes: SubModelItem[]): boolean => {
+    for (const node of nodes) {
+      if (!node) continue;
+      if (!node.children && (node.toggleDetector || node.toggleable)) return true;
+      if (Array.isArray(node.children)) {
+        if (walk(node.children)) return true;
+      } else if (typeof node.children === 'function') {
+        return true; // 保守处理：函数型 children 可能包含 toggleable
+      }
+    }
+    return false;
+  };
+  return walk(items);
 };
 
 /**
@@ -257,12 +273,15 @@ const transformSubModelItems = async (
           return transformSubModelItems(childrenResult, model, subModelKey, subModelType);
         };
       } else {
-        transformedItem.children = await transformSubModelItems(
-          item.children as SubModelItem[],
-          model,
-          subModelKey,
-          subModelType,
-        );
+        const staticChildren = item.children as SubModelItem[];
+        // 仅当子树包含 toggleable/动态函数时，才转为惰性函数；否则保留为静态数组，兼容现有测试与用法
+        const childHasToggle = hasToggleItems(staticChildren);
+        if (childHasToggle) {
+          transformedItem.children = async () =>
+            transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+        } else {
+          transformedItem.children = await transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+        }
       }
     }
 
@@ -274,6 +293,7 @@ const transformSubModelItems = async (
       transformedItem.isToggled = isToggled;
       // toggleable 项默认保持下拉菜单打开，便于连续操作
       transformedItem.keepDropdownOpen = item.keepDropdownOpen ?? true;
+      // Note: toggle state for each leaf can be numerous and noisy; omit per-item logs to avoid UI lag.
     }
 
     return transformedItem;
@@ -300,8 +320,10 @@ export const transformItems = (
 
   const hasToggle = hasToggleItems(items as SubModelItem[]);
   if (hasToggle) {
+    // 存在 toggle，则每次重算（以更新开关状态）
     return () => transformSubModelItems(items as SubModelItem[], model, subModelKey, subModelType);
   } else {
+    // 无 toggle，保留缓存，满足“二次调用同一引用”的用例
     let cachedResult: Item[] | null = null;
     return async () => {
       if (!cachedResult) {
@@ -401,6 +423,9 @@ const AddSubModelButtonCore = function AddSubModelButton({
   }, [model, subModelKey, subModelType]);
   // Internal tick to force reloading menu items when subModels change
   const [refreshTick, setRefreshTick] = React.useState(0);
+  // 最近一次点击的菜单 key，用于引导 LazyDropdown 精准刷新路径
+  // 以 refreshKeys 单一数组表示刷新路径（首个为当前点击路径）
+  const [refreshKeys, setRefreshKeys] = React.useState<string[] | undefined>(undefined);
   // 合并 items 与 baseClass 的菜单来源
   const finalItems = useMemo<SubModelItemsType>(() => {
     const sources: (SubModelItemsType | undefined | null)[] = [];
@@ -427,6 +452,11 @@ const AddSubModelButtonCore = function AddSubModelButton({
     const clickedItem = info.originalItem || info;
     const item = clickedItem.originalItem || (clickedItem as SubModelItem);
     const isToggled = clickedItem.isToggled;
+    const clickedKey: string | undefined = info?.key;
+    if (clickedKey) {
+      const extras = (item as SubModelItem)?.refreshTargets || [];
+      setRefreshKeys([clickedKey, ...extras]);
+    }
 
     // 处理可切换菜单项的开关操作
     if (item.toggleDetector && isToggled) {
@@ -534,6 +564,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
         keepDropdownOpen,
         persistKey,
         stateVersion: refreshTick,
+        refreshKeys,
       }}
     >
       {children}

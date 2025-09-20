@@ -52,6 +52,10 @@ interface LazyDropdownMenuProps extends Omit<DropdownProps['menu'], 'items'> {
    * 但不会清空已加载的 children，避免 UI 闪烁。
    */
   stateVersion?: number;
+  /**
+   * 额外刷新目标（多路径）：每条路径的祖先都会被刷新
+   */
+  refreshKeys?: string[];
 }
 
 interface ExtendedMenuInfo {
@@ -78,65 +82,125 @@ const useNiceDropdownMaxHeight = () => {
 /**
  * 处理异步菜单项加载的逻辑
  */
-const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[], resetKey?: any) => {
+const useAsyncMenuItems = (
+  menuVisible: boolean,
+  rootItems: Item[],
+  resetKey?: any,
+  openKeySet?: Set<string>,
+  refreshKeys?: string[],
+) => {
   const [loadedChildren, setLoadedChildren] = useState<Record<string, Item[]>>({});
   const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
+  // 记录已处理过的 stateVersion，避免重复强制刷新
+  const lastRefreshedVersion = useRef<any>(null);
+  // 预取逻辑已移除：不再使用签名缓存
 
-  const handleLoadChildren = async (keyPath: string, loader: () => Item[] | Promise<Item[]>, force = false) => {
-    if (!force && (loadedChildren[keyPath] || loadingKeys.has(keyPath))) return;
+  const handleLoadChildren = useCallback(
+    async (keyPath: string, loader: () => Item[] | Promise<Item[]>, force = false) => {
+      // 若已在加载中，直接跳过，避免重复进入（即便是 force 情况也避免重入）
+      if (loadingKeys.has(keyPath)) return;
+      if (!force && loadedChildren[keyPath]) return;
 
-    setLoadingKeys((prev) => new Set(prev).add(keyPath));
-    try {
-      const children = loader();
-      const resolved = children instanceof Promise ? await children : children;
-      setLoadedChildren((prev) => ({ ...prev, [keyPath]: resolved }));
-    } catch (err) {
-      console.error(`Failed to load children for ${keyPath}`, err);
-    } finally {
-      setLoadingKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(keyPath);
-        return next;
-      });
-    }
-  };
+      setLoadingKeys((prev) => new Set(prev).add(keyPath));
+      try {
+        const children = loader();
+        const resolved = children instanceof Promise ? await children : children;
+        setLoadedChildren((prev) => ({ ...prev, [keyPath]: resolved }));
+      } catch (err) {
+        console.error(`Failed to load children for ${keyPath}`, err);
+      } finally {
+        setLoadingKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(keyPath);
+          return next;
+        });
+      }
+    },
+    [loadedChildren, loadingKeys],
+  );
 
-  // 收集所有异步 group
-  const collectAsyncGroups = (items: Item[], path: string[] = []): [string, () => Item[] | Promise<Item[]>][] => {
+  // 收集所有“children 为函数”的节点（无论是否为 group），支持从 rootItems 与已加载的 loadedChildren 中同时收集。
+  const collectAsyncNodes = (
+    root: Item[],
+    loaded: Record<string, Item[]>,
+  ): [string, () => Item[] | Promise<Item[]>][] => {
     const result: [string, () => Item[] | Promise<Item[]>][] = [];
-    for (const item of items) {
-      const keyPath = getKeyPath(path, item.key);
-      if (item.type === 'group' && typeof item.children === 'function') {
-        result.push([keyPath, item.children]);
+    const scan = (items: Item[], path: string[] = []) => {
+      for (const item of items) {
+        const keyPath = getKeyPath(path, item.key);
+        if (typeof item.children === 'function') {
+          result.push([keyPath, item.children]);
+        }
+        if (Array.isArray(item.children)) {
+          scan(item.children, [...path, item.key]);
+        }
       }
-      if (Array.isArray(item.children)) {
-        result.push(...collectAsyncGroups(item.children, [...path, item.key]));
-      }
+    };
+    // 1) 扫描根
+    scan(root, []);
+    // 2) 扫描已加载的分支（保持 keyPath 前缀）
+    for (const keyPath of Object.keys(loaded)) {
+      const items = loaded[keyPath] || [];
+      const parts = keyPath ? keyPath.split('/') : [];
+      scan(items, parts);
     }
     return result;
   };
 
-  // 当 resetKey 变化时，清空所有已加载缓存，确保下一次展开会重新加载所有子菜单
+  // 当 resetKey（stateVersion）变化时，尽量“原位刷新”已加载的 children：
+  // 1) 不清空 loadedChildren，避免 UI 闪烁；
+  // 2) 仅对 children 为函数的节点强制后台刷新，刷新完成后无感替换。
   useEffect(() => {
-    setLoadedChildren({});
-    setLoadingKeys(new Set());
-  }, [resetKey]);
-
-  // 自动加载所有 group 的异步 children；不清空缓存，避免闪烁。
-  // 已加载的分支使用 handleLoadChildren(..., true) 原位刷新，界面继续显示旧内容，
-  // 待新数据返回后再无感替换。
-  useEffect(() => {
-    if (!menuVisible || !rootItems.length) return;
-    const asyncGroups = collectAsyncGroups(rootItems);
-    for (const [keyPath, loader] of asyncGroups) {
-      // 强制加载，但不清空缓存；若已有数据则后台刷新
+    if (!menuVisible) return;
+    // 避免同一 stateVersion 被重复刷新
+    if (lastRefreshedVersion.current === resetKey) {
+      return;
+    }
+    lastRefreshedVersion.current = resetKey;
+    // 构建当前可用的 loader 索引表（keyPath -> loader）
+    const loaderMap = new Map<string, () => Item[] | Promise<Item[]>>();
+    for (const [kp, loader] of collectAsyncNodes(rootItems, loadedChildren)) {
+      loaderMap.set(kp, loader);
+    }
+    // 仅刷新“当前展开”的分支，避免刷新未展开的所有分支导致的循环/卡顿
+    const openKeys = openKeySet ? Array.from(openKeySet) : [];
+    let targetKeys: string[] = [];
+    const candidates = Array.from(new Set([...(refreshKeys || [])].filter(Boolean))) as string[];
+    if (candidates.length > 0) {
+      // 精确刷新：仅刷新 focusKey 的祖先路径中已加载的分支
+      for (const rk of candidates) {
+        const parts = rk.split('/').filter(Boolean);
+        for (let i = 1; i <= parts.length; i++) {
+          const prefix = parts.slice(0, i).join('/');
+          if (!targetKeys.includes(prefix) && loadedChildren[prefix]) targetKeys.push(prefix);
+        }
+      }
+    } else {
+      // 无焦点路径时，以当前展开项为准
+      targetKeys = Object.keys(loadedChildren).filter((kp) =>
+        openKeys.some((ok) => kp === ok || kp.startsWith(ok + '/')),
+      );
+    }
+    // 若没有匹配到“当前展开”的分支，则回退刷新顶层已加载分支（如 TableColumnModel）
+    if (targetKeys.length === 0) {
+      targetKeys = Object.keys(loadedChildren).filter((kp) => kp.indexOf('/') === -1);
+    }
+    const refreshedInThisVersion = new Set<string>();
+    for (const keyPath of targetKeys) {
+      const loader = loaderMap.get(keyPath);
+      if (!loader) continue;
       try {
-        handleLoadChildren(keyPath, loader, true);
+        if (!refreshedInThisVersion.has(keyPath)) {
+          refreshedInThisVersion.add(keyPath);
+          handleLoadChildren(keyPath, loader, true);
+        }
       } catch (e) {
-        // 忽略刷新错误，保持已有内容
+        // 忽略刷新错误
       }
     }
-  }, [menuVisible, rootItems]);
+  }, [menuVisible, resetKey, rootItems, handleLoadChildren, loadedChildren, openKeySet, refreshKeys]);
+
+  // 取消全量递归预取：避免层级结构导致的重复加载。
 
   return {
     loadedChildren,
@@ -151,17 +215,22 @@ const useAsyncMenuItems = (menuVisible: boolean, rootItems: Item[], resetKey?: a
 const useKeepDropdownOpen = () => {
   const shouldKeepOpenRef = useRef(false);
   const [forceKeepOpen, setForceKeepOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const requestKeepOpen = useCallback(() => {
     shouldKeepOpenRef.current = true;
     setForceKeepOpen(true);
 
-    // 使用 requestAnimationFrame 来确保在下一个渲染周期后重置
-    requestAnimationFrame(() => {
+    // 使用短 TTL 保持打开，覆盖子菜单关闭级联到顶层的延迟调用
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       shouldKeepOpenRef.current = false;
       setForceKeepOpen(false);
-    });
+      timerRef.current = null;
+    }, 250);
   }, []);
+
+  useEffect(() => () => timerRef.current && clearTimeout(timerRef.current), []);
 
   const shouldPreventClose = useCallback(() => {
     return shouldKeepOpenRef.current || forceKeepOpen;
@@ -179,7 +248,7 @@ const useKeepDropdownOpen = () => {
 const useMenuSearch = () => {
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateSearchValue = (key: string, value: string) => {
     setIsSearching(true);
@@ -352,11 +421,16 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const dropdownMaxHeight = useNiceDropdownMaxHeight();
   const t = engine.translate.bind(engine);
 
+  // 解构 menu，避免在 effect 中直接依赖整个对象，减少不必要的重跑并满足 exhaustive-deps
+  const { items: menuItems, keepDropdownOpen, persistKey, stateVersion, refreshKeys, ...dropdownMenuProps } = menu;
+
   // 使用自定义 hooks
   const { loadedChildren, loadingKeys, handleLoadChildren } = useAsyncMenuItems(
     menuVisible,
     rootItems,
-    menu.stateVersion,
+    stateVersion,
+    openKeys,
+    refreshKeys,
   );
   const { searchValues, isSearching, updateSearchValue } = useMenuSearch();
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
@@ -364,65 +438,50 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
 
   // 在挂载时，若存在 persistKey 且仍在持久期内，则尝试恢复打开状态
   useEffect(() => {
-    if (!menu.persistKey) return;
-    const until = dropdownPersistRegistry.get(menu.persistKey) || 0;
+    if (!persistKey) return;
+    const until = dropdownPersistRegistry.get(persistKey) || 0;
     if (until > Date.now()) {
       setMenuVisible(true);
     }
-  }, [menu.persistKey]);
+  }, [persistKey]);
 
   // 在卸载时，若当前是打开状态，记录一个短暂的保持时间窗，供下次重挂载时恢复
   useEffect(() => {
     return () => {
-      if (menu.persistKey && menuVisible) {
+      if (persistKey && menuVisible) {
         const until = Date.now() + DROPDOWN_PERSIST_TTL_MS;
-        dropdownPersistRegistry.set(menu.persistKey, until);
+        dropdownPersistRegistry.set(persistKey, until);
         // 定时清理
         setTimeout(() => {
-          const v = dropdownPersistRegistry.get(menu.persistKey) || 0;
-          if (v <= Date.now()) dropdownPersistRegistry.delete(menu.persistKey);
+          const v = dropdownPersistRegistry.get(persistKey) || 0;
+          if (v <= Date.now()) dropdownPersistRegistry.delete(persistKey);
         }, DROPDOWN_PERSIST_TTL_MS + 100);
       }
     };
-  }, [menu.persistKey, menuVisible]);
+  }, [persistKey, menuVisible]);
 
   // 加载根 items，支持同步/异步函数
   useEffect(() => {
     const loadRootItems = async () => {
-      let items: Item[];
-      if (typeof menu.items === 'function') {
+      let resolvedItems: Item[];
+      if (typeof menuItems === 'function') {
         setRootLoading(true);
         try {
-          const res = menu.items();
-          items = res instanceof Promise ? await res : res;
+          const res = menuItems();
+          resolvedItems = res instanceof Promise ? await res : res;
         } finally {
           setRootLoading(false);
         }
       } else {
-        items = menu.items;
+        resolvedItems = menuItems;
       }
-      setRootItems(items);
+      setRootItems(resolvedItems);
     };
 
     if (menuVisible) {
       loadRootItems();
     }
-  }, [menu.items, menuVisible, menu.stateVersion]);
-
-  // 预取根层的异步 children（非 group），减少首次展开时的加载闪烁
-  useEffect(() => {
-    if (!menuVisible || !rootItems.length) return;
-    rootItems.forEach((item) => {
-      const hasAsyncChildren = typeof item.children === 'function';
-      if (hasAsyncChildren && item.type !== 'group') {
-        try {
-          handleLoadChildren(item.key, item.children as () => Item[] | Promise<Item[]>);
-        } catch (e) {
-          // 忽略预取错误，按需加载
-        }
-      }
-    });
-  }, [menuVisible, rootItems, handleLoadChildren]);
+  }, [menuVisible, stateVersion, menuItems]);
 
   // 递归解析 items，支持 children 为同步/异步函数
   function buildSearchChildren(
@@ -558,7 +617,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
           }
 
           // 检查是否应该保持下拉菜单打开
-          const itemShouldKeepOpen = item.keepDropdownOpen ?? menu.keepDropdownOpen ?? false;
+          const itemShouldKeepOpen = item.keepDropdownOpen ?? keepDropdownOpen ?? false;
 
           // 如果需要保持菜单打开，请求保持打开状态
           if (itemShouldKeepOpen) {
@@ -606,9 +665,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       }
     `;
   }, [dropdownMaxHeight]);
-
-  // 仅将 antd 支持的 Menu 配置传递给 Dropdown，过滤掉自定义字段
-  const { keepDropdownOpen, persistKey, stateVersion, ...dropdownMenuProps } = { ...menu };
 
   return (
     <Dropdown
