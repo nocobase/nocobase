@@ -12,9 +12,9 @@ import ReactDOM from 'react-dom';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
+import { createViewMeta } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
-import { createViewMeta } from './createViewMeta';
 
 let uuid = 0;
 
@@ -30,6 +30,21 @@ export function usePage() {
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
+
+    // Footer 组件实现
+    const FooterComponent = ({ children, ...props }) => {
+      return <div className="nb-embed-footer">{children}</div>;
+    };
+
+    // Header 组件实现
+    const HeaderComponent = (props) => {
+      return (
+        <div className="nb-embed-header">
+          <div>{props.title}</div>
+          <div>{props.extra}</div>
+        </div>
+      );
+    };
 
     const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
 
@@ -49,6 +64,8 @@ export function usePage() {
         closeFunc?.();
       },
       navigation: config.inputArgs?.navigation,
+      Header: HeaderComponent,
+      Footer: FooterComponent,
     };
 
     const ctx = new FlowContext();
