@@ -45,9 +45,9 @@ describe('workflow > Plugin', () => {
       expect(workflow.current).toBe(true);
 
       expect(workflow.stats).toBeDefined();
-      expect(workflow.stats.executed).toBe(0);
+      expect(workflow.stats.executed).toEqualNumberOrString(0);
       expect(workflow.versionStats).toBeDefined();
-      expect(workflow.versionStats.executed).toBe(0);
+      expect(workflow.versionStats.executed).toEqualNumberOrString(0);
     });
 
     it('create with disabled', async () => {
@@ -365,7 +365,7 @@ describe('workflow > Plugin', () => {
 
       const w1_1 = plugin.enabledCache.get(w1.id);
       expect(w1_1.stats).toBeDefined();
-      expect(w1_1.stats.executed).toBe(0);
+      expect(w1_1.stats.executed).toEqualNumberOrString(0);
 
       await e1.reload();
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -555,7 +555,7 @@ describe('workflow > Plugin', () => {
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(processor.execution.id).toBe(executions[0].id);
+      expect(processor.execution.id).toEqualNumberOrString(executions[0].id);
       expect(processor.execution.status).toBe(executions[0].status);
     });
 
@@ -571,7 +571,7 @@ describe('workflow > Plugin', () => {
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
-      expect(processor.execution.id).toBe(executions[0].id);
+      expect(processor.execution.id).toEqualNumberOrString(executions[0].id);
       expect(processor.execution.status).toBe(executions[0].status);
     });
   });
@@ -606,8 +606,8 @@ describe('workflow > Plugin', () => {
 
       const s2 = await w1.getStats();
       const vs2 = await w1.getVersionStats();
-      expect(s2.executed).toBe(0);
-      expect(vs2.executed).toBe(0);
+      expect(s2.executed).toEqualNumberOrString(0);
+      expect(vs2.executed).toEqualNumberOrString(0);
     });
 
     it.skipIf(process.env.DB_DIALECT === 'sqlite')('bigint stats', async () => {
@@ -627,8 +627,8 @@ describe('workflow > Plugin', () => {
 
       const s1 = await w1.getStats();
       const vs1 = await w1.getVersionStats();
-      expect(s1.executed).toBe('10000000000000001');
-      expect(vs1.executed).toBe('10000000000000001');
+      expect(s1.executed).toEqualNumberOrString('10000000000000001');
+      expect(vs1.executed).toEqualNumberOrString('10000000000000001');
     });
   });
 });

@@ -183,19 +183,19 @@ describe('tree path test', () => {
       },
     });
     //test if root primary key data is correct
-    expect(pathNodeA1.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
-    expect(pathNodeA2.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
-    expect(pathNodeA3.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
-    expect(pathNodeA4.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
-    expect(pathNodeA5.get('rootPk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA1.get('rootPk'), nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA2.get('rootPk'), nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA3.get('rootPk'), nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA4.get('rootPk'), nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA5.get('rootPk'), nodeA1.get(treeCollection.filterTargetKey));
     //test if root node key data is correct
-    expect(pathNodeA1.get('nodePk')).toEqual(nodeA1.get(treeCollection.filterTargetKey));
-    expect(pathNodeA2.get('nodePk')).toEqual(nodeA2.get(treeCollection.filterTargetKey));
-    expect(pathNodeA3.get('nodePk')).toEqual(nodeA3.get(treeCollection.filterTargetKey));
-    expect(pathNodeA4.get('nodePk')).toEqual(nodeA4.get(treeCollection.filterTargetKey));
-    expect(pathNodeA5.get('nodePk')).toEqual(nodeA5.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA1.get('nodePk'), nodeA1.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA2.get('nodePk'), nodeA2.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA3.get('nodePk'), nodeA3.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA4.get('nodePk'), nodeA4.get(treeCollection.filterTargetKey));
+    assert.equal(pathNodeA5.get('nodePk'), nodeA5.get(treeCollection.filterTargetKey));
     //test if root path data is correct
-    expect(pathNodeA1.get('path')).toEqual(`/${nodeA1.get(treeCollection.filterTargetKey)}`);
+    assert.equal(pathNodeA1.get('path'), `/${nodeA1.get(treeCollection.filterTargetKey)}`);
     expect(pathNodeA2.get('path')).toEqual(
       `/${nodeA1.get(treeCollection.filterTargetKey)}/${nodeA2.get(treeCollection.filterTargetKey)}`,
     );
@@ -277,7 +277,7 @@ describe('tree path test', () => {
     const allNodes = await db.getCollection(name).repository.find({});
     // all nodes root primary key is equal when a4 change parent to a3
     for (const node of allNodes) {
-      expect(nodeA1.get(treeCollection.filterTargetKey) === node.get('rootPk')).toBeTruthy();
+      assert.equal(nodeA1.get(treeCollection.filterTargetKey), node.get('rootPk'));
     }
     // await treeCollection.repository.update({
     //   values: {
@@ -388,7 +388,7 @@ describe('tree path test', () => {
     expect(dataA2[0].get('children')[0].get('parent').get('name')).toEqual('a1');
   });
 
-  it('test tree find with tree、 appends and fields parameter', async () => {
+  it('test tree find with tree, appends and fields parameter', async () => {
     await treeCollection.repository.create({
       values,
     });
@@ -401,11 +401,12 @@ describe('tree path test', () => {
       fields: ['id', 'name'],
     });
     const dataExpect = {
-      id: 1,
+      // id: 1,
       name: 'a1',
       parent: null,
       __index: '0',
     };
+    assert.equal(data[0].get('id'), 1);
     expect(data[0].toJSON()).toMatchObject(dataExpect);
     expect(data.length).toEqual(1);
     expect(data[0].get('children')).toBeFalsy();

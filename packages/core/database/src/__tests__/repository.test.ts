@@ -413,10 +413,8 @@ describe('repository.create', () => {
       },
     });
     const post = await Post.model.findOne();
-    expect(post).toMatchObject({
-      name: 'post11',
-      userId: user.get('id'),
-    });
+    expect(post.name).toBe('post11');
+    assert.equal(post.userId, user.get('id'));
     const comments = await Comment.model.findAll();
     expect(comments.map((m) => m.get('postId'))).toEqual([post.get('id'), post.get('id'), post.get('id')]);
   });
@@ -496,10 +494,8 @@ describe('repository.update', () => {
       },
     });
 
-    expect(post).toMatchObject({
-      name: 'post1',
-      userId: user.id,
-    });
+    expect(post.name).toBe('post1');
+    assert.equal(post.userId, user.get('id'));
 
     await User.repository.update({
       filterByTk: user.id,
@@ -621,7 +617,7 @@ describe('repository.update', () => {
     const p1Updated = await Post.repository.findOne({
       filterByTk: p1.id,
     });
-    expect(p1Updated.userId).toBe(u2.id);
+    assert.equal(p1Updated.userId, u2.id);
 
     const r2 = await Post.repository.update({
       filter: {
@@ -655,7 +651,7 @@ describe('repository.update', () => {
     const p1Updated2 = await Post.repository.findOne({
       filterByTk: p1.id,
     });
-    expect(p1Updated2.userId).toBe(u1.id);
+    assert.equal(p1Updated2.userId, u1.id);
   });
 
   it('update in batch filtered by belongsTo field as deep association field', async () => {
@@ -806,18 +802,14 @@ describe('repository.relatedQuery', () => {
       values: { name: 'post1' },
     });
 
-    expect(post).toMatchObject({
-      name: 'post1',
-      userId: user.get('id'),
-    });
+    expect(post.name).toBe('post1');
+    assert.equal(post.userId, user.get('id'));
 
     const post2 = await userPostRepository.create({
       values: { name: 'post2' },
     });
 
-    expect(post2).toMatchObject({
-      name: 'post2',
-      userId: user.get('id'),
-    });
+    expect(post2.name).toBe('post2');
+    assert.equal(post2.userId, user.get('id'));
   });
 });

@@ -377,8 +377,8 @@ describe('union role: full permissions', async () => {
     getTbResponse = await agent.resource(testTbName).list({ pageSize: 30 });
     expect(getTbResponse.statusCode).toBe(200);
     expect(getTbResponse.body.data.length).gt(0);
-    expect(getTbResponse.body.data.some((x) => x.createdById === user.id)).toBe(true);
-    expect(getTbResponse.body.data.some((x) => x.createdById === rootUser.id)).toBe(false);
+    expect(getTbResponse.body.data.some((x) => x.createdById == user.id)).toBe(true);
+    expect(getTbResponse.body.data.some((x) => x.createdById == rootUser.id)).toBe(false);
     // no title_id, only id and createdById
     expect(getTbResponse.body.data.some((x) => Boolean(x.title_id))).toBe(false);
   });
