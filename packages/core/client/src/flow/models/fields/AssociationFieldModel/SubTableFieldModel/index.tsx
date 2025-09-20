@@ -94,7 +94,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
         wrapper: HeaderWrapperComponent,
       },
     };
-
     return <SubTableField {...this.props} columns={columns} components={components} />;
   }
   onInit(options: any): void {
@@ -105,6 +104,10 @@ export class SubTableFieldModel extends AssociationFieldModel {
     });
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
+    });
+    // 监听表单reset
+    this.context.blockModel.emitter.on('onFieldReset', () => {
+      this.props.onChange([]);
     });
   }
 }
