@@ -82,7 +82,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: `${token.padding}px ${token.paddingLG}px`,
+          padding: `${token.paddingSM}px ${token.padding}px`,
           borderBottom: `1px solid ${token.colorSplit}`,
           backgroundColor: token.colorBgContainer,
           ...styles.header,
@@ -101,7 +101,6 @@ export const PageComponent = forwardRef((props: any, ref) => {
             }}
             style={{
               color: token.colorTextTertiary,
-              fontSize: token.fontSizeSM,
             }}
           />
           {title && (
