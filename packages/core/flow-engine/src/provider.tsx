@@ -47,7 +47,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   useEffect(() => {
     const context = {
       antdConfig: config,
-      themeToken: token,
+      // themeToken 改为可观察的 getter，在下方单独 define
       modal,
       message,
       notification,
@@ -55,6 +55,12 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
     engine.context.defineProperty('viewer', {
       cache: false,
       get: (ctx) => new FlowViewer(ctx, { drawer, embed, popover, dialog }),
+    });
+    // 将 themeToken 定义为 observable, 使组件能够响应主题的变更
+    engine.context.defineProperty('themeToken', {
+      get: () => token,
+      observable: true,
+      cache: true,
     });
     for (const item of Object.entries(context)) {
       const [key, value] = item;

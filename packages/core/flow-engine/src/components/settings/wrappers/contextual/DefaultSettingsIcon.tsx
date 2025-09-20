@@ -114,7 +114,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       message.success(t('UID copied to clipboard'));
     } catch (error) {
       console.error(t('Copy failed'), ':', error);
-      message.error(t('Copy failed, please try again'));
+      message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid: model.uid }));
     }
   }, [model.uid, message]);
 

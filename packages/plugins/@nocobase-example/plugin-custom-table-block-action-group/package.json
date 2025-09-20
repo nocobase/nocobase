@@ -1,0 +1,12 @@
+{
+  "name": "@nocobase-example/plugin-custom-table-block-action-group",
+  "displayName": "Plugin example: Custom actions for table block",
+  "version": "1.9.0-alpha.15",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "1.x",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  }
+}

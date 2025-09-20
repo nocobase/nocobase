@@ -64,7 +64,19 @@ export interface FlowModelRendererProps {
   key?: React.Key;
 
   /** 是否显示流程设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean }; // 默认 false
+  showFlowSettings?:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        /** 自定义工具栏样式 */
+        style?: React.CSSProperties;
+        /**
+         * @default 'inside'
+         */
+        toolbarPosition?: 'inside' | 'above';
+      }; // 默认 false
 
   /** 流程设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -96,7 +108,18 @@ export interface FlowModelRendererProps {
  */
 const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
+  showFlowSettings:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        /**
+         * @default 'inside'
+         */
+        toolbarPosition?: 'inside' | 'above';
+      };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -150,7 +173,18 @@ const FlowModelRendererWithAutoFlows: React.FC<{
  */
 const FlowModelRendererWithoutAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings: boolean | { showBackground?: boolean; showBorder?: boolean; style?: React.CSSProperties };
+  showFlowSettings:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        /**
+         * @default 'inside'
+         */
+        toolbarPosition?: 'inside' | 'above';
+      };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -193,7 +227,16 @@ const FlowModelRendererCore: React.FC<{
   model: FlowModel;
   showFlowSettings:
     | boolean
-    | { showBackground?: boolean; showBorder?: boolean; showDragHandle?: boolean; style?: React.CSSProperties };
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        /**
+         * @default 'inside'
+         */
+        toolbarPosition?: 'inside' | 'above';
+      };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -227,7 +270,7 @@ const FlowModelRendererCore: React.FC<{
       const rendered = model.render();
       // RenderFunction 模式：render 返回函数，作为组件类型渲染，避免函数作为子节点的警告
       if (typeof rendered === 'function') {
-        return React.createElement(rendered as any);
+        return React.createElement(rendered as React.ComponentType<any>);
       }
       return <>{rendered}</>;
     };
@@ -251,6 +294,7 @@ const FlowModelRendererCore: React.FC<{
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
+            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
             {wrapWithErrorBoundary(<ContentOrError />)}
           </FlowsFloatContextMenu>
@@ -288,6 +332,7 @@ const FlowModelRendererCore: React.FC<{
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
+            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
             {wrapWithErrorBoundary(<ContentOrError />)}
           </FlowsFloatContextMenu>
@@ -376,3 +421,8 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     return content;
   },
 );
+
+// 为需要进一步优化渲染的场景提供一个 Memo 包装版本
+// 仅在父级重渲且 props 浅比较未变时跳过渲染；不影响内部响应式更新
+export const MemoFlowModelRenderer = React.memo(FlowModelRenderer);
+MemoFlowModelRenderer.displayName = 'MemoFlowModelRenderer';

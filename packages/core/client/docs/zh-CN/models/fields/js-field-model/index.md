@@ -34,6 +34,43 @@
 - 如需跨字段取值，可用 `ctx.record` 拼接显示；
 - 需要在表单中“可编辑”的 JS 字段，请使用 JSEditableFieldModel。
 
+## 跨区块弹窗（dispatchModelEvent）
+可通过 `ctx.dispatchModelEvent(targetUid, eventName, args)` 通知另一个区块模型处理事件，可以用于跨区块跨页面打开抽屉/对话框。
+
+示例
+<code src="./demos/dispatch-open-dialog-by-button.tsx"></code>
+
+示例
+
+```js
+const targetUid = '<目标按钮UID>'; // 替换成目标按钮uid
+
+ctx.element.innerHTML = '<a href="javascript:;" style="color:#1677ff;">查看详情</a>';
+ctx.element.querySelector('a')?.addEventListener('click', async () => {
+  await ctx.dispatchModelEvent(targetUid, 'click');
+});
+```
+
+示例（目标区块：监听事件并打开抽屉）
+
+```ts
+// 在目标区块的模型中注册监听（伪代码/示意）
+MyBlockModel.registerFlow({
+  key: 'demo',
+  on: 'click',
+  steps: {
+    show: {
+      async handler(ctx) {
+        await ctx.viewer.drawer({
+          width: '56%',
+          content: `<div style="padding:16px"><pre>Hello NocoBase!</pre></div>`,
+        });
+      },
+    },
+  },
+});
+```
+
 # JSEditableFieldModel
 
 用于在表单项中以 JavaScript 自定义“可编辑字段”的输入体验。典型用于：

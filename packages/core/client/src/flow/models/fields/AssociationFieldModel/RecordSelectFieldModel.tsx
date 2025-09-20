@@ -8,6 +8,7 @@
  */
 import {
   CollectionField,
+  createCollectionContextMeta,
   createCurrentRecordMetaFactory,
   EditableItemModel,
   escapeT,
@@ -80,6 +81,7 @@ export function LazySelect(props) {
       {...others}
       allowClear
       showSearch
+      maxTagCount="responsive"
       filterOption={false}
       labelInValue
       fieldNames={fieldNames}
@@ -101,6 +103,18 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
 
   get collectionField(): CollectionField {
     return this.context.collectionField;
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    // For association fields, expose target collection to variable selectors
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField?.targetCollection,
+      meta: createCollectionContextMeta(
+        () => this.context.collectionField?.targetCollection,
+        this.context.t('Current collection'),
+      ),
+    });
   }
 
   set onPopupScroll(fn) {

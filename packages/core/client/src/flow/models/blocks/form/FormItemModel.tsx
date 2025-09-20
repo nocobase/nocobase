@@ -16,14 +16,14 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { customAlphabet as Alphabet } from 'nanoid';
 import { debounce } from 'lodash';
+import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { FieldModel } from '../../base';
-import { EditFormModel } from './EditFormModel';
 import { DEBOUNCE_WAIT } from '../../../../variables';
 import { SelectOptions } from '../../../actions/titleField';
+import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
+import { EditFormModel } from './EditFormModel';
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -61,6 +61,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         return {
           key: fullName,
           label: field.title,
+          refreshTargets: ['FormCustomItemModel/FormJSFieldItemModel'],
           toggleable: (subModel) => {
             const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
             return fieldPath === fullName;
@@ -88,6 +89,15 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       .filter(Boolean);
   }
 
+  onInit(options: any) {
+    super.onInit(options);
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      if (this.collectionField) {
+        subModel.setProps(this.collectionField.getComponentProps());
+      }
+    });
+  }
+
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
@@ -110,7 +120,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         {...this.props}
         name={namePath}
         onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
+          this.dispatchEvent('formItemChange', { value: event?.target?.value }, { debounce: true });
         }}
       >
         <FieldModelRenderer model={modelForRender} name={namePath} />
@@ -153,7 +163,7 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label });
+        ctx.model.setProps({ label: params.label || ctx.collectionField.title });
       },
     },
     aclCheck: {
@@ -161,10 +171,10 @@ FormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        const collectionField = ctx.model.collectionField;
-        if (collectionField) {
-          ctx.model.setProps(collectionField.getComponentProps());
-        }
+        // const collectionField = ctx.model.collectionField;
+        // if (collectionField) {
+        //   ctx.model.setProps(collectionField.getComponentProps());
+        // }
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
@@ -287,7 +297,7 @@ FormItemModel.registerFlow({
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-          if (binding.modelName !== ctx.model.subModels.field.use) {
+          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
             const model = ctx.model.setSubModel('field', {

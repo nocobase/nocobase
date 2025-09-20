@@ -54,9 +54,6 @@ export function SubTableField(props) {
         });
       },
     }))
-    .concat({
-      key: 'empty',
-    })
     .concat([
       !disabled && {
         title: '',
@@ -76,7 +73,8 @@ export function SubTableField(props) {
           );
         },
       },
-    ]);
+    ])
+    .filter(Boolean);
   return (
     <Form.Item>
       <Table

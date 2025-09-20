@@ -185,19 +185,19 @@ PageModel.registerFlow({
 
         if (ctx.view.type !== 'embed') {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgLayout,
+            backgroundColor: 'var(--colorBgLayout)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.themeToken.colorBgLayout,
+            backgroundColor: 'var(--colorBgLayout)',
             paddingInline: 16,
             marginBottom: 0,
           });
         } else {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgContainer,
+            backgroundColor: 'var(--colorBgContainer)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.themeToken.colorBgContainer,
+            backgroundColor: 'var(--colorBgContainer)',
             paddingInline: 16,
             marginBottom: 0,
           });

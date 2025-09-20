@@ -12,11 +12,20 @@ import ReactDOM from 'react-dom';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
+import { createViewMeta } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
-import { createViewMeta } from './createViewMeta';
 
 let uuid = 0;
+
+// 稳定的 Holder 组件，避免在父组件重渲染时更换组件类型导致卸载， 否则切换主题时会丢失所有页面内容
+const PageElementsHolder = React.memo(
+  React.forwardRef((props: any, ref: any) => {
+    const [elements, patchElement] = usePatchElement();
+    React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+    return <>{elements}</>;
+  }),
+);
 
 export function usePage() {
   const holderRef = React.useRef(null);
@@ -30,6 +39,21 @@ export function usePage() {
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
+
+    // Footer 组件实现
+    const FooterComponent = ({ children, ...props }) => {
+      return <div className="nb-embed-footer">{children}</div>;
+    };
+
+    // Header 组件实现
+    const HeaderComponent = (props) => {
+      return (
+        <div className="nb-embed-header">
+          <div>{props.title}</div>
+          <div>{props.extra}</div>
+        </div>
+      );
+    };
 
     const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
 
@@ -49,6 +73,8 @@ export function usePage() {
         closeFunc?.();
       },
       navigation: config.inputArgs?.navigation,
+      Header: HeaderComponent,
+      Footer: FooterComponent,
     };
 
     const ctx = new FlowContext();
@@ -69,7 +95,8 @@ export function usePage() {
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
         const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
-
+        // 响应themeToken的响应式更新
+        void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         React.useEffect(() => {
           config.onOpen?.(currentPage, ctx);
@@ -118,13 +145,6 @@ export function usePage() {
   };
 
   const api = React.useMemo(() => ({ open }), []);
-  const ElementsHolder = React.memo(
-    React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
-      return <>{elements}</>;
-    }),
-  );
 
-  return [api, <ElementsHolder key="page-holder" ref={holderRef} />];
+  return [api, <PageElementsHolder key="page-holder" ref={holderRef} />];
 }

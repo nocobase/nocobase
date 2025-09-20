@@ -491,6 +491,20 @@ export default defineConfig({
           ],
         },
         {
+          title: '区块扩展',
+          type: 'group',
+          children: [
+            {
+              title: '区块的分类',
+              link: '/learn/block-categories',
+            },
+            {
+              title: '区块的使用场景',
+              link: '/learn/block-scenes',
+            },
+          ]
+        },
+        {
           title: 'Basic',
           type: 'group',
           children: [

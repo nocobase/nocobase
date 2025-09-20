@@ -101,7 +101,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
                 <FlowModelRenderer
                   key={action.uid}
                   model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                   extraToolbarItems={[
                     {
                       key: 'drag-handler',
@@ -116,7 +116,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
               key="filter-form-actions-add"
               model={this}
               subModelKey="actions"
-              subModelBaseClass={'FilterFormActionModel'}
+              subModelBaseClass={'FilterFormActionGroupModel'}
             >
               <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
             </AddSubModelButton>

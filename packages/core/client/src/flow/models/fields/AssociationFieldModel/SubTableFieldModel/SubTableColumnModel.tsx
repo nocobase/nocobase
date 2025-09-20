@@ -23,6 +23,7 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
+  DisplayItemModel,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
@@ -188,6 +189,7 @@ export class SubTableColumnModel<
       onCell: (record, recordIndex) => ({
         record,
         recordIndex,
+        key: recordIndex,
         width: this.props.width,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
@@ -287,7 +289,7 @@ SubTableColumnModel.registerFlow({
         if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
           return null;
         }
-        const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.model.collectionField);
+        const classes = DisplayItemModel.getBindingsByField(ctx, ctx.model.collectionField);
         if (classes.length === 1) {
           return null;
         }
@@ -308,7 +310,7 @@ SubTableColumnModel.registerFlow({
         };
       },
       defaultParams: (ctx) => {
-        const model = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.model.collectionField);
+        const model = DisplayItemModel.getDefaultBindingByField(ctx, ctx.model.collectionField);
         return {
           use: model.modelName,
         };

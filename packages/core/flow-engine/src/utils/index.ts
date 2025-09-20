@@ -11,15 +11,15 @@
 
 // 常量
 export {
-  FLOW_ENGINE_NAMESPACE,
-  BLOCK_TYPES,
   BLOCK_GROUP_CONFIGS,
+  BLOCK_TYPES,
+  FLOW_ENGINE_NAMESPACE,
   MENU_KEYS,
   type BlockBuilderConfig,
 } from './constants';
 
 // 翻译相关
-export { getT, escapeT } from './translation';
+export { escapeT, getT, tExpr } from './translation';
 
 // 异常类
 export { FlowExitException } from './exceptions';
@@ -31,7 +31,7 @@ export { defineAction } from './flow-definitions';
 export { isInheritedFrom } from './inheritance';
 
 // 参数解析器
-export { resolveDefaultParams, resolveCreateModelOptions, resolveExpressions } from './params-resolvers';
+export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
 
 // Schema 工具
 export { compileUiSchema, resolveStepUiSchema, resolveUiMode } from './schema-utils';
@@ -43,21 +43,21 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 export { createCollectionContextMeta } from './createCollectionContextMeta';
 export {
   buildRecordMeta,
-  createRecordMetaFactory,
+  collectContextParamsForTemplate,
   createCurrentRecordMetaFactory,
-  inferRecordRef,
-  inferParentRecordRef,
+  createRecordMetaFactory,
   extractUsedVariableNames,
   extractUsedVariablePaths,
-  collectContextParamsForTemplate,
+  inferParentRecordRef,
+  inferRecordRef,
   type RecordParamsBuilder,
 } from './variablesParams';
 
 // Context 工具
 export { extractPropertyPath, formatPathToVariable, isVariableExpression } from './context';
 
+export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
-export { setAutoFlowError, getAutoFlowError, clearAutoFlowError, type AutoFlowError } from './autoFlowError';
 
 // 安全全局对象（window/document）
-export { createSafeWindow, createSafeDocument } from './safeGlobals';
+export { createSafeDocument, createSafeWindow } from './safeGlobals';

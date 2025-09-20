@@ -15,9 +15,10 @@ import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
-import qs from 'qs';
 import pino from 'pino';
-import { createRef } from 'react';
+import qs from 'qs';
+import React, { createRef } from 'react';
+import * as antd from 'antd';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -37,18 +38,18 @@ import {
 } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
+  escapeT,
   extractPropertyPath,
+  extractUsedVariablePaths,
   FlowExitException,
   resolveDefaultParams,
   resolveExpressions,
-  extractUsedVariablePaths,
-  escapeT,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { JSONValue, enqueueVariablesResolve } from './utils/params-resolvers';
-import { FlowView, FlowViewer } from './views/FlowView';
-import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
+import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
+import { FlowView, FlowViewer } from './views/FlowView';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -234,7 +235,7 @@ export class FlowContext {
     });
   }
 
-  defineMethod(name: string, fn: (...args: any[]) => any) {
+  defineMethod(name: string, fn: (...args: any[]) => any, des?: string) {
     this._methods[name] = fn;
     Object.defineProperty(this, name, {
       configurable: true,
@@ -331,7 +332,7 @@ export class FlowContext {
    * // 获取多层级属性的子树
    * const profileTree = flowContext.getPropertyMetaTree("{{ ctx.user.profile }}");
    */
-  getPropertyMetaTree(value?: string): MetaTreeNode[] {
+  getPropertyMetaTree(value?: string, options?: { flatten?: boolean }): MetaTreeNode[] {
     const metaMap = this._getPropertiesMeta();
 
     // 如果有 value 参数，尝试返回对应属性的子树
@@ -380,6 +381,10 @@ export class FlowContext {
           }
 
           if (typeof metaOrFactory === 'function') {
+            if (options?.flatten) {
+              // 统一语义：当请求子层路径且 flatten=true 时，直接返回其 children 列表
+              return (() => loadChildrenFrom(metaOrFactory, fullPath, finalKey)) as unknown as MetaTreeNode[];
+            }
             const parentTitles = this.#buildParentTitles(fullPath);
             return [this.#toTreeNode(finalKey, metaOrFactory, fullPath, parentTitles)];
           }
@@ -448,14 +453,25 @@ export class FlowContext {
       return this.#findMetaInProperty(firstKey, ownProperty.meta, remainingPath, [firstKey]);
     }
 
-    // 2. 查找委托链中的属性
-    for (const delegate of this._delegates) {
-      const delegateProperty = delegate._props[firstKey];
-      if (delegateProperty?.meta) {
-        return this.#findMetaInProperty(firstKey, delegateProperty.meta, remainingPath, [firstKey]);
-      }
+    // 2 进一步递归查找更深层委托链（_getPropertiesMeta 会递归收集，但此处原来仅检查了一层，导致不一致）
+    const deepMeta = this.#findMetaInDelegatesDeep(this._delegates, firstKey);
+    if (deepMeta) {
+      return this.#findMetaInProperty(firstKey, deepMeta, remainingPath, [firstKey]);
     }
 
+    return null;
+  }
+
+  /**
+   * 递归在委托链中查找指定 key 的 meta（只返回 metaOrFactory，不解析路径）。
+   */
+  #findMetaInDelegatesDeep(delegates: FlowContext[], key: string): PropertyMetaOrFactory | null {
+    for (const delegate of delegates) {
+      const prop = delegate._props[key];
+      if (prop?.meta) return prop.meta;
+      const deeper = this.#findMetaInDelegatesDeep(delegate._delegates, key);
+      if (deeper) return deeper;
+    }
     return null;
   }
 
@@ -873,6 +889,34 @@ export class FlowContext {
   }
 }
 
+export class FlowRunjsContext extends FlowContext {
+  constructor(delegate: FlowContext) {
+    super();
+    this.addDelegate(delegate);
+    // Expose React and antd only within runjs context
+    // This keeps the scope minimal while enabling React/AntD rendering in scripts
+    this.defineProperty('React', { value: React });
+    this.defineProperty('antd', { value: antd });
+    this.defineMethod(
+      'dispatchModelEvent',
+      async (modelOrUid: FlowModel | string, eventName: string, inputArgs?: Record<string, any>) => {
+        let model: FlowModel | null = null;
+        if (typeof modelOrUid === 'string') {
+          model = await this.engine.loadModel({ uid: modelOrUid });
+        } else if (modelOrUid instanceof FlowModel) {
+          model = modelOrUid;
+        }
+        if (model) {
+          model.context.addDelegate(this);
+          model.dispatchEvent(eventName, inputArgs);
+        } else {
+          this.message.error(this.t('Model with ID {{uid}} not found', { uid: modelOrUid }));
+        }
+      },
+    );
+  }
+}
+
 class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
@@ -1209,9 +1253,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return _buildServerContextParams(this, input);
     });
     this.defineMethod('runjs', function (code, variables) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       const runner = new JSRunner({
         globals: {
-          ctx: this,
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1402,9 +1447,11 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });
@@ -1421,6 +1468,7 @@ export class FlowRuntimeContext<
   stepResults: Record<string, any> = {};
   declare useResource: (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource') => void;
   declare getStepParams: (stepKey: string) => Record<string, any>;
+  declare setStepParams: (stepKey: string, params?: any) => void;
   declare getStepResults: (stepKey: string) => any;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   constructor(
@@ -1432,6 +1480,9 @@ export class FlowRuntimeContext<
     this.addDelegate(this.model.context);
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
+    });
+    this.defineMethod('setStepParams', (stepKey: string, params) => {
+      return model.setStepParams(flowKey, stepKey, params);
     });
     this.defineMethod('getStepResults', (stepKey: string) => {
       return _.get(this.steps, [stepKey, 'result']);
@@ -1461,9 +1512,11 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
+      const runCtx = new FlowRunjsContext(this.createProxy());
+
       const runner = new JSRunner({
         globals: {
-          ctx: this.createProxy(),
+          ctx: runCtx,
           ...variables,
         },
       });

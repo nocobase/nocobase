@@ -44,22 +44,14 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 }> {
   static scene = BlockSceneEnum.oam;
 
-  subModelBaseClasses = {
-    action: 'RecordActionGroupModel' as any,
-    field: ['DetailsItemModel', 'DetailsAssociationFieldGroupModel', 'DetailsCustomItemModel'] as any,
+  _defaultCustomModelClasses = {
+    RecordActionGroupModel: 'RecordActionGroupModel',
+    DetailsItemModel: 'DetailsItemModel',
+    DetailsAssociationFieldGroupModel: 'DetailsAssociationFieldGroupModel',
+    DetailsCustomItemModel: 'DetailsCustomItemModel',
   };
 
-  getAddSubModelButtonProps(type: 'action' | 'field') {
-    const subClass = this.subModelBaseClasses[type];
-    if (Array.isArray(subClass)) {
-      return {
-        subModelBaseClasses: subClass,
-      };
-    }
-    return {
-      subModelBaseClass: subClass,
-    };
-  }
+  customModelClasses = {};
 
   createResource(ctx, params) {
     if (this.association?.type === 'hasOne' || this.association?.type === 'belongsTo') {
@@ -146,7 +138,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
                       model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                       extraToolbarItems={[
                         {
                           key: 'drag-handler',
@@ -163,7 +155,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                 key="details-actions-add"
                 model={this}
                 subModelKey="actions"
-                {...this.getAddSubModelButtonProps('action')}
+                subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
                 afterSubModelInit={async (actionModel) => {
                   actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
                 }}

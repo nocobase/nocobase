@@ -73,9 +73,11 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
     this.uid = master.uid;
     this.localProps = { ...initialProps };
     this.forkId = forkId;
+    this.hidden = this.master.hidden;
 
     define(this, {
       localProps: observable,
+      hidden: observable,
       setProps: action,
     });
 

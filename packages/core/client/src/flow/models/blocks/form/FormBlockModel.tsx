@@ -28,6 +28,7 @@ type DefaultCollectionBlockModelStructure = {
   subModels?: { grid: FormGridModel; actions?: FormActionModel[] };
 };
 
+type CustomFormBlockModelClassesEnum = {};
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
@@ -35,26 +36,21 @@ export class FormBlockModel<
     return this.context.form as FormInstance;
   }
 
-  subModelBaseClasses = {
-    action: 'FormActionGroupModel' as any,
-    field: ['FormItemModel', 'FormCustomItemModel'] as any,
+  _defaultCustomModelClasses = {
+    FormActionGroupModel: 'FormActionGroupModel',
+    FormItemModel: 'FormItemModel',
+    FormCustomItemModel: 'FormCustomItemModel',
   };
 
-  getAddSubModelButtonProps(type: 'action' | 'field') {
-    const subClass = this.subModelBaseClasses[type];
-    if (Array.isArray(subClass)) {
-      return {
-        subModelBaseClasses: subClass,
-      };
-    }
-    return {
-      subModelBaseClass: subClass,
-    };
-  }
+  customModelClasses: CustomFormBlockModelClassesEnum = {};
 
   renderConfigureActions() {
     return (
-      <AddSubModelButton model={this} subModelKey="actions" {...this.getAddSubModelButtonProps('action')}>
+      <AddSubModelButton
+        model={this}
+        subModelKey="actions"
+        subModelBaseClass={this.getModelClassName('FormActionGroupModel')}
+      >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
       </AddSubModelButton>
     );

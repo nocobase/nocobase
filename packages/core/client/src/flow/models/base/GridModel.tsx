@@ -17,11 +17,12 @@ import {
   escapeT,
   findModelUidPosition,
   FlowModel,
-  FlowModelRenderer,
+  MemoFlowModelRenderer,
   getMousePositionOnElement,
   moveBlock,
   positionToDirection,
 } from '@nocobase/flow-engine';
+import type { FlowModelRendererProps } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
@@ -45,7 +46,23 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   prevMoveDistance = 0;
   // 设置项菜单的层级，默认为 1
   itemSettingsMenuLevel = 1;
-  itemFlowSettings = {};
+  itemFlowSettings: Exclude<FlowModelRendererProps['showFlowSettings'], boolean> = {};
+  // 通过稳定引用减少子项不必要的重渲染
+  private itemFallback = (<SkeletonFallback />);
+  private itemExtraToolbarItems = [
+    {
+      key: 'drag-handler',
+      component: DragHandler,
+      sort: 1,
+    },
+  ];
+  private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
+  private getItemFlowSettings(): Exclude<FlowModelRendererProps['showFlowSettings'], boolean> {
+    if (!this._memoItemFlowSettings) {
+      this._memoItemFlowSettings = { showBackground: false, showDragHandle: true, ...this.itemFlowSettings };
+    }
+    return this._memoItemFlowSettings;
+  }
 
   onInit(options: any): void {
     super.onInit(options);
@@ -310,21 +327,15 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         })();
                   return (
                     <Droppable model={item}>
-                      <FlowModelRenderer
+                      <MemoFlowModelRenderer
                         model={item}
                         key={`${item.uid}:${rowIndex}`}
-                        fallback={<SkeletonFallback />}
-                        showFlowSettings={{ showBackground: false, showDragHandle: true, ...this.itemFlowSettings }}
+                        fallback={this.itemFallback}
+                        showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
                         showErrorFallback
                         settingsMenuLevel={this.itemSettingsMenuLevel}
                         showTitle
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
+                        extraToolbarItems={this.itemExtraToolbarItems}
                       />
                     </Droppable>
                   );
