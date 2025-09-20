@@ -36,9 +36,9 @@ export class DetailsGridModel extends GridModel<{
         model={this}
         subModelKey={'items'}
         subModelBaseClasses={[
-          this.parent.getModelClassName('DetailsItemModel'),
-          this.parent.getModelClassName('DetailsAssociationFieldGroupModel'),
-          this.parent.getModelClassName('DetailsCustomItemModel'),
+          this.context.getModelClassName('DetailsItemModel'),
+          this.context.getModelClassName('DetailsAssociationFieldGroupModel'),
+          this.context.getModelClassName('DetailsCustomItemModel'),
         ].filter(Boolean)}
         afterSubModelInit={async (item: DetailsItemModel) => {
           const field: any = item.subModels.field;

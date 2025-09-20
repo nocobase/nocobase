@@ -52,6 +52,13 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     return <BlockPlaceholder />;
   }
 
+  onInit(options: any): void {
+    super.onInit(options);
+    this.context.defineMethod('getModelClassName', (className: string) => {
+      return this.getModelClassName(className);
+    });
+  }
+
   setDecoratorProps(props) {
     Object.assign(this.decoratorProps, props);
   }

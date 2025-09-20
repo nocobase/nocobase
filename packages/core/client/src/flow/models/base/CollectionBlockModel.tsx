@@ -226,6 +226,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   onInit(options) {
+    super.onInit(options);
     this.context.defineProperty('blockModel', {
       value: this,
     });

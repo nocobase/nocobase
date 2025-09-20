@@ -75,7 +75,7 @@ const AddActionToolbarComponent = ({ model }) => {
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      subModelBaseClass={model.parent.getModelClassName('RecordActionGroupModel')}
+      subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });
