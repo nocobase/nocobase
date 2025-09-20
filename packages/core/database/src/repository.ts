@@ -37,7 +37,7 @@ import injectTargetCollection from './decorators/target-collection-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import { ArrayField, Field, RelationField } from './fields';
 import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
@@ -55,6 +55,7 @@ import { processIncludes } from './utils';
 const debug = require('debug')('noco-database');
 
 interface CreateManyOptions extends BulkCreateOptions {
+  updateAssociationValues?: AssociationKeysToBeUpdate;
   records: Values[];
 }
 
@@ -665,14 +666,15 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
     const transaction = await this.getTransaction(options);
-
     const guard = UpdateGuard.fromOptions(this.model, {
       ...options,
       action: 'create',
       underscored: this.collection.options.underscored,
     });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const sanitized = guard.sanitize(options.values || {});
+    const filtered = this.filterAssociationValues(sanitized, options.updateAssociationValues);
+    const values = (this.model as typeof Model).callSetters(filtered, options);
     this.validate({ values: values as any, context: options.context, operation: 'create' });
     const instance = await this.model.create<any>(values, {
       ...options,
@@ -743,7 +745,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
-    const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
+    const sanitized = guard.sanitize(options.values || {});
+    const filtered = this.filterAssociationValues(sanitized, options.updateAssociationValues);
+    const values = (this.model as typeof Model).callSetters(filtered, options);
     this.validate({ values: values as any, context: options.context, operation: 'update' });
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
@@ -968,6 +972,129 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       },
     });
     return parser.toSequelizeParams();
+  }
+
+  protected filterAssociationValues(values: any, updateAssociationValues?: AssociationKeysToBeUpdate) {
+    if (['collections', 'fields'].includes(this.collection.name)) {
+      return values;
+    }
+    const isTree = this.collection.options?.tree;
+    if (isTree) {
+      return values;
+    }
+    if (!values || typeof values !== 'object') return values;
+
+    const result: any = { ...values };
+
+    const allowList = Array.isArray(updateAssociationValues) ? updateAssociationValues : undefined;
+
+    for (const key of Object.keys(values)) {
+      const field = this.collection.getField(key);
+      const hasAssociation =
+        Boolean(field && field instanceof RelationField) || Boolean(this.collection.model.associations[key]);
+      if (!hasAssociation) continue;
+
+      const val = values[key];
+      const targetKey = field.targetKey || field.filterTargetKey;
+      if (!allowList) {
+        if (Array.isArray(val)) {
+          const mapped = val.map((item) =>
+            item && typeof item === 'object' ? { [targetKey]: item[targetKey] } : item,
+          );
+          const hasValid = mapped.some((item) => {
+            if (item === null || item === undefined) return false;
+            if (typeof item === 'object') {
+              return item[targetKey] !== undefined && item[targetKey] !== null;
+            }
+            return true;
+          });
+          if (mapped.length === 0 || !hasValid) {
+            delete result[key];
+          } else {
+            result[key] = mapped;
+          }
+        } else if (val && typeof val === 'object') {
+          const value = val[targetKey];
+          if (value === undefined || value === null) {
+            delete result[key];
+          } else {
+            result[key] = { [targetKey]: value };
+          }
+        } else {
+          result[key] = val;
+        }
+        continue;
+      }
+
+      const hasExact = allowList.includes(key);
+      const nestedCandidates = allowList.filter((u) => u.startsWith(`${key}.`));
+      let hasNested = false;
+      if (nestedCandidates.length > 0) {
+        for (const nc of nestedCandidates) {
+          const remainder = nc.substring(key.length + 1);
+          const immediate = remainder.split('.')[0];
+          if (allowList.includes(`${key}.${immediate}`)) {
+            hasNested = true;
+            break;
+          }
+        }
+      }
+
+      if (hasExact && !hasNested) {
+        const targetCollection =
+          (field && (field as RelationField).targetCollection && (field as RelationField).targetCollection()) || null;
+
+        const filterItem = (item) => {
+          if (!item || typeof item !== 'object') return item;
+          const out: any = {};
+          if (item[targetKey] !== undefined) out[targetKey] = item[targetKey];
+          for (const k of Object.keys(item)) {
+            if (k === targetKey) continue;
+            if (targetCollection) {
+              const tf = targetCollection.getField(k);
+              const isRel = Boolean(tf && tf.isRelationField && tf.isRelationField());
+              const assocExists = Boolean(targetCollection.model.associations[k]);
+              if (isRel || assocExists) {
+                continue;
+              }
+            }
+            const v = item[k];
+            if (v === null || typeof v !== 'object') {
+              out[k] = v;
+            } else {
+              out[k] = v;
+            }
+          }
+          return out;
+        };
+
+        if (Array.isArray(val)) {
+          result[key] = val.map(filterItem);
+        } else if (val && typeof val === 'object') {
+          result[key] = filterItem(val);
+        } else {
+          result[key] = val;
+        }
+        continue;
+      }
+
+      if (hasNested || hasExact) {
+        result[key] = val;
+        continue;
+      }
+
+      if (Array.isArray(val)) {
+        result[key] = val.map((item) =>
+          item && typeof item === 'object' ? { [field.targetKey]: item[field.targetKey] } : item,
+        );
+      } else if (val && typeof val === 'object') {
+        result[key] = { [field.targetKey]: val[field.targetKey] };
+      } else {
+        result[key] = val;
+      }
+    }
+
+    return result;
   }
 
   protected async getTransaction(options: any, autoGen = false) {

@@ -503,6 +503,7 @@ describe('belongs to many', () => {
 
   test('find and count', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],
@@ -528,6 +529,7 @@ describe('belongs to many', () => {
 
   test('find one', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: { title: 'p1', tags: [{ name: 't1' }, { name: 't2' }] },
     });
 
@@ -583,6 +585,7 @@ describe('belongs to many', () => {
     });
 
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],
@@ -629,6 +632,7 @@ describe('belongs to many', () => {
 
   test('update through table attribute', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [
@@ -654,6 +658,7 @@ describe('belongs to many', () => {
     expect(t1.posts_tags.tagged_at).toEqual('123');
 
     const p2 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p2',
         tags: [t1.id],
@@ -697,6 +702,7 @@ describe('belongs to many', () => {
     });
 
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }, { name: 't2' }],

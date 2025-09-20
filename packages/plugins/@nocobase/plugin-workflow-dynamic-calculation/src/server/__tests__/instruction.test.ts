@@ -58,6 +58,7 @@ describe('workflow > instructions > calculation', () => {
       });
 
       const post = await PostRepo.create({
+        updateAssociationValues: ['category'],
         values: {
           title: 't1',
           category: {
