@@ -70,16 +70,17 @@ export class JSColumnModel extends TableCustomColumnModel {
         titleContent
       ),
       render: (value, record, index) => {
-        const fork = this.createFork({}, `${index}`);
+        // 使用记录主键作为 fork key，避免分页后 index 复用导致 fork 复用
+        const tk = this.context.collection?.getFilterByTK?.(record);
+        const forkKey = tk ?? record?.id ?? index;
+        const fork = this.createFork({}, String(forkKey));
         const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
-          () => (fork.context as any).collection,
+          () => fork.context.collection,
           fork.context.t('Current record'),
           (ctx) => {
-            const coll = (ctx as any).collection;
-            const rec = (ctx as any).record;
-            const name = coll?.name;
-            const dataSourceKey = coll?.dataSourceKey;
-            const filterByTk = coll?.getFilterByTK?.(rec);
+            const name = ctx.collection?.name;
+            const dataSourceKey = ctx.collection?.dataSourceKey;
+            const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
             if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
             return { collection: name, dataSourceKey, filterByTk };
           },
@@ -100,6 +101,12 @@ export class JSColumnModel extends TableCustomColumnModel {
   render() {
     // 渲染一个占位容器，供 JS 代码写入内容
     return () => <span ref={this.context.ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+  }
+
+  protected onMount() {
+    if (this.context.ref?.current) {
+      this.rerender();
+    }
   }
 }
 
