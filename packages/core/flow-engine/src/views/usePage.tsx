@@ -18,6 +18,15 @@ import usePatchElement from './usePatchElement';
 
 let uuid = 0;
 
+// 稳定的 Holder 组件，避免在父组件重渲染时更换组件类型导致卸载， 否则切换主题时会丢失所有页面内容
+const PageElementsHolder = React.memo(
+  React.forwardRef((props: any, ref: any) => {
+    const [elements, patchElement] = usePatchElement();
+    React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+    return <>{elements}</>;
+  }),
+);
+
 export function usePage() {
   const holderRef = React.useRef(null);
 
@@ -135,13 +144,6 @@ export function usePage() {
   };
 
   const api = React.useMemo(() => ({ open }), []);
-  const ElementsHolder = React.memo(
-    React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
-      return <>{elements}</>;
-    }),
-  );
 
-  return [api, <ElementsHolder key="page-holder" ref={holderRef} />];
+  return [api, <PageElementsHolder key="page-holder" ref={holderRef} />];
 }
