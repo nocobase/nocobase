@@ -95,7 +95,8 @@ export function usePage() {
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
         const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
-
+        // 响应themeToken的响应式更新
+        void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         React.useEffect(() => {
           config.onOpen?.(currentPage, ctx);
