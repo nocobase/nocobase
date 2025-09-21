@@ -8,6 +8,7 @@
  */
 
 import {
+  Collection,
   extractTypeFromDefinition,
   fieldTypeMap,
   Filter,
@@ -567,14 +568,13 @@ export class PluginDataSourceMainServer extends Plugin {
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        const collectionName = ctx.action.params?.associatedIndex;
+        const collectionName = ctx.action.sourceId;
+        const collection: Collection = ctx.db.getCollection(collectionName);
         let rawFields: ColumnsDescription = {};
-        if (collectionName) {
-          const tableInfo: TableInfo = {
-            tableName: collectionName,
-            schema: process.env.COLLECTION_MANAGER_SCHEMA || ctx.app.db.options.schema,
-          };
-          rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(tableInfo);
+        if (collection) {
+          rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(
+            collection.getTableNameWithSchema(),
+          );
         }
         handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
       }
