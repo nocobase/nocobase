@@ -647,7 +647,10 @@ const LinkageRulesUI = observer(
                             marginBottom: '8px',
                           }}
                         >
-                          <span style={{ fontWeight: 500, color: '#262626' }}>{actionDef.title}</span>
+                          <span style={{ fontWeight: 500, color: '#262626' }}>
+                            {actionDef.title}
+                            <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
+                          </span>
                           <Tooltip title="Delete action">
                             <Button
                               type="text"

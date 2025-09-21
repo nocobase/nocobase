@@ -169,7 +169,14 @@ FormBlockModel.registerEvents({
   formValuesChange: {
     title: escapeT('Form values change'),
     name: 'formValuesChange',
-    uiSchema: { condition: { type: 'object', 'x-component': ConditionBuilder } },
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
     handler: commonConditionHandler,
   },
 });

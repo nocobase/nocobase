@@ -14,6 +14,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
@@ -155,7 +156,14 @@ FilterFormBlockModel.registerEvents({
   formValuesChange: {
     title: tval('Form values change'),
     name: 'formValuesChange',
-    uiSchema: { condition: { type: 'object', 'x-component': ConditionBuilder } },
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
     handler: commonConditionHandler,
   },
 });

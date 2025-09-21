@@ -187,7 +187,14 @@ ActionModel.registerEvents({
   click: {
     title: escapeT('Click'),
     name: 'click',
-    uiSchema: { condition: { type: 'object', 'x-component': ConditionBuilder } },
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
     handler: commonConditionHandler,
   },
 });
