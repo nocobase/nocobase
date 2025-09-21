@@ -28,13 +28,16 @@ class PluginEventRegistryDemo extends Plugin {
       testEvent: {
         name: 'testEvent',
         title: '测试事件',
-        description: '用于演示事件注册的测试事件',
+        handler: (ctx, params) => {
+          // 事件处理逻辑由流定义中的 handler 处理
+        },
       },
       logEvent: {
         name: 'logEvent',
         title: '日志事件',
-        label: '记录日志',
-        description: '触发时会记录日志的事件',
+        handler: (ctx, params) => {
+          // 日志事件处理逻辑由流定义中的 handler 处理
+        },
       },
     });
 

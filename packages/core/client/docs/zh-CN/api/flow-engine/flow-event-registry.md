@@ -30,13 +30,25 @@
 ```ts
 const engine = new FlowEngine();
 engine.registerEvents({
-  click: { name: 'click', label: 'Click' },
-  submit: { name: 'submit', label: 'Submit' },
+  click: { 
+    name: 'click', 
+    title: 'Click',
+    handler: (ctx, params) => {
+      // 处理点击事件
+    }
+  },
+  submit: { 
+    name: 'submit', 
+    title: 'Submit',
+    handler: (ctx, params) => {
+      // 处理提交事件
+    }
+  },
 });
 
 // 读取
 const e = engine.getEvent('click');
-console.log(e?.label); // 'Click'
+console.log(e?.title); // 'Click'
 ```
 
 ---
@@ -63,22 +75,40 @@ engine.registerModels({ Base, Sub });
 
 // 全局事件
 engine.registerEvents({
-  click: { name: 'click', label: 'Click' },
+  click: { 
+    name: 'click', 
+    title: 'Click',
+    handler: (ctx, params) => {
+      // 全局点击处理
+    }
+  },
 });
 
 // 类级事件
-Base.registerEvent({ name: 'openView', label: 'Open view' });
-Sub.registerEvent({ name: 'click', label: 'Click (sub override)' });
+Base.registerEvent({ 
+  name: 'openView', 
+  title: 'Open view',
+  handler: (ctx, params) => {
+    // 打开视图处理
+  }
+});
+Sub.registerEvent({ 
+  name: 'click', 
+  title: 'Click (sub override)',
+  handler: (ctx, params) => {
+    // 子类点击处理
+  }
+});
 
 const base = engine.createModel<Base>({ use: 'Base' });
 const sub = engine.createModel<Sub>({ use: 'Sub' });
 
 // base: 包含全局 click + 类级 openView；click 指向全局（若 Base 未覆盖）
 console.log(base.getEvents().has('openView')); // true
-console.log(base.getEvent('click')?.label); // 'Click'
+console.log(base.getEvent('click')?.title); // 'Click'
 
 // sub: 继承 Base 的 openView，且覆盖 click
-console.log(sub.getEvent('click')?.label); // 'Click (sub override)'
+console.log(sub.getEvent('click')?.title); // 'Click (sub override)'
 ```
 
 ---
