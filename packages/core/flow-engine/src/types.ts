@@ -179,10 +179,9 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupOptions | ((ctx: FlowContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; condition?: FlowEventCondition };
+  | { eventName: FlowEventName; defaultParams?: Record<string, any> };
 
 /**
  * 事件定义：用于事件注册表（全局/模型类级）。
