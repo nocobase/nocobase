@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import _ from 'lodash';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
@@ -45,12 +46,17 @@ export class FlowExecutor {
 
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
+    const eventStep = model.getEvent(typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName);
+    if (eventStep) {
+      eventStep.defaultParams = { ..._.get(flow, 'on.defaultParams', {}), ...eventStep.defaultParams };
+    }
+    // Execute the event step first since it's usually the trigger condition - if the condition is not met, subsequent steps don't need to execute
+    const stepDefs = eventStep ? { eventStep, ...flow.steps } : flow.steps; // Record<string, StepDefinition>
 
     // Setup steps meta and runtime mapping
-    setupRuntimeContextSteps(flowContext, flow, model, flowKey);
+    setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
-    const stepDefs = flow.steps; // Record<string, StepDefinition>
     for (const stepKey in stepDefs) {
       if (!Object.prototype.hasOwnProperty.call(stepDefs, stepKey)) continue;
       const step: StepDefinition = stepDefs[stepKey];
