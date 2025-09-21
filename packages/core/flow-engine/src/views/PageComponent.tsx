@@ -14,16 +14,17 @@ import { useFlowEngine } from '../provider';
 
 export const PageComponent = forwardRef((props: any, ref) => {
   const [newConfig, setNewConfig] = React.useState<any>({});
+  const mergedProps: any = { ...props, ...newConfig };
   const {
     visible = true,
-    footer: _footer,
-    header: _header,
+    footer: _footer = null,
+    header: _header = null,
     afterClose,
     children,
     hidden,
     title: _title,
     styles = {},
-  } = { ...props, ...newConfig };
+  } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
   const [footer, setFooter] = useState(_footer);
