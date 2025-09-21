@@ -60,6 +60,9 @@ export interface FlowSettingsOpenOptions {
           target?: any;
           onOpen?: () => void;
           onClose?: () => void;
+          footer?:
+            | React.ReactNode
+            | ((originNode: React.ReactNode, extra: { OkBtn: React.FC; CancelBtn: React.FC }) => React.ReactNode);
           [key: string]: any;
         };
       };
@@ -478,7 +481,7 @@ export class FlowSettings {
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
-   * - options.uiMode?: 'dialog' | 'drawer' | 'embed' ｜ { type?: 'dialog' | 'drawer' | 'embed'; props?: { title?: string; width?: number; target?: any; onOpen?: () => void; onClose?: () => void; [key: string]: any } }，默认 'dialog'。
+   * - options.uiMode?: 默认 'dialog'。
    * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
@@ -623,7 +626,9 @@ export class FlowSettings {
       const onOpen = modeProps.onOpen;
       const onClose = modeProps.onClose;
 
-      target.innerHTML = ''; // 清空容器内原有内容
+      if (target) {
+        target.innerHTML = ''; // 清空容器内原有内容
+      }
 
       modeProps = {
         target,
@@ -821,10 +826,8 @@ export class FlowSettings {
         currentView.submit = onSaveAll;
 
         const stepsEl = renderStepsContainer();
-        const footerButtons = React.createElement(
-          Space,
-          { align: 'end' },
-          React.createElement(
+        const Cancel = (props: { title?: string }) => {
+          return React.createElement(
             Button,
             {
               onClick: async () => {
@@ -836,10 +839,29 @@ export class FlowSettings {
                 }
               },
             },
-            t('Cancel'),
-          ),
-          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('Save')),
+            props.title || t('Cancel'),
+          );
+        };
+        const Save = (props: { title?: string }) => {
+          return React.createElement(Button, { type: 'primary', onClick: onSaveAll }, props.title || t('Save'));
+        };
+
+        let footerButtons = React.createElement(
+          Space,
+          { align: 'end' },
+          React.createElement(Cancel),
+          React.createElement(Save),
         );
+
+        if (modeProps.footer) {
+          footerButtons = _.isFunction(modeProps.footer)
+            ? modeProps.footer(footerButtons, { OkBtn: Save, CancelBtn: Cancel })
+            : modeProps.footer;
+        }
+
+        if (modeProps.footer === null) {
+          footerButtons = null;
+        }
 
         let footerEl;
         if (currentView.Footer) {
