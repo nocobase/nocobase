@@ -60,9 +60,44 @@ export interface FlowSettingsOpenOptions {
           target?: any;
           onOpen?: () => void;
           onClose?: () => void;
+          /**
+           * 自定义弹窗底部内容
+           *
+           * 支持三种形式：
+           * 1. `React.ReactNode` - 直接替换整个底部内容
+           * 2. `Function` - 函数式自定义，接收原始底部内容和按钮组件，返回新的内容
+           * 3. `null` - 隐藏底部内容
+           *
+           * @example
+           * ```typescript
+           * // 1. 直接替换底部内容
+           * footer: <div>Custom Footer</div>
+           *
+           * // 2. 函数式自定义 - 在原有按钮基础上添加内容
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+           *     <span>Additional info</span>
+           *     {originNode}
+           *   </div>
+           * )
+           *
+           * // 3. 函数式自定义 - 完全重新组合按钮
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <Space>
+           *     <CancelBtn title="Close" />
+           *     <Button type="link">Help</Button>
+           *     <OkBtn title="Apply" />
+           *   </Space>
+           * )
+           *
+           * // 4. 隐藏底部
+           * footer: null
+           * ```
+           */
           footer?:
             | React.ReactNode
-            | ((originNode: React.ReactNode, extra: { OkBtn: React.FC; CancelBtn: React.FC }) => React.ReactNode);
+            | ((originNode: React.ReactNode, extra: { OkBtn: React.FC; CancelBtn: React.FC }) => React.ReactNode)
+            | null;
           [key: string]: any;
         };
       };
