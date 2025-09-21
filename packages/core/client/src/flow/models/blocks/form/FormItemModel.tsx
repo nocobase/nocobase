@@ -116,13 +116,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         : fieldModel;
     const namePath = buildDynamicName(this.props.name, idx);
     return (
-      <FormItem
-        {...this.props}
-        name={namePath}
-        onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event?.target?.value }, { debounce: true });
-        }}
-      >
+      <FormItem {...this.props} name={namePath}>
         <FieldModelRenderer model={modelForRender} name={namePath} />
       </FormItem>
     );
@@ -324,8 +318,4 @@ FormItemModel.registerFlow({
       },
     },
   },
-});
-
-FormItemModel.registerEvents({
-  formItemChange: { label: escapeT('Filed value change'), name: 'formItemChange' },
 });

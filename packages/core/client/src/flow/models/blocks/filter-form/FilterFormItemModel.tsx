@@ -192,13 +192,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
-      <FormItem
-        {...this.props}
-        getValueProps={this.getValueProps.bind(this)}
-        onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event.target?.value }, { debounce: true });
-        }}
-      >
+      <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
         <FieldModelRenderer model={fieldModel} />
       </FormItem>
     );
@@ -355,12 +349,5 @@ FilterFormItemModel.registerFlow({
       // 筛选这里 dataSourceKey, collectionName, fieldPath 不是必须的
       handler(ctx, params) {},
     },
-  },
-});
-
-FilterFormItemModel.registerEvents({
-  formItemChange: {
-    label: tval('Field value change'),
-    name: 'formItemChange',
   },
 });
