@@ -22,6 +22,7 @@ import React from 'react';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -165,7 +166,12 @@ FormBlockModel.registerFlow({
 });
 
 FormBlockModel.registerEvents({
-  formValuesChange: { label: escapeT('Form values change'), name: 'formValuesChange' },
+  formValuesChange: {
+    title: escapeT('Form values change'),
+    name: 'formValuesChange',
+    uiSchema: { condition: { type: 'object', 'x-component': ConditionBuilder } },
+    handler: commonConditionHandler,
+  },
 });
 
 /**
