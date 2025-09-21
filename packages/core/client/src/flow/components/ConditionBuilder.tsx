@@ -27,7 +27,7 @@ export const ConditionBuilder = observer(
 );
 
 export const commonConditionHandler = (ctx, params) => {
-  const { condition } = params;
+  const { condition = { logic: '$and', items: [] } } = params;
   const evaluator = (path: string, operator: string, value: any) => {
     return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
   };
