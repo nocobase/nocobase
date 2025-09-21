@@ -19,14 +19,7 @@ import {
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
-import {
-  DeleteOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  CopyOutlined,
-  PlusOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
 import { FilterGroup } from '../components/filter/FilterGroup';
