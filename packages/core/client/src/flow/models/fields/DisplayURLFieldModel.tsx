@@ -12,7 +12,6 @@ import React from 'react';
 import { FieldModel } from '../base';
 
 export class DisplayURLFieldModel extends FieldModel {
-  // @reactive
   public render() {
     const { value } = this.props;
     const content = value && (
