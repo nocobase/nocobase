@@ -32,11 +32,14 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
 
+    target.innerHTML = ''; // 清空容器内原有内容
+
     model.context.viewer.embed({
       type: 'embed',
       target,
+      title: 'Edit event flows',
       onOpen() {
-        target.style.width = '50%';
+        target.style.width = '33.3%';
         target.style.maxWidth = '800px';
       },
       onClose() {
@@ -378,36 +381,9 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#fff',
-        borderLeft: '1px solid #e0e0e0',
-        position: 'relative',
+        height: '100%',
       }}
     >
-      {/* 顶部标题栏 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderBottom: '1px solid #f0f0f0',
-          backgroundColor: '#fff',
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t('Edit event flows')}</div>
-        <Button
-          type="text"
-          size="small"
-          icon={<CloseOutlined />}
-          style={{ color: '#8c8c8c' }}
-          onClick={() => ctx.view.destroy()}
-        />
-      </div>
-
       {/* 内容区域 */}
       <div
         style={{
@@ -462,6 +438,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
             setSubmitLoading(true);
             await model.flowRegistry.save();
             setSubmitLoading(false);
+            model.context?.message?.success?.(t('Configuration saved'));
             ctx.view.destroy();
           }}
         >

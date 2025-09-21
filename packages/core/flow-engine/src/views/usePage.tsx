@@ -32,7 +32,12 @@ export function usePage() {
 
   const open = (config, flowContext) => {
     uuid += 1;
-    const pageRef = React.createRef<{ destroy: () => void; update: (config: any) => void }>();
+    const pageRef = React.createRef<{
+      destroy: () => void;
+      update: (config: any) => void;
+      setFooter: (footer: React.ReactNode) => void;
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => void;
+    }>();
 
     let closeFunc: (() => void) | undefined;
     let resolvePromise: (value?: any) => void;
@@ -42,17 +47,28 @@ export function usePage() {
 
     // Footer 组件实现
     const FooterComponent = ({ children, ...props }) => {
-      return <div className="nb-embed-footer">{children}</div>;
+      React.useEffect(() => {
+        pageRef.current?.setFooter(children);
+
+        return () => {
+          pageRef.current?.setFooter(null);
+        };
+      }, [children]);
+
+      return null; // Footer 组件本身不渲染内容
     };
 
     // Header 组件实现
-    const HeaderComponent = (props) => {
-      return (
-        <div className="nb-embed-header">
-          <div>{props.title}</div>
-          <div>{props.extra}</div>
-        </div>
-      );
+    const HeaderComponent = ({ ...props }) => {
+      React.useEffect(() => {
+        pageRef.current?.setHeader(props as any);
+
+        return () => {
+          pageRef.current?.setHeader(null);
+        };
+      }, [props]);
+
+      return null; // Header 组件本身不渲染内容
     };
 
     const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
@@ -72,9 +88,15 @@ export function usePage() {
         pageRef.current?.destroy();
         closeFunc?.();
       },
-      navigation: config.inputArgs?.navigation,
       Header: HeaderComponent,
       Footer: FooterComponent,
+      setFooter: (footer: React.ReactNode) => {
+        pageRef.current?.setFooter(footer);
+      },
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => {
+        pageRef.current?.setHeader(header);
+      },
+      navigation: config.inputArgs?.navigation,
     };
 
     const ctx = new FlowContext();

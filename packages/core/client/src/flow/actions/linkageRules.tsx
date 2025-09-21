@@ -414,7 +414,6 @@ const LinkageRulesUI = observer(
     currentLinkageRules = rules;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
-    const [submitLoading, setSubmitLoading] = React.useState(false);
     const t = ctx.model.translate.bind(ctx.model);
 
     // 创建新规则的默认值
@@ -701,101 +700,31 @@ const LinkageRulesUI = observer(
     }));
 
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          backgroundColor: '#fff',
-          borderLeft: '1px solid #e0e0e0',
-          position: 'relative',
-        }}
-      >
-        {/* 顶部标题栏 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderBottom: '1px solid #f0f0f0',
-            backgroundColor: '#fff',
-            borderTopLeftRadius: '8px',
-            borderTopRightRadius: '8px',
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t(title)}</div>
-          <Button
-            type="text"
+      <>
+        {rules.length > 0 ? (
+          <Collapse
+            items={collapseItems}
             size="small"
-            icon={<CloseOutlined />}
-            style={{ color: '#8c8c8c' }}
-            onClick={() => ctx.view.destroy()}
+            style={{ marginBottom: 8 }}
+            defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
+            accordion
           />
-        </div>
-
-        {/* 内容区域 */}
-        <div
-          style={{
-            flex: 1,
-            padding: '16px',
-            overflow: 'auto',
-            minHeight: 0,
-          }}
-        >
-          {rules.length > 0 ? (
-            <Collapse
-              items={collapseItems}
-              size="small"
-              style={{ marginBottom: 8 }}
-              defaultActiveKey={rules.length > 0 ? [rules[0].key] : []}
-              accordion
-            />
-          ) : (
-            <div
-              style={{
-                border: '1px dashed #d9d9d9',
-                borderRadius: '6px',
-                backgroundColor: '#fafafa',
-                marginBottom: '8px',
-              }}
-            >
-              <Empty description={t('No linkage rules')} style={{ margin: '20px 0' }} />
-            </div>
-          )}
-          <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
-            {t('Add linkage rule')}
-          </Button>
-        </div>
-
-        {/* 底部按钮区域 */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '8px',
-            padding: '8px 16px',
-            borderTop: '1px solid #f0f0f0',
-            backgroundColor: '#fff',
-            flexShrink: 0,
-          }}
-        >
-          <Button onClick={() => ctx.view.destroy()}>{t('Cancel')}</Button>
-          <Button
-            type="primary"
-            loading={submitLoading}
-            onClick={async () => {
-              setSubmitLoading(true);
-              await ctx.view.submit();
-              setSubmitLoading(false);
-              ctx.view.destroy();
+        ) : (
+          <div
+            style={{
+              border: '1px dashed #d9d9d9',
+              borderRadius: '6px',
+              backgroundColor: '#fafafa',
+              marginBottom: '8px',
             }}
           >
-            {t('Save')}
-          </Button>
-        </div>
-      </div>
+            <Empty description={t('No linkage rules')} style={{ margin: '20px 0' }} />
+          </div>
+        )}
+        <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddRule} style={{ width: '100%' }}>
+          {t('Add linkage rule')}
+        </Button>
+      </>
     );
   },
 );

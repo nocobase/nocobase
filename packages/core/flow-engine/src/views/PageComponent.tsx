@@ -7,14 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import classNames from 'classnames';
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { CloseOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../provider';
 
 export const PageComponent = forwardRef((props: any, ref) => {
-  const { visible = true, afterClose, children, hidden } = props;
+  const [newConfig, setNewConfig] = React.useState<any>({});
+  const mergedProps: any = { ...props, ...newConfig };
+  const {
+    visible = true,
+    footer: _footer = null,
+    header: _header = null,
+    afterClose,
+    children,
+    hidden,
+    title: _title,
+    styles = {},
+  } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
+  const [footer, setFooter] = useState(_footer);
+  const [header, setHeader] = useState(_header);
 
   // 提供 destroy 和 update 能力
   useImperativeHandle(ref, () => ({
@@ -25,29 +39,110 @@ export const PageComponent = forwardRef((props: any, ref) => {
       }
     },
     update: (newConfig: any) => {
-      // 这里可以实现 props 更新逻辑（如 setState），视你的需求
+      setNewConfig(newConfig);
+    },
+    setFooter: (newFooter) => {
+      setFooter(newFooter);
+    },
+    setHeader: (newHeader) => {
+      if (Object.values(newHeader || {}).length === 0) {
+        setHeader(null);
+      } else {
+        setHeader(newHeader);
+      }
     },
   }));
 
   const style: React.CSSProperties = useMemo(
     () => ({
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100%',
+      display: hidden ? 'none' : 'flex',
+      flexDirection: 'column',
       height: '100%',
-      backgroundColor: flowEngine.context.themeToken.colorBgLayout,
     }),
-    [flowEngine.context.themeToken.colorBgLayout],
+    [hidden],
   );
+
+  // Header 组件
+  const HeaderComponent = useMemo(() => {
+    if (!header && !_title) return null;
+
+    const { title = _title, extra } = header || {};
+    const token = flowEngine.context.themeToken;
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: `${token.paddingSM}px ${token.padding}px`,
+          borderBottom: `1px solid ${token.colorSplit}`,
+          backgroundColor: token.colorBgContainer,
+          ...styles.header,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: token.marginXS }}>
+          <Button
+            type="text"
+            size="small"
+            icon={<CloseOutlined />}
+            onClick={() => {
+              if (!closedRef.current) {
+                closedRef.current = true;
+                afterClose?.();
+              }
+            }}
+            style={{
+              color: token.colorTextTertiary,
+            }}
+          />
+          {title && (
+            <div
+              style={{
+                fontSize: token.fontSizeLG,
+                fontWeight: token.fontWeightStrong,
+                color: token.colorText,
+              }}
+            >
+              {title}
+            </div>
+          )}
+        </div>
+        {extra && <div>{extra}</div>}
+      </div>
+    );
+  }, [header, _title, flowEngine.context.themeToken, styles.header, afterClose]);
+
+  // Footer 组件
+  const FooterComponent = useMemo(() => {
+    if (!footer) return null;
+
+    const token = flowEngine.context.themeToken;
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          padding: `${token.paddingXS}px ${token.padding}px`,
+          borderTop: `1px solid ${token.colorSplit}`,
+          backgroundColor: token.colorBgContainer,
+          ...styles.footer,
+        }}
+      >
+        {footer}
+      </div>
+    );
+  }, [footer, flowEngine.context.themeToken, styles.footer]);
 
   if (!visible) return null;
 
   return (
-    <div className={classNames('nb-embed', hidden ? 'nb-hidden' : '')} style={style}>
-      {children}
+    <div style={{ ...style, ...styles.content }}>
+      {HeaderComponent}
+      <div style={{ flex: 1, overflowY: 'auto', ...styles.body }}>{children}</div>
+      {FooterComponent}
     </div>
   );
 });
