@@ -113,15 +113,26 @@ export const openView = defineAction({
       }
     }
 
+    // Build openerUids information (a list of view uids from root -> immediate opener)
+    const isRouteManaged = !!ctx.inputArgs?.navigation;
+    const parentOpenerUids =
+      (ctx.view?.inputArgs?.openerUids as string[] | undefined) || (inputArgs.openerUids as string[] | undefined) || [];
+    const openerUids: string[] = isRouteManaged
+      ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
+      : [...parentOpenerUids, ctx.model.uid];
+
+    const finalInputArgs = {
+      ...ctx.inputArgs,
+      ...inputArgs,
+      dataSourceKey: params.dataSourceKey,
+      collectionName: params.collectionName,
+      associationName: params.associationName,
+      openerUids,
+    };
+
     await ctx.viewer.open({
       type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
-      inputArgs: {
-        ...ctx.inputArgs,
-        ...inputArgs,
-        dataSourceKey: params.dataSourceKey,
-        collectionName: params.collectionName,
-        associationName: params.associationName,
-      },
+      inputArgs: finalInputArgs,
       preventClose: !!params.preventClose,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
