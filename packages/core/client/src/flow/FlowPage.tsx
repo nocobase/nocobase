@@ -144,6 +144,7 @@ export const FlowRoute = () => {
 
             prevViewListRef.current.push(viewItem);
 
+            const openerUids = prevViewListRef.current.slice(0, -1).map((item) => item.params.viewUid);
             viewItem.model.dispatchEvent('click', {
               target: layoutContentRef.current,
               collectionName: openViewParams?.collectionName,
@@ -151,6 +152,7 @@ export const FlowRoute = () => {
               dataSourceKey: openViewParams?.dataSourceKey,
               closeRef,
               updateRef,
+              openerUids,
               ...viewItem.params,
               navigation: new ViewNavigation(
                 flowEngine.context,

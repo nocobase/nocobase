@@ -97,15 +97,42 @@ export const openView = defineAction({
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
 
+    // If subModelKey is provided, create or load a container FlowModel under current ctx.model
+    // and use it as the parent for the child page content.
+    let parentIdForChild = ctx.model.uid;
+    if (params.subModelKey) {
+      const container = await ctx.engine.loadOrCreateModel({
+        async: true,
+        parentId: ctx.model.uid,
+        subKey: params.subModelKey,
+        subType: 'object',
+        use: 'FlowModel',
+      });
+      if (container?.uid) {
+        parentIdForChild = container.uid;
+      }
+    }
+
+    // Build openerUids information (a list of view uids from root -> immediate opener)
+    const isRouteManaged = !!ctx.inputArgs?.navigation;
+    const parentOpenerUids =
+      (ctx.view?.inputArgs?.openerUids as string[] | undefined) || (inputArgs.openerUids as string[] | undefined) || [];
+    const openerUids: string[] = isRouteManaged
+      ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
+      : [...parentOpenerUids, ctx.model.uid];
+
+    const finalInputArgs = {
+      ...ctx.inputArgs,
+      ...inputArgs,
+      dataSourceKey: params.dataSourceKey,
+      collectionName: params.collectionName,
+      associationName: params.associationName,
+      openerUids,
+    };
+
     await ctx.viewer.open({
       type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
-      inputArgs: {
-        ...ctx.inputArgs,
-        ...inputArgs,
-        dataSourceKey: params.dataSourceKey,
-        collectionName: params.collectionName,
-        associationName: params.associationName,
-      },
+      inputArgs: finalInputArgs,
       preventClose: !!params.preventClose,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,
@@ -119,7 +146,7 @@ export const openView = defineAction({
         }
         return (
           <FlowPage
-            parentId={ctx.model.uid}
+            parentId={parentIdForChild}
             pageModelClass={pageModelClass}
             onModelLoaded={(uid) => {
               pageModelUid = uid;
