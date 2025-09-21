@@ -59,12 +59,7 @@ JavaScriptBlockModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams(ctx) {
         return {
           code:
@@ -77,13 +72,13 @@ ctx.element.innerHTML = \`
             NAMESPACE +
             `' })}
     </h2>
-    
+
     <p style="color: #666; margin-bottom: 24px; font-size: 16px;">
       \${ctx.i18n.t('Build interactive components with JavaScript and external libraries', { ns: '` +
             NAMESPACE +
             `' })}
     </p>
-    
+
     <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
       <h3 style="color: #333; margin: 0 0 16px 0; font-size: 18px;">✨ \${ctx.i18n.t('Key Features', { ns: '` +
             NAMESPACE +
@@ -116,7 +111,7 @@ ctx.element.innerHTML = \`
             `' })}</li>
       </ul>
     </div>
-    
+
     <div style="background: #e6f7ff; border-left: 4px solid #1890ff; padding: 16px; border-radius: 4px;">
       <p style="margin: 0; color: #333; font-size: 14px;">
         💡 <strong>\${ctx.i18n.t('Ready to start?', { ns: '` +

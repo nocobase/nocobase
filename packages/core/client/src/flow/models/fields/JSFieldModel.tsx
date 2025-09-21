@@ -82,12 +82,7 @@ JSFieldModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {

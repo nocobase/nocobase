@@ -79,12 +79,7 @@ JSItemModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams(ctx) {
         return {
           code: `
