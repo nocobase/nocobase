@@ -346,7 +346,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
 
 const FieldTypeRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
   const item = omit(record, ['__parent', '__collectionName']);
-  return !Array.isArray(item?.possibleTypes) ? (
+  return !Array.isArray(item?.possibleTypes) || isPresetField ? (
     <Tag>{value}</Tag>
   ) : (
     <Select
@@ -354,14 +354,12 @@ const FieldTypeRenderer = ({ value, record, updateFieldHandler, isPresetField = 
       defaultValue={value}
       popupMatchSelectWidth={false}
       style={{ width: '100%' }}
-      disabled={isPresetField}
       options={
         item?.possibleTypes.map((v) => {
           return { label: v, value: v };
         }) || []
       }
       onChange={async (newValue) => {
-        if (isPresetField) return;
         await updateFieldHandler(record, { type: newValue });
       }}
     />
@@ -419,12 +417,7 @@ const CurrentFields = (props) => {
       dataIndex: 'interface',
       title: t('Field interface'),
       render: (value, record) => (
-        <FieldInterfaceRenderer
-          value={value}
-          record={record}
-          updateFieldHandler={updateFieldHandler}
-          isPresetField={collectionInfo.from === 'db2cm' && collectionPresetFieldsInterfaces.includes(record.interface)}
-        />
+        <FieldInterfaceRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
       ),
     },
     {
@@ -435,7 +428,7 @@ const CurrentFields = (props) => {
           value={value}
           record={record}
           updateFieldHandler={updateFieldHandler}
-          isPresetField={collectionInfo.from === 'db2cm' && collectionPresetFieldsInterfaces.includes(record.interface)}
+          isPresetField={collectionInfo.from === 'db2cm' || collectionPresetFieldsInterfaces.includes(record.interface)}
         />
       ),
     },

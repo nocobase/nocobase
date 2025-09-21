@@ -559,9 +559,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (this.options.underscored) {
-      options.underscored = true;
-    }
+    options.underscored = options.underscored ?? this.options.underscored;
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
       databaseInstanceId: this.instanceId,

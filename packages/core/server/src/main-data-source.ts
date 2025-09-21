@@ -92,7 +92,11 @@ export class MainDataSource extends SequelizeDataSource {
       try {
         this.status = 'loading';
         const results = await this.tables2Collections(addToCollections);
-        await repo.create({ values: results, context: ctx });
+        const values = results.map((result) => ({
+          ...result,
+          underscored: false,
+        }));
+        await repo.create({ values, context: ctx });
         this.status = 'loaded';
       } catch (e) {
         this.logger.error('Failed to load tables', {

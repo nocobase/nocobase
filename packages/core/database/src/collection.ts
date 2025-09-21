@@ -264,10 +264,9 @@ export class Collection<
             throw new Error(
               t('{{#label}} is required', {
                 ns: 'client',
-                '#label': `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', { ns: 'client' })}: ${t(
-                  fieldLabel,
-                  { ns: 'client' },
-                )}`,
+                '#label': `${t('Collection', { ns: 'client' })}: ${this.name}, ${t('Field', {
+                  ns: 'client',
+                })}: ${t(fieldLabel, { ns: 'client' })}`,
               }),
             );
           }
