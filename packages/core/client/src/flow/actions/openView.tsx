@@ -145,8 +145,9 @@ export const openView = defineAction({
       },
       styles: {
         content: {
-          background: 'var(--nb-box-bg)',
           padding: 0,
+          backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+          ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
         },
         body: {
           padding: 0,

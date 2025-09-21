@@ -9,7 +9,6 @@
 
 import { CloseOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import classNames from 'classnames';
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../provider';
 
@@ -55,19 +54,11 @@ export const PageComponent = forwardRef((props: any, ref) => {
 
   const style: React.CSSProperties = useMemo(
     () => ({
-      // position: 'absolute',
-      // top: 0,
-      // left: 0,
-      // right: 0,
-      // bottom: 0,
-      // width: '100%',
-      // height: '100%',
-      // backgroundColor: flowEngine.context.themeToken.colorBgLayout,
-      display: 'flex',
+      display: hidden ? 'none' : 'flex',
       flexDirection: 'column',
       height: '100%',
     }),
-    [],
+    [hidden],
   );
 
   // Header 组件
@@ -147,7 +138,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
   if (!visible) return null;
 
   return (
-    <div className={hidden ? 'nb-hidden' : ''} style={{ ...style, ...styles.content }}>
+    <div style={{ ...style, ...styles.content }}>
       {HeaderComponent}
       <div style={{ flex: 1, overflowY: 'auto', ...styles.body }}>{children}</div>
       {FooterComponent}
