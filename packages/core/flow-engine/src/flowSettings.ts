@@ -602,7 +602,7 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext as any, flow as any, model as any, fk);
+        setupRuntimeContextSteps(flowRuntimeContext as any, flow.steps, model as any, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
 
         // 解析默认值 + 当前参数

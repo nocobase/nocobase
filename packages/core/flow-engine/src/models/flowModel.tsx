@@ -1253,7 +1253,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     const ctx = new FlowRuntimeContext(this, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow, this, flowKey);
+    setupRuntimeContextSteps(ctx, flow.steps, this, flowKey);
     ctx.defineProperty('currentStep', { value: step });
 
     return openStepSettingsDialogFn({

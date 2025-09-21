@@ -140,7 +140,7 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
 
       const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
       const flow = model.getFlow(flowKey);
-      setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+      setupRuntimeContextSteps(flowRuntimeContext, flow?.steps, model, flowKey);
       // 解析 defaultParams
       const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
 

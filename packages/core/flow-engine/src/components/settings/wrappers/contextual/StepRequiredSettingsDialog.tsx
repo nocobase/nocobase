@@ -79,7 +79,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
     const flow = model.getFlow(flowKey);
 
     const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow, model, flowKey);
+    setupRuntimeContextSteps(ctx, flow?.steps, model, flowKey);
     ctx.defineProperty('currentStep', { value: step });
     return ctx;
   }, [model, currentStepInfo]);
@@ -190,7 +190,7 @@ const openRequiredParamsStepFormDialog = async ({
           const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
           const flow = model.getFlow(flowKey);
           if (flow) {
-            setupRuntimeContextSteps(flowRuntimeContext, flow, model, flowKey);
+            setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flowKey);
           }
           flowRuntimeContext.defineProperty('currentStep', { value: step });
 
