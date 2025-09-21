@@ -194,12 +194,10 @@ export type FlowEvent<TModel extends FlowModel = FlowModel> =
 /**
  * 事件定义：用于事件注册表（全局/模型类级）。
  */
-export interface EventDefinition<TModel extends FlowModel = FlowModel> {
-  name: FlowEventName;
-  label?: string;
-  title?: string;
-  description?: string;
-}
+export type EventDefinition<
+  TModel extends FlowModel = FlowModel,
+  TCtx extends FlowContext = FlowContext,
+> = ActionDefinition<TModel, TCtx>;
 
 export type StepUIMode =
   | 'dialog'
