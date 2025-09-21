@@ -71,7 +71,7 @@ export async function resolveCreateModelOptions(
   return createModelOptions;
 }
 
-export type JSONValue = string | { [key: string | number]: JSONValue } | JSONValue[];
+export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
 // =========================
 // variables:resolve 微批 + 去重（前端）
