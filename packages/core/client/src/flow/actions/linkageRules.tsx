@@ -727,6 +727,9 @@ const LinkageRulesUI = observer(
 
 const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const evaluator = (path: string, operator: string, value: any) => {
+    if (!operator) {
+      return true;
+    }
     return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
   };
 
