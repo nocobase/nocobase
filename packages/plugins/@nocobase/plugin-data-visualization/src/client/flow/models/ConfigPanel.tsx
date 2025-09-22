@@ -103,7 +103,6 @@ export const ConfigPanel: React.FC = () => {
     }
 
     return () => {
-      configStore.setResult(uid, null);
       configStore.setError(uid, null);
     };
   }, [ctx.model.uid, form?.values?.query?.mode, form?.values?.query?.sql, form?.values?.settings?.collection]);
