@@ -15,6 +15,8 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { createViewMeta } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
+import { FlowEngineProvider } from '../provider';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 
 let uuid = 0;
 
@@ -105,6 +107,10 @@ export function useDialog() {
       meta: createViewMeta(ctx, () => currentDialog),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
+    // build a scoped engine for this view; isolate model instances & cache by default
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);
     } else {
@@ -160,9 +166,11 @@ export function useDialog() {
     );
 
     const dialog = (
-      <FlowViewContextProvider context={ctx}>
-        <DialogWithContext />
-      </FlowViewContextProvider>
+      <FlowEngineProvider engine={scopedEngine}>
+        <FlowViewContextProvider context={ctx}>
+          <DialogWithContext />
+        </FlowViewContextProvider>
+      </FlowEngineProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(dialog);

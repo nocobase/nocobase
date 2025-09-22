@@ -15,6 +15,8 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { createViewMeta } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
+import { FlowEngineProvider } from '../provider';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 
 let uuid = 0;
 
@@ -105,6 +107,10 @@ export function usePage() {
       meta: createViewMeta(ctx, () => currentPage),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
+    // build a scoped engine for this view; isolate model instances & cache by default
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
     if (inheritContext) {
       ctx.addDelegate(flowContext);
     } else {
@@ -152,9 +158,11 @@ export function usePage() {
     );
 
     const page = (
-      <FlowViewContextProvider context={ctx}>
-        <PageWithContext />
-      </FlowViewContextProvider>
+      <FlowEngineProvider engine={scopedEngine}>
+        <FlowViewContextProvider context={ctx}>
+          <PageWithContext />
+        </FlowViewContextProvider>
+      </FlowEngineProvider>
     );
 
     if (target && target instanceof HTMLElement) {

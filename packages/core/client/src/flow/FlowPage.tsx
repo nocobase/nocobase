@@ -16,6 +16,7 @@ import {
   useFlowViewContext,
   ViewNavigation,
 } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useAllAccessDesktopRoutes, useCurrentRoute, useMobileLayout } from '../route-switch';
@@ -194,7 +195,13 @@ export const FlowRoute = () => {
   return <div ref={layoutContentRef} />;
 };
 
-export const FlowPage = (props) => {
+type FlowPageProps = {
+  pageModelClass?: string;
+  parentId?: string;
+  onModelLoaded?: (uid: string, model: FlowModel) => void;
+};
+
+export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
   const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext();
@@ -236,7 +243,7 @@ export const FlowPage = (props) => {
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
         data.removeParentDelegate();
-        onModelLoaded(data.uid);
+        onModelLoaded(data.uid, data);
       }
       return data;
     },
