@@ -220,6 +220,8 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
+        // for quick edit
+        await ctx.model.applySubModelsAutoFlows('field');
         ctx.model.setProps({
           ...collectionField.getComponentProps(),
         });

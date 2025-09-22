@@ -237,7 +237,7 @@ QuickEditFormModel.registerFlow({
           });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
-          ctx.model.setProps(collectionField.getComponentProps());
+          ctx.model.setProps({ ...collectionField.getComponentProps(), ...(fieldProps || {}) });
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);
