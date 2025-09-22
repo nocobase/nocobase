@@ -3,6 +3,15 @@
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
  * Authors: NocoBase Team.
  *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
@@ -76,6 +85,8 @@ interface DatabaseIntrospectorOptions {
 
 export class DatabaseIntrospector extends EventEmitter {
   db: Database;
+  invalidCollectionNamePattern = /[\s.]/g;
+  invalidFieldNamePattern = /[\s]/g;
 
   constructor(options: DatabaseIntrospectorOptions) {
     super();
@@ -203,7 +214,7 @@ export class DatabaseIntrospector extends EventEmitter {
       name = tableName.replace(this.db.options.tablePrefix, '');
     }
     //replace dot to underscore
-    name = name.replace(/\./g, '_');
+    name = name.replace(this.invalidCollectionNamePattern, '_');
 
     return {
       name,
@@ -262,11 +273,15 @@ export class DatabaseIntrospector extends EventEmitter {
   ): FiledInferResult {
     const columnInfo = columnsInfo[columnName];
 
+    let name = columnName;
+    if (this.invalidFieldNamePattern) {
+      name = columnName.replace(this.invalidFieldNamePattern, '_');
+    }
     let fieldOptions: FieldOptions = {
       ...this.columnAttribute(columnsInfo, columnName, indexes),
       ...this.inferFieldTypeByRawType(columnInfo.type),
       rawType: columnInfo.type,
-      name: columnName,
+      name,
       field: columnName,
     };
 
@@ -275,7 +290,8 @@ export class DatabaseIntrospector extends EventEmitter {
     if (!fieldOptions.type) {
       return {
         rawType: columnInfo.type,
-        name: columnName,
+        name,
+        field: columnName,
         supported: false,
       };
     }

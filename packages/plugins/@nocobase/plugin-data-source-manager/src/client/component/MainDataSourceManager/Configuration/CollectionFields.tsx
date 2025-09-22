@@ -439,8 +439,9 @@ const CurrentFields = (props) => {
         const handleChange = async (checked) => {
           setLoadingRecord(record);
           await api.request({
-            url: `collections:update?filterByTk=${filterByTk}`,
+            url: `collections:update`,
             method: 'post',
+            params: { filterByTk },
             data: { titleField: checked ? record.name : 'id' },
           });
           ctx?.refresh?.();
@@ -562,8 +563,9 @@ const InheritFields = (props) => {
           setLoadingRecord(record);
 
           await api.request({
-            url: `collections:update?filterByTk=${filterByTk}`,
+            url: `collections:update`,
             method: 'post',
+            params: { filterByTk },
             data: { titleField: checked ? record.name : 'id' },
           });
           ctx?.refresh?.();

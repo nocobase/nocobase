@@ -110,7 +110,8 @@ ORDER BY tc.constraint_name, kcu.column_name;
     if (columnInfo.type === 'ARRAY') {
       attr.dataType = 'array';
       if (columnInfo['elementType']) {
-        const { type } = this.inferFieldTypeByRawType(columnInfo['elementType']);
+        const elementType = columnInfo['elementType'].replace(/"/g, '');
+        const { type } = this.inferFieldTypeByRawType(elementType);
         attr.elementType = type;
       }
     }
