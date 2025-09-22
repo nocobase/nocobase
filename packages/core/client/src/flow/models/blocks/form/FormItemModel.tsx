@@ -81,6 +81,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             subModels: {
               field: {
                 use: fieldModel,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
             },
           }),
