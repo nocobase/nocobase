@@ -1356,5 +1356,6 @@
   "Content settings": "内容设置项",
   "Input": "文本框",
   "Content overflow display mode": "内容溢出显示方式",
-  "Wrap": "换行"
+  "Wrap": "换行",
+  "Save failed":" 保存失败"
 }
