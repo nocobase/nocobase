@@ -14,7 +14,6 @@ import type { ButtonProps } from 'antd/es/button';
 import _ from 'lodash';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
-import condition from 'packages/plugins/@nocobase/plugin-workflow/src/client/nodes/condition';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
