@@ -66,7 +66,9 @@ export const openView = defineAction({
       inputArgs.tabUid = params.tabUid;
     }
 
-    if (params.navigation !== false) {
+    const navigation = inputArgs.navigation ?? params.navigation;
+
+    if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view.navigation) {
         ctx.view.navigation.navigateTo({
           viewUid: ctx.model.uid,
@@ -185,7 +187,7 @@ export const openView = defineAction({
           const pageModel = ctx.model.flowEngine.getModel(pageModelUid);
           pageModel.invalidateAutoFlowCache(true);
         }
-        if (params.navigation !== false) {
+        if (navigation !== false) {
           ctx.inputArgs.navigation?.back();
         }
       },
