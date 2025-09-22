@@ -45,8 +45,6 @@ interface LinkageRule {
   }[];
 }
 
-let currentLinkageRules = null;
-
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
@@ -404,7 +402,6 @@ export const linkageRunjs = defineAction({
 const LinkageRulesUI = observer(
   (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
     const { value: rules, supportedActions, title = 'Linkage rules' } = props;
-    currentLinkageRules = rules;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
@@ -733,14 +730,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
   };
 
-  let linkageRules: LinkageRule[] = [];
-
-  if (currentLinkageRules) {
-    linkageRules = await ctx.resolveJsonTemplate(currentLinkageRules);
-  } else {
-    linkageRules = params.value as LinkageRule[];
-  }
-
+  const linkageRules: LinkageRule[] = params.value as LinkageRule[];
   const allModels: FlowModel[] = ctx.model.__allModels || (ctx.model.__allModels = []);
 
   allModels.forEach((model: any) => {
