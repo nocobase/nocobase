@@ -27,7 +27,7 @@ import {
   ModelRenderMode,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
-import { get } from 'lodash';
+import { get, omit } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -137,6 +137,7 @@ export class TableColumnModel extends DisplayItemModel {
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
+        overflowMode: this.props.overflowMode,
         model: this,
         // handleSave,
       }),
@@ -193,7 +194,7 @@ export class TableColumnModel extends DisplayItemModel {
           });
           const value = get(record, this.fieldPath);
           return (
-            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
+            <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
             </FormItem>
           );
@@ -354,6 +355,27 @@ TableColumnModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ titleField: params.label });
+      },
+    },
+    overflowMode: {
+      title: escapeT('Content overflow display mode'),
+      uiSchema(ctx) {
+        return {
+          overflowMode: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: escapeT('Ellipsis'), value: 'ellipsis' },
+              { label: escapeT('Wrap'), value: 'wrap' },
+            ],
+          },
+        };
+      },
+      defaultParams: { overflowMode: 'ellipsis' },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          overflowMode: params.overflowMode,
+        });
       },
     },
   },

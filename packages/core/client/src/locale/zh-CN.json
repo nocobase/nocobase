@@ -1336,7 +1336,7 @@
   "Enable click to open": "启用点击打开",
   "Display style": "显示样式",
   "Text": "文本",
-  "Text only":"纯文本",
+  "Text only": "纯文本",
   "Display only": "阅读模式",
   "Form settings": "表单设置",
   "The field value is required": "该字段是必填字段",
@@ -1349,10 +1349,12 @@
   "Preview field component": "预览组件",
   "AssociationField component": "关系字段组件",
   "Title field component": "标题字段组件",
-  "Display Field settings":"显示设置",
-  "Preview Settings":"预览设置",
+  "Display Field settings": "显示设置",
+  "Preview Settings": "预览设置",
   "Html settings": "Html 设置项",
-  "Render mode":"渲染模式",
-  "Content settings":"内容设置项",
-  "Input":"文本框"
+  "Render mode": "渲染模式",
+  "Content settings": "内容设置项",
+  "Input": "文本框",
+  "Content overflow display mode": "内容溢出显示方式",
+  "Wrap": "换行"
 }

@@ -25,7 +25,7 @@ import {
   observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { Space, Table } from 'antd';
+import { Space, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useRef } from 'react';
@@ -193,8 +193,36 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   };
 
   EditableCell = observer<any>((props) => {
-    const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
+    const {
+      className,
+      title,
+      editable,
+      width,
+      record,
+      recordIndex,
+      dataIndex,
+      children,
+      model,
+      overflowMode,
+      ...restProps
+    } = props;
     const ref = useRef(null);
+
+    // 设置溢出显示样式
+    const overflowStyle =
+      overflowMode === 'wrap'
+        ? css`
+            white-space: normal;
+            word-wrap: break-word;
+          `
+        : css`
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            span {
+              display: inline !important;
+            }
+          `;
     if (editable) {
       return (
         <td
@@ -269,23 +297,18 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
               }
             }}
           />
-          <div
-            ref={ref}
-            className={css`
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-              width: calc(${width}px - 16px);
-            `}
-          >
+          <div ref={ref} className={overflowStyle} style={{ width: `calc(${width}px - 16px)` }}>
             {children}
           </div>
         </td>
       );
     }
+
     return (
       <td className={classNames(className)} {...restProps}>
-        {children}
+        <div className={overflowStyle} style={{ width: `calc(${width}px - 16px)` }}>
+          {children}
+        </div>
       </td>
     );
   });
@@ -536,21 +559,21 @@ TableBlockModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
-    virtualScrolling: {
-      title: escapeT('Enable virtual scrolling'),
-      uiSchema: {
-        virtual: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        virtual: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('virtual', params.virtual);
-      },
-    },
+    // virtualScrolling: {
+    //   title: escapeT('Enable virtual scrolling'),
+    //   uiSchema: {
+    //     virtual: {
+    //       'x-component': 'Switch',
+    //       'x-decorator': 'FormItem',
+    //     },
+    //   },
+    //   defaultParams: {
+    //     virtual: false,
+    //   },
+    //   handler(ctx, params) {
+    //     ctx.model.setProps('virtual', params.virtual);
+    //   },
+    // },
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
