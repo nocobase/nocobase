@@ -284,7 +284,7 @@ ImportActionModel.registerFlow({
                   onClick={() => handelStartImport(popover)}
                   disabled={!form.values.upload?.fileList?.length}
                 >
-                  {t('Start import')}
+                  {t('Start import', { ns: `${NAMESPACE}` })}
                 </Button>
               </FormButtonGroup>
             </FormProvider>

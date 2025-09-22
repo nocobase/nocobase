@@ -347,6 +347,57 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     );
   }
 
+  pagination() {
+    const totalCount = this.resource.getMeta('count');
+    const pageSize = this.resource.getPageSize();
+    const hasNext = this.resource.getMeta('hasNext');
+    const current = this.resource.getPage();
+    const data = this.resource.getData();
+    if (totalCount) {
+      return {
+        current,
+        pageSize,
+        total: totalCount,
+        showTotal: (total) => {
+          return this.translate('Total {{count}} items', { count: total });
+        },
+        showSizeChanger: true,
+      };
+    } else {
+      return {
+        showTotal: false,
+        simple: true,
+        showTitle: false,
+        showSizeChanger: true,
+        hideOnSinglePage: false,
+        total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${this.context.themeToken.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div>{this.resource.getPage()}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
+      };
+    }
+  }
+
   renderComponent() {
     return (
       <>
@@ -417,15 +468,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           scroll={{ x: 'max-content' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
-          pagination={{
-            current: this.resource.getPage(),
-            pageSize: this.resource.getPageSize(),
-            total: this.resource.getMeta('count'),
-            showTotal: (total) => {
-              return this.translate('Total {{count}} items', { count: total });
-            },
-            showSizeChanger: true,
-          }}
+          pagination={this.pagination()}
           onChange={(pagination) => {
             console.log('onChange pagination:', pagination);
             this.resource.loading = true;
