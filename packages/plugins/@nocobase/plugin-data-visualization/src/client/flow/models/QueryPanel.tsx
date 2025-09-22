@@ -20,7 +20,7 @@ import { configStore } from './config-store';
 import { ResultPanel } from './ResultPanel';
 import { parseField, removeUnparsableFilter } from '../../utils';
 
-const QueryMode: React.FC = connect(({ value = 'sql', onChange }) => {
+const QueryMode: React.FC = connect(({ value = 'sql', onChange, onClick }) => {
   const t = useT();
   return (
     <Radio.Group
@@ -30,10 +30,10 @@ const QueryMode: React.FC = connect(({ value = 'sql', onChange }) => {
         onChange(value);
       }}
     >
-      <Radio.Button value="builder">
+      <Radio.Button value="builder" onClick={() => onClick?.('builder')}>
         <BuildOutlined /> {t('Query builder')}
       </Radio.Button>
-      <Radio.Button value="sql">
+      <Radio.Button value="sql" onClick={() => onClick?.('sql')}>
         <ConsoleSqlOutlined /> {t('SQL')}
       </Radio.Button>
     </Radio.Group>
@@ -61,7 +61,6 @@ export const QueryPanel: React.FC = observer(() => {
         if (!sql) return;
         const result = await ctx.sql.run(sql);
         configStore.setResult(uid, result);
-        configStore.setError(uid, null);
       } else {
         const collectionPath: string[] | undefined = form?.values?.settings?.collection;
         const [dataSource, collection] = collectionPath || [];
@@ -96,7 +95,6 @@ export const QueryPanel: React.FC = observer(() => {
           },
         });
         configStore.setResult(uid, res?.data?.data);
-        configStore.setError(uid, null);
       }
     } catch (error: any) {
       const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
@@ -117,13 +115,15 @@ export const QueryPanel: React.FC = observer(() => {
             marginBottom: '8px',
           }}
         >
-          <Field name="mode" component={[QueryMode]} />
+          {/* 左边：模式切换，点击时收起数据结果预览 */}
+          <Field name="mode" component={[QueryMode, { onClick: () => setShowResult(false) }]} />
+          {/* 右边： 运行查询、结果 */}
           <Space size={8}>
             <Button type="link" loading={running} onClick={handleRun}>
               {t('Run query')}
             </Button>
             <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
-              {t('Result')}
+              {t('Preview Data')}
               {showResult ? <DownOutlined /> : <RightOutlined />}
             </Button>
           </Space>

@@ -222,12 +222,12 @@ export const ChartOptionsBuilder: React.FC = observer(() => {
   }, [form, previewData]);
 
   // 监听 builder 值变化，实时生成 raw
-  useEffect(() => {
-    const builder = form.values?.chart?.option?.builder;
-    if (!builder) return;
-    const raw = genRawByBuilder(builder);
-    form.setValuesIn('chart.option.raw', raw);
-  }, [form.values?.chart?.option?.builder]);
+  // useEffect(() => {
+  //   const builder = form.values?.chart?.option?.builder;
+  //   if (!builder) return;
+  //   const raw = genRawByBuilder(builder);
+  //   form.setValuesIn('chart.option.raw', raw);
+  // }, [form.values?.chart?.option?.builder]);
 
   // 联动：切换图表类型时重置无关字段
   const handleTypeChange = (v: 'line' | 'bar' | 'pie') => {
