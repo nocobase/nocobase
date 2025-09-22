@@ -357,26 +357,5 @@ TableColumnModel.registerFlow({
         ctx.model.setProps({ titleField: params.label });
       },
     },
-    overflowMode: {
-      title: escapeT('Content overflow display mode'),
-      uiSchema(ctx) {
-        return {
-          overflowMode: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: escapeT('Ellipsis'), value: 'ellipsis' },
-              { label: escapeT('Wrap'), value: 'wrap' },
-            ],
-          },
-        };
-      },
-      defaultParams: { overflowMode: 'ellipsis' },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          overflowMode: params.overflowMode,
-        });
-      },
-    },
   },
 });

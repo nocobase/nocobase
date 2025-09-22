@@ -8,7 +8,7 @@
  */
 
 import { CollectionField, escapeT } from '@nocobase/flow-engine';
-import { Tag } from 'antd';
+import { Tag, Typography } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
@@ -50,24 +50,38 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?) {
-    const { clickToOpen = false, displayStyle, titleField, ...restProps } = this.props;
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
     };
+
     const commonStyle = {
       cursor: clickToOpen ? 'pointer' : 'default',
-      display: 'inline-flex',
       alignItems: 'center',
       gap: 4,
     };
+
+    // 使用Typography.Text来处理overflow和换行
+    const typographyProps = {
+      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      style: {
+        ...commonStyle,
+        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
+        width: restProps.width || 'auto', // 传入的宽度，默认值为auto
+      },
+    };
+
+    // 使用 Typography.Text 自带的 tooltip
+    const textContent = <Typography.Text {...typographyProps}>{display}</Typography.Text>;
+
     if (isTag) {
       return (
         value && (
           <Tag {...restProps} style={commonStyle} onClick={handleClick}>
-            {display}
+            {textContent}
           </Tag>
         )
       );
@@ -75,14 +89,13 @@ export class ClickableFieldModel extends FieldModel {
     if (clickToOpen) {
       return (
         <a {...restProps} style={commonStyle} onClick={handleClick}>
-          {display}
+          {textContent}
         </a>
       );
     }
-
     return (
       <span {...restProps} style={commonStyle} className={restProps.className}>
-        {display}
+        {textContent}
       </span>
     );
   }
@@ -149,6 +162,27 @@ ClickableFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen });
+      },
+    },
+    overflowMode: {
+      title: escapeT('Content overflow display mode'),
+      uiSchema(ctx) {
+        return {
+          overflowMode: {
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: escapeT('Ellipsis'), value: 'ellipsis' },
+              { label: escapeT('Wrap'), value: 'wrap' },
+            ],
+          },
+        };
+      },
+      defaultParams: { overflowMode: 'ellipsis' },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          overflowMode: params.overflowMode,
+        });
       },
     },
   },

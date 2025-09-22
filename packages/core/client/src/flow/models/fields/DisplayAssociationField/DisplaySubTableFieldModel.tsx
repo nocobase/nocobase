@@ -67,7 +67,9 @@ export class DisplaySubTableFieldModel extends FieldModel {
           return index + 1;
         },
       },
-      ...baseColumns,
+      ...baseColumns.concat({
+        key: 'empty',
+      }),
       {
         key: 'addColumn',
         fixed: 'right',
@@ -82,7 +84,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
         tableLayout="fixed"
         size={this.props.size}
         rowKey={this.collection.filterTargetKey}
-        virtual={this.props.virtual}
+        // virtual={this.props.virtual}
         scroll={{ x: 'max-content' }}
         dataSource={this.props.value}
         columns={this.getColumns()}
