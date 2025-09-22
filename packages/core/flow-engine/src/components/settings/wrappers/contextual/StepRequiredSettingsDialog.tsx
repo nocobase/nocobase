@@ -79,7 +79,7 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
     const flow = model.getFlow(flowKey);
 
     const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow?.steps, model, flowKey);
+    setupRuntimeContextSteps(ctx, flow?.steps || {}, model, flowKey);
     ctx.defineProperty('currentStep', { value: step });
     return ctx;
   }, [model, currentStepInfo]);
