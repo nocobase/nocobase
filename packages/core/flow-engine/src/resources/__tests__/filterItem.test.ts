@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FilterGroup, FilterItem } from './filterItem';
+import { FilterGroup, FilterItem } from '../filterItem';
 
 describe('FilterItem', () => {
   describe('constructor', () => {
