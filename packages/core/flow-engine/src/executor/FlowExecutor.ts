@@ -46,8 +46,9 @@ export class FlowExecutor {
 
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
-    const eventStep = model.getEvent(typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName);
+    let eventStep = model.getEvent(typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName);
     if (eventStep) {
+      eventStep = { ...eventStep }; // clone to avoid side effects
       eventStep.defaultParams = { ..._.get(flow, 'on.defaultParams', {}), ...eventStep.defaultParams };
     }
     // Execute the event step first since it's usually the trigger condition - if the condition is not met, subsequent steps don't need to execute
