@@ -10,10 +10,15 @@
 import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
 import React from 'react';
 import { SQLEditor } from './SQLEditor';
-import { Radio } from 'antd';
+import { Radio, Button, Space } from 'antd';
 import { useT } from '../../locale';
-import { BuildOutlined, ConsoleSqlOutlined } from '@ant-design/icons';
+import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
+import { useAPIClient } from '@nocobase/client';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { configStore } from './config-store';
+import { ResultPanel } from './ResultPanel';
+import { parseField, removeUnparsableFilter } from '../../utils';
 
 const QueryMode: React.FC = connect(({ value = 'sql', onChange }) => {
   const t = useT();
@@ -35,21 +40,104 @@ const QueryMode: React.FC = connect(({ value = 'sql', onChange }) => {
   );
 });
 
+// 核心修改：将顶部“模式切换 + Result/Run”合并到本组件的一行头部
 export const QueryPanel: React.FC = observer(() => {
+  const t = useT();
   const form = useForm();
+  const api = useAPIClient();
+  const ctx = useFlowSettingsContext();
   const mode = form?.values?.query?.mode || 'sql';
+
+  const [showResult, setShowResult] = React.useState(false);
+  const [running, setRunning] = React.useState(false);
+
+  const handleRun = async () => {
+    try {
+      setRunning(true);
+      const uid = ctx.model.uid;
+
+      if ((form?.values?.query?.mode || 'sql') === 'sql') {
+        const sql = form.values?.query?.sql;
+        if (!sql) return;
+        const result = await ctx.sql.run(sql);
+        configStore.setResult(uid, result);
+        configStore.setError(uid, null);
+      } else {
+        const collectionPath: string[] | undefined = form?.values?.settings?.collection;
+        const [dataSource, collection] = collectionPath || [];
+        const query = form?.values?.query || {};
+        if (!(collection && (query?.measures?.length || 0) > 0)) return;
+
+        const res = await api.request({
+          url: 'charts:query',
+          method: 'POST',
+          data: {
+            uid,
+            dataSource,
+            collection,
+            ...query,
+            filter: removeUnparsableFilter(query.filter),
+            dimensions: (query?.dimensions || []).map((item: any) => {
+              const dimension = { ...item };
+              if (item.format && !item.alias) {
+                const { alias } = parseField(item.field);
+                dimension.alias = alias;
+              }
+              return dimension;
+            }),
+            measures: (query?.measures || []).map((item: any) => {
+              const measure = { ...item };
+              if (item.aggregation && !item.alias) {
+                const { alias } = parseField(item.field);
+                measure.alias = alias;
+              }
+              return measure;
+            }),
+          },
+        });
+        configStore.setResult(uid, res?.data?.data);
+        configStore.setError(uid, null);
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
+      configStore.setError(ctx.model.uid, message);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <>
       <ObjectField name="query">
         <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             marginBottom: '8px',
           }}
         >
           <Field name="mode" component={[QueryMode]} />
+          <Space size={8}>
+            <Button type="link" loading={running} onClick={handleRun}>
+              {t('Run query')}
+            </Button>
+            <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
+              {t('Result')}
+              {showResult ? <DownOutlined /> : <RightOutlined />}
+            </Button>
+          </Space>
         </div>
-        {mode === 'builder' ? <QueryBuilder /> : <Field name="sql" component={[SQLEditor]} />}
+
+        {showResult ? (
+          <div style={{ marginTop: 8 }}>
+            <ResultPanel />
+          </div>
+        ) : mode === 'builder' ? (
+          <QueryBuilder />
+        ) : (
+          <Field name="sql" component={[SQLEditor]} />
+        )}
       </ObjectField>
     </>
   );

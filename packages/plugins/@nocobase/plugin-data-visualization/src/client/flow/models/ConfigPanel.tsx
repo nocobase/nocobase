@@ -7,95 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useT } from '../../locale';
-import { Collapse, Card, Tabs, Button } from 'antd';
-import { PlaySquareOutlined } from '@ant-design/icons';
+import { Collapse, Card, Button } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
 import { useFlowSettingsContext, useFlowView } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
-import { useRequest, useAPIClient } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { configStore } from './config-store';
 import { ChartBlockModel } from './ChartBlockModel';
-import { ResultPanel } from './ResultPanel';
-import { AxiosError } from 'axios';
 import { EventsPanel } from './EventsPanel';
 import { parseField, removeUnparsableFilter } from '../../utils';
-
-const RunButton: React.FC = memo(() => {
-  const t = useT();
-  const form = useForm();
-  const ctx = useFlowSettingsContext();
-  const api = useAPIClient();
-
-  const { loading, run } = useRequest(
-    async () => {
-      const mode = form?.values?.query?.mode || 'sql';
-
-      if (mode === 'sql') {
-        const sql = form.values?.query?.sql;
-        if (!sql) return;
-        return ctx.sql.run(sql);
-      }
-
-      // builder 模式
-      const collectionPath: string[] | undefined = form?.values?.settings?.collection;
-      const [dataSource, collection] = collectionPath || [];
-      const query = form?.values?.query || {};
-      if (!(collection && (query?.measures?.length || 0) > 0)) return;
-
-      const res = await api.request({
-        url: 'charts:query',
-        method: 'POST',
-        data: {
-          uid: ctx.model.uid,
-          dataSource,
-          collection,
-          ...query,
-          filter: removeUnparsableFilter(query.filter),
-          dimensions: (query?.dimensions || []).map((item: any) => {
-            const dimension = { ...item };
-            if (item.format && !item.alias) {
-              const { alias } = parseField(item.field);
-              dimension.alias = alias;
-            }
-            return dimension;
-          }),
-          measures: (query?.measures || []).map((item: any) => {
-            const measure = { ...item };
-            if (item.aggregation && !item.alias) {
-              const { alias } = parseField(item.field);
-              measure.alias = alias;
-            }
-            return measure;
-          }),
-        },
-      });
-      return res?.data?.data;
-    },
-    {
-      manual: true,
-      onSuccess(result) {
-        configStore.setResult(ctx.model.uid, result);
-      },
-      onError(
-        error: AxiosError<{
-          errors: { message: string }[];
-        }>,
-      ) {
-        const message = error?.response?.data?.errors?.map?.((error: any) => error.message).join('\n') || error.message;
-        configStore.setError(ctx.model.uid, message);
-      },
-    },
-  );
-
-  return (
-    <Button type="link" loading={loading} icon={<PlaySquareOutlined />} onClick={run}>
-      {t('Run query')}
-    </Button>
-  );
-});
 
 export const ConfigPanel: React.FC = () => {
   const t = useT();
@@ -108,17 +31,6 @@ export const ConfigPanel: React.FC = () => {
     ctx.model.setStepParams('chartSettings', 'configure', form.values);
     ctx.model.applyFlow('chartSettings');
   };
-  // useEffect(() => {
-  //   const id = uid();
-  //   form.addEffects(id, () => {
-  //     onFormValuesChange((form) => {
-  //       ctx.model.setStepParams('chartSettings', 'configure', form.values);
-  //       ctx.model.applyFlow('chartSettings');
-  //     });
-  //   });
-
-  //   return () => form.removeEffects(id);
-  // }, [ctx.model, form]);
 
   useEffect(() => {
     const uid = ctx.model.uid;
@@ -228,21 +140,7 @@ export const ConfigPanel: React.FC = () => {
       <Collapse activeKey={activeKeys} onChange={setActiveKeys}>
         <Collapse.Panel header={t('Query & Result')} key="query">
           <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
-            <Tabs
-              tabBarExtraContent={<RunButton />}
-              items={[
-                {
-                  label: t('Query'),
-                  key: 'query',
-                  children: <QueryPanel />,
-                },
-                {
-                  label: t('Result'),
-                  key: 'result',
-                  children: <ResultPanel />,
-                },
-              ]}
-            />
+            <QueryPanel />
           </Card>
         </Collapse.Panel>
 
@@ -257,13 +155,6 @@ export const ConfigPanel: React.FC = () => {
           </Card>
         </Collapse.Panel>
       </Collapse>
-
-      {/* 定制 Drawer Footer */}
-      {/* <currentView.Footer>
-        <Button type="primary" onClick={onPreviewClick}>
-          {t('Preview')}
-        </Button>
-      </currentView.Footer> */}
     </div>
   );
 };

@@ -9,10 +9,11 @@
 
 import React from 'react';
 import { Radio } from 'antd';
-import { ObjectField, Field, connect } from '@formily/react';
+import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
+import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 
 const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   const t = useT();
@@ -23,7 +24,7 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
         onChange(value);
       }}
     >
-      <Radio.Button disabled value="basic">
+      <Radio.Button value="builder">
         <LineChartOutlined /> {t('Basic')}
       </Radio.Button>
       <Radio.Button value="custom">
@@ -33,7 +34,10 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   );
 });
 
-export const ChartOptionsPanel: React.FC = () => {
+export const ChartOptionsPanel: React.FC = observer(() => {
+  const form = useForm();
+  const mode = form?.values?.chart?.option?.mode || 'custom';
+
   return (
     <ObjectField name="chart.option">
       <div
@@ -43,12 +47,16 @@ export const ChartOptionsPanel: React.FC = () => {
       >
         <Field name="mode" component={[OptionsMode]} />
       </div>
-      <Field
-        name="raw"
-        component={[ChartOptionsEditor]}
-        initialValue={`return {
+      {mode === 'builder' ? (
+        <ChartOptionsBuilder />
+      ) : (
+        <Field
+          name="raw"
+          component={[ChartOptionsEditor]}
+          initialValue={`return {
 }`}
-      />
+        />
+      )}
     </ObjectField>
   );
-};
+});

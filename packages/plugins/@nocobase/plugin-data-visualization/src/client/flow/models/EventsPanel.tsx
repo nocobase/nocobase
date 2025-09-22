@@ -69,7 +69,7 @@ export const EventsPanel: React.FC = () => {
 // chart.on('click', 'series', function() {
 //  ctx.openView({ mode: 'dialog', size: 'large '});
 // });
-      `}
+`}
       />
     </ObjectField>
   );
