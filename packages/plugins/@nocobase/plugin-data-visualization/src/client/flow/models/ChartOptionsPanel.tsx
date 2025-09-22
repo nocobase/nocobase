@@ -15,7 +15,26 @@ import { useT } from '../../locale';
 import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 
-const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
+enum ChartOptionsMode {
+  BASIC = 'basic',
+  CUSTOM = 'custom',
+}
+
+const customInitialValue = `return {
+  dataset: { source: ctx.data.objects || [] },
+  xAxis: { type: 'category' },
+  yAxis: {},
+  series: [
+    {
+      type: 'line',
+      smooth: true,
+      showSymbol: false,
+    },
+  ],
+}
+`;
+
+const OptionsMode: React.FC = connect(({ value = ChartOptionsMode.CUSTOM, onChange }) => {
   const t = useT();
   return (
     <Radio.Group
@@ -24,10 +43,10 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
         onChange(value);
       }}
     >
-      <Radio.Button value="builder">
+      <Radio.Button value={ChartOptionsMode.BASIC}>
         <LineChartOutlined /> {t('Basic')}
       </Radio.Button>
-      <Radio.Button value="custom">
+      <Radio.Button value={ChartOptionsMode.CUSTOM}>
         <FunctionOutlined /> {t('Custom')}
       </Radio.Button>
     </Radio.Group>
@@ -36,7 +55,7 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
 
 export const ChartOptionsPanel: React.FC = observer(() => {
   const form = useForm();
-  const mode = form?.values?.chart?.option?.mode || 'custom';
+  const mode = form?.values?.chart?.option?.mode || ChartOptionsMode.CUSTOM;
 
   return (
     <ObjectField name="chart.option">
@@ -47,15 +66,10 @@ export const ChartOptionsPanel: React.FC = observer(() => {
       >
         <Field name="mode" component={[OptionsMode]} />
       </div>
-      {mode === 'builder' ? (
+      {mode === ChartOptionsMode.BASIC ? (
         <ChartOptionsBuilder />
       ) : (
-        <Field
-          name="raw"
-          component={[ChartOptionsEditor]}
-          initialValue={`return {
-}`}
-        />
+        <Field name="raw" component={[ChartOptionsEditor]} initialValue={customInitialValue} />
       )}
     </ObjectField>
   );
