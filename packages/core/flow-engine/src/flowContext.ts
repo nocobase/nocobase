@@ -938,7 +938,7 @@ class BaseFlowEngineContext extends FlowContext {
   >;
   declare getEvents: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
     string,
-    EventDefinition<TModel>
+    EventDefinition<TModel, TCtx>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare engine: FlowEngine;
@@ -966,7 +966,7 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
   >;
   declare getEvents: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>() => Map<
     string,
-    EventDefinition<TModel>
+    EventDefinition<TModel, TCtx>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
   declare createResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;

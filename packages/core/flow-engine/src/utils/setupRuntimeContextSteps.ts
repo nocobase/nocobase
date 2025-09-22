@@ -8,20 +8,19 @@
  */
 
 import type { FlowRuntimeContext } from '../flowContext';
-import { FlowDefinition } from '../FlowDefinition';
 import { FlowModel } from '../models/flowModel';
-import { escapeT } from './translation';
+import { DefaultStructure, StepDefinition } from '../types';
 
 /**
  * 为 FlowRuntimeContext 设置 steps 属性及其 meta 信息
  * @param ctx FlowRuntimeContext 实例
- * @param flow 流定义
+ * @param flowSteps 流定义
  * @param model FlowModel 实例
  * @param flowKey key
  */
 export function setupRuntimeContextSteps(
   ctx: FlowRuntimeContext<any>,
-  flow: FlowDefinition,
+  flowSteps: Record<string, StepDefinition<FlowModel<DefaultStructure>>>,
   model: FlowModel,
   flowKey: string,
 ): void {
@@ -29,10 +28,9 @@ export function setupRuntimeContextSteps(
   const stepsMetaProperties: Record<string, any> = {};
 
   // 构建 meta 信息和步骤对象
-  for (const stepKey in flow.steps) {
-    if (Object.prototype.hasOwnProperty.call(flow.steps, stepKey)) {
-      const flowStep = flow.steps[stepKey];
-      const stepParams = model.getStepParams(flowKey, stepKey) || {};
+  for (const stepKey in flowSteps) {
+    if (Object.prototype.hasOwnProperty.call(flowSteps, stepKey)) {
+      const flowStep = flowSteps[stepKey];
 
       // 根据 uiSchema 构建细化的 params meta
       const paramsProperties: Record<string, any> = {};

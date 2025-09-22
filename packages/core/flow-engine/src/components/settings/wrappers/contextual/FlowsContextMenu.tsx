@@ -111,7 +111,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             }
 
             const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-            setupRuntimeContextSteps(ctx, flow, model, flowKey);
+            setupRuntimeContextSteps(ctx, flow.steps, model, flowKey);
             ctx.defineProperty('currentStep', { value: step });
 
             openStepSettingsDialog({
