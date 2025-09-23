@@ -244,6 +244,14 @@ FormItemModel.registerFlow({
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;
         }
+        // 在子表单/子表格内，不提供默认值设置（检测父级为关联子容器：SubForm/SubTable）
+        if ((ctx.model.parent?.parent as any)?.updateAssociation) {
+          return;
+        }
+        // 当前字段组件本身为 SubForm/SubTable 时，也不提供默认值设置
+        if ((ctx.model.subModels as any)?.field?.updateAssociation) {
+          return;
+        }
         const iface = ctx.model.collectionField?.interface;
         if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
           return;
