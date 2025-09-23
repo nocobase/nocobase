@@ -63,7 +63,7 @@ const getFormFields = (ctx: any) => {
 
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
-  title: 'Block properties',
+  title: escapeT('Set block state'),
   scene: ActionScene.BLOCK_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -79,7 +79,7 @@ export const linkageSetBlockProps = defineAction({
           <Select
             value={value}
             onChange={onChange}
-            placeholder={t('Please select a state')}
+            placeholder={t('Please select state')}
             style={{ width: '100%' }}
             options={[
               { label: t('Visible'), value: 'visible' },
@@ -98,7 +98,7 @@ export const linkageSetBlockProps = defineAction({
 
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
-  title: 'Button properties',
+  title: escapeT('Set button state'),
   scene: ActionScene.ACTION_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -114,7 +114,7 @@ export const linkageSetActionProps = defineAction({
           <Select
             value={value}
             onChange={onChange}
-            placeholder={t('Please select a state')}
+            placeholder={t('Please select state')}
             style={{ width: '100%' }}
             options={[
               { label: t('Visible'), value: 'visible' },
@@ -135,7 +135,7 @@ export const linkageSetActionProps = defineAction({
 
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
-  title: 'Field properties',
+  title: escapeT('Set field state'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -261,7 +261,7 @@ export const linkageSetFieldProps = defineAction({
 
 export const linkageSetDetailsFieldProps = defineAction({
   name: 'linkageSetDetailsFieldProps',
-  title: 'Field properties',
+  title: escapeT('Set field state'),
   scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -371,7 +371,7 @@ export const linkageSetDetailsFieldProps = defineAction({
 
 export const linkageAssignField = defineAction({
   name: 'linkageAssignField',
-  title: 'Field assignment',
+  title: escapeT('Field assignment'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 200,
   uiSchema: {
@@ -452,7 +452,7 @@ export const linkageAssignField = defineAction({
 
 export const linkageRunjs = defineAction({
   name: 'linkageRunjs',
-  title: 'Execute JavaScript',
+  title: escapeT('Execute JavaScript'),
   scene: [
     ActionScene.BLOCK_LINKAGE_RULES,
     ActionScene.FIELD_LINKAGE_RULES,
@@ -760,7 +760,7 @@ const LinkageRulesUI = observer(
                           }}
                         >
                           <span style={{ fontWeight: 500, color: '#262626' }}>
-                            {actionDef.title}
+                            {t(actionDef.title)}
                             <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                           </span>
                           <Tooltip title="Delete action">
@@ -791,7 +791,7 @@ const LinkageRulesUI = observer(
                 menu={{
                   items: getActionsDefinition().map((action) => ({
                     key: action.name,
-                    label: action.title || action.name,
+                    label: t(action.title || action.name),
                     onClick: () => handleAddAction(index, action.name),
                   })),
                 }}
