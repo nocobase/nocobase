@@ -14,27 +14,17 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
-  FlowModelContext,
   FlowModelRenderer,
   FlowSettingsButton,
   MultiRecordResource,
   SingleRecordResource,
-  buildRecordMeta,
   createCurrentRecordMetaFactory,
   escapeT,
-  inferRecordRef,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import {
-  BlockGridModel,
-  BlockSceneEnum,
-  CollectionBlockModel,
-  RecordActionGroupModel,
-  RecordActionModel,
-} from '../../base';
+import { BlockGridModel, BlockSceneEnum, CollectionBlockModel, RecordActionModel } from '../../base';
 import { FormComponent } from '../form/FormBlockModel';
 import { DetailsGridModel } from './DetailsGridModel';
 
