@@ -20,8 +20,8 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
+import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { DataBlockModel } from './DataBlockModel';
 
 export interface ResourceSettingsInitParams {
@@ -39,7 +39,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
    * 子菜单过滤函数
    */
   static filterCollection(_collection: Collection) {
-    return true;
+    if (_collection.filterTargetKey) {
+      return true;
+    }
+    return false;
   }
 
   /**
