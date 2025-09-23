@@ -113,6 +113,9 @@ export const QueryPanel: React.FC = observer(() => {
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: '8px',
+            // 解决父容器裁剪导致圆角/边框被吃掉
+            paddingTop: 1,
+            paddingLeft: 1,
           }}
         >
           {/* 左边：模式切换，点击时收起数据结果预览 */}
@@ -128,7 +131,7 @@ export const QueryPanel: React.FC = observer(() => {
             </Button>
           </Space>
         </div>
-
+        {/* 下面保持不变 */}
         {showResult ? (
           <div style={{ marginTop: 8 }}>
             <ResultPanel />
