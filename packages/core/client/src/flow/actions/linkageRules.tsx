@@ -401,7 +401,7 @@ export const linkageRunjs = defineAction({
 
 const LinkageRulesUI = observer(
   (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
-    const { value: rules, supportedActions, title = 'Linkage rules' } = props;
+    const { value: rules, supportedActions } = props;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
