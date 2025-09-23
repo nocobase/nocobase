@@ -23,20 +23,32 @@ const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span 
  */
 export class JSFieldModel extends FieldModel {
   getInputArgs() {
-    const inputArgs = {};
-    if (this.context.resource) {
-      const sourceId = this.context.resource.getSourceId();
-      if (sourceId) {
-        inputArgs['sourceId'] = sourceId;
-      }
+    const field = this.context.collectionField;
+    if (field?.isAssociationField?.()) {
+      const targetCollection = field.targetCollection;
+      const sourceCollection = this.context.blockModel?.collection;
+      const sourceKey = field.sourceKey || sourceCollection?.filterTargetKey;
+      const targetKey = field?.targetKey;
+      const currentRecord = this.props?.value;
+
+      return {
+        collectionName: targetCollection?.name,
+        associationName: sourceCollection?.name && field?.name ? `${sourceCollection.name}.${field.name}` : undefined,
+        sourceId: this.context.record?.[sourceKey],
+        filterByTk:
+          currentRecord && typeof currentRecord === 'object' && !Array.isArray(currentRecord)
+            ? currentRecord?.[targetKey]
+            : undefined,
+      };
     }
-    if (this.context.collection && this.context.record) {
-      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
-      if (filterByTk) {
-        inputArgs['filterByTk'] = filterByTk;
-      }
-    }
-    return inputArgs;
+
+    return {
+      sourceId: this.context.resource?.getSourceId?.(),
+      filterByTk:
+        this.context.collection && this.context.record
+          ? this.context.collection.getFilterByTK(this.context.record)
+          : undefined,
+    };
   }
 
   /**
