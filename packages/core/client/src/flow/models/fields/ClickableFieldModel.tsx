@@ -70,7 +70,8 @@ export class ClickableFieldModel extends FieldModel {
       style: {
         ...commonStyle,
         whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
-        width: restProps.width || 'auto', // 传入的宽度，默认值为auto
+        width: restProps.width || 'auto',
+        color: 'inherit',
       },
     };
 
