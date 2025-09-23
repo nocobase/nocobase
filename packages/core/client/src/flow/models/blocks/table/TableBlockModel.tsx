@@ -285,7 +285,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     }
     return (
       <td className={classNames(className)} {...restProps}>
-        {children}
+        <div style={{ width }}> {children}</div>
       </td>
     );
   });
