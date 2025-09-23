@@ -35,6 +35,23 @@ export class JSColumnModel extends TableCustomColumnModel {
     );
   }
 
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>

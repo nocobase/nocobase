@@ -22,6 +22,23 @@ const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span 
  * - 通过 ctx.element 直接操作渲染容器（经过 ElementProxy 包裹，带 XSS 保护）。
  */
 export class JSFieldModel extends FieldModel {
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   /**
    * 在渲染前注入副作用：当 props.value 变化时，重新执行 jsSettings
    * 说明：fork 实例在表格逐行渲染时会复用该逻辑，确保按值更新。

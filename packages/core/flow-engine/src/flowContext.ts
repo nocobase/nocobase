@@ -11,6 +11,7 @@ import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
+import * as antd from 'antd';
 import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
@@ -18,7 +19,6 @@ import _ from 'lodash';
 import pino from 'pino';
 import qs from 'qs';
 import React, { createRef } from 'react';
-import * as antd from 'antd';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -38,6 +38,8 @@ import {
 } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
+  createSafeDocument,
+  createSafeWindow,
   escapeT,
   extractPropertyPath,
   extractUsedVariablePaths,
@@ -1257,6 +1259,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const runner = new JSRunner({
         globals: {
           ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
           ...variables,
         },
       });
