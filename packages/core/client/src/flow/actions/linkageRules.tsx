@@ -82,8 +82,8 @@ export const linkageSetBlockProps = defineAction({
             placeholder={t('Please select a state')}
             style={{ width: '100%' }}
             options={[
-              { label: t('Show block'), value: 'show' },
-              { label: t('Hide block'), value: 'hide' },
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
             ]}
             allowClear
           />
@@ -117,10 +117,10 @@ export const linkageSetActionProps = defineAction({
             placeholder={t('Please select a state')}
             style={{ width: '100%' }}
             options={[
-              { label: t('Show button'), value: 'show' },
-              { label: t('Hide button'), value: 'hide' },
-              { label: t('Enable button'), value: 'enable' },
-              { label: t('Disable button'), value: 'disable' },
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+              { label: t('Enabled'), value: 'enabled' },
+              { label: t('Disabled'), value: 'disabled' },
             ]}
             allowClear
           />
@@ -129,7 +129,7 @@ export const linkageSetActionProps = defineAction({
     },
   },
   handler(ctx, { value, setProps }) {
-    setProps(ctx.model, { hiddenModel: value === 'hide', disabled: value === 'disable' });
+    setProps(ctx.model, { hiddenModel: value === 'hidden', disabled: value === 'disabled' });
   },
 });
 
@@ -151,11 +151,11 @@ export const linkageSetFieldProps = defineAction({
 
         // 状态选项
         const stateOptions = [
-          { label: t('Show'), value: 'show' },
-          { label: t('Hide'), value: 'hide' },
-          { label: t('Hide (keep value)'), value: 'hideKeepValue' },
+          { label: t('Visible'), value: 'visible' },
+          { label: t('Hidden'), value: 'hidden' },
+          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
           { label: t('Required'), value: 'required' },
-          { label: t('Optional'), value: 'optional' },
+          { label: t('Not required'), value: 'notRequired' },
           { label: t('Disabled'), value: 'disabled' },
           { label: t('Enabled'), value: 'enabled' },
         ];
@@ -224,19 +224,19 @@ export const linkageSetFieldProps = defineAction({
           let props: any = {};
 
           switch (state) {
-            case 'show':
+            case 'visible':
               props = { hiddenModel: false };
               break;
-            case 'hide':
+            case 'hidden':
               props = { hiddenModel: true };
               break;
-            case 'hideKeepValue':
+            case 'hiddenReservedValue':
               props = { hidden: true };
               break;
             case 'required':
               props = { required: true };
               break;
-            case 'optional':
+            case 'notRequired':
               props = { required: false };
               break;
             case 'disabled':
@@ -277,9 +277,9 @@ export const linkageSetDetailsFieldProps = defineAction({
 
         // 状态选项
         const stateOptions = [
-          { label: t('Show'), value: 'show' },
-          { label: t('Hide'), value: 'hide' },
-          { label: t('Hide (keep value)'), value: 'hideKeepValue' },
+          { label: t('Visible'), value: 'visible' },
+          { label: t('Hidden'), value: 'hidden' },
+          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
         ];
 
         const handleFieldsChange = (selectedFields: string[]) => {
@@ -346,13 +346,13 @@ export const linkageSetDetailsFieldProps = defineAction({
           let props: any = {};
 
           switch (state) {
-            case 'show':
+            case 'visible':
               props = { hiddenModel: false };
               break;
-            case 'hide':
+            case 'hidden':
               props = { hiddenModel: true };
               break;
-            case 'hideKeepValue':
+            case 'hiddenReservedValue':
               props = { hidden: true };
               break;
             default:
