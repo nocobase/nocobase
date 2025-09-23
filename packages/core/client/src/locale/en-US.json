@@ -990,5 +990,7 @@
   "Check strength": "Check strength",
   "N/A": "N/A",
   "No form available for reset.": "No form available for reset.",
-  "No form available for submission.": "No form available for submission."
+  "No form available for submission.": "No form available for submission.",
+  "Collapse button": "Collapse",
+  "Expand button": "Expand"
 }

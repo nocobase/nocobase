@@ -150,6 +150,9 @@
   "Large screen device": "大屏幕设备",
   "Table OID(Inheritance)": "数据表 OID(继承)",
   "Collapse": "折叠面板",
+  "Collapsed rows": "折叠时显示的行数",
+  "Enter number of rows to display": "请输入显示行数",
+  "Default collapsed": "默认折叠",
   "Select data source": "选择数据源",
   "Calendar": "日历",
   "Delete events": "删除日程",
@@ -1383,5 +1386,8 @@
   "Connect fields": "连接字段",
   "Please select fields to filter": "请选择需要筛选的字段",
   "Separate multiple values with comma or Enter": "多个值用逗号或回车分隔",
-  "Default operator": "默认操作符"
+  "Default operator": "默认操作符",
+  "Collapse button": "折叠",
+  "Expand button": "展开",
+  "Collapse settings": "折叠设置"
 }
