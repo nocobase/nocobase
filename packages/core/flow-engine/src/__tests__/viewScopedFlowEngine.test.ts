@@ -14,6 +14,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { APIClient as SDKApiClient } from '@nocobase/sdk';
 import { FlowEngine } from '../flowEngine';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { FlowModel } from '../models';
@@ -99,8 +100,17 @@ describe('ViewScopedFlowEngine', () => {
   it('uses local context and delegates to parent context', () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);
-    // local context should be a distinct instance
-    expect(child.context).not.toBe(parent.context);
+    // In runtime, context.api is always provided by host app.
+    // Provide a minimal mock here to avoid incidental getter access (e.g. ctx.auth) from throwing.
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    parent.context.defineProperty('api', { value: api });
+    // local context should be a distinct instance (avoid pretty-printing contexts)
+    const parentCtx = parent.context;
+    const childCtx = child.context;
+    expect(Object.is(childCtx, parentCtx)).toBe(false);
     // define a value on parent context
     parent.context.defineProperty('foo', { value: 42 });
     // child context should be able to read via delegate chain
