@@ -25,7 +25,6 @@ export class DisplayMapFieldModel extends FieldModel {
     return null;
   }
 
-  // @reactive
   public render() {
     const { value } = this.props;
     return (

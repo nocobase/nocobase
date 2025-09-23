@@ -12,17 +12,7 @@ interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   title?: string; // 可选：流显示名称
   auto?: boolean; // 可选：是否自动运行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
-  on?:
-    | string
-    | {
-        eventName: string;
-        /**
-         * 触发条件，可使用 Filter 结构或返回布尔值的函数。
-         * - Filter 结构会在运行期套用 `evaluateConditions`，自动解析 `ctx.*` 变量
-         * - 函数会收到运行态上下文（兼容 FlowContext API，附带 model/event/inputArgs）
-         */
-        condition?: FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
-      }; // 可选：事件触发配置（支持附加条件）
+  on?: { eventName: string }; // 可选：事件触发配置
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
 }
 
@@ -119,34 +109,6 @@ const myFlow = defineFlow<MyFlowSteps>({
 
 MyFlowModel.registerFlow(myFlow); // 注册流
 ```
-
-#### 事件触发条件 `on.condition`
-
-- `condition` 支持两种写法：
-  - **过滤器结构**：与「联动规则」统一的 `FilterGroupType` 形状（`logic + items`）。运行期会自动使用 `evaluateConditions`，并结合 `ctx` 解析变量（例如 `ctx.model`、`ctx.event`、`ctx.inputArgs`）。
-  - **函数**：`(ctx: FlowEngineContext) => boolean | Promise<boolean>`，可直接书写复杂判断。
-- 当条件为空对象时默认视为通过；若结构非法（如 items 内没有有效条件）则不会触发流。
-- 示例：
-
-```json5
-{
-  "logic": "$and",
-  "items": [
-    {
-      "path": "{{ ctx.event.args.type }}",
-      "operator": "$eq",
-      "value": "primary"
-    },
-    {
-      "path": "{{ ctx.model.props.count }}",
-      "operator": "$gt",
-      "value": 10
-    }
-  ]
-}
-```
-
-> **提示**：`ctx.event.args` 与 `model.dispatchEvent(eventName, inputArgs)` 的入参一致，便于在条件中判断事件上下文。
 
 ---
 

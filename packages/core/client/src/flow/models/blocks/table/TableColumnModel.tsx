@@ -27,7 +27,7 @@ import {
   ModelRenderMode,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
-import { get } from 'lodash';
+import { get, omit } from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -59,10 +59,11 @@ export class TableColumnModel extends DisplayItemModel {
         return {
           key: field.name,
           label: field.title,
+          refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
           toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
-          useModel: 'TableColumnModel',
+          useModel: this.name,
           createModelOptions: () => ({
-            use: 'TableColumnModel',
+            use: this.name,
             stepParams: {
               fieldSettings: {
                 init: {
@@ -136,6 +137,7 @@ export class TableColumnModel extends DisplayItemModel {
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
         title: this.props.title,
+        overflowMode: this.props.overflowMode,
         model: this,
         // handleSave,
       }),
@@ -192,7 +194,7 @@ export class TableColumnModel extends DisplayItemModel {
           });
           const value = get(record, this.fieldPath);
           return (
-            <FormItem key={field.uid} {...this.props} value={value} noStyle={true}>
+            <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
             </FormItem>
           );
@@ -219,6 +221,8 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
+        // for quick edit
+        await ctx.model.applySubModelsAutoFlows('field');
         ctx.model.setProps({
           ...collectionField.getComponentProps(),
         });
@@ -283,6 +287,11 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: escapeT('Enable quick edit'),
       uiSchema: (ctx) => {
+        const blockCollectionName = ctx.model.context.blockModel.collection.name;
+        const fieldCollectionName = ctx.model.collectionField.collectionName;
+        if (blockCollectionName !== fieldCollectionName) {
+          return;
+        }
         return {
           editable: {
             'x-component': 'Switch',

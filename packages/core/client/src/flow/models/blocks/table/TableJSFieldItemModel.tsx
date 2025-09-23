@@ -22,6 +22,7 @@ export class TableJSFieldItemModel extends TableCustomColumnModel {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
+      refreshTargets: ['TableColumnModel'],
     });
     return groups?.[0]?.children || [];
   }

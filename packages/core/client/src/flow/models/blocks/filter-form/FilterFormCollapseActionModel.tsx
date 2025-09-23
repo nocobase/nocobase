@@ -15,7 +15,8 @@ import { observer } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { useFlowModel } from '@nocobase/flow-engine';
+import { escapeT, useFlowModel } from '@nocobase/flow-engine';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 // 使用observable创建响应式状态
 const collapseState = observable({
@@ -118,7 +119,16 @@ FilterFormCollapseActionModel.define({
 
 FilterFormCollapseActionModel.registerEvents({
   collapseToggle: {
-    label: tval('Collapse / Expand toggle'),
+    title: tval('Collapse / Expand toggle'),
     name: 'collapseToggle',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
   },
 });

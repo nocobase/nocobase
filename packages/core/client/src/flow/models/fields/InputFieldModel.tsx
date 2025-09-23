@@ -21,30 +21,13 @@ export class InputFieldModel extends FieldModel {
 InputFieldModel.define({
   label: escapeT('Input'),
 });
-EditableItemModel.bindModelToInterface(
-  'InputFieldModel',
-  ['input', 'email', 'phone', 'uuid', 'url', 'sequence', 'nanoid'],
-  {
-    isDefault: true,
-  },
-);
+EditableItemModel.bindModelToInterface('InputFieldModel', ['input', 'email', 'phone', 'uuid', 'url', 'nanoid'], {
+  isDefault: true,
+});
 
 FilterableItemModel.bindModelToInterface(
   'InputFieldModel',
-  [
-    'input',
-    'email',
-    'phone',
-    'uuid',
-    'url',
-    'sequence',
-    'nanoid',
-    'textarea',
-    'markdown',
-    'richText',
-    'password',
-    'color',
-  ],
+  ['input', 'email', 'phone', 'uuid', 'url', 'nanoid', 'textarea', 'markdown', 'richText', 'password', 'color'],
   {
     isDefault: true,
   },

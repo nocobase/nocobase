@@ -1082,6 +1082,41 @@ describe('FlowContext delayed meta loading', () => {
   });
 });
 
+describe('getPropertyMetaTree with deep delegate meta', () => {
+  it('should resolve meta defined on a deeper delegate when using value path', () => {
+    // bottom defines the actual meta for 'collection'
+    const bottom = new FlowContext();
+    bottom.defineProperty('collection', {
+      meta: {
+        type: 'object',
+        title: 'Collection',
+        properties: {
+          name: { type: 'string', title: 'Name' },
+        },
+      },
+    });
+
+    // middle delegates to bottom (no own meta)
+    const middle = new FlowContext();
+    middle.addDelegate(bottom);
+
+    // top delegates to middle (no own meta)
+    const top = new FlowContext();
+    top.addDelegate(middle);
+
+    // Previously, findMetaByPath only checked first-level delegates and failed here.
+    // After fix, it should find 'collection' meta through deep delegates.
+    const subTree = top.getPropertyMetaTree('{{ ctx.collection }}');
+    expect(Array.isArray(subTree)).toBe(true);
+    expect(subTree.length).toBeGreaterThan(0);
+    // Ensure we actually got the field children of collection
+    const fieldNames = subTree.map((n) => n.name);
+    expect(fieldNames).toContain('name');
+    // Also verify each child has full path starting with ['collection', ...]
+    subTree.forEach((n) => expect(n.paths[0]).toBe('collection'));
+  });
+});
+
 describe('FlowContext resolveOnServer selective server resolution', () => {
   it('does not call server by default (no resolveOnServer set)', async () => {
     const engine = new FlowEngine();

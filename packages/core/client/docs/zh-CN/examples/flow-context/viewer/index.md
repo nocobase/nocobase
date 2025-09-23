@@ -58,6 +58,8 @@ useFlowView + useFlowContext
 
 <code src="./embed.tsx"></code>
 
+<code src="./embed-header-footer.tsx"></code>
+
 ### 气泡卡片
 
 <code src="./popover.tsx"></code>

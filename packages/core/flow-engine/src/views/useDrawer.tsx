@@ -15,6 +15,8 @@ import { FlowViewContextProvider } from '../FlowContextProvider';
 import { createViewMeta } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
+import { FlowEngineProvider } from '../provider';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 
 let uuid = 0;
 
@@ -105,6 +107,11 @@ export function useDrawer() {
       meta: createViewMeta(ctx, () => currentDrawer),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
+    // build a scoped engine for this view; isolate model instances & cache by default
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    // expose scoped engine to view context first, then inherit parent context
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
     if (config.inheritContext !== false) {
       ctx.addDelegate(flowContext);
     } else {
@@ -158,10 +165,12 @@ export function useDrawer() {
       },
     );
 
-    const renderDrawer = (children: any) => (
-      <FlowViewContextProvider context={ctx}>
-        <DrawerWithContext>{children}</DrawerWithContext>
-      </FlowViewContextProvider>
+    const renderDrawer = (children: React.ReactNode) => (
+      <FlowEngineProvider engine={scopedEngine}>
+        <FlowViewContextProvider context={ctx}>
+          <DrawerWithContext>{children}</DrawerWithContext>
+        </FlowViewContextProvider>
+      </FlowEngineProvider>
     );
 
     closeFunc = holderRef.current?.patchElement(renderDrawer);
@@ -171,7 +180,7 @@ export function useDrawer() {
   const api = React.useMemo(() => ({ open }), []);
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement<(children: any) => React.ReactElement>();
+      const [elements, patchElement] = usePatchElement<(children: React.ReactNode) => React.ReactElement>();
       React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
 
       // 嵌套渲染：后面的元素是前一个元素的子元素

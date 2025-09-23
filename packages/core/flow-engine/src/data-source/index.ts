@@ -693,7 +693,6 @@ export class CollectionField {
         mode: this.type === 'array' ? 'multiple' : undefined,
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
-        valuePropName: this.interface === 'checkbox' ? 'checked' : 'value',
         target: target,
       },
       _.isUndefined,

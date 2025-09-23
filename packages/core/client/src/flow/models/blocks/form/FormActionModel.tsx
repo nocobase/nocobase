@@ -70,6 +70,7 @@ FormSubmitActionModel.registerFlow({
               await resource.refresh();
             } else {
               blockModel.form.resetFields();
+              blockModel.emitter.emit('onFieldReset');
             }
           } else if (resource instanceof MultiRecordResource) {
             const currentFilterByTk = resource.getMeta('currentFilterByTk');

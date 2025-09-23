@@ -12,24 +12,66 @@ import ReactDOM from 'react-dom';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
+import { createViewMeta } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
-import { createViewMeta } from './createViewMeta';
+import { FlowEngineProvider } from '../provider';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 
 let uuid = 0;
+
+// 稳定的 Holder 组件，避免在父组件重渲染时更换组件类型导致卸载， 否则切换主题时会丢失所有页面内容
+const PageElementsHolder = React.memo(
+  React.forwardRef((props: any, ref: any) => {
+    const [elements, patchElement] = usePatchElement();
+    React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+    return <>{elements}</>;
+  }),
+);
 
 export function usePage() {
   const holderRef = React.useRef(null);
 
   const open = (config, flowContext) => {
     uuid += 1;
-    const pageRef = React.createRef<{ destroy: () => void; update: (config: any) => void }>();
+    const pageRef = React.createRef<{
+      destroy: () => void;
+      update: (config: any) => void;
+      setFooter: (footer: React.ReactNode) => void;
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => void;
+    }>();
 
     let closeFunc: (() => void) | undefined;
     let resolvePromise: (value?: any) => void;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
+
+    // Footer 组件实现
+    const FooterComponent = ({ children, ...props }) => {
+      React.useEffect(() => {
+        pageRef.current?.setFooter(children);
+
+        return () => {
+          pageRef.current?.setFooter(null);
+        };
+      }, [children]);
+
+      return null; // Footer 组件本身不渲染内容
+    };
+
+    // Header 组件实现
+    const HeaderComponent = ({ ...props }) => {
+      React.useEffect(() => {
+        pageRef.current?.setHeader(props as any);
+
+        return () => {
+          pageRef.current?.setHeader(null);
+        };
+      }, [props]);
+
+      return null; // Header 组件本身不渲染内容
+    };
 
     const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
 
@@ -48,6 +90,14 @@ export function usePage() {
         pageRef.current?.destroy();
         closeFunc?.();
       },
+      Header: HeaderComponent,
+      Footer: FooterComponent,
+      setFooter: (footer: React.ReactNode) => {
+        pageRef.current?.setFooter(footer);
+      },
+      setHeader: (header: { title?: React.ReactNode; extra?: React.ReactNode }) => {
+        pageRef.current?.setHeader(header);
+      },
       navigation: config.inputArgs?.navigation,
     };
 
@@ -57,6 +107,10 @@ export function usePage() {
       meta: createViewMeta(ctx, () => currentPage),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
+    // build a scoped engine for this view; isolate model instances & cache by default
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
     if (inheritContext) {
       ctx.addDelegate(flowContext);
     } else {
@@ -69,7 +123,8 @@ export function usePage() {
         const mountedRef = React.useRef(false);
         // 支持 content 为函数，传递 currentPage
         const pageContent = typeof content === 'function' ? content(currentPage, ctx) : content;
-
+        // 响应themeToken的响应式更新
+        void ctx.themeToken;
         // eslint-disable-next-line react-hooks/rules-of-hooks
         React.useEffect(() => {
           config.onOpen?.(currentPage, ctx);
@@ -103,9 +158,11 @@ export function usePage() {
     );
 
     const page = (
-      <FlowViewContextProvider context={ctx}>
-        <PageWithContext />
-      </FlowViewContextProvider>
+      <FlowEngineProvider engine={scopedEngine}>
+        <FlowViewContextProvider context={ctx}>
+          <PageWithContext />
+        </FlowViewContextProvider>
+      </FlowEngineProvider>
     );
 
     if (target && target instanceof HTMLElement) {
@@ -118,13 +175,6 @@ export function usePage() {
   };
 
   const api = React.useMemo(() => ({ open }), []);
-  const ElementsHolder = React.memo(
-    React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement();
-      React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
-      return <>{elements}</>;
-    }),
-  );
 
-  return [api, <ElementsHolder key="page-holder" ref={holderRef} />];
+  return [api, <PageElementsHolder key="page-holder" ref={holderRef} />];
 }

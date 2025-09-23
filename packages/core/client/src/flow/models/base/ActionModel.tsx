@@ -14,6 +14,7 @@ import type { ButtonProps } from 'antd/es/button';
 import _ from 'lodash';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
+import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
 
@@ -182,5 +183,17 @@ ActionModel.registerFlow({
 });
 
 ActionModel.registerEvents({
-  click: { label: escapeT('Click'), name: 'click' },
+  click: {
+    title: escapeT('Click'),
+    name: 'click',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
+  },
 });

@@ -9,6 +9,7 @@
 
 import {
   CollectionField,
+  createCollectionContextMeta,
   EditableItemModel,
   escapeT,
   FlowModel,
@@ -127,6 +128,14 @@ export class RecordPickerFieldModel extends FieldModel {
   }
   onInit(option) {
     super.onInit(option);
+    // For association fields, expose target collection to variable selectors
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField?.targetCollection,
+      meta: createCollectionContextMeta(
+        () => this.context.collectionField?.targetCollection,
+        this.context.t('Current collection'),
+      ),
+    });
     this.onClick = (e) => {
       this.dispatchEvent('openView', {
         event: e,
@@ -234,6 +243,16 @@ RecordPickerFieldModel.registerFlow({
             },
           },
           content: () => <RecordPickerContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
         });
       },
     },

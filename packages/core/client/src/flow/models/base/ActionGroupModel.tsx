@@ -99,9 +99,11 @@ export class ActionGroupModel extends FlowModel {
 }
 
 export class CollectionActionGroupModel extends ActionGroupModel {
+  static baseClass = ActionModel;
   static scene = ActionSceneEnum.collection;
 }
 
 export class RecordActionGroupModel extends ActionGroupModel {
+  static baseClass = ActionModel;
   static scene = ActionSceneEnum.record;
 }

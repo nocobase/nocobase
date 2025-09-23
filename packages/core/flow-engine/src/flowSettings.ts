@@ -60,6 +60,44 @@ export interface FlowSettingsOpenOptions {
           target?: any;
           onOpen?: () => void;
           onClose?: () => void;
+          /**
+           * 自定义弹窗底部内容
+           *
+           * 支持三种形式：
+           * 1. `React.ReactNode` - 直接替换整个底部内容
+           * 2. `Function` - 函数式自定义，接收原始底部内容和按钮组件，返回新的内容
+           * 3. `null` - 隐藏底部内容
+           *
+           * @example
+           * ```typescript
+           * // 1. 直接替换底部内容
+           * footer: <div>Custom Footer</div>
+           *
+           * // 2. 函数式自定义 - 在原有按钮基础上添加内容
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+           *     <span>Additional info</span>
+           *     {originNode}
+           *   </div>
+           * )
+           *
+           * // 3. 函数式自定义 - 完全重新组合按钮
+           * footer: (originNode, { OkBtn, CancelBtn }) => (
+           *   <Space>
+           *     <CancelBtn title="Close" />
+           *     <Button type="link">Help</Button>
+           *     <OkBtn title="Apply" />
+           *   </Space>
+           * )
+           *
+           * // 4. 隐藏底部
+           * footer: null
+           * ```
+           */
+          footer?:
+            | React.ReactNode
+            | ((originNode: React.ReactNode, extra: { OkBtn: React.FC; CancelBtn: React.FC }) => React.ReactNode)
+            | null;
           [key: string]: any;
         };
       };
@@ -478,7 +516,7 @@ export class FlowSettings {
    * - options.flowKey?: 目标 flow 的 key。
    * - options.flowKeys?: 多个目标 flow 的 key 列表（当同时提供 flowKey 时被忽略）。
    * - options.stepKey?: 目标步骤的 key（通常与 flowKey 搭配使用）。
-   * - options.uiMode?: 'dialog' | 'drawer' | 'embed' ｜ { type?: 'dialog' | 'drawer' | 'embed'; props?: { title?: string; width?: number; target?: any; onOpen?: () => void; onClose?: () => void; [key: string]: any } }，默认 'dialog'。
+   * - options.uiMode?: 默认 'dialog'。
    * - options.onCancel?: 取消按钮点击后触发的回调（无参数）。
    * - options.onSaved?: 配置保存成功后触发的回调（无参数）。
    *
@@ -564,7 +602,7 @@ export class FlowSettings {
 
         // 构建 settings 上下文
         const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext as any, flow as any, model as any, fk);
+        setupRuntimeContextSteps(flowRuntimeContext as any, flow.steps, model as any, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
 
         // 解析默认值 + 当前参数
@@ -607,6 +645,14 @@ export class FlowSettings {
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    const openView = viewer[modeType || 'dialog'].bind(viewer);
+    const flowEngine = (model as any).flowEngine as FlowEngine;
+    const scopes = {
+      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
+      useFlowSettingsContext,
+      ...(flowEngine?.flowSettings?.scopes || {}),
+    } as Record<string, any>;
+
     let modeProps: Record<string, any> =
       typeof resolvedUiMode === 'object' && resolvedUiMode ? resolvedUiMode.props || {} : {};
 
@@ -614,11 +660,21 @@ export class FlowSettings {
       const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
       const onOpen = modeProps.onOpen;
       const onClose = modeProps.onClose;
+
+      if (target) {
+        target.innerHTML = ''; // 清空容器内原有内容
+      }
+
       modeProps = {
         target,
+        styles: {
+          body: {
+            padding: flowEngine.context.themeToken?.padding,
+          },
+        },
         ...modeProps,
         onOpen() {
-          target.style.width = modeProps.width || '50%';
+          target.style.width = modeProps.width || '33.3%';
           target.style.maxWidth = modeProps.maxWidth || '800px';
           onOpen?.();
         },
@@ -629,14 +685,6 @@ export class FlowSettings {
         },
       };
     }
-
-    const openView = viewer[modeType || 'dialog'].bind(viewer);
-    const flowEngine = (model as any).flowEngine;
-    const scopes = {
-      // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
-      useFlowSettingsContext,
-      ...(flowEngine?.flowSettings?.scopes || {}),
-    } as Record<string, any>;
 
     // 将步骤分组到 flow 下，用于 Collapse 分组展示
     const grouped: Record<string, { title: string; steps: StepEntry[] }> = {};
@@ -813,10 +861,8 @@ export class FlowSettings {
         currentView.submit = onSaveAll;
 
         const stepsEl = renderStepsContainer();
-        const footerButtons = React.createElement(
-          Space,
-          { align: 'end' },
-          React.createElement(
+        const Cancel = (props: { title?: string }) => {
+          return React.createElement(
             Button,
             {
               onClick: async () => {
@@ -828,10 +874,29 @@ export class FlowSettings {
                 }
               },
             },
-            t('Cancel'),
-          ),
-          React.createElement(Button, { type: 'primary', onClick: onSaveAll }, t('OK')),
+            props.title || t('Cancel'),
+          );
+        };
+        const Save = (props: { title?: string }) => {
+          return React.createElement(Button, { type: 'primary', onClick: onSaveAll }, props.title || t('Save'));
+        };
+
+        let footerButtons = React.createElement(
+          Space,
+          { align: 'end' },
+          React.createElement(Cancel),
+          React.createElement(Save),
         );
+
+        if (modeProps.footer) {
+          footerButtons = _.isFunction(modeProps.footer)
+            ? modeProps.footer(footerButtons, { OkBtn: Save, CancelBtn: Cancel })
+            : modeProps.footer;
+        }
+
+        if (modeProps.footer === null) {
+          footerButtons = null;
+        }
 
         let footerEl;
         if (currentView.Footer) {

@@ -8,7 +8,7 @@
  */
 
 import { CollectionField, escapeT } from '@nocobase/flow-engine';
-import { Tag } from 'antd';
+import { Tag, Typography } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
@@ -50,19 +50,20 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?) {
-    const { clickToOpen = false, displayStyle, titleField, ...restProps } = this.props;
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
       clickToOpen && this.onClick(e, record);
     };
+
     const commonStyle = {
       cursor: clickToOpen ? 'pointer' : 'default',
-      display: 'inline-flex',
       alignItems: 'center',
       gap: 4,
     };
+
     if (isTag) {
       return (
         value && (
@@ -79,7 +80,6 @@ export class ClickableFieldModel extends FieldModel {
         </a>
       );
     }
-
     return (
       <span {...restProps} style={commonStyle} className={restProps.className}>
         {display}
@@ -91,21 +91,31 @@ export class ClickableFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, displayStyle, fieldNames } = this.props;
+    const { value, displayStyle, fieldNames, overflowMode, width } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
+    const typographyProps = {
+      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      style: {
+        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
+        width: width || 'auto',
+      },
+    };
     if (titleField) {
       if (displayStyle === 'tag') {
-        return castArray(value).map((v, idx) => (
+        const result = castArray(value).map((v, idx) => (
           <React.Fragment key={idx}>{this.renderInDisplayStyle(v?.[titleField], v)}</React.Fragment>
         ));
+        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
       } else {
-        return castArray(value).flatMap((v, idx) => {
+        const result = castArray(value).flatMap((v, idx) => {
           const node = this.renderInDisplayStyle(v?.[titleField], v);
           return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
         });
+        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
       }
     } else {
-      return this.renderInDisplayStyle(value);
+      const textContent = <Typography.Text {...typographyProps}>{this.renderInDisplayStyle(value)}</Typography.Text>;
+      return textContent;
     }
   }
 }
@@ -117,15 +127,21 @@ ClickableFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: escapeT('Display style'),
-      uiSchema: {
-        displayStyle: {
-          'x-component': 'Radio.Group',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: escapeT('Tag'), value: 'tag' },
-            { label: escapeT('Text'), value: 'text' },
-          ],
-        },
+      uiSchema: (ctx) => {
+        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField.interface)) {
+          return null;
+        }
+
+        return {
+          displayStyle: {
+            'x-component': 'Radio.Group',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: escapeT('Tag'), value: 'tag' },
+              { label: escapeT('Text'), value: 'text' },
+            ],
+          },
+        };
       },
       defaultParams: {
         displayStyle: 'text',
@@ -150,6 +166,10 @@ ClickableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen });
       },
+    },
+    overflowMode: {
+      title: escapeT('Content overflow display mode'),
+      use: 'overflowMode',
     },
   },
 });

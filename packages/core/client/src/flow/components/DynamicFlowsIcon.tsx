@@ -22,7 +22,6 @@ import {
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
 import { observer } from '@formily/react';
-import { FilterGroup, LinkageFilterItem } from '@nocobase/client';
 import { useUpdate } from 'ahooks';
 import _ from 'lodash';
 
@@ -32,11 +31,14 @@ export const DynamicFlowsIcon: React.FC<{ model: FlowModel }> = (props) => {
   const handleClick = () => {
     const target = document.querySelector<HTMLDivElement>('#nocobase-embed-container');
 
+    target.innerHTML = ''; // 清空容器内原有内容
+
     model.context.viewer.embed({
       type: 'embed',
       target,
+      title: 'Edit event flows',
       onOpen() {
-        target.style.width = '50%';
+        target.style.width = '33.3%';
         target.style.maxWidth = '800px';
       },
       onClose() {
@@ -61,9 +63,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   // 创建新流的默认值
   const createNewFlow = (): any => ({
     title: t('Event flow'),
-    on: {
-      condition: { logic: '$and', items: [] },
-    },
     steps: {},
   });
 
@@ -124,7 +123,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   };
 
   const getEventList = () => {
-    return [...model.getEvents().values()].map((event) => ({ label: t(event.label), value: event.name }));
+    return [...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }));
   };
 
   // 添加步骤
@@ -193,221 +192,201 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   );
 
   // 生成折叠面板项
-  const collapseItems = model.flowRegistry.mapFlows((flow) => ({
-    key: flow.key,
-    label: renderPanelHeader(flow),
-    styles: {
-      header: {
-        display: 'flex',
-        alignItems: 'center',
+  const collapseItems = model.flowRegistry.mapFlows((flow) => {
+    const eventName = (flow.on as any)?.eventName;
+    const eventUiSchema = model.getEvent(eventName)?.uiSchema;
+    const eventDefaultParams = (flow.on as any)?.defaultParams;
+
+    return {
+      key: flow.key,
+      label: renderPanelHeader(flow),
+      styles: {
+        header: {
+          display: 'flex',
+          alignItems: 'center',
+        },
       },
-    },
-    children: (
-      <div>
-        {/* 事件部分 */}
-        <div style={{ marginBottom: 32 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 16,
-              paddingBottom: 8,
-              borderBottom: '1px solid #f0f0f0',
-            }}
-          >
+      children: (
+        <div>
+          {/* 事件部分 */}
+          <div style={{ marginBottom: 32 }}>
             <div
               style={{
-                width: '4px',
-                height: '16px',
-                backgroundColor: '#1890ff',
-                borderRadius: '2px',
-                marginRight: 8,
-              }}
-            ></div>
-            <h4
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 500,
-                color: '#262626',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+                paddingBottom: 8,
+                borderBottom: '1px solid #f0f0f0',
               }}
             >
-              {t('Event')}
-            </h4>
-          </div>
-          <div style={{ paddingLeft: 12 }}>
-            {/* 触发事件 */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-                {t('Trigger event')}
-              </div>
-              <Select
-                placeholder={t('Select trigger event')}
-                style={{ width: '100%' }}
-                value={(flow.on as any)?.eventName}
-                onChange={(value) => {
-                  if (!flow.on) {
-                    flow.on = { eventName: value, condition: { logic: '$and', items: [] } } as any;
-                  } else {
-                    (flow.on as any).eventName = value;
-                  }
-                  refresh();
+              <div
+                style={{
+                  width: '4px',
+                  height: '16px',
+                  backgroundColor: '#1890ff',
+                  borderRadius: '2px',
+                  marginRight: 8,
                 }}
-                options={getEventList()}
-              />
+              ></div>
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#262626',
+                }}
+              >
+                {t('Event')}
+              </h4>
             </div>
-
-            {/* 触发条件 */}
-            {(flow.on as any)?.eventName && (
-              <div>
+            <div style={{ paddingLeft: 12 }}>
+              {/* 触发事件 */}
+              <div style={{ marginBottom: 16 }}>
                 <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 500, color: '#262626' }}>
-                  {t('Trigger condition')}
+                  {t('Trigger event')}
+                  <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                 </div>
-                <FilterGroup
-                  value={(flow.on as any)?.condition}
-                  FilterItem={(props) => <LinkageFilterItem model={model} value={props.value} />}
-                  onChange={refresh}
+                <Select
+                  placeholder={t('Select trigger event')}
+                  style={{ width: '100%' }}
+                  value={(flow.on as any)?.eventName}
+                  onChange={(value) => {
+                    if (!flow.on) {
+                      flow.on = { eventName: value } as any;
+                    } else {
+                      (flow.on as any).eventName = value;
+                    }
+                    refresh();
+                  }}
+                  options={getEventList()}
                 />
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* 步骤部分 */}
-        <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: 16,
-              paddingBottom: 8,
-              borderBottom: '1px solid #f0f0f0',
-            }}
-          >
+              {/* 触发条件 */}
+              {eventName &&
+                flowEngine.flowSettings.renderStepForm({
+                  uiSchema: eventUiSchema,
+                  initialValues: eventDefaultParams,
+                  flowEngine,
+                  onFormValuesChange: (form: any) => {
+                    _.set(flow, 'on.defaultParams', form.values);
+                  },
+                })}
+            </div>
+          </div>
+
+          {/* 步骤部分 */}
+          <div>
             <div
               style={{
-                width: '4px',
-                height: '16px',
-                backgroundColor: '#52c41a',
-                borderRadius: '2px',
-                marginRight: 8,
-              }}
-            ></div>
-            <h4
-              style={{
-                margin: 0,
-                fontSize: 14,
-                fontWeight: 500,
-                color: '#262626',
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+                paddingBottom: 8,
+                borderBottom: '1px solid #f0f0f0',
               }}
             >
-              {t('Steps')}
-            </h4>
-          </div>
-          <div style={{ paddingLeft: 12 }}>
-            {/* 渲染已有的步骤 */}
-            <div style={{ marginBottom: 16 }}>
-              {flow.mapSteps((step) => {
-                const actionDef = model.getAction(step.use);
-                if (!actionDef) return null;
+              <div
+                style={{
+                  width: '4px',
+                  height: '16px',
+                  backgroundColor: '#52c41a',
+                  borderRadius: '2px',
+                  marginRight: 8,
+                }}
+              ></div>
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#262626',
+                }}
+              >
+                {t('Steps')}
+              </h4>
+            </div>
+            <div style={{ paddingLeft: 12 }}>
+              {/* 渲染已有的步骤 */}
+              <div style={{ marginBottom: 16 }}>
+                {flow.mapSteps((step) => {
+                  const actionDef = model.getAction(step.use);
+                  if (!actionDef) return null;
 
-                return (
-                  <div
-                    key={step.key}
-                    style={{
-                      border: '1px solid #f0f0f0',
-                      borderRadius: '6px',
-                      padding: '12px',
-                      marginBottom: '8px',
-                    }}
-                  >
+                  return (
                     <div
+                      key={step.key}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        border: '1px solid #f0f0f0',
+                        borderRadius: '6px',
+                        padding: '12px',
                         marginBottom: '8px',
                       }}
                     >
-                      <span style={{ fontWeight: 500, color: '#262626' }}>{t(actionDef.title)}</span>
-                      <Tooltip title={t('Delete step')}>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={() => handleDeleteStep(step)}
-                        />
-                      </Tooltip>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <span style={{ fontWeight: 500, color: '#262626' }}>
+                          {t(actionDef.title)}
+                          <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
+                        </span>
+                        <Tooltip title={t('Delete step')}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleDeleteStep(step)}
+                          />
+                        </Tooltip>
+                      </div>
+                      <div>
+                        {flowEngine.flowSettings.renderStepForm({
+                          uiSchema: actionDef.uiSchema,
+                          initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
+                          flowEngine,
+                          onFormValuesChange: (form: any) => handleActionValueChange(step, form.values),
+                        })}
+                      </div>
                     </div>
-                    <div>
-                      {flowEngine.flowSettings.renderStepForm({
-                        uiSchema: actionDef.uiSchema,
-                        initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
-                        flowEngine,
-                        onFormValuesChange: (form: any) => handleActionValueChange(step, form.values),
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            {/* Add step 按钮 */}
-            <Dropdown
-              menu={{
-                items: getActionList().map((action) => ({
-                  key: action.name,
-                  label: t(action.title) || action.name,
-                  onClick: () => handleAddStep(flow, action),
-                })),
-              }}
-              trigger={['hover']}
-            >
-              <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
-                {t('Add step')}
-              </Button>
-            </Dropdown>
+              {/* Add step 按钮 */}
+              <Dropdown
+                menu={{
+                  items: getActionList().map((action) => ({
+                    key: action.name,
+                    label: t(action.title) || action.name,
+                    onClick: () => handleAddStep(flow, action),
+                  })),
+                }}
+                trigger={['hover']}
+              >
+                <Button type="link" icon={<PlusOutlined />} style={{ padding: 0, height: 'auto', textAlign: 'left' }}>
+                  {t('Add step')}
+                </Button>
+              </Dropdown>
+            </div>
           </div>
         </div>
-      </div>
-    ),
-  }));
+      ),
+    };
+  });
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        backgroundColor: '#fff',
-        borderLeft: '1px solid #e0e0e0',
-        position: 'relative',
+        height: '100%',
       }}
     >
-      {/* 顶部标题栏 */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderBottom: '1px solid #f0f0f0',
-          backgroundColor: '#fff',
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ fontSize: '16px', fontWeight: 500, color: '#262626' }}>{t('Edit event flows')}</div>
-        <Button
-          type="text"
-          size="small"
-          icon={<CloseOutlined />}
-          style={{ color: '#8c8c8c' }}
-          onClick={() => ctx.view.destroy()}
-        />
-      </div>
-
       {/* 内容区域 */}
       <div
         style={{
@@ -462,6 +441,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
             setSubmitLoading(true);
             await model.flowRegistry.save();
             setSubmitLoading(false);
+            model.context?.message?.success?.(t('Configuration saved'));
             ctx.view.destroy();
           }}
         >

@@ -44,14 +44,14 @@ const openStepSettings = async ({ model, flowKey, stepKey, width = 600, title }:
 
   // 创建设置专用的流程运行时上下文
   const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-  setupRuntimeContextSteps(ctx, flow, model, flowKey);
+  setupRuntimeContextSteps(ctx, flow.steps, model, flowKey);
   ctx.defineProperty('currentStep', { value: step });
 
   // 解析 uiMode，支持函数式
   const resolvedUiMode = await resolveUiMode(step.uiMode, ctx);
 
   // 提取模式和属性
-  let settingMode: 'dialog' | 'drawer';
+  let settingMode: 'dialog' | 'drawer' | 'embed';
   let uiModeProps: Record<string, any> = {};
   let cleanup: () => void;
 

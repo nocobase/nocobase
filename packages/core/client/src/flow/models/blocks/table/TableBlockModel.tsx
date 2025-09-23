@@ -136,7 +136,7 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
   );
 };
 
-type CustomModelClassesEnum = {
+type CustomTableBlockModelClassesEnum = {
   CollectionActionGroupModel?: string;
   RecordActionGroupModel?: string;
   TableColumnModel?: string;
@@ -157,20 +157,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     TableCustomColumnModel: 'TableCustomColumnModel',
   };
 
-  customModelClasses: CustomModelClassesEnum = {
-    CollectionActionGroupModel: 'CollectionActionGroupModel' as string,
-    RecordActionGroupModel: 'RecordActionGroupModel' as string,
-    TableColumnModel: 'TableColumnModel' as string,
-    TableAssociationFieldGroupModel: 'TableAssociationFieldGroupModel' as string,
-    TableCustomColumnModel: 'TableCustomColumnModel' as string,
-  };
-
-  getModelClassName(className: string) {
-    if (Object.keys(this.customModelClasses).includes(className)) {
-      return this.customModelClasses[className];
-    }
-    return this._defaultCustomModelClasses[className] || className;
-  }
+  customModelClasses: CustomTableBlockModelClassesEnum = {};
 
   get resource() {
     return super.resource as MultiRecordResource;
@@ -298,16 +285,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     }
     return (
       <td className={classNames(className)} {...restProps}>
-        <div
-          className={css`
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: calc(${width}px - 16px);
-          `}
-        >
-          {children}
-        </div>
+        <div style={{ width }}> {children}</div>
       </td>
     );
   });
@@ -369,6 +347,57 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     );
   }
 
+  pagination() {
+    const totalCount = this.resource.getMeta('count');
+    const pageSize = this.resource.getPageSize();
+    const hasNext = this.resource.getMeta('hasNext');
+    const current = this.resource.getPage();
+    const data = this.resource.getData();
+    if (totalCount) {
+      return {
+        current,
+        pageSize,
+        total: totalCount,
+        showTotal: (total) => {
+          return this.translate('Total {{count}} items', { count: total });
+        },
+        showSizeChanger: true,
+      };
+    } else {
+      return {
+        showTotal: false,
+        simple: true,
+        showTitle: false,
+        showSizeChanger: true,
+        hideOnSinglePage: false,
+        total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
+        className: css`
+          .ant-pagination-simple-pager {
+            display: none !important;
+          }
+        `,
+        itemRender: (_, type, originalElement) => {
+          if (type === 'prev') {
+            return (
+              <div
+                style={{ display: 'flex' }}
+                className={css`
+                  .ant-pagination-item-link {
+                    min-width: ${this.context.themeToken.controlHeight}px;
+                  }
+                `}
+              >
+                {originalElement} <div>{this.resource.getPage()}</div>
+              </div>
+            );
+          } else {
+            return originalElement;
+          }
+        },
+      };
+    }
+  }
+
   renderComponent() {
     return (
       <>
@@ -382,7 +411,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <FlowModelRenderer
                       key={action.uid}
                       model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false }}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                     />
                   );
                 }
@@ -400,7 +429,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     <Droppable model={action} key={action.uid}>
                       <FlowModelRenderer
                         model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false }}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                         extraToolbarItems={[
                           {
                             key: 'drag-handler',
@@ -439,15 +468,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           scroll={{ x: 'max-content' }}
           dataSource={this.resource.getData()}
           columns={this.getColumns()}
-          pagination={{
-            current: this.resource.getPage(),
-            pageSize: this.resource.getPageSize(),
-            total: this.resource.getMeta('count'),
-            showTotal: (total) => {
-              return this.translate('Total {{count}} items', { count: total });
-            },
-            showSizeChanger: true,
-          }}
+          pagination={this.pagination()}
           onChange={(pagination) => {
             console.log('onChange pagination:', pagination);
             this.resource.loading = true;
@@ -558,21 +579,21 @@ TableBlockModel.registerFlow({
         ctx.model.setProps('size', params.size);
       },
     },
-    virtualScrolling: {
-      title: escapeT('Enable virtual scrolling'),
-      uiSchema: {
-        virtual: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: {
-        virtual: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('virtual', params.virtual);
-      },
-    },
+    // virtualScrolling: {
+    //   title: escapeT('Enable virtual scrolling'),
+    //   uiSchema: {
+    //     virtual: {
+    //       'x-component': 'Switch',
+    //       'x-decorator': 'FormItem',
+    //     },
+    //   },
+    //   defaultParams: {
+    //     virtual: false,
+    //   },
+    //   handler(ctx, params) {
+    //     ctx.model.setProps('virtual', params.virtual);
+    //   },
+    // },
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {

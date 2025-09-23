@@ -61,6 +61,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
   getColumns() {
     const { enableIndexColumn } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
       Boolean,
     );
@@ -76,7 +78,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         },
       },
       ...baseColumns,
-      {
+      isConfigMode && {
         key: 'addColumn',
         fixed: 'right',
         width: 100,
@@ -92,7 +94,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
         wrapper: HeaderWrapperComponent,
       },
     };
-
     return <SubTableField {...this.props} columns={columns} components={components} />;
   }
   onInit(options: any): void {
@@ -103,6 +104,10 @@ export class SubTableFieldModel extends AssociationFieldModel {
     });
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
+    });
+    // 监听表单reset
+    this.context.blockModel.emitter.on('onFieldReset', () => {
+      this.props.onChange([]);
     });
   }
 }

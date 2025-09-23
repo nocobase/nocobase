@@ -20,6 +20,7 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { DataBlockModel } from './DataBlockModel';
 
@@ -34,6 +35,19 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
 
+  /**
+   * 子菜单过滤函数
+   */
+  static filterCollection(_collection: Collection) {
+    if (_collection.filterTargetKey) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 定义子菜单选项
+   */
   static async defineChildren(ctx: FlowModelContext) {
     const createModelOptions = (options) => {
       if (!this.meta?.createModelOptions) {
@@ -49,34 +63,46 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       return this.name + key;
     };
     const { dataSourceKey, collectionName, associationName } = ctx.view.inputArgs;
-    const dataSources = ctx.dataSourceManager.getDataSources().map((dataSource) => {
-      return {
-        key: genKey(`ds-${dataSource.key}`),
-        label: dataSource.displayName,
-        searchable: true,
-        searchPlaceholder: escapeT('Search'),
-        children: (ctx) => {
-          return dataSource.getCollections().map((collection) => {
-            const initOptions = {
-              dataSourceKey: collection.dataSourceKey,
-              collectionName: collection.name,
-            };
-            return {
-              key: genKey(`ds-${dataSource.key}.${collection.name}`),
-              label: collection.title,
-              useModel: this.name,
-              createModelOptions: createModelOptions({
-                stepParams: {
-                  resourceSettings: {
-                    init: initOptions,
-                  },
-                },
-              }),
-            };
-          });
-        },
-      };
-    });
+    const dataSources = ctx.dataSourceManager
+      .getDataSources()
+      .map((dataSource) => {
+        if (dataSource.getCollections().length === 0) {
+          return null;
+        }
+        return {
+          key: genKey(`ds-${dataSource.key}`),
+          label: dataSource.displayName,
+          searchable: true,
+          searchPlaceholder: escapeT('Search'),
+          children: (ctx) => {
+            return dataSource
+              .getCollections()
+              .map((collection) => {
+                if (!this.filterCollection(collection)) {
+                  return null;
+                }
+                const initOptions = {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: collection.name,
+                };
+                return {
+                  key: genKey(`ds-${dataSource.key}.${collection.name}`),
+                  label: collection.title,
+                  useModel: this.name,
+                  createModelOptions: createModelOptions({
+                    stepParams: {
+                      resourceSettings: {
+                        init: initOptions,
+                      },
+                    },
+                  }),
+                };
+              })
+              .filter(Boolean);
+          },
+        };
+      })
+      .filter(Boolean);
     const children = (ctx) => {
       if (dataSources.length === 1) {
         return dataSources[0].children(ctx);
@@ -122,26 +148,35 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         label: 'Associated records',
         children: () => {
           const collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-          return collection.getAssociationFields(this._getScene()).map((field) => {
-            const initOptions = {
-              dataSourceKey,
-              collectionName: field.target,
-              associationName: field.resourceName,
-              sourceId: '{{ctx.view.inputArgs.filterByTk}}',
-            };
-            return {
-              key: genKey(`associated-${field.name}`),
-              label: field.title,
-              useModel: this.name,
-              createModelOptions: createModelOptions({
-                stepParams: {
-                  resourceSettings: {
-                    init: initOptions,
+          return collection
+            .getAssociationFields(this._getScene())
+            .map((field) => {
+              if (!field.targetCollection) {
+                return null;
+              }
+              if (!this.filterCollection(field.targetCollection)) {
+                return null;
+              }
+              const initOptions = {
+                dataSourceKey,
+                collectionName: field.target,
+                associationName: field.resourceName,
+                sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+              };
+              return {
+                key: genKey(`associated-${field.name}`),
+                label: field.title,
+                useModel: this.name,
+                createModelOptions: createModelOptions({
+                  stepParams: {
+                    resourceSettings: {
+                      init: initOptions,
+                    },
                   },
-                },
-              }),
-            };
-          });
+                }),
+              };
+            })
+            .filter(Boolean);
         },
       },
       {
@@ -226,6 +261,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   onInit(options) {
+    super.onInit(options);
     this.context.defineProperty('blockModel', {
       value: this,
     });
@@ -282,16 +318,23 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   protected defaultBlockTitle() {
-    let collectionTitle = this.collection?.title;
+    const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
+    const dsName = this.dataSource?.displayName || this.dataSource?.key;
+    const dsCount = this.context?.dataSourceManager?.getDataSources?.().length || 0;
+    const colTitle = this.collection?.title;
     if (this.association) {
       const resourceName = this.resource.getResourceName();
       const sourceCollection = this.dataSource.getCollection(resourceName.split('.')[0]);
-      collectionTitle = [sourceCollection.title, this.association.title].join(' > ');
-      collectionTitle += ` (${this.collection?.title})`;
+      return createDefaultCollectionBlockTitle({
+        blockLabel,
+        dsName,
+        dsCount,
+        collectionTitle: colTitle,
+        sourceCollectionTitle: sourceCollection.title,
+        associationTitle: this.association.title,
+      });
     }
-    return `
-    ${this.translate(this.constructor['meta']?.label || this.constructor.name)}:
-    ${collectionTitle}`;
+    return createDefaultCollectionBlockTitle({ blockLabel, dsName, dsCount, collectionTitle: colTitle });
   }
 
   addAppends(fieldPath: string, refresh = false) {

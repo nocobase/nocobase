@@ -61,6 +61,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         return {
           key: fullName,
           label: field.title,
+          refreshTargets: ['FormCustomItemModel/FormJSFieldItemModel'],
           toggleable: (subModel) => {
             const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
             return fieldPath === fullName;
@@ -80,6 +81,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             subModels: {
               field: {
                 use: fieldModel,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
               },
             },
           }),
@@ -115,13 +118,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         : fieldModel;
     const namePath = buildDynamicName(this.props.name, idx);
     return (
-      <FormItem
-        {...this.props}
-        name={namePath}
-        onChange={(event) => {
-          this.dispatchEvent('formItemChange', { value: event?.target?.value }, { debounce: true });
-        }}
-      >
+      <FormItem {...this.props} name={namePath}>
         <FieldModelRenderer model={modelForRender} name={namePath} />
       </FormItem>
     );
@@ -219,6 +216,9 @@ FormItemModel.registerFlow({
         description: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
+          'x-component-props': {
+            autoSize: true,
+          },
         },
       },
       handler(ctx, params) {
@@ -296,7 +296,7 @@ FormItemModel.registerFlow({
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-          if (binding.modelName !== ctx.model.subModels.field.use) {
+          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
             const model = ctx.model.setSubModel('field', {
@@ -323,8 +323,4 @@ FormItemModel.registerFlow({
       },
     },
   },
-});
-
-FormItemModel.registerEvents({
-  formItemChange: { label: escapeT('Filed value change'), name: 'formItemChange' },
 });

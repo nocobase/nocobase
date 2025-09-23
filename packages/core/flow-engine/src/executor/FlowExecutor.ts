@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowDefinition } from '../FlowDefinition';
+import _ from 'lodash';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
-import type { ActionDefinition, ApplyFlowCacheEntry, FlowEventCondition, StepDefinition } from '../types';
+import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
 import { FlowExitException, resolveDefaultParams } from '../utils';
-import { evaluateFlowCondition } from '../utils/evaluateFlowCondition';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 
@@ -47,12 +46,18 @@ export class FlowExecutor {
 
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
+    let eventStep = model.getEvent(typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName);
+    if (eventStep) {
+      eventStep = { ...eventStep }; // clone to avoid side effects
+      eventStep.defaultParams = { ..._.get(flow, 'on.defaultParams', {}), ...eventStep.defaultParams };
+    }
+    // Execute the event step first since it's usually the trigger condition - if the condition is not met, subsequent steps don't need to execute
+    const stepDefs = eventStep ? { eventStep, ...flow.steps } : flow.steps; // Record<string, StepDefinition>
 
     // Setup steps meta and runtime mapping
-    setupRuntimeContextSteps(flowContext, flow, model, flowKey);
+    setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
-    const stepDefs = flow.steps; // Record<string, StepDefinition>
     for (const stepKey in stepDefs) {
       if (!Object.prototype.hasOwnProperty.call(stepDefs, stepKey)) continue;
       const step: StepDefinition = stepDefs[stepKey];
@@ -228,32 +233,13 @@ export class FlowExecutor {
    * Dispatch an event to flows bound via flow.on and execute them.
    */
   async dispatchEvent(model: FlowModel, eventName: string, inputArgs?: Record<string, any>): Promise<void> {
-    const flows: FlowDefinition[] = [];
-    for (const flow of model.getFlows().values()) {
+    const flows = Array.from(model.getFlows().values()).filter((flow) => {
       const on = flow.on;
-      if (!on) {
-        continue;
-      }
-      let matched = false;
-      if (typeof on === 'string') {
-        matched = on === eventName;
-      } else if (typeof on === 'object') {
-        matched = on.eventName === eventName;
-        if (matched && on.condition) {
-          matched = await evaluateFlowCondition({
-            model,
-            flowKey: flow.key,
-            condition: on.condition,
-            eventName,
-            inputArgs,
-          });
-        }
-      }
-
-      if (matched) {
-        flows.push(flow);
-      }
-    }
+      if (!on) return false;
+      if (typeof on === 'string') return on === eventName;
+      if (typeof on === 'object') return on.eventName === eventName;
+      return false;
+    });
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
     const promises = flows.map((flow) => {

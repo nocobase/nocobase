@@ -392,7 +392,7 @@ exports.initEnv = function initEnv() {
   if (
     !process.env.APP_ENV_PATH &&
     process.argv[2] &&
-    ['test', 'test:client', 'test:server', 'benchmark'].includes(process.argv[2])
+    ['test', 'test:client', 'test:server', 'benchmark', 'perf'].includes(process.argv[2])
   ) {
     if (fs.existsSync(resolve(process.cwd(), '.env.test'))) {
       process.env.APP_ENV_PATH = '.env.test';

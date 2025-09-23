@@ -15,8 +15,6 @@ import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { GridModel } from './GridModel';
 
 export class BlockGridModel extends GridModel {
-  subModelBaseClasses = ['DataBlockModel', 'FilterBlockModel', 'BlockModel'];
-
   onInit(options: any) {
     super.onInit(options);
     this.context.defineProperty('blockGridModel', {
@@ -28,6 +26,15 @@ export class BlockGridModel extends GridModel {
         return new FilterManager(this, options['filterManager']);
       },
     });
+  }
+
+  get subModelBaseClasses() {
+    const inputArgs = this.context.view?.inputArgs ?? {};
+    if (inputArgs.collectionName && !inputArgs.filterByTk) {
+      // 新增记录的场景，需要移除掉 筛选区块
+      return ['DataBlockModel', 'BlockModel'];
+    }
+    return ['DataBlockModel', 'FilterBlockModel', 'BlockModel'];
   }
 
   get filterManager(): FilterManager {

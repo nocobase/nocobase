@@ -59,7 +59,7 @@ const Columns = observer<any>(({ record, model, index }) => {
         });
         return (
           <FlowModelRenderer
-            showFlowSettings={{ showBorder: false }}
+            showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
             key={fork.uid}
             model={fork}
             fallback={<Skeleton.Button size="small" />}
@@ -75,7 +75,7 @@ const AddActionToolbarComponent = ({ model }) => {
     <AddSubModelButton
       key="table-row-actions-add"
       model={model}
-      subModelBaseClass={model.parent.getModelClassName('RecordActionGroupModel')}
+      subModelBaseClass={model.context.getModelClassName('RecordActionGroupModel')}
       subModelKey="actions"
       afterSubModelInit={async (actionModel) => {
         actionModel.setStepParams('buttonSettings', 'general', { type: 'link' });

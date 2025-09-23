@@ -13,7 +13,7 @@ import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'file' {
+function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'file' | 'unknown' {
   let mimetype = '';
   let ext = '';
 
@@ -51,7 +51,7 @@ function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' |
   if (['.pdf'].includes(ext)) return 'pdf';
   if (['.xlsx'].includes(ext)) return 'excel';
 
-  return 'file';
+  return 'unknown';
 }
 
 const FilePreview = ({ file, size, showFileName }: { file: any; size: number; showFileName: boolean }) => {
@@ -66,8 +66,8 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     pdf: '/file-placeholder/pdf-200-200.png',
     mp4: '/file-placeholder/video-200-200.png',
     mov: '/file-placeholder/video-200-200.png',
-    doc: '/file-placeholder/word-200-200.png',
-    docx: '/file-placeholder/word-200-200.png',
+    doc: '/file-placeholder/docx-200-200.png',
+    docx: '/file-placeholder/docx-200-200.png',
     xls: '/file-placeholder/xlsx-200-200.png',
     xlsx: '/file-placeholder/xlsx-200-200.png',
     ppt: '/file-placeholder/ppt-200-200.png',
@@ -76,7 +76,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     jpeg: '/file-placeholder/image-200-200.png',
     png: '/file-placeholder/image-200-200.png',
     gif: '/file-placeholder/image-200-200.png',
-    default: '/file-placeholder/file-200-200.png',
+    default: '/file-placeholder/unknown-200-200.png',
   };
 
   const type = getFileType(file);

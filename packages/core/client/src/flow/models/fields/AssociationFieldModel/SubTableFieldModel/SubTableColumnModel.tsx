@@ -221,7 +221,6 @@ export class SubTableColumnModel<
               });
               return <React.Fragment key={id}>{fork.render()}</React.Fragment>;
             } else {
-              console.log(fork.constructor.isLargeField);
               return (
                 <FormItem
                   {...this.props}

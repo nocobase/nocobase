@@ -11,7 +11,8 @@ import { useFlowEngine } from '@nocobase/flow-engine';
 import { getDateRanges, inferPickerType } from '../../../../../../../schema-component';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
+import _ from 'lodash';
 
 export const FilterRangePicker = (props: any) => {
   const { value, picker = 'date', format, showTime, timeFormat } = props;
@@ -50,5 +51,9 @@ export const FilterRangePicker = (props: any) => {
     picker: targetPicker,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
   };
-  return <DatePicker.RangePicker {...newProps} />;
+  const dayjsValue = useMemo(() => {
+    return _.castArray(props.value).map((item) => (item ? dayjs(item) : null));
+  }, [props.value]);
+
+  return <DatePicker.RangePicker {...newProps} value={dayjsValue} />;
 };

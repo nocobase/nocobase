@@ -24,6 +24,8 @@ export * from './pattern';
 export * from './validation';
 export {
   fieldLinkageRules,
+  detailsFieldLinkageRules,
+  linkageSetDetailsFieldProps,
   actionLinkageRules,
   blockLinkageRules,
   linkageSetBlockProps,
@@ -33,3 +35,4 @@ export {
   linkageRunjs,
 } from './linkageRules';
 export * from './displayFieldComponent';
+export * from './overflowMode';

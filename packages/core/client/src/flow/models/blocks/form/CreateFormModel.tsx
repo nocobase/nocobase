@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SettingOutlined } from '@ant-design/icons';
 import {
-  AddSubModelButton,
   DndProvider,
   DragHandler,
   Droppable,
   escapeT,
   FlowModelRenderer,
-  FlowSettingsButton,
+  MemoFlowModelRenderer,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
@@ -26,6 +24,15 @@ import { FormBlockModel, FormComponent } from './FormBlockModel';
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.new;
+
+  private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
+  private actionExtraToolbarItems = [
+    {
+      key: 'drag-handler',
+      component: DragHandler,
+      sort: 1,
+    },
+  ];
 
   createResource(ctx, params) {
     const resource = this.context.createResource(SingleRecordResource);
@@ -46,17 +53,11 @@ export class CreateFormModel extends FormBlockModel {
           <Space>
             {this.mapSubModels('actions', (action) => (
               <Droppable model={action} key={action.uid}>
-                <FlowModelRenderer
+                <MemoFlowModelRenderer
                   key={action.uid}
                   model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
-                  extraToolbarItems={[
-                    {
-                      key: 'drag-handler',
-                      component: DragHandler,
-                      sort: 1,
-                    },
-                  ]}
+                  showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
+                  extraToolbarItems={this.actionExtraToolbarItems}
                 />
               </Droppable>
             ))}

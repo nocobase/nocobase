@@ -18,19 +18,31 @@ describe('EngineEventRegistry', () => {
     const reg = new EngineEventRegistry();
 
     reg.registerEvents({
-      e1: { name: 'e1', label: 'E1' },
-      dup: { name: 'dup', label: 'v1' },
+      e1: {
+        name: 'e1',
+        title: 'E1',
+        handler: (ctx, params) => {},
+      },
+      dup: {
+        name: 'dup',
+        title: 'v1',
+        handler: (ctx, params) => {},
+      },
     });
 
     // duplicate overrides
-    reg.registerEvent({ name: 'dup', label: 'v2' });
+    reg.registerEvent({
+      name: 'dup',
+      title: 'v2',
+      handler: (ctx, params) => {},
+    });
 
     const all = reg.getEvents();
     expect(all.has('e1')).toBe(true);
-    expect(all.get('e1')?.label).toBe('E1');
-    expect(all.get('dup')?.label).toBe('v2');
+    expect(all.get('e1')?.title).toBe('E1');
+    expect(all.get('dup')?.title).toBe('v2');
 
     const one = reg.getEvent('dup');
-    expect(one?.label).toBe('v2');
+    expect(one?.title).toBe('v2');
   });
 });

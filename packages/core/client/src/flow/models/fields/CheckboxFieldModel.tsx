@@ -14,7 +14,15 @@ import { FieldModel } from '../base';
 
 export class CheckboxFieldModel extends FieldModel {
   render() {
-    return <Checkbox {...this.props} />;
+    return (
+      <Checkbox
+        {...this.props}
+        checked={this.props.value}
+        onChange={(val) => {
+          this.props.onChange(val.target.checked);
+        }}
+      />
+    );
   }
 }
 

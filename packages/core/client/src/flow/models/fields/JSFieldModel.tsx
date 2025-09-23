@@ -22,6 +22,35 @@ const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span 
  * - 通过 ctx.element 直接操作渲染容器（经过 ElementProxy 包裹，带 XSS 保护）。
  */
 export class JSFieldModel extends FieldModel {
+  getInputArgs() {
+    const field = this.context.collectionField;
+    if (field?.isAssociationField?.()) {
+      const targetCollection = field.targetCollection;
+      const sourceCollection = this.context.blockModel?.collection;
+      const sourceKey = field.sourceKey || sourceCollection?.filterTargetKey;
+      const targetKey = field?.targetKey;
+      const currentRecord = this.props?.value;
+
+      return {
+        collectionName: targetCollection?.name,
+        associationName: sourceCollection?.name && field?.name ? `${sourceCollection.name}.${field.name}` : undefined,
+        sourceId: this.context.record?.[sourceKey],
+        filterByTk:
+          currentRecord && typeof currentRecord === 'object' && !Array.isArray(currentRecord)
+            ? currentRecord?.[targetKey]
+            : undefined,
+      };
+    }
+
+    return {
+      sourceId: this.context.resource?.getSourceId?.(),
+      filterByTk:
+        this.context.collection && this.context.record
+          ? this.context.collection.getFilterByTK(this.context.record)
+          : undefined,
+    };
+  }
+
   /**
    * 在渲染前注入副作用：当 props.value 变化时，重新执行 jsSettings
    * 说明：fork 实例在表格逐行渲染时会复用该逻辑，确保按值更新。
@@ -82,12 +111,7 @@ JSFieldModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {

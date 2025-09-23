@@ -72,6 +72,7 @@ export class JSRunner {
       const result = await Promise.race([task, timeoutPromise]);
       return { success: true, value: result };
     } catch (err) {
+      console.error(err);
       return {
         success: false,
         error: err,

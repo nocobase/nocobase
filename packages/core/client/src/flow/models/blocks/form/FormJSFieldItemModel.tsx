@@ -22,6 +22,7 @@ export class FormJSFieldItemModel extends FormCustomItemModel {
       useModel: 'FormItemModel',
       fieldUseModel: 'JSEditableFieldModel',
       associationPathName: (ctx as any).prefixFieldPath,
+      refreshTargets: ['FormItemModel', 'FilterFormItemModel'],
     });
     return groups?.[0]?.children || [];
   }

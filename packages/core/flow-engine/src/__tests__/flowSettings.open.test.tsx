@@ -86,11 +86,24 @@ vi.mock('antd', () => {
 });
 
 // helper to locate the primary Button element in a React element tree
+// Updated to work with new Cancel/Save component structure
 const findPrimaryButton = async (node: any) => {
   const { Button } = await import('antd');
   const walk = (n: any): any => {
     if (!n || typeof n !== 'object') return null;
+
+    // Look for Button with type='primary'
     if (n.type === Button && n?.props?.type === 'primary') return n;
+
+    // Also look for the Save component (function component that creates primary button)
+    if (typeof n.type === 'function' && n.type.name === 'Save') {
+      // Return the actual Button element created by Save component
+      const buttonEl = n.type(n.props);
+      if (buttonEl && buttonEl.type === Button && buttonEl.props?.type === 'primary') {
+        return { ...buttonEl, props: { ...buttonEl.props, onClick: n.props?.onClick || buttonEl.props?.onClick } };
+      }
+    }
+
     const children = n.props?.children;
     if (!children) return null;
     if (Array.isArray(children)) {
@@ -106,13 +119,26 @@ const findPrimaryButton = async (node: any) => {
 };
 
 // helper to locate the cancel Button (the non-primary one with text 'Cancel')
+// Updated to work with new Cancel/Save component structure
 const findCancelButton = async (node: any) => {
   const { Button } = await import('antd');
   const walk = (n: any): any => {
     if (!n || typeof n !== 'object') return null;
+
+    // Look for Button without type and with 'Cancel' text
     const isBtn = n.type === Button;
     const isCancel = isBtn && !n?.props?.type && n?.props?.children === 'Cancel';
     if (isCancel) return n;
+
+    // Also look for the Cancel component (function component that creates cancel button)
+    if (typeof n.type === 'function' && n.type.name === 'Cancel') {
+      // Return the actual Button element created by Cancel component
+      const buttonEl = n.type(n.props);
+      if (buttonEl && buttonEl.type === Button && !buttonEl.props?.type) {
+        return { ...buttonEl, props: { ...buttonEl.props, onClick: n.props?.onClick || buttonEl.props?.onClick } };
+      }
+    }
+
     const children = n.props?.children;
     if (!children) return null;
     if (Array.isArray(children)) {
@@ -1153,7 +1179,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.target).toBe(mockTarget);
       // Test default width and maxWidth
       opts.onOpen();
-      expect(mockTarget.style.width).toBe('50%'); // default width
+      expect(mockTarget.style.width).toBe('33.3%'); // default width
       expect(mockTarget.style.maxWidth).toBe('800px'); // default maxWidth
 
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;

@@ -18,6 +18,25 @@ import { CommonItemModel } from '../base/CommonItemModel';
  * - 默认提供 jsSettings.runJs 自动执行的步骤
  */
 export class JSItemModel extends CommonItemModel {
+  private removeRefreshListener?: () => void;
+
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
@@ -34,6 +53,19 @@ export class JSItemModel extends CommonItemModel {
     if (this.context.ref?.current) {
       this.rerender();
     }
+
+    // 监听资源刷新（翻页/重新加载），自动重跑 jsSettings
+    const resource = this.context.resource;
+    const onRefresh = () => {
+      this.applyFlow('jsSettings');
+    };
+    resource.on('refresh', onRefresh);
+    this.removeRefreshListener = () => resource.off('refresh', onRefresh);
+  }
+
+  protected onUnmount() {
+    this.removeRefreshListener?.();
+    this.removeRefreshListener = undefined;
   }
 }
 
@@ -64,12 +96,7 @@ JSItemModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams(ctx) {
         return {
           code: `

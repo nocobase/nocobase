@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
@@ -15,18 +15,43 @@ import {
   escapeT,
   FlowsFloatContextMenu,
   DragHandler,
-  FlowModelRenderer,
+  MemoFlowModelRenderer,
   createRecordMetaFactory,
   ElementProxy,
   createSafeDocument,
   createSafeWindow,
 } from '@nocobase/flow-engine';
-import { Skeleton, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
 import React from 'react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
 
 export class JSColumnModel extends TableCustomColumnModel {
+  renderHiddenInConfig() {
+    return (
+      <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+        <LockOutlined style={{ opacity: '0.45' }} />
+      </Tooltip>
+    );
+  }
+
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   getColumnProps() {
     const titleContent = (
       <Droppable model={this}>
@@ -56,6 +81,10 @@ export class JSColumnModel extends TableCustomColumnModel {
       </Droppable>
     );
 
+    if (this.hidden && !this.flowEngine.flowSettings.enabled) {
+      return null;
+    }
+
     return {
       ...this.props,
       width: 100,
@@ -70,16 +99,17 @@ export class JSColumnModel extends TableCustomColumnModel {
         titleContent
       ),
       render: (value, record, index) => {
-        const fork = this.createFork({}, `${index}`);
+        // 使用记录主键作为 fork key，避免分页后 index 复用导致 fork 复用
+        const tk = this.context.collection?.getFilterByTK?.(record);
+        const forkKey = tk ?? record?.id ?? index;
+        const fork = this.createFork({}, String(forkKey));
         const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
-          () => (fork.context as any).collection,
+          () => fork.context.collection,
           fork.context.t('Current record'),
           (ctx) => {
-            const coll = (ctx as any).collection;
-            const rec = (ctx as any).record;
-            const name = coll?.name;
-            const dataSourceKey = coll?.dataSourceKey;
-            const filterByTk = coll?.getFilterByTK?.(rec);
+            const name = ctx.collection?.name;
+            const dataSourceKey = ctx.collection?.dataSourceKey;
+            const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
             if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
             return { collection: name, dataSourceKey, filterByTk };
           },
@@ -92,14 +122,28 @@ export class JSColumnModel extends TableCustomColumnModel {
         fork.context.defineProperty('recordIndex', {
           get: () => index,
         });
-        return <FlowModelRenderer key={fork.uid} model={fork} fallback={<Skeleton.Button size="small" />} />;
+        return <MemoFlowModelRenderer key={fork.uid} model={fork} />;
       },
     };
   }
 
   render() {
-    // 渲染一个占位容器，供 JS 代码写入内容
-    return () => <span ref={this.context.ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+    const Component = () => {
+      const ref = this.context.ref;
+      React.useEffect(() => {
+        if (ref?.current) {
+          this.applyFlow('jsSettings');
+        }
+      }, [ref?.current]);
+      return <span ref={ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+    };
+    return Component;
+  }
+
+  protected onMount() {
+    if (this.context.ref?.current) {
+      this.rerender();
+    }
   }
 }
 
@@ -134,12 +178,7 @@ JSColumnModel.registerFlow({
           },
         },
       },
-      uiMode: {
-        type: 'dialog',
-        props: {
-          width: '70%',
-        },
-      },
+      uiMode: 'embed',
       defaultParams() {
         return {
           code: `ctx.element.innerHTML = \`<span class="nb-js-column">JS column</span>\`;`,

@@ -9,7 +9,6 @@
 
 import type { ISchema } from '@formily/json-schema';
 import { Schema } from '@formily/json-schema';
-import { toJS } from '@formily/reactive';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
 import type { StepDefinition, StepUIMode } from '../types';
@@ -174,7 +173,7 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 ): Promise<Record<string, ISchema> | null> {
   // 创建运行时上下文
   const flowRuntimeContext = new FlowRuntimeContext(model, flow.key, 'settings');
-  setupRuntimeContextSteps(flowRuntimeContext, flow, model, flow.key);
+  setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flow.key);
   flowRuntimeContext.defineProperty('currentStep', { value: step });
 
   // 获取步骤的uiSchema

@@ -10,5 +10,4 @@
 export * from './useFlowModelById';
 export * from './useFlowModel';
 export * from './useApplyAutoFlows';
-export * from './useDispatchEvent';
 export * from './useFlowSettingsContext';

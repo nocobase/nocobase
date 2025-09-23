@@ -96,7 +96,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
-            this.context.view.navigation?.changeTo({
+            this.context.view.navigation?.changeTo?.({
               tabUid: activeKey,
             });
           }}
@@ -177,7 +177,8 @@ PageModel.registerFlow({
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (!ctx.model.context.closable) {
-          ctx.model.setProps('title', ctx.t(params.title || ctx.model.context.currentFlow.currentRoute?.title));
+          const routeTitle = (ctx.model.context as any)?.currentRoute?.title;
+          ctx.model.setProps('title', ctx.t(params.title || routeTitle));
         } else {
           ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
         }
@@ -185,19 +186,19 @@ PageModel.registerFlow({
 
         if (ctx.view.type !== 'embed') {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgLayout,
+            backgroundColor: 'var(--colorBgLayout)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.themeToken.colorBgLayout,
+            backgroundColor: 'var(--colorBgLayout)',
             paddingInline: 16,
             marginBottom: 0,
           });
         } else {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: ctx.themeToken.colorBgContainer,
+            backgroundColor: 'var(--colorBgContainer)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: ctx.themeToken.colorBgContainer,
+            backgroundColor: 'var(--colorBgContainer)',
             paddingInline: 16,
             marginBottom: 0,
           });

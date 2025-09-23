@@ -33,8 +33,10 @@ export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridS
     return (
       <AddSubModelButton
         subModelKey="items"
-        subModelBaseClasses={['FormItemModel', 'FormCustomItemModel']}
-        {...this.parent?.getAddSubModelButtonProps?.('field')}
+        subModelBaseClasses={[
+          this.context.getModelClassName('FormItemModel'),
+          this.context.getModelClassName('FormCustomItemModel'),
+        ].filter(Boolean)}
         model={this}
         keepDropdownOpen
       >

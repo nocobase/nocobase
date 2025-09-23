@@ -19,16 +19,14 @@ import {
   FlowModelRenderer,
   FormItem,
   SingleRecordResource,
-  buildRecordMeta,
   createCurrentRecordMetaFactory,
-  inferRecordRef,
 } from '@nocobase/flow-engine';
 import { Button, Form, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
-
 import { FormComponent } from './FormBlockModel';
+import { FormItemModel } from './FormItemModel';
 
 export class QuickEditFormModel extends FlowModel {
   fieldPath: string;
@@ -210,7 +208,7 @@ QuickEditFormModel.registerFlow({
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
-          const binding = EditableItemModel.getDefaultBindingByField(ctx, collectionField);
+          const binding = FormItemModel.getDefaultBindingByField(ctx, collectionField);
           if (!binding) {
             return;
           }
@@ -237,7 +235,7 @@ QuickEditFormModel.registerFlow({
           });
           await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
-          ctx.model.setProps(collectionField.getComponentProps());
+          ctx.model.setProps({ ...collectionField.getComponentProps(), ...(fieldProps || {}) });
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);

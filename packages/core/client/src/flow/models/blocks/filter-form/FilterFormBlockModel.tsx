@@ -14,6 +14,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
+  escapeT,
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
@@ -24,6 +25,7 @@ import { FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -101,7 +103,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
                 <FlowModelRenderer
                   key={action.uid}
                   model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false }}
+                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
                   extraToolbarItems={[
                     {
                       key: 'drag-handler',
@@ -152,7 +154,16 @@ FilterFormBlockModel.registerFlow({
 
 FilterFormBlockModel.registerEvents({
   formValuesChange: {
-    label: tval('Form values change'),
+    title: tval('Form values change'),
     name: 'formValuesChange',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
   },
 });

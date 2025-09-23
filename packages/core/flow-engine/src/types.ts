@@ -8,18 +8,11 @@
  */
 
 import { ISchema } from '@formily/json-schema';
-import type { FilterGroupType } from '@nocobase/utils/client';
-import { SubModelItem, SubModelItemsType } from './components';
-import {
-  FlowContext,
-  FlowEngineContext,
-  FlowModelContext,
-  FlowRuntimeContext,
-  FlowSettingsContext,
-} from './flowContext';
-import type { FlowDefinition } from './FlowDefinition';
+import { SubModelItem } from './components';
+import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
+import { FilterGroupOptions } from './resources';
 
 /**
  * 工具类型：如果 T 是数组类型，则提取数组元素类型；否则返回 T 本身
@@ -139,8 +132,10 @@ export type ModelConstructor<T extends FlowModel<any> = FlowModel<any>> = (new (
 export enum ActionScene {
   /** 块级联动规则可用 */
   BLOCK_LINKAGE_RULES = 1,
-  /** 字段级联动规则可用 */
+  /** 表单字段级联动规则可用 */
   FIELD_LINKAGE_RULES,
+  /** 详情字段级联动规则可用 */
+  DETAILS_FIELD_LINKAGE_RULES,
   /** 按钮级联动规则可用 */
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
@@ -186,20 +181,17 @@ export type FlowEventName =
 /**
  * Flow 事件类型（供 FlowDefinitionOptions.on 使用）。
  */
-export type FlowEventCondition = FilterGroupType | ((ctx: FlowContext) => boolean | Promise<boolean>);
 export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | FlowEventName
-  | { eventName: FlowEventName; condition?: FlowEventCondition };
+  | { eventName: FlowEventName; defaultParams?: Record<string, any> };
 
 /**
  * 事件定义：用于事件注册表（全局/模型类级）。
  */
-export interface EventDefinition<TModel extends FlowModel = FlowModel> {
-  name: FlowEventName;
-  label?: string;
-  title?: string;
-  description?: string;
-}
+export type EventDefinition<
+  TModel extends FlowModel = FlowModel,
+  TCtx extends FlowContext = FlowContext,
+> = ActionDefinition<TModel, TCtx>;
 
 export type StepUIMode =
   | 'dialog'
