@@ -145,7 +145,7 @@ const WorkContext: React.FC = () => {
     <>
       <div>
         {field.value.map((item) => (
-          <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
+          <ContextItem within="task" key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={onRemove} />
         ))}
       </div>
       <AddContextButton contextItems={field.value} onAdd={onAdd} onRemove={onRemove} />

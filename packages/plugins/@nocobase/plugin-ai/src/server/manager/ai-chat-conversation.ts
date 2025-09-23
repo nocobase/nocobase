@@ -116,10 +116,11 @@ class AIChatConversationImpl implements AIChatConversation {
   async getChatContext(options: AIChatContextOptions): Promise<AIChatContext> {
     const aiMessages = await this.listMessages(options);
     const messages = await this.formatMessages(aiMessages, options);
-    if (options?.systemPrompt) {
+    const systemPrompt = await options.getSystemPrompt?.(aiMessages);
+    if (systemPrompt) {
       messages.unshift({
         role: 'system',
-        content: options.systemPrompt,
+        content: systemPrompt,
       });
     }
     return {

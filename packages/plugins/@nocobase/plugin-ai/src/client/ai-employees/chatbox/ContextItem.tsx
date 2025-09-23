@@ -19,7 +19,8 @@ export const ContextItem: React.FC<{
   item: ContextItemType;
   closable?: boolean;
   onRemove?: (type: string, uid: string) => void;
-}> = ({ item, closable, onRemove }) => {
+  within: 'sender' | 'chatbox' | 'task';
+}> = ({ item, closable, onRemove, within }) => {
   const app = useApp();
   const [showContent, setShowContent] = React.useState(false);
   const plugin = usePlugin('ai') as PluginAIClient;
@@ -55,19 +56,24 @@ export const ContextItem: React.FC<{
 
   return (
     <>
-      <Tag
-        onClick={() => setShowContent(true)}
-        closable={closable}
-        onClose={() => {
-          onRemove(item.type, item.uid);
-        }}
-        style={{
-          cursor: 'pointer',
-          whiteSpace: 'normal',
-        }}
-      >
-        {C ? <C item={item} /> : item.title}
-      </Tag>
+      {within === 'chatbox' && options?.chatbox?.Component ? (
+        <options.chatbox.Component item={item} />
+      ) : (
+        <Tag
+          onClick={() => setShowContent(true)}
+          closable={closable}
+          onClose={() => {
+            onRemove(item.type, item.uid);
+          }}
+          style={{
+            cursor: 'pointer',
+            whiteSpace: 'normal',
+          }}
+        >
+          {C ? <C item={item} /> : item.title}
+        </Tag>
+      )}
+
       <Modal open={showContent} onCancel={() => setShowContent(false)} footer={null} width="50%">
         <Paragraph
           copyable={{

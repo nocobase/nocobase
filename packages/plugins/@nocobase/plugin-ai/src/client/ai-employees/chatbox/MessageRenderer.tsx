@@ -233,7 +233,7 @@ export const UserMessage: React.FC<{
           }}
         >
           {msg.workContext.map((item: any) => (
-            <ContextItem item={item} key={`${item.type}:${item.uid}`} />
+            <ContextItem within="chatbox" item={item} key={`${item.type}:${item.uid}`} />
           ))}
         </div>
       ) : null}

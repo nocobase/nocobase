@@ -8,42 +8,59 @@
  */
 
 import { FlowRuntimeContext, useFlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
-import React, { PropsWithChildren, useEffect } from 'react';
+import React, { ComponentType, PropsWithChildren, useEffect } from 'react';
+
+export const bindInjectableRendingEvent = (C: ComponentType<any>, options?: InjectableRendingEventTriggerProps) => {
+  return (props) => (
+    <InjectableRendingEventTrigger {...options}>
+      <C {...props} />
+    </InjectableRendingEventTrigger>
+  );
+};
 
 export type InjectableRendingEventTriggerProps = {
   mode?: 'runtime' | 'settings';
   name?: string;
+  language?: string;
 };
 
 export const InjectableRendingEventTrigger: React.FC<PropsWithChildren<InjectableRendingEventTriggerProps>> = ({
   children,
   mode,
-  name,
+  ...props
 }) => {
   if (React.Children.count(children) !== 1 || !React.isValidElement(children)) {
     throw new Error('InjectableRendingEventTrigger expects exactly one child element.');
   }
 
   return mode === 'runtime' ? (
-    <RuntimeTrigger name={name}>{children}</RuntimeTrigger>
+    <RuntimeTrigger {...props}>{children}</RuntimeTrigger>
   ) : (
-    <SettingsTrigger name={name}>{children}</SettingsTrigger>
+    <SettingsTrigger {...props}>{children}</SettingsTrigger>
   );
 };
 
-export const SettingsTrigger: React.FC<PropsWithChildren<{ name: string }>> = ({ children, name }) => {
+export const SettingsTrigger: React.FC<PropsWithChildren<Omit<InjectableRendingEventTriggerProps, 'mode'>>> = ({
+  children,
+  name,
+  language,
+}) => {
   const ctx = useFlowSettingsContext();
-  const props = useInjectableProps(ctx, name, children);
+  const props = useInjectableProps(ctx, name, language, children);
   return React.cloneElement(children, props);
 };
 
-export const RuntimeTrigger: React.FC<PropsWithChildren<{ name: string }>> = ({ children, name }) => {
+export const RuntimeTrigger: React.FC<PropsWithChildren<Omit<InjectableRendingEventTriggerProps, 'mode'>>> = ({
+  children,
+  name,
+  language,
+}) => {
   const ctx = useFlowContext<FlowRuntimeContext>();
-  const props = useInjectableProps(ctx, name, children);
+  const props = useInjectableProps(ctx, name, language, children);
   return React.cloneElement(children, props);
 };
 
-const useInjectableProps = (ctx: FlowRuntimeContext, name: string, children: any) => {
+const useInjectableProps = (ctx: FlowRuntimeContext, name: string, language: string, children: any) => {
   const [props, setProps] = React.useState({});
 
   useEffect(() => {
@@ -51,11 +68,12 @@ const useInjectableProps = (ctx: FlowRuntimeContext, name: string, children: any
       ctx.model.dispatchEvent('InjectableRending', {
         ctx,
         name,
+        language,
         children,
         setProps,
       });
     }
-  }, [ctx, name, children]);
+  }, [ctx, name, language, children]);
 
   return props;
 };

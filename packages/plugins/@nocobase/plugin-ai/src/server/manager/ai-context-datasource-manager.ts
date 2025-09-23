@@ -10,7 +10,7 @@
 import { assign, QueryObject, transformFilter } from '@nocobase/utils';
 import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
-import { WorkContext } from '../types';
+import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
 
 export class AIContextDatasourceManager {
@@ -19,7 +19,7 @@ export class AIContextDatasourceManager {
     return await this.innerQuery(ctx, { ...options, filter: options.filter ? transformFilter(options.filter) : null });
   }
 
-  provideWorkContextResolveStrategy() {
+  provideWorkContextResolveStrategy(): WorkContextResolveStrategy {
     return async (ctx: Context, contextItem: WorkContext): Promise<string> => {
       if (!contextItem.content) {
         return '';

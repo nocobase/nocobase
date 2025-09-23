@@ -289,7 +289,7 @@ export class AIEmployee {
     return message;
   }
 
-  async getSystemPrompt() {
+  async getSystemPrompt(aiMessages: AIMessage[]) {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id,
@@ -306,6 +306,11 @@ export class AIEmployee {
     let background = '';
     if (this.systemMessage) {
       background = await parseVariables(this.ctx, this.systemMessage);
+    }
+
+    const workContextBackground = await this.plugin.workContextHandler.background(this.ctx, aiMessages);
+    if (workContextBackground?.length) {
+      background = `${background}\n${workContextBackground.join('\n')}`;
     }
 
     let knowledgeBase;
@@ -701,7 +706,7 @@ export class AIEmployee {
     const chatContext = await this.aiChatConversation.getChatContext({
       workContextHandler: this.plugin.workContextHandler,
       provider,
-      systemPrompt: await this.getSystemPrompt(),
+      getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
       tools: await this.getTools(),
     });
 
@@ -733,7 +738,7 @@ export class AIEmployee {
       const chatContext = await this.aiChatConversation.getChatContext({
         workContextHandler: this.plugin.workContextHandler,
         provider,
-        systemPrompt: await this.getSystemPrompt(),
+        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         tools: await this.getTools(),
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
@@ -759,7 +764,7 @@ export class AIEmployee {
       const chatContext = await this.aiChatConversation.getChatContext({
         workContextHandler: this.plugin.workContextHandler,
         provider,
-        systemPrompt: await this.getSystemPrompt(),
+        getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         messageId,
         tools: await this.getTools(),
       });

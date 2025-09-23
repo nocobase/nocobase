@@ -14,7 +14,15 @@ import { useT } from '../../locale';
 // @ts-ignore
 import _ from 'lodash';
 import { Space } from 'antd';
-import { codeEditorStore } from '../ai-coding/stores';
+import { css } from '@nocobase/client';
+import ReactMarkdown from 'react-markdown';
+import { Code } from '../chatbox/markdown/Code';
+
+type Content = {
+  scene: string;
+  language: string;
+  code: string;
+};
 
 export const CodeEditorContext: WorkContextOptions = {
   name: 'code-editor',
@@ -24,12 +32,34 @@ export const CodeEditorContext: WorkContextOptions = {
       return (
         <Space>
           <CodeOutlined />
-          <span>{t('Code editor')}</span>
+          <span>{item.title}</span>
         </Space>
       );
     },
   },
-  getContent: async (app, { uid }) => {
-    return codeEditorStore.read();
+  chatbox: {
+    Component: ({ item }) => {
+      const t = useT();
+      const content = item.content as Content;
+      return (
+        <div
+          className={css`
+            width: 350px;
+            margin-bottom: -1em;
+          `}
+        >
+          <ReactMarkdown
+            components={{
+              code: (props) => <Code {...props} />,
+            }}
+          >
+            {'```' + content.language + '\n' + content.code + '\n```'}
+          </ReactMarkdown>
+        </div>
+      );
+    },
+  },
+  getContent: async (_app, { content }) => {
+    return (content as Content)?.code;
   },
 };

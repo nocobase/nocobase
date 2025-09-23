@@ -18,6 +18,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup, EditorView } from 'codemirror';
 import completions from './completions';
 import { createJavaScriptLinter } from './linter';
+import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
 
 export interface EditorRef {
   write(document: string): void;
@@ -53,7 +54,16 @@ interface CodeEditorProps {
   rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({
+export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
+  const { mode, name, ...rest } = props;
+  return (
+    <InjectableRendingEventTrigger mode={mode} name={name}>
+      <InnerCodeEditor {...rest} />
+    </InjectableRendingEventTrigger>
+  );
+};
+
+const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
@@ -228,8 +238,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       }}
     >
       {rightExtra ? (
-        <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}>
-          {<div style={{ margin: '8px 18px' }}>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
+        <div style={{ position: 'absolute', top: -35, right: 0, zIndex: 10 }}>
+          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
         </div>
       ) : null}
       <div ref={editorRef} />

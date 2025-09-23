@@ -29,7 +29,6 @@ import {
   getCollectionMetadata,
   getCollectionNames,
   getWorkflowCallers,
-  editorFiller,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -39,6 +38,7 @@ import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
+import { AICodingManager } from './manager/ai-coding-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -47,6 +47,7 @@ export class PluginAIServer extends Plugin {
   aiEmployeesManager = new AIEmployeesManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
+  aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   snowflake: Snowflake;
 
@@ -88,7 +89,6 @@ export class PluginAIServer extends Plugin {
     const frontendGroupName = 'frontend';
     const dataModelingGroupName = 'dataModeling';
     const workflowGroupName = 'workflowCaller';
-    const aiCodingGroupName = 'aiCoding';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
@@ -103,11 +103,6 @@ export class PluginAIServer extends Plugin {
       groupName: workflowGroupName,
       title: '{{t("Workflow caller")}}',
       description: '{{t("Use workflow as a tool")}}',
-    });
-    toolManager.registerToolGroup({
-      groupName: aiCodingGroupName,
-      title: '{{t("AI Coding")}}',
-      description: '{{t("AI coding tools")}}',
     });
 
     this.aiManager.toolManager.registerTools([
@@ -130,10 +125,6 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
-      },
-      {
-        groupName: aiCodingGroupName,
-        tool: editorFiller,
       },
     ]);
 
@@ -224,10 +215,13 @@ export class PluginAIServer extends Plugin {
   }
 
   registerWorkContextResolveStrategy() {
-    this.workContextHandler.registerStrategy(
-      'datasource',
-      this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
-    );
+    this.workContextHandler.registerStrategy('datasource', {
+      resolve: this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
+    });
+    this.workContextHandler.registerStrategy('code-editor', {
+      resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
+      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
+    });
   }
 
   handleSyncMessage(message: any): Promise<void> {

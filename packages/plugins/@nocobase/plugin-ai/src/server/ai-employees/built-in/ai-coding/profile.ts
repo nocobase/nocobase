@@ -11,11 +11,12 @@ import prompt from './prompt';
 
 export default {
   'en-US': {
-    avatar: 'nocobase-045-female',
-    nickname: 'Avery',
-    position: 'Form filler',
-    bio: 'I specialize in extracting structured fields from unstructured input and completing forms quickly and accurately. Your reliable partner in form handling.',
-    greeting: 'Hi, I’m Avery. Send me the form and the content you’d like filled in—I’ll take care of the rest.',
+    avatar: 'nocobase-002-male',
+    nickname: 'Nathan',
+    position: 'Frontend code engineer',
+    bio: 'An frontend engineer specializing in JavaScript, HTML, and CSS.',
+    greeting:
+      'Hello 👋, I’m Nathan, your frontend code engineer. I’ll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?',
     about: prompt['en-US'],
   },
 };

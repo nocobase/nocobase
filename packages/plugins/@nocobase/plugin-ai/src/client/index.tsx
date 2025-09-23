@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
 import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
-import { JSBlockModel, Plugin, lazy } from '@nocobase/client';
+import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
 import { openaiProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
@@ -43,11 +42,8 @@ const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
-import { Button } from 'antd';
-import { FlowModel } from '@nocobase/flow-engine';
-import { AICodingButton } from './ai-employees/ai-coding/AICodingButton';
-import { editorFillerTool } from './ai-employees/ai-coding/tools';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { setupAICoding } from './ai-employees/ai-coding/setup';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -76,33 +72,7 @@ export class PluginAIClient extends Plugin {
     this.setupAIFeatures();
     this.setupWorkflow();
 
-    FlowModel.registerFlow({
-      key: 'AIEmployeeHandleInjectableRending',
-      on: 'InjectableRending',
-      steps: {
-        injectAIEmployeeShortcut: {
-          handler(ctx) {
-            const settingContext = ctx.inputArgs.ctx;
-            const name = ctx.inputArgs.name;
-            const setProps = ctx.inputArgs.setProps;
-            if (!(settingContext.model instanceof JSBlockModel)) {
-              console.debug('not a JSBlockModel');
-              return;
-            }
-            if (settingContext.flowKey !== 'jsSettings') {
-              console.debug('not jsSettings flow');
-              return;
-            }
-
-            const uid = `${settingContext.model.uid}-${settingContext.flowKey}-${name}`;
-            setProps((prev) => ({
-              ...prev,
-              rightExtra: [(editorRef) => <AICodingButton uid={uid} editorRef={editorRef} />],
-            }));
-          },
-        },
-      },
-    });
+    setupAICoding();
   }
 
   addPluginSettings() {
@@ -167,7 +137,6 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
-    this.aiManager.registerTool(...editorFillerTool);
   }
 
   setupWorkflow() {

@@ -8,30 +8,41 @@
  */
 
 import React, { useEffect } from 'react';
-import { observer } from '@nocobase/flow-engine';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { Avatar, Popover } from 'antd';
-import { codeEditorStore } from './stores';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
 import { EditorRef } from '@nocobase/client';
+import { isEngineer } from '../built-in/utils';
 
-export const AICodingButton: React.FC<{ uid: string; editorRef: EditorRef }> = observer(({ uid, editorRef }) => {
+export interface AICodingButtonProps {
+  uid: string;
+  scene: string;
+  language: string;
+  editorRef: EditorRef;
+}
+
+export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef }) => {
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
   const addContextItems = useChatMessagesStore.use.addContextItems();
+  const setEditorRef = useChatMessagesStore.use.setEditorRef();
+  const storedEditorRef = useChatMessagesStore.use.editorRef();
 
-  const aiEmployee = aiEmployees[0];
+  const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
   useEffect(() => {
-    codeEditorStore.focus(editorRef);
-  }, [editorRef]);
+    setEditorRef(editorRef);
+    return () => {
+      setEditorRef(null);
+    };
+  }, [editorRef, setEditorRef]);
 
   return aiEmployee ? (
     <Popover content={<ProfileCard aiEmployee={aiEmployee} />}>
@@ -50,11 +61,20 @@ export const AICodingButton: React.FC<{ uid: string; editorRef: EditorRef }> = o
           if (currentEmployee?.username !== aiEmployee.username) {
             switchAIEmployee(aiEmployee);
           }
-          addContextItems({ type: 'code-editor', uid, content: codeEditorStore.read() });
+          addContextItems({
+            type: 'code-editor',
+            uid,
+            title: `${scene}(${language})`,
+            content: {
+              scene,
+              language,
+              code: storedEditorRef?.read(),
+            },
+          });
         }}
       />
     </Popover>
   ) : (
     <></>
   );
-});
+};

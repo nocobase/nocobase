@@ -59,6 +59,6 @@ export type AIMessageRemoveOptions = {
 export type AIChatContextOptions = {
   workContextHandler: WorkContextHandler;
   provider: LLMProvider;
-  systemPrompt?: string;
+  getSystemPrompt?: (aiMessages: AIMessage[]) => Promise<string>;
   tools?: any[];
 } & AIMessageQuery;

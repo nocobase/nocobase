@@ -55,7 +55,8 @@
     "nwsapi": "2.2.7",
     "antd": "5.24.2",
     "dayjs": "1.11.13",
-    "@ant-design/icons": "^5.6.1"
+    "@ant-design/icons": "^5.6.1",
+    "eslint": "8.57.1"
   },
   "config": {
     "ghooks": {
@@ -79,6 +80,8 @@
     "@types/react-dom": "^18.0.0",
     "auto-changelog": "^2.4.0",
     "eslint-plugin-jest-dom": "^5.0.1",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-testing-library": "^5.11.0",
     "ghooks": "^2.0.4",
     "joi": "^17.13.3",
