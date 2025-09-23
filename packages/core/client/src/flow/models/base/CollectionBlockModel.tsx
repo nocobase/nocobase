@@ -21,6 +21,7 @@ import {
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
+import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
 import { DataBlockModel } from './DataBlockModel';
 
 export interface ResourceSettingsInitParams {
@@ -314,16 +315,23 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   protected defaultBlockTitle() {
-    let collectionTitle = this.collection?.title;
+    const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
+    const dsName = this.dataSource?.displayName || this.dataSource?.key;
+    const dsCount = this.context?.dataSourceManager?.getDataSources?.().length || 0;
+    const colTitle = this.collection?.title;
     if (this.association) {
       const resourceName = this.resource.getResourceName();
       const sourceCollection = this.dataSource.getCollection(resourceName.split('.')[0]);
-      collectionTitle = [sourceCollection.title, this.association.title].join(' > ');
-      collectionTitle += ` (${this.collection?.title})`;
+      return createDefaultCollectionBlockTitle({
+        blockLabel,
+        dsName,
+        dsCount,
+        collectionTitle: colTitle,
+        sourceCollectionTitle: sourceCollection.title,
+        associationTitle: this.association.title,
+      });
     }
-    return `
-    ${this.translate(this.constructor['meta']?.label || this.constructor.name)}:
-    ${collectionTitle}`;
+    return createDefaultCollectionBlockTitle({ blockLabel, dsName, dsCount, collectionTitle: colTitle });
   }
 
   addAppends(fieldPath: string, refresh = false) {
