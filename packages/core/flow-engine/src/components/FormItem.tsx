@@ -122,7 +122,7 @@ export const FormItem = ({
       layout={layout}
       label={renderLabel()}
       colon={false}
-      extra={<span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
+      extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
     >
       {processedChildren}
     </Form.Item>
