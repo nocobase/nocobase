@@ -37,11 +37,10 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     get(target, prop: string, receiver) {
       // 本地化字段（实例/缓存/执行器/上下文）
       if (localOnly.has(prop)) {
-        // Ensure accessors use the local instance as receiver
-        return Reflect.get(target, prop, target);
+        return Reflect.get(target, prop, receiver);
       }
       // 其它一律代理到父引擎
-      const value = Reflect.get(parent, prop, parent);
+      const value = Reflect.get(parent, prop, receiver);
       // 对 brand-sensitive 方法确保 this 绑定到父实例
       if (prop === 'registerModels' && typeof value === 'function') {
         return value.bind(parent);

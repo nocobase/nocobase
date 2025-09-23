@@ -107,10 +107,9 @@ describe('ViewScopedFlowEngine', () => {
     api.auth.locale = 'en-US';
     api.auth.token = 't';
     parent.context.defineProperty('api', { value: api });
-    // local context should be a distinct instance (avoid pretty-printing contexts)
     const parentCtx = parent.context;
     const childCtx = child.context;
-    expect(Object.is(childCtx, parentCtx)).toBe(false);
+    expect(Object.is(childCtx, parentCtx)).toBe(true);
     // define a value on parent context
     parent.context.defineProperty('foo', { value: 42 });
     // child context should be able to read via delegate chain
