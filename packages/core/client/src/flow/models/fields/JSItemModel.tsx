@@ -20,6 +20,23 @@ import { CommonItemModel } from '../base/CommonItemModel';
 export class JSItemModel extends CommonItemModel {
   private removeRefreshListener?: () => void;
 
+  getInputArgs() {
+    const inputArgs = {};
+    if (this.context.resource) {
+      const sourceId = this.context.resource.getSourceId();
+      if (sourceId) {
+        inputArgs['sourceId'] = sourceId;
+      }
+    }
+    if (this.context.collection && this.context.record) {
+      const filterByTk = this.context.collection.getFilterByTK(this.context.record);
+      if (filterByTk) {
+        inputArgs['filterByTk'] = filterByTk;
+      }
+    }
+    return inputArgs;
+  }
+
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
