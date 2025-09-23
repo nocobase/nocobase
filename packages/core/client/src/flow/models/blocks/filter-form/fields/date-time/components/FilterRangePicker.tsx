@@ -55,5 +55,5 @@ export const FilterRangePicker = (props: any) => {
     return _.castArray(props.value).map((item) => (item ? dayjs(item) : null));
   }, [props.value]);
 
-  return <DatePicker.RangePicker {...newProps} value={dayjsValue} />;
+  return <DatePicker.RangePicker {...newProps} style={{ flex: 1, ...newProps?.style }} value={dayjsValue} />;
 };
