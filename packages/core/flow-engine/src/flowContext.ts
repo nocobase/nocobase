@@ -908,7 +908,7 @@ export class FlowRunjsContext extends FlowContext {
         }
         if (model) {
           model.context.addDelegate(this);
-          model.dispatchEvent(eventName, { ...this.model?.['getInputArgs']?.(), ...inputArgs });
+          model.dispatchEvent(eventName, { navigation: false, ...this.model?.['getInputArgs']?.(), ...inputArgs });
         } else {
           this.message.error(this.t('Model with ID {{uid}} not found', { uid: modelOrUid }));
         }
