@@ -16,168 +16,13 @@ const { Text } = Typography;
 // 顶部模块作用域：替换内联函数为从 service 引入
 import { genRawByBuilder, normalizeBuilder, applyTypeChange, buildFieldOptions } from './ChartOptionsBuilder.service';
 
-// 将各图表类型的“必选/可选”UI 片段集中配置，避免在渲染处多重条件判断
-const typeUISchema: Record<
-  'line' | 'bar' | 'pie',
-  {
-    required: (ctx: {
-      t: (s: string) => string;
-      disabled?: boolean;
-      fieldOptions: { label: string; value: string }[];
-      builder: any;
-      setBuilder: (patch: Partial<any>) => void;
-    }) => React.ReactNode;
-    optional: (ctx: {
-      t: (s: string) => string;
-      disabled?: boolean;
-      fieldOptions: { label: string; value: string }[];
-      builder: any;
-      setBuilder: (patch: Partial<any>) => void;
-    }) => React.ReactNode;
-  }
-> = {
-  line: {
-    required: ({ t, disabled, fieldOptions, builder, setBuilder }) => (
-      <Space wrap size={[12, 8]} align="start" style={{ marginBottom: 8, width: '100%', justifyContent: 'flex-start' }}>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>xField</Typography.Text>
-          <Select
-            placeholder={t('Select field')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.xField}
-            onChange={(v) => setBuilder({ xField: v })}
-          />
-        </div>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>yField</Typography.Text>
-          <Select
-            placeholder={t('Select field')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.yField}
-            onChange={(v) => setBuilder({ yField: v })}
-          />
-        </div>
-      </Space>
-    ),
-    optional: ({ t, disabled, fieldOptions, builder, setBuilder }) => (
-      <Space wrap size={[12, 8]} align="start" style={{ marginBottom: 8, width: '100%', justifyContent: 'flex-start' }}>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>seriesField</Typography.Text>
-          <Select
-            allowClear
-            placeholder={t('Optional series')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.seriesField}
-            onChange={(v) => setBuilder({ seriesField: v })}
-          />
-        </div>
-        <Checkbox
-          disabled={disabled}
-          checked={!!builder.smooth}
-          onChange={(e) => setBuilder({ smooth: e.target.checked })}
-        >
-          {t('Smooth')}
-        </Checkbox>
-      </Space>
-    ),
-  },
-  bar: {
-    required: ({ t, disabled, fieldOptions, builder, setBuilder }) =>
-      typeUISchema.line.required({ t, disabled, fieldOptions, builder, setBuilder }),
-    optional: ({ t, disabled, fieldOptions, builder, setBuilder }) => (
-      <Space wrap size={[12, 8]} align="start" style={{ marginBottom: 8, width: '100%', justifyContent: 'flex-start' }}>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>seriesField</Typography.Text>
-          <Select
-            allowClear
-            placeholder={t('Optional series')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.seriesField}
-            onChange={(v) => setBuilder({ seriesField: v })}
-          />
-        </div>
-        <Checkbox
-          disabled={disabled}
-          checked={!!builder.stack}
-          onChange={(e) => setBuilder({ stack: e.target.checked })}
-        >
-          {t('Stack')}
-        </Checkbox>
-      </Space>
-    ),
-  },
-  pie: {
-    required: ({ t, disabled, fieldOptions, builder, setBuilder }) => (
-      <Space wrap size={[12, 8]} align="start" style={{ marginBottom: 8, width: '100%', justifyContent: 'flex-start' }}>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>{t('Category')}</Typography.Text>
-          <Select
-            placeholder={t('Select field')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.pieCategory}
-            onChange={(v) => setBuilder({ pieCategory: v })}
-          />
-        </div>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>{t('Value field')}</Typography.Text>
-          <Select
-            placeholder={t('Select field')}
-            style={{ minWidth: 160 }}
-            disabled={disabled}
-            options={fieldOptions}
-            value={builder.pieValue}
-            onChange={(v) => setBuilder({ pieValue: v })}
-          />
-        </div>
-      </Space>
-    ),
-    optional: ({ t, disabled, builder, setBuilder }) => (
-      <Space wrap size={[12, 8]} align="start" style={{ marginBottom: 8, width: '100%', justifyContent: 'flex-start' }}>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>{t('Inner radius (%)')}</Typography.Text>
-          <InputNumber
-            min={0}
-            max={100}
-            style={{ width: 120 }}
-            disabled={disabled}
-            value={builder.pieRadiusInner}
-            onChange={(v) => setBuilder({ pieRadiusInner: v ?? 0 })}
-          />
-        </div>
-        <div>
-          <Typography.Text style={{ display: 'block', marginBottom: 4 }}>{t('Outer radius (%)')}</Typography.Text>
-          <InputNumber
-            min={0}
-            max={100}
-            style={{ width: 120 }}
-            disabled={disabled}
-            value={builder.pieRadiusOuter}
-            onChange={(v) => setBuilder({ pieRadiusOuter: v ?? 70 })}
-          />
-        </div>
-      </Space>
-    ),
-  },
-};
-
 export const ChartOptionsBuilder: React.FC<{
   columns: string[];
   value?: any;
   defaultValue?: any;
   onChange?: (next: any) => void;
   onRawChange?: (raw: string) => void;
-  disabled?: boolean;
-}> = ({ columns, value, defaultValue, onChange, onRawChange, disabled }) => {
+}> = ({ columns, value, defaultValue, onChange, onRawChange }) => {
   const t = useT();
   const [form] = Form.useForm();
 
@@ -252,15 +97,6 @@ export const ChartOptionsBuilder: React.FC<{
     setBuilder(next);
   };
 
-  // [删除] 重复的 useEffect（会重复触发 onRawChange）
-  // // builder 改变时，同步 raw
-  // useEffect(() => {
-  //   onRawChange?.(genRawByBuilder(builder));
-  // }, [builder, onRawChange]);
-
-  // [删除] 重复的 type 声明
-  // const type = builder?.type ?? 'line';
-
   return (
     <div style={{ padding: 1 }}>
       <Form
@@ -273,7 +109,6 @@ export const ChartOptionsBuilder: React.FC<{
         style={{ textAlign: 'left' }}
         initialValues={builder}
         onValuesChange={handleValuesChange}
-        disabled={disabled}
       >
         {/* 图表类型 */}
         <Form.Item label={t('Chart type')} name="type">
@@ -287,86 +122,87 @@ export const ChartOptionsBuilder: React.FC<{
             onChange={handleTypeChange}
           />
         </Form.Item>
-        {/* 必选配置 */}
-        <Divider style={{ margin: '8px 0' }} />
-        <Text strong style={{ display: 'block', marginBottom: 6 }}>
-          {t('Required')}
-        </Text>
-        {type === 'line' || type === 'bar' ? (
-          <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-            <Form.Item label="xField" name="xField">
-              <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-            <Form.Item label="yField" name="yField">
-              <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-          </Space>
-        ) : (
-          <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-            <Form.Item label={t('Category')} name="pieCategory">
-              <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-            <Form.Item label={t('Value field')} name="pieValue">
-              <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-          </Space>
-        )}
 
-        {/* 可选配置 */}
         <Divider style={{ margin: '8px 0' }} />
-        <Text strong style={{ display: 'block', marginBottom: 6 }}>
-          {t('Optional')}
-        </Text>
-        {type === 'line' && (
-          <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-            <Form.Item label="seriesField" name="seriesField">
-              <Select allowClear placeholder={t('Optional series')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-            <Form.Item name="smooth" valuePropName="checked" colon={false} label=" ">
-              <Checkbox>{t('Smooth')}</Checkbox>
-            </Form.Item>
-          </Space>
-        )}
-        {type === 'bar' && (
-          <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-            <Form.Item label="seriesField" name="seriesField">
-              <Select allowClear placeholder={t('Optional series')} style={{ minWidth: 160 }} options={fieldOptions} />
-            </Form.Item>
-            <Form.Item name="stack" valuePropName="checked" colon={false} label=" ">
-              <Checkbox>{t('Stack')}</Checkbox>
-            </Form.Item>
-          </Space>
-        )}
-        {type === 'pie' && (
-          <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-            <Form.Item label={t('Inner radius (%)')} name="pieRadiusInner">
-              <InputNumber min={0} max={100} style={{ width: 120 }} />
-            </Form.Item>
-            <Form.Item label={t('Outer radius (%)')} name="pieRadiusOuter">
-              <InputNumber min={0} max={100} style={{ width: 120 }} />
-            </Form.Item>
-          </Space>
-        )}
+        {/* 图表属性 */}
+        {getChartFormItem(type, { t, fieldOptions, builder })}
+
+        <Divider style={{ margin: '8px 0' }} />
         {/* 公共属性 */}
-        <Divider style={{ margin: '8px 0' }} />
         <Text strong style={{ display: 'block', marginBottom: 6 }}>
           {t('Common')}
         </Text>
-        <Space wrap size={[12, 8]} style={{ marginBottom: 8 }}>
-          <Form.Item label={t('Height')} name="height">
-            <InputNumber min={100} style={{ width: 120 }} />
-          </Form.Item>
-          <Form.Item name="legend" valuePropName="checked" colon={false} label=" ">
-            <Checkbox>{t('Legend')}</Checkbox>
-          </Form.Item>
-          <Form.Item name="tooltip" valuePropName="checked" colon={false} label=" ">
-            <Checkbox>{t('Tooltip')}</Checkbox>
-          </Form.Item>
-          <Form.Item name="label" valuePropName="checked" colon={false} label=" ">
-            <Checkbox>{t('Label')}</Checkbox>
-          </Form.Item>
-        </Space>
+        <Form.Item label={t('Height')} name="height">
+          <InputNumber min={100} style={{ width: 120 }} />
+        </Form.Item>
+        <Form.Item name="legend" valuePropName="checked" colon={false} label=" ">
+          <Checkbox>{t('Legend')}</Checkbox>
+        </Form.Item>
+        <Form.Item name="tooltip" valuePropName="checked" colon={false} label=" ">
+          <Checkbox>{t('Tooltip')}</Checkbox>
+        </Form.Item>
+        <Form.Item name="label" valuePropName="checked" colon={false} label=" ">
+          <Checkbox>{t('Label')}</Checkbox>
+        </Form.Item>
       </Form>
     </div>
   );
+};
+
+const getChartFormItem = (
+  type: 'line' | 'bar' | 'pie' = 'line',
+  options: {
+    t: (s: string) => string;
+    fieldOptions: { label: string; value: string }[];
+    builder?: any;
+  },
+) => {
+  const { t, fieldOptions } = options;
+  if (type === 'line' || type === 'bar') {
+    return (
+      <>
+        {/* required */}
+        <Form.Item label="xField" name="xField" required>
+          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+        </Form.Item>
+        <Form.Item label="yField" name="yField" required>
+          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+        </Form.Item>
+        {/* optional */}
+        <Form.Item label="seriesField" name="seriesField">
+          <Select allowClear placeholder={t('Optional series')} style={{ minWidth: 160 }} options={fieldOptions} />
+        </Form.Item>
+        {type === 'line' ? (
+          <Form.Item name="smooth" valuePropName="checked" colon={false} label=" ">
+            <Checkbox>{t('Smooth')}</Checkbox>
+          </Form.Item>
+        ) : (
+          <Form.Item name="stack" valuePropName="checked" colon={false} label=" ">
+            <Checkbox>{t('Stack')}</Checkbox>
+          </Form.Item>
+        )}
+      </>
+    );
+  }
+  // pie
+  if (type === 'pie') {
+    return (
+      <>
+        {/* required */}
+        <Form.Item label={t('Category')} name="pieCategory" required>
+          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+        </Form.Item>
+        <Form.Item label={t('Value field')} name="pieValue" required>
+          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+        </Form.Item>
+        {/* optional */}
+        <Form.Item label={t('Inner radius (%)')} name="pieRadiusInner">
+          <InputNumber min={0} max={100} style={{ width: 120 }} />
+        </Form.Item>
+        <Form.Item label={t('Outer radius (%)')} name="pieRadiusOuter">
+          <InputNumber min={0} max={100} style={{ width: 120 }} />
+        </Form.Item>
+      </>
+    );
+  }
 };
