@@ -259,6 +259,116 @@ export const linkageSetFieldProps = defineAction({
   },
 });
 
+export const linkageSetDetailsFieldProps = defineAction({
+  name: 'linkageSetDetailsFieldProps',
+  title: 'Field properties',
+  scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { fields: [] }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFields(ctx);
+
+        // 状态选项
+        const stateOptions = [
+          { label: t('Show'), value: 'show' },
+          { label: t('Hide'), value: 'hide' },
+          { label: t('Hide (keep value)'), value: 'hideKeepValue' },
+        ];
+
+        const handleFieldsChange = (selectedFields: string[]) => {
+          onChange({
+            ...value,
+            fields: selectedFields,
+          });
+        };
+
+        const handleStateChange = (selectedState: string) => {
+          onChange({
+            ...value,
+            state: selectedState,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
+              <Select
+                mode="multiple"
+                value={value.fields}
+                onChange={handleFieldsChange}
+                placeholder={t('Please select fields')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
+              <Select
+                value={value.state}
+                onChange={handleStateChange}
+                placeholder={t('Please select state')}
+                style={{ width: '100%' }}
+                options={stateOptions}
+                allowClear
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { fields, state } = value || {};
+
+    if (!fields || !Array.isArray(fields) || !state) {
+      return;
+    }
+
+    // 根据 uid 找到对应的字段 model 并设置属性
+    fields.forEach((fieldUid: string) => {
+      try {
+        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+
+        if (fieldModel) {
+          let props: any = {};
+
+          switch (state) {
+            case 'show':
+              props = { hiddenModel: false };
+              break;
+            case 'hide':
+              props = { hiddenModel: true };
+              break;
+            case 'hideKeepValue':
+              props = { hidden: true };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
+          }
+
+          setProps(fieldModel as FlowModel, props);
+        }
+      } catch (error) {
+        console.warn(`Failed to set props for field ${fieldUid}:`, error);
+      }
+    });
+  },
+});
+
 export const linkageAssignField = defineAction({
   name: 'linkageAssignField',
   title: 'Field assignment',
@@ -343,7 +453,12 @@ export const linkageAssignField = defineAction({
 export const linkageRunjs = defineAction({
   name: 'linkageRunjs',
   title: 'Execute JavaScript',
-  scene: [ActionScene.BLOCK_LINKAGE_RULES, ActionScene.FIELD_LINKAGE_RULES, ActionScene.ACTION_LINKAGE_RULES],
+  scene: [
+    ActionScene.BLOCK_LINKAGE_RULES,
+    ActionScene.FIELD_LINKAGE_RULES,
+    ActionScene.ACTION_LINKAGE_RULES,
+    ActionScene.DETAILS_FIELD_LINKAGE_RULES,
+  ],
   sort: 300,
   uiSchema: {
     value: {
@@ -856,6 +971,33 @@ export const fieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
+          title: escapeT('Field linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  handler: (ctx, params) => {
+    if (ctx.model.hidden) {
+      return;
+    }
+    commonLinkageRulesHandler(ctx, params);
+  },
+});
+
+export const detailsFieldLinkageRules = defineAction({
+  name: 'detailsFieldLinkageRules',
+  title: escapeT('Field linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.DETAILS_FIELD_LINKAGE_RULES),
           title: escapeT('Field linkage rules'),
         },
       },
