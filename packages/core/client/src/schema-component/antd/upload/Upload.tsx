@@ -93,9 +93,9 @@ attachmentFileTypes.add({
       }
       let { transform } = el.style || {};
       const nextRotate = `rotate(${angle}deg)`;
-      const rotateMatch = transform?.match(/rotate\((\d+)deg\)/);
+      const rotateMatch = transform?.match(/rotate\(-?(\d+)deg\)/);
       if (rotateMatch) {
-        transform = transform.replace(/rotate\((\d+)deg\)/, nextRotate);
+        transform = transform.replace(/rotate\(-?(\d+)deg\)/, nextRotate);
       } else {
         transform = `${transform} ${nextRotate}`;
       }
