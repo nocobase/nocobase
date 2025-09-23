@@ -26,10 +26,12 @@ import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,
+  ICON_POPUP_Z_INDEX,
   SchemaComponent,
   SchemaComponentOptions,
   useNocoBaseRoutes,
   useParentRoute,
+  zIndexContext,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
@@ -56,26 +58,29 @@ export const LinkMenuItem = () => {
               <Router location={history.location} navigator={history}>
                 <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
                   <FormLayout layout={'vertical'}>
-                    <SchemaComponent
-                      schema={{
-                        properties: {
-                          title: {
-                            title: t('Menu item title'),
-                            required: true,
-                            'x-component': 'Input',
-                            'x-decorator': 'FormItem',
+                    {/* 防止图标弹窗被遮挡 */}
+                    <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                      <SchemaComponent
+                        schema={{
+                          properties: {
+                            title: {
+                              title: t('Menu item title'),
+                              required: true,
+                              'x-component': 'Input',
+                              'x-decorator': 'FormItem',
+                            },
+                            icon: {
+                              title: t('Icon'),
+                              'x-component': 'IconPicker',
+                              'x-decorator': 'FormItem',
+                            },
+                            href: urlSchema,
+                            params: paramsSchema,
+                            openInNewWindow: openInNewWindowSchema,
                           },
-                          icon: {
-                            title: t('Icon'),
-                            'x-component': 'IconPicker',
-                            'x-decorator': 'FormItem',
-                          },
-                          href: urlSchema,
-                          params: paramsSchema,
-                          openInNewWindow: openInNewWindowSchema,
-                        },
-                      }}
-                    />
+                        }}
+                      />
+                    </zIndexContext.Provider>
                   </FormLayout>
                 </SchemaComponentOptions>
               </Router>
