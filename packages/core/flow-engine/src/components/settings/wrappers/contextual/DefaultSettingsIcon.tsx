@@ -8,13 +8,14 @@
  */
 
 import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
+import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { getT, resolveStepUiSchema } from '../../../../utils';
 import { openStepSettings } from './StepSettings';
+import { useNiceDropdownMaxHeight } from '../../../../hooks';
 
 // Type definitions for better type safety
 interface StepInfo {
@@ -106,6 +107,16 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 }) => {
   const { message } = App.useApp();
   const t = getT(model);
+  const [visible, setVisible] = useState(false);
+  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
+    if (info.source === 'trigger' || nextOpen) {
+      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+      startTransition(() => {
+        setVisible(nextOpen);
+      });
+    }
+  }, []);
+  const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
   // 分离处理函数以便更好的代码组织
   const handleCopyUid = useCallback(async () => {
@@ -528,9 +539,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   return (
     <Dropdown
+      onOpenChange={handleOpenChange}
+      open={visible}
       menu={{
         items: finalMenuItems,
         onClick: handleMenuClick,
+        style: { maxHeight: dropdownMaxHeight, overflowY: 'auto' },
       }}
       trigger={['hover']}
       placement="bottomRight"

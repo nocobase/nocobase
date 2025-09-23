@@ -11,3 +11,4 @@ export * from './useFlowModelById';
 export * from './useFlowModel';
 export * from './useApplyAutoFlows';
 export * from './useFlowSettingsContext';
+export * from './useNiceDropdownMaxHeight';
