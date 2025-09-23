@@ -12,7 +12,7 @@ import { useT } from '../../locale';
 import { Collapse, Card, Button } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
-import { useFlowSettingsContext, useFlowView } from '@nocobase/flow-engine';
+import { useFlowContext, useFlowSettingsContext, useFlowView } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { configStore } from './config-store';
@@ -25,11 +25,10 @@ export const ConfigPanel: React.FC = () => {
   const ctx = useFlowSettingsContext<ChartBlockModel>();
   const form = useForm();
   const api = useAPIClient();
-  const currentView = useFlowView();
 
-  const onPreviewClick = () => {
-    ctx.model.setStepParams('chartSettings', 'configure', form.values);
-    ctx.model.applyFlow('chartSettings');
+  const handlePreview = async () => {
+    await form.submit();
+    ctx.model.setParamsAndPreview(form?.values || {});
   };
 
   useEffect(() => {
@@ -124,36 +123,51 @@ export const ConfigPanel: React.FC = () => {
   };
 
   return (
-    <div>
+    <>
       <div
         style={{
-          marginBottom: 12,
+          marginBottom: 6,
           textAlign: 'right',
         }}
       >
-        <Button type="primary" onClick={onPreviewClick}>
+        <Button type="primary" onClick={handlePreview}>
           {t('Preview')}
         </Button>
       </div>
 
-      <Collapse activeKey={activeKeys} onChange={setActiveKeys}>
-        <Collapse.Panel header={t('Query & Result')} key="query">
-          <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
-            <QueryPanel />
-          </Card>
-        </Collapse.Panel>
-
-        <Collapse.Panel header={t('Chart options')} key="chartOptions">
-          <Card style={getCardStyle('chartOptions')} styles={{ body: { padding: 0 } }}>
-            <ChartOptionsPanel />
-          </Card>
-        </Collapse.Panel>
-        <Collapse.Panel header={t('Events')} key="events">
-          <Card style={getCardStyle('events')} styles={{ body: { padding: 0 } }}>
-            <EventsPanel />
-          </Card>
-        </Collapse.Panel>
-      </Collapse>
-    </div>
+      <Collapse
+        activeKey={activeKeys}
+        onChange={setActiveKeys}
+        items={[
+          {
+            key: 'query',
+            label: t('Query & Result'),
+            children: (
+              <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
+                <QueryPanel />
+              </Card>
+            ),
+          },
+          {
+            key: 'chartOptions',
+            label: t('Chart options'),
+            children: (
+              <Card style={getCardStyle('chartOptions')} styles={{ body: { padding: 0 } }}>
+                <ChartOptionsPanel />
+              </Card>
+            ),
+          },
+          {
+            key: 'events',
+            label: t('Events'),
+            children: (
+              <Card style={getCardStyle('events')} styles={{ body: { padding: 0 } }}>
+                <EventsPanel />
+              </Card>
+            ),
+          },
+        ]}
+      />
+    </>
   );
 };

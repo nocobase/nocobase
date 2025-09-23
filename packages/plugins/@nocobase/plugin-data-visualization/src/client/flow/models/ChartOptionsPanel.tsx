@@ -55,7 +55,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
     [form],
   );
 
-  const mode = form?.values?.chart?.option?.mode || 'code';
+  const mode = form?.values?.chart?.option?.mode || 'custom';
   const rawValue = form?.values?.chart?.option?.raw;
 
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）
@@ -80,16 +80,16 @@ export const ChartOptionsPanel: React.FC = observer(() => {
             form?.setValuesIn?.('chart.option.mode', e.target.value);
           }}
         >
-          <Radio.Button value={'builder'}>
+          <Radio.Button value={'basic'}>
             <LineChartOutlined /> {t('Basic')}
           </Radio.Button>
-          <Radio.Button value={'code'}>
+          <Radio.Button value={'custom'}>
             <FunctionOutlined /> {t('Custom')}
           </Radio.Button>
         </Radio.Group>
       </div>
 
-      {mode === 'builder' ? (
+      {mode === 'basic' ? (
         <ChartOptionsBuilder
           columns={columns}
           value={builderValue}
