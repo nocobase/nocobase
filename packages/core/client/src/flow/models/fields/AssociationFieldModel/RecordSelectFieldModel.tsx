@@ -24,7 +24,7 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
 
-  const { label: labelKey, value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null || item == undefined) return undefined;
