@@ -332,7 +332,7 @@ describe('query', () => {
       const dateOn = filter.$and[0].createdAt.$dateOn;
       expect(new Date(dateOn).getTime()).toBeLessThanOrEqual(new Date().getTime());
       const userId = filter.$and[1].userId.$eq;
-      expect(userId).toBe(1);
+      expect(userId).toEqualNumberOrString(1);
     });
   });
 

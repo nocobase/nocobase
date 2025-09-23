@@ -545,7 +545,7 @@ describe('dumper', () => {
 
     const usersCount = await db.getRepository('users').count();
     const res = await db.getRepository('tests').findOne();
-    expect(res.get('count')).toEqual(usersCount);
+    assert.equal(res.get('count'), usersCount);
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
@@ -561,7 +561,7 @@ describe('dumper', () => {
     });
 
     const res2 = await app.db.getRepository('tests').findOne();
-    expect(res2.get('count')).toEqual(usersCount);
+    assert.equal(res2.get('count'), usersCount);
   });
 
   it('should dump with view that not exists', async () => {

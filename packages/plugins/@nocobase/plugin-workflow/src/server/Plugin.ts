@@ -38,6 +38,7 @@ import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
+import { ObjectCache } from './utils';
 
 type ID = number | string;
 
@@ -62,7 +63,7 @@ export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
-  enabledCache: Map<number, WorkflowModel> = new Map();
+  enabledCache: ObjectCache<WorkflowModel> = new ObjectCache();
   snowflake: Snowflake;
 
   private ready = false;
