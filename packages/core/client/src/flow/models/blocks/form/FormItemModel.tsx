@@ -216,6 +216,9 @@ FormItemModel.registerFlow({
         description: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
+          'x-component-props': {
+            autoSize: true,
+          },
         },
       },
       handler(ctx, params) {
