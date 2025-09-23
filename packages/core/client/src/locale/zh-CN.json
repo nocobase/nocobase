@@ -1382,5 +1382,6 @@
   "Add target block": "添加目标区块",
   "Connect fields": "连接字段",
   "Please select fields to filter": "请选择需要筛选的字段",
-  "Separate multiple values with comma or Enter": "多个值用逗号或回车分隔"
+  "Separate multiple values with comma or Enter": "多个值用逗号或回车分隔",
+  "Default operator": "默认操作符"
 }
