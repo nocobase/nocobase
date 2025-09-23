@@ -7,21 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowModelContext } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import { DatePicker as AntdDatePicker, Select, Space } from 'antd';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { inferPickerType } from '../../../../../../../schema-component';
 
 export const FilterDatePicker = (props: any) => {
   const { picker = 'date', format, showTime, timeFormat } = props;
-  const ctx = useFlowModelContext();
+  const ctx = useFlowContext();
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const initPicker = value ? inferPickerType(value, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const targetDateFormat = getPickerFormat(initPicker) || format;
-  const t = ctx.t;
-
+  const t = ctx.model.translate.bind(ctx.model);
   const newProps = {
     utc: true,
     inputReadOnly: ctx.isMobileLayout,
@@ -32,6 +31,8 @@ export const FilterDatePicker = (props: any) => {
     picker: targetPicker,
   };
   const [stateProps, setStateProps] = useState(newProps);
+  const dayjsValue = useMemo(() => (value ? dayjs(value) : null), [value]);
+
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -66,7 +67,7 @@ export const FilterDatePicker = (props: any) => {
           setStateProps(newProps);
         }}
       />
-      <AntdDatePicker {...stateProps} value={value} />
+      <AntdDatePicker {...stateProps} value={dayjsValue} />
     </Space.Compact>
   );
 };
