@@ -1,7 +1,7 @@
 import { useForm } from '@formily/react';
 import { Application, css, Plugin } from '@nocobase/client';
 import { defineFlow, FlowModel, FlowModelContext, FlowModelRenderer, useFlowContext } from '@nocobase/flow-engine';
-import { Button, Space } from 'antd';
+import { Button, Card, Space } from 'antd';
 import React from 'react';
 
 // 基础 UI Mode 示例：展示字符串形式的 uiMode
@@ -97,6 +97,8 @@ class BasicUIPlugin extends Plugin {
           <FlowModelRenderer model={model} showFlowSettings={true} />
           <div
             className={css`
+              width: 100% !important;
+              max-width: 100% !important;
               > div {
                 position: relative !important;
                 padding: 16px;
