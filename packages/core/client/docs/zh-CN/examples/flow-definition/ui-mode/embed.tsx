@@ -25,7 +25,7 @@ function PreviewButton() {
     <Button
       onClick={async () => {
         await form.submit();
-        // form.values;
+        console.log('当前表单值', JSON.stringify(form.values, null, 2));
         ctx.model.setSteParamsAndPreview({
           title: 'abc',
         });
