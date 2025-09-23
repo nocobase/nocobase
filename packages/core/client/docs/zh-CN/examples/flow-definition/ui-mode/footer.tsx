@@ -16,7 +16,12 @@ import { Application, Plugin } from '@nocobase/client';
 // 自定义底部 footer 示例
 class FooterExampleModel extends FlowModel {
   render() {
-    return <Button>Footer Configuration Examples</Button>;
+    return (
+      <>
+        <Button>Footer Configuration Examples</Button>
+        <div id="nocobase-embed-container"></div>
+      </>
+    );
   }
 }
 
@@ -113,7 +118,7 @@ FooterExampleModel.registerFlow({
         },
       },
       uiMode: {
-        type: 'dialog',
+        type: 'embed',
         props: {
           title: 'Custom buttons footer example',
           width: 600,
