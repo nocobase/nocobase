@@ -7,16 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
+import { Typography } from 'antd';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { FieldModel } from '../base';
 
 export class DisplayHtmlFieldModel extends FieldModel {
   public render() {
-    const { textOnly = true, value } = this.props;
-    return <DisplayMarkdown textOnly={textOnly} value={value} />;
+    const { textOnly = true, value, overflowMode, ...restProps } = this.props;
+    const display = <DisplayMarkdown textOnly={textOnly} value={value} />;
+    // 使用Typography.Text来处理overflow和换行
+    const typographyProps = {
+      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      style: {
+        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
+        width: restProps.width || 'auto',
+        color: 'inherit',
+      },
+    };
+
+    // 使用 Typography.Text 自带的 tooltip
+    const textContent = <Typography.Text {...typographyProps}>{display}</Typography.Text>;
+    return textContent;
   }
 }
 
@@ -27,6 +41,10 @@ DisplayHtmlFieldModel.registerFlow({
   steps: {
     renderMode: {
       use: 'renderMode',
+    },
+    overflowMode: {
+      title: escapeT('Content overflow display mode'),
+      use: 'overflowMode',
     },
   },
 });

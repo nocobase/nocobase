@@ -131,15 +131,25 @@ ClickableFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: escapeT('Display style'),
-      uiSchema: {
-        displayStyle: {
-          'x-component': 'Radio.Group',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: escapeT('Tag'), value: 'tag' },
-            { label: escapeT('Text'), value: 'text' },
-          ],
-        },
+      uiSchema: (ctx) => {
+        if (
+          ['color', 'icon', 'select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(
+            ctx.collectionField.interface,
+          )
+        ) {
+          return null;
+        }
+
+        return {
+          displayStyle: {
+            'x-component': 'Radio.Group',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: escapeT('Tag'), value: 'tag' },
+              { label: escapeT('Text'), value: 'text' },
+            ],
+          },
+        };
       },
       defaultParams: {
         displayStyle: 'text',
@@ -167,24 +177,7 @@ ClickableFieldModel.registerFlow({
     },
     overflowMode: {
       title: escapeT('Content overflow display mode'),
-      uiSchema(ctx) {
-        return {
-          overflowMode: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: escapeT('Ellipsis'), value: 'ellipsis' },
-              { label: escapeT('Wrap'), value: 'wrap' },
-            ],
-          },
-        };
-      },
-      defaultParams: { overflowMode: 'ellipsis' },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          overflowMode: params.overflowMode,
-        });
-      },
+      use: 'overflowMode',
     },
   },
 });

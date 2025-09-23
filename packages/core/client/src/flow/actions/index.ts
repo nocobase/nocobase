@@ -33,3 +33,4 @@ export {
   linkageRunjs,
 } from './linkageRules';
 export * from './displayFieldComponent';
+export * from './overflowMode';
