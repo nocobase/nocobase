@@ -10,6 +10,7 @@
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
+import { css } from '@emotion/css';
 import { Typography } from 'antd';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { FieldModel } from '../base';
@@ -20,7 +21,19 @@ export class DisplayHtmlFieldModel extends FieldModel {
     const display = <DisplayMarkdown textOnly={textOnly} value={value} />;
     // 使用Typography.Text来处理overflow和换行
     const typographyProps = {
-      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      ellipsis:
+        overflowMode === 'ellipsis'
+          ? {
+              tooltip: {
+                rootClassName: css`
+                  .ant-tooltip-inner {
+                    color: #000;
+                  }
+                `,
+                color: '#fff',
+              },
+            }
+          : false, // 处理省略显示
       style: {
         whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
         width: restProps.width || 'auto',
