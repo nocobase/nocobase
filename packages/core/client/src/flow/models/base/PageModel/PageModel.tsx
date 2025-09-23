@@ -96,7 +96,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
-            this.context.view.navigation?.changeTo({
+            this.context.view.navigation?.changeTo?.({
               tabUid: activeKey,
             });
           }}
