@@ -100,6 +100,7 @@ export const Code = (props: any) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   editorRef?.write(value);
+                  ctx.message.info(ctx.t('Applied'));
                 }}
                 disabled={!isFullText}
               >

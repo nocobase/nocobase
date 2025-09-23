@@ -13,7 +13,7 @@ import { WorkContext, WorkContextBackgroundStrategy, WorkContextResolveStrategy 
 import resource from '../ai-employees/built-in/ai-coding/document/basic/flow-resource';
 import jsBlock from '../ai-employees/built-in/ai-coding/document/js-block';
 import jsField from '../ai-employees/built-in/ai-coding/document/js-field';
-// import jsColumn from '../ai-employees/built-in/ai-coding/document/js-column';
+import jsColumn from '../ai-employees/built-in/ai-coding/document/js-column';
 import jsItem from '../ai-employees/built-in/ai-coding/document/js-item';
 import jsAction from '../ai-employees/built-in/ai-coding/document/js-action';
 
@@ -47,7 +47,7 @@ export class AICodingManager {
         document.push(jsField);
       }
       if (sceneSet.has('JSColumnModel')) {
-        // document.push(jsColumn);
+        document.push(jsColumn);
       }
       if (
         sceneSet.has('JSFormActionModel') ||

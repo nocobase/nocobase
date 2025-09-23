@@ -19,6 +19,7 @@ import { basicSetup, EditorView } from 'codemirror';
 import completions from './completions';
 import { createJavaScriptLinter } from './linter';
 import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
+import { Flex } from 'antd';
 
 export interface EditorRef {
   write(document: string): void;
@@ -238,9 +239,14 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       }}
     >
       {rightExtra ? (
-        <div style={{ position: 'absolute', top: -35, right: 0, zIndex: 10 }}>
+        <Flex
+          gap="middle"
+          justify="flex-end"
+          align="center"
+          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
+        >
           {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
-        </div>
+        </Flex>
       ) : null}
       <div ref={editorRef} />
       {placeholder && !value && (

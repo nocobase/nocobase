@@ -57,10 +57,13 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
         onClick={() => {
           if (!open) {
             setOpen(true);
-          }
-          if (currentEmployee?.username !== aiEmployee.username) {
             switchAIEmployee(aiEmployee);
+          } else {
+            if (currentEmployee?.username !== aiEmployee.username) {
+              switchAIEmployee(aiEmployee);
+            }
           }
+
           addContextItems({
             type: 'code-editor',
             uid,
