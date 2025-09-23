@@ -24,6 +24,8 @@ export * from './pattern';
 export * from './validation';
 export {
   fieldLinkageRules,
+  detailsFieldLinkageRules,
+  linkageSetDetailsFieldProps,
   actionLinkageRules,
   blockLinkageRules,
   linkageSetBlockProps,

@@ -185,6 +185,9 @@ DetailsBlockModel.registerFlow({
     dataScope: {
       use: 'dataScope',
     },
+    linkageRules: {
+      use: 'detailsFieldLinkageRules',
+    },
   },
 });
 

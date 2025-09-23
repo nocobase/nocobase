@@ -132,8 +132,10 @@ export type ModelConstructor<T extends FlowModel<any> = FlowModel<any>> = (new (
 export enum ActionScene {
   /** 块级联动规则可用 */
   BLOCK_LINKAGE_RULES = 1,
-  /** 字段级联动规则可用 */
+  /** 表单字段级联动规则可用 */
   FIELD_LINKAGE_RULES,
+  /** 详情字段级联动规则可用 */
+  DETAILS_FIELD_LINKAGE_RULES,
   /** 按钮级联动规则可用 */
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
