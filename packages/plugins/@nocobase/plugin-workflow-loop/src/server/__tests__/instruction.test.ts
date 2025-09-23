@@ -66,7 +66,7 @@ describe('workflow > instructions > loop', () => {
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(2);
       expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-      expect(jobs[0].result).toEqual({ looped: 0 });
+      expect(jobs[0].result).toEqual({ looped: 0, done: 0 });
     });
 
     it('should exit when branch meets error', async () => {
@@ -97,7 +97,7 @@ describe('workflow > instructions > loop', () => {
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(2);
       expect(jobs[0].status).toBe(JOB_STATUS.ERROR);
-      expect(jobs[0].result).toEqual({ looped: 0 });
+      expect(jobs[0].result).toEqual({ looped: 1, done: 0 });
       expect(jobs[1].status).toBe(JOB_STATUS.ERROR);
     });
   });
@@ -129,7 +129,7 @@ describe('workflow > instructions > loop', () => {
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 0 });
+        expect(jobs[0].result).toEqual({ looped: 0, done: 0 });
       });
 
       it('null target just pass', async () => {
@@ -160,7 +160,7 @@ describe('workflow > instructions > loop', () => {
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 0 });
+        expect(jobs[0].result).toEqual({ looped: 0, done: 0 });
       });
 
       it('empty array just pass', async () => {
@@ -191,7 +191,7 @@ describe('workflow > instructions > loop', () => {
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 0 });
+        expect(jobs[0].result).toEqual({ looped: 0, done: 0 });
       });
 
       it('null value in array will not be passed', async () => {
@@ -222,7 +222,7 @@ describe('workflow > instructions > loop', () => {
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
         expect(jobs.length).toBe(3);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 1 });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 1 });
       });
 
       it('target is number, cycle number times', async () => {
@@ -254,7 +254,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(4);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
       });
 
       it('target is no array, set as an array', async () => {
@@ -286,7 +286,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(3);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 1 });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 1 });
       });
 
       it('multiple targets', async () => {
@@ -318,7 +318,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(4);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
         expect(jobs.filter((j) => j.nodeId === n2.id).length).toBe(2);
       });
     });
@@ -359,7 +359,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(5);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
         expect(jobs[1].result).toBe(0);
         expect(jobs[2].result).toBe(0);
         expect(jobs[3].result).toBe(1);
@@ -402,7 +402,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(5);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
         expect(jobs[1].result).toBe(1);
         expect(jobs[2].result).toBe(1);
         expect(jobs[3].result).toBe(2);
@@ -436,7 +436,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(3);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
       });
 
       it('condition engine basic before each: true with loop variable', async () => {
@@ -480,7 +480,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 1, broken: true });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 1, broken: true });
       });
 
       it('condition engine basic after each: true with loop variable', async () => {
@@ -525,7 +525,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 1, broken: true });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 1, broken: true });
       });
 
       it('condition engine basic before each: first false', async () => {
@@ -565,7 +565,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(1);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 0, broken: true });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 0, broken: true });
       });
 
       it('condition engine basic after each: first false', async () => {
@@ -606,7 +606,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 1, broken: true });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 1, broken: true });
       });
 
       it('continueOnFalse as true', async () => {
@@ -642,9 +642,9 @@ describe('workflow > instructions > loop', () => {
         expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
         const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
 
-        expect(jobs.length).toBe(2);
+        expect(jobs.length).toBe(1);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 0 });
       });
 
       it('continueOnFalse as true, second false', async () => {
@@ -662,7 +662,7 @@ describe('workflow > instructions > loop', () => {
                   calculations: [
                     {
                       calculator: 'equal',
-                      operands: [1, '{{$scopes.' + n1.key + '.item}}'],
+                      operands: [0, '{{$scopes.' + n1.key + '.item}}'],
                     },
                   ],
                 },
@@ -684,7 +684,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 1 });
       });
     });
 
@@ -718,7 +718,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.ERROR);
-        expect(jobs[0].result).toEqual({ looped: 0 });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 0 });
       });
 
       it('exit as failed', async () => {
@@ -751,7 +751,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(2);
         expect(jobs[0].status).toBe(JOB_STATUS.ERROR);
-        expect(jobs[0].result).toEqual({ looped: 0 });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 0 });
       });
 
       it('exit as break', async () => {
@@ -784,7 +784,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(3);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 0, broken: true });
+        expect(jobs[0].result).toEqual({ looped: 1, done: 0, broken: true });
       });
 
       it('exit as continue', async () => {
@@ -817,7 +817,7 @@ describe('workflow > instructions > loop', () => {
 
         expect(jobs.length).toBe(4);
         expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-        expect(jobs[0].result).toEqual({ looped: 2 });
+        expect(jobs[0].result).toEqual({ looped: 2, done: 2 });
       });
 
       it('exit as continue with async node inside', async () => {
@@ -858,7 +858,7 @@ describe('workflow > instructions > loop', () => {
         const j2s = await e2.getJobs({ order: [['id', 'ASC']] });
 
         expect(j2s.length).toBe(3);
-        expect(j2s[0].result).toEqual({ looped: 1 });
+        expect(j2s[0].result).toEqual({ looped: 1, done: 1 });
         expect(j2s[1].status).toBe(JOB_STATUS.RESOLVED);
         expect(j2s[2].status).toBe(JOB_STATUS.PENDING);
 
@@ -872,7 +872,7 @@ describe('workflow > instructions > loop', () => {
         const j3s = await e3.getJobs({ order: [['id', 'ASC']] });
 
         expect(j3s.length).toBe(3);
-        expect(j3s[0].result).toEqual({ looped: 2 });
+        expect(j3s[0].result).toEqual({ looped: 2, done: 2 });
         expect(j3s[1].status).toBe(JOB_STATUS.RESOLVED);
         expect(j3s[2].status).toBe(JOB_STATUS.RESOLVED);
       });
