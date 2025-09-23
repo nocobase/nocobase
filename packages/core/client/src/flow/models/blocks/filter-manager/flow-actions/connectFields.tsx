@@ -9,7 +9,7 @@
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
-import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Dropdown, Segmented, Select, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
@@ -20,7 +20,7 @@ import { getAllDataModels } from '../utils';
 
 export const connectFields = defineAction({
   name: 'connectFields',
-  title: 'Connect fields',
+  title: escapeT('Connect fields'),
   uiSchema(ctx: FlowContext) {
     return {
       value: {
@@ -281,7 +281,7 @@ function ConnectFields(
                       onChange={(values) => handleSelectChange(model.uid, values)}
                       multiple
                       allowClear
-                      placeholder="请选择字段"
+                      placeholder={ctx.t('Please select field')}
                       treeDataSimpleMode={false}
                       showSearch
                       treeDefaultExpandAll={false}
@@ -294,7 +294,9 @@ function ConnectFields(
                       mode="tags"
                       value={values}
                       onChange={(values) => handleSelectChange(model.uid, values)}
-                      placeholder="请输入字段路径，支持多个值（用回车或逗号分隔）"
+                      placeholder={ctx.t(
+                        'Please enter field paths, support multiple values (separated by Enter or comma)',
+                      )}
                       style={{ width: '100%' }}
                       allowClear
                       tokenSeparators={[',']}
@@ -308,8 +310,8 @@ function ConnectFields(
                   value={currentInputMode}
                   onChange={(mode) => handleInputModeChange(model.uid, mode as 'field-select' | 'text-input')}
                   options={[
-                    { label: '下拉选择', value: 'field-select' },
-                    { label: '文本输入', value: 'text-input' },
+                    { label: ctx.t('Dropdown select'), value: 'field-select' },
+                    { label: ctx.t('Text input'), value: 'text-input' },
                   ]}
                 />
                 <Button
@@ -317,7 +319,7 @@ function ConnectFields(
                   icon={<DeleteOutlined />}
                   onClick={() => handleRemoveBlock(model.uid)}
                   style={{ color: '#8c8c8c' }}
-                  title="删除此目标区块"
+                  title={ctx.t('Delete this target block')}
                 />
               </div>
             </FormItem>
@@ -328,7 +330,7 @@ function ConnectFields(
       <div style={{ marginTop: '16px' }}>
         <Dropdown menu={{ items: menuItems }} trigger={['hover']} autoFocus={false}>
           <Button type="dashed" icon={<PlusOutlined />} style={{ width: '100%' }}>
-            添加目标区块
+            {ctx.t('Add target block')}
           </Button>
         </Dropdown>
       </div>

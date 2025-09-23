@@ -1372,5 +1372,13 @@
   "Save failed":" 保存失败",
   "Please select fields": "请选择字段",
   "Please select field": "请选择字段",
-  "Please select state": "请选择状态"
+  "Please select state": "请选择状态",
+  "Configuration:": "配置说明：",
+  "Available \"target blocks\" are all data blocks on the current page": "可选的\"目标区块\"为当前页面中的所有数据区块",
+  "Support filtering multiple blocks simultaneously, support deep selection of relationship fields (e.g.: User/Department/Name)": "支持同时筛选多个区块，支持关系字段深层选择（如：用户/部门/名称）",
+  "Please enter field paths, support multiple values (separated by Enter or comma)": "请输入字段路径，支持多个值（用回车或逗号分隔）",
+  "Dropdown select": "下拉选择",
+  "Text input": "文本输入",
+  "Delete this target block": "删除此目标区块",
+  "Add target block": "添加目标区块"
 }
