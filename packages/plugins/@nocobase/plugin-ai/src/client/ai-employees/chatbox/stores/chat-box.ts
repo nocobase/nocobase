@@ -34,6 +34,7 @@ interface ChatBoxState {
 
   chatBoxRef: React.MutableRefObject<HTMLDivElement> | null;
   senderRef: React.MutableRefObject<GetRef<typeof Sender>> | null;
+  showCodeHistory: boolean;
 }
 
 interface ChatBoxActions {
@@ -53,6 +54,7 @@ interface ChatBoxActions {
 
   setChatBoxRef: (ref: React.MutableRefObject<HTMLDivElement> | null) => void;
   setSenderRef: (ref: React.MutableRefObject<GetRef<typeof Sender>> | null) => void;
+  setShowCodeHistory: (show: boolean) => void;
 }
 
 const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
@@ -75,6 +77,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   senderRef: {
     current: null,
   },
+  showCodeHistory: false,
 
   setOpen: (open) => set({ open }),
   setExpanded: (expanded) => set({ expanded }),
@@ -99,6 +102,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
 
   setChatBoxRef: (ref) => set({ chatBoxRef: ref }),
   setSenderRef: (ref) => set({ senderRef: ref }),
+  setShowCodeHistory: (show) => set({ showCodeHistory: show }),
 }));
 
 export const useChatBoxStore = createSelectors(store);
