@@ -246,10 +246,14 @@ function ConnectFields(
           color: '#0369a1',
         }}
       >
-        <div style={{ fontWeight: 500, marginBottom: '8px' }}>配置说明：</div>
+        <div style={{ fontWeight: 500, marginBottom: '8px' }}>{ctx.t('Configuration:')}</div>
         <ul style={{ margin: 0, paddingLeft: '16px' }}>
-          <li>可选的“目标区块”为当前页面中的所有数据区块</li>
-          <li>支持同时筛选多个区块，支持关系字段深层选择（如：用户/部门/名称）</li>
+          <li>{ctx.t('Available "target blocks" are all data blocks on the current page')}</li>
+          <li>
+            {ctx.t(
+              'Support filtering multiple blocks simultaneously, support deep selection of relationship fields (e.g.: User/Department/Name)',
+            )}
+          </li>
         </ul>
       </div>
       {allDataModels
@@ -281,7 +285,7 @@ function ConnectFields(
                       onChange={(values) => handleSelectChange(model.uid, values)}
                       multiple
                       allowClear
-                      placeholder={ctx.t('Please select field')}
+                      placeholder={ctx.t('Please select fields to filter')}
                       treeDataSimpleMode={false}
                       showSearch
                       treeDefaultExpandAll={false}
@@ -294,9 +298,7 @@ function ConnectFields(
                       mode="tags"
                       value={values}
                       onChange={(values) => handleSelectChange(model.uid, values)}
-                      placeholder={ctx.t(
-                        'Please enter field paths, support multiple values (separated by Enter or comma)',
-                      )}
+                      placeholder={ctx.t('Separate multiple values with comma or Enter')}
                       style={{ width: '100%' }}
                       allowClear
                       tokenSeparators={[',']}
