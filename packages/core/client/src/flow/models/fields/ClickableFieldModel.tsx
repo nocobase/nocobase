@@ -64,25 +64,11 @@ export class ClickableFieldModel extends FieldModel {
       gap: 4,
     };
 
-    // 使用Typography.Text来处理overflow和换行
-    const typographyProps = {
-      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
-      style: {
-        ...commonStyle,
-        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
-        width: restProps.width || 'auto',
-        color: 'inherit',
-      },
-    };
-
-    // 使用 Typography.Text 自带的 tooltip
-    const textContent = <Typography.Text {...typographyProps}>{display}</Typography.Text>;
-
     if (isTag) {
       return (
         value && (
           <Tag {...restProps} style={commonStyle} onClick={handleClick}>
-            {textContent}
+            {display}
           </Tag>
         )
       );
@@ -90,13 +76,13 @@ export class ClickableFieldModel extends FieldModel {
     if (clickToOpen) {
       return (
         <a {...restProps} style={commonStyle} onClick={handleClick}>
-          {textContent}
+          {display}
         </a>
       );
     }
     return (
       <span {...restProps} style={commonStyle} className={restProps.className}>
-        {textContent}
+        {display}
       </span>
     );
   }
@@ -105,21 +91,31 @@ export class ClickableFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, displayStyle, fieldNames } = this.props;
+    const { value, displayStyle, fieldNames, overflowMode, width } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
+    const typographyProps = {
+      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      style: {
+        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
+        width: width || 'auto',
+      },
+    };
     if (titleField) {
       if (displayStyle === 'tag') {
-        return castArray(value).map((v, idx) => (
+        const result = castArray(value).map((v, idx) => (
           <React.Fragment key={idx}>{this.renderInDisplayStyle(v?.[titleField], v)}</React.Fragment>
         ));
+        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
       } else {
-        return castArray(value).flatMap((v, idx) => {
+        const result = castArray(value).flatMap((v, idx) => {
           const node = this.renderInDisplayStyle(v?.[titleField], v);
           return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
         });
+        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
       }
     } else {
-      return this.renderInDisplayStyle(value);
+      const textContent = <Typography.Text {...typographyProps}>{this.renderInDisplayStyle(value)}</Typography.Text>;
+      return textContent;
     }
   }
 }
