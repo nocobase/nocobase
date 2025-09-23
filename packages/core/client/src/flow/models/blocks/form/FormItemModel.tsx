@@ -25,6 +25,21 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 
+const interfacesOfUnsupportedDefaultValue = [
+  'o2o',
+  'oho',
+  'obo',
+  'o2m',
+  'attachment',
+  'expression',
+  'point',
+  'lineString',
+  'circle',
+  'polygon',
+  'sequence',
+  'formula',
+];
+
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
     return nameParts;
@@ -231,6 +246,10 @@ FormItemModel.registerFlow({
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;
         }
+        const iface = ctx.model.collectionField?.interface;
+        if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
+          return;
+        }
         return {
           defaultValue: {
             'x-component': 'DefaultValue',
@@ -252,6 +271,10 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
+        const iface = ctx.model.collectionField?.interface;
+        if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
+          return;
+        }
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
     },
