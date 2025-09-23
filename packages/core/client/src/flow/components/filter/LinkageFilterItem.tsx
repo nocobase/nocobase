@@ -19,9 +19,9 @@ import {
   parseValueToPath,
   FlowModel,
 } from '@nocobase/flow-engine';
-import { DateFilterDynamicComponent } from '../../../schema-component';
 import { NumberPicker } from '@formily/antd-v5';
 import { normalizeUiSchemaEnumToOptions } from '../../internal/utils/enumOptionsUtils';
+import { DateFilterDynamicComponent } from '../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent';
 
 export interface LinkageFilterItemValue {
   path: string | null;
