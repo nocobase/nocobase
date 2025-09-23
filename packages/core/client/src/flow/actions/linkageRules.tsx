@@ -92,7 +92,7 @@ export const linkageSetBlockProps = defineAction({
     },
   },
   handler(ctx, { value, setProps }) {
-    setProps(ctx.model, { hiddenModel: value === 'hide' });
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
   },
 });
 
