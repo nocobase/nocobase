@@ -695,7 +695,7 @@ export class FlowSettings {
 
     // 为每个步骤创建独立的表单实例，互不干扰
     const forms = new Map<string, ReturnType<typeof createForm>>();
-    const keyOf = (e: StepEntry) => `${e.flowKey}::${e.stepKey}`;
+    const keyOf = (e: { flowKey: string; stepKey: string }) => `${e.flowKey}::${e.stepKey}`;
 
     entries.forEach((e) => {
       const form = createForm({ initialValues: compileUiSchema(scopes, e.initialValues) });
@@ -890,7 +890,13 @@ export class FlowSettings {
 
         if (modeProps.footer) {
           footerButtons = _.isFunction(modeProps.footer)
-            ? modeProps.footer(footerButtons, { OkBtn: Save, CancelBtn: Cancel })
+            ? modeProps.footer(footerButtons, {
+                OkBtn: Save,
+                CancelBtn: Cancel,
+                getStepFormValues: (flowKey: string, stepKey: string) => {
+                  return forms.get(keyOf({ flowKey, stepKey }))?.values;
+                },
+              })
             : modeProps.footer;
         }
 
