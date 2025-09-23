@@ -16,10 +16,8 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { debounce } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { DEBOUNCE_WAIT } from '../../../../variables';
 import { SelectOptions } from '../../../actions/titleField';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
