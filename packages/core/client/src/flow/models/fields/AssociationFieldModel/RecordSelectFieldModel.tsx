@@ -133,6 +133,14 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
   getDataSource() {
     return this.props.options;
   }
+
+  getFilterValue() {
+    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.props.value)
+      ? this.props.value.map((item) => item[fieldNames.value])
+      : this.props.value?.[fieldNames.value];
+  }
+
   render() {
     return <LazySelect {...this.props} />;
   }
