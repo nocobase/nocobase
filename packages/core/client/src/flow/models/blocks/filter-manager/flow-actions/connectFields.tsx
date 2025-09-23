@@ -63,10 +63,14 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
       );
 
       if (shouldLoadChildren) {
-        const targetCollection = field.targetCollection;
-        if (targetCollection) {
-          const targetFields = targetCollection.getFields?.() || [];
-          treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPaths, fullLabel);
+        if (field.filterable?.children?.length) {
+          treeNode.children = buildTreeData(ctx, field.filterable.children, currentPath, selectedPaths, fullLabel);
+        } else {
+          const targetCollection = field.targetCollection;
+          if (targetCollection) {
+            const targetFields = targetCollection.getFields?.() || [];
+            treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPaths, fullLabel);
+          }
         }
       }
 
@@ -377,8 +381,12 @@ function TreeSelectWrapper(props) {
     }
 
     const targetCollection = node.field.targetCollection;
+    const filterableChildren = node.field.filterable?.children || [];
 
-    if (targetCollection) {
+    if (filterableChildren.length) {
+      const childNodes = buildTreeData(ctx, filterableChildren, key, '', node.fullLabel || node.title);
+      node.props.data.children = childNodes;
+    } else if (targetCollection) {
       const targetFields = targetCollection.getFields?.() || [];
       const parentFullLabel = node.fullLabel || node.title;
       const childNodes = buildTreeData(ctx, targetFields, key, '', parentFullLabel);
