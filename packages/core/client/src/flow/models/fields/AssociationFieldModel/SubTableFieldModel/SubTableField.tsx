@@ -24,10 +24,11 @@ export function SubTableField(props) {
     components,
     allowSelectExistingRecord,
     onSelectExitRecordClick,
+    allowDisassociation,
   } = props;
   // 新增一行
   const handleAdd = () => {
-    const newRow = {};
+    const newRow = { isNew: true };
     columns.forEach((col) => (newRow[col.dataIndex] = undefined));
     onChange?.([...(value || []), newRow]);
   };
@@ -71,6 +72,9 @@ export function SubTableField(props) {
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
+          if (!allowDisassociation && !record.isNew) {
+            return;
+          }
           return (
             <div
               onClick={() => {

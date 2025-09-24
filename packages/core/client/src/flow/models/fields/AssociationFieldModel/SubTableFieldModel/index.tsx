@@ -209,6 +209,27 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
+    allowDisassociation: {
+      title: escapeT('Allow disassociation'),
+      uiSchema: {
+        allowDisassociation: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
   },
 });
 
