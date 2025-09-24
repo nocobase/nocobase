@@ -9,20 +9,15 @@
 
 import React from 'react';
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
-import { ClickableFieldModel, ApplicationContext, tval } from '@nocobase/client';
+import { DisplayTitleFieldModel, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
-export class DisplayVditorFieldModel extends ClickableFieldModel {
+export class DisplayVditorFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
-    const app = this.context.app;
     if (!value) {
-      return <div></div>;
+      return;
     }
-    return (
-      <ApplicationContext.Provider value={app}>
-        <Display value={value} ellipsis={this.props.textOnly} />
-      </ApplicationContext.Provider>
-    );
+    return <Display value={value} ellipsis={this.props.textOnly} />;
   }
 }
 DisplayVditorFieldModel.define({
@@ -31,11 +26,11 @@ DisplayVditorFieldModel.define({
 
 DisplayVditorFieldModel.registerFlow({
   key: 'markdownVditorSettings',
-  title: tval('MarkdownVditor settings'),
+  title: tval('Content settings'),
   sort: 200,
   steps: {
-    displayMode: {
-      use: 'displayMode',
+    renderMode: {
+      use: 'renderMode',
     },
   },
 });
