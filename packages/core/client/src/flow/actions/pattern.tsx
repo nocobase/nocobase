@@ -36,12 +36,17 @@ export const pattern = defineAction({
       },
     };
   },
-  defaultParams: (ctx) => ({
-    pattern:
-      ctx.model.context.parentDisabled || ctx.model.props.disabled || ctx.model.collectionField.readonly
-        ? 'disabled'
-        : 'editable',
-  }),
+  defaultParams: (ctx) => {
+    return {
+      pattern:
+        !ctx.model.collectionField.inputable ||
+        ctx.model.context.parentDisabled ||
+        ctx.model.props.disabled ||
+        ctx.model.collectionField.readonly
+          ? 'disabled'
+          : 'editable',
+    };
+  },
   afterParamsSave: async (ctx, params, previousParams) => {
     const { model } = ctx;
 
@@ -59,7 +64,6 @@ export const pattern = defineAction({
   },
 
   handler(ctx, params) {
-    console.log(params.pattern);
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
         pattern: 'readPretty',
