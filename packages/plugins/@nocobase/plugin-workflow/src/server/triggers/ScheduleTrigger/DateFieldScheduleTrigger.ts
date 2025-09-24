@@ -36,7 +36,7 @@ export interface ScheduleTriggerConfig {
   endsOn?: string | ScheduleOnField;
 }
 
-function getOnTimestampWithOffset({ field, offset = 0, unit = 1000 }: ScheduleOnField, now: Date) {
+function getOnTimestampWithOffset({ field, offset = 0, unit = 86400000 }: ScheduleOnField, now: Date) {
   if (!field) {
     return null;
   }

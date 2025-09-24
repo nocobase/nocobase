@@ -509,4 +509,41 @@ describe('workflow > triggers > schedule > date field mode', () => {
       expect(e2s.length).toBe(1);
     });
   });
+
+  describe('record', () => {
+    it('record deleted after first triggered', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+          repeat: 1000,
+        },
+      });
+
+      const now = await sleepToEvenSecond();
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(1300);
+
+      const e1s = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].context.data.id).toBe(p1.id);
+      const triggerTime = new Date(p1.createdAt);
+      triggerTime.setMilliseconds(0);
+      expect(e1s[0].context.date).toBe(triggerTime.toISOString());
+
+      await p1.destroy();
+
+      await sleep(1500);
+
+      const e2s = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(e2s.length).toBe(1);
+    });
+  });
 });
