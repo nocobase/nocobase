@@ -11,6 +11,8 @@ import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import { LLMProvider, EmbeddingProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { Model } from '@nocobase/database';
+import { stripToolCallTags } from '../utils';
 
 const OPENAI_URL = 'https://api.openai.com/v1';
 
@@ -29,19 +31,72 @@ export class OpenAIProvider extends LLMProvider {
       type: responseFormat,
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['name'] = 'default';
+      responseFormatOptions['schema'] = schema;
     }
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
       modelKwargs: {
-        response_format: responseFormatOptions,
+        text: {
+          format: responseFormatOptions,
+        },
       },
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
-      verbose: true,
+      verbose: false,
+      useResponsesApi: true,
     });
+  }
+
+  parseResponseChunk(chunk: any) {
+    if (chunk && Array.isArray(chunk)) {
+      if (chunk[0] && chunk[0].type === 'text') {
+        chunk = chunk[0].text;
+      }
+    }
+    return stripToolCallTags(chunk);
+  }
+
+  parseResponseMessage(message: Model) {
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const content = {
+      ...rawContent,
+      messageId,
+      metadata,
+      attachments,
+      workContext,
+    };
+
+    if (toolCalls) {
+      content.tool_calls = toolCalls;
+    }
+
+    if (Array.isArray(content.content)) {
+      const textMessage = content.content.find((msg) => msg.type === 'text');
+      content.content = textMessage?.text;
+    }
+
+    return {
+      key: messageId,
+      content,
+      role,
+    };
+  }
+
+  protected builtInTools(): any[] {
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      const webSearchTool = {
+        type: 'web_search_preview',
+      };
+      return [webSearchTool];
+    }
+    return [];
+  }
+
+  protected isToolConflict(): boolean {
+    return false;
   }
 }
 
