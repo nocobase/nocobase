@@ -25,10 +25,8 @@ function PreviewButton() {
     <Button
       onClick={async () => {
         await form.submit();
-        console.log('当前表单值', JSON.stringify(form.values, null, 2));
-        ctx.model.setSteParamsAndPreview({
-          title: 'abc',
-        });
+        const values = ctx.getStepFormValues('flow1', 'step1');
+        ctx.model.setSteParamsAndPreview(values);
       }}
     >
       Preview

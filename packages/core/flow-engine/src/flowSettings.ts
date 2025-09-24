@@ -751,7 +751,10 @@ export class FlowSettings {
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
-      content: (currentView) => {
+      content: (currentView, viewCtx) => {
+        viewCtx.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+          return forms.get(keyOf({ flowKey, stepKey }))?.values;
+        });
         // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
@@ -893,9 +896,6 @@ export class FlowSettings {
             ? modeProps.footer(footerButtons, {
                 OkBtn: Save,
                 CancelBtn: Cancel,
-                getStepFormValues: (flowKey: string, stepKey: string) => {
-                  return forms.get(keyOf({ flowKey, stepKey }))?.values;
-                },
               })
             : modeProps.footer;
         }
