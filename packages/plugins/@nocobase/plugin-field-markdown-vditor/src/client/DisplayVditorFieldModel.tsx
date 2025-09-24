@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { ClickableFieldModel, ApplicationContext, tval } from '@nocobase/client';
 import { Display } from './components/Display';
 
@@ -25,6 +25,9 @@ export class DisplayVditorFieldModel extends ClickableFieldModel {
     );
   }
 }
+DisplayVditorFieldModel.define({
+  label: escapeT('MarkdownVditor'),
+});
 
 DisplayVditorFieldModel.registerFlow({
   key: 'markdownVditorSettings',
