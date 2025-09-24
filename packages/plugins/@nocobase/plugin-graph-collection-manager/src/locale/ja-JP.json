@@ -11,7 +11,7 @@
   "Entity relationship only": "エンティティ関係",
   "Inheritance relationship only": "継承関係",
   "Graphical interface": "グラフィカルインターフェース",
-  "Selection": "せんたく",
   "Auto layout": "自動レイアウト",
+  "Selection": "せんたく",
   "Associations Fields": "関係フィールド"
 }

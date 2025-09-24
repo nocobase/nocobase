@@ -7,5 +7,7 @@
   "Data of associated collection": "関連コレクションデータ",
   "Field to aggregate": "集計フィールド",
   "Distinct": "重複排除",
-  "Query result": "クエリ結果"
+  "Query result": "クエリ結果",
+  "Result precision": "結果精度",
+  "Number of decimal places for query result.": "クエリ結果の小数点以下桁数"
 }

@@ -1,0 +1,7 @@
+{
+  "Verification send failed, please try later or contact to administrator": "認証送信に失敗しました。後ほど再試行するか、管理者にご連絡ください。",
+  "Not a valid cellphone number, please re-enter": "無効な携帯電話番号です。再入力してください。",
+  "Please don't retry in {{time}} seconds": "{{time}} 秒後に再試行してください。",
+  "You are trying so frequently, please slow down": "操作が頻繁すぎます。少し待ってから再試行してください。",
+  "Verification code is invalid": "無効な認証コードです。"
+}
