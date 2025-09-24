@@ -93,7 +93,6 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       fork.mapSubModels('items', (item) => {
         item.setProps({ disabled: disabled });
       });
-      fork.rerender();
     });
     gridModel.context.defineProperty('parentDisabled', {
       get: () => disabled,
@@ -126,18 +125,20 @@ const ArrayNester = ({ name, value, disabled }: any) => {
               }
               return (
                 <div key={uid} style={{ marginBottom: 12 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <Tooltip title={t('Remove')}>
-                      <CloseOutlined
-                        style={{ zIndex: 1000, color: '#a8a3a3' }}
-                        onClick={() => {
-                          remove(index);
-                          // 删除 fork 缓存
-                          delete forksRef.current[uid];
-                        }}
-                      />
-                    </Tooltip>
-                  </div>
+                  {!disabled && (
+                    <div style={{ textAlign: 'right' }}>
+                      <Tooltip title={t('Remove')}>
+                        <CloseOutlined
+                          style={{ zIndex: 1000, color: '#a8a3a3' }}
+                          onClick={() => {
+                            remove(index);
+                            // 删除 fork 缓存
+                            delete forksRef.current[uid];
+                          }}
+                        />
+                      </Tooltip>
+                    </div>
+                  )}
                   <FlowModelRenderer model={forksRef.current[uid]} showFlowSettings={false} />
                   <Divider />
                 </div>
