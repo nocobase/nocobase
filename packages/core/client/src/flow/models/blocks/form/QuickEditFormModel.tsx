@@ -174,6 +174,7 @@ export class QuickEditFormModel extends FlowModel {
                 this.resource.save(formValues, { refresh: false }).catch((error) => {});
                 this.__onSubmitSuccess?.(formValues);
                 this.viewContainer.close();
+                this.context.message.success(this.context.t('Saved successfully'));
               } catch (error) {
                 console.error('Failed to save form data:', error);
                 this.context.message.error(this.context.t('Failed to save form data'));
