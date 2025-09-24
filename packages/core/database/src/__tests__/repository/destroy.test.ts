@@ -214,6 +214,7 @@ describe('destroy', () => {
     await db.sync();
 
     const post = await Post.repository.create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 't1' }],

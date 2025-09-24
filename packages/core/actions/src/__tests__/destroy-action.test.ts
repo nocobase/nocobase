@@ -91,6 +91,7 @@ describe('destroy action', () => {
 
   test('destroy has many resource', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['comments'],
       values: {
         title: 'p1',
         comments: [
@@ -115,6 +116,7 @@ describe('destroy action', () => {
 
   test('destroy belongs to many', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['tags', 'tags.posts_tags'],
       values: {
         title: 'p1',
         tags: [

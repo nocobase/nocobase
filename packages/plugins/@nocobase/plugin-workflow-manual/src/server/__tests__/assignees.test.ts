@@ -100,6 +100,7 @@ describe('workflow > instructions > manual > assignees', () => {
       });
 
       const post = await PostRepo.create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
         context: { state: { currentUser: users[0] } },
       });

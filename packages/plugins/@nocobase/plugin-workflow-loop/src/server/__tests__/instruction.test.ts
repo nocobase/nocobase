@@ -899,6 +899,7 @@ describe('workflow > instructions > loop', () => {
       });
 
       const post = await PostRepo.create({
+        updateAssociationValues: ['comments'],
         values: {
           title: 't1',
           comments: [{ content: 'c1' }, { content: 'c2' }],
