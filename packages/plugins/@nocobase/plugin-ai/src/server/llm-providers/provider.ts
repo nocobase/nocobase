@@ -46,9 +46,18 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    if (context.tools?.length) {
-      chain = chain.bindTools(context.tools);
+
+    const tools = [];
+    if (this.builtInTools()?.length) {
+      tools.push(...this.builtInTools());
     }
+    if (!this.isToolConflict() && context.tools?.length) {
+      tools.push(...context.tools);
+    }
+    if (tools.length) {
+      chain = chain.bindTools(tools);
+    }
+
     if (context.structuredOutput) {
       const { schema, options } = this.getStructuredOutputOptions(context.structuredOutput) || {};
       if (schema) {
@@ -154,6 +163,14 @@ export abstract class LLMProvider {
       },
       options,
     };
+  }
+
+  protected builtInTools(): any[] {
+    return [];
+  }
+
+  protected isToolConflict(): boolean {
+    return true;
   }
 }
 

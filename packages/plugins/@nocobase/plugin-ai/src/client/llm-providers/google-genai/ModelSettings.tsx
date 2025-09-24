@@ -156,6 +156,18 @@ export const ModelSettingsForm: React.FC = () => {
             'x-decorator': 'FormItem',
             'x-component': 'ModelSelect',
           },
+          builtIn: {
+            title: tval('Built in tools', { ns: namespace }),
+            type: 'object',
+            properties: {
+              webSearch: {
+                type: 'boolean',
+                title: tval('Web search', { ns: namespace }),
+                'x-decorator': 'FormItem',
+                'x-component': 'Checkbox',
+              },
+            },
+          },
           options: {
             type: 'void',
             'x-component': 'Options',

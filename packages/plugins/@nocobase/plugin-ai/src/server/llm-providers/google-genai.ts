@@ -34,7 +34,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       json: responseFormat === 'json',
-      // verbose: true,
+      verbose: false,
     });
   }
 
@@ -113,6 +113,16 @@ export class GoogleGenAIProvider extends LLMProvider {
         data,
       };
     }
+  }
+
+  protected builtInTools(): any[] {
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      const groundingTool = {
+        googleSearch: {},
+      };
+      return [groundingTool];
+    }
+    return [];
   }
 }
 
