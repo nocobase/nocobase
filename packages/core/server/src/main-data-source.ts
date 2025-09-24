@@ -8,7 +8,7 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { CollectionOptions, DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { Collection, Model } from '@nocobase/database';
 
 type MainDataSourceStatus = 'loaded' | 'loading';
@@ -46,39 +46,40 @@ export class MainDataSource extends SequelizeDataSource {
     return diffTables.map((name) => ({ name }));
   }
 
-  private async tables2Collections(collectionNames: string[]) {
+  private async tables2Collections(
+    tableNames: (
+      | string
+      | {
+          tableName: string;
+          schema?: string;
+        }
+    )[],
+  ): Promise<CollectionOptions[]> {
     const db = this.collectionManager.db;
-    const results = (
-      await Promise.all(
-        collectionNames.map(async (tableName) => {
-          const tableInfo: { tableName: string; schema?: string } = { tableName };
-
+    const results = await Promise.all(
+      tableNames.map(async (tableName) => {
+        let tableInfo: { tableName: string; schema?: string };
+        if (typeof tableName === 'string') {
+          tableInfo = { tableName };
           if (db.options.schema) {
             tableInfo.schema = db.options.schema;
           }
+        } else {
+          tableInfo = tableName;
+        }
 
-          try {
-            return await this.introspector.getCollection({ tableInfo });
-          } catch (e) {
-            if (e.message.includes('No description found for')) {
-              this.logger.debug('Table description not found', {
-                tableName,
-                error: e.message,
-              });
-              return false;
-            }
-
-            this.logger.error('Failed to get collection', {
-              tableName,
-              error: e.message,
-              stack: e.stack,
-            });
-            throw e;
+        try {
+          return await this.introspector.getCollection({ tableInfo });
+        } catch (e) {
+          if (e.message.includes('No description found for')) {
+            return null;
           }
-        }),
-      )
-    ).filter(Boolean);
-    return results;
+
+          throw e;
+        }
+      }),
+    );
+    return results.filter(Boolean);
   }
 
   async loadTables(ctx: Context, tables: string[]) {
@@ -87,11 +88,11 @@ export class MainDataSource extends SequelizeDataSource {
       filter: { name: tables },
     });
     const existsCollectionNames = existsCollections.map((c: Model) => c.name);
-    const addToCollections = tables.filter((table) => !existsCollectionNames.includes(table));
-    if (addToCollections.length) {
+    const toAddTables = tables.filter((table) => !existsCollectionNames.includes(table));
+    if (toAddTables.length) {
       try {
         this.status = 'loading';
-        const results = await this.tables2Collections(addToCollections);
+        const results = await this.tables2Collections(toAddTables);
         const values = results.map((result) => ({
           ...result,
           underscored: false,
@@ -99,11 +100,73 @@ export class MainDataSource extends SequelizeDataSource {
         await repo.create({ values, context: ctx });
         this.status = 'loaded';
       } catch (e) {
-        this.logger.error('Failed to load tables', {
+        ctx.logger.error('Failed to load tables', {
           error: e.message,
           stack: e.stack,
         });
       }
+    }
+  }
+
+  private async getLoadedCollections(filter?: any) {
+    const db = this.collectionManager.db;
+    const loadedCollections = await db.getRepository('collections').find({
+      appends: ['fields'],
+      filter,
+    });
+    const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
+    const loadedData = {};
+    for (const collection of collections) {
+      loadedData[collection.name] = {
+        ...collection.toJSON(),
+        fields: collection.fields.map((field: Model) => field.toJSON()),
+      };
+    }
+    return loadedData;
+  }
+
+  async syncFieldsFromDatabase(ctx: any, collectionNames?: string[]) {
+    let filter = {};
+    if (collectionNames?.length) {
+      filter = {
+        name: collectionNames,
+      };
+    }
+    const db = this.collectionManager.db;
+    const loadedCollections = await this.getLoadedCollections(filter);
+    const tableNames = Object.keys(loadedCollections).map((collectionName: string) => {
+      const collection = db.getCollection(collectionName);
+      return collection.getTableNameWithSchema();
+    });
+    let collections = [];
+    try {
+      collections = await this.tables2Collections(tableNames);
+    } catch (err) {
+      ctx.log.error(err);
+    }
+    const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
+
+    for (const values of toLoadCollections) {
+      const existsFields = loadedCollections[values.name].fields;
+      const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
+
+      await db.sequelize.transaction(async (transaction) => {
+        for (const field of deletedFields) {
+          await db.getRepository('fields').destroy({
+            filterByTk: field.key,
+            context: ctx,
+            transaction,
+          });
+        }
+
+        await db.getRepository('collections').update({
+          filterByTk: values.name,
+          values,
+          updateAssociationValues: ['fields'],
+          context: ctx,
+          transaction,
+        });
+      });
     }
   }
 }

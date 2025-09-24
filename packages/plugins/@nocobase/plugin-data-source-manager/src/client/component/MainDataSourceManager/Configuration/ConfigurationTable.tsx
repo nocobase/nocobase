@@ -16,7 +16,6 @@ import {
   DataSourceContext_deprecated,
   EditSubFieldAction,
   FieldSummary,
-  LoadCollection,
   ResourceActionContext,
   SchemaComponent,
   SchemaComponentContext,
@@ -35,6 +34,7 @@ import { useTranslation } from 'react-i18next';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
 import { useDataSourceRefresh } from '../../../hooks';
+import { SyncFromDatabaseAction } from './db-sync/SyncFromDatabaseAction';
 
 /**
  * @param service
@@ -237,7 +237,7 @@ export const ConfigurationTable = () => {
           FieldSummary,
           TemplateSummay: TemplateSummary,
           CollectionFields,
-          LoadCollection,
+          SyncFromDatabaseAction,
         }}
         scope={{
           loadFilterTargetKeys,

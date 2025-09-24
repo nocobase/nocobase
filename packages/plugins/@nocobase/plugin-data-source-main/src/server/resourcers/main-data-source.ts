@@ -20,9 +20,15 @@ export default {
       if (mainDataSource.status === 'loaded') {
         await plugin.loadCollections();
       }
-      ctx.body = {
-        status: mainDataSource.status,
-      };
+      await next();
+    },
+
+    async syncFields(ctx: Context, next: Next) {
+      const { collections } = ctx.action.params.values || {};
+      const mainDataSource = ctx.app.dataSourceManager.get('main') as MainDataSource;
+      if (mainDataSource.status === 'loaded') {
+        await mainDataSource.syncFieldsFromDatabase(ctx, collections);
+      }
       await next();
     },
   },

@@ -9,8 +9,7 @@
 
 import { DataSource } from './data-source';
 import { DataSourceManager } from './data-source-manager';
-
-type DataSourceConstructor = new (...args: any[]) => DataSource;
+import { DataSourceConstructor } from './types';
 
 export class DataSourceFactory {
   public collectionTypes: Map<string, DataSourceConstructor> = new Map();

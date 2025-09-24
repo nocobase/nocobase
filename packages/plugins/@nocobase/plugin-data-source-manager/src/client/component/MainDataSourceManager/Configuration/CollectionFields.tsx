@@ -44,6 +44,7 @@ import { omit } from 'lodash';
 
 import { FilterTargetKeyAlert } from '../../CollectionsManager/FilterTargetKeyAlert';
 import { collection } from './schemas/collectionFields';
+import { SyncFieldChangesAction } from './db-sync/SyncFieldChangesAction';
 const resourceActionProps = {
   association: {
     sourceKey: 'name',
@@ -734,6 +735,7 @@ const CollectionFieldsInternal = () => {
           <Action {...deleteProps} />
           <SyncFieldsAction {...syncProps} />
           <SyncSQLFieldsAction refreshCMList={refreshAsync} />
+          <SyncFieldChangesAction />
           <SchemaComponent
             schema={{
               type: 'object',

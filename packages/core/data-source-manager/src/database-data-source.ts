@@ -13,6 +13,7 @@ import { PostgresIntrospector } from './database-introspector/postgres-introspec
 import { MariaDBIntrospector } from './database-introspector/mariadb-introspector';
 import { DataSource } from './data-source';
 import { Context } from '@nocobase/actions';
+import { CollectionOptions, FieldOptions } from './types';
 
 export abstract class DatabaseDataSource<T extends DatabaseIntrospector = DatabaseIntrospector> extends DataSource {
   declare introspector: T;
@@ -38,4 +39,66 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
 
   abstract readTables(): Promise<any>;
   abstract loadTables(ctx: Context, tables: string[]): Promise<void>;
+
+  mergeWithLoadedCollections(
+    collections: CollectionOptions[],
+    loadedCollections: {
+      [name: string]: { name: string; fields: FieldOptions[] };
+    },
+  ): CollectionOptions[] {
+    return collections.map((collection) => {
+      const loadedCollection = loadedCollections[collection.name];
+      if (!loadedCollection) return collection;
+
+      const collectionFields = collection.fields || [];
+      const loadedFieldsAsObjectByName = Object.fromEntries((loadedCollection.fields || []).map((f) => [f.name, f]));
+      const loadedFieldsAsObjectByField = Object.fromEntries(
+        (loadedCollection.fields || []).map((f) => [f.field || f.name, f]),
+      );
+
+      // Merge existing fields
+      const newFields = collectionFields.map((field) => {
+        const loadedField = loadedFieldsAsObjectByField[field.name] || loadedFieldsAsObjectByName[field.name];
+        if (!loadedField) return field;
+        if (loadedField.possibleTypes) {
+          loadedField.possibleTypes = field.possibleTypes;
+        }
+        return this.mergeFieldOptions(field, loadedField);
+      });
+
+      // Add association fields from loaded data
+      const loadedAssociationFields = (loadedCollection.fields || []).filter((field) =>
+        ['belongsTo', 'belongsToMany', 'hasMany', 'hasOne', 'belongsToArray'].includes(field.type),
+      );
+
+      newFields.push(...loadedAssociationFields);
+
+      return {
+        ...collection,
+        ...Object.fromEntries(Object.entries(loadedCollection).filter(([key]) => key !== 'fields')),
+        fields: newFields,
+      };
+    });
+  }
+
+  private mergeFieldOptions(fieldOptions: FieldOptions, modelOptions: FieldOptions): FieldOptions {
+    const newOptions = {
+      ...fieldOptions,
+      ...modelOptions,
+    };
+
+    if (fieldOptions.type && modelOptions.type && fieldOptions.type !== modelOptions.type) {
+      newOptions.type = fieldOptions.type;
+      newOptions.interface = fieldOptions.interface;
+      newOptions.rawType = fieldOptions.rawType;
+    }
+
+    for (const key of [...new Set([...Object.keys(modelOptions), ...Object.keys(fieldOptions)])]) {
+      if (modelOptions[key] === null && fieldOptions[key]) {
+        newOptions[key] = fieldOptions[key];
+      }
+    }
+
+    return newOptions;
+  }
 }

@@ -9,10 +9,9 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button, Drawer, Transfer, Input, message, App, Spin } from 'antd';
-import { ImportOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../api-client';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
+import { useAPIClient } from '@nocobase/client';
+import { useResourceActionContext, useResourceContext } from '@nocobase/client';
+import { useDSMTranslation } from '../../../../locale';
 
 interface CollectionItem {
   key: string;
@@ -28,7 +27,7 @@ interface LoadCollectionProps {
 
 export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
   const { ...restProps } = props;
-  const { t } = useTranslation();
+  const { t } = useDSMTranslation();
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [targetKeys, setTargetKeys] = useState<string[]>([]);
@@ -147,12 +146,12 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
 
   return (
     <>
-      <Button type="default" icon={<ImportOutlined style={{ marginRight: 4 }} />} onClick={showDrawer} {...restProps}>
-        {t('Load tables')}
-      </Button>
+      <div onClick={showDrawer} {...restProps}>
+        {t('Load tables from database')}
+      </div>
 
       <Drawer
-        title={t('Load tables')}
+        title={t('Load tables from database')}
         placement="right"
         onClose={handleCancel}
         open={open}
@@ -189,7 +188,6 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
                 itemUnit: t('item'),
                 itemsUnit: t('items'),
                 searchPlaceholder: t('Search collections...'),
-                notFoundContent: t('No collections found'),
               }}
             />
           </Spin>

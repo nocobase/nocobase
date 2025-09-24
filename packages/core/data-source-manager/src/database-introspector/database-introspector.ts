@@ -22,61 +22,20 @@ import lodash from 'lodash';
 import { ColumnsDescription } from 'sequelize';
 import { isArray } from 'mathjs';
 import { typeInterfaceMap } from './type-interface-map';
-
-export type tableInfo = {
-  tableName: string;
-  schema?: string;
-};
+import {
+  CollectionOptions,
+  FieldInferResult,
+  FieldOptions,
+  PartialCollectionOptions,
+  UnsupportedFieldOptions,
+  tableInfo,
+} from '../types';
 
 type GetCollectionOptions = {
   tableInfo: tableInfo;
   localOptions?: PartialCollectionOptions;
   mergedOptions?: PartialCollectionOptions;
 };
-
-export type PartialCollectionOptions = Partial<
-  Omit<CollectionOptions, 'fields'> & {
-    fields?: Partial<FieldOptions>[];
-  }
->;
-
-interface CollectionOptions {
-  name: string;
-  schema?: string;
-  tableName: string;
-  title?: string;
-  template?: string;
-  timestamps?: boolean;
-  filterTargetKey?: string | Array<string>;
-  fields: FieldOptions[];
-  autoGenId?: boolean;
-  view?: boolean;
-  unsupportedFields?: UnsupportedFieldOptions[];
-}
-
-interface UnsupportedFieldOptions {
-  rawType: string;
-  name: string;
-  supported: false;
-}
-
-type FiledInferResult = FieldOptions | UnsupportedFieldOptions;
-
-interface FieldOptions {
-  name: string;
-  field: string;
-  rawType: string;
-  type: string;
-  description?: string;
-  interface?: string;
-  uiSchema?: any;
-  possibleTypes?: string[];
-  defaultValue?: any;
-  primaryKey: boolean;
-  unique: boolean;
-  allowNull?: boolean;
-  autoIncrement?: boolean;
-}
 
 interface DatabaseIntrospectorOptions {
   db: Database;
@@ -147,7 +106,7 @@ export class DatabaseIntrospector extends EventEmitter {
     const collectionOptions = this.tableInfoToCollectionOptions(tableInfo);
 
     try {
-      const fields: Array<FiledInferResult> = Object.keys(columnsInfo).map((columnName) => {
+      const fields: Array<FieldInferResult> = Object.keys(columnsInfo).map((columnName) => {
         return this.columnInfoToFieldOptions(columnsInfo, columnName, constraints);
       });
 
@@ -270,7 +229,7 @@ export class DatabaseIntrospector extends EventEmitter {
     columnsInfo: ColumnsDescription,
     columnName: string,
     indexes: any,
-  ): FiledInferResult {
+  ): FieldInferResult {
     const columnInfo = columnsInfo[columnName];
 
     let name = columnName;

@@ -572,9 +572,13 @@ export class PluginDataSourceMainServer extends Plugin {
         const collection: Collection = ctx.db.getCollection(collectionName);
         let rawFields: ColumnsDescription = {};
         if (collection) {
-          rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(
-            collection.getTableNameWithSchema(),
-          );
+          try {
+            rawFields = await ctx.app.db.queryInterface.sequelizeQueryInterface.describeTable(
+              collection.getTableNameWithSchema(),
+            );
+          } catch (err) {
+            // ignore
+          }
         }
         handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows, rawFields);
       }

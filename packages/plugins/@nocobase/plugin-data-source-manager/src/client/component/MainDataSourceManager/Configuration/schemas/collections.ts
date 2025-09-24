@@ -161,11 +161,6 @@ export const collectionTableSchema: ISchema = {
             icon: 'ReloadOutlined',
           },
         },
-        loadCollections: {
-          type: 'void',
-          title: '{{ t("Load collection") }}',
-          'x-component': 'LoadCollection',
-        },
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',
@@ -174,6 +169,10 @@ export const collectionTableSchema: ISchema = {
             role: 'button',
             isBulk: true,
           },
+        },
+        syncFromDatabase: {
+          type: 'void',
+          'x-component': 'SyncFromDatabaseAction',
         },
         create: {
           type: 'void',
