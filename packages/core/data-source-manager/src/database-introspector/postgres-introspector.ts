@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DatabaseIntrospector, tableInfo } from './database-introspector';
+import { DatabaseIntrospector } from './database-introspector';
 import _ from 'lodash';
 import { ColumnsDescription } from 'sequelize';
+import { tableInfo } from '../types';
 
 export class PostgresIntrospector extends DatabaseIntrospector {
   async getTableConstraints(tableInfo: tableInfo): Promise<object> {
