@@ -1515,7 +1515,9 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
-      const runner = this.createJSRunner();
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
       return runner.run(code);
     });
   }

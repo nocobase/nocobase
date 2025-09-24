@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FieldModel, ClickableFieldModel } from '@nocobase/client';
+import { ClickableFieldModel, FieldModel } from '@nocobase/client';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import React from 'react';
 
@@ -16,14 +16,6 @@ export class DisplaySimpleFieldModel extends ClickableFieldModel {
     console.log('当前记录：', this.context.record);
     console.log('当前记录 index：', this.context.recordIndex);
     return <span>[{value}]</span>;
-  }
-}
-
-export class DisplaySimpleFieldModel extends FieldModel {
-  public render() {
-    console.log('当前记录：', this.context.record);
-    console.log('当前记录 index：', this.context.recordIndex);
-    return <span>[{props.value}]</span>;
   }
 }
 
