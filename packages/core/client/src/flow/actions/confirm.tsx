@@ -51,6 +51,8 @@ export const confirm = defineAction({
       const confirmed = await ctx.modal.confirm({
         title: ctx.t(params.title),
         content: ctx.t(params.content),
+        okText: ctx.t('Confirm'),
+        cancelText: ctx.t('Cancel'),
       });
 
       if (!confirmed) {

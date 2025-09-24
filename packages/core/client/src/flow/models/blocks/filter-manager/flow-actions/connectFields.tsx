@@ -9,7 +9,7 @@
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
-import { defineAction, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Dropdown, Segmented, Select, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
@@ -20,7 +20,7 @@ import { getAllDataModels } from '../utils';
 
 export const connectFields = defineAction({
   name: 'connectFields',
-  title: 'Connect fields',
+  title: escapeT('Connect fields'),
   uiSchema(ctx: FlowContext) {
     return {
       value: {
@@ -63,10 +63,14 @@ const buildTreeData = (ctx, fields: any[], prefix = '', selectedPaths = '', labe
       );
 
       if (shouldLoadChildren) {
-        const targetCollection = field.targetCollection;
-        if (targetCollection) {
-          const targetFields = targetCollection.getFields?.() || [];
-          treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPaths, fullLabel);
+        if (field.filterable?.children?.length) {
+          treeNode.children = buildTreeData(ctx, field.filterable.children, currentPath, selectedPaths, fullLabel);
+        } else {
+          const targetCollection = field.targetCollection;
+          if (targetCollection) {
+            const targetFields = targetCollection.getFields?.() || [];
+            treeNode.children = buildTreeData(ctx, targetFields, currentPath, selectedPaths, fullLabel);
+          }
         }
       }
 
@@ -246,10 +250,14 @@ function ConnectFields(
           color: '#0369a1',
         }}
       >
-        <div style={{ fontWeight: 500, marginBottom: '8px' }}>配置说明：</div>
+        <div style={{ fontWeight: 500, marginBottom: '8px' }}>{ctx.t('Configuration:')}</div>
         <ul style={{ margin: 0, paddingLeft: '16px' }}>
-          <li>可选的“目标区块”为当前页面中的所有数据区块</li>
-          <li>支持同时筛选多个区块，支持关系字段深层选择（如：用户/部门/名称）</li>
+          <li>{ctx.t('Available "target blocks" are all data blocks on the current page')}</li>
+          <li>
+            {ctx.t(
+              'Support filtering multiple blocks simultaneously, support deep selection of relationship fields (e.g.: User/Department/Name)',
+            )}
+          </li>
         </ul>
       </div>
       {allDataModels
@@ -281,7 +289,7 @@ function ConnectFields(
                       onChange={(values) => handleSelectChange(model.uid, values)}
                       multiple
                       allowClear
-                      placeholder="请选择字段"
+                      placeholder={ctx.t('Please select fields to filter')}
                       treeDataSimpleMode={false}
                       showSearch
                       treeDefaultExpandAll={false}
@@ -294,7 +302,7 @@ function ConnectFields(
                       mode="tags"
                       value={values}
                       onChange={(values) => handleSelectChange(model.uid, values)}
-                      placeholder="请输入字段路径，支持多个值（用回车或逗号分隔）"
+                      placeholder={ctx.t('Separate multiple values with comma or Enter')}
                       style={{ width: '100%' }}
                       allowClear
                       tokenSeparators={[',']}
@@ -308,8 +316,8 @@ function ConnectFields(
                   value={currentInputMode}
                   onChange={(mode) => handleInputModeChange(model.uid, mode as 'field-select' | 'text-input')}
                   options={[
-                    { label: '下拉选择', value: 'field-select' },
-                    { label: '文本输入', value: 'text-input' },
+                    { label: ctx.t('Dropdown select'), value: 'field-select' },
+                    { label: ctx.t('Text input'), value: 'text-input' },
                   ]}
                 />
                 <Button
@@ -317,7 +325,7 @@ function ConnectFields(
                   icon={<DeleteOutlined />}
                   onClick={() => handleRemoveBlock(model.uid)}
                   style={{ color: '#8c8c8c' }}
-                  title="删除此目标区块"
+                  title={ctx.t('Delete this target block')}
                 />
               </div>
             </FormItem>
@@ -328,7 +336,7 @@ function ConnectFields(
       <div style={{ marginTop: '16px' }}>
         <Dropdown menu={{ items: menuItems }} trigger={['hover']} autoFocus={false}>
           <Button type="dashed" icon={<PlusOutlined />} style={{ width: '100%' }}>
-            添加目标区块
+            {ctx.t('Add target block')}
           </Button>
         </Dropdown>
       </div>
@@ -373,8 +381,12 @@ function TreeSelectWrapper(props) {
     }
 
     const targetCollection = node.field.targetCollection;
+    const filterableChildren = node.field.filterable?.children || [];
 
-    if (targetCollection) {
+    if (filterableChildren.length) {
+      const childNodes = buildTreeData(ctx, filterableChildren, key, '', node.fullLabel || node.title);
+      node.props.data.children = childNodes;
+    } else if (targetCollection) {
       const targetFields = targetCollection.getFields?.() || [];
       const parentFullLabel = node.fullLabel || node.title;
       const childNodes = buildTreeData(ctx, targetFields, key, '', parentFullLabel);

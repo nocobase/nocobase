@@ -16,14 +16,27 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { debounce } from 'lodash';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { DEBOUNCE_WAIT } from '../../../../variables';
 import { SelectOptions } from '../../../actions/titleField';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
+
+const interfacesOfUnsupportedDefaultValue = [
+  'o2o',
+  'oho',
+  'obo',
+  'o2m',
+  'attachment',
+  'expression',
+  'point',
+  'lineString',
+  'circle',
+  'polygon',
+  'sequence',
+  'formula',
+];
 
 function buildDynamicName(nameParts: string[], fieldIndex: string[]) {
   if (!fieldIndex?.length) {
@@ -231,6 +244,18 @@ FormItemModel.registerFlow({
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;
         }
+        // 在子表单/子表格内，不提供默认值设置（检测父级为关联子容器：SubForm/SubTable）
+        if ((ctx.model.parent?.parent as any)?.updateAssociation) {
+          return;
+        }
+        // 当前字段组件本身为 SubForm/SubTable 时，也不提供默认值设置
+        if ((ctx.model.subModels as any)?.field?.updateAssociation) {
+          return;
+        }
+        const iface = ctx.model.collectionField?.interface;
+        if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
+          return;
+        }
         return {
           defaultValue: {
             'x-component': 'DefaultValue',
@@ -252,6 +277,10 @@ FormItemModel.registerFlow({
         };
       },
       handler(ctx, params) {
+        const iface = ctx.model.collectionField?.interface;
+        if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
+          return;
+        }
         ctx.model.setProps({ initialValue: params.defaultValue });
       },
     },

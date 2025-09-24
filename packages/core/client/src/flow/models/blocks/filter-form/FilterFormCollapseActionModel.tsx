@@ -39,7 +39,7 @@ const CollapseButton = observer(() => {
       icon={<DownOutlined rotate={collapseState.collapsed ? 0 : 180} />}
       iconPosition="end"
     >
-      {collapseState.collapsed ? model.translate('Expand') : model.translate('Collapse')}
+      {collapseState.collapsed ? model.translate('Expand button') : model.translate('Collapse button')}
     </Button>
   );
 });
@@ -71,7 +71,7 @@ FilterFormCollapseActionModel.registerFlow({
   on: 'collapseToggle',
   steps: {
     toggle: {
-      title: '折叠时显示的行数',
+      title: tval('Collapsed rows'),
       uiSchema: {
         collapsedRows: {
           type: 'number',
@@ -80,7 +80,7 @@ FilterFormCollapseActionModel.registerFlow({
           'x-component-props': {
             min: 1,
             max: 10,
-            placeholder: '请输入显示行数',
+            placeholder: tval('Enter number of rows to display'),
           },
           default: 1,
         },
@@ -92,7 +92,7 @@ FilterFormCollapseActionModel.registerFlow({
       },
     },
     defaultCollapsed: {
-      title: '默认折叠',
+      title: tval('Default collapsed'),
       uiSchema: {
         value: {
           type: 'boolean',
@@ -112,7 +112,7 @@ FilterFormCollapseActionModel.registerFlow({
 });
 
 FilterFormCollapseActionModel.define({
-  label: tval('Collapse / Expand'),
+  label: tval('Collapse button'),
   toggleable: true,
   sort: 300,
 });

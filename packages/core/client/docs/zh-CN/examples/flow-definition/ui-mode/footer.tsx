@@ -39,7 +39,7 @@ FooterExampleModel.registerFlow({
         type: 'dialog',
         props: {
           title: 'Replace footer example',
-          width: 600,
+          width: '600px',
           // 直接替换整个底部内容
           footer: (
             <div style={{ textAlign: 'center', padding: '16px' }}>
@@ -68,7 +68,7 @@ FooterExampleModel.registerFlow({
         type: 'dialog',
         props: {
           title: 'Enhanced footer example',
-          width: 600,
+          width: '600px',
           // 函数式自定义 - 在原有按钮基础上添加内容
           footer: (originNode, { OkBtn, CancelBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -116,7 +116,7 @@ FooterExampleModel.registerFlow({
         type: 'dialog',
         props: {
           title: 'Custom buttons footer example',
-          width: 600,
+          width: '600px',
           // 函数式自定义 - 完全重新组合按钮
           footer: (originNode, { OkBtn, CancelBtn }) => (
             <Space>
@@ -158,7 +158,7 @@ FooterExampleModel.registerFlow({
         type: 'dialog',
         props: {
           title: 'No footer example',
-          width: 400,
+          width: '400px',
           // 隐藏底部内容
           footer: null,
         },

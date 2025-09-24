@@ -76,7 +76,7 @@
   "Read only": "Read only",
   "Easy reading": "Easy reading",
   "Hidden": "Hidden",
-  "Hidden(reserved value)": "Hidden(reserved value)",
+  "Hidden (reserved value)": "Hidden (reserved value)",
   "Not required": "Not required",
   "Value": "Value",
   "Disabled": "Disabled",
@@ -990,5 +990,7 @@
   "Check strength": "Check strength",
   "N/A": "N/A",
   "No form available for reset.": "No form available for reset.",
-  "No form available for submission.": "No form available for submission."
+  "No form available for submission.": "No form available for submission.",
+  "Collapse button": "Collapse",
+  "Expand button": "Expand"
 }

@@ -695,7 +695,7 @@ export class FlowSettings {
 
     // 为每个步骤创建独立的表单实例，互不干扰
     const forms = new Map<string, ReturnType<typeof createForm>>();
-    const keyOf = (e: StepEntry) => `${e.flowKey}::${e.stepKey}`;
+    const keyOf = (e: { flowKey: string; stepKey: string }) => `${e.flowKey}::${e.stepKey}`;
 
     entries.forEach((e) => {
       const form = createForm({ initialValues: compileUiSchema(scopes, e.initialValues) });
@@ -751,7 +751,10 @@ export class FlowSettings {
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
-      content: (currentView) => {
+      content: (currentView, viewCtx) => {
+        viewCtx.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+          return forms.get(keyOf({ flowKey, stepKey }))?.values;
+        });
         // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField
         const renderStepForm = (entry: StepEntry) => {
           const form = forms.get(keyOf(entry));
@@ -890,7 +893,10 @@ export class FlowSettings {
 
         if (modeProps.footer) {
           footerButtons = _.isFunction(modeProps.footer)
-            ? modeProps.footer(footerButtons, { OkBtn: Save, CancelBtn: Cancel })
+            ? modeProps.footer(footerButtons, {
+                OkBtn: Save,
+                CancelBtn: Cancel,
+              })
             : modeProps.footer;
         }
 

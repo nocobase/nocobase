@@ -24,7 +24,7 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 function toValue(record: any | any[], fieldNames, multiple = false) {
   if (!record) return multiple ? [] : undefined;
 
-  const { label: labelKey, value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames;
 
   const convert = (item: any) => {
     if (typeof item !== 'object' || item === null || item == undefined) return undefined;
@@ -133,6 +133,14 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
   getDataSource() {
     return this.props.options;
   }
+
+  getFilterValue() {
+    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.props.value)
+      ? this.props.value.map((item) => item[fieldNames.value])
+      : this.props.value?.[fieldNames.value];
+  }
+
   render() {
     return <LazySelect {...this.props} />;
   }

@@ -21,8 +21,6 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
-import { DEBOUNCE_WAIT } from '../../../../variables';
-import { tval } from '@nocobase/utils/client';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;

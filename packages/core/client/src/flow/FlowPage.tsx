@@ -85,10 +85,15 @@ export const FlowRoute = () => {
     routeModel.context.defineProperty('currentRoute', {
       get: () => currentRoute,
     });
+    // Also expose currentRoute on engine context so view-scoped engines
+    // can still read it for default title fallback.
+    flowEngine.context.defineProperty('currentRoute', {
+      get: () => currentRoute,
+    });
     routeModel.context.defineProperty('refreshDesktopRoutes', {
       get: () => refresh,
     });
-  }, [routeModel, currentRoute, refresh]);
+  }, [routeModel, currentRoute, refresh, flowEngine]);
 
   useEffect(() => {
     const dispose = reaction(

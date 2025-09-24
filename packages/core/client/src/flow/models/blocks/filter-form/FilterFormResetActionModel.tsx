@@ -29,11 +29,14 @@ FilterFormResetActionModel.registerFlow({
         const gridModel = blockModel.subModels.grid;
         const fieldModels: FilterFormItemModel[] = gridModel.subModels.items;
 
-        fieldModels.forEach((fieldModel) => {
-          fieldModel.doReset();
-        });
-
         ctx.form.resetFields();
+
+        // 等待表单值被清空
+        setTimeout(() => {
+          fieldModels.forEach((fieldModel) => {
+            fieldModel.doReset();
+          });
+        });
       },
     },
   },

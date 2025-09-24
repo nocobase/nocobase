@@ -393,18 +393,12 @@ SubTableColumnModel.registerFlow({
     },
     initialValue: {
       title: escapeT('Default value'),
-      uiSchema: {
-        defaultValue: {
-          'x-component': 'DefaultValue',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: (ctx) => ({
-        defaultValue: ctx.model.collectionField.defaultValue,
-      }),
-      handler(ctx, params) {
-        ctx.model.setProps({ initialValue: params.defaultValue });
-      },
+      // 子表格子表单内不提供“默认值”配置：返回空对象，避免渲染任何字段
+      uiSchema: {},
+      // 不提供默认参数
+      defaultParams: () => ({}),
+      // 禁止写入初始值
+      handler() {},
     },
     required: {
       title: escapeT('Required'),

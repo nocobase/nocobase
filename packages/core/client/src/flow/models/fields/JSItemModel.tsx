@@ -18,7 +18,8 @@ import { CommonItemModel } from '../base/CommonItemModel';
  * - 默认提供 jsSettings.runJs 自动执行的步骤
  */
 export class JSItemModel extends CommonItemModel {
-  private removeRefreshListener?: () => void;
+  private _offResourceRefresh?: () => void;
+  private _lastPage?: number;
 
   getInputArgs() {
     const inputArgs = {};
@@ -50,22 +51,29 @@ export class JSItemModel extends CommonItemModel {
    * 解决某些情况下命中旧缓存导致新节点未写入而显示空白的问题。
    */
   protected onMount() {
+    // 订阅 refresh：仅在分页页码改变后触发 jsSettings
+    const resource: any = this.context.resource;
+    this._lastPage = resource.getPage?.();
+    const handler = () => {
+      const current = resource.getPage?.();
+      if (current !== this._lastPage) {
+        this.applyFlow('jsSettings');
+      }
+      this._lastPage = current;
+    };
+    resource.on('refresh', handler);
+    this._offResourceRefresh = () => {
+      resource.off('refresh', handler);
+    };
+
     if (this.context.ref?.current) {
       this.rerender();
     }
-
-    // 监听资源刷新（翻页/重新加载），自动重跑 jsSettings
-    const resource = this.context.resource;
-    const onRefresh = () => {
-      this.applyFlow('jsSettings');
-    };
-    resource.on('refresh', onRefresh);
-    this.removeRefreshListener = () => resource.off('refresh', onRefresh);
   }
 
-  protected onUnmount() {
-    this.removeRefreshListener?.();
-    this.removeRefreshListener = undefined;
+  protected onUnmount(): void {
+    this._offResourceRefresh?.();
+    this._offResourceRefresh = undefined;
   }
 }
 

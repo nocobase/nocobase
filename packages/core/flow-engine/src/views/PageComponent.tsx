@@ -27,7 +27,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
   } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
-  const [footer, setFooter] = useState(_footer);
+  const [footer, setFooter] = useState(() => _footer);
   const [header, setHeader] = useState(_header);
 
   // 提供 destroy 和 update 能力

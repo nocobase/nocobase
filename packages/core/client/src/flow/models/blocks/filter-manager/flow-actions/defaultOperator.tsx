@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { defineAction, escapeT, FlowContext, FlowModel } from '@nocobase/flow-engine';
 import { operators } from '../../../../../collection-manager';
 import { FilterFormFieldModel } from '../../filter-form/fields';
 
 export const defaultOperator = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
-  title: 'Default operator',
+  title: escapeT('Default operator'),
   uiSchema(ctx: FlowContext) {
     const operatorOptions = getOperatorOptions(ctx.model);
 

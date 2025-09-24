@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  RedoOutlined,
+  UndoOutlined,
+} from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
@@ -62,6 +70,7 @@ attachmentFileTypes.add({
     return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
+    const [angle, setAngle] = useState(0);
     const onDownload = useCallback(
       (e) => {
         e.preventDefault();
@@ -70,6 +79,28 @@ attachmentFileTypes.add({
       },
       [index, list],
     );
+    const onRotateLeft = useCallback(() => {
+      setAngle((prev) => (prev - 90) % 360);
+    }, []);
+    const onRotateRight = useCallback(() => {
+      setAngle((prev) => (prev + 90) % 360);
+    }, []);
+
+    useEffect(() => {
+      const el = document.querySelector('.ril-image-current') as HTMLElement;
+      if (!el) {
+        return;
+      }
+      let { transform } = el.style || {};
+      const nextRotate = `rotate(${angle}deg)`;
+      const rotateMatch = transform?.match(/rotate\(-?(\d+)deg\)/);
+      if (rotateMatch) {
+        transform = transform.replace(/rotate\(-?(\d+)deg\)/, nextRotate);
+      } else {
+        transform = `${transform} ${nextRotate}`;
+      }
+      el.style.transform = transform;
+    }, [angle]);
     return (
       <>
         <LightBoxGlobalStyle />
@@ -84,15 +115,33 @@ attachmentFileTypes.add({
           imageTitle={list[index]?.title}
           toolbarButtons={[
             <button
-              key={'preview-img'}
-              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              key="preview-img"
               type="button"
               aria-label="Download"
               title="Download"
               className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               onClick={onDownload}
             >
               <DownloadOutlined />
+            </button>,
+            <button
+              key="rotate-left"
+              type="button"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onRotateLeft}
+            >
+              <UndoOutlined />
+            </button>,
+            <button
+              key="rotate-right"
+              type="button"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onRotateRight}
+            >
+              <RedoOutlined />
             </button>,
           ]}
         />

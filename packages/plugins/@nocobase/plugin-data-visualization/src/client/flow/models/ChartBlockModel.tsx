@@ -8,11 +8,16 @@
  */
 
 import { DataBlockModel, SubPageModel } from '@nocobase/client';
-import { SQLResource, escapeT } from '@nocobase/flow-engine';
+import { SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
+import { Button } from 'antd';
+import { useT } from '../../locale';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import ctx from 'packages/core/client/docs/zh-CN/examples/flow-definition/ui-schema-custom-component/ctx';
+import { useForm } from '@formily/react';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -111,20 +116,53 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     });
     return fields;
   }
+
+  async setParamsAndPreview(params) {
+    this.setStepParams('chartSettings', 'configure', params);
+    // this.render();
+    await this.applyFlow('chartSettings');
+  }
 }
 
+const PreviewButton = ({ style }) => {
+  const t = useT();
+  const ctx = useFlowContext();
+  const form = useForm();
+  return (
+    <Button
+      type="default"
+      style={style}
+      onClick={async () => {
+        await form.submit();
+        ctx.model.setParamsAndPreview(form?.values || {});
+      }}
+    >
+      {t('Preview')}
+    </Button>
+  );
+};
+
 ChartBlockModel.define({
-  label: escapeT('Charts'),
+  label: 'Charts',
 });
 
 ChartBlockModel.registerFlow({
   key: 'chartSettings',
-  title: escapeT('Chart settings'),
+  title: 'Chart settings',
   steps: {
     configure: {
-      title: escapeT('Configure chart'),
+      title: 'Configure chart',
       uiMode: {
-        type: 'drawer',
+        type: 'embed',
+        props: {
+          width: '600px',
+          // footer: (originNode) => (
+          //   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          //     <PreviewButton style={{ marginRight: 4 }} />
+          //     {originNode}
+          //   </div>
+          // ),
+        },
       },
       uiSchema: {
         configuration: {

@@ -10,6 +10,7 @@
 import { CollectionField, escapeT } from '@nocobase/flow-engine';
 import { Tag, Typography } from 'antd';
 import { castArray } from 'lodash';
+import { css } from '@emotion/css';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
@@ -61,6 +62,7 @@ export class ClickableFieldModel extends FieldModel {
     const commonStyle = {
       cursor: clickToOpen ? 'pointer' : 'default',
       alignItems: 'center',
+      display: 'inline-block',
       gap: 4,
     };
 
@@ -94,7 +96,19 @@ export class ClickableFieldModel extends FieldModel {
     const { value, displayStyle, fieldNames, overflowMode, width } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
     const typographyProps = {
-      ellipsis: overflowMode === 'ellipsis' ? { tooltip: true } : false, // 处理省略显示
+      ellipsis:
+        overflowMode === 'ellipsis'
+          ? {
+              tooltip: {
+                rootClassName: css`
+                  .ant-tooltip-inner {
+                    color: #000;
+                  }
+                `,
+                color: '#fff',
+              },
+            }
+          : false, // 处理省略显示
       style: {
         whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
         width: width || 'auto',

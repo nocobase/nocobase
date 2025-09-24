@@ -88,8 +88,19 @@ function createTempFieldClass(Base: any) {
     }
 
     setProps(props: any) {
-      const { originalModel, ...filteredProps } = props || {};
-      return super.setProps?.(filteredProps);
+      const {
+        originalModel,
+        // 强制与原字段解耦：忽略外部传入的只读/禁用相关属性
+        disabled,
+        readOnly,
+        readPretty,
+        pattern,
+        ...filteredProps
+      } = props || {};
+      const ret = super.setProps?.({ ...filteredProps, disabled: false });
+      // 始终保持可编辑
+      this.setPattern?.('editable');
+      return ret;
     }
 
     remove(...args: any[]) {
@@ -297,7 +308,11 @@ export const DefaultValue = connect((props: Props) => {
   const InputComponent = useMemo(() => {
     const ConstantValueEditor = (inputProps) => {
       React.useEffect(() => {
-        tempRoot.setProps({ ...inputProps });
+        const fieldModel = tempRoot?.subModels?.fields?.[0];
+        if (!fieldModel) return;
+        const { disabled, readOnly, readPretty, pattern, ...rest } = inputProps || {};
+        fieldModel.setProps({ ...rest, disabled: false });
+        fieldModel.setPattern?.('editable');
       }, [inputProps]);
       return (
         <div style={{ flexGrow: 1 }}>

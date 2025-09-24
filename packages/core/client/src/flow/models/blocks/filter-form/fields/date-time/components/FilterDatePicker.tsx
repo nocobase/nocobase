@@ -67,7 +67,7 @@ export const FilterDatePicker = (props: any) => {
           setStateProps(newProps);
         }}
       />
-      <AntdDatePicker {...stateProps} value={dayjsValue} />
+      <AntdDatePicker {...stateProps} style={{ flex: 1, ...stateProps?.style }} value={dayjsValue} />
     </Space.Compact>
   );
 };
