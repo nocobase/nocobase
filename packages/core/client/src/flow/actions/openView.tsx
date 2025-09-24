@@ -93,7 +93,7 @@ export const openView = defineAction({
       embed: {},
     };
 
-    const pageModelClass = params.pageModelClass;
+    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass;
 
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
