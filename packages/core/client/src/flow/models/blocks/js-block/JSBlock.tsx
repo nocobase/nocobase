@@ -40,14 +40,14 @@ JSBlockModel.registerFlow({
   title: 'JavaScript settings',
   steps: {
     runJs: {
-      title: 'Write JavaScript',
+      title: escapeT('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',
-          title: 'Write JavaScript',
+          'x-decorator': 'FormItem',
           'x-component': CodeEditor,
           'x-component-props': {
-            minHeight: '400px',
+            minHeight: '320px',
             theme: 'light',
             enableLinter: true,
           },

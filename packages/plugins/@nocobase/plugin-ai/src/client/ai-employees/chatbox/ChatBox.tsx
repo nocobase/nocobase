@@ -16,6 +16,7 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   ShrinkOutlined,
+  CodeOutlined,
 } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
@@ -30,6 +31,8 @@ import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { aiSelection } from '../stores/ai-selection';
 import { observer } from '@formily/react';
 import { dialogController } from '../stores/dialog-controller';
+import { CodeHistory } from '../ai-coding/CodeHistory';
+import { isEngineer } from '../built-in/utils';
 
 export const ChatBox: React.FC = () => {
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +43,7 @@ export const ChatBox: React.FC = () => {
   const setExpanded = useChatBoxStore.use.setExpanded();
   const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
+  const setShowCodeHistory = useChatBoxStore.use.setShowCodeHistory();
 
   const { startNewConversation } = useChatBoxActions();
 
@@ -120,6 +124,17 @@ export const ChatBox: React.FC = () => {
                   <Button icon={<EditOutlined />} type="text" onClick={startNewConversation} />
                 </Tooltip>
                 <UserPrompt />
+                {isEngineer(currentEmployee) && (
+                  <Tooltip arrow={false} title={t('Code History')}>
+                    <Button
+                      icon={<CodeOutlined />}
+                      type="text"
+                      onClick={() => {
+                        setShowCodeHistory(true);
+                      }}
+                    />
+                  </Tooltip>
+                )}
                 <Divider type="vertical" />
               </>
             ) : null}
@@ -172,6 +187,7 @@ const ExpandChatBox: React.FC = observer(() => {
 export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
   const showConversations = useChatBoxStore.use.showConversations();
+  const showCodeHistory = useChatBoxStore.use.showCodeHistory();
 
   return expanded ? (
     <ExpandChatBox />
@@ -189,7 +205,7 @@ export const ChatBoxWrapper: React.FC = () => {
         borderInlineStart: '1px solid rgba(5, 5, 5, 0.06)',
       }}
     >
-      <ChatBox />
+      {showCodeHistory ? <CodeHistory /> : <ChatBox />}
     </div>
   );
 };

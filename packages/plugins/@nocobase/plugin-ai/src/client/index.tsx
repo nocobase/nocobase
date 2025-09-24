@@ -42,6 +42,8 @@ const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
 );
+import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { setupAICoding } from './ai-employees/ai-coding/setup';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -69,6 +71,8 @@ export class PluginAIClient extends Plugin {
     this.addPluginSettings();
     this.setupAIFeatures();
     this.setupWorkflow();
+
+    setupAICoding();
   }
 
   addPluginSettings() {
@@ -130,6 +134,7 @@ export class PluginAIClient extends Plugin {
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
+    this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
   }

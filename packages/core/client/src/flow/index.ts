@@ -49,6 +49,7 @@ export class PluginFlowEngine extends Plugin {
 
 // Export all models for external use
 export * from './components/filter';
+export * from './components/code-editor';
 export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';

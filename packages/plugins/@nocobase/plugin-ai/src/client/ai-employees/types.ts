@@ -29,6 +29,7 @@ export type AIEmployee = {
   skillSettings?: {
     skills?: { name: string }[];
   };
+  builtIn: boolean;
 };
 
 export type SkillSettings = {
@@ -174,6 +175,11 @@ export type WorkContextOptions = {
     }) => void;
   };
   tag?: {
+    Component: ComponentType<{
+      item: ContextItem;
+    }>;
+  };
+  chatbox?: {
     Component: ComponentType<{
       item: ContextItem;
     }>;

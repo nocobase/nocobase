@@ -9,39 +9,61 @@
 
 import { Registry } from '@nocobase/utils';
 import PluginAIServer from '../plugin';
-import { WorkContext, WorkContextHandler, WorkContextResolveStrategy } from '../types';
+import { AIMessage, WorkContext, WorkContextHandler, WorkContextStrategies } from '../types';
 import { Context } from '@nocobase/actions';
+import _ from 'lodash';
 
 export const createWorkContextHandler = (plugin: PluginAIServer): WorkContextHandler =>
   new WorkContextHandlerImpl(plugin);
 
 class WorkContextHandlerImpl implements WorkContextHandler {
-  private defaultStrategy: WorkContextResolveStrategy;
-  private resolveStrategies: Registry<WorkContextResolveStrategy>;
+  private defaultStrategy: WorkContextStrategies;
+  private strategies: Registry<WorkContextStrategies>;
 
   constructor(protected plugin: PluginAIServer) {
-    this.defaultStrategy = Stringify(plugin);
-    this.resolveStrategies = new Registry();
+    this.defaultStrategy = {
+      resolve: Stringify(plugin),
+      background: NoBackground(plugin),
+    };
+    this.strategies = new Registry();
   }
 
-  registerStrategy(type: string, strategy: WorkContextResolveStrategy) {
-    this.resolveStrategies.register(type, strategy);
+  registerStrategy(type: string, strategies: WorkContextStrategies) {
+    this.strategies.register(type, strategies);
   }
 
   async resolve(ctx: Context, workContext: WorkContext[]): Promise<string[]> {
     return Promise.all(workContext.map((contextItem) => this.applyResolveStrategy(ctx, contextItem)));
   }
 
+  async background(ctx: Context, aiMessages: AIMessage[]): Promise<String[]> {
+    const backgroundList = [];
+    const workContextList = aiMessages.flatMap((aiMessage) => aiMessage.workContext);
+    const workContextGroup = _.groupBy(workContextList, 'type');
+    for (const key in workContextGroup) {
+      const workContext = workContextGroup[key];
+      if (!workContext?.length) {
+        continue;
+      }
+      const background = await this.strategies.get(key)?.background?.(ctx, aiMessages, workContext);
+      if (!background) {
+        continue;
+      }
+      backgroundList.push(background);
+    }
+    return backgroundList;
+  }
+
   private async applyResolveStrategy(ctx: Context, contextItem: WorkContext): Promise<string> {
     if (!contextItem) {
       return '';
     }
-    const resolve = this.resolveStrategies.get(contextItem.type);
+    const { resolve } = this.strategies.get(contextItem.type);
     if (resolve) {
       return await resolve(ctx, contextItem);
     }
 
-    return await this.defaultStrategy(ctx, contextItem);
+    return await this.defaultStrategy.resolve?.(ctx, contextItem);
   }
 }
 
@@ -50,3 +72,4 @@ const Stringify =
   async (_ctx: Context, contextItem: WorkContext): Promise<string> => {
     return JSON.stringify(contextItem);
   };
+const NoBackground = (_plugin: PluginAIServer) => undefined;

@@ -11,7 +11,7 @@ import prompt from './prompt';
 
 export default {
   'en-US': {
-    avatar: 'notion-3-male',
+    avatar: 'nocobase-055-male',
     nickname: 'Orin',
     position: 'Data modeling assistant',
     bio: 'A data modeling assistant who helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.',

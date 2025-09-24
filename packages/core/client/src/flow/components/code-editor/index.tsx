@@ -18,6 +18,13 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup, EditorView } from 'codemirror';
 import completions from './completions';
 import { createJavaScriptLinter } from './linter';
+import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
+import { Flex } from 'antd';
+
+export interface EditorRef {
+  write(document: string): void;
+  read(): string;
+}
 
 // 自定义自动补全函数
 const createCustomCompletion = () => {
@@ -45,9 +52,19 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
 }
 
-export const CodeEditor: React.FC<CodeEditorProps> = ({
+export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
+  const { mode, name, ...rest } = props;
+  return (
+    <InjectableRendingEventTrigger mode={mode} name={name}>
+      <InnerCodeEditor {...rest} />
+    </InjectableRendingEventTrigger>
+  );
+};
+
+const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
@@ -56,6 +73,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  rightExtra,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -194,6 +212,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [value]);
 
+  const extraEditorRef: EditorRef = {
+    write(document) {
+      if (viewRef?.current && viewRef?.current.state.doc.toString() !== document) {
+        viewRef.current.dispatch({
+          changes: {
+            from: 0,
+            to: viewRef.current.state.doc.length,
+            insert: document,
+          },
+        });
+      }
+    },
+
+    read() {
+      return viewRef?.current.state.doc.toString() ?? '';
+    },
+  };
+
   return (
     <div
       style={{
@@ -202,6 +238,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         overflow: 'hidden',
       }}
     >
+      {rightExtra ? (
+        <Flex
+          gap="middle"
+          justify="flex-end"
+          align="center"
+          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
+        >
+          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
+        </Flex>
+      ) : null}
       <div ref={editorRef} />
       {placeholder && !value && (
         <div

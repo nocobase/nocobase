@@ -29,7 +29,13 @@ export const ContextItemsHeader: React.FC = () => {
       `}
     >
       {contextItems.map((item) => (
-        <ContextItem key={`${item.type}:${item.uid}`} item={item} closable={true} onRemove={removeContextItem} />
+        <ContextItem
+          within="sender"
+          key={`${item.type}:${item.uid}`}
+          item={item}
+          closable={true}
+          onRemove={removeContextItem}
+        />
       ))}
     </div>
   );

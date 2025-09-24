@@ -154,7 +154,10 @@ export const FlowModelsContext: WorkContextOptions = {
       );
     },
   },
-  getContent: async (app, { uid }) => {
+  getContent: async (app, { uid, content }) => {
+    if (content) {
+      return content;
+    }
     const model = app.flowEngine.getModel(uid);
     if (!model) {
       return '';

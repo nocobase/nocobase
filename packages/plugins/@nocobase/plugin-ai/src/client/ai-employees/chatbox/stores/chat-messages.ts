@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 import { Message, Attachment, ContextItem, SkillSettings } from '../../types';
 import { createSelectors } from './create-selectors';
+import { EditorRef } from '@nocobase/client';
 
 type ChatMessagesState = {
   messages: Message[];
@@ -19,6 +20,7 @@ type ChatMessagesState = {
   responseLoading: boolean;
   abortController?: AbortController;
   skillSettings?: SkillSettings;
+  editorRef?: EditorRef;
 };
 
 export interface ChatMessagesActions {
@@ -41,6 +43,8 @@ export interface ChatMessagesActions {
   setAbortController: (controller: AbortController | undefined) => void;
 
   setSkillSettings: (settings: SkillSettings | undefined) => void;
+
+  setEditorRef: (editorRef: EditorRef) => void;
 }
 
 const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
@@ -51,6 +55,7 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   responseLoading: false,
   abortController: null,
   skillSettings: null,
+  editorRef: null,
 
   setMessages: (messages) => {
     set((state) => {
@@ -132,6 +137,10 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   setAbortController: (controller) => set({ abortController: controller }),
 
   setSkillSettings: (settings) => set({ skillSettings: settings }),
+
+  setEditorRef(editorRef) {
+    set({ editorRef });
+  },
 }));
 
 export const useChatMessagesStore = createSelectors(store);

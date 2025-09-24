@@ -14,21 +14,11 @@ import { default as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useGlobalTheme, useToken } from '@nocobase/client';
 import { useT } from '../../../locale';
+import { useChatBoxStore } from '../stores/chat-box';
+import { isEngineer, isSupportLanguage } from '../../built-in/utils';
+import { Code as AICoding } from '../../ai-coding/markdown/Code';
 
-export const CodeInternal: React.FC<{
-  language: string;
-  value: string;
-}> = ({ language, value, ...rest }) => {
-  const { isDarkTheme } = useGlobalTheme();
-
-  return (
-    <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
-      {value}
-    </SyntaxHighlighter>
-  );
-};
-
-export const Code = (props: any) => {
+export const CodeInternal: React.FC = (props: any) => {
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -40,6 +30,8 @@ export const Code = (props: any) => {
     navigator.clipboard.writeText(value);
     antdMessage.success(t('Copied'));
   };
+
+  const { isDarkTheme } = useGlobalTheme();
 
   return match ? (
     <Card
@@ -57,11 +49,25 @@ export const Code = (props: any) => {
       }}
       extra={<Button variant="link" color="default" size="small" onClick={copy} icon={<CopyOutlined />} />}
     >
-      <CodeInternal {...rest} language={language} value={value} />
+      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
+        {value}
+      </SyntaxHighlighter>
     </Card>
   ) : (
     <Typography.Text code {...rest} className={className}>
       {children}
     </Typography.Text>
+  );
+};
+
+export const Code = (props: any) => {
+  const { className } = props;
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1] : '';
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  return isEngineer(currentEmployee) && isSupportLanguage(language) ? (
+    <AICoding {...props} />
+  ) : (
+    <CodeInternal {...props} />
   );
 };

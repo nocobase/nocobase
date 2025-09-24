@@ -38,6 +38,7 @@ import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
+import { AICodingManager } from './manager/ai-coding-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -46,6 +47,7 @@ export class PluginAIServer extends Plugin {
   aiEmployeesManager = new AIEmployeesManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
+  aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   snowflake: Snowflake;
 
@@ -213,10 +215,13 @@ export class PluginAIServer extends Plugin {
   }
 
   registerWorkContextResolveStrategy() {
-    this.workContextHandler.registerStrategy(
-      'datasource',
-      this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
-    );
+    this.workContextHandler.registerStrategy('datasource', {
+      resolve: this.aiContextDatasourceManager.provideWorkContextResolveStrategy(),
+    });
+    this.workContextHandler.registerStrategy('code-editor', {
+      resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
+      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
+    });
   }
 
   handleSyncMessage(message: any): Promise<void> {

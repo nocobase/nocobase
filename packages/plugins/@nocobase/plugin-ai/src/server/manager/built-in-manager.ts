@@ -10,6 +10,7 @@
 import PluginAIServer from '../plugin';
 import dataModeling from '../ai-employees/built-in/data-modeling';
 import formFiller from '../ai-employees/built-in/form-filler';
+import aiCoding from '../ai-employees/built-in/ai-coding';
 
 const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_KNOWLEDGE_BASE = {
@@ -21,7 +22,7 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
   "From knowledge base:\n{knowledgeBaseData}\nanswer user's question using this information.";
 
 export class BuiltInManager {
-  private builtInEmployees = [dataModeling, formFiller];
+  private builtInEmployees = [dataModeling, formFiller, aiCoding];
 
   constructor(protected plugin: PluginAIServer) {}
 
