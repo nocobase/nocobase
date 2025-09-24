@@ -54,6 +54,7 @@ describe('ViewScopedFlowEngine', () => {
     const cm = child.createModel<TestModel>({ use: TestModel, uid });
 
     expect(pm).not.toBe(cm);
+    // 默认 getModel 仅在当前作用域查找
     expect(parent.getModel(uid)).toBe(pm);
     expect(child.getModel(uid)).toBe(cm);
   });
