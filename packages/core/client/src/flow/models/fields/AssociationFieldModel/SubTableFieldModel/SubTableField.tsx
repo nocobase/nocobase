@@ -58,7 +58,7 @@ export function SubTableField(props) {
       !disabled && {
         title: '',
         key: 'delete',
-        width: 60,
+        width: 50,
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
