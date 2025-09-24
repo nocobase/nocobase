@@ -85,7 +85,6 @@ export const QueryBuilder: React.FC = observer(() => {
   } = useQueryBuilderLogic();
 
   const t = useT();
-  const form = useForm();
 
   return (
     <>
@@ -150,7 +149,7 @@ export const QueryBuilder: React.FC = observer(() => {
                             SelectAdapter,
                             {
                               placeholder: t('Aggregation'),
-                              style: { minWidth: 80 },
+                              style: { minWidth: 75 },
                               dataSource: [
                                 { label: t('Sum'), value: 'sum' },
                                 { label: t('Count'), value: 'count' },
@@ -164,7 +163,7 @@ export const QueryBuilder: React.FC = observer(() => {
                         <Field
                           name="alias"
                           decorator={[FormItemLite]}
-                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 100 } }]}
+                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 85 } }]}
                         />
                         <Field
                           name="distinct"

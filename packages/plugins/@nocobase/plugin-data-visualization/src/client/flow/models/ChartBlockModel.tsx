@@ -156,7 +156,7 @@ ChartBlockModel.registerFlow({
       uiMode: {
         type: 'embed',
         props: {
-          width: '600px',
+          minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
           footer: (originNode) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <PreviewButton style={{ marginRight: 4 }} />
