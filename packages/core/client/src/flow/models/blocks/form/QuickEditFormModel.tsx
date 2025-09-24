@@ -215,6 +215,10 @@ QuickEditFormModel.registerFlow({
           const use = binding.modelName;
           const fieldModel = ctx.model.addSubModel<FieldModel>('fields', {
             use,
+            props:
+              typeof binding.defaultProps === 'function'
+                ? binding.defaultProps(ctx, collectionField)
+                : binding.defaultProps,
             stepParams: {
               fieldSettings: {
                 init: {
