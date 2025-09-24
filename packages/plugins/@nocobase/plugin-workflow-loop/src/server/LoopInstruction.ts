@@ -52,19 +52,19 @@ export default class extends Instruction {
     const [branch] = processor.getBranches(node);
     const target = processor.getParsedValue(node.config.target, node.id);
     const length = getTargetLength(target);
-    const looped = 0;
+    const result = { looped: 0, done: 0 };
 
     if (!branch || !length) {
       return {
         status: JOB_STATUS.RESOLVED,
-        result: { looped },
+        result,
       };
     }
 
     // NOTE: save job for condition calculation
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
-      result: { looped },
+      result,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
@@ -73,18 +73,31 @@ export default class extends Instruction {
     if (node.config.condition) {
       const { checkpoint, calculation, expression, continueOnFalse } = node.config.condition ?? {};
       if ((calculation || expression) && !checkpoint) {
-        const condition = calculateCondition(node, processor);
-        if (!condition) {
-          if (continueOnFalse) {
-            job.set('result', { looped: 1 });
-            processor.saveJob(job);
-          } else {
-            job.set({
-              status: JOB_STATUS.RESOLVED,
-              result: { looped, broken: true },
-            });
-            return job;
+        while (result.looped < length) {
+          const condition = calculateCondition(node, processor);
+          if (condition) {
+            // NOTE: if condition matches, run inner branch
+            break;
           }
+          result.looped += 1;
+          job.set('result', result);
+          if (continueOnFalse) {
+            // NOTE: if `continueOnFalse` is true, continue next loop directly
+            processor.saveJob(job);
+            continue;
+          }
+          job.set({
+            status: JOB_STATUS.RESOLVED,
+            result: { ...result, broken: true },
+          });
+          return job;
+        }
+        if (result.looped >= length) {
+          job.set({
+            status: JOB_STATUS.RESOLVED,
+            result,
+          });
+          return job;
         }
       }
     }
@@ -108,7 +121,7 @@ export default class extends Instruction {
       return null;
     }
 
-    const nextIndex = result.looped + 1;
+    result.looped += 1;
 
     const target = processor.getParsedValue(loop.config.target, node.id);
     // NOTE: branchJob.status === JOB_STATUS.RESOLVED means branchJob is done, try next loop or exit as resolved
@@ -116,24 +129,37 @@ export default class extends Instruction {
       branchJob.status === JOB_STATUS.RESOLVED ||
       (branchJob.status < JOB_STATUS.PENDING && loop.config.exit === EXIT.CONTINUE)
     ) {
-      job.set({ result: { looped: nextIndex } });
-      processor.saveJob(job);
-
+      result.done += 1;
       const length = getTargetLength(target);
-      if (nextIndex < length) {
-        if (loop.config.condition) {
-          const { calculation, expression, continueOnFalse } = loop.config.condition ?? {};
-          if (calculation || expression) {
+
+      if (loop.config.condition) {
+        const { calculation, expression, continueOnFalse } = loop.config.condition ?? {};
+        if (calculation || expression) {
+          while (result.looped < length) {
             const condition = calculateCondition(loop, processor);
-            if (!condition && !continueOnFalse) {
+            if (condition) {
+              // NOTE: if condition matched, run inner branch
+              processor.logger.debug(`loop condition matched, continue inner branch (looped: ${result.looped})`);
+              break;
+            }
+            if (!continueOnFalse) {
+              processor.logger.debug(`loop condition not matches, break (looped: ${result.looped})`);
               job.set({
                 status: JOB_STATUS.RESOLVED,
-                result: { looped: nextIndex, broken: true },
+                result: { ...result, broken: true },
               });
               return job;
             }
+            // NOTE: if `continueOnFalse` is true, continue next loop directly
+            result.looped += 1;
+            processor.logger.debug(`loop condition not matches, try next loop item (looped: ${result.looped})`);
           }
         }
+      }
+      job.set({ result });
+      job.changed('result', true);
+      processor.saveJob(job);
+      if (result.looped < length) {
         await processor.run(branch, job);
         return;
       } else {
@@ -146,7 +172,7 @@ export default class extends Instruction {
       job.set(
         loop.config.exit
           ? {
-              result: { looped: result.looped, broken: true },
+              result: { ...result, broken: true },
               status: JOB_STATUS.RESOLVED,
             }
           : {

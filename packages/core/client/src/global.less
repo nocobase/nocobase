@@ -97,6 +97,18 @@
       &.ant-menu-submenu-selected {
         .ant-menu-submenu-title {
           color: var(--colorTextSiderMenuActive) !important;
+          color: var(--colorTextSiderMenu) !important;
+
+          &:hover {
+            background-color: var(--colorBgSiderMenuHover) !important;
+            color: var(--colorTextSiderMenuHover) !important;
+          }
+        }
+
+        &.ant-menu-submenu-selected {
+          & > .ant-menu-submenu-title {
+            color: var(--colorTextSiderMenuActive) !important;
+          }
         }
       }
     }
