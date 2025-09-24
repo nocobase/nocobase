@@ -134,7 +134,8 @@ const PreviewButton = ({ style }) => {
       style={style}
       onClick={async () => {
         await form.submit();
-        ctx.model.setParamsAndPreview(form?.values || {});
+        const formValues = ctx.getStepFormValues('chartSettings', 'configure');
+        ctx.model.setParamsAndPreview(formValues || {});
       }}
     >
       {t('Preview')}
@@ -156,12 +157,12 @@ ChartBlockModel.registerFlow({
         type: 'embed',
         props: {
           width: '600px',
-          // footer: (originNode) => (
-          //   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          //     <PreviewButton style={{ marginRight: 4 }} />
-          //     {originNode}
-          //   </div>
-          // ),
+          footer: (originNode) => (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <PreviewButton style={{ marginRight: 4 }} />
+              {originNode}
+            </div>
+          ),
         },
       },
       uiSchema: {
