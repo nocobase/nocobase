@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useForm } from '@formily/react';
 import { DataBlockModel, SubPageModel } from '@nocobase/client';
 import { SQLResource, useFlowContext } from '@nocobase/flow-engine';
-import React from 'react';
+import { Button } from 'antd';
+import React, { createRef } from 'react';
+import { useT } from '../../locale';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
-import { Button } from 'antd';
-import { useT } from '../../locale';
-import { useForm } from '@formily/react';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -40,6 +40,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   onInit() {
+    this.context.defineProperty('chartRef', {
+      get: () => createRef(),
+    });
     this.context.defineProperty('resource', {
       get: () => {
         const resource = this.context.createResource(SQLResource);
@@ -62,7 +65,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   renderComponent() {
-    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
+    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
   }
 
   // regenerate option，refresh ECharts
@@ -193,8 +196,8 @@ ChartBlockModel.registerFlow({
           },
         });
         if (rawEvents) {
-          ctx.onRefReady(ctx.ref, () => {
-            ctx.runjs(rawEvents, { chart: ctx.ref.current });
+          ctx.onRefReady(ctx.chartRef, () => {
+            ctx.runjs(rawEvents, { chart: ctx.chartRef.current });
           });
         }
       },
