@@ -107,7 +107,23 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return allModelInstances.map((model: CollectionBlockModel) => {
       return {
         key: model.uid,
-        label: `${model.title} #${model.uid.substring(0, 4)}`,
+        label: (
+          <span
+            style={{ margin: '-5px -24px -5px -12px', padding: '5px 24px 5px 12px' }}
+            onMouseEnter={() => {
+              const modelEl = model.context.ref?.current;
+              if (modelEl) {
+                modelEl.style.outline = `2px solid ${model.context.themeToken.colorPrimaryBorder}`;
+              }
+            }}
+            onMouseLeave={() => {
+              const modelEl = model.context.ref?.current;
+              if (modelEl) {
+                modelEl.style.outline = 'none';
+              }
+            }}
+          >{`${model.title} #${model.uid.substring(0, 4)}`}</span>
+        ),
         children: async () => {
           return [
             {
