@@ -89,100 +89,97 @@ describe('db2cm test', () => {
   });
 
   describe.skipIf(process.env.DB_DIALECT === 'sqlite')('read db tables', async () => {
-    let sequelize: Sequelize;
+    let queryInterface: any;
+    let schema: string;
 
     beforeEach(async () => {
-      app = await createApp();
+      app = await createApp({
+        plugins: ['data-source-manager'],
+      });
       db = app.db;
 
-      const queryInterface = db.sequelize.getQueryInterface();
-
-      const schema = (db.sequelize as any).options?.schema;
-
-      const getTableName = (tableName: string) => {
-        return {
-          tableName,
-          schema: schema || undefined,
-        };
-      };
-
-      await queryInterface.createTable(getTableName('table1'), {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        name: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
-      });
-
-      await queryInterface.createTable(getTableName('table2'), {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        description: {
-          type: DataTypes.TEXT,
-        },
-      });
-
-      await queryInterface.createTable(getTableName('table3'), {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        createdAt: {
-          type: DataTypes.DATE,
-          defaultValue: DataTypes.NOW,
-        },
-      });
+      queryInterface = db.sequelize.getQueryInterface();
+      schema = db.options.schema;
     });
 
     afterEach(async () => {
-      if (sequelize) {
-        await sequelize.close();
-      }
+      await db.clean({ drop: true });
       await app.destroy();
     });
 
-    it('get selectable tables', async () => {
-      const response = await app.agent().resource('collections').selectable();
+    it('get available tables', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .readTables({
+          values: {
+            dataSourceKey: 'main',
+          },
+        });
       expect(response.status).toBe(200);
-      expect(response.body.data.length).toBeGreaterThan(0);
-      expect(response.body.data.some((x) => x.name === 'table1')).toBeTruthy();
-      expect(response.body.data.some((x) => x.name === 'table2')).toBeTruthy();
-      expect(response.body.data.some((x) => x.name === 'table3')).toBeTruthy();
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].name).toBe('table');
     });
 
-    it('add tables to collections', async () => {
-      const tableNames = ['table1', 'table2', 'table3'];
+    it('load table', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const tables = ['table'];
 
       let collections = await db.getRepository('collections').find({
-        where: { name: tableNames },
+        filter: { name: tables },
       });
       expect(collections.length).toBe(0);
 
-      const response = await app.agent().resource('collections').add({
-        values: tableNames,
-      });
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .loadTables({
+          values: {
+            dataSourceKey: 'main',
+            tables,
+          },
+        });
       expect(response.status).toBe(200);
 
       await new Promise((resolve) => setTimeout(resolve, 100));
       collections = await db.getRepository('collections').find({
-        where: { name: tableNames },
+        filter: { name: tables },
       });
 
-      expect(collections.length).toBe(3);
-      const listReponse = await app.agent().resource('collections').list();
-      expect(listReponse.status).toBe(200);
-
-      tableNames.forEach((tableName) => {
-        expect(listReponse.body.data.some((x) => x.name === tableName)).toBeTruthy();
-      });
+      expect(collections.length).toBe(1);
     });
   });
 });

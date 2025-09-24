@@ -20,14 +20,17 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
       dataSource = ctx.app.dataSourceManager.factory.create(type, {
         name: key,
         ...options,
-      }) as DatabaseDataSource;
+      });
       dataSource.setLogger(ctx.logger);
     } else {
       const { filterByTk: dataSourceKey } = params;
-      dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey) as DatabaseDataSource;
+      dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
       if (!dataSource) {
         throw new Error(`dataSource ${dataSourceKey} not found`);
       }
+    }
+    if (!(dataSource instanceof DatabaseDataSource)) {
+      return next();
     }
     if (options?.addAllCollections) {
       const allTables = await dataSource.introspector.getTables();
