@@ -62,7 +62,6 @@ export class ClickableFieldModel extends FieldModel {
     const commonStyle = {
       cursor: clickToOpen ? 'pointer' : 'default',
       alignItems: 'center',
-      display: 'inline-block',
       gap: 4,
     };
 

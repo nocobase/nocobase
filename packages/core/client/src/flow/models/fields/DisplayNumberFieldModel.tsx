@@ -185,21 +185,17 @@ export const DisplayNumber = (props: displayNumberProps) => {
   }
 
   return (
-    <div>
+    <span>
       {addonBefore}
       <span dangerouslySetInnerHTML={{ __html: result }} />
       {addonAfter}
-    </div>
+    </span>
   );
 };
 
 export class DisplayNumberFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    return (
-      <div>
-        <DisplayNumber {...this.props} value={value} />
-      </div>
-    );
+    return <DisplayNumber {...this.props} value={value} />;
   }
 }
 DisplayNumberFieldModel.define({
