@@ -33,6 +33,7 @@ export const pattern = defineAction({
             label: escapeT('Display only'),
           },
         ],
+        'x-disabled': ctx.model.collectionField.inputable === false,
       },
     };
   },
