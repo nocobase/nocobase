@@ -682,7 +682,7 @@ export class FlowSettings {
         onClose() {
           target.style.width = 'auto';
           target.style.maxWidth = 'none';
-          target.style.minWidth = 'none';
+          target.style.minWidth = 'auto';
           onClose?.();
         },
       };
