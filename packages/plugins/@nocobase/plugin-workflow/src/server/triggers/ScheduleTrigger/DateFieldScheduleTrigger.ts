@@ -153,7 +153,6 @@ export default class DateFieldScheduleTrigger {
     this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
     records.forEach((record) => {
       const nextTime = this.getRecordNextTime(workflow, record);
-      console.log('======', nextTime, record.createdAt);
       this.schedule(workflow, record, nextTime, Boolean(nextTime));
     });
   }
@@ -185,7 +184,6 @@ export default class DateFieldScheduleTrigger {
       this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn.field" is not configured`);
       return [];
     }
-    console.debug('>>>>>>>>', new Date(startTimestamp));
 
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     const { collectionManager } = dataSourceManager.get(dataSourceName);
@@ -252,7 +250,7 @@ export default class DateFieldScheduleTrigger {
       });
     }
     this.workflow.getLogger(id).debug(`[Schedule on date field] conditions: `, { conditions });
-    console.debug('------------', conditions);
+
     return model.findAll({
       where: {
         [Op.and]: conditions,
