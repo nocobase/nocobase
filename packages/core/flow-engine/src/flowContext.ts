@@ -1391,15 +1391,20 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
-      const model = this.engine.loadOrCreateModel({
-        uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
-        use: 'PopupActionModel',
-        parentId: this.model.uid,
-        subType: 'object',
-        subKey: uid,
-      });
-      await model.dispatchEvent('openView', {
+      let model: FlowModel | null = null;
+      model = await this.engine.loadModel({ uid });
+      if (!model) {
+        model = this.engine.createModel({
+          uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
+          use: 'PopupActionModel',
+          parentId: this.model.uid,
+          subType: 'object',
+          subKey: uid,
+        });
+      }
+      await model.dispatchEvent('click', {
         navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
         ...options,
       });
     });
