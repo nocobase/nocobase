@@ -107,7 +107,7 @@ export function usePage() {
       meta: createViewMeta(ctx, () => currentPage),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
-    // build a scoped engine for this view; isolate model instances & cache by default
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
@@ -146,6 +146,8 @@ export function usePage() {
               closeFunc?.();
               config.onClose?.();
               resolvePromise?.(config.result);
+              // 关闭时修正 previous/next 指针
+              scopedEngine.unlinkFromStack();
             }}
           >
             {pageContent}

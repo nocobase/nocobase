@@ -104,6 +104,14 @@ export class FlowEngine {
    */
   private _flowContext: FlowEngineContext;
 
+  /**
+   * 视图作用域引擎的栈式链表指针。
+   * - previousEngine：打开当前视图的上一个引擎
+   * - nextEngine：在当前之上的下一个引擎
+   */
+  private _previousEngine?: FlowEngine;
+  private _nextEngine?: FlowEngine;
+
   private _resources = new Map<string, typeof FlowResource>();
 
   logger: pino.Logger;
@@ -156,6 +164,43 @@ export class FlowEngine {
     });
     this.executor = new FlowExecutor(this);
   }
+
+  /** 上一个引擎（根引擎为 undefined） */
+  get previousEngine(): FlowEngine | undefined {
+    return this._previousEngine;
+  }
+  /** 下一个引擎（若存在） */
+  get nextEngine(): FlowEngine | undefined {
+    return this._nextEngine;
+  }
+
+  /**
+   * 将当前引擎链接到 prev 之后（用于视图打开时形成栈关系）。
+   */
+  public linkAfter(prev: FlowEngine): void {
+    this._previousEngine = prev;
+    if (prev) {
+      prev._nextEngine = this;
+    }
+  }
+
+  /**
+   * 将当前引擎从栈中移除并修复相邻指针（用于视图关闭时）。
+   */
+  public unlinkFromStack(): void {
+    const prev = this._previousEngine;
+    const next = this._nextEngine;
+    if (prev && prev._nextEngine === this) {
+      prev._nextEngine = next;
+    }
+    if (next && next._previousEngine === this) {
+      next._previousEngine = prev;
+    }
+    this._previousEngine = undefined;
+    this._nextEngine = undefined;
+  }
+
+  // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API
 
   /**
    * Get the flow engine context object.
@@ -462,8 +507,23 @@ export class FlowEngine {
    * @param {string} uid Model instance UID
    * @returns {T | undefined} Model instance, or undefined if not found
    */
-  public getModel<T extends FlowModel = FlowModel>(uid: string): T | undefined {
-    return this._modelInstances.get(uid) as T | undefined;
+  public getModel<T extends FlowModel = FlowModel>(uid: string, global?: boolean): T | undefined {
+    // 默认仅在当前引擎查找；只有当 global === true 时才跨视图栈查找
+    if (!global) {
+      return this._modelInstances.get(uid) as T | undefined;
+    }
+    // 跨视图栈查找：按视图栈从栈顶到根逐个查找
+    // 1) 找到栈顶引擎
+    let top: FlowEngine = this;
+    while (top.nextEngine) top = top.nextEngine;
+    // 2) 从栈顶向下查找，命中即返回
+    let eng: FlowEngine | undefined = top;
+    while (eng) {
+      const found = eng._modelInstances.get(uid) as T | undefined;
+      if (found) return found;
+      eng = eng.previousEngine;
+    }
+    return undefined;
   }
 
   /**

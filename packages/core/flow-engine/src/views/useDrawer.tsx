@@ -107,9 +107,9 @@ export function useDrawer() {
       meta: createViewMeta(ctx, () => currentDrawer),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
-    // build a scoped engine for this view; isolate model instances & cache by default
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
-    // expose scoped engine to view context first, then inherit parent context
+    // 先将引擎暴露给视图上下文，再按需继承父上下文
     ctx.defineProperty('engine', { value: scopedEngine });
     ctx.addDelegate(scopedEngine.context);
     if (config.inheritContext !== false) {
@@ -153,6 +153,8 @@ export function useDrawer() {
               closeFunc?.();
               config.onClose?.();
               resolvePromise?.(config.result);
+              // 关闭时修正 previous/next 指针
+              scopedEngine.unlinkFromStack();
             }}
           >
             {content}

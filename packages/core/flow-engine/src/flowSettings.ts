@@ -676,11 +676,13 @@ export class FlowSettings {
         onOpen() {
           target.style.width = modeProps.width || '33.3%';
           target.style.maxWidth = modeProps.maxWidth || '800px';
+          target.style.minWidth = modeProps.minWidth || '0px';
           onOpen?.();
         },
         onClose() {
           target.style.width = 'auto';
           target.style.maxWidth = 'none';
+          target.style.minWidth = 'auto';
           onClose?.();
         },
       };
@@ -752,7 +754,7 @@ export class FlowSettings {
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       content: (currentView, viewCtx) => {
-        viewCtx.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+        viewCtx?.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
         });
         // 渲染单个 step 表单（无 JSX）：FormProvider + SchemaField

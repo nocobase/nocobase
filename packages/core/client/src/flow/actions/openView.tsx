@@ -93,7 +93,7 @@ export const openView = defineAction({
       embed: {},
     };
 
-    const pageModelClass = params.pageModelClass;
+    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass;
 
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
@@ -162,14 +162,21 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
-              if (params.afterModelInit) {
-                params.afterModelInit(pageModel);
-              }
+              const defineProperties = inputArgs.defineProperties || {};
+              const defineMethods = inputArgs.defineMethods || {};
+
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
               });
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'embed',
+              });
+
+              Object.entries(defineProperties as Record<string, any>).forEach(([key, p]) => {
+                pageModel.context.defineProperty(key, p);
+              });
+              Object.entries(defineMethods as Record<string, any>).forEach(([key, method]) => {
+                pageModel.context.defineMethod(key, method);
               });
 
               pageModel.invalidateAutoFlowCache(true);

@@ -55,9 +55,9 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
   }, [props.value]);
 
   return wrapSSR(
-    <div className={`${hashId} ${componentCls}`}>
-      <div ref={containerRef} style={{ border: 'none', ...(props?.style ?? {}) }} />
-    </div>,
+    <span className={`${hashId} ${componentCls}`}>
+      <span ref={containerRef} style={{ border: 'none', ...(props?.style ?? {}) }} />
+    </span>,
   );
 }
 
@@ -65,7 +65,7 @@ function openCustomPreview(src: string) {
   if (document.getElementById('custom-image-preview')) return;
 
   // 创建容器
-  const overlay = document.createElement('div');
+  const overlay = document.createElement('span');
   overlay.id = 'custom-image-preview';
   Object.assign(overlay.style, {
     position: 'fixed',

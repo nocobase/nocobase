@@ -1209,11 +1209,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
-    this.defineMethod('createJSRunner', (options) => {
+    this.defineMethod('createJSRunner', function (options) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       return new JSRunner({
         ...options,
         globals: {
-          ctx: this,
+          ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
           ...options?.globals,
         },
       });
@@ -1253,18 +1256,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     // Helper: build server contextParams for variables:resolve
     this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {
       return _buildServerContextParams(this, input);
-    });
-    this.defineMethod('runjs', function (code, variables) {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...variables,
-        },
-      });
-      return runner.run(code);
     });
     this.defineMethod('getAction', function (this: BaseFlowEngineContext, name: string) {
       return this.engine.getAction(name);
@@ -1365,7 +1356,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
       return this.engine.createResource(resourceType, {
-        context: this,
+        context: this.createProxy(),
       });
     });
   }
@@ -1389,6 +1380,25 @@ export class FlowModelContext extends BaseFlowModelContext {
         this.model['_refCreated'] = true;
         return createRef<HTMLDivElement>();
       },
+    });
+    this.defineMethod('openView', async function (uid: string, options) {
+      let model: FlowModel | null = null;
+      model = await this.engine.loadModel({ uid });
+      if (!model) {
+        model = this.engine.createModel({
+          uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
+          use: 'PopupActionModel',
+          parentId: this.model.uid,
+          subType: 'object',
+          subKey: uid,
+        });
+        await model.save();
+      }
+      await model.dispatchEvent('click', {
+        navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
+        ...options,
+      });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
@@ -1450,17 +1460,6 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
-    this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          ...variables,
-        },
-      });
-      return runner.run(code);
-    });
   }
 }
 
@@ -1516,13 +1515,8 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          ...variables,
-        },
+      const runner = this.createJSRunner({
+        globals: variables,
       });
       return runner.run(code);
     });

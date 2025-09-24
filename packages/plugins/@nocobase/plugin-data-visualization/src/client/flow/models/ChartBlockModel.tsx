@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useForm } from '@formily/react';
 import { DataBlockModel, SubPageModel } from '@nocobase/client';
 import { SQLResource, useFlowContext } from '@nocobase/flow-engine';
-import React from 'react';
+import { Button } from 'antd';
+import React, { createRef } from 'react';
+import { useT } from '../../locale';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
-import { Button } from 'antd';
-import { useT } from '../../locale';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import ctx from 'packages/core/client/docs/zh-CN/examples/flow-definition/ui-schema-custom-component/ctx';
-import { useForm } from '@formily/react';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -42,6 +40,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   onInit() {
+    this.context.defineProperty('chartRef', {
+      get: () => createRef(),
+    });
     this.context.defineProperty('resource', {
       get: () => {
         const resource = this.context.createResource(SQLResource);
@@ -61,19 +62,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       get: () => convertDatasetFormats(this.resource.getData()),
       cache: false,
     });
-
-    this.context.defineMethod('openView', async (params) => {
-      const { mode, size, ...rest } = params || {};
-      this.dispatchEvent('openView', {
-        mode: mode || 'dialog',
-        size: size || 'large',
-        ...rest,
-      });
-    });
   }
 
   renderComponent() {
-    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.ref as any} />;
+    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
   }
 
   // regenerate option，refresh ECharts
@@ -134,7 +126,8 @@ const PreviewButton = ({ style }) => {
       style={style}
       onClick={async () => {
         await form.submit();
-        ctx.model.setParamsAndPreview(form?.values || {});
+        const formValues = ctx.getStepFormValues('chartSettings', 'configure');
+        ctx.model.setParamsAndPreview(formValues || {});
       }}
     >
       {t('Preview')}
@@ -155,13 +148,13 @@ ChartBlockModel.registerFlow({
       uiMode: {
         type: 'embed',
         props: {
-          width: '600px',
-          // footer: (originNode) => (
-          //   <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          //     <PreviewButton style={{ marginRight: 4 }} />
-          //     {originNode}
-          //   </div>
-          // ),
+          minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
+          footer: (originNode) => (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <PreviewButton style={{ marginRight: 4 }} />
+              {originNode}
+            </div>
+          ),
         },
       },
       uiSchema: {
@@ -203,26 +196,10 @@ ChartBlockModel.registerFlow({
           },
         });
         if (rawEvents) {
-          ctx.onRefReady(ctx.ref, () => {
-            ctx.runjs(rawEvents, { chart: ctx.ref.current });
+          ctx.onRefReady(ctx.chartRef, () => {
+            ctx.runjs(rawEvents, { chart: ctx.chartRef.current });
           });
         }
-      },
-    },
-  },
-});
-
-ChartBlockModel.registerFlow({
-  key: 'popupSettings',
-  on: 'openView',
-  steps: {
-    openView: {
-      use: 'openView',
-      hideInSettings: true,
-      defaultParams(ctx) {
-        return {
-          navigation: false,
-        };
       },
     },
   },

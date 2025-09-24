@@ -21,6 +21,7 @@ export const runjs = defineAction({
       'x-component-props': {
         enableLinter: true,
         height: '200px',
+        mode: 'runtime',
       },
     },
   },

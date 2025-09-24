@@ -33,12 +33,21 @@ export const pattern = defineAction({
             label: escapeT('Display only'),
           },
         ],
+        'x-disabled': ctx.model.collectionField.inputable === false,
       },
     };
   },
-  defaultParams: (ctx) => ({
-    pattern: ctx.model.collectionField.readonly ? 'disabled' : 'editable',
-  }),
+  defaultParams: (ctx) => {
+    return {
+      pattern:
+        ctx.model.collectionField.inputable === false ||
+        ctx.model.context.parentDisabled ||
+        ctx.model.props.disabled ||
+        ctx.model.collectionField.readonly
+          ? 'disabled'
+          : 'editable',
+    };
+  },
   afterParamsSave: async (ctx, params, previousParams) => {
     const { model } = ctx;
 
