@@ -102,7 +102,7 @@ export function SubTableField(props) {
         }}
         components={components || {}}
       />
-      <Space>
+      <Space size={'middle'}>
         {!disabled && allowAddNew !== false && (
           <a onClick={handleAdd} style={{ marginTop: 8 }}>
             <PlusOutlined /> {t('Add new')}
