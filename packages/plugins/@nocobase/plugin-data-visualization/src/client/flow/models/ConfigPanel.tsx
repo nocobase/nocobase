@@ -12,7 +12,7 @@ import { useT } from '../../locale';
 import { Collapse, Card, Button } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
-import { useFlowContext, useFlowSettingsContext, useFlowView } from '@nocobase/flow-engine';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
 import { useAPIClient } from '@nocobase/client';
 import { configStore } from './config-store';
@@ -124,7 +124,8 @@ export const ConfigPanel: React.FC = () => {
 
   return (
     <>
-      <div
+      {/* 预览按钮迁移到 抽屉弹窗 Footer */}
+      {/* <div
         style={{
           marginBottom: 6,
           textAlign: 'right',
@@ -133,7 +134,7 @@ export const ConfigPanel: React.FC = () => {
         <Button type="primary" onClick={handlePreview}>
           {t('Preview')}
         </Button>
-      </div>
+      </div> */}
 
       <Collapse
         activeKey={activeKeys}
