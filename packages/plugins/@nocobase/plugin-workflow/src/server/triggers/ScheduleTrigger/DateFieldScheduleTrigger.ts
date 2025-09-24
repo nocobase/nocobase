@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fn, literal, Op, Transactionable, where } from '@nocobase/database';
+import { fn, literal, Model, Op, Transactionable, where } from '@nocobase/database';
 import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
@@ -153,6 +153,7 @@ export default class DateFieldScheduleTrigger {
     this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
     records.forEach((record) => {
       const nextTime = this.getRecordNextTime(workflow, record);
+      console.log('======', nextTime, record.createdAt);
       this.schedule(workflow, record, nextTime, Boolean(nextTime));
     });
   }
@@ -184,6 +185,7 @@ export default class DateFieldScheduleTrigger {
       this.workflow.getLogger(id).warn(`[Schedule on date field] "startsOn.field" is not configured`);
       return [];
     }
+    console.debug('>>>>>>>>', new Date(startTimestamp));
 
     const [dataSourceName, collectionName] = parseCollectionName(collection);
     const { collectionManager } = dataSourceManager.get(dataSourceName);
@@ -250,6 +252,7 @@ export default class DateFieldScheduleTrigger {
       });
     }
     this.workflow.getLogger(id).debug(`[Schedule on date field] conditions: `, { conditions });
+    console.debug('------------', conditions);
     return model.findAll({
       where: {
         [Op.and]: conditions,
@@ -257,7 +260,7 @@ export default class DateFieldScheduleTrigger {
     });
   }
 
-  getRecordNextTime(workflow: WorkflowModel, record, nextSecond = false) {
+  getRecordNextTime(workflow: WorkflowModel, record: Model, nextSecond = false) {
     const {
       config: { startsOn, endsOn, repeat, limit },
       stats,
@@ -265,6 +268,7 @@ export default class DateFieldScheduleTrigger {
     if (limit && stats.executed >= limit) {
       return null;
     }
+    const logger = this.workflow.getLogger(workflow.id);
     const range = this.cacheCycle;
     const now = new Date();
     now.setMilliseconds(nextSecond ? 1000 : 0);
@@ -273,43 +277,57 @@ export default class DateFieldScheduleTrigger {
     const endTime = getDataOptionTime(record, endsOn);
     let nextTime = null;
     if (!startTime) {
+      logger.debug(`[Schedule on date field] getNextTime: startsOn not configured`);
       return null;
     }
     if (startTime > timestamp + range) {
+      logger.debug(`[Schedule on date field] getNextTime: startsOn is out of caching window`);
       return null;
     }
     if (startTime >= timestamp) {
-      return !endTime || (endTime >= startTime && endTime < timestamp + range) ? startTime : null;
+      if (!endTime || startTime <= endTime) {
+        return startTime;
+      }
+      logger.debug(`[Schedule on date field] getNextTime: endsOn is before startsOn or out of caching window`);
+      return null;
     } else {
       if (!repeat) {
+        logger.debug(
+          `[Schedule on date field] getNextTime: startsOn is before current time and repeat is not configured`,
+        );
         return null;
       }
     }
     if (typeof repeat === 'number') {
-      const nextRepeatTime = ((startTime - timestamp) % repeat) + repeat;
-      if (nextRepeatTime > range) {
-        return null;
-      }
-      if (endTime && endTime < timestamp + nextRepeatTime) {
-        return null;
-      }
-      nextTime = timestamp + nextRepeatTime;
-    } else if (typeof repeat === 'string') {
-      nextTime = getCronNextTime(repeat, now);
+      const passedCycles = Math.floor((timestamp - startTime) / repeat);
+      nextTime = startTime + (passedCycles + 1) * repeat;
       if (nextTime - timestamp > range) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is out of caching window`);
         return null;
       }
       if (endTime && endTime < nextTime) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
+        return null;
+      }
+    } else if (typeof repeat === 'string') {
+      nextTime = getCronNextTime(repeat, now);
+      if (nextTime - timestamp > range) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is out of caching window`);
+        return null;
+      }
+      if (endTime && endTime < nextTime) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
         return null;
       }
     }
     if (endTime && endTime <= timestamp) {
+      logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
       return null;
     }
     return nextTime;
   }
 
-  schedule(workflow: WorkflowModel, record, nextTime, toggle = true, options = {}) {
+  schedule(workflow: WorkflowModel, record: Model, nextTime: number, toggle = true, options = {}) {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
@@ -336,17 +354,23 @@ export default class DateFieldScheduleTrigger {
     }
   }
 
-  async trigger(workflow: WorkflowModel, record, nextTime, { transaction }: Transactionable = {}) {
+  async trigger(workflow: WorkflowModel, record: Model, nextTime: number, { transaction }: Transactionable = {}) {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { repository, filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
     const recordPk = record.get(filterTargetKey);
-    const data = await repository.findOne({
+    const data = (await repository.findOne({
       filterByTk: recordPk,
       appends: workflow.config.appends,
       transaction,
-    });
+    })) as Model;
+    if (!data) {
+      this.workflow
+        .getLogger(workflow.id)
+        .warn(`[Schedule on date field] record (${recordPk}) not exists, will not trigger`);
+      return;
+    }
     const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
     this.cache.delete(eventKey);
     // NOTE: data.toJSON() will cause erorr
@@ -391,8 +415,9 @@ export default class DateFieldScheduleTrigger {
       return;
     }
 
-    const listener = async (data, { transaction }) => {
+    const listener = async (data: Model, { transaction }) => {
       const nextTime = this.getRecordNextTime(workflow, data);
+      this.workflow.getLogger().debug(`[Schedule on date field] record saved, nextTime: ${nextTime}`);
       return this.schedule(workflow, data, nextTime, Boolean(nextTime), { transaction });
     };
 
