@@ -9,17 +9,18 @@
 
 import { DataSource } from './data-source';
 import { DataSourceManager } from './data-source-manager';
+import { DataSourceConstructor } from './types';
 
 export class DataSourceFactory {
-  public collectionTypes: Map<string, typeof DataSource> = new Map();
+  public collectionTypes: Map<string, DataSourceConstructor> = new Map();
 
   constructor(protected dataSourceManager: DataSourceManager) {}
 
-  register(type: string, dataSourceClass: typeof DataSource) {
+  register(type: string, dataSourceClass: DataSourceConstructor) {
     this.collectionTypes.set(type, dataSourceClass);
   }
 
-  getClass(type: string): typeof DataSource {
+  getClass(type: string): DataSourceConstructor {
     return this.collectionTypes.get(type);
   }
 
@@ -36,8 +37,7 @@ export class DataSourceFactory {
     if (environment) {
       Object.assign(opts, environment.renderJsonTemplate(others));
     }
-    // @ts-ignore
-    const dataSource = new klass(opts) as DataSource;
+    const dataSource = new klass(opts);
     dataSource.setDataSourceManager(this.dataSourceManager);
     return dataSource;
   }

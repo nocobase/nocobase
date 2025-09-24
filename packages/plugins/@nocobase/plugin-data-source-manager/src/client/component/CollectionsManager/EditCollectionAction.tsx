@@ -147,8 +147,11 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
     async run() {
       await form.submit();
       await api.request({
-        url: `dataSources/${name}/collections:update?filterByTk=${filterByTk}`,
+        url: `dataSources/${name}/collections:update`,
         method: 'post',
+        params: {
+          filterByTk,
+        },
         data: {
           ...omit(form.values, ['fields', 'autoGenId', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'sortable']),
         },
