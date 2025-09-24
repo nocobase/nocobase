@@ -122,8 +122,61 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return true;
   }
 
+  constructor(context: FlowEngineContext) {
+    super(context);
+    context.defineProperty('limit', {
+      get: () => this.getPageSize(),
+      cache: false,
+    });
+    context.defineProperty('offset', {
+      get: () => {
+        const page = this.getPage();
+        const pageSize = this.getPageSize();
+        return (page - 1) * pageSize;
+      },
+      cache: false,
+    });
+  }
+
   protected buildURL(action?: string): string {
     return `flowSql:${action || 'runById'}`;
+  }
+
+  setPage(page: number) {
+    this.addRequestParameter('page', page);
+    return this.setMeta({ page });
+  }
+
+  getPage(): number {
+    return this.getMeta('page') || 1;
+  }
+
+  setPageSize(pageSize: number) {
+    this.addRequestParameter('pageSize', pageSize);
+    return this.setMeta({ pageSize });
+  }
+
+  getPageSize(): number {
+    return this.getMeta('pageSize') || 20;
+  }
+
+  async next(): Promise<void> {
+    this.setPage(this.getPage() + 1);
+    await this.refresh();
+  }
+
+  async previous(): Promise<void> {
+    if (this.getPage() > 1) {
+      this.setPage(this.getPage() - 1);
+      await this.refresh();
+    }
+  }
+
+  async goto(page: number): Promise<void> {
+    if (page > 0) {
+      this.request.params.page = page;
+      await this.refresh();
+    }
   }
 
   setDataSourceKey(dataSourceKey: string): this {

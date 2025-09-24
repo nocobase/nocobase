@@ -1365,7 +1365,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
       return this.engine.createResource(resourceType, {
-        context: this,
+        context: this.createProxy(),
       });
     });
   }
