@@ -676,11 +676,13 @@ export class FlowSettings {
         onOpen() {
           target.style.width = modeProps.width || '33.3%';
           target.style.maxWidth = modeProps.maxWidth || '800px';
+          target.style.minWidth = modeProps.minWidth || '0px';
           onOpen?.();
         },
         onClose() {
           target.style.width = 'auto';
           target.style.maxWidth = 'none';
+          target.style.minWidth = 'none';
           onClose?.();
         },
       };
