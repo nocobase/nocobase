@@ -127,7 +127,7 @@ export const ChartOptionsBuilder: React.FC<{
 
         {/* 公共属性 */}
         <Form.Item label={t('Height')} name="height">
-          <InputNumber min={100} style={{ width: 120 }} />
+          <InputNumber min={100} style={{ width: 160 }} />
         </Form.Item>
         <Form.Item name="legend" valuePropName="checked" colon={false} label=" ">
           <Checkbox>{t('Legend')}</Checkbox>
@@ -196,11 +196,11 @@ const getChartFormItems = (
 
         {/* optional */}
         <Form.Item label={t('Inner radius (%)')} name="pieRadiusInner">
-          <InputNumber min={0} max={100} style={{ width: 120 }} />
+          <InputNumber min={0} max={100} style={{ width: 160 }} />
         </Form.Item>
 
         <Form.Item label={t('Outer radius (%)')} name="pieRadiusOuter">
-          <InputNumber min={0} max={100} style={{ width: 120 }} />
+          <InputNumber min={0} max={100} style={{ width: 160 }} />
         </Form.Item>
       </>
     );
