@@ -198,13 +198,23 @@ describe('FlowSettings.open rendering behavior', () => {
           container.setAttribute('data-testid', 'flow-settings-container');
           // execute content function to ensure render path doesn't throw
           if (typeof content === 'function') {
-            content(dialog);
+            content(dialog, { defineMethod: vi.fn() });
           }
           document.body.appendChild(container);
           return dialog;
         },
         drawer: ({ content }) => {
-          return (this as any).dialog({ content });
+          const dialog = {
+            close: () => container.remove?.(),
+            Footer: () => null,
+          } as any;
+          const container = document.createElement('div');
+          container.setAttribute('data-testid', 'flow-settings-container');
+          if (typeof content === 'function') {
+            content(dialog, { defineMethod: vi.fn() });
+          }
+          document.body.appendChild(container);
+          return dialog;
         },
       },
     });
@@ -246,13 +256,23 @@ describe('FlowSettings.open rendering behavior', () => {
           const container = document.createElement('div');
           container.setAttribute('data-testid', 'flow-settings-container');
           if (typeof content === 'function') {
-            content(dialog);
+            content(dialog, { defineMethod: vi.fn() });
           }
           document.body.appendChild(container);
           return dialog;
         },
         drawer: ({ content }) => {
-          return (this as any).dialog({ content });
+          const dialog = {
+            close: () => container.remove?.(),
+            Footer: () => null,
+          } as any;
+          const container = document.createElement('div');
+          container.setAttribute('data-testid', 'flow-settings-container');
+          if (typeof content === 'function') {
+            content(dialog, { defineMethod: vi.fn() });
+          }
+          document.body.appendChild(container);
+          return dialog;
         },
       },
     });
@@ -315,7 +335,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const openSpy = { lastTree: null as any };
     const viewerDrawer = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (props: any) => null } as any;
-      openSpy.lastTree = typeof content === 'function' ? content(dlg) : null;
+      openSpy.lastTree = typeof content === 'function' ? content(dlg, { defineMethod: vi.fn() }) : null;
       return dlg;
     });
     const viewerDialog = vi.fn();
@@ -543,7 +563,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -606,7 +626,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -637,7 +657,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -677,7 +697,7 @@ describe('FlowSettings.open rendering behavior', () => {
     model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
     const dialog = vi.fn(({ content }) => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof content === 'function') content(dlg);
+      if (typeof content === 'function') content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -720,7 +740,7 @@ describe('FlowSettings.open rendering behavior', () => {
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
       // Execute content once to ensure it is callable
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -760,7 +780,7 @@ describe('FlowSettings.open rendering behavior', () => {
       // also check title fallback if not provided in props
       expect(typeof opts.title === 'string').toBe(true);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -797,7 +817,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('General');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -1040,7 +1060,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Global Multi Steps Title');
       expect(opts.width).toBe(1000);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const drawer = vi.fn();
