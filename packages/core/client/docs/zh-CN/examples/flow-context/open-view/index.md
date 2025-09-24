@@ -11,6 +11,7 @@
 
 - `uid`：标识本次打开的视图的 flowModel。
   - 若 uid 对应的 flowModel 实例不存在，则会添加一个 subModel 到 ctx.model 。
+  - 若打开内部的弹窗，注意保持 uid 稳定，建议使用类似 `${ctx.model.uid}-1` 的 uid 。
 - `options` 关键字段：
   - `mode`: `dialog` | `drawer` | `embed`，默认 `drawer`
   - `size`: `small` | `medium` | `large`，默认 `medium`

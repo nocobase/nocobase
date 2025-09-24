@@ -845,7 +845,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('A');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -876,7 +876,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const dialog = vi.fn((opts: any) => {
       expect(opts.title).toBe('');
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     model.context.defineProperty('viewer', { value: { dialog } });
@@ -908,7 +908,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Function Title');
       expect(opts.width).toBe(800);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -946,7 +946,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Async Function Title');
       expect(opts.width).toBe(900);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -979,7 +979,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Static Title');
       expect(opts.width).toBe(700);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -1014,7 +1014,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(opts.title).toBe('Global Title');
       expect(opts.width).toBe(600);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -1132,7 +1132,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(onCloseSpy).toHaveBeenCalled();
 
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
     const dialog = vi.fn();
@@ -1203,7 +1203,7 @@ describe('FlowSettings.open rendering behavior', () => {
       expect(mockTarget.style.maxWidth).toBe('800px'); // default maxWidth
 
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1247,7 +1247,7 @@ describe('FlowSettings.open rendering behavior', () => {
     const embed = vi.fn((opts: any) => {
       expect(opts.target).toBeNull();
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1294,7 +1294,7 @@ describe('FlowSettings.open rendering behavior', () => {
       // Should fallback to default 'dialog' when function throws error
       expect(typeof opts.title === 'string').toBe(true);
       const dlg = { close: vi.fn(), Footer: (p: any) => null } as any;
-      if (typeof opts.content === 'function') opts.content(dlg);
+      if (typeof opts.content === 'function') opts.content(dlg, { defineMethod: vi.fn() });
       return dlg;
     });
 
@@ -1355,7 +1355,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1427,7 +1427,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1503,7 +1503,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1564,7 +1564,7 @@ describe('FlowSettings.open rendering behavior', () => {
       } as any;
 
       if (typeof opts.content === 'function') {
-        opts.content(dlg);
+        opts.content(dlg, { defineMethod: vi.fn() });
       }
       return dlg;
     });
@@ -1627,7 +1627,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1689,7 +1689,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1750,7 +1750,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1798,7 +1798,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1849,7 +1849,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
@@ -1892,7 +1892,7 @@ describe('FlowSettings.open rendering behavior', () => {
         dialog: ({ content }) => {
           capturedDialog = { close: vi.fn(), Footer: (p: any) => null };
           if (typeof content === 'function') {
-            content(capturedDialog);
+            content(capturedDialog, { defineMethod: vi.fn() });
           }
           return capturedDialog;
         },
