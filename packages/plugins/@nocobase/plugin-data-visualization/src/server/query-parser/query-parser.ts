@@ -109,7 +109,7 @@ export class QueryParser {
 
       const queryParams = {
         where,
-        attributes: [...measureAttributes, ...dimensionAttributes],
+        attributes: [...dimensionAttributes, ...measureAttributes],
         include,
         group,
         order,
