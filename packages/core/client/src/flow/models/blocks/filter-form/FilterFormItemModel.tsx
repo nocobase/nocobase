@@ -112,13 +112,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
             style={{ margin: '-5px -24px -5px -12px', padding: '5px 24px 5px 12px' }}
             onMouseEnter={() => {
               const modelEl = model.context.ref?.current;
-              if (modelEl) {
+              if (modelEl instanceof HTMLElement) {
                 modelEl.style.outline = `2px solid ${model.context.themeToken.colorPrimaryBorder}`;
               }
             }}
             onMouseLeave={() => {
               const modelEl = model.context.ref?.current;
-              if (modelEl) {
+              if (modelEl instanceof HTMLElement) {
                 modelEl.style.outline = 'none';
               }
             }}
