@@ -1540,6 +1540,8 @@ export class FlowRuntimeContext<
       const runner = new JSRunner({
         globals: {
           ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
           ...variables,
         },
       });
