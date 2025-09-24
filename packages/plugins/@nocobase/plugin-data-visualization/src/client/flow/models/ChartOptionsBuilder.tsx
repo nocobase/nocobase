@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+// 顶部引入：移除 Row/Col
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, InputNumber, Checkbox, Space, Divider, Typography, Form } from 'antd';
 import { useT } from '../../locale';
+import { Row, Col } from 'antd';
 
 const { Text } = Typography;
 
@@ -124,10 +126,12 @@ export const ChartOptionsBuilder: React.FC<{
         </Form.Item>
 
         <Divider style={{ margin: '8px 0' }} />
+
         {/* 图表属性 */}
-        {getChartFormItem(type, { t, fieldOptions, builder })}
+        {getChartFormItems(type, { t, fieldOptions, builder })}
 
         <Divider style={{ margin: '8px 0' }} />
+
         {/* 公共属性 */}
         <Text strong style={{ display: 'block', marginBottom: 6 }}>
           {t('Common')}
@@ -149,7 +153,7 @@ export const ChartOptionsBuilder: React.FC<{
   );
 };
 
-const getChartFormItem = (
+const getChartFormItems = (
   type: 'line' | 'bar' | 'pie' = 'line',
   options: {
     t: (s: string) => string;
@@ -163,15 +167,18 @@ const getChartFormItem = (
       <>
         {/* required */}
         <Form.Item label="xField" name="xField" required>
-          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
         </Form.Item>
+
         <Form.Item label="yField" name="yField" required>
-          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
         </Form.Item>
+
         {/* optional */}
         <Form.Item label="seriesField" name="seriesField">
-          <Select allowClear placeholder={t('Optional series')} style={{ minWidth: 160 }} options={fieldOptions} />
+          <Select style={{ width: 160 }} allowClear placeholder={t('Optional series')} options={fieldOptions} />
         </Form.Item>
+
         {type === 'line' ? (
           <Form.Item name="smooth" valuePropName="checked" colon={false} label=" ">
             <Checkbox>{t('Smooth')}</Checkbox>
@@ -190,19 +197,23 @@ const getChartFormItem = (
       <>
         {/* required */}
         <Form.Item label={t('Category')} name="pieCategory" required>
-          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
         </Form.Item>
+
         <Form.Item label={t('Value field')} name="pieValue" required>
-          <Select placeholder={t('Select field')} style={{ minWidth: 160 }} options={fieldOptions} />
+          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
         </Form.Item>
+
         {/* optional */}
         <Form.Item label={t('Inner radius (%)')} name="pieRadiusInner">
           <InputNumber min={0} max={100} style={{ width: 120 }} />
         </Form.Item>
+
         <Form.Item label={t('Outer radius (%)')} name="pieRadiusOuter">
           <InputNumber min={0} max={100} style={{ width: 120 }} />
         </Form.Item>
       </>
     );
   }
+  return null;
 };
