@@ -9,7 +9,7 @@
 
 import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
-import { AuthErrorCode } from '../auth';
+import { AuthErrorCode } from '../constants';
 
 describe('base-auth', () => {
   it('should validate username', () => {
