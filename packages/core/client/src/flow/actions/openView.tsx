@@ -162,14 +162,21 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
-              if (params.afterModelInit) {
-                params.afterModelInit(pageModel);
-              }
+              const defineProperties = inputArgs.defineProperties || {};
+              const defineMethods = inputArgs.defineMethods || {};
+
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
               });
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'embed',
+              });
+
+              Object.entries(defineProperties as Record<string, any>).forEach(([key, p]) => {
+                pageModel.context.defineProperty(key, p);
+              });
+              Object.entries(defineMethods as Record<string, any>).forEach(([key, method]) => {
+                pageModel.context.defineMethod(key, method);
               });
 
               pageModel.invalidateAutoFlowCache(true);

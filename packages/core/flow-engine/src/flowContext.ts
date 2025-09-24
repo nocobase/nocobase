@@ -1390,6 +1390,19 @@ export class FlowModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('openView', async function (uid: string, options) {
+      const model = this.engine.loadOrCreateModel({
+        uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
+        use: 'PopupActionModel',
+        parentId: this.model.uid,
+        subType: 'object',
+        subKey: uid,
+      });
+      await model.dispatchEvent('openView', {
+        navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        ...options,
+      });
+    });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
     });
