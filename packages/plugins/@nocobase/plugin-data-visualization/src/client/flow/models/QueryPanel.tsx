@@ -20,7 +20,7 @@ import { configStore } from './config-store';
 import { ResultPanel } from './ResultPanel';
 import { parseField, removeUnparsableFilter } from '../../utils';
 
-const QueryMode: React.FC = connect(({ value = 'sql', onChange, onClick }) => {
+const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
   return (
     <Radio.Group
@@ -30,10 +30,10 @@ const QueryMode: React.FC = connect(({ value = 'sql', onChange, onClick }) => {
         onChange(value);
       }}
     >
-      <Radio.Button value="builder" onClick={() => onClick?.('builder')}>
+      <Radio.Button value="builder" onClick={() => onClick?.()}>
         <BuildOutlined /> {t('Query builder')}
       </Radio.Button>
-      <Radio.Button value="sql" onClick={() => onClick?.('sql')}>
+      <Radio.Button value="sql" onClick={() => onClick?.()}>
         <ConsoleSqlOutlined /> {t('SQL')}
       </Radio.Button>
     </Radio.Group>
@@ -46,7 +46,7 @@ export const QueryPanel: React.FC = observer(() => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useFlowSettingsContext();
-  const mode = form?.values?.query?.mode || 'sql';
+  const mode = form?.values?.query?.mode || 'builder';
 
   const [showResult, setShowResult] = React.useState(false);
   const [running, setRunning] = React.useState(false);
@@ -56,7 +56,7 @@ export const QueryPanel: React.FC = observer(() => {
       setRunning(true);
       const uid = ctx.model.uid;
 
-      if ((form?.values?.query?.mode || 'sql') === 'sql') {
+      if (form?.values?.query?.mode === 'sql') {
         const sql = form.values?.query?.sql;
         if (!sql) return;
         const result = await ctx.sql.run(sql);
