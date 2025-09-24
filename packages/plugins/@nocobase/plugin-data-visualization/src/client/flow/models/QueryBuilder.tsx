@@ -114,6 +114,83 @@ export const QueryBuilder: React.FC = observer(() => {
         defaultActiveKey={['measures']}
         style={{ border: 'none', boxShadow: 'none' }}
       >
+        {/* Dimensions */}
+        <Collapse.Panel
+          key="dimensions"
+          header={t('Dimensions')}
+          style={{ background: token.colorBgContainer, marginBottom: 8 }}
+        >
+          <ArrayField name="dimensions">
+            {(field) => (
+              <>
+                <div style={{ overflow: 'auto' }}>
+                  {field.value?.map((item, index) => (
+                    <ObjectField name={index} key={index}>
+                      <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }}>
+                        <Field
+                          name="field"
+                          required
+                          decorator={[FormItemLite]}
+                          component={[
+                            CascaderAdapter,
+                            {
+                              placeholder: t('Select Field'),
+                              fieldNames: { label: 'title', value: 'name', children: 'children' },
+                              dataSource: fieldOptions,
+                              style: { minWidth: 100 },
+                            },
+                          ]}
+                        />
+                        <Field
+                          name="format"
+                          decorator={[FormItemLite]}
+                          reactions={[
+                            useFormatterOptions,
+                            (f) => {
+                              // 仅当存在可选项时显示
+                              // @ts-ignore
+                              f.visible = !!(f.dataSource && f.dataSource.length);
+                            },
+                          ]}
+                          component={[SelectAdapter, { placeholder: t('Format'), style: { maxWidth: 120 } }]}
+                        />
+                        <Field
+                          name="alias"
+                          decorator={[FormItemLite]}
+                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 100 } }]}
+                        />
+                        <Button
+                          size="small"
+                          type="text"
+                          onClick={() => field.remove(index)}
+                          icon={<DeleteOutlined />}
+                        />
+                        <Button
+                          size="small"
+                          type="text"
+                          disabled={index === 0}
+                          onClick={() => field.moveUp(index)}
+                          icon={<ArrowUpOutlined />}
+                        />
+                        <Button
+                          size="small"
+                          type="text"
+                          disabled={index === (field.value?.length ?? 0) - 1}
+                          onClick={() => field.moveDown(index)}
+                          icon={<ArrowDownOutlined />}
+                        />
+                      </Space>
+                    </ObjectField>
+                  ))}
+                </div>
+                <Button type="dashed" icon={<PlusOutlined />} onClick={() => field.push({})}>
+                  {t('Add field')}
+                </Button>
+              </>
+            )}
+          </ArrayField>
+        </Collapse.Panel>
+
         {/* Measures */}
         <Collapse.Panel
           key="measures"
@@ -169,83 +246,6 @@ export const QueryBuilder: React.FC = observer(() => {
                           decorator={[FormItemLite]}
                           component={[CheckboxAdapter]}
                           content={t('Distinct')}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          onClick={() => field.remove(index)}
-                          icon={<DeleteOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === 0}
-                          onClick={() => field.moveUp(index)}
-                          icon={<ArrowUpOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === (field.value?.length ?? 0) - 1}
-                          onClick={() => field.moveDown(index)}
-                          icon={<ArrowDownOutlined />}
-                        />
-                      </Space>
-                    </ObjectField>
-                  ))}
-                </div>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => field.push({})}>
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </ArrayField>
-        </Collapse.Panel>
-
-        {/* Dimensions */}
-        <Collapse.Panel
-          key="dimensions"
-          header={t('Dimensions')}
-          style={{ background: token.colorBgContainer, marginBottom: 8 }}
-        >
-          <ArrayField name="dimensions">
-            {(field) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {field.value?.map((item, index) => (
-                    <ObjectField name={index} key={index}>
-                      <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }}>
-                        <Field
-                          name="field"
-                          required
-                          decorator={[FormItemLite]}
-                          component={[
-                            CascaderAdapter,
-                            {
-                              placeholder: t('Select Field'),
-                              fieldNames: { label: 'title', value: 'name', children: 'children' },
-                              dataSource: fieldOptions,
-                              style: { minWidth: 100 },
-                            },
-                          ]}
-                        />
-                        <Field
-                          name="format"
-                          decorator={[FormItemLite]}
-                          reactions={[
-                            useFormatterOptions,
-                            (f) => {
-                              // 仅当存在可选项时显示
-                              // @ts-ignore
-                              f.visible = !!(f.dataSource && f.dataSource.length);
-                            },
-                          ]}
-                          component={[SelectAdapter, { placeholder: t('Format'), style: { maxWidth: 120 } }]}
-                        />
-                        <Field
-                          name="alias"
-                          decorator={[FormItemLite]}
-                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 100 } }]}
                         />
                         <Button
                           size="small"

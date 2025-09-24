@@ -6,16 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-// 顶部引入：移除 Row/Col
 import React, { useEffect, useMemo, useState } from 'react';
-import { Select, InputNumber, Checkbox, Space, Divider, Typography, Form } from 'antd';
+import { Select, InputNumber, Checkbox, Divider, Form } from 'antd';
 import { useT } from '../../locale';
-import { Row, Col } from 'antd';
-
-const { Text } = Typography;
-
-// 顶部模块作用域：替换内联函数为从 service 引入
 import { genRawByBuilder, normalizeBuilder, applyTypeChange, buildFieldOptions } from './ChartOptionsBuilder.service';
 
 export const ChartOptionsBuilder: React.FC<{
@@ -133,9 +126,6 @@ export const ChartOptionsBuilder: React.FC<{
         <Divider style={{ margin: '8px 0' }} />
 
         {/* 公共属性 */}
-        <Text strong style={{ display: 'block', marginBottom: 6 }}>
-          {t('Common')}
-        </Text>
         <Form.Item label={t('Height')} name="height">
           <InputNumber min={100} style={{ width: 120 }} />
         </Form.Item>
