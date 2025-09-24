@@ -1401,6 +1401,7 @@ export class FlowModelContext extends BaseFlowModelContext {
           subType: 'object',
           subKey: uid,
         });
+        await model.save();
       }
       await model.dispatchEvent('click', {
         navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false

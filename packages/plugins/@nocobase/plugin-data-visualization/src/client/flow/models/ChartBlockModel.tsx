@@ -15,8 +15,6 @@ import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
 import { Button } from 'antd';
 import { useT } from '../../locale';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import ctx from 'packages/core/client/docs/zh-CN/examples/flow-definition/ui-schema-custom-component/ctx';
 import { useForm } from '@formily/react';
 
 type ChartBlockModelStructure = {
@@ -60,15 +58,6 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.context.defineProperty('data', {
       get: () => convertDatasetFormats(this.resource.getData()),
       cache: false,
-    });
-
-    this.context.defineMethod('openView', async (params) => {
-      const { mode, size, ...rest } = params || {};
-      this.dispatchEvent('openView', {
-        mode: mode || 'dialog',
-        size: size || 'large',
-        ...rest,
-      });
     });
   }
 
@@ -208,22 +197,6 @@ ChartBlockModel.registerFlow({
             ctx.runjs(rawEvents, { chart: ctx.ref.current });
           });
         }
-      },
-    },
-  },
-});
-
-ChartBlockModel.registerFlow({
-  key: 'popupSettings',
-  on: 'openView',
-  steps: {
-    openView: {
-      use: 'openView',
-      hideInSettings: true,
-      defaultParams(ctx) {
-        return {
-          navigation: false,
-        };
       },
     },
   },
