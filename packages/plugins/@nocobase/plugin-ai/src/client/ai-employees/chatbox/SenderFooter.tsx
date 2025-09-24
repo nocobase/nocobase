@@ -7,23 +7,47 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Divider, Flex } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { Button, Divider, Flex, GetRef } from 'antd';
 import { Upload } from './Upload';
 import { AddContextButton } from '../AddContextButton';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxStore } from './stores/chat-box';
+import _ from 'lodash';
 
 export const SenderFooter: React.FC<{
   components: any;
-}> = ({ components }) => {
+  handleSubmit: (content: string) => void;
+}> = ({ components, handleSubmit }) => {
   const { SendButton, LoadingButton } = components;
-
+  const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
   const currentEmployee = useChatBoxStore.use.currentEmployee();
 
   const loading = useChatMessagesStore.use.responseLoading();
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const removeContextItem = useChatMessagesStore.use.removeContextItem();
+
+  const senderValue = useChatBoxStore.use.senderValue();
+  const contextItems = useChatMessagesStore.use.contextItems();
+  const handleEmptySubmit = () => {
+    if (_.isEmpty(senderValue) && contextItems.length) {
+      handleSubmit('');
+    }
+  };
+
+  const senderRef = useChatBoxStore.use.senderRef();
+  useEffect(() => {
+    if (senderRef?.current?.nativeElement) {
+      senderRef.current.nativeElement.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (_.isEmpty(senderValue) && contextItems.length) {
+            senderButtonRef.current?.click();
+          }
+        }
+      };
+    }
+  }, [senderRef, senderValue, contextItems]);
 
   return (
     <Flex justify="space-between" align="center">
@@ -38,7 +62,11 @@ export const SenderFooter: React.FC<{
         <Upload />
       </Flex>
       <Flex align="center">
-        {loading ? <LoadingButton type="default" /> : <SendButton type="primary" disabled={false} />}
+        {loading ? (
+          <LoadingButton type="default" />
+        ) : (
+          <SendButton ref={senderButtonRef} type="primary" disabled={false} onClick={handleEmptySubmit} />
+        )}
       </Flex>
     </Flex>
   );

@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Sender as AntSender } from '@ant-design/x';
-import { GetRef, Button } from 'antd';
+import { GetRef } from 'antd';
 import { useT } from '../../locale';
 import { SenderFooter } from './SenderFooter';
 import { SenderHeader } from './SenderHeader';
@@ -64,7 +64,6 @@ export const Sender: React.FC = () => {
   const t = useT();
   const [handleSubmit] = useSendMessage();
   const senderRef = useRef<GetRef<typeof AntSender> | null>(null);
-  const senderButtonRef = useRef<GetRef<typeof Button> | null>(null);
 
   const senderValue = useChatBoxStore.use.senderValue();
   const setSenderValue = useChatBoxStore.use.setSenderValue();
@@ -91,18 +90,6 @@ export const Sender: React.FC = () => {
     setValue(senderValue);
   }, [senderValue]);
 
-  const contextItems = useChatMessagesStore.use.contextItems();
-  useEffect(() => {
-    senderRef.current.nativeElement.onkeydown = (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (_.isEmpty(senderValue) && contextItems.length) {
-          senderButtonRef.current.click();
-        }
-      }
-    };
-  }, [senderValue, contextItems]);
-
   return (
     <AntSender
       // components={{
@@ -117,24 +104,7 @@ export const Sender: React.FC = () => {
       onCancel={cancelRequest}
       header={<SenderHeader />}
       loading={responseLoading}
-      footer={({ components }) => {
-        const { SendButton } = components;
-        if (SendButton) {
-          const DecoratedSendButton = (props) => {
-            const senderValue = useChatBoxStore.use.senderValue();
-            const contextItems = useChatMessagesStore.use.contextItems();
-            const [handleSubmit] = useSendMessage();
-            const handleEmptySubmit = () => {
-              if (_.isEmpty(senderValue) && contextItems.length) {
-                handleSubmit('');
-              }
-            };
-            return <SendButton ref={senderButtonRef} {...props} onClick={handleEmptySubmit} />;
-          };
-          components.SendButton = DecoratedSendButton;
-        }
-        return <SenderFooter components={components} />;
-      }}
+      footer={({ components }) => <SenderFooter components={components} handleSubmit={handleSubmit} />}
       disabled={!currentEmployee}
       // placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
       actions={false}
