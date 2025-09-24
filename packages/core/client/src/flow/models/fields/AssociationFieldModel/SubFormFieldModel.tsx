@@ -11,7 +11,7 @@ import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -40,8 +40,18 @@ export const ObjectNester = (props) => {
     fork.context.defineProperty('fieldIndex', {
       get: () => rowIndex,
     });
+
     return fork;
   }, [gridModel, rowIndex]);
+  useEffect(() => {
+    grid.mapSubModels('items', (item) => {
+      item.setProps({ disabled: props.disabled });
+    });
+    grid.context.defineProperty('parentDisabled', {
+      get: () => props.disabled,
+      cache: false,
+    });
+  }, [props.disabled]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />
@@ -70,7 +80,7 @@ SubFormFieldModel.define({
   },
 });
 
-const ArrayNester = ({ name, value }: any) => {
+const ArrayNester = ({ name, value, disabled }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
@@ -78,6 +88,19 @@ const ArrayNester = ({ name, value }: any) => {
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
   const collectionName = model.context.collectionField.name;
+  useEffect(() => {
+    gridModel.forks.forEach((fork) => {
+      fork.mapSubModels('items', (item) => {
+        item.setProps({ disabled: disabled });
+      });
+      fork.rerender();
+    });
+    gridModel.context.defineProperty('parentDisabled', {
+      get: () => disabled,
+      cache: false,
+    });
+  }, [disabled]);
+
   return (
     <Card
       bordered={true}
@@ -101,7 +124,6 @@ const ArrayNester = ({ name, value }: any) => {
                 });
                 forksRef.current[uid] = fork;
               }
-
               return (
                 <div key={uid} style={{ marginBottom: 12 }}>
                   <div style={{ textAlign: 'right' }}>
@@ -121,7 +143,7 @@ const ArrayNester = ({ name, value }: any) => {
                 </div>
               );
             })}
-            <Button type="link" onClick={() => add()}>
+            <Button type="link" onClick={() => add()} disabled={disabled}>
               <PlusOutlined />
               {t('Add new')}
             </Button>

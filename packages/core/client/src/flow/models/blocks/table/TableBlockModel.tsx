@@ -370,6 +370,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
+        pageSize,
         total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {
