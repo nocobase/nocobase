@@ -1209,11 +1209,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
-    this.defineMethod('createJSRunner', (options) => {
+    this.defineMethod('createJSRunner', function (options) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       return new JSRunner({
         ...options,
         globals: {
-          ctx: this,
+          ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
           ...options?.globals,
         },
       });
@@ -1253,18 +1256,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     // Helper: build server contextParams for variables:resolve
     this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {
       return _buildServerContextParams(this, input);
-    });
-    this.defineMethod('runjs', function (code, variables) {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...variables,
-        },
-      });
-      return runner.run(code);
     });
     this.defineMethod('getAction', function (this: BaseFlowEngineContext, name: string) {
       return this.engine.getAction(name);
@@ -1469,17 +1460,6 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
-    this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          ...variables,
-        },
-      });
-      return runner.run(code);
-    });
   }
 }
 
@@ -1535,16 +1515,7 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...variables,
-        },
-      });
+      const runner = this.createJSRunner();
       return runner.run(code);
     });
   }
