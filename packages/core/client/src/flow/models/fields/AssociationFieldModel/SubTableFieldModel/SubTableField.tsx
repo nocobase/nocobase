@@ -7,15 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined } from '@ant-design/icons';
-import { Table, Form } from 'antd';
+import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
+import { Table, Form, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React from 'react';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
-  const { value = [], onChange, columns, disabled, allowAddNew, components } = props;
+  const {
+    value = [],
+    onChange,
+    columns,
+    disabled,
+    allowAddNew,
+    components,
+    allowSelectExistingRecord,
+    onSelectExitRecordClick,
+  } = props;
   // 新增一行
   const handleAdd = () => {
     const newRow = {};
@@ -89,11 +98,18 @@ export function SubTableField(props) {
         }}
         components={components || {}}
       />
-      {!disabled && allowAddNew !== false && (
-        <a onClick={handleAdd} style={{ marginTop: 8 }}>
-          <PlusOutlined /> {t('Add new')}
-        </a>
-      )}
+      <Space>
+        {!disabled && allowAddNew !== false && (
+          <a onClick={handleAdd} style={{ marginTop: 8 }}>
+            <PlusOutlined /> {t('Add new')}
+          </a>
+        )}
+        {!disabled && allowSelectExistingRecord && (
+          <a onClick={onSelectExitRecordClick} style={{ marginTop: 8 }}>
+            <ZoomInOutlined /> {t('Select record')}
+          </a>
+        )}
+      </Space>
     </Form.Item>
   );
 }
