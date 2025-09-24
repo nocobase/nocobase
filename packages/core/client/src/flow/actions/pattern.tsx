@@ -39,7 +39,7 @@ export const pattern = defineAction({
   defaultParams: (ctx) => {
     return {
       pattern:
-        !ctx.model.collectionField.inputable ||
+        ctx.model.collectionField.inputable === false ||
         ctx.model.context.parentDisabled ||
         ctx.model.props.disabled ||
         ctx.model.collectionField.readonly
