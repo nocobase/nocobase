@@ -96,7 +96,7 @@ export const openView = defineAction({
               setFieldDisabled('tabUid', false);
               return;
             }
-            const readParam = (k: string) => (params[k] !== undefined ? params[k] : params?.dataParams?.[k]);
+            const readParam = (k: string) => params[k];
             keys.forEach((k) => {
               const v = readParam(k as string);
               if (v !== undefined) {
@@ -488,26 +488,13 @@ export const openView = defineAction({
         );
       },
     },
-    // Keep legacy dataParams group hidden for backward-compat saved params
-    dataParams: {
-      type: 'void',
-      title: '数据参数',
-      'x-decorator': 'FormItem',
-      'x-component': 'FormLayout',
-      'x-reactions': {
-        fulfill: { state: { hidden: true } },
-      },
-    },
   },
   defaultParams: (ctx) => {
-    // 根据上下文情况动态提供默认变量，尽量避免在“无记录上下文”时显示错误的默认值
-    const key = ctx.collection.filterTargetKey || 'id';
-    const recordKeyPath = typeof key === 'string' && key ? key : 'id';
-    // 判断是否存在 record 变量上下文（在集合场景通常不存在）
-    let hasRecord = false;
-    const tree = ctx.getPropertyMetaTree() || [];
-    hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
-    const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
+    // 根据集合上下文决定是否提供默认 filterByTk；无集合则不提供
+    const col = ctx.collection;
+    const recordKeyPath =
+      col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
+    const filterByTkExpr = col ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
     // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
     // 否则不设置，避免出现无效的默认变量。
     let sourceIdExpr: string | undefined = undefined;
@@ -519,8 +506,8 @@ export const openView = defineAction({
     } catch (_) {
       // ignore
     }
-    const defaultDSKey = ctx.collection?.dataSourceKey;
-    const defaultCol = ctx.collection.name;
+    const defaultDSKey = col?.dataSourceKey;
+    const defaultCol = col?.name;
     return {
       mode: 'drawer',
       size: 'medium',
@@ -548,24 +535,23 @@ export const openView = defineAction({
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
       await ctx.openView(params.uid, {
         target: ctx.inputArgs.target || ctx.layoutContentElement,
-        dataSourceKey: params.dataSourceKey ?? params?.dataParams?.dataSourceKey ?? actionDefaults.dataSourceKey,
-        collectionName: params.collectionName ?? params?.dataParams?.collectionName ?? actionDefaults.collectionName,
-        associationName:
-          params.associationName ?? params?.dataParams?.associationName ?? actionDefaults.associationName,
-        filterByTk: params.filterByTk ?? params?.dataParams?.filterByTk ?? actionDefaults.filterByTk,
-        sourceId: params.sourceId ?? params?.dataParams?.sourceId ?? actionDefaults.sourceId,
+        dataSourceKey: params.dataSourceKey ?? actionDefaults.dataSourceKey,
+        collectionName: params.collectionName ?? actionDefaults.collectionName,
+        associationName: params.associationName ?? actionDefaults.associationName,
+        filterByTk: params.filterByTk ?? actionDefaults.filterByTk,
+        sourceId: params.sourceId ?? actionDefaults.sourceId,
         tabUid: params.tabUid,
       });
       return;
     }
     const inputArgs = ctx.inputArgs || {};
 
-    if (params.filterByTk || params?.dataParams?.filterByTk) {
-      inputArgs.filterByTk = params.filterByTk ?? params?.dataParams?.filterByTk;
+    if (params.filterByTk) {
+      inputArgs.filterByTk = params.filterByTk;
     }
 
-    if (params.sourceId || params?.dataParams?.sourceId) {
-      inputArgs.sourceId = params.sourceId ?? params?.dataParams?.sourceId;
+    if (params.sourceId) {
+      inputArgs.sourceId = params.sourceId;
     }
 
     if (params.tabUid) {
@@ -634,9 +620,9 @@ export const openView = defineAction({
     const finalInputArgs: Record<string, unknown> = {
       ...ctx.inputArgs,
       ...inputArgs,
-      dataSourceKey: params.dataSourceKey ?? params?.dataParams?.dataSourceKey,
-      collectionName: params.collectionName ?? params?.dataParams?.collectionName,
-      associationName: params.associationName ?? params?.dataParams?.associationName,
+      dataSourceKey: params.dataSourceKey,
+      collectionName: params.collectionName,
+      associationName: params.associationName,
       tabUid: params.tabUid,
       openerUids,
     };
