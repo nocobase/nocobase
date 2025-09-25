@@ -54,9 +54,9 @@ export const ChartOptionsBuilder: React.FC<{
   };
 
   // builder 变化 -> 同步 raw（保留这一处）
-  useEffect(() => {
-    onRawChange?.(genRawByBuilder(builder));
-  }, [builder, onRawChange]);
+  // useEffect(() => {
+  //   onRawChange?.(genRawByBuilder(builder));
+  // }, [builder, onRawChange]);
 
   const type = Form.useWatch('type', form) ?? builder?.type ?? 'line';
   const fieldOptions = useMemo(() => buildFieldOptions(columns), [columns]);
