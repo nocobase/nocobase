@@ -504,7 +504,6 @@ export class Gateway extends EventEmitter {
     this.wsServer?.close();
   }
 
-  // TODO
   private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
     [];
 

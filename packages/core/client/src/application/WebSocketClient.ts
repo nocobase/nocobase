@@ -45,7 +45,8 @@ export class WebSocketClient {
       lastMessage: observable.ref,
     });
   }
-  // TODO 插件与主仓耦合了 此处代码需重新设计
+
+  // TODO for plugin-multi-app
   getSubAppName = (app: Application) => {
     const publicPath = app.getPublicPath();
     const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
@@ -64,7 +65,7 @@ export class WebSocketClient {
 
     let queryString = '';
     if (this.getSubAppName(this.app)) {
-      queryString = `?_app=${this.getSubAppName(this.app)}`; // 新多应用 TODO 支持域名解析
+      queryString = `?_app=${this.getSubAppName(this.app)}`;
     } else {
       const subApp = getSubAppName(this.app.getPublicPath());
       queryString = subApp ? `?__appName=${subApp}` : '';
