@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip, Space } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -774,10 +774,10 @@ export const InternalAdminLayout = () => {
             route={route}
             actionsRender={actionsRender}
             logo={
-              <Space>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 {AppsComponent && <AppsComponent />}
                 <NocoBaseLogo />
-              </Space>
+              </div>
             }
             title={''}
             layout="mix"
