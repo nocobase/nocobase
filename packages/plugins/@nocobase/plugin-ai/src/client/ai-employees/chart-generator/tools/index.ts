@@ -7,7 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './form-filler';
-export * from './workflow-caller';
-export * from './data-modeling';
-export * from './chart-generator';
+import { ToolOptions } from '../../../manager/ai-manager';
+import { Echarts } from '../ui/ECharts';
+
+export const chartGeneratorTool: [string, string, ToolOptions] = [
+  'others',
+  'chartGenerator',
+  {
+    ui: {
+      card: Echarts,
+    },
+  },
+];
