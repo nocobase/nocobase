@@ -13,7 +13,7 @@ import { useT } from '../../locale';
 import { RolesManagerContext } from '@nocobase/plugin-acl/client';
 import { createForm, onFormValuesChange, Form } from '@formily/core';
 import { useMemoizedFn } from 'ahooks';
-import { message, Table, Checkbox, Avatar } from 'antd';
+import { message, Table, Checkbox, Avatar, Tag } from 'antd';
 import { avatars } from '../avatars';
 import { AIEmployee } from '../types';
 
@@ -123,6 +123,15 @@ export const Permissions: React.FC<{
           {
             dataIndex: 'username',
             title: t('Username'),
+          },
+          {
+            dataIndex: 'position',
+            title: t('Position'),
+          },
+          {
+            dataIndex: 'modelSettings',
+            title: t('Model'),
+            render: (value) => value?.model && <Tag>{value?.model}</Tag>,
           },
           {
             dataIndex: 'available',
