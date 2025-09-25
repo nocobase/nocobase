@@ -15,8 +15,7 @@ import { FlowModel } from '../../models';
 import { useFlowEngine } from '../../provider';
 import { PersistOptions } from '../../types';
 
-export * from './getMousePositionOnElement';
-export * from './moveBlock';
+export * from './findModelUidPosition';
 
 export const EMPTY_COLUMN_UID = 'EMPTY_COLUMN';
 
