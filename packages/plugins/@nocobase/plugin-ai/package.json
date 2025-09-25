@@ -21,7 +21,7 @@
     "@langchain/core": "^0.3.61",
     "@langchain/deepseek": "^0.0.2",
     "@langchain/google-genai": "^0.2.16",
-    "@langchain/openai": "^0.5.16",
+    "@langchain/openai": "^0.6.13",
     "@nocobase/ai-employee-avatars": "^1.0.2",
     "@xyflow/react": "^12.7.0",
     "echarts": "^5.5.0",
@@ -34,6 +34,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "use-context-selector": "^2.0.0",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "jsonrepair": "3.13.1"
   }
 }
