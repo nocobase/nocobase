@@ -489,12 +489,16 @@ export const openView = defineAction({
       },
     },
   },
-  defaultParams: (ctx) => {
-    // 根据集合上下文决定是否提供默认 filterByTk；无集合则不提供
-    const col = ctx.collection;
+  defaultParams: async (ctx) => {
+    // 当存在 ctx.record 上下文时提供默认 filterByTk；否则不提供
+    const tree = ctx.getPropertyMetaTree() || [];
+    const hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
+    const col = (ctx as any)?.collection;
+
+    // 决定主键字段：优先使用集合的 filterTargetKey；否则直接回退 'id'
     const recordKeyPath =
-      col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
-    const filterByTkExpr = col ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
+      hasRecord && col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
+    const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
     // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
     // 否则不设置，避免出现无效的默认变量。
     let sourceIdExpr: string | undefined = undefined;
@@ -513,7 +517,7 @@ export const openView = defineAction({
       size: 'medium',
       pageModelClass: 'ChildPageModel',
       uid: ctx.model?.uid,
-      // Provide default variable expressions to reduce manual input
+      // 当存在 ctx.record 时提供默认 filterByTk
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
       ...(defaultDSKey ? { dataSourceKey: defaultDSKey } : {}),

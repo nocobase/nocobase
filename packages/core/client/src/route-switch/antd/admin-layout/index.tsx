@@ -60,6 +60,7 @@ import { KeepAlive, useKeepAlive } from './KeepAlive';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { userCenterSettings } from './userCenterSettings';
+import { useApplications } from './useApplications';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
@@ -693,6 +694,7 @@ export const InternalAdminLayout = () => {
   const { t } = useMenuTranslation();
   const designable = isMobileLayout ? false : _designable;
   const { styles } = useHeaderStyle();
+  const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
     const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t });
@@ -771,7 +773,12 @@ export const InternalAdminLayout = () => {
             location={location}
             route={route}
             actionsRender={actionsRender}
-            logo={<NocoBaseLogo />}
+            logo={
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {AppsComponent && <AppsComponent />}
+                <NocoBaseLogo />
+              </div>
+            }
             title={''}
             layout="mix"
             splitMenus

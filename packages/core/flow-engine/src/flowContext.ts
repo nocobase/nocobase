@@ -1406,6 +1406,10 @@ export class FlowModelContext extends BaseFlowModelContext {
         });
         await model.save();
       }
+      const parentView = this.view;
+      if (parentView) {
+        model.context.defineProperty('view', { get: () => parentView });
+      }
       await model.dispatchEvent('click', {
         // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法

@@ -101,7 +101,6 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
   }
 
   > .nb-toolbar-container {
-    transition: opacity 0.2s ease;
     position: absolute;
     top: 0;
     bottom: 0;
@@ -190,7 +189,6 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
       pointer-events: all;
       background: var(--colorSettings);
       opacity: 0.6;
-      transition: opacity 0.2s ease;
       border-radius: 4px;
       display: flex;
       align-items: center;
