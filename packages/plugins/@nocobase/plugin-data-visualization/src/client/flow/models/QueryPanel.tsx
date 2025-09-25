@@ -15,10 +15,11 @@ import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
 import { useAPIClient } from '@nocobase/client';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
 import { ResultPanel } from './ResultPanel';
-import { parseField, removeUnparsableFilter } from '../../utils';
+import { ChartBlockModel } from './ChartBlockModel';
+import { ChartResource } from '../resources/ChartResource';
+import { SQLResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 
 const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
@@ -45,7 +46,7 @@ export const QueryPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
   const api = useAPIClient();
-  const ctx = useFlowSettingsContext();
+  const ctx = useFlowSettingsContext<ChartBlockModel>();
   const mode = form?.values?.query?.mode || 'builder';
 
   const [showResult, setShowResult] = React.useState(false);
@@ -59,44 +60,25 @@ export const QueryPanel: React.FC = observer(() => {
       if (form?.values?.query?.mode === 'sql') {
         const sql = form.values?.query?.sql;
         if (!sql) return;
-        const result = await ctx.sql.run(sql);
-        configStore.setResult(uid, result);
+        // 切换为 SQLResource
+        ctx.model.initResource('sql');
+        const resource = ctx.model.resource;
+        if (resource instanceof SQLResource) {
+          resource.setSQL(sql);
+        }
       } else {
-        const collectionPath: string[] | undefined = form?.values?.settings?.collection;
-        const [dataSource, collection] = collectionPath || [];
-        const query = form?.values?.query || {};
-        if (!(collection && (query?.measures?.length || 0) > 0)) return;
-
-        const res = await api.request({
-          url: 'charts:query',
-          method: 'POST',
-          data: {
-            uid,
-            dataSource,
-            collection,
-            ...query,
-            filter: removeUnparsableFilter(query.filter),
-            dimensions: (query?.dimensions || []).map((item: any) => {
-              const dimension = { ...item };
-              if (item.format && !item.alias) {
-                const { alias } = parseField(item.field);
-                dimension.alias = alias;
-              }
-              return dimension;
-            }),
-            measures: (query?.measures || []).map((item: any) => {
-              const measure = { ...item };
-              if (item.aggregation && !item.alias) {
-                const { alias } = parseField(item.field);
-                measure.alias = alias;
-              }
-              return measure;
-            }),
-          },
-        });
-        configStore.setResult(uid, res?.data?.data);
+        // 切换为 ChartResource（builder）
+        ctx.model.initResource('builder');
+        const resource = ctx.model.resource;
+        if (resource instanceof ChartResource) {
+          resource.setQueryParams(form.values.query);
+        }
       }
+      await ctx.model.resource.refresh();
+      const data = ctx.model.resource.getData();
+      configStore.setResult(uid, data);
     } catch (error: any) {
+      console.error(error);
       const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
       configStore.setError(ctx.model.uid, message);
     } finally {
