@@ -412,10 +412,17 @@ export const openView = defineAction({
         const metaTree = useMemo(() => {
           try {
             const full = ctx.getPropertyMetaTree();
-            // 在关联场景下允许选择 Resource.sourceId；否则仅保留 record
             const nodes = (full || []).filter((n: any) => ['record', 'resource'].includes(String(n?.name)));
-            const hasResource = nodes.some((n: any) => String(n?.name) === 'resource');
-            if (!hasResource && ctx.association) {
+            const hasResourceNode = nodes.some((n: any) => String(n?.name) === 'resource');
+            let hasSourceIdValue = false;
+            try {
+              const sid = ctx?.resource?.getSourceId?.();
+              hasSourceIdValue = sid !== undefined && sid !== null && String(sid) !== '';
+            } catch (_) {
+              // ignore
+            }
+            // 仅当存在实际的 sourceId 值且树中没有 resource 时，注入 Resource -> Source ID
+            if (!hasResourceNode && hasSourceIdValue) {
               nodes.push({
                 name: 'resource',
                 title: ctx.t('Resource'),
@@ -501,9 +508,17 @@ export const openView = defineAction({
     const tree = ctx.getPropertyMetaTree() || [];
     hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
-    // 仅在存在关联上下文时，默认提供 sourceId 表达式（常见于子表/关联场景）；
-    // 其它情况下保持为空，避免与 filterByTk 取值混淆。
-    const sourceIdExpr = ctx.association ? `{{ ctx.resource.sourceId }}` : undefined;
+    // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
+    // 否则不设置，避免出现无效的默认变量。
+    let sourceIdExpr: string | undefined = undefined;
+    try {
+      const sid = (ctx as any)?.resource?.getSourceId?.();
+      if (sid !== undefined && sid !== null && String(sid) !== '') {
+        sourceIdExpr = `{{ ctx.resource.sourceId }}`;
+      }
+    } catch (_) {
+      // ignore
+    }
     const defaultDSKey = ctx.collection?.dataSourceKey;
     const defaultCol = ctx.collection.name;
     return {
