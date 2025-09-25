@@ -117,8 +117,8 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 });
                 forksRef.current[uid] = fork;
               }
-              forksRef.current[uid].mapSubModels('items', (item) => {
-                item.setProps({ disabled: disabled });
+              forksRef.current[uid].setProps({
+                disabled: disabled,
               });
               return (
                 <div key={uid} style={{ marginBottom: 12 }}>
