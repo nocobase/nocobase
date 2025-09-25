@@ -51,7 +51,7 @@ export const titleField = defineAction({
   defaultParams: (ctx: any) => {
     const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
     return {
-      label: titleField,
+      label: ctx.model.props?.titleField || titleField,
     };
   },
   async handler(ctx: any, params) {
@@ -65,7 +65,6 @@ export const titleField = defineAction({
     };
     ctx.model.setProps({ fieldNames: newFieldNames });
     const targetCollectionField = targetCollection.getField(label);
-
     const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
     const use = binding.modelName;
     const model = ctx.model.setSubModel('field', {
