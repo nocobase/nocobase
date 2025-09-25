@@ -21,12 +21,12 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   const prevViewMap = new Map<string, ViewItem>();
   const currentViewMap = new Map<string, ViewItem>();
 
-  prevViewList.forEach((viewItem, index) => {
-    prevViewMap.set(`${viewItem.params.viewUid}_${index}`, viewItem);
+  prevViewList.forEach((viewItem) => {
+    prevViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
   });
 
-  currentViewList.forEach((viewItem, index) => {
-    currentViewMap.set(`${viewItem.params.viewUid}_${index}`, viewItem);
+  currentViewList.forEach((viewItem) => {
+    currentViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
   });
 
   // 找出需要关闭的视图：存在于旧列表但不在新列表中
