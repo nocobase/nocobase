@@ -537,7 +537,9 @@ export const openView = defineAction({
     // If uid differs from current model, delegate to ctx.openView to open that popup
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
+      // 外部弹窗时应该以弹窗发起者为高优先级
       await ctx.openView(params.uid, {
+        ...params,
         target: ctx.inputArgs.target || ctx.layoutContentElement,
         dataSourceKey: params.dataSourceKey ?? actionDefaults.dataSourceKey,
         collectionName: params.collectionName ?? actionDefaults.collectionName,
@@ -550,17 +552,11 @@ export const openView = defineAction({
     }
     const inputArgs = ctx.inputArgs || {};
 
-    if (params.filterByTk) {
-      inputArgs.filterByTk = params.filterByTk;
-    }
+    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk;
 
-    if (params.sourceId) {
-      inputArgs.sourceId = params.sourceId;
-    }
+    inputArgs.sourceId = inputArgs.sourceId || params.sourceId;
 
-    if (params.tabUid) {
-      inputArgs.tabUid = params.tabUid;
-    }
+    inputArgs.tabUid = inputArgs.tabuid || params.tabUid;
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
@@ -568,9 +564,9 @@ export const openView = defineAction({
       if (!ctx.inputArgs.navigation && ctx.view.navigation) {
         ctx.view.navigation.navigateTo({
           viewUid: ctx.model.uid,
-          filterByTk: inputArgs.filterByTk,
-          sourceId: inputArgs.sourceId,
-          tabUid: inputArgs.tabUid,
+          filterByTk: inputArgs.filterByTk ?? params.filterByTk,
+          sourceId: inputArgs.sourceId ?? params.sourceId,
+          tabUid: inputArgs.tabUid ?? params.tabUid,
         });
         return;
       }
@@ -627,7 +623,7 @@ export const openView = defineAction({
       dataSourceKey: params.dataSourceKey,
       collectionName: params.collectionName,
       associationName: params.associationName,
-      tabUid: params.tabUid,
+      tabUid: inputArgs.tabUid ?? params.tabUid,
       openerUids,
     };
 
