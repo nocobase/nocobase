@@ -42,9 +42,10 @@ function RemoteModelRenderer({ options }) {
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-export function RecordPickerContent({ model }) {
+export function RecordPickerContent({ model, toOne }) {
   const ctx = useFlowContext();
   const { Header, Footer } = ctx.view;
+  model._closeView = ctx.view.close;
   return (
     <div>
       <Header title={ctx.t('Select record')} />
@@ -58,17 +59,19 @@ export function RecordPickerContent({ model }) {
           use: 'BlockGridModel',
         }}
       />
-      <Footer>
-        <Button
-          type="primary"
-          onClick={() => {
-            model.change();
-            ctx.view.close();
-          }}
-        >
-          {ctx.t('Submit')}
-        </Button>
-      </Footer>
+      {!toOne && (
+        <Footer>
+          <Button
+            type="primary"
+            onClick={() => {
+              model.change();
+              ctx.view.close();
+            }}
+          >
+            {ctx.t('Submit')}
+          </Button>
+        </Footer>
+      )}
     </div>
   );
 }
@@ -118,7 +121,7 @@ function RecordPickerField(props) {
 
 export class RecordPickerFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
-
+  _closeView;
   get collectionField(): CollectionField {
     return this.context.collectionField;
   }
@@ -225,6 +228,8 @@ RecordPickerFieldModel.registerFlow({
                 if (toOne) {
                   // 单选
                   ctx.model.selectedRows.value = selectedRows?.[0];
+                  ctx.model.change();
+                  ctx.model._closeView?.();
                 } else {
                   // 多选：追加
                   const prev = ctx.model.selectedRows.value || [];
@@ -242,7 +247,7 @@ RecordPickerFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
           styles: {
             content: {
               padding: 0,
