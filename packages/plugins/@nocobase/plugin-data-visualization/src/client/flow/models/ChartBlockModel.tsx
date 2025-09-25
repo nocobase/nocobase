@@ -39,7 +39,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.context.resource;
   }
 
-  onInit() {
+  onInit(options) {
+    super.onInit(options);
     this.context.defineProperty('chartRef', {
       get: () => createRef(),
     });
@@ -72,12 +73,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   async regenerateChartOption() {
     const rawOption = (this.props.chart as any)?.optionRaw ?? (this.props.chart as any)?.option?.raw;
     if (rawOption) {
-      const { value: option } = await this.context.runjs(rawOption as string, {
-        ctx: {
-          ...this.context,
-          data: convertDatasetFormats(this.resource.getData()),
-        },
-      });
+      const { value: option } = await this.context.runjs(rawOption);
 
       this.setProps({
         ...this.props,

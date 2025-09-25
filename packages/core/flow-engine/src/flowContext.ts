@@ -1002,6 +1002,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
+    });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
@@ -1513,12 +1519,6 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
-    });
-    this.defineMethod('runjs', async (code, variables) => {
-      const runner = this.createJSRunner({
-        globals: variables,
-      });
-      return runner.run(code);
     });
   }
 
