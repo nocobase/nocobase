@@ -1378,6 +1378,12 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
+    });
     this.defineProperty('model', {
       value: model,
     });
@@ -1466,6 +1472,12 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
+    });
   }
 }
 
@@ -1519,6 +1531,12 @@ export class FlowRuntimeContext<
     });
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
+    });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
     });
   }
 
