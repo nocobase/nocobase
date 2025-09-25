@@ -238,7 +238,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   fieldPath: dataIndex,
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
-                  fieldProps: model.subModels.field.props,
+                  fieldProps: { ...model.props, ...model.subModels.field.props },
                   onSuccess: (values) => {
                     record[dataIndex] = values[dataIndex];
                     this.resource.getData()[recordIndex] = record;
@@ -253,9 +253,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                       get: () => record,
                       meta: recordMeta,
                     });
-                    // fork.context.defineProperty('fieldValue', {
-                    //   get: () => values[dataIndex],
-                    // });
                     fork.setProps({ value: values[dataIndex] });
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,

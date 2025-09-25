@@ -22,27 +22,27 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
   const currentViewMap = new Map<string, ViewItem>();
 
   prevViewList.forEach((viewItem) => {
-    prevViewMap.set(viewItem.params.viewUid, viewItem);
+    prevViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
   });
 
   currentViewList.forEach((viewItem) => {
-    currentViewMap.set(viewItem.params.viewUid, viewItem);
+    currentViewMap.set(`${viewItem.params.viewUid}_${viewItem.index}`, viewItem);
   });
 
   // 找出需要关闭的视图：存在于旧列表但不在新列表中
   const viewsToClose: ViewItem[] = [];
-  prevViewMap.forEach((viewItem, viewUid) => {
-    if (!currentViewMap.has(viewUid)) {
+  prevViewMap.forEach((viewItem, key) => {
+    if (!currentViewMap.has(key)) {
       viewsToClose.push(viewItem);
     } else {
-      viewItem.hidden.value = currentViewMap.get(viewUid).hidden.value; // 用于控制已经渲染的视图是否隐藏
+      viewItem.hidden.value = currentViewMap.get(key).hidden.value; // 用于控制已经渲染的视图是否隐藏
     }
   });
 
   // 找出需要打开的视图：存在于新列表但不在旧列表中
   const viewsToOpen: ViewItem[] = [];
-  currentViewMap.forEach((viewItem, viewUid) => {
-    if (!prevViewMap.has(viewUid)) {
+  currentViewMap.forEach((viewItem, key) => {
+    if (!prevViewMap.has(key)) {
       viewsToOpen.push(viewItem);
     }
   });

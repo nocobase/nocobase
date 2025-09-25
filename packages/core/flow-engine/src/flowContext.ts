@@ -1403,9 +1403,27 @@ export class FlowModelContext extends BaseFlowModelContext {
           parentId: this.model.uid,
           subType: 'object',
           subKey: uid,
+          stepParams: {
+            popupSettings: {
+              openView: {
+                ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+              },
+            },
+          },
         });
         await model.save();
       }
+      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
+        model.setStepParams('popupSettings', {
+          openView: {
+            ...model.getStepParams('popupSettings')?.openView,
+            ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+          },
+        });
+        await model.save();
+      }
+
+      model.context.defineProperty('inputArgs', { value: options });
       const parentView = this.view;
       if (parentView) {
         model.context.defineProperty('view', { get: () => parentView });

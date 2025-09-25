@@ -39,6 +39,8 @@ function InternalFlowPage({ uid, ...props }) {
   );
 }
 
+const getKey = (viewItem: ViewItem) => `${viewItem.params.viewUid}_${viewItem.index}`;
+
 export const FlowRoute = () => {
   const layoutContentRef = useRef(null);
   const flowEngine = useFlowEngine();
@@ -171,7 +173,7 @@ export const FlowRoute = () => {
               isMobileLayout,
             });
 
-            viewStateRef.current[viewItem.params.viewUid] = {
+            viewStateRef.current[getKey(viewItem)] = {
               close: () => closeRef.current?.(),
               update: (value: any) => updateRef.current?.(value),
             };
@@ -182,11 +184,9 @@ export const FlowRoute = () => {
 
         // 5. 处理需要关闭的视图
         viewsToClose.forEach((viewItem) => {
-          viewStateRef.current[viewItem.params.viewUid].close();
-          delete viewStateRef.current[viewItem.params.viewUid];
-          prevViewListRef.current = prevViewListRef.current.filter(
-            (item) => item.params.viewUid !== viewItem.params.viewUid,
-          );
+          viewStateRef.current[getKey(viewItem)].close();
+          delete viewStateRef.current[getKey(viewItem)];
+          prevViewListRef.current = prevViewListRef.current.filter((item) => getKey(item) !== getKey(viewItem));
         });
       },
       {

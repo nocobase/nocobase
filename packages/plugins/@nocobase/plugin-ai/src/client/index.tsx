@@ -44,6 +44,7 @@ const { AIResourceContextCollector } = lazy(
 );
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
+import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -137,6 +138,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
+    this.aiManager.registerTool(...chartGeneratorTool);
   }
 
   setupWorkflow() {
