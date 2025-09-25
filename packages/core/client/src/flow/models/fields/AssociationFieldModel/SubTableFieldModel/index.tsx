@@ -124,7 +124,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
       });
     };
   }
-
+  protected onMount(): void {
+    console.log('子表格onMount', this.props.value);
+  }
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
   }
@@ -275,7 +277,6 @@ SubTableFieldModel.registerFlow({
         size: 'medium',
       },
       handler(ctx, params) {
-        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const sizeToWidthMap: Record<string, any> = {
           drawer: {
             small: '30%',
@@ -302,7 +303,7 @@ SubTableFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
             rowSelectionProps: {
-              type: toOne ? 'radio' : 'checkbox',
+              type: 'checkbox',
               defaultSelectedRows: () => {
                 return ctx.model.props.value;
               },

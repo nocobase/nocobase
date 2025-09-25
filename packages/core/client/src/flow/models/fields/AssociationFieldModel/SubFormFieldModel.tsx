@@ -89,17 +89,11 @@ const ArrayNester = ({ name, value, disabled }: any) => {
   const forksRef = useRef<Record<string, any>>({});
   const collectionName = model.context.collectionField.name;
   useEffect(() => {
-    gridModel.forks.forEach((fork) => {
-      fork.mapSubModels('items', (item) => {
-        item.setProps({ disabled: disabled });
-      });
-    });
     gridModel.context.defineProperty('parentDisabled', {
       get: () => disabled,
       cache: false,
     });
   }, [disabled]);
-
   return (
     <Card
       bordered={true}
@@ -123,6 +117,9 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 });
                 forksRef.current[uid] = fork;
               }
+              forksRef.current[uid].mapSubModels('items', (item) => {
+                item.setProps({ disabled: disabled });
+              });
               return (
                 <div key={uid} style={{ marginBottom: 12 }}>
                   {!disabled && (
