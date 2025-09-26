@@ -14,7 +14,7 @@ import { FieldModel } from '../base';
 
 export class SelectFieldModel extends FieldModel {
   render() {
-    const options = this.props.options.map((v) => {
+    const options = this.props.options?.map((v) => {
       return {
         ...v,
         label: this.translate(v.label),
