@@ -22,10 +22,14 @@ import { contextAware } from '../stores/context-aware';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { isHide } from '../built-in/utils';
+import { AIEmployeeShortcutModel } from '../flow/models';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
-  ctx.engine.flowSettings.on('beforeOpen', () => {
+  ctx.engine.flowSettings.on('beforeOpen', (event) => {
+    if (event?.model instanceof AIEmployeeShortcutModel) {
+      return;
+    }
     setFolded(true);
   });
 
