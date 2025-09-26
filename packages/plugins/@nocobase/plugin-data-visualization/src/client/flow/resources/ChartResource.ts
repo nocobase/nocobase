@@ -25,7 +25,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>) {
-    console.log('---ChartResource setQueryParams', query);
     const { success, message } = this.validateQuery(query);
     if (!success) {
       // 这里过程性校验 不强制报错，只做提示
@@ -132,10 +131,26 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   // 查询数据
   async run() {
     const data = this.request.data || {};
-    if (!data.collection || !data.measures?.length) {
-      throw new Error('collection and measures are required');
+    // 尝试从已有字段推断模式；但若无法推断则直接跳过，避免切换时抛错
+    const mode: 'sql' | 'builder' | undefined = data.mode ?? (data.sql ? 'sql' : undefined);
+
+    if (!mode) {
+      // 未配置模式时，认为尚未完成查询参数设置：不抛错、不请求 API，返回现有数据
+      return { data: this.getData(), meta: this.getMeta?.() };
     }
-    // 请求数据 api.post('chart:query')
+
+    if (mode === 'sql') {
+      if (!data.sql) {
+        throw new Error('sql is required');
+      }
+    } else {
+      // builder 模式
+      if (!data.collection || !data.measures?.length) {
+        throw new Error('collection and measures are required');
+      }
+    }
+
+    // 请求数据 api.post('charts:query')
     return await this.runAction<TData, any>('query', this.getRefreshRequestOptions());
   }
 

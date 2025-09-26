@@ -118,6 +118,20 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return fields;
   }
 
+  // 检查当前资源与查询模式是否匹配，不匹配则重新初始化
+  checkResource(query: any): void {
+    const mode = query?.mode || 'builder';
+    if (mode === 'sql') {
+      if (!(this.resource instanceof SQLResource)) {
+        this.initResource('sql');
+      }
+    } else {
+      if (!(this.resource instanceof ChartResource)) {
+        this.initResource('builder');
+      }
+    }
+  }
+
   // 公共方法：运行数据查询 + 刷新资源 + 更新结果面板
   async runQueryAndUpdateResult(query: any) {
     const uid = this.uid;
@@ -146,21 +160,18 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   async setParamsAndPreview(params) {
-    console.log('----setParamsAndPreview', params);
     // 暂存预览前的 stepParams，用于取消预览时回滚
     if (!this._previousStepParams) {
       this._previousStepParams = _.cloneDeep(this.stepParams);
     }
     this.setStepParams('chartSettings', 'configure', params);
     console.log('---latest setParams', this.getStepParams('chartSettings', 'configure'));
-    // 这里不再直接执行 runQueryAndUpdateResult，避免重复执行
-    // rerender -> applyAutoFlows -> handler -> runQueryAndUpdateResult
     this.rerender();
+    // rerender -> applyAutoFlows -> handler -> runQueryAndUpdateResult
   }
 
   // 取消预览，回滚stepParams
   async cancelPreview() {
-    console.log('----cancelPreview', this._previousStepParams);
     if (this._previousStepParams) {
       this.setStepParams('chartSettings', 'configure', this._previousStepParams);
       this._previousStepParams = null;
@@ -178,8 +189,14 @@ const PreviewButton = ({ style }) => {
       type="default"
       style={style}
       onClick={async () => {
-        await form.submit();
         const formValues = ctx.getStepFormValues('chartSettings', 'configure');
+        if (formValues?.query?.mode === 'builder') {
+          await form.submit();
+        }
+        ctx.model.checkResource(formValues.query); // 保证 resource 正确
+        if (formValues?.query?.mode === 'sql') {
+          ctx.model.resource.setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+        }
         ctx.model.setParamsAndPreview(formValues || {});
       }}
     >
@@ -237,8 +254,6 @@ ChartBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         const { query, chart } = params;
-        console.log('----setting flow handler params', query, chart);
-
         if (!query || !chart) {
           return;
         }
