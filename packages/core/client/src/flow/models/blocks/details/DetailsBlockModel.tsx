@@ -94,7 +94,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
   renderPagination() {
     const resource = this.resource as MultiRecordResource;
-    if (!this.isMultiRecordResource() || !resource.getPage()) {
+    if (!this.isMultiRecordResource() || !resource.getPage() || this.resource.getMeta('count') <= 1) {
       return null;
     }
     return (

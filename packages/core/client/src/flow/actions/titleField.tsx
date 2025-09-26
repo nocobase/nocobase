@@ -54,11 +54,39 @@ export const titleField = defineAction({
       label: ctx.model.props?.titleField || titleField,
     };
   },
+  beforeParamsSave: async (ctx: any, params, previousParams) => {
+    const target = ctx.model.collectionField.target;
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    if (params.label !== previousParams.label) {
+      const fieldUid = ctx.model.subModels['field']['uid'];
+      await ctx.engine.destroyModel(fieldUid);
+      const targetCollectionField = targetCollection.getField(params.label);
+      const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+      const use = binding.modelName;
+      const model = ctx.model.setSubModel('field', {
+        use,
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: ctx.model.collectionField.dataSourceKey,
+              collectionName: target,
+              fieldPath: params.label,
+            },
+          },
+        },
+      });
+      await model.save();
+      await model.applyAutoFlows();
+      // 持久化
+      await ctx.model.save();
+    }
+  },
+
   async handler(ctx: any, params) {
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = targetCollection.filterTargetKey;
-    const label = params.label || ctx.model.collectionField.targetCollectionTitleFieldName || filterKey;
+    const label = params.label;
     const newFieldNames = {
       value: filterKey,
       label,
@@ -67,19 +95,21 @@ export const titleField = defineAction({
     const targetCollectionField = targetCollection.getField(label);
     const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
     const use = binding.modelName;
-    const model = ctx.model.setSubModel('field', {
-      use,
-      stepParams: {
-        fieldSettings: {
-          init: {
-            dataSourceKey: ctx.model.collectionField.dataSourceKey,
-            collectionName: target,
-            fieldPath: newFieldNames.label,
+    if (!ctx.model.subModels['field']) {
+      const model = ctx.model.setSubModel('field', {
+        use,
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: ctx.model.collectionField.dataSourceKey,
+              collectionName: target,
+              fieldPath: newFieldNames.label,
+            },
           },
         },
-      },
-    });
-    await model.save();
-    await model.applyAutoFlows();
+      });
+      await model.save();
+      await model.applyAutoFlows();
+    }
   },
 });

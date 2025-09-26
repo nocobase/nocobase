@@ -44,14 +44,16 @@ export const ObjectNester = (props) => {
     return fork;
   }, [gridModel, rowIndex]);
   useEffect(() => {
-    grid.mapSubModels('items', (item) => {
-      item.setProps({ disabled: props.disabled });
-    });
-    grid.context.defineProperty('parentDisabled', {
-      get: () => props.disabled,
-      cache: false,
-    });
-  }, [props.disabled]);
+    if (props.disabled !== grid.context.parentDisabled) {
+      grid.mapSubModels('items', (item) => {
+        item.setProps({ disabled: props.disabled });
+      });
+      grid.context.defineProperty('parentDisabled', {
+        get: () => props.disabled,
+        cache: false,
+      });
+    }
+  }, [props.disabled, grid]);
   return (
     <Card>
       <FlowModelRenderer model={grid} showFlowSettings={false} />

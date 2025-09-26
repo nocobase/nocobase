@@ -60,4 +60,74 @@ describe('ChartResource basic behaviors', () => {
       $and: [{ status: 'active' }, { 'price.$lt': 100 }, { 'stock.$gt': 0 }],
     });
   });
+
+  it('getFilter should reflect order 1-2 (QB -> External)', () => {
+    const r = new ChartResource(new FlowContext());
+
+    const qb1 = { status: 'active' };
+    const ext1 = { 'price.$lt': 100 };
+
+    // 1: QueryBuilder
+    r.setQueryParams(makeBuilderQuery(qb1));
+    // 2: External group
+    r.addFilterGroup('ext1', ext1);
+
+    expect(r.getFilter()).toEqual({
+      $and: [qb1, ext1],
+    });
+  });
+
+  it('getFilter should reflect order 2-1 (External -> QB)', () => {
+    const r = new ChartResource(new FlowContext());
+
+    const qb1 = { status: 'active' };
+    const ext1 = { 'price.$lt': 100 };
+
+    // 2: External group
+    r.addFilterGroup('ext1', ext1);
+    // 1: QueryBuilder
+    r.setQueryParams(makeBuilderQuery(qb1));
+
+    expect(r.getFilter()).toEqual({
+      $and: [ext1, qb1],
+    });
+  });
+
+  it('getFilter should reflect order 1-1-2, QB updated but keeps insertion order', () => {
+    const r = new ChartResource(new FlowContext());
+
+    const qb1 = { status: 'active' };
+    const qb2 = { status: 'inactive' };
+    const ext1 = { 'price.$lt': 100 };
+
+    // 1: QueryBuilder first time
+    r.setQueryParams(makeBuilderQuery(qb1));
+    // 1: QueryBuilder second time (same key "__qbFilter__" updates value, keeps order)
+    r.setQueryParams(makeBuilderQuery(qb2));
+    // 2: External group
+    r.addFilterGroup('ext1', ext1);
+
+    expect(r.getFilter()).toEqual({
+      $and: [qb2, ext1],
+    });
+  });
+
+  it('getFilter should reflect order 2-2-1 (External -> External -> QB)', () => {
+    const r = new ChartResource(new FlowContext());
+
+    const qb1 = { status: 'active' };
+    const ext1 = { 'price.$lt': 100 };
+    const ext2 = { 'stock.$gt': 0 };
+
+    // 2: External group A
+    r.addFilterGroup('ext1', ext1);
+    // 2: External group B
+    r.addFilterGroup('ext2', ext2);
+    // 1: QueryBuilder
+    r.setQueryParams(makeBuilderQuery(qb1));
+
+    expect(r.getFilter()).toEqual({
+      $and: [ext1, ext2, qb1],
+    });
+  });
 });
