@@ -561,13 +561,14 @@ export const openView = defineAction({
     const navigation = inputArgs.navigation ?? params.navigation;
 
     if (navigation !== false) {
-      if (!ctx.inputArgs.navigation && ctx.view.navigation) {
-        ctx.view.navigation.navigateTo({
-          viewUid: ctx.model.uid,
+      if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
+        const nextView = {
+          viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
           filterByTk: inputArgs.filterByTk ?? params.filterByTk,
           sourceId: inputArgs.sourceId ?? params.sourceId,
           tabUid: inputArgs.tabUid ?? params.tabUid,
-        });
+        };
+        ctx.view.navigation.navigateTo(nextView);
         return;
       }
     }
@@ -615,7 +616,7 @@ export const openView = defineAction({
       (ctx.view?.inputArgs?.openerUids as string[] | undefined) || (inputArgs.openerUids as string[] | undefined) || [];
     const openerUids: string[] = isRouteManaged
       ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
-      : [...parentOpenerUids, ctx.model.uid];
+      : [...parentOpenerUids, (ctx.model.context?.inputArgs?.viewUid as string) || ctx.model.uid];
 
     const finalInputArgs: Record<string, unknown> = {
       ...ctx.inputArgs,
@@ -650,8 +651,9 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
-              const defineProperties = inputArgs.defineProperties || {};
-              const defineMethods = inputArgs.defineMethods || {};
+              const defineProperties =
+                inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? {};
+              const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? {};
 
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
@@ -684,12 +686,17 @@ export const openView = defineAction({
         },
       },
       onClose: () => {
+        const nav = ctx.inputArgs?.navigation || ctx.view?.navigation;
         if (pageModelUid) {
           const pageModel = pageModelRef || ctx.model.flowEngine.getModel(pageModelUid);
           pageModel?.invalidateAutoFlowCache(true);
         }
         if (navigation !== false) {
-          ctx.inputArgs.navigation?.back();
+          if (nav?.back) {
+            nav.back();
+          } else {
+            ctx.model.flowEngine?.context?.router?.navigate(-1);
+          }
         }
       },
       onOpen: ctx.inputArgs.onOpen,

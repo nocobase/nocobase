@@ -85,27 +85,35 @@ export const QueryBuilder: React.FC = observer(() => {
   } = useQueryBuilderLogic();
 
   const t = useT();
+  const form = useForm();
+
+  // 兼容：老数据迁移到新字段
+  React.useEffect(() => {
+    const legacy = form?.values?.query?.settings?.collection;
+    const current = form?.values?.query?.collectionPath;
+    if (!current && legacy) {
+      form.setValuesIn('query.collectionPath', legacy);
+    }
+  }, [form]);
 
   return (
     <>
       {/* 设置：数据源/集合 */}
-      <ObjectField name="settings">
-        <Field
-          name="collection"
-          title={t('Collection')}
-          decorator={[FormItemLite]}
-          component={[
-            CascaderAdapter,
-            {
-              showSearch: true,
-              placeholder: t('Collection'),
-              dataSource: collectionOptions,
-              onValueChange: onCollectionChange,
-              style: { width: 222, marginBottom: 4 },
-            },
-          ]}
-        />
-      </ObjectField>
+      <Field
+        name="collectionPath"
+        title={t('Collection')}
+        decorator={[FormItemLite]}
+        component={[
+          CascaderAdapter,
+          {
+            showSearch: true,
+            placeholder: t('Collection'),
+            dataSource: collectionOptions,
+            onValueChange: onCollectionChange,
+            style: { width: 222, marginBottom: 4 },
+          },
+        ]}
+      />
 
       <Divider style={{ margin: '8px 0' }} />
 

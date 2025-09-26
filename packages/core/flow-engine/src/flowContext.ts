@@ -1423,7 +1423,7 @@ export class FlowModelContext extends BaseFlowModelContext {
         await model.save();
       }
 
-      model.context.defineProperty('inputArgs', { value: options });
+      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid: this.model.uid } });
       const parentView = this.view;
       if (parentView) {
         model.context.defineProperty('view', { get: () => parentView });

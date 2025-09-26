@@ -19,8 +19,9 @@ class OpenViewDemoModel extends FlowModel {
                 mode: 'drawer',
                 size: 'medium',
                 pageModelClass: 'OpenViewContentModel',
+                navigation: false,
                 defineProperties: {
-                  新定义上下文: {
+                  someContext: {
                     value: { name: '演示数据', email: 'demo@example.com' },
                     meta: {
                       title: '新定义上下文',

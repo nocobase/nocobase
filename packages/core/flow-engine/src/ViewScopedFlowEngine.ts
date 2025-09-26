@@ -37,6 +37,11 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     'context',
     'previousEngine',
     'nextEngine',
+    // 栈指针维护方法需要在本地执行，而非代理到父引擎
+    'unlinkFromStack',
+    'linkAfter',
+    '_previousEngine',
+    '_nextEngine',
   ]);
 
   const handler: ProxyHandler<FlowEngine> = {

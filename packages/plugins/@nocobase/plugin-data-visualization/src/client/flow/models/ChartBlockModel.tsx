@@ -16,6 +16,9 @@ import { useT } from '../../locale';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
+import { ChartResource } from '../resources/ChartResource';
+import _ from 'lodash';
+import { genRawByBuilder } from './ChartOptionsBuilder.service';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -25,18 +28,52 @@ type ChartBlockModelStructure = {
 
 type ChartProps = {
   query: {
-    sql: string;
+    mode: 'builder' | 'sql';
+    measure?: any;
+    dimension?: any;
+    filter?: any;
+    order?: any;
+    limit?: any;
+    offset?: any;
+    sql?: string; // only sql mode
   };
   chart: ChartOptions & {
     optionRaw?: string; // 持久化存储原始脚本，供数据刷新时重新生成 option
+    mode: 'basic' | 'custom';
+    builder?: any;
+    raw?: string; // only custom mode
   };
 };
 
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
-  get resource() {
-    return this.context.resource;
+  _previousStepParams: any; // 上一次的 stepParams，用于 preview 时回滚
+
+  get resource(): ChartResource<any> | SQLResource<any> {
+    return this.context.resource as ChartResource<any> | SQLResource<any>;
+  }
+
+  // 初始化注册 ChartResource | SQLResource
+  initResource(mode = 'builder') {
+    if (mode === 'sql') {
+      this.context.defineProperty('resource', {
+        get: () => {
+          const resource = this.context.createResource(SQLResource);
+          resource.setSQLType('selectRows');
+          resource.setFilterByTk(this.uid);
+          return resource;
+        },
+      });
+    } else {
+      this.context.defineProperty('resource', {
+        get: () => {
+          const resource = this.context.createResource(ChartResource);
+          // resource.setFilterByTk(this.uid); // TDOO 是否必要？ 和 ctx.model.uid 区别？
+          return resource;
+        },
+      });
+    }
   }
 
   onInit(options) {
@@ -44,20 +81,9 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.context.defineProperty('chartRef', {
       get: () => createRef(),
     });
-    this.context.defineProperty('resource', {
-      get: () => {
-        const resource = this.context.createResource(SQLResource);
-        resource.setSQLType('selectRows');
-        resource.setFilterByTk(this.uid);
 
-        // refresh listener
-        resource.on('refresh', async () => {
-          this.invalidateAutoFlowCache();
-          await this.regenerateChartOption(); // regenerate option，refresh ECharts
-        });
-        return resource;
-      },
-    });
+    // // 初始化注册 ChartResource | SQLResource
+    this.initResource();
 
     this.context.defineProperty('data', {
       get: () => convertDatasetFormats(this.resource.getData()),
@@ -66,25 +92,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   renderComponent() {
+    // TODO onRefReady 的逻辑理清，内部的 onRefReady props是否已经没必要？
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
   }
 
-  // regenerate option，refresh ECharts
-  async regenerateChartOption() {
-    const rawOption = (this.props.chart as any)?.optionRaw ?? (this.props.chart as any)?.option?.raw;
-    if (rawOption) {
-      const { value: option } = await this.context.runjs(rawOption);
-
-      this.setProps({
-        ...this.props,
-        chart: {
-          ...this.props.chart,
-          option,
-        },
-      });
-    }
-  }
-
+  // TODO 暴露给外部筛选表单调用筛选项，需要重构
   async getFilterFields(): Promise<{ name: string; title: string; target?: string }[]> {
     const data = this.resource.getData();
     if (!data) {
@@ -105,10 +117,26 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return fields;
   }
 
+  // 预览
   async setParamsAndPreview(params) {
+    console.log('----setParamsAndPreview', params);
+    // 暂存预览前的 stepParams，用于取消预览时回滚
+    if (!this._previousStepParams) {
+      this._previousStepParams = _.cloneDeep(this.stepParams);
+    }
     this.setStepParams('chartSettings', 'configure', params);
-    // this.render();
-    await this.applyFlow('chartSettings');
+    console.log('---latest setParams', this.getStepParams('chartSettings', 'configure'));
+    this.rerender();
+  }
+
+  // 取消预览，回滚stepParams
+  async cancelPreview() {
+    console.log('----cancelPreview', this._previousStepParams);
+    if (this._previousStepParams) {
+      this.setStepParams('chartSettings', 'configure', this._previousStepParams);
+      this._previousStepParams = null;
+      this.rerender();
+    }
   }
 }
 
@@ -166,35 +194,62 @@ ChartBlockModel.registerFlow({
         });
       },
       defaultParams(ctx) {
+        // 数据查询默认 builder 模式；图表配置默认 basic 模式
         return {
-          chart: {},
+          query: {
+            mode: 'builder',
+          },
+          chart: {
+            option: {
+              mode: 'basic',
+            },
+          },
         };
       },
       async handler(ctx, params) {
-        if (params.query?.sql) {
-          try {
-            await ctx.model.resource.refresh();
-          } catch (err) {
-            console.log(err);
-          }
-        } else {
-          ctx.model.resource.setData(null);
+        const { query, chart } = params;
+        console.log('----setting flow handler params', query, chart);
+
+        if (!query || !chart) {
+          return;
         }
-        const rawOption = params.chart.option?.raw;
-        const rawEvents = params.chart.events?.raw;
-        const { value: option } = await ctx.runjs(rawOption);
-        ctx.model.setProps({
-          ...params,
-          chart: {
-            ...params.chart,
-            optionRaw: rawOption, // keep raw option for refresh
-            option,
-          },
-        });
-        if (rawEvents) {
-          ctx.onRefReady(ctx.chartRef, () => {
-            ctx.runjs(rawEvents, { chart: ctx.chartRef.current });
+        try {
+          // 数据部分
+          if (query.mode === 'sql') {
+            if (!(ctx.model.resource instanceof SQLResource)) {
+              ctx.model.initResource('sql');
+            }
+            (ctx.model.resource as SQLResource).setSQL(query.sql);
+            await ctx.model.resource.refresh();
+          } else {
+            if (!(ctx.model.resource instanceof ChartResource)) {
+              ctx.model.initResource('builder');
+            }
+            (ctx.model.resource as ChartResource).setQueryParams(query);
+            await ctx.model.resource.refresh();
+          }
+
+          // 图表部分
+          const optionRaw = chart.option?.mode === 'basic' ? genRawByBuilder(chart.option?.builder) : chart.option?.raw;
+          const { value: option } = await ctx.runjs(optionRaw);
+
+          ctx.model.setProps({
+            ...params,
+            chart: {
+              ...params.chart,
+              optionRaw, // TODO 是否持久化？
+              option, // TODO 是否换个变量，并传给<Chart> 不要覆盖已有结构？
+            },
           });
+
+          // 事件部分
+          if (chart.events?.raw) {
+            ctx.onRefReady(ctx.chartRef, () => {
+              ctx.runjs(chart.events?.raw, { chart: ctx.chartRef.current });
+            });
+          }
+        } catch (error) {
+          console.error('ChartBlockModel chartSettings configure flow handler() error:', error);
         }
       },
     },
