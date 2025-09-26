@@ -25,12 +25,23 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>) {
-    if (!this.validateQuery(query)) {
+    console.log('---ChartResource setQueryParams', query);
+    const { success, message } = this.validateQuery(query);
+    if (!success) {
+      // 这里过程性校验 不强制报错，只做提示
+      console.warn(message);
       return this;
     }
     const parsed = this.parseQuery(query);
-    const qbFilter = parsed?.filter;
+    const { filter: qbFilter, ...rest } = parsed;
 
+    // 写入除 filter 以外的字段到请求体
+    this.request.data = {
+      ...this.request.data,
+      ...rest,
+    };
+
+    // filter 通过统一处理后设置到请求体
     if (isEmptyFilterObject(qbFilter)) {
       this.removeFilterGroup('__qbFilter__');
     } else {
@@ -68,20 +79,20 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
-  validateQuery(query: Record<string, any>) {
+  validateQuery(query: Record<string, any>): { success: boolean; message: string } {
     if (!query) {
-      console.warn('validate: query is required');
-      return false;
+      return { success: false, message: 'validate: query is required' };
+    }
+    if (!query.mode) {
+      return { success: false, message: 'validate: query mode is required' };
     }
     if (query.mode === 'sql' && !query.sql) {
-      console.warn('validate: sql is required when mode is sql');
-      return false;
+      return { success: false, message: 'validate: sql is required when mode is sql' };
     }
     if (query.mode === 'builder' && (!query.collectionPath?.length || !query.measures?.length)) {
-      console.warn('validate: collection and measures are required when mode is builder');
-      return false;
+      return { success: false, message: 'validate: collection and measures are required when mode is builder' };
     }
-    return true;
+    return { success: true, message: '' };
   }
 
   // 解析 queryBuider 表单值为请求参数
