@@ -90,9 +90,10 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
     display: inline-block;
   }
 
-  /* 正常的hover行为 */
+  /* 正常的hover行为 - 添加延迟显示 */
   &:hover > .nb-toolbar-container {
     opacity: 1;
+    transition-delay: 0.1s;
 
     .nb-toolbar-container-icons {
       display: block;
