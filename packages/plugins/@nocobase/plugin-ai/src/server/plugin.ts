@@ -29,6 +29,7 @@ import {
   getCollectionMetadata,
   getCollectionNames,
   getWorkflowCallers,
+  chartGenerator,
 } from './tools';
 import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
@@ -125,6 +126,9 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: defineCollections,
+      },
+      {
+        tool: chartGenerator,
       },
     ]);
 

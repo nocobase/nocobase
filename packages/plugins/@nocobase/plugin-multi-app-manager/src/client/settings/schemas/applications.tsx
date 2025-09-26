@@ -19,10 +19,12 @@ import {
   useResourceContext,
   useFilterFieldProps,
   useFilterFieldOptions,
+  useAPIClient,
 } from '@nocobase/client';
 import React from 'react';
-import { i18nText } from '../../utils';
+import { i18nText, usePluginUtils } from '../../utils';
 import { NAMESPACE } from '../../../locale';
+import { Modal, Form, InputNumber, message } from 'antd';
 
 const collection = {
   name: 'applications',
@@ -112,6 +114,58 @@ export const useDestroyAll = () => {
   };
 };
 
+export const useMigrateData = () => {
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  const port = React.useRef<any>();
+  const api = useAPIClient();
+  const { t } = usePluginUtils();
+  return {
+    async run() {
+      console.log('migrateData');
+      await Modal.confirm({
+        title: t('Migrate data'),
+        content: (
+          <Form.Item
+            label={t('Port')}
+            tooltip={t(
+              'When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.',
+            )}
+          >
+            <InputNumber
+              onChange={(value) => {
+                port.current = value as number;
+              }}
+              defaultValue={port.current}
+              style={{ width: '100%' }}
+              min={1}
+            />
+          </Form.Item>
+        ),
+        onOk: async () => {
+          const { data } = await api.resource('pm').get({
+            filterByTk: 'multi-app2',
+          });
+          if (!data?.data?.enabled) {
+            message.error(t('Multi-app is not enabled, please enable it first'));
+            return;
+          }
+          await api.request({
+            url: 'multiApplications:importFromMultiappManager',
+            method: 'post',
+            data: {
+              port: port.current,
+            },
+          });
+          message.success(t('Migrate successfully'));
+        },
+      });
+      // const { data } = await resource.migrateData();
+      // await resource.migrateData();
+      // refresh();
+    },
+  };
+};
 export const formSchema: ISchema = {
   type: 'void',
   'x-component': 'div',
@@ -285,6 +339,15 @@ export const schema: ISchema = {
               },
               'x-align': 'left',
             },
+            migrateData: {
+              type: 'void',
+              title: `{{ t("Migrate data to new multi-app", { ns: "${NAMESPACE}" }) }}`,
+              'x-component': 'Action',
+              'x-component-props': {
+                icon: 'DeliveredProcedureOutlined',
+                useAction: useMigrateData,
+              },
+            },
             delete: {
               type: 'void',
               title: '{{ t("Delete") }}',
@@ -298,6 +361,7 @@ export const schema: ISchema = {
                 },
               },
             },
+
             create: {
               type: 'void',
               title: '{{t("Add new")}}',

@@ -42,7 +42,7 @@ export const setupAICoding = () => {
                   language,
                   editorRef,
                 };
-                return <AICodingButton {...props} />;
+                return <AICodingButton key="plugin-ai-button-ai-coding" {...props} />;
               },
             ],
           }));

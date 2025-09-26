@@ -12,7 +12,6 @@ import {
   BaseRecordResource,
   Collection,
   CollectionField,
-  EditableItemModel,
   FieldModelRenderer,
   FlowEngine,
   FlowModel,
@@ -38,6 +37,7 @@ export class QuickEditFormModel extends FlowModel {
 
   viewContainer: any;
   __onSubmitSuccess;
+  _fieldProps: any;
 
   get form() {
     return this.context.form;
@@ -70,7 +70,6 @@ export class QuickEditFormModel extends FlowModel {
             dataSourceKey,
             collectionName,
             fieldPath,
-            fieldProps,
           },
         },
       },
@@ -91,6 +90,7 @@ export class QuickEditFormModel extends FlowModel {
       content: (popover) => {
         model.viewContainer = popover;
         model.__onSubmitSuccess = onSuccess;
+        model._fieldProps = fieldProps;
         console.log('QuickEditFormModel.open3', Date.now() - model.now);
         return (
           <FlowModelRenderer
@@ -196,7 +196,7 @@ QuickEditFormModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const { dataSourceKey, collectionName, fieldPath, fieldProps } = params;
+        const { dataSourceKey, collectionName, fieldPath } = params;
         if (!dataSourceKey || !collectionName || !fieldPath) {
           throw new Error('dataSourceKey, collectionName and fieldPath are required parameters');
         }
@@ -205,7 +205,6 @@ QuickEditFormModel.registerFlow({
         const resource = ctx.createResource(SingleRecordResource);
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
-        // resource.setAPIClient(ctx.api);
         ctx.model.resource = resource;
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
@@ -228,19 +227,14 @@ QuickEditFormModel.registerFlow({
                   fieldPath,
                 },
               },
-              formItemSettings: {
-                createField: {
-                  fieldProps,
-                },
-              },
             },
           });
+          fieldModel.setProps({ ...collectionField.getComponentProps(), ...ctx.model._fieldProps });
           ctx.model.context.defineProperty('collectionField', {
             get: () => collectionField,
           });
-          await fieldModel.applyAutoFlows();
           ctx.model.addAppends(fieldPath);
-          ctx.model.setProps({ ...collectionField.getComponentProps(), ...(fieldProps || {}) });
+          await fieldModel.applyAutoFlows();
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
           resource.setFilterByTk(ctx.inputArgs.filterByTk);

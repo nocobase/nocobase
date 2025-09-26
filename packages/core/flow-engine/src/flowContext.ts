@@ -1403,11 +1403,33 @@ export class FlowModelContext extends BaseFlowModelContext {
           parentId: this.model.uid,
           subType: 'object',
           subKey: uid,
+          stepParams: {
+            popupSettings: {
+              openView: {
+                ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+              },
+            },
+          },
         });
         await model.save();
       }
+      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
+        model.setStepParams('popupSettings', {
+          openView: {
+            ...model.getStepParams('popupSettings')?.openView,
+            ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+          },
+        });
+        await model.save();
+      }
+
+      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid: this.model.uid } });
+      const parentView = this.view;
+      if (parentView) {
+        model.context.defineProperty('view', { get: () => parentView });
+      }
       await model.dispatchEvent('click', {
-        navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
         ...options,
       });

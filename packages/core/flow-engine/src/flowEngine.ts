@@ -177,7 +177,10 @@ export class FlowEngine {
   /**
    * 将当前引擎链接到 prev 之后（用于视图打开时形成栈关系）。
    */
-  public linkAfter(prev: FlowEngine): void {
+  public linkAfter(engine: FlowEngine): void {
+    // 找到栈底
+    let prev: FlowEngine = engine;
+    while (prev._nextEngine) prev = prev._nextEngine;
     this._previousEngine = prev;
     if (prev) {
       prev._nextEngine = this;
@@ -190,14 +193,9 @@ export class FlowEngine {
   public unlinkFromStack(): void {
     const prev = this._previousEngine;
     const next = this._nextEngine;
-    if (prev && prev._nextEngine === this) {
-      prev._nextEngine = next;
+    if (prev) {
+      prev._nextEngine = undefined;
     }
-    if (next && next._previousEngine === this) {
-      next._previousEngine = prev;
-    }
-    this._previousEngine = undefined;
-    this._nextEngine = undefined;
   }
 
   // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API

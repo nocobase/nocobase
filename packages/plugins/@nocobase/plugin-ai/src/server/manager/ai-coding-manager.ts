@@ -16,6 +16,8 @@ import jsField from '../ai-employees/built-in/ai-coding/document/js-field';
 import jsColumn from '../ai-employees/built-in/ai-coding/document/js-column';
 import jsItem from '../ai-employees/built-in/ai-coding/document/js-item';
 import jsAction from '../ai-employees/built-in/ai-coding/document/js-action';
+import jsColumnExample from '../ai-employees/built-in/ai-coding/document/example/js-column';
+import jsFilterExample from '../ai-employees/built-in/ai-coding/document/example/js-filter';
 
 type Content = {
   scene: string;
@@ -39,6 +41,7 @@ export class AICodingManager {
       const sceneSet = new Set(workContext.map((item) => item.content as Content).map((content) => content.scene));
       if (sceneSet.has('JSBlockModel')) {
         document.push(jsBlock);
+        document.push(...jsFilterExample['en-US']);
       }
       if (sceneSet.has('JSItemModel')) {
         document.push(jsItem);
@@ -48,6 +51,7 @@ export class AICodingManager {
       }
       if (sceneSet.has('JSColumnModel')) {
         document.push(jsColumn);
+        document.push(...jsColumnExample['en-US']);
       }
       if (
         sceneSet.has('JSFormActionModel') ||

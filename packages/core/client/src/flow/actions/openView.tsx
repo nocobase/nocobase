@@ -96,7 +96,7 @@ export const openView = defineAction({
               setFieldDisabled('tabUid', false);
               return;
             }
-            const readParam = (k: string) => (params[k] !== undefined ? params[k] : params?.dataParams?.[k]);
+            const readParam = (k: string) => params[k];
             keys.forEach((k) => {
               const v = readParam(k as string);
               if (v !== undefined) {
@@ -412,10 +412,17 @@ export const openView = defineAction({
         const metaTree = useMemo(() => {
           try {
             const full = ctx.getPropertyMetaTree();
-            // 在关联场景下允许选择 Resource.sourceId；否则仅保留 record
             const nodes = (full || []).filter((n: any) => ['record', 'resource'].includes(String(n?.name)));
-            const hasResource = nodes.some((n: any) => String(n?.name) === 'resource');
-            if (!hasResource && ctx.association) {
+            const hasResourceNode = nodes.some((n: any) => String(n?.name) === 'resource');
+            let hasSourceIdValue = false;
+            try {
+              const sid = ctx?.resource?.getSourceId?.();
+              hasSourceIdValue = sid !== undefined && sid !== null && String(sid) !== '';
+            } catch (_) {
+              // ignore
+            }
+            // 仅当存在实际的 sourceId 值且树中没有 resource 时，注入 Resource -> Source ID
+            if (!hasResourceNode && hasSourceIdValue) {
               nodes.push({
                 name: 'resource',
                 title: ctx.t('Resource'),
@@ -481,37 +488,36 @@ export const openView = defineAction({
         );
       },
     },
-    // Keep legacy dataParams group hidden for backward-compat saved params
-    dataParams: {
-      type: 'void',
-      title: '数据参数',
-      'x-decorator': 'FormItem',
-      'x-component': 'FormLayout',
-      'x-reactions': {
-        fulfill: { state: { hidden: true } },
-      },
-    },
   },
-  defaultParams: (ctx) => {
-    // 根据上下文情况动态提供默认变量，尽量避免在“无记录上下文”时显示错误的默认值
-    const key = ctx.collection.filterTargetKey || 'id';
-    const recordKeyPath = typeof key === 'string' && key ? key : 'id';
-    // 判断是否存在 record 变量上下文（在集合场景通常不存在）
-    let hasRecord = false;
+  defaultParams: async (ctx) => {
+    // 当存在 ctx.record 上下文时提供默认 filterByTk；否则不提供
     const tree = ctx.getPropertyMetaTree() || [];
-    hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
+    const hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
+    const col = (ctx as any)?.collection;
+
+    // 决定主键字段：优先使用集合的 filterTargetKey；否则直接回退 'id'
+    const recordKeyPath =
+      hasRecord && col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
-    // 仅在存在关联上下文时，默认提供 sourceId 表达式（常见于子表/关联场景）；
-    // 其它情况下保持为空，避免与 filterByTk 取值混淆。
-    const sourceIdExpr = ctx.association ? `{{ ctx.resource.sourceId }}` : undefined;
-    const defaultDSKey = ctx.collection?.dataSourceKey;
-    const defaultCol = ctx.collection.name;
+    // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
+    // 否则不设置，避免出现无效的默认变量。
+    let sourceIdExpr: string | undefined = undefined;
+    try {
+      const sid = (ctx as any)?.resource?.getSourceId?.();
+      if (sid !== undefined && sid !== null && String(sid) !== '') {
+        sourceIdExpr = `{{ ctx.resource.sourceId }}`;
+      }
+    } catch (_) {
+      // ignore
+    }
+    const defaultDSKey = col?.dataSourceKey;
+    const defaultCol = col?.name;
     return {
       mode: 'drawer',
       size: 'medium',
       pageModelClass: 'ChildPageModel',
       uid: ctx.model?.uid,
-      // Provide default variable expressions to reduce manual input
+      // 当存在 ctx.record 时提供默认 filterByTk
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
       ...(defaultDSKey ? { dataSourceKey: defaultDSKey } : {}),
@@ -531,42 +537,38 @@ export const openView = defineAction({
     // If uid differs from current model, delegate to ctx.openView to open that popup
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
+      // 外部弹窗时应该以弹窗发起者为高优先级
       await ctx.openView(params.uid, {
+        ...params,
         target: ctx.inputArgs.target || ctx.layoutContentElement,
-        dataSourceKey: params.dataSourceKey ?? params?.dataParams?.dataSourceKey ?? actionDefaults.dataSourceKey,
-        collectionName: params.collectionName ?? params?.dataParams?.collectionName ?? actionDefaults.collectionName,
-        associationName:
-          params.associationName ?? params?.dataParams?.associationName ?? actionDefaults.associationName,
-        filterByTk: params.filterByTk ?? params?.dataParams?.filterByTk ?? actionDefaults.filterByTk,
-        sourceId: params.sourceId ?? params?.dataParams?.sourceId ?? actionDefaults.sourceId,
+        dataSourceKey: params.dataSourceKey ?? actionDefaults.dataSourceKey,
+        collectionName: params.collectionName ?? actionDefaults.collectionName,
+        associationName: params.associationName ?? actionDefaults.associationName,
+        filterByTk: params.filterByTk ?? actionDefaults.filterByTk,
+        sourceId: params.sourceId ?? actionDefaults.sourceId,
         tabUid: params.tabUid,
       });
       return;
     }
     const inputArgs = ctx.inputArgs || {};
 
-    if (params.filterByTk || params?.dataParams?.filterByTk) {
-      inputArgs.filterByTk = params.filterByTk ?? params?.dataParams?.filterByTk;
-    }
+    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk;
 
-    if (params.sourceId || params?.dataParams?.sourceId) {
-      inputArgs.sourceId = params.sourceId ?? params?.dataParams?.sourceId;
-    }
+    inputArgs.sourceId = inputArgs.sourceId || params.sourceId;
 
-    if (params.tabUid) {
-      inputArgs.tabUid = params.tabUid;
-    }
+    inputArgs.tabUid = inputArgs.tabuid || params.tabUid;
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
     if (navigation !== false) {
-      if (!ctx.inputArgs.navigation && ctx.view.navigation) {
-        ctx.view.navigation.navigateTo({
-          viewUid: ctx.model.uid,
-          filterByTk: inputArgs.filterByTk,
-          sourceId: inputArgs.sourceId,
-          tabUid: inputArgs.tabUid,
-        });
+      if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
+        const nextView = {
+          viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
+          filterByTk: inputArgs.filterByTk ?? params.filterByTk,
+          sourceId: inputArgs.sourceId ?? params.sourceId,
+          tabUid: inputArgs.tabUid ?? params.tabUid,
+        };
+        ctx.view.navigation.navigateTo(nextView);
         return;
       }
     }
@@ -614,15 +616,15 @@ export const openView = defineAction({
       (ctx.view?.inputArgs?.openerUids as string[] | undefined) || (inputArgs.openerUids as string[] | undefined) || [];
     const openerUids: string[] = isRouteManaged
       ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
-      : [...parentOpenerUids, ctx.model.uid];
+      : [...parentOpenerUids, (ctx.model.context?.inputArgs?.viewUid as string) || ctx.model.uid];
 
     const finalInputArgs: Record<string, unknown> = {
       ...ctx.inputArgs,
       ...inputArgs,
-      dataSourceKey: params.dataSourceKey ?? params?.dataParams?.dataSourceKey,
-      collectionName: params.collectionName ?? params?.dataParams?.collectionName,
-      associationName: params.associationName ?? params?.dataParams?.associationName,
-      tabUid: params.tabUid,
+      dataSourceKey: params.dataSourceKey,
+      collectionName: params.collectionName,
+      associationName: params.associationName,
+      tabUid: inputArgs.tabUid ?? params.tabUid,
       openerUids,
     };
 
@@ -649,8 +651,9 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
-              const defineProperties = inputArgs.defineProperties || {};
-              const defineMethods = inputArgs.defineMethods || {};
+              const defineProperties =
+                inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? {};
+              const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? {};
 
               pageModel.context.defineProperty('currentView', {
                 get: () => currentView,
@@ -683,12 +686,17 @@ export const openView = defineAction({
         },
       },
       onClose: () => {
+        const nav = ctx.inputArgs?.navigation || ctx.view?.navigation;
         if (pageModelUid) {
           const pageModel = pageModelRef || ctx.model.flowEngine.getModel(pageModelUid);
           pageModel?.invalidateAutoFlowCache(true);
         }
         if (navigation !== false) {
-          ctx.inputArgs.navigation?.back();
+          if (nav?.back) {
+            nav.back();
+          } else {
+            ctx.model.flowEngine?.context?.router?.navigate(-1);
+          }
         }
       },
       onOpen: ctx.inputArgs.onOpen,

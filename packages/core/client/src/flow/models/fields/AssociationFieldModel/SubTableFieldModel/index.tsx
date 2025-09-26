@@ -13,15 +13,15 @@ import {
   DndProvider,
   FlowSettingsButton,
   escapeT,
-  useFlowEngine,
   observable,
+  useFlowEngine,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { EditFormModel, FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
+import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
-import { RecordPickerContent } from '../RecordPickerFieldModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -29,15 +29,6 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       subModelBaseClasses={['SubTableColumnModel']}
-      afterSubModelInit={async (column: SubTableColumnModel) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: SubTableColumnModel) => {
-        const currentBlockModel = model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${model.context.fieldPath}.${column.context.fieldPath}`, true);
-        }
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -124,7 +115,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
       });
     };
   }
-
+  protected onMount(): void {
+    console.log('子表格onMount', this.props.value);
+  }
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
   }
@@ -275,7 +268,6 @@ SubTableFieldModel.registerFlow({
         size: 'medium',
       },
       handler(ctx, params) {
-        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const sizeToWidthMap: Record<string, any> = {
           drawer: {
             small: '30%',
@@ -302,7 +294,7 @@ SubTableFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
             rowSelectionProps: {
-              type: toOne ? 'radio' : 'checkbox',
+              type: 'checkbox',
               defaultSelectedRows: () => {
                 return ctx.model.props.value;
               },

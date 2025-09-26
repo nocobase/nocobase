@@ -16,6 +16,7 @@ import { useDesignable, useToken } from '@nocobase/client';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { observer } from '@formily/react';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { isHide } from '../built-in/utils';
 
 export const ShortcutList: React.FC = observer(() => {
   const { designable } = useDesignable();
@@ -42,18 +43,20 @@ export const ShortcutList: React.FC = observer(() => {
           items={async () => {
             return loading
               ? []
-              : aiEmployees.map((aiEmployee) => ({
-                  key: aiEmployee.username,
-                  label: <AIEmployeeListItem aiEmployee={aiEmployee} />,
-                  createModelOptions: {
-                    use: 'AIEmployeeShortcutModel',
-                    props: {
-                      aiEmployee: {
-                        username: aiEmployee.username,
+              : aiEmployees
+                  ?.filter((aiEmployee) => !isHide(aiEmployee))
+                  .map((aiEmployee) => ({
+                    key: aiEmployee.username,
+                    label: <AIEmployeeListItem aiEmployee={aiEmployee} />,
+                    createModelOptions: {
+                      use: 'AIEmployeeShortcutModel',
+                      props: {
+                        aiEmployee: {
+                          username: aiEmployee.username,
+                        },
                       },
                     },
-                  },
-                }));
+                  }));
           }}
         >
           <Button

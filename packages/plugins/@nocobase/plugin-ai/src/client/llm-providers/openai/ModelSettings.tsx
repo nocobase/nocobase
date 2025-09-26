@@ -77,7 +77,7 @@ const Options: React.FC = () => {
                       type: 'number',
                       'x-decorator': 'FormItem',
                       'x-component': 'InputNumber',
-                      default: 0.7,
+                      default: 1.0,
                       'x-component-props': {
                         step: 0.1,
                         min: 0.0,

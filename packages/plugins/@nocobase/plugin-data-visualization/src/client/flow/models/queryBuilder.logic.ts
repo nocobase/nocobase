@@ -19,8 +19,9 @@ export const useQueryBuilderLogic = () => {
   const dm = useDataSourceManager();
   const compile = useCompile();
 
-  // 读取当前选择的数据源与集合
-  const collectionPath: string[] | undefined = form?.values?.settings?.collection;
+  // 读取当前选择的数据源与集合（兼容：新字段优先，回退老字段）
+  const collectionPath: string[] | undefined =
+    form?.values?.query?.collectionPath || form?.values?.query?.settings?.collection;
   const [dataSourceKey, collectionName] = collectionPath || [];
   const ds = dm.getDataSource(dataSourceKey || DEFAULT_DATA_SOURCE_KEY);
   const cm = ds?.collectionManager;
@@ -89,7 +90,7 @@ export const useQueryBuilderLogic = () => {
     };
 
     return collectionFields.map((f) => toOption(f, 0)).filter(Boolean);
-  }, [cm, fim, collectionName, compile, form?.values?.settings?.collection]);
+  }, [cm, fim, collectionName, compile, form?.values?.query?.collectionPath]);
 
   // 过滤器字段与操作符（Filter 用）：最多两层关联
   const filterOptions = useMemo(() => {
@@ -132,7 +133,7 @@ export const useQueryBuilderLogic = () => {
     };
 
     return fields.map((f) => toOption(f, 0)).filter(Boolean);
-  }, [cm, fim, collectionName, compile, form?.values?.settings?.collection]);
+  }, [cm, fim, collectionName, compile, form?.values?.query?.collectionPath]);
 
   // 根据字段别名推断 interface（仅处理实际字段/一层关联）
   const getInterfaceByAlias = (alias: string): string | undefined => {
@@ -258,7 +259,7 @@ export const useQueryBuilderLogic = () => {
 
   // 切换collection：清空 builder 配置
   const onCollectionChange = (value: string[]) => {
-    form.setValuesIn('settings.collection', value);
+    form.setValuesIn('query.collectionPath', value);
     form.setValuesIn('query.measures', []);
     form.setValuesIn('query.dimensions', []);
     form.setValuesIn('query.filter', undefined);

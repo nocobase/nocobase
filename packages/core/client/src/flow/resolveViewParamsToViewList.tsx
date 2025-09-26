@@ -16,6 +16,7 @@ export interface ViewItem {
   hidden: {
     value: boolean;
   };
+  index: number;
 }
 
 export async function resolveViewParamsToViewList(
@@ -40,6 +41,7 @@ export async function resolveViewParamsToViewList(
       params,
       model,
       hidden: observable.ref(false), // Will be calculated after all items are resolved
+      index,
     };
   });
 

@@ -323,6 +323,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                           fork.context.defineProperty('fieldIndex', {
                             get: () => rowIndex,
                           });
+                          fork.setProps({ disabled: this.props.disabled });
                           return fork;
                         })();
                   return (

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { jsonrepair } from 'jsonrepair';
 import { Model, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
@@ -132,12 +133,14 @@ export class AIEmployee {
     try {
       for await (const chunk of stream) {
         gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
-        if (!chunk.content) {
-          continue;
+        if (chunk.content) {
+          this.ctx.res.write(
+            `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
+          );
         }
-        this.ctx.res.write(
-          `data: ${JSON.stringify({ type: 'content', body: provider.parseResponseChunk(chunk.content) })}\n\n`,
-        );
+        if (chunk.tool_call_chunks) {
+          this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunk.tool_call_chunks })}\n\n`);
+        }
       }
     } catch (err) {
       this.ctx.log.error(err);
@@ -208,6 +211,7 @@ export class AIEmployee {
       });
 
       if (toolCalls?.length) {
+        this.ctx.res.write(`data: ${JSON.stringify({ type: 'new_message' })}\n\n`);
         await this.callTool(aiMessage.messageId, true);
         return;
       }
@@ -540,7 +544,7 @@ export class AIEmployee {
           }
         });
 
-        const type = 'tool';
+        const type = 'tool_calls';
         const body = (await Promise.all(parallelToolCall)).filter((x) => !_.isNull(x));
         if (!_.isEmpty(body)) {
           this.ctx.res.write(`data: ${JSON.stringify({ type, body })} \n\n`);
