@@ -45,6 +45,7 @@ const { AIResourceContextCollector } = lazy(
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { setupDataModeling } from './ai-employees/data-modeling/setup';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -73,6 +74,7 @@ export class PluginAIClient extends Plugin {
     this.setupAIFeatures();
     this.setupWorkflow();
 
+    setupDataModeling(this);
     setupAICoding();
   }
 

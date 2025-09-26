@@ -107,6 +107,10 @@ export const databaseConnectionSchema: ISchema = {
             },
           },
           properties: {
+            extendable: {
+              type: 'void',
+              'x-component': 'ExtendableActions',
+            },
             refresh: {
               type: 'void',
               title: '{{ t("Refresh") }}',

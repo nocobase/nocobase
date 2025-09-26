@@ -108,6 +108,7 @@ export const Sender: React.FC = () => {
       disabled={!currentEmployee}
       // placeholder={!currentEmployee ? t('Please choose an AI employee') : senderPlaceholder}
       actions={false}
+      autoSize={{ minRows: 2, maxRows: 8 }}
     />
   );
 };
