@@ -13,13 +13,13 @@ import { javascript, javascriptLanguage } from '@codemirror/lang-javascript';
 import { parseMixed } from '@lezer/common';
 import type { SyntaxNode } from '@lezer/common';
 
-interface OverlayRange {
+export interface TemplateHtmlRange {
   from: number;
   to: number;
 }
 
-function buildTemplateHtmlRanges(node: SyntaxNode): OverlayRange[] {
-  const ranges: OverlayRange[] = [];
+export function getTemplateHtmlRanges(node: SyntaxNode): TemplateHtmlRange[] {
+  const ranges: TemplateHtmlRange[] = [];
   const open = node.from + 1;
   const close = node.to - 1;
   let cursor = open;
@@ -50,7 +50,7 @@ export function javascriptWithHtmlTemplates(): LanguageSupport {
         return null;
       }
 
-      const ranges = buildTemplateHtmlRanges(node.node);
+      const ranges = getTemplateHtmlRanges(node.node);
       if (!ranges.length) {
         return null;
       }
