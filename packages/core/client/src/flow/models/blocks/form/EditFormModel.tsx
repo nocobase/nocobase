@@ -133,6 +133,9 @@ EditFormModel.registerFlow({
           }
 
           const currentRecord = ctx.model.getCurrentRecord();
+          if (!currentRecord) {
+            return;
+          }
           const targetKey = ctx.association?.targetKey;
 
           if (targetKey) {

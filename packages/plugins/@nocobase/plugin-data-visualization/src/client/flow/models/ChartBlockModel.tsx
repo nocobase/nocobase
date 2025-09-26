@@ -19,6 +19,7 @@ import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
 import _ from 'lodash';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
+import { configStore } from './config-store';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -117,7 +118,33 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return fields;
   }
 
-  // 预览
+  // 公共方法：运行数据查询 + 刷新资源 + 更新结果面板
+  async runQueryAndUpdateResult(query: any) {
+    const uid = this.uid;
+    try {
+      if (!query?.mode) {
+        throw new Error('Query mode is required');
+      }
+      if (query.mode === 'sql') {
+        if (!(this.resource instanceof SQLResource)) {
+          this.initResource('sql');
+        }
+        (this.resource as SQLResource).setSQL(query.sql);
+      } else {
+        if (!(this.resource instanceof ChartResource)) {
+          this.initResource('builder');
+        }
+        (this.resource as ChartResource).setQueryParams(query);
+      }
+      await this.resource.refresh();
+      const data = this.resource.getData();
+      configStore.setResult(uid, data);
+    } catch (error: any) {
+      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
+      configStore.setError(uid, message);
+    }
+  }
+
   async setParamsAndPreview(params) {
     console.log('----setParamsAndPreview', params);
     // 暂存预览前的 stepParams，用于取消预览时回滚
@@ -126,6 +153,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
     this.setStepParams('chartSettings', 'configure', params);
     console.log('---latest setParams', this.getStepParams('chartSettings', 'configure'));
+    // 这里不再直接执行 runQueryAndUpdateResult，避免重复执行
+    // rerender -> applyAutoFlows -> handler -> runQueryAndUpdateResult
     this.rerender();
   }
 
@@ -215,24 +244,11 @@ ChartBlockModel.registerFlow({
         }
         try {
           // 数据部分
-          if (query.mode === 'sql') {
-            if (!(ctx.model.resource instanceof SQLResource)) {
-              ctx.model.initResource('sql');
-            }
-            (ctx.model.resource as SQLResource).setSQL(query.sql);
-            await ctx.model.resource.refresh();
-          } else {
-            if (!(ctx.model.resource instanceof ChartResource)) {
-              ctx.model.initResource('builder');
-            }
-            (ctx.model.resource as ChartResource).setQueryParams(query);
-            await ctx.model.resource.refresh();
-          }
+          await ctx.model.runQueryAndUpdateResult(query);
 
           // 图表部分
           const optionRaw = chart.option?.mode === 'basic' ? genRawByBuilder(chart.option?.builder) : chart.option?.raw;
           const { value: option } = await ctx.runjs(optionRaw);
-
           ctx.model.setProps({
             ...params,
             chart: {

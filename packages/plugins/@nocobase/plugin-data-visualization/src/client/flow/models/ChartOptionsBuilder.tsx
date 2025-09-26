@@ -126,9 +126,9 @@ export const ChartOptionsBuilder: React.FC<{
         <Divider style={{ margin: '8px 0' }} />
 
         {/* 公共属性 */}
-        <Form.Item label={t('Height')} name="height">
+        {/* <Form.Item label={t('Height')} name="height">
           <InputNumber min={100} style={{ width: 160 }} />
-        </Form.Item>
+        </Form.Item> */}
         <Form.Item name="legend" valuePropName="checked" colon={false} label=" ">
           <Checkbox>{t('Legend')}</Checkbox>
         </Form.Item>
@@ -174,9 +174,11 @@ const getChartFormItems = (
             <Checkbox>{t('Smooth')}</Checkbox>
           </Form.Item>
         ) : (
-          <Form.Item name="stack" valuePropName="checked" colon={false} label=" ">
-            <Checkbox>{t('Stack')}</Checkbox>
-          </Form.Item>
+          <></>
+          // TODO: 关于堆叠stack https://echarts.apache.org/handbook/zh/how-to/chart-types/bar/stacked-bar
+          // <Form.Item name="stack" valuePropName="checked" colon={false} label=" ">
+          //   <Checkbox>{t('Stack')}</Checkbox>
+          // </Form.Item>
         )}
       </>
     );

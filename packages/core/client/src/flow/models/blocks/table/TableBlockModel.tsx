@@ -119,16 +119,6 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
         model.getModelClassName('TableAssociationFieldGroupModel'),
         model.getModelClassName('TableCustomColumnModel'),
       ].filter(Boolean)}
-      afterSubModelInit={async (column: TableColumnModel) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
-        // Only append fields for actual table field columns
-        if (column instanceof TableColumnModel) {
-          model.addAppends(column.fieldPath, true);
-          model.addAppends(column.associationPathName, true);
-        }
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>

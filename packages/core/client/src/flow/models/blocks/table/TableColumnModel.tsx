@@ -44,6 +44,7 @@ export class TableColumnModel extends DisplayItemModel {
   }
 
   async afterAddAsSubModel() {
+    await super.afterAddAsSubModel();
     await this.applyAutoFlows();
   }
 

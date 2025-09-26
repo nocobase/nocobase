@@ -20,13 +20,6 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       subModelBaseClasses={['TableColumnModel']}
-      afterSubModelInit={async (column: any) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: any) => {
-        const currentBlockModel = model.context.blockModel;
-        currentBlockModel.addAppends(`${model.context.collectionField.name}.${column.fieldPath}`, true);
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -49,6 +42,10 @@ export class DisplaySubTableFieldModel extends FieldModel {
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
     });
+  }
+
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
   }
 
   getColumns() {

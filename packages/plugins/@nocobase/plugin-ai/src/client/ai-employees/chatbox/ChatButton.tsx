@@ -12,53 +12,23 @@ import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { PauseCircleFilled, RightOutlined, LeftOutlined, HolderOutlined } from '@ant-design/icons';
+import { RightOutlined, LeftOutlined, HolderOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { contextAware } from '../stores/context-aware';
-import { observer } from '@nocobase/flow-engine';
+import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
-import { useEventListener, useMemoizedFn } from 'ahooks';
-
-interface UseDragYOptions {
-  initialTop?: number; // 初始 top
-  minTop?: number; // 限制最小 top
-  maxTop?: number; // 限制最大 top
-}
-
-export function useDragY(options: UseDragYOptions = {}) {
-  const { initialTop = window.innerHeight - 120, minTop = 50, maxTop = window.innerHeight - 100 } = options;
-
-  const [top, setTop] = useState(initialTop);
-  const dragging = useRef(false);
-  const offsetY = useRef(0);
-
-  const onMouseDown = useMemoizedFn((e: React.MouseEvent) => {
-    dragging.current = true;
-    offsetY.current = e.clientY - top;
-  });
-
-  const onMouseMove = useMemoizedFn((e: MouseEvent) => {
-    if (!dragging.current) return;
-    let newTop = e.clientY - offsetY.current;
-    newTop = Math.max(minTop, Math.min(maxTop, newTop));
-    setTop(newTop);
-  });
-
-  const onMouseUp = useMemoizedFn(() => {
-    dragging.current = false;
-  });
-
-  useEventListener('mousemove', onMouseMove);
-  useEventListener('mouseup', onMouseUp);
-
-  return { top, onMouseDown, dragging };
-}
+import { isHide } from '../built-in/utils';
 
 export const ChatButton: React.FC = observer(() => {
+  const ctx = useFlowContext<FlowRuntimeContext>();
+  ctx.engine.flowSettings.on('beforeOpen', () => {
+    setFolded(true);
+  });
+
   const { aiEmployees } = useAIEmployeesData();
 
   const open = useChatBoxStore.use.open();
@@ -73,8 +43,6 @@ export const ChatButton: React.FC = observer(() => {
   const showed = useRef(false);
 
   const location = useLocation();
-
-  const { top, onMouseDown, dragging } = useDragY();
 
   useEffect(() => {
     showed.current = false;
@@ -96,18 +64,20 @@ export const ChatButton: React.FC = observer(() => {
   }, [contextAware.aiEmployees.length, folded]);
 
   const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            setOpen(true);
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
+    return aiEmployees
+      ?.filter((employee) => !isHide(employee))
+      .map((employee) => ({
+        key: employee.username,
+        label: (
+          <AIEmployeeListItem
+            aiEmployee={employee}
+            onClick={() => {
+              setOpen(true);
+              switchAIEmployee(employee);
+            }}
+          />
+        ),
+      }));
   }, [aiEmployees]);
 
   if (!aiEmployees?.length) {
@@ -122,7 +92,7 @@ export const ChatButton: React.FC = observer(() => {
         border-radius: 8px;
         gap: 8px;
         position: fixed;
-        top: ${top}px;
+        bottom: 42px;
         align-items: center;
         inset-inline-end: 8px;
         width: fit-content;
@@ -159,7 +129,7 @@ export const ChatButton: React.FC = observer(() => {
               height: '50px',
             }}
           />
-          <Dropdown menu={{ items }} placement="topRight" disabled={dragging.current}>
+          <Dropdown menu={{ items }} placement="topRight">
             <Avatar
               src={icon}
               size={52}
@@ -169,18 +139,6 @@ export const ChatButton: React.FC = observer(() => {
               }}
             />
           </Dropdown>
-          <Button
-            variant="text"
-            color="default"
-            icon={<HolderOutlined />}
-            style={{
-              height: '52px',
-              width: '12px',
-              fontSize: token.fontSizeSM,
-              cursor: 'grab',
-            }}
-            onMouseDown={onMouseDown}
-          />
         </>
       )}
     </div>

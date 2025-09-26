@@ -8,7 +8,7 @@
  */
 
 import { ToolOptions } from '../../../manager/ai-manager';
-import { FormModel } from '@nocobase/client';
+import { FormBlockModel } from '@nocobase/client';
 
 export const formFillerTool: [string, string, ToolOptions] = [
   'frontend',
@@ -19,7 +19,7 @@ export const formFillerTool: [string, string, ToolOptions] = [
       if (!uid || !data) {
         return;
       }
-      const model = app.flowEngine.getModel(uid) as FormModel;
+      const model = app.flowEngine.getModel(uid, true) as FormBlockModel;
       model?.form?.setFieldsValue(data);
     },
   },

@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { Button, Dropdown, Tag, Avatar, Popover, Flex } from 'antd';
+import { Button, Dropdown, Tag, Avatar, Popover, Flex, Divider } from 'antd';
 import { useT } from '../../locale';
 import { useToken } from '@nocobase/client';
 import { UserAddOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -115,15 +115,21 @@ export const SenderHeader: React.FC = () => {
               <Popover content={<ProfileCard aiEmployee={currentEmployee} />} placement="leftTop">
                 <Avatar
                   style={{
-                    margin: '4px 8px 4px 0',
+                    margin: '4px 0',
                   }}
                   shape="circle"
-                  size={48}
+                  size={35}
                   src={avatar}
                 />
               </Popover>
-              <Flex vertical={true}>
+              <Flex
+                style={{
+                  margin: '4px 12px',
+                }}
+                align="center"
+              >
                 <div>{currentEmployee.nickname}</div>
+                <Divider type="vertical" />
                 <div
                   style={{
                     fontSize: token.fontSizeSM,

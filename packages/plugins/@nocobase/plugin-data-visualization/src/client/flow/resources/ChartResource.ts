@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// 文件中的 ChartResource 类
 import { BaseRecordResource } from '@nocobase/flow-engine';
-import { parseField, removeUnparsableFilter } from '../../utils';
+import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
-  resourceName = 'charts'; // 修复：从 'chart' 改为 'charts'
+  resourceName = 'charts';
 
   private refreshTimer: NodeJS.Timeout | null = null;
 
-  // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     url: 'charts:query',
     method: 'post',
@@ -25,29 +23,76 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     headers: {} as Record<string, any>,
   };
 
-  // 整体参数设置
+  // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>) {
-    if (!this.validateQuery(query)) {
+    console.log('---ChartResource setQueryParams', query);
+    const { success, message } = this.validateQuery(query);
+    if (!success) {
+      // 这里过程性校验 不强制报错，只做提示
+      console.warn(message);
       return this;
     }
-    this.request.data = this.parseQuery(query);
+    const parsed = this.parseQuery(query);
+    const { filter: qbFilter, ...rest } = parsed;
+
+    // 写入除 filter 以外的字段到请求体
+    this.request.data = {
+      ...this.request.data,
+      ...rest,
+    };
+
+    // filter 通过统一处理后设置到请求体
+    if (isEmptyFilterObject(qbFilter)) {
+      this.removeFilterGroup('__qbFilter__');
+    } else {
+      this.addFilterGroup('__qbFilter__', qbFilter);
+    }
+
     return this;
   }
 
-  validateQuery(query: Record<string, any>) {
+  // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
+  setFilter(filter: Record<string, any>) {
+    // 父类已将所有组聚合为 {$and: [...] } 或单对象；这里统一清洗与扁平化 $and
+    const cleanedRoot = removeUnparsableFilter(filter);
+
+    let merged = cleanedRoot;
+    if (
+      cleanedRoot &&
+      typeof cleanedRoot === 'object' &&
+      !Array.isArray(cleanedRoot) &&
+      Array.isArray((cleanedRoot as any).$and)
+    ) {
+      const andItems = (cleanedRoot as any).$and
+        .map((item: any) => removeUnparsableFilter(item))
+        .filter(Boolean)
+        .flatMap((item: any) => (item && Array.isArray(item.$and) ? item.$and : [item]));
+
+      merged = andItems.length === 0 ? null : andItems.length === 1 ? andItems[0] : { $and: andItems };
+    }
+
+    if (isEmptyFilterObject(merged)) {
+      delete this.request.data.filter;
+    } else {
+      this.request.data.filter = merged;
+    }
+    return this;
+  }
+
+  validateQuery(query: Record<string, any>): { success: boolean; message: string } {
     if (!query) {
-      console.warn('validate: query is required');
-      return false;
+      return { success: false, message: 'validate: query is required' };
+    }
+    if (!query.mode) {
+      return { success: false, message: 'validate: query mode is required' };
     }
     if (query.mode === 'sql' && !query.sql) {
-      console.warn('validate: sql is required when mode is sql');
-      return false;
+      return { success: false, message: 'validate: sql is required when mode is sql' };
     }
     if (query.mode === 'builder' && (!query.collectionPath?.length || !query.measures?.length)) {
-      console.warn('validate: collection and measures are required when mode is builder');
-      return false;
+      return { success: false, message: 'validate: collection and measures are required when mode is builder' };
     }
-    return true;
+    return { success: true, message: '' };
   }
 
   // 解析 queryBuider 表单值为请求参数
@@ -84,27 +129,13 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     return data;
   }
 
-  // 新增过滤条件组, 支持外部筛选表单联动传入
-  addFilterGroup(key: string, filterGroup: Record<string, any>) {
-    this.request.data.filter = {
-      ...this.request.data.filter,
-      ...filterGroup,
-    };
-    return this;
-  }
-
-  setFilter(filter: Record<string, any>) {
-    this.request.data.filter = filter;
-    return this;
-  }
-
   // 查询数据
   async run() {
     const data = this.request.data || {};
     if (!data.collection || !data.measures?.length) {
       throw new Error('collection and measures are required');
     }
-    // 刷新数据 api.post('chart:query')
+    // 请求数据 api.post('chart:query')
     return await this.runAction<TData, any>('query', this.getRefreshRequestOptions());
   }
 

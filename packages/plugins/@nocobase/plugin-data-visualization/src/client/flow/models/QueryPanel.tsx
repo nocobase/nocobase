@@ -55,32 +55,17 @@ export const QueryPanel: React.FC = observer(() => {
   const handleRun = async () => {
     try {
       setRunning(true);
-      const uid = ctx.model.uid;
+      // 先提交表单，触发校验
+      await form.submit();
 
-      if (form?.values?.query?.mode === 'sql') {
-        const sql = form.values?.query?.sql;
-        if (!sql) return;
-        // 切换为 SQLResource
-        ctx.model.initResource('sql');
-        const resource = ctx.model.resource;
-        if (resource instanceof SQLResource) {
-          resource.setSQL(sql);
-        }
-      } else {
-        // 切换为 ChartResource（builder）
-        ctx.model.initResource('builder');
-        const resource = ctx.model.resource;
-        if (resource instanceof ChartResource) {
-          resource.setQueryParams(form.values.query);
-        }
-      }
-      await ctx.model.resource.refresh();
-      const data = ctx.model.resource.getData();
-      configStore.setResult(uid, data);
+      // 统一通过 Model 的公共方法执行查询与结果更新
+      const query = form.values?.query;
+      await ctx.model.runQueryAndUpdateResult(query);
+
+      // 运行查询完，直接展开结果面板
+      setShowResult(true);
     } catch (error: any) {
       console.error(error);
-      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
-      configStore.setError(ctx.model.uid, message);
     } finally {
       setRunning(false);
     }

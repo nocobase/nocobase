@@ -13,9 +13,9 @@ import { define, observable, reaction } from '@formily/reactive';
 import { Button, Collapse, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-
 import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
+import { Emitter } from './emitter';
 import { FlowRuntimeContext } from './flowContext';
 import { FlowEngine } from './flowEngine';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
@@ -114,6 +114,7 @@ export class FlowSettings {
   public enabled: boolean;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
+  #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
@@ -128,6 +129,14 @@ export class FlowSettings {
     define(this, {
       enabled: observable,
     });
+  }
+
+  on(event: 'beforeOpen', callback: (...args: any[]) => void) {
+    this.#emitter.on(event, callback);
+  }
+
+  off(event: 'beforeOpen', callback: (...args: any[]) => void) {
+    this.#emitter.off(event, callback);
   }
 
   /**
@@ -524,6 +533,7 @@ export class FlowSettings {
    * @returns {Promise<boolean>} 是否成功打开弹窗
    */
   public async open(options: FlowSettingsOpenOptions): Promise<boolean> {
+    this.#emitter.emit('beforeOpen', options);
     const { model, flowKey, flowKeys, stepKey, uiMode = 'dialog', preset, onCancel, onSaved } = options;
 
     // 基础校验

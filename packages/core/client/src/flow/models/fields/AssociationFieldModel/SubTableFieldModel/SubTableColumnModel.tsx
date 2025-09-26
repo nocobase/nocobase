@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
   buildWrapperFieldChildren,
+  DisplayItemModel,
   DragHandler,
   Droppable,
   EditableItemModel,
@@ -23,7 +24,6 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
-  DisplayItemModel,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
@@ -139,6 +139,11 @@ export class SubTableColumnModel<
       cache: false,
     });
   }
+
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>

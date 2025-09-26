@@ -31,7 +31,6 @@ export const ToolCard: React.FC<{
         console.error(err, tool.args);
       }
     }
-    console.log(tool);
     const toolOption = plugin.aiManager.tools.get(tool.name);
     const C = toolOption?.ui?.card;
     if (C) {
