@@ -13,15 +13,15 @@ import {
   DndProvider,
   FlowSettingsButton,
   escapeT,
-  useFlowEngine,
   observable,
+  useFlowEngine,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { EditFormModel, FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
+import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
-import { RecordPickerContent } from '../RecordPickerFieldModel';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -29,15 +29,6 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       subModelBaseClasses={['SubTableColumnModel']}
-      afterSubModelInit={async (column: SubTableColumnModel) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: SubTableColumnModel) => {
-        const currentBlockModel = model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${model.context.fieldPath}.${column.context.fieldPath}`, true);
-        }
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>

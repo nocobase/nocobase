@@ -94,6 +94,12 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     return this.context.collectionField as CollectionField;
   }
 
+  async afterAddAsSubModel() {
+    if (this.context.resource) {
+      await this.context.resource.refresh();
+    }
+  }
+
   static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions[] {
     const interfaceName = collectionField.interface;
 
