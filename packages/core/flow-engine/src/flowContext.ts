@@ -1423,11 +1423,24 @@ export class FlowModelContext extends BaseFlowModelContext {
         await model.save();
       }
 
-      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid: this.model.uid } });
+      // viewUid 如何确定? 如果是内嵌视图，则为父模型 uid，否则为子模型 uid
+      const viewUid = model.stepParams?.popupSettings?.openView ? model.uid : this.model.uid;
+      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid } });
       const parentView = this.view;
-      if (parentView) {
-        model.context.defineProperty('view', { get: () => parentView });
-      }
+      // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
+      const pendingType = (options?.isMobileLayout ? 'embed' : options?.mode || 'drawer') as any;
+      const pendingInputArgs = { ...(options || {}), viewUid };
+      pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
+      pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
+
+      const pendingView = {
+        type: pendingType,
+        inputArgs: pendingInputArgs,
+        navigation: parentView?.navigation,
+        preventClose: !!options?.preventClose,
+        engineCtx: this.engine.context,
+      };
+      model.context.defineProperty('view', { value: pendingView });
       await model.dispatchEvent('click', {
         // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法

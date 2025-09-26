@@ -552,16 +552,39 @@ export const openView = defineAction({
     }
     const inputArgs = ctx.inputArgs || {};
 
-    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk;
+    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk || ctx.view?.inputArgs.filterByTk;
 
-    inputArgs.sourceId = inputArgs.sourceId || params.sourceId;
+    inputArgs.sourceId = inputArgs.sourceId || params.sourceId || ctx.view?.inputArgs.sourceId;
 
-    inputArgs.tabUid = inputArgs.tabuid || params.tabUid;
+    inputArgs.tabUid = inputArgs.tabuid || params.tabUid || ctx.view?.inputArgs.tabUid;
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
     if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
+        // 在路由跳转前注入 PendingView，统一首次 handler 阶段的 ctx.view 语义
+        const pendingType = (
+          ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params?.mode || 'drawer'
+        ) as any;
+        const pendingInputArgs = {
+          ...ctx.inputArgs,
+          dataSourceKey: params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
+          collectionName: params.collectionName ?? ctx.inputArgs.collectionName,
+          associationName: params.associationName ?? ctx.inputArgs.associationName,
+          filterByTk: inputArgs.filterByTk ?? params.filterByTk,
+          sourceId: inputArgs.sourceId ?? params.sourceId,
+          tabUid: inputArgs.tabUid ?? params.tabUid,
+          viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
+        } as Record<string, unknown>;
+        const pendingView = {
+          type: pendingType,
+          inputArgs: pendingInputArgs,
+          navigation: ctx.view?.navigation,
+          preventClose: !!params?.preventClose,
+          engineCtx: ctx.engine.context,
+        };
+        ctx.model.context.defineProperty('view', { value: pendingView });
+
         const nextView = {
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
           filterByTk: inputArgs.filterByTk ?? params.filterByTk,
@@ -627,7 +650,9 @@ export const openView = defineAction({
       tabUid: inputArgs.tabUid ?? params.tabUid,
       openerUids,
     };
-
+    // Ensure runtime keys propagate to view.inputArgs
+    finalInputArgs.filterByTk = inputArgs.filterByTk ?? params.filterByTk;
+    finalInputArgs.sourceId = inputArgs.sourceId ?? params.sourceId;
     await ctx.viewer.open({
       type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
       inputArgs: finalInputArgs,
@@ -656,6 +681,11 @@ export const openView = defineAction({
               const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? {};
 
               pageModel.context.defineProperty('currentView', {
+                get: () => currentView,
+              });
+              // 统一视图上下文：无论内部还是外部弹窗，页面内的 ctx.view 都指向“当前视图”
+              // 这样在路由模式下，外部弹窗（通过 ctx.openView 触发）与内部弹窗拥有一致的 ctx.view 行为
+              pageModel.context.defineProperty('view', {
                 get: () => currentView,
               });
               pageModel.context.defineProperty('closable', {
@@ -694,8 +724,6 @@ export const openView = defineAction({
         if (navigation !== false) {
           if (nav?.back) {
             nav.back();
-          } else {
-            ctx.model.flowEngine?.context?.router?.navigate(-1);
           }
         }
       },
