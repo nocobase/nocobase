@@ -119,16 +119,20 @@ export const DefaultToolCard: React.FC<{
       title: string;
       description: string;
     };
-  }>(() =>
-    api
-      .resource('aiConversations')
-      .getTools({
-        values: {
-          sessionId: currentConversation,
-          messageId,
-        },
-      })
-      .then((res) => res?.data?.data),
+  }>(
+    () =>
+      api
+        .resource('aiConversations')
+        .getTools({
+          values: {
+            sessionId: currentConversation,
+            messageId,
+          },
+        })
+        .then((res) => res?.data?.data),
+    {
+      ready: !!messageId,
+    },
   );
 
   const items = tools.map((tool) => {
@@ -191,6 +195,7 @@ export const DefaultToolCard: React.FC<{
   });
 
   const showCallButton =
+    messageId &&
     !tools.every((tool) => tool.auto) &&
     !tools.every((tool) => tool.invokeStatus === 'done' || tool.invokeStatus === 'confirmed');
 
