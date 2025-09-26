@@ -107,10 +107,6 @@ export const databaseConnectionSchema: ISchema = {
             },
           },
           properties: {
-            extendable: {
-              type: 'void',
-              'x-component': 'ExtendableActions',
-            },
             refresh: {
               type: 'void',
               title: '{{ t("Refresh") }}',
@@ -141,6 +137,10 @@ export const databaseConnectionSchema: ISchema = {
               'x-component-props': {
                 type: 'primary',
               },
+            },
+            extendable: {
+              type: 'void',
+              'x-component': 'ExtendableActions',
             },
           },
         },
