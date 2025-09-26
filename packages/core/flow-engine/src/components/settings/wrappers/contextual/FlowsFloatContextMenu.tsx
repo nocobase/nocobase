@@ -93,6 +93,10 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
   /* 正常的hover行为 */
   &:hover > .nb-toolbar-container {
     opacity: 1;
+
+    .nb-toolbar-container-icons {
+      display: block;
+    }
   }
 
   /* 当有.hide-parent-menu类时隐藏菜单 */
@@ -139,10 +143,13 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
     }
 
     > .nb-toolbar-container-icons {
+      display: none; // 防止遮挡其它 icons
       position: absolute;
       right: 2px;
-      top: ${toolbarPosition === 'inside' ? '2px' : '-2px'};
-      ${toolbarPosition === 'inside' ? '' : 'transform: translateY(-100%);'}
+      top: ${toolbarPosition === 'above' ? '0px' : '2px'};
+      ${toolbarPosition === 'above' ? 'transform: translateY(-100%);' : ''}
+      ${toolbarPosition === 'above' ? 'padding-bottom: 2px;' : ''}
+      ${toolbarPosition === 'above' ? 'margin-bottom: -2px;' : ''}
       line-height: 16px;
       pointer-events: all;
 
