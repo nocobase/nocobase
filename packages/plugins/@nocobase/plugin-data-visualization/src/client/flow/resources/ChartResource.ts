@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-// 文件中的 ChartResource 类
 import { BaseRecordResource } from '@nocobase/flow-engine';
-import { parseField, removeUnparsableFilter } from '../../utils';
+import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
-  resourceName = 'charts'; // 修复：从 'chart' 改为 'charts'
+  resourceName = 'charts';
 
   private refreshTimer: NodeJS.Timeout | null = null;
 
-  // 请求配置 - 与 APIClient 接口保持一致
   protected request = {
     url: 'charts:query',
     method: 'post',
@@ -25,12 +23,48 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     headers: {} as Record<string, any>,
   };
 
-  // 整体参数设置
+  // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>) {
     if (!this.validateQuery(query)) {
       return this;
     }
-    this.request.data = this.parseQuery(query);
+    const parsed = this.parseQuery(query);
+    const qbFilter = parsed?.filter;
+
+    if (isEmptyFilterObject(qbFilter)) {
+      this.removeFilterGroup('__qbFilter__');
+    } else {
+      this.addFilterGroup('__qbFilter__', qbFilter);
+    }
+
+    return this;
+  }
+
+  // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
+  setFilter(filter: Record<string, any>) {
+    // 父类已将所有组聚合为 {$and: [...] } 或单对象；这里统一清洗与扁平化 $and
+    const cleanedRoot = removeUnparsableFilter(filter);
+
+    let merged = cleanedRoot;
+    if (
+      cleanedRoot &&
+      typeof cleanedRoot === 'object' &&
+      !Array.isArray(cleanedRoot) &&
+      Array.isArray((cleanedRoot as any).$and)
+    ) {
+      const andItems = (cleanedRoot as any).$and
+        .map((item: any) => removeUnparsableFilter(item))
+        .filter(Boolean)
+        .flatMap((item: any) => (item && Array.isArray(item.$and) ? item.$and : [item]));
+
+      merged = andItems.length === 0 ? null : andItems.length === 1 ? andItems[0] : { $and: andItems };
+    }
+
+    if (isEmptyFilterObject(merged)) {
+      delete this.request.data.filter;
+    } else {
+      this.request.data.filter = merged;
+    }
     return this;
   }
 
@@ -84,27 +118,13 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     return data;
   }
 
-  // 新增过滤条件组, 支持外部筛选表单联动传入
-  addFilterGroup(key: string, filterGroup: Record<string, any>) {
-    this.request.data.filter = {
-      ...this.request.data.filter,
-      ...filterGroup,
-    };
-    return this;
-  }
-
-  setFilter(filter: Record<string, any>) {
-    this.request.data.filter = filter;
-    return this;
-  }
-
   // 查询数据
   async run() {
     const data = this.request.data || {};
     if (!data.collection || !data.measures?.length) {
       throw new Error('collection and measures are required');
     }
-    // 刷新数据 api.post('chart:query')
+    // 请求数据 api.post('chart:query')
     return await this.runAction<TData, any>('query', this.getRefreshRequestOptions());
   }
 
