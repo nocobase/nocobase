@@ -1394,6 +1394,9 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
+      if (options.defineProperties || options.defineMethod) {
+        options.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
+      }
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
