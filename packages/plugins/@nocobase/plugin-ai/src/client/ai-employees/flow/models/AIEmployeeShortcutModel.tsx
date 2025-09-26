@@ -28,9 +28,18 @@ const { Meta } = Card;
 type ShortcutProps = TriggerTaskOptions & {
   builtIn?: boolean;
   showNotice?: boolean;
+  size?: number;
+  animation?: boolean;
 };
 
-const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, showNotice, builtIn }) => {
+const Shortcut: React.FC<ShortcutProps> = ({
+  aiEmployee: { username },
+  tasks,
+  showNotice,
+  size,
+  animation = true,
+  builtIn,
+}) => {
   const [focus, setFocus] = useState(false);
 
   const { loading, aiEmployeesMap } = useAIEmployeesData();
@@ -43,6 +52,11 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
     if (!avatar) {
       return null;
     }
+    if (!animation) {
+      return avatars(avatar, {
+        mask: undefined,
+      });
+    }
     if (focus || showNotice) {
       return avatars(avatar, {
         mask: undefined,
@@ -53,14 +67,14 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
       mouth: undefined,
       mask: ['dark'],
     });
-  }, [aiEmployee, focus, showNotice]);
+  }, [aiEmployee, focus, showNotice, animation]);
 
   return (
     <Spin spinning={loading}>
       <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} />}>
         <Avatar
           src={currentAvatar}
-          size={52}
+          size={size || 52}
           shape="circle"
           style={{
             cursor: 'pointer',
