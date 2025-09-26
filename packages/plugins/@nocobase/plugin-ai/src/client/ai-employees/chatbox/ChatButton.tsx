@@ -22,6 +22,7 @@ import { contextAware } from '../stores/context-aware';
 import { observer } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { useEventListener, useMemoizedFn } from 'ahooks';
+import { isHide } from '../built-in/utils';
 
 interface UseDragYOptions {
   initialTop?: number; // 初始 top
@@ -96,18 +97,20 @@ export const ChatButton: React.FC = observer(() => {
   }, [contextAware.aiEmployees.length, folded]);
 
   const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            setOpen(true);
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
+    return aiEmployees
+      ?.filter((employee) => !isHide(employee))
+      .map((employee) => ({
+        key: employee.username,
+        label: (
+          <AIEmployeeListItem
+            aiEmployee={employee}
+            onClick={() => {
+              setOpen(true);
+              switchAIEmployee(employee);
+            }}
+          />
+        ),
+      }));
   }, [aiEmployees]);
 
   if (!aiEmployees?.length) {
