@@ -77,7 +77,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
           return props.rowIdx + 1;
         },
       },
-      ...baseColumns,
+      ...baseColumns.concat({
+        key: '_empty',
+      }),
       isConfigMode && {
         key: 'addColumn',
         fixed: 'right',
