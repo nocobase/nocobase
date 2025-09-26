@@ -55,14 +55,21 @@ export const QueryPanel: React.FC = observer(() => {
   const handleRun = async () => {
     try {
       setRunning(true);
-      // 先提交表单，触发校验
-      await form.submit();
 
-      // 统一通过 Model 的公共方法执行查询与结果更新
       const query = form.values?.query;
+
+      // builder 模式需要先提交表单做校验；sql 模式不需要
+      if (query?.mode === 'builder') {
+        await form.submit();
+      }
+
+      ctx.model.checkResource(query); // 保证 resource 正确
+      if (query?.mode === 'sql') {
+        (ctx.model.resource as SQLResource).setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+      }
+
       await ctx.model.runQueryAndUpdateResult(query);
 
-      // 运行查询完，直接展开结果面板
       setShowResult(true);
     } catch (error: any) {
       console.error(error);
