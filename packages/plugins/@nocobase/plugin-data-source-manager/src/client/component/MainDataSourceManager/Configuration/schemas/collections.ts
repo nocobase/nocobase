@@ -176,6 +176,10 @@ export const collectionTableSchema: ISchema = {
             type: 'primary',
           },
         },
+        extendable: {
+          type: 'void',
+          'x-component': 'ExtendableActions',
+        },
       },
     },
     [uid()]: {

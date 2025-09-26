@@ -138,10 +138,6 @@ export const databaseConnectionSchema: ISchema = {
                 type: 'primary',
               },
             },
-            extendable: {
-              type: 'void',
-              'x-component': 'ExtendableActions',
-            },
           },
         },
         table: {
