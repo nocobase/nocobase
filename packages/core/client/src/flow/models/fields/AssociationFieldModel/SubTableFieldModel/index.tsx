@@ -117,9 +117,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
       });
     };
   }
-  protected onMount(): void {
-    console.log('子表格onMount', this.props.value);
-  }
+
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
   }
