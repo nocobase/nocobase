@@ -210,13 +210,13 @@ export default class DateFieldScheduleTrigger {
       if (typeof repeat === 'number') {
         const tsFn = DialectTimestampFnMap[db.options.dialect];
         if (repeat > range && tsFn) {
+          const offsetSeconds = Math.round(((startsOn.offset || 0) * (startsOn.unit || 1000)) / 1000);
+          const repeatSecond = Math.round(repeat / 1000);
           const { field } = model.getAttributes()[startsOn.field];
-          const modExp = fn(
-            'MOD',
-            literal(
-              `${Math.round(timestamp / 1000)} - ${tsFn(db.sequelize.getQueryInterface().quoteIdentifiers(field))}`,
-            ),
-            Math.round(repeat / 1000),
+          const modExp = literal(
+            `${repeatSecond} - MOD(${Math.round(timestamp / 1000)} - ${tsFn(
+              db.sequelize.getQueryInterface().quoteIdentifiers(field),
+            )} - ${offsetSeconds}, ${repeatSecond})`,
           );
           conditions.push(where(modExp, { [Op.lt]: Math.round(range / 1000) }));
         }
@@ -297,10 +297,10 @@ export default class DateFieldScheduleTrigger {
       }
     }
     if (typeof repeat === 'number') {
-      const passedCycles = Math.floor((timestamp - startTime) / repeat);
-      nextTime = startTime + (passedCycles + 1) * repeat;
+      // const passedCycles = Math.floor((timestamp - startTime) / repeat);
+      nextTime = timestamp + repeat - ((timestamp - startTime) % repeat);
       if (nextTime - timestamp > range) {
-        logger.debug(`[Schedule on date field] getNextTime: nextTime is out of caching window`);
+        logger.debug(`[Schedule on date field] getNextTime: nextTime (${nextTime}) is out of caching window`);
         return null;
       }
       if (endTime && endTime < nextTime) {
@@ -310,7 +310,7 @@ export default class DateFieldScheduleTrigger {
     } else if (typeof repeat === 'string') {
       nextTime = getCronNextTime(repeat, now);
       if (nextTime - timestamp > range) {
-        logger.debug(`[Schedule on date field] getNextTime: nextTime is out of caching window`);
+        logger.debug(`[Schedule on date field] getNextTime: nextTime (${nextTime}) is out of caching window`);
         return null;
       }
       if (endTime && endTime < nextTime) {
