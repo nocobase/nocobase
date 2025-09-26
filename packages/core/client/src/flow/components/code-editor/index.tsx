@@ -11,12 +11,12 @@ import React, { useEffect, useRef } from 'react';
 
 // CodeMirror imports
 import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
-import { javascript } from '@codemirror/lang-javascript';
 import { lintGutter } from '@codemirror/lint';
 import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup, EditorView } from 'codemirror';
 import completions from './completions';
+import { javascriptWithHtmlTemplates } from './javascriptHtmlTemplate';
 import { createJavaScriptLinter } from './linter';
 import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
 import { Flex } from 'antd';
@@ -83,7 +83,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
 
     const extensions = [
       basicSetup,
-      javascript(),
+      javascriptWithHtmlTemplates(),
       autocompletion({
         override: [createCustomCompletion()],
         closeOnBlur: false,

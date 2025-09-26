@@ -1,0 +1,66 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { html, htmlLanguage } from '@codemirror/lang-html';
+import { LanguageSupport } from '@codemirror/language';
+import { javascript, javascriptLanguage } from '@codemirror/lang-javascript';
+import { parseMixed } from '@lezer/common';
+import type { SyntaxNode } from '@lezer/common';
+
+interface OverlayRange {
+  from: number;
+  to: number;
+}
+
+function buildTemplateHtmlRanges(node: SyntaxNode): OverlayRange[] {
+  const ranges: OverlayRange[] = [];
+  const open = node.from + 1;
+  const close = node.to - 1;
+  let cursor = open;
+
+  for (let child = node.firstChild; child; child = child.nextSibling) {
+    if (child.type.name === 'Interpolation') {
+      if (child.from > cursor) {
+        ranges.push({ from: cursor, to: child.from });
+      }
+      cursor = Math.max(cursor, child.to);
+    }
+  }
+
+  if (cursor < close) {
+    ranges.push({ from: cursor, to: close });
+  }
+
+  return ranges.filter((range) => range.to > range.from);
+}
+
+export function javascriptWithHtmlTemplates(): LanguageSupport {
+  const baseJavascript = javascript();
+  const htmlSupport = html();
+
+  const mixedLanguage = javascriptLanguage.configure({
+    wrap: parseMixed((node) => {
+      if (node.type.name !== 'TemplateString') {
+        return null;
+      }
+
+      const ranges = buildTemplateHtmlRanges(node.node);
+      if (!ranges.length) {
+        return null;
+      }
+
+      return {
+        parser: htmlLanguage.parser,
+        overlay: ranges,
+      };
+    }),
+  });
+
+  return new LanguageSupport(mixedLanguage, [baseJavascript.support, htmlSupport.support]);
+}

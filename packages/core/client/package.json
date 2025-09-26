@@ -30,6 +30,7 @@
     "@nocobase/evaluators": "1.9.0-alpha.16",
     "@nocobase/sdk": "1.9.0-alpha.16",
     "@nocobase/utils": "1.9.0-alpha.16",
+    "@codemirror/lang-html": "^6.4.10",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
     "antd-style": "3.7.1",
