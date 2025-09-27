@@ -260,10 +260,13 @@ ChartBlockModel.registerFlow({
         },
       },
       async beforeParamsSave(ctx, params) {
-        return ctx.sql.save({
-          uid: ctx.model.uid,
-          sql: params.query.sql,
-        });
+        const mode = params.query?.mode || 'builder';
+        if (mode === 'sql') {
+          return ctx.sql.save({
+            uid: ctx.model.uid,
+            sql: params.query.sql,
+          });
+        }
       },
       defaultParams(ctx) {
         // 数据查询默认 builder 模式；图表配置默认 basic 模式
