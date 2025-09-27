@@ -16,6 +16,8 @@ import { CodeEditor } from '../../../components/code-editor';
 const NAMESPACE = 'client';
 
 export class JSBlockModel extends BlockModel {
+  // Avoid double-run on first mount; only rerun after remounts
+  private _mountedOnce = false;
   render() {
     return (
       <Card id={`model-${this.uid}`} className="code-block">
@@ -24,10 +26,13 @@ export class JSBlockModel extends BlockModel {
     );
   }
   protected onMount() {
-    // if having ref, should rerender to insert content to html again
-    if (this.context.ref.current) {
-      this.rerender();
+    // Rerun only when remounting (e.g., after being hidden/unmounted)
+    if (this._mountedOnce) {
+      if (this.context.ref.current) {
+        this.rerender();
+      }
     }
+    this._mountedOnce = true;
   }
 }
 

@@ -82,8 +82,8 @@ export function usePage() {
       preventClose: !!config.preventClose,
       destroy: () => pageRef.current?.destroy(),
       update: (newConfig) => pageRef.current?.update(newConfig),
-      close: (result?: any) => {
-        if (preventClose) {
+      close: (result?: any, force?: boolean) => {
+        if (preventClose && !force) {
           return;
         }
         resolvePromise?.(result);
