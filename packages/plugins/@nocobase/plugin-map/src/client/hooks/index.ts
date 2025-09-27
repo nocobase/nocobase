@@ -8,3 +8,4 @@
  */
 
 export * from './useMapConfiguration';
+export * from './useMapConfig';

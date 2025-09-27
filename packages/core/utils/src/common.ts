@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import flat from 'flat';
 
 export const isString = (value: any): value is string => {
   return typeof value === 'string';
@@ -134,3 +135,30 @@ export function sleep(ms: number): Promise<void> {
     setTimeout(resolve, ms);
   });
 }
+
+export function isEmptyFilter(obj) {
+  if (!obj) return true;
+
+  if (('$and' in obj && _.isEmpty(obj.$and)) || ('$or' in obj && _.isEmpty(obj.$or))) {
+    return true;
+  }
+
+  return false;
+}
+
+export const removeNullCondition = (filter, customFlat = flat) => {
+  const items = customFlat(filter || {});
+  const values = {};
+  for (const key in items) {
+    const value = items[key];
+    if (value != null && !isEmpty(value) && value !== '') {
+      values[key] = value;
+    }
+  }
+
+  const result = customFlat.unflatten(values);
+
+  return _.isEmpty(result) ? undefined : result;
+};
+
+export * from './transformFilter';

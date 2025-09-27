@@ -160,6 +160,9 @@ interface KeepAliveProps {
 // Evaluate device performance to determine maximum number of cached pages
 // Range: minimum 5, maximum 20
 const getMaxPageCount = () => {
+  // TODO: 2.0 中暂时先去除 KeepAlive 功能
+  return 1;
+
   // If keep-alive is enabled in e2e environment, it makes locator selection difficult. So we disable keep-alive in e2e environment
   if (process.env.__E2E__) {
     return 1;

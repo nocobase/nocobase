@@ -1,0 +1,65 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { WorkContextOptions } from '../types';
+import { CodeOutlined } from '@ant-design/icons';
+import { useT } from '../../locale';
+// @ts-ignore
+import _ from 'lodash';
+import { Space } from 'antd';
+import { css } from '@nocobase/client';
+import ReactMarkdown from 'react-markdown';
+import { Code } from '../chatbox/markdown/Code';
+
+type Content = {
+  scene: string;
+  language: string;
+  code: string;
+};
+
+export const CodeEditorContext: WorkContextOptions = {
+  name: 'code-editor',
+  tag: {
+    Component: ({ item }) => {
+      const t = useT();
+      return (
+        <Space>
+          <CodeOutlined />
+          <span>{item.title}</span>
+        </Space>
+      );
+    },
+  },
+  chatbox: {
+    Component: ({ item }) => {
+      const t = useT();
+      const content = item.content as Content;
+      return (
+        <div
+          className={css`
+            width: 350px;
+            margin-bottom: -1em;
+          `}
+        >
+          <ReactMarkdown
+            components={{
+              code: (props) => <Code {...props} />,
+            }}
+          >
+            {'```' + content.language + '\n' + content.code + '\n```'}
+          </ReactMarkdown>
+        </div>
+      );
+    },
+  },
+  getContent: async (_app, { content }) => {
+    return (content as Content)?.code;
+  },
+};
