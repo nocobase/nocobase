@@ -18,7 +18,20 @@ import { useChatBoxStore } from '../stores/chat-box';
 import { isEngineer, isSupportLanguage } from '../../built-in/utils';
 import { Code as AICoding } from '../../ai-coding/markdown/Code';
 
-export const CodeInternal: React.FC = (props: any) => {
+export const CodeInternal: React.FC<{
+  language: string;
+  value: string;
+}> = ({ language, value, ...rest }) => {
+  const { isDarkTheme } = useGlobalTheme();
+
+  return (
+    <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
+      {value}
+    </SyntaxHighlighter>
+  );
+};
+
+export const CodeBasic: React.FC = (props: any) => {
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -30,8 +43,6 @@ export const CodeInternal: React.FC = (props: any) => {
     navigator.clipboard.writeText(value);
     antdMessage.success(t('Copied'));
   };
-
-  const { isDarkTheme } = useGlobalTheme();
 
   return match ? (
     <Card
@@ -49,9 +60,7 @@ export const CodeInternal: React.FC = (props: any) => {
       }}
       extra={<Button variant="link" color="default" size="small" onClick={copy} icon={<CopyOutlined />} />}
     >
-      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
-        {value}
-      </SyntaxHighlighter>
+      <CodeInternal {...rest} language={language} value={value} />
     </Card>
   ) : (
     <Typography.Text code {...rest} className={className}>
@@ -68,6 +77,6 @@ export const Code = (props: any) => {
   return isEngineer(currentEmployee) && isSupportLanguage(language) ? (
     <AICoding {...props} />
   ) : (
-    <CodeInternal {...props} />
+    <CodeBasic {...props} />
   );
 };
