@@ -77,7 +77,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
           return props.rowIdx + 1;
         },
       },
-      ...baseColumns,
+      ...baseColumns.concat({
+        key: '_empty',
+      }),
       isConfigMode && {
         key: 'addColumn',
         fixed: 'right',
@@ -115,9 +117,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
       });
     };
   }
-  protected onMount(): void {
-    console.log('子表格onMount', this.props.value);
-  }
+
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
   }

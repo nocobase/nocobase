@@ -33,13 +33,10 @@ export const ModelSelect: React.FC = () => {
         })
         .then(
           (res) =>
-            res?.data?.data?.map(
-              ({ id }) =>
-                ({
-                  label: id,
-                  value: id,
-                }) || [],
-            ),
+            res?.data?.data?.map(({ id }) => ({
+              label: id,
+              value: id,
+            })),
         ),
     {
       ready: !!serviceField?.value && ctx.visible,

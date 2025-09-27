@@ -74,6 +74,49 @@ const aiResource: ResourceOptions = {
 
       return next();
     },
+    testFlightModels: async (ctx, next) => {
+      const { provider, options } = ctx.action.params.values ?? {};
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+
+      const providerOptions = plugin.aiManager.llmProviders.get(provider);
+      if (!providerOptions) {
+        ctx.throw(400, 'invalid llm provider');
+      }
+
+      const Provider = providerOptions.provider;
+      const providerClient = new Provider({
+        app: ctx.app,
+        serviceOptions: options,
+      });
+
+      const res = await providerClient.listModels();
+      if (res.errMsg) {
+        ctx.log.error(res.errMsg);
+        ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
+      }
+      ctx.body = res.models || [];
+
+      return next();
+    },
+    testFlight: async (ctx, next) => {
+      const { provider, options, model } = ctx.action.params.values ?? {};
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const providerOptions = plugin.aiManager.llmProviders.get(provider);
+      if (!providerOptions) {
+        ctx.throw(400, 'invalid llm provider');
+      }
+      const Provider = providerOptions.provider;
+      const providerClient = new Provider({
+        app: ctx.app,
+        serviceOptions: options,
+        modelOptions: {
+          model,
+          responseFormat: 'text',
+        },
+      });
+      ctx.body = await providerClient.testFlight();
+      return next();
+    },
   },
 };
 

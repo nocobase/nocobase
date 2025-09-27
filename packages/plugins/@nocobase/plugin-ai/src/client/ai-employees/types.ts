@@ -29,7 +29,7 @@ export type AIEmployee = {
   skillSettings?: {
     skills?: { name: string }[];
   };
-  builtIn: boolean;
+  builtIn?: boolean;
 };
 
 export type SkillSettings = {

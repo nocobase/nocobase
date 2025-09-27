@@ -31,7 +31,7 @@ export async function resolveViewParamsToViewList(
     if (index === 0) {
       model = routeModel;
     } else {
-      model = flowEngine.getModel(params.viewUid) || (await flowEngine.loadModel({ uid: params.viewUid }));
+      model = flowEngine.getModel(params.viewUid, true) || (await flowEngine.loadModel({ uid: params.viewUid }));
     }
 
     if (!model) {

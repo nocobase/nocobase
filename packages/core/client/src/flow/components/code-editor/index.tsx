@@ -10,13 +10,14 @@
 import React, { useEffect, useRef } from 'react';
 
 // CodeMirror imports
-import { autocompletion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
-import { javascript } from '@codemirror/lang-javascript';
+import { autocompletion } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
 import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup, EditorView } from 'codemirror';
-import completions from './completions';
+import { javascriptWithHtmlTemplates } from './javascriptHtmlTemplate';
+import { createHtmlCompletion } from './htmlCompletion';
+import { createJavascriptCompletion } from './javascriptCompletion';
 import { createJavaScriptLinter } from './linter';
 import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
 import { Flex } from 'antd';
@@ -25,23 +26,6 @@ export interface EditorRef {
   write(document: string): void;
   read(): string;
 }
-
-// 自定义自动补全函数
-const createCustomCompletion = () => {
-  return (context: CompletionContext): CompletionResult | null => {
-    const word = context.matchBefore(/[a-zA-Z_][\w.]*/);
-    if (!word || (word.from === word.to && !context.explicit)) return null;
-
-    const from = word.from;
-    const to = word.to;
-
-    return {
-      from,
-      to,
-      options: completions,
-    };
-  };
-};
 
 interface CodeEditorProps {
   value?: string;
@@ -83,9 +67,9 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
 
     const extensions = [
       basicSetup,
-      javascript(),
+      javascriptWithHtmlTemplates(),
       autocompletion({
-        override: [createCustomCompletion()],
+        override: [createHtmlCompletion(), createJavascriptCompletion()],
         closeOnBlur: false,
         activateOnTyping: true,
       }),
@@ -197,6 +181,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       view.destroy();
       viewRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, height, minHeight, placeholder, readonly, enableLinter]);
 
   // Update editor content when value prop changes

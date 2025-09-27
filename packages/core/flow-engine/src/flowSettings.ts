@@ -30,6 +30,7 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
+import { FlowStepContext } from './hooks/useFlowStep';
 
 const Panel = Collapse.Panel;
 
@@ -777,12 +778,21 @@ export class FlowSettings {
           return React.createElement(
             FlowSettingsContextProvider as any,
             { value: entry.ctx },
-            this.renderStepForm({
-              uiSchema: entry.mergedUiSchema,
-              initialValues: entry.initialValues,
-              flowEngine,
-              form,
-            }),
+            React.createElement(
+              FlowStepContext.Provider,
+              {
+                value: {
+                  params: { ...entry.initialValues, ...form.values },
+                  path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
+                },
+              },
+              this.renderStepForm({
+                uiSchema: entry.mergedUiSchema,
+                initialValues: entry.initialValues,
+                flowEngine,
+                form,
+              }),
+            ),
           );
         };
 

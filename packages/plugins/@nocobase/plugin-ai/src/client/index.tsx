@@ -20,7 +20,11 @@ import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
+import {
+  AIEmployeeShortcutListModel,
+  AIEmployeeShortcutModel,
+  AIEmployeeButtonModel,
+} from './ai-employees/flow/models';
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { formFillerTool } from './ai-employees/form-filler/tools';
@@ -68,6 +72,7 @@ export class PluginAIClient extends Plugin {
     this.flowEngine.registerModels({
       AIEmployeeShortcutListModel,
       AIEmployeeShortcutModel,
+      AIEmployeeButtonModel,
     });
 
     this.addPluginSettings();
