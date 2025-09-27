@@ -348,7 +348,12 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                       <div>
                         {React.createElement(
                           FlowStepContext.Provider,
-                          { value: { params: step.defaultParams, path: `${model.uid}_${step.flowKey}_${step.key}` } },
+                          {
+                            value: {
+                              params: untracked(() => step.defaultParams),
+                              path: `${model.uid}_${step.flowKey}_${step.key}`,
+                            },
+                          },
                           flowEngine.flowSettings.renderStepForm({
                             uiSchema: actionDef.uiSchema,
                             initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
