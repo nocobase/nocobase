@@ -118,16 +118,48 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, []);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
-  // 分离处理函数以便更好的代码组织
+  // 统一的复制 UID 方法
+  const copyUidToClipboard = useCallback(
+    async (uid: string) => {
+      try {
+        await navigator.clipboard.writeText(uid);
+        message.success(t('UID copied to clipboard'));
+      } catch (error) {
+        console.error(t('Copy failed'), ':', error);
+        message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid }));
+      }
+    },
+    [message, t],
+  );
+
+  // 复制当前模型 UID
   const handleCopyUid = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(model.uid);
-      message.success(t('UID copied to clipboard'));
-    } catch (error) {
-      console.error(t('Copy failed'), ':', error);
-      message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid: model.uid }));
-    }
-  }, [model.uid, message]);
+    copyUidToClipboard(model.uid);
+  }, [model.uid, copyUidToClipboard]);
+
+  // 复制弹窗对应模型的 UID（根据菜单 key 判断是否为子模型）
+  const handleCopyPopupUid = useCallback(
+    (menuKey: string) => {
+      try {
+        const originalKey = menuKey.replace(/^copy-pop-uid:/, '');
+        const keyParts = originalKey.split(':');
+
+        let targetModel: FlowModel | null = model;
+        if (keyParts.length === 3) {
+          const [subModelKey] = keyParts;
+          targetModel = findSubModelByKey(model, subModelKey) || model;
+        } else if (keyParts.length !== 2) {
+          console.error('Invalid copy-pop-uid key format:', menuKey);
+          return;
+        }
+
+        copyUidToClipboard(targetModel.uid);
+      } catch (error) {
+        console.error('handleCopyPopupUid error:', error);
+      }
+    },
+    [model, copyUidToClipboard],
+  );
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
@@ -199,6 +231,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       // Handle duplicate key suffixes (e.g., "key-1" -> "key")
       const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
 
+      if (cleanKey.startsWith('copy-pop-uid:')) {
+        handleCopyPopupUid(cleanKey);
+        return;
+      }
+
       switch (cleanKey) {
         case 'copy-uid':
           handleCopyUid();
@@ -211,7 +248,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [handleCopyUid, handleDelete, handleStepConfiguration],
+    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid],
   );
 
   // 获取单个模型的可配置flows和steps
@@ -425,6 +462,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               key: uniqueKey,
               label: t(stepInfo.title),
             });
+
+            // add per-step copy popup uid under each configurable step
+            if (flow.key === 'popupSettings') {
+              const copyKey = generateUniqueKey(`copy-pop-uid:${baseMenuKey}`);
+              items.push({
+                key: copyKey,
+                label: t('Copy popup UID'),
+              });
+            }
           });
         });
       } else {
@@ -463,6 +509,14 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
+
+                if (flow.key === 'popupSettings') {
+                  const copyKey = generateUniqueKey(`copy-pop-uid:${flow.key}:${stepInfo.stepKey}`);
+                  items.push({
+                    key: copyKey,
+                    label: t('Copy popup UID'),
+                  });
+                }
               });
             });
           } else {
@@ -478,6 +532,14 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
+
+                if (flow.key === 'popupSettings') {
+                  const copyKey = generateUniqueKey(`copy-pop-uid:${modelKey}:${flow.key}:${stepInfo.stepKey}`);
+                  subMenuChildren.push({
+                    key: copyKey,
+                    label: t('Copy popup UID'),
+                  });
+                }
               });
             });
 
@@ -492,7 +554,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [configurableFlowsAndSteps, flattenSubMenus]);
+  }, [configurableFlowsAndSteps, flattenSubMenus, t]);
 
   // 向菜单项添加额外按钮
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
@@ -524,7 +586,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t]);
 
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
   if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {

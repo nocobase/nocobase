@@ -12,20 +12,39 @@ import { DefaultToolCard } from './DefaultToolCard';
 import { usePlugin } from '@nocobase/client';
 import { PluginAIClient } from '../../../';
 import { ToolCall } from '../../types';
+import { jsonrepair } from 'jsonrepair';
 
 export const ToolCard: React.FC<{
   messageId: string;
   tools: ToolCall<unknown>[];
 }> = ({ tools, messageId }) => {
   const plugin = usePlugin('ai') as PluginAIClient;
-  if (tools.length > 1) {
-    return <DefaultToolCard tools={tools} messageId={messageId} />;
+  const toolsWithUI = [];
+  const toolsWithoutUI = [];
+  for (const t of tools) {
+    const tool = { ...t };
+    if (typeof tool.args === 'string') {
+      try {
+        const args = jsonrepair(tool.args);
+        tool.args = JSON.parse(args);
+      } catch (err) {
+        console.error(err, tool.args);
+      }
+    }
+    const toolOption = plugin.aiManager.tools.get(tool.name);
+    const C = toolOption?.ui?.card;
+    if (C) {
+      toolsWithUI.push({ tool, C });
+    } else {
+      toolsWithoutUI.push(tool);
+    }
   }
-  const tool = tools[0];
-  const toolOption = plugin.aiManager.tools.get(tool.name);
-  const C = toolOption?.ui?.card;
-  if (C) {
-    return <C messageId={messageId} tool={tool} />;
-  }
-  return <DefaultToolCard tools={[tool]} messageId={messageId} />;
+  return (
+    <>
+      {toolsWithoutUI.length > 0 ? <DefaultToolCard tools={toolsWithoutUI} messageId={messageId} /> : null}
+      {toolsWithUI.map(({ tool, C }, index) => (
+        <C key={index} messageId={messageId} tool={tool} />
+      ))}
+    </>
+  );
 };

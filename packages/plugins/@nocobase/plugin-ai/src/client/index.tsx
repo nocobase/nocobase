@@ -20,7 +20,11 @@ import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { PermissionsTab } from './ai-employees/permissions/PermissionsTab';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
-import { AIEmployeeShortcutListModel, AIEmployeeShortcutModel } from './ai-employees/flow/models';
+import {
+  AIEmployeeShortcutListModel,
+  AIEmployeeShortcutModel,
+  AIEmployeeButtonModel,
+} from './ai-employees/flow/models';
 import { defineCollectionsTool } from './ai-employees/data-modeling/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { formFillerTool } from './ai-employees/form-filler/tools';
@@ -44,6 +48,8 @@ const { AIResourceContextCollector } = lazy(
 );
 import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
+import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
+import { setupDataModeling } from './ai-employees/data-modeling/setup';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -66,12 +72,14 @@ export class PluginAIClient extends Plugin {
     this.flowEngine.registerModels({
       AIEmployeeShortcutListModel,
       AIEmployeeShortcutModel,
+      AIEmployeeButtonModel,
     });
 
     this.addPluginSettings();
     this.setupAIFeatures();
     this.setupWorkflow();
 
+    setupDataModeling(this);
     setupAICoding();
   }
 
@@ -137,6 +145,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
+    this.aiManager.registerTool(...chartGeneratorTool);
   }
 
   setupWorkflow() {

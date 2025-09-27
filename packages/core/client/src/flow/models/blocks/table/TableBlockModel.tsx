@@ -119,16 +119,6 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
         model.getModelClassName('TableAssociationFieldGroupModel'),
         model.getModelClassName('TableCustomColumnModel'),
       ].filter(Boolean)}
-      afterSubModelInit={async (column: TableColumnModel) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: TableColumnModel | TableCustomColumnModel) => {
-        // Only append fields for actual table field columns
-        if (column instanceof TableColumnModel) {
-          model.addAppends(column.fieldPath, true);
-          model.addAppends(column.associationPathName, true);
-        }
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -238,7 +228,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   fieldPath: dataIndex,
                   filterByTk: this.collection.getFilterByTK(record),
                   record: record,
-                  fieldProps: model.subModels.field.props,
+                  fieldProps: { ...model.props, ...model.subModels.field.props },
                   onSuccess: (values) => {
                     record[dataIndex] = values[dataIndex];
                     this.resource.getData()[recordIndex] = record;
@@ -253,9 +243,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                       get: () => record,
                       meta: recordMeta,
                     });
-                    // fork.context.defineProperty('fieldValue', {
-                    //   get: () => values[dataIndex],
-                    // });
                     fork.setProps({ value: values[dataIndex] });
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
@@ -370,6 +357,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
+        pageSize,
         total: data?.length < pageSize || !hasNext ? pageSize * current : pageSize * current + 1,
         className: css`
           .ant-pagination-simple-pager {

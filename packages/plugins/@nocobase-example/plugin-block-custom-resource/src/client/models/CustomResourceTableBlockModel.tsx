@@ -8,17 +8,17 @@
  */
 
 import { BlockModel } from '@nocobase/client';
-import { MultiRecordResource } from '@nocobase/flow-engine';
+import { SingleRecordResource } from '@nocobase/flow-engine';
 import React from 'react';
 
 export class CustomBlockWithResourceModel extends BlockModel {
   createResource() {
-    const resource = this.context.createResource(MultiRecordResource);
+    const resource = this.context.createResource(SingleRecordResource);
     return resource;
   }
 
   get resource() {
-    return this.context.resource as MultiRecordResource;
+    return this.context.resource as SingleRecordResource;
   }
 
   onInit(options) {
@@ -49,13 +49,14 @@ CustomBlockWithResourceModel.registerFlow({
   steps: {
     initResource: {
       handler: async (ctx) => {
-        const resource = ctx.resource as MultiRecordResource;
-        resource.setResourceName('users');
+        const resource = ctx.resource as SingleRecordResource;
+        resource.setResourceName(ctx.view.inputArgs.collectionName);
+        resource.setFilterByTk(ctx.view.inputArgs.filterByTk);
       },
     },
     refresh: {
       handler: async (ctx) => {
-        const resource = ctx.resource as MultiRecordResource;
+        const resource = ctx.resource as SingleRecordResource;
         await resource.refresh();
       },
     },

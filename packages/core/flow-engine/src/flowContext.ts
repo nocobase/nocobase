@@ -1002,6 +1002,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
+    });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
@@ -1209,11 +1215,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
-    this.defineMethod('createJSRunner', (options) => {
+    this.defineMethod('createJSRunner', function (options) {
+      const runCtx = new FlowRunjsContext(this.createProxy());
       return new JSRunner({
         ...options,
         globals: {
-          ctx: this,
+          ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
           ...options?.globals,
         },
       });
@@ -1253,18 +1262,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     // Helper: build server contextParams for variables:resolve
     this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {
       return _buildServerContextParams(this, input);
-    });
-    this.defineMethod('runjs', function (code, variables) {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...variables,
-        },
-      });
-      return runner.run(code);
     });
     this.defineMethod('getAction', function (this: BaseFlowEngineContext, name: string) {
       return this.engine.getAction(name);
@@ -1365,7 +1362,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
       return this.engine.createResource(resourceType, {
-        context: this,
+        context: this.createProxy(),
       });
     });
   }
@@ -1381,6 +1378,12 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
+    this.defineMethod('runjs', async (code, variables) => {
+      const runner = this.createJSRunner({
+        globals: variables,
+      });
+      return runner.run(code);
+    });
     this.defineProperty('model', {
       value: model,
     });
@@ -1389,6 +1392,63 @@ export class FlowModelContext extends BaseFlowModelContext {
         this.model['_refCreated'] = true;
         return createRef<HTMLDivElement>();
       },
+    });
+    this.defineMethod('openView', async function (uid: string, options) {
+      if (options.defineProperties || options.defineMethod) {
+        options.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
+      }
+      let model: FlowModel | null = null;
+      model = await this.engine.loadModel({ uid });
+      if (!model) {
+        model = this.engine.createModel({
+          uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
+          use: 'PopupActionModel',
+          parentId: this.model.uid,
+          subType: 'object',
+          subKey: uid,
+          stepParams: {
+            popupSettings: {
+              openView: {
+                ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+              },
+            },
+          },
+        });
+        await model.save();
+      }
+      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
+        model.setStepParams('popupSettings', {
+          openView: {
+            ...model.getStepParams('popupSettings')?.openView,
+            ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+          },
+        });
+        await model.save();
+      }
+
+      // viewUid 如何确定? 如果是内嵌视图，则为父模型 uid，否则为子模型 uid
+      const viewUid = model.stepParams?.popupSettings?.openView ? model.uid : this.model.uid;
+      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid } });
+      const parentView = this.view;
+      // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
+      const pendingType = (options?.isMobileLayout ? 'embed' : options?.mode || 'drawer') as any;
+      const pendingInputArgs = { ...(options || {}), viewUid };
+      pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
+      pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
+
+      const pendingView = {
+        type: pendingType,
+        inputArgs: pendingInputArgs,
+        navigation: parentView?.navigation,
+        preventClose: !!options?.preventClose,
+        engineCtx: this.engine.context,
+      };
+      model.context.defineProperty('view', { value: pendingView });
+      await model.dispatchEvent('click', {
+        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
+        ...options,
+      });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
@@ -1451,13 +1511,8 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          ...variables,
-        },
+      const runner = this.createJSRunner({
+        globals: variables,
       });
       return runner.run(code);
     });
@@ -1516,13 +1571,8 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables) => {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-
-      const runner = new JSRunner({
-        globals: {
-          ctx: runCtx,
-          ...variables,
-        },
+      const runner = this.createJSRunner({
+        globals: variables,
       });
       return runner.run(code);
     });

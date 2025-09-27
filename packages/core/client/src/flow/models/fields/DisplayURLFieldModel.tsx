@@ -9,11 +9,10 @@
 
 import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import React from 'react';
-import { FieldModel } from '../base';
+import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 
-export class DisplayURLFieldModel extends FieldModel {
-  public render() {
-    const { value } = this.props;
+export class DisplayURLFieldModel extends DisplayTitleFieldModel {
+  public renderComponent(value) {
     const content = value && (
       <a target="_blank" rel="noopener noreferrer" href={value} style={{ overflowWrap: 'anywhere' }}>
         {value}

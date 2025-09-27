@@ -54,6 +54,7 @@ describe('ViewScopedFlowEngine', () => {
     const cm = child.createModel<TestModel>({ use: TestModel, uid });
 
     expect(pm).not.toBe(cm);
+    // 默认 getModel 仅在当前作用域查找
     expect(parent.getModel(uid)).toBe(pm);
     expect(child.getModel(uid)).toBe(cm);
   });
@@ -91,10 +92,18 @@ describe('ViewScopedFlowEngine', () => {
   it('creates resources using parent registry but binds to scoped context by default', () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);
+    // mock minimal api to satisfy ctx.auth and related getters
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    parent.context.defineProperty('api', { value: api });
 
     // use built-in FlowResource class name
     const res = child.createResource('FlowResource');
-    expect(res['context']).toBe(child.context);
+    // resource context is a wrapper that delegates to child context
+    child.context.defineProperty('foo', { value: 123 });
+    expect((res as any).context.foo).toBe(123);
   });
 
   it('uses local context and delegates to parent context', () => {
@@ -124,5 +133,80 @@ describe('ViewScopedFlowEngine', () => {
     const m = child.createModel<T>({ use: T });
     await child.saveModel(m);
     expect(spy).toHaveBeenCalledOnce();
+  });
+
+  it('stacks multiple scoped engines on tail (linkAfter attaches to bottom)', () => {
+    const root = new FlowEngine();
+    const c1 = createViewScopedEngine(root);
+    const c2 = createViewScopedEngine(root);
+
+    // child pointers point back correctly
+    expect(c1.previousEngine).toBe(root);
+    expect(c2.previousEngine?.previousEngine).toBe(root);
+
+    // chain length from root is 2 (two scoped engines)
+    let count = 0;
+    let p = root.nextEngine;
+    while (p) {
+      count += 1;
+      p = p.nextEngine;
+    }
+    expect(count).toBe(2);
+  });
+
+  it('supports stacking when anchoring from nested child (still appends to bottom)', () => {
+    const root = new FlowEngine();
+    const c1 = createViewScopedEngine(root);
+    const c2 = createViewScopedEngine(c1); // pass child as anchor
+
+    expect(c1.previousEngine).toBe(root);
+    expect(c2.previousEngine?.previousEngine).toBe(root);
+  });
+
+  it('global model lookup traverses from top to root across stack', () => {
+    const root = new FlowEngine();
+    const c1 = createViewScopedEngine(root);
+    const c2 = createViewScopedEngine(root);
+
+    class TM extends FlowModel {}
+    const uid = 'same-uid-global-lookup';
+    const mRoot = root.createModel<TM>({ use: TM, uid });
+    const m1 = c1.createModel<TM>({ use: TM, uid });
+    const m2 = c2.createModel<TM>({ use: TM, uid });
+
+    // sanity: each scope returns its own when not global
+    expect(root.getModel(uid)).toBe(mRoot);
+    expect(c1.getModel(uid)).toBe(m1);
+    expect(c2.getModel(uid)).toBe(m2);
+
+    // global search from any engine hits the top-most engine's instance first
+    expect(root.getModel(uid, true)).toBe(m2);
+    expect(c1.getModel(uid, true)).toBe(m2);
+    expect(c2.getModel(uid, true)).toBe(m2);
+  });
+
+  it('unlinkFromStack detaches only the top engine', () => {
+    const root = new FlowEngine();
+    const c1 = createViewScopedEngine(root);
+    const c2 = createViewScopedEngine(root);
+
+    class TM extends FlowModel {}
+    const uid = 'unlink-top-only';
+    c1.createModel<TM>({ use: TM, uid });
+    const m2 = c2.createModel<TM>({ use: TM, uid });
+
+    // before unlink: top is c2
+    expect(root.getModel(uid, true)).toBe(m2);
+
+    // unlink the top scoped engine
+    c2.unlinkFromStack();
+
+    // After unlink, root should have only one child (c1). Its next should be undefined.
+    expect(root.nextEngine?.nextEngine).toBeUndefined();
+    expect(root.nextEngine?.previousEngine).toBe(root);
+
+    // global lookup should now resolve to c1's instance
+    const resolved = root.getModel<TM>(uid, true);
+    expect(resolved?.flowEngine.previousEngine).toBe(root);
   });
 });

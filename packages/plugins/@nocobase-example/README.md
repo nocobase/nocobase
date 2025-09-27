@@ -16,10 +16,11 @@
 
 | 插件名                             | 插件描述 | 包名                                                         |
 | ------------------------------- | ---- | ---------------------------------------------------------- |
-| 简易操作                |      | `@nocobase-example/plugin-simple-action`                   |
-| 弹窗操作            |      | `@nocobase-example/plugin-simple-popup-action`             |
-| 自定义操作组                  |      | `@nocobase-example/plugin-action-group`                    |
-| 自定义表格的自定义操作 |      | `@nocobase-example/plugin-custom-table-block-action-group` |
+| 简易操作               |      | `@nocobase-example/plugin-simple-action`                   |
+| 弹窗操作               |      | `@nocobase-example/plugin-simple-popup-action`             |
+| 自定义操作组            |      | `@nocobase-example/plugin-action-group`                    |
+| 自定义表格的自定义操作    |      | `@nocobase-example/plugin-custom-table-block-action-group` |
+| 支持子菜单的操作         |      | `@nocobase-example/plugin-nested-action` |
 
 ## 资源示例
 

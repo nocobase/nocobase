@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
   buildWrapperFieldChildren,
+  DisplayItemModel,
   DragHandler,
   Droppable,
   EditableItemModel,
@@ -23,13 +24,12 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
-  DisplayItemModel,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
-import { FormComponent } from '../../../blocks';
+import { FormComponent, FormItemModel } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
@@ -37,7 +37,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
   const fieldModel = field?.createFork({}, `${index}`);
-  fieldModel.setProps({
+  fieldModel?.setProps({
     value: defaultValue,
   });
 
@@ -84,7 +84,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', minHeight: 25, width: '100%' }}
       onClick={handleClick}
     >
-      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel.uid} />}</span>
+      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}</span>
     </div>
   );
 });
@@ -113,7 +113,7 @@ export class SubTableColumnModel<
     return buildWrapperFieldChildren(ctx, {
       useModel: 'SubTableColumnModel',
       fieldUseModel: (f) => {
-        const binding = EditableItemModel.getDefaultBindingByField(ctx, f);
+        const binding = FormItemModel.getDefaultBindingByField(ctx, f);
         if (!binding) {
           return;
         }
@@ -139,6 +139,11 @@ export class SubTableColumnModel<
       cache: false,
     });
   }
+
+  async afterAddAsSubModel() {
+    await this.applyAutoFlows();
+  }
+
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>

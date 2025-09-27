@@ -164,6 +164,22 @@ export abstract class LLMProvider {
       options,
     };
   }
+  async testFlight(): Promise<{ status: 'success' | 'error'; code: number; message?: string }> {
+    try {
+      const result = await this.chatModel.invoke('hello');
+      console.log(result);
+    } catch (error) {
+      return {
+        status: 'error',
+        code: 1,
+        message: error.message,
+      };
+    }
+    return {
+      status: 'success',
+      code: 0,
+    };
+  }
 
   protected builtInTools(): any[] {
     return [];

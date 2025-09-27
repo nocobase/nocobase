@@ -11,7 +11,7 @@ import React from 'react';
 import { Field, ObjectField, ArrayField, observer, useForm } from '@formily/react';
 import { InputNumber, Filter } from '@nocobase/client';
 import { useQueryBuilderLogic } from './queryBuilder.logic';
-import { Space, Collapse, Cascader, Select, Input, Checkbox, Button } from 'antd';
+import { Space, Collapse, Cascader, Select, Input, Checkbox, Button, Divider } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import FormItemLite from './FormItemLite';
 import { useT } from '../../locale';
@@ -87,26 +87,35 @@ export const QueryBuilder: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
 
+  // 兼容：老数据迁移到新字段
+  React.useEffect(() => {
+    const legacy = form?.values?.query?.settings?.collection;
+    const current = form?.values?.query?.collectionPath;
+    if (!current && legacy) {
+      form.setValuesIn('query.collectionPath', legacy);
+    }
+  }, [form]);
+
   return (
     <>
       {/* 设置：数据源/集合 */}
-      <ObjectField name="settings">
-        <Field
-          name="collection"
-          title={t('Collection')}
-          decorator={[FormItemLite]}
-          component={[
-            CascaderAdapter,
-            {
-              showSearch: true,
-              placeholder: t('Collection'),
-              dataSource: collectionOptions,
-              onValueChange: onCollectionChange,
-              style: { width: 222, marginBottom: 4 },
-            },
-          ]}
-        />
-      </ObjectField>
+      <Field
+        name="collectionPath"
+        title={t('Collection')}
+        decorator={[FormItemLite]}
+        component={[
+          CascaderAdapter,
+          {
+            showSearch: true,
+            placeholder: t('Collection'),
+            dataSource: collectionOptions,
+            onValueChange: onCollectionChange,
+            style: { width: 222, marginBottom: 4 },
+          },
+        ]}
+      />
+
+      <Divider style={{ margin: '8px 0' }} />
 
       <Collapse
         size="small"
@@ -148,7 +157,7 @@ export const QueryBuilder: React.FC = observer(() => {
                             SelectAdapter,
                             {
                               placeholder: t('Aggregation'),
-                              style: { minWidth: 80 },
+                              style: { minWidth: 75 },
                               dataSource: [
                                 { label: t('Sum'), value: 'sum' },
                                 { label: t('Count'), value: 'count' },
@@ -162,7 +171,7 @@ export const QueryBuilder: React.FC = observer(() => {
                         <Field
                           name="alias"
                           decorator={[FormItemLite]}
-                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 100 } }]}
+                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 85 } }]}
                         />
                         <Field
                           name="distinct"
@@ -288,7 +297,7 @@ export const QueryBuilder: React.FC = observer(() => {
           <Field
             name="filter"
             decorator={[FormItemLite, { style: { overflow: 'auto' } }]}
-            component={[Filter, { dynamicComponent: 'FilterDynamicComponent', dataSource: filterOptions }]}
+            component={[Filter, { options: filterOptions }]}
           />
         </Collapse.Panel>
 
@@ -385,6 +394,8 @@ export const QueryBuilder: React.FC = observer(() => {
           </ArrayField>
         </Collapse.Panel>
       </Collapse>
+
+      <Divider style={{ margin: '8px 0' }} />
 
       {/* Limit */}
       <Field

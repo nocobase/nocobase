@@ -138,6 +138,7 @@ export const UserPrompt: React.FC = () => {
 
   return (
     <Popover
+      zIndex={1101}
       styles={{
         body: {
           padding: 0,

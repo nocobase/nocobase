@@ -58,7 +58,7 @@ class WorkContextHandlerImpl implements WorkContextHandler {
     if (!contextItem) {
       return '';
     }
-    const { resolve } = this.strategies.get(contextItem.type);
+    const { resolve } = this.strategies.get(contextItem.type) ?? {};
     if (resolve) {
       return await resolve(ctx, contextItem);
     }

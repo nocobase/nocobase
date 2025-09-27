@@ -217,6 +217,10 @@ export class Collection<
     return (this.options.titleField as string) || this.model.primaryKeyAttribute;
   }
 
+  get titleFieldInstance() {
+    return this.getField(this.titleField);
+  }
+
   get db() {
     return this.context.database;
   }

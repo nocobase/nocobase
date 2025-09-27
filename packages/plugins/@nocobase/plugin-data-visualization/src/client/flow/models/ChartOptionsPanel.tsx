@@ -55,7 +55,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
     [form],
   );
 
-  const mode = form?.values?.chart?.option?.mode || 'custom';
+  const mode = form?.values?.chart?.option?.mode || 'basic';
   const rawValue = form?.values?.chart?.option?.raw;
 
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）

@@ -16,6 +16,7 @@ export interface ViewItem {
   hidden: {
     value: boolean;
   };
+  index: number;
 }
 
 export async function resolveViewParamsToViewList(
@@ -30,7 +31,7 @@ export async function resolveViewParamsToViewList(
     if (index === 0) {
       model = routeModel;
     } else {
-      model = flowEngine.getModel(params.viewUid) || (await flowEngine.loadModel({ uid: params.viewUid }));
+      model = flowEngine.getModel(params.viewUid, true) || (await flowEngine.loadModel({ uid: params.viewUid }));
     }
 
     if (!model) {
@@ -40,6 +41,7 @@ export async function resolveViewParamsToViewList(
       params,
       model,
       hidden: observable.ref(false), // Will be calculated after all items are resolved
+      index,
     };
   });
 

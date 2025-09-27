@@ -33,6 +33,7 @@ export * from './DividerItemModel';
 export * from './MarkdownItemModel';
 export * from './JSItemModel';
 export * from './ClickableFieldModel';
+export * from './DisplayTitleFieldModel';
 
 export * from './DisplayAssociationField';
 export * from './DisplayColorFieldModel';

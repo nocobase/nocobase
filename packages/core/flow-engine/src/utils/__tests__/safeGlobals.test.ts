@@ -16,7 +16,8 @@ describe('safeGlobals', () => {
     expect(typeof win.setTimeout).toBe('function');
     expect(win.console).toBeDefined();
     expect(win.foo).toBe(123);
-    expect(() => win.location).toThrow(/not allowed/);
+    // access to location proxy is allowed, but sensitive props throw
+    expect(() => win.location.href).toThrow(/not allowed/);
   });
 
   it('createSafeDocument exposes whitelisted methods and extras', () => {

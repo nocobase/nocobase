@@ -14,6 +14,11 @@ export const LLMProviderContext = createContext<{
 }>({ provider: '' });
 LLMProviderContext.displayName = 'LLMProvidersContext';
 
+export const useLLMProvider = () => {
+  const { provider } = useContext(LLMProviderContext);
+  return provider;
+};
+
 export const LLMProvidersContext = createContext<{
   providers: {
     key: string;

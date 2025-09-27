@@ -12,17 +12,27 @@ import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { PauseCircleFilled, RightOutlined, LeftOutlined } from '@ant-design/icons';
+import { RightOutlined, LeftOutlined, HolderOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { contextAware } from '../stores/context-aware';
-import { observer } from '@nocobase/flow-engine';
+import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
+import { isHide } from '../built-in/utils';
+import { AIEmployeeShortcutModel } from '../flow/models';
 
 export const ChatButton: React.FC = observer(() => {
+  const ctx = useFlowContext<FlowRuntimeContext>();
+  ctx.engine.flowSettings.on('beforeOpen', (event) => {
+    if (event?.model instanceof AIEmployeeShortcutModel) {
+      return;
+    }
+    setFolded(true);
+  });
+
   const { aiEmployees } = useAIEmployeesData();
 
   const open = useChatBoxStore.use.open();
@@ -37,6 +47,7 @@ export const ChatButton: React.FC = observer(() => {
   const showed = useRef(false);
 
   const location = useLocation();
+
   useEffect(() => {
     showed.current = false;
   }, [location]);
@@ -57,18 +68,20 @@ export const ChatButton: React.FC = observer(() => {
   }, [contextAware.aiEmployees.length, folded]);
 
   const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            setOpen(true);
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
+    return aiEmployees
+      ?.filter((employee) => !isHide(employee))
+      .map((employee) => ({
+        key: employee.username,
+        label: (
+          <AIEmployeeListItem
+            aiEmployee={employee}
+            onClick={() => {
+              setOpen(true);
+              switchAIEmployee(employee);
+            }}
+          />
+        ),
+      }));
   }, [aiEmployees]);
 
   if (!aiEmployees?.length) {

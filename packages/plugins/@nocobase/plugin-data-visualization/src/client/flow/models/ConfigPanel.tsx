@@ -7,106 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useT } from '../../locale';
-import { Collapse, Card, Button } from 'antd';
+import { Collapse, Card } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
-import { useFlowContext, useFlowSettingsContext, useFlowView } from '@nocobase/flow-engine';
-import { useForm } from '@formily/react';
-import { useAPIClient } from '@nocobase/client';
-import { configStore } from './config-store';
-import { ChartBlockModel } from './ChartBlockModel';
 import { EventsPanel } from './EventsPanel';
-import { parseField, removeUnparsableFilter } from '../../utils';
 
 export const ConfigPanel: React.FC = () => {
   const t = useT();
-  const ctx = useFlowSettingsContext<ChartBlockModel>();
-  const form = useForm();
-  const api = useAPIClient();
-
-  const handlePreview = async () => {
-    await form.submit();
-    ctx.model.setParamsAndPreview(form?.values || {});
-  };
-
-  useEffect(() => {
-    const uid = ctx.model.uid;
-    configStore.setError(uid, null);
-
-    const mode = form?.values?.query?.mode || 'sql';
-
-    // 源码模式
-    const doSqlPreview = async (sql: string) => {
-      try {
-        const result = await ctx.sql.run(sql);
-        configStore.setResult(uid, result);
-      } catch (error: any) {
-        const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
-        configStore.setError(uid, message);
-      }
-    };
-
-    // 图形模式
-    const doBuilderPreview = async () => {
-      const collectionPath: string[] | undefined = form?.values?.settings?.collection;
-      const [dataSource, collection] = collectionPath || [];
-      const query = form?.values?.query || {};
-      if (!(collection && (query?.measures?.length || 0) > 0)) return;
-      try {
-        const res = await api.request({
-          url: 'charts:query',
-          method: 'POST',
-          data: {
-            uid,
-            dataSource,
-            collection,
-            ...query,
-            filter: removeUnparsableFilter(query.filter),
-            dimensions: (query?.dimensions || []).map((item: any) => {
-              const dimension = { ...item };
-              if (item.format && !item.alias) {
-                const { alias } = parseField(item.field);
-                dimension.alias = alias;
-              }
-              return dimension;
-            }),
-            measures: (query?.measures || []).map((item: any) => {
-              const measure = { ...item };
-              if (item.aggregation && !item.alias) {
-                const { alias } = parseField(item.field);
-                measure.alias = alias;
-              }
-              return measure;
-            }),
-          },
-        });
-        configStore.setResult(uid, res?.data?.data);
-      } catch (error: any) {
-        const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
-        configStore.setError(uid, message);
-      }
-    };
-
-    // init fetch preview data
-    if (!configStore[uid]?.result) {
-      if (mode === 'sql') {
-        const sql = form?.values?.query?.sql;
-        if (sql) {
-          doSqlPreview(sql);
-        }
-      } else {
-        doBuilderPreview();
-      }
-    }
-
-    return () => {
-      configStore.setError(uid, null);
-    };
-  }, [ctx.model.uid, form?.values?.query?.mode, form?.values?.query?.sql, form?.values?.settings?.collection]);
-
-  // 默认展开前两个面板（'query' 和 'chartOptions'）
+  // 默认展开前两个面板（'query' 和 'chartOptions'）必填
   const [activeKeys, setActiveKeys] = useState<string | string[]>(['query', 'chartOptions']);
 
   // 根据当前展开数量动态分配每个面板的高度；只展开一个时占满原高度
@@ -124,17 +34,6 @@ export const ConfigPanel: React.FC = () => {
 
   return (
     <>
-      <div
-        style={{
-          marginBottom: 6,
-          textAlign: 'right',
-        }}
-      >
-        <Button type="primary" onClick={handlePreview}>
-          {t('Preview')}
-        </Button>
-      </div>
-
       <Collapse
         activeKey={activeKeys}
         onChange={setActiveKeys}

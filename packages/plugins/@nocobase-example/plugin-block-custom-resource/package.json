@@ -1,6 +1,6 @@
 {
   "name": "@nocobase-example/plugin-block-custom-resource",
-  "version": "1.9.0-alpha.15",
+  "version": "1.9.0-alpha.16",
   "main": "dist/server/index.js",
   "dependencies": {},
   "peerDependencies": {

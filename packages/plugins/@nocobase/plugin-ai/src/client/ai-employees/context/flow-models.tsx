@@ -121,7 +121,7 @@ const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'ty
       if (!uid) {
         return;
       }
-      const model = ctx.engine.getModel(uid);
+      const model = ctx.engine.getModel(uid, true);
       if (!model) {
         return;
       }
@@ -145,7 +145,7 @@ export const FlowModelsContext: WorkContextOptions = {
   tag: {
     Component: ({ item }) => {
       const flowEngine = useFlowEngine();
-      const model = flowEngine.getModel(item.uid);
+      const model = flowEngine.getModel(item.uid, true);
       return (
         <Space>
           <BuildOutlined />
@@ -158,7 +158,7 @@ export const FlowModelsContext: WorkContextOptions = {
     if (content) {
       return content;
     }
-    const model = app.flowEngine.getModel(uid);
+    const model = app.flowEngine.getModel(uid, true);
     if (!model) {
       return '';
     }

@@ -91,7 +91,7 @@ export const useChatMessageActions = () => {
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        let content = '';
+        const content = '';
         const { done, value } = await reader.read();
         if (done || error) {
           setResponseLoading(false);
@@ -104,30 +104,52 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
-            if (data.body && typeof data.body === 'string') {
-              content += data.body;
+            if (data.type === 'content' && data.body && typeof data.body === 'string') {
+              updateLastMessage((last) => ({
+                ...last,
+                content: {
+                  ...last.content,
+                  content: (last.content as any).content + data.body,
+                },
+                loading: false,
+              }));
+            }
+            if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+              updateLastMessage((last) => {
+                const toolCalls = last.content.tool_calls || [];
+                const toolCallChunk = data.body[0];
+                if (toolCallChunk.name) {
+                  toolCalls.push(toolCallChunk);
+                } else {
+                  toolCalls[toolCalls.length - 1].args += data.body[0].args;
+                }
+                return {
+                  ...last,
+                  content: {
+                    ...last.content,
+                    tool_calls: toolCalls,
+                  },
+                  loading: false,
+                };
+              });
+            }
+            if (data.type === 'new_message') {
+              addMessage({
+                key: uid(),
+                role: aiEmployee.username,
+                content: { type: 'text', content: '' },
+                loading: true,
+              });
             }
             if (data.type === 'error') {
               error = true;
             }
-            if (data.type === 'tool') {
+            if (data.type === 'tool_calls') {
               tools = data.body;
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);
           }
-        }
-
-        result += content;
-        if (result) {
-          updateLastMessage((last) => ({
-            ...last,
-            content: {
-              ...last.content,
-              content: (last.content as any).content + content,
-            },
-            loading: false,
-          }));
         }
       }
     } catch (err) {

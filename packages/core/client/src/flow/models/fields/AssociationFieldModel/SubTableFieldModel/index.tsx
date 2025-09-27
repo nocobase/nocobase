@@ -8,10 +8,18 @@
  */
 import { SettingOutlined } from '@ant-design/icons';
 import { DragEndEvent } from '@dnd-kit/core';
-import { AddSubModelButton, DndProvider, FlowSettingsButton, escapeT, useFlowEngine } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  DndProvider,
+  FlowSettingsButton,
+  escapeT,
+  observable,
+  useFlowEngine,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { EditFormModel, FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
+import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
 
@@ -21,15 +29,6 @@ const AddFieldColumn = ({ model }) => {
       model={model}
       subModelKey={'columns'}
       subModelBaseClasses={['SubTableColumnModel']}
-      afterSubModelInit={async (column: SubTableColumnModel) => {
-        await column.applyAutoFlows();
-      }}
-      afterSubModelAdd={async (column: SubTableColumnModel) => {
-        const currentBlockModel = model.context.blockModel;
-        if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${model.context.fieldPath}.${column.context.fieldPath}`, true);
-        }
-      }}
       keepDropdownOpen
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
@@ -54,6 +53,7 @@ const HeaderWrapperComponent = React.memo((props) => {
 });
 
 export class SubTableFieldModel extends AssociationFieldModel {
+  selectedRows = observable.ref([]);
   updateAssociation = true;
   get collection() {
     return this.context.collection;
@@ -77,7 +77,9 @@ export class SubTableFieldModel extends AssociationFieldModel {
           return props.rowIdx + 1;
         },
       },
-      ...baseColumns,
+      ...baseColumns.concat({
+        key: '_empty',
+      }),
       isConfigMode && {
         key: 'addColumn',
         fixed: 'right',
@@ -109,6 +111,18 @@ export class SubTableFieldModel extends AssociationFieldModel {
     this.context.blockModel.emitter.on('onFieldReset', () => {
       this.props.onChange([]);
     });
+    this.onSelectExitRecordClick = (e) => {
+      this.dispatchEvent('openView', {
+        event: e,
+      });
+    };
+  }
+
+  set onSelectExitRecordClick(fn) {
+    this.setProps({ onSelectExitRecordClick: fn });
+  }
+  change() {
+    this.props.onChange(this.selectedRows.value);
   }
 }
 
@@ -164,6 +178,154 @@ SubTableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           enableIndexColumn: params.enableIndexColumn,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: escapeT('Allow selection of existing records'),
+      uiSchema: {
+        allowSelectExistingRecord: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
+    allowDisassociation: {
+      title: escapeT('Allow disassociation'),
+      uiSchema: {
+        allowDisassociation: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: escapeT('Yes'),
+            unCheckedChildren: escapeT('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+  },
+});
+
+SubTableFieldModel.registerFlow({
+  key: 'selectExitRecordSettings',
+  title: escapeT('Selector setting'),
+  on: {
+    eventName: 'openView',
+  },
+  steps: {
+    openView: {
+      title: escapeT('Edit popup'),
+      uiSchema(ctx) {
+        if (!ctx.model.props.allowSelectExistingRecord) {
+          return;
+        }
+        return {
+          mode: {
+            type: 'string',
+            title: escapeT('Open mode'),
+            enum: [
+              { label: escapeT('Drawer'), value: 'drawer' },
+              { label: escapeT('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: escapeT('Popup size'),
+            enum: [
+              { label: escapeT('Small'), value: 'small' },
+              { label: escapeT('Medium'), value: 'medium' },
+              { label: escapeT('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'select',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+            rowSelectionProps: {
+              type: 'checkbox',
+              defaultSelectedRows: () => {
+                return ctx.model.props.value;
+              },
+              renderCell: undefined,
+              selectedRowKeys: undefined,
+              onChange: (_, selectedRows) => {
+                const prev = ctx.model.props.value || [];
+                const merged = [...prev, ...selectedRows];
+
+                // 去重，防止同一个值重复
+                const unique = merged.filter(
+                  (row, index, self) =>
+                    index ===
+                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                );
+
+                ctx.model.selectedRows.value = unique;
+              },
+            },
+          },
+          content: () => <RecordPickerContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
         });
       },
     },

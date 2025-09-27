@@ -40,16 +40,6 @@ export class DetailsGridModel extends GridModel<{
           this.context.getModelClassName('DetailsAssociationFieldGroupModel'),
           this.context.getModelClassName('DetailsCustomItemModel'),
         ].filter(Boolean)}
-        afterSubModelInit={async (item: DetailsItemModel) => {
-          const field: any = item.subModels.field;
-          if (field) {
-            await field.applyAutoFlows();
-          }
-        }}
-        afterSubModelAdd={async (item: DetailsItemModel) => {
-          blockModel.addAppends(item.fieldPath, true);
-          blockModel.addAppends(item.associationPathName, true);
-        }}
         keepDropdownOpen
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>

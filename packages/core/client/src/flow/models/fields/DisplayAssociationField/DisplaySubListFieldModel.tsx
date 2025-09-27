@@ -23,9 +23,12 @@ const ArrayNester = ({ name, value = [] }: any) => {
   const forksRef = useRef<Record<string, any>>({});
   const rowIndex = model.context.fieldIndex || [];
   const collectionName = model.context.collectionField.name;
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+
+  const resultValue = isConfigMode && value.length === 0 ? [{}] : value;
 
   return (
-    value.length > 0 && (
+    resultValue.length > 0 && (
       <Card
         bordered={true}
         style={{ position: 'relative' }}
@@ -35,7 +38,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
           }
         `}
       >
-        {value.map((item: any, index: number) => {
+        {resultValue.map((item: any, index: number) => {
           const key = `row_${index}`;
           if (!forksRef.current[key]) {
             const fork = gridModel.createFork();

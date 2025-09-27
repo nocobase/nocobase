@@ -94,7 +94,7 @@ export class EditFormModel extends FormBlockModel {
             {this.renderConfigureActions()}
           </Space>
         </DndProvider>
-        {this.isMultiRecordResource() && (
+        {this.isMultiRecordResource() && this.resource.getMeta('count') > 1 && (
           <div
             style={{
               textAlign: 'center',
@@ -133,6 +133,9 @@ EditFormModel.registerFlow({
           }
 
           const currentRecord = ctx.model.getCurrentRecord();
+          if (!currentRecord) {
+            return;
+          }
           const targetKey = ctx.association?.targetKey;
 
           if (targetKey) {

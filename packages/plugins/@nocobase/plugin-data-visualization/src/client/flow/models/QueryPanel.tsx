@@ -15,12 +15,13 @@ import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
 import { useAPIClient } from '@nocobase/client';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
 import { ResultPanel } from './ResultPanel';
-import { parseField, removeUnparsableFilter } from '../../utils';
+import { ChartBlockModel } from './ChartBlockModel';
+import { ChartResource } from '../resources/ChartResource';
+import { SQLResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 
-const QueryMode: React.FC = connect(({ value = 'sql', onChange, onClick }) => {
+const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
   return (
     <Radio.Group
@@ -30,10 +31,10 @@ const QueryMode: React.FC = connect(({ value = 'sql', onChange, onClick }) => {
         onChange(value);
       }}
     >
-      <Radio.Button value="builder" onClick={() => onClick?.('builder')}>
+      <Radio.Button value="builder" onClick={() => onClick?.()}>
         <BuildOutlined /> {t('Query builder')}
       </Radio.Button>
-      <Radio.Button value="sql" onClick={() => onClick?.('sql')}>
+      <Radio.Button value="sql" onClick={() => onClick?.()}>
         <ConsoleSqlOutlined /> {t('SQL')}
       </Radio.Button>
     </Radio.Group>
@@ -45,8 +46,8 @@ export const QueryPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
   const api = useAPIClient();
-  const ctx = useFlowSettingsContext();
-  const mode = form?.values?.query?.mode || 'sql';
+  const ctx = useFlowSettingsContext<ChartBlockModel>();
+  const mode = form?.values?.query?.mode || 'builder';
 
   const [showResult, setShowResult] = React.useState(false);
   const [running, setRunning] = React.useState(false);
@@ -54,51 +55,24 @@ export const QueryPanel: React.FC = observer(() => {
   const handleRun = async () => {
     try {
       setRunning(true);
-      const uid = ctx.model.uid;
 
-      if ((form?.values?.query?.mode || 'sql') === 'sql') {
-        const sql = form.values?.query?.sql;
-        if (!sql) return;
-        const result = await ctx.sql.run(sql);
-        configStore.setResult(uid, result);
-      } else {
-        const collectionPath: string[] | undefined = form?.values?.settings?.collection;
-        const [dataSource, collection] = collectionPath || [];
-        const query = form?.values?.query || {};
-        if (!(collection && (query?.measures?.length || 0) > 0)) return;
+      const query = form.values?.query;
 
-        const res = await api.request({
-          url: 'charts:query',
-          method: 'POST',
-          data: {
-            uid,
-            dataSource,
-            collection,
-            ...query,
-            filter: removeUnparsableFilter(query.filter),
-            dimensions: (query?.dimensions || []).map((item: any) => {
-              const dimension = { ...item };
-              if (item.format && !item.alias) {
-                const { alias } = parseField(item.field);
-                dimension.alias = alias;
-              }
-              return dimension;
-            }),
-            measures: (query?.measures || []).map((item: any) => {
-              const measure = { ...item };
-              if (item.aggregation && !item.alias) {
-                const { alias } = parseField(item.field);
-                measure.alias = alias;
-              }
-              return measure;
-            }),
-          },
-        });
-        configStore.setResult(uid, res?.data?.data);
+      // builder 模式需要先提交表单做校验；sql 模式不需要
+      if (query?.mode === 'builder') {
+        await form.submit();
       }
+
+      ctx.model.checkResource(query); // 保证 resource 正确
+      if (query?.mode === 'sql') {
+        (ctx.model.resource as SQLResource).setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+      }
+
+      await ctx.model.runQueryAndUpdateResult(query);
+
+      setShowResult(true);
     } catch (error: any) {
-      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
-      configStore.setError(ctx.model.uid, message);
+      console.error(error);
     } finally {
       setRunning(false);
     }
