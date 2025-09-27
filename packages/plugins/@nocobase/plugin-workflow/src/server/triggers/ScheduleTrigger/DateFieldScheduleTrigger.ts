@@ -56,7 +56,7 @@ function getDataOptionTime(record, on, dir = 1) {
       return time ? time : null;
     }
     case 'object': {
-      const { field, offset = 0, unit = 1000 } = on;
+      const { field, offset = 0, unit = 86400000 } = on;
       if (!field || !record.get(field)) {
         return null;
       }
