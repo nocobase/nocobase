@@ -20,6 +20,7 @@ import { CommonItemModel } from '../base/CommonItemModel';
 export class JSItemModel extends CommonItemModel {
   private _offResourceRefresh?: () => void;
   private _lastPage?: number;
+  private _mountedOnce = false; // prevent first-mount double-run
 
   getInputArgs() {
     const inputArgs = {};
@@ -66,9 +67,12 @@ export class JSItemModel extends CommonItemModel {
       resource.off('refresh', handler);
     };
 
-    if (this.context.ref?.current) {
-      this.rerender();
+    if (this._mountedOnce) {
+      if (this.context.ref?.current) {
+        this.rerender();
+      }
     }
+    this._mountedOnce = true;
   }
 
   protected onUnmount(): void {

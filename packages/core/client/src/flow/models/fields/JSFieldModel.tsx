@@ -22,6 +22,7 @@ const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span 
  * - 通过 ctx.element 直接操作渲染容器（经过 ElementProxy 包裹，带 XSS 保护）。
  */
 export class JSFieldModel extends FieldModel {
+  private _mountedOnce = false; // prevent first-mount double-run
   getInputArgs() {
     const field = this.context.collectionField;
     if (field?.isAssociationField?.()) {
@@ -56,19 +57,21 @@ export class JSFieldModel extends FieldModel {
    * 说明：fork 实例在表格逐行渲染时会复用该逻辑，确保按值更新。
    */
   useHooksBeforeRender() {
+    // 单一副作用：当 code 或 value 变化，且二者都已就绪时执行一次
+    // 通过记忆上次运行的输入，避免相同输入导致的重复执行
+    const codeParam = this.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const valueRef = useRef(this.props.value);
+    const lastRunRef = useRef<{ code: string; value: any } | null>(null);
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      if (valueRef.current !== this.props.value) {
-        valueRef.current = this.props.value;
-        // 仅重新执行本模型的 JS 配置步骤
-        this.applyFlow('jsSettings');
-      }
-      // 当代码在设置态被修改时，FlowEngine 会因 stepParams 变化自动触发一次自动流程，无需重复监听
-      // 这里仅监听值变化
+      const valueNow = this.props.value;
+      const codeNow = (typeof codeParam === 'string' && codeParam.trim().length ? codeParam : DEFAULT_CODE).trim();
+      const last = lastRunRef.current;
+      if (last && last.code === codeNow && last.value === valueNow) return;
+      lastRunRef.current = { code: codeNow, value: valueNow };
+      this.applyFlow('jsSettings');
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [this.props.value]);
+    }, [codeParam, this.props.value]);
   }
 
   /**
@@ -83,9 +86,12 @@ export class JSFieldModel extends FieldModel {
    * 解决新增后因命中缓存或执行时机导致内容未写入的问题（与 JSBlock/JSItem 一致处理）。
    */
   protected onMount() {
-    if (this.context.ref?.current) {
-      this.rerender();
+    if (this._mountedOnce) {
+      if (this.context.ref?.current) {
+        this.rerender();
+      }
     }
+    this._mountedOnce = true;
   }
 }
 
@@ -96,6 +102,7 @@ JSFieldModel.define({
 JSFieldModel.registerFlow({
   key: 'jsSettings',
   title: escapeT('JavaScript settings'),
+  manual: true,
   steps: {
     runJs: {
       title: escapeT('Write JavaScript'),
