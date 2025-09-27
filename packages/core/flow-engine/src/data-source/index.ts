@@ -600,7 +600,7 @@ export class CollectionField {
   }
 
   get dataSourceKey() {
-    return this.collection.dataSourceKey;
+    return this.collection?.dataSourceKey;
   }
 
   get resourceName() {
@@ -608,7 +608,7 @@ export class CollectionField {
   }
 
   get collectionName() {
-    return this.collection.name;
+    return this.collection?.name || this.options.collectionName;
   }
 
   get readonly() {
@@ -680,7 +680,7 @@ export class CollectionField {
   }
 
   get targetCollection() {
-    return this.options.target && this.collection.collectionManager.getCollection(this.options.target);
+    return this.options.target && this.collection?.collectionManager.getCollection(this.options.target);
   }
 
   get validation() {

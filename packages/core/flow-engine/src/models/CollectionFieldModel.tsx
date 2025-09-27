@@ -47,6 +47,8 @@ export interface BindingOptions {
   when: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
 }
 
+const defaultWhen = () => true;
+
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
 
@@ -139,12 +141,23 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     }
     // Find the default mapping
     const bindings = this.bindings.get(interfaceName);
-    const defaultBinding = bindings.find(
+    const defaultBindings = bindings.filter(
       (binding) =>
         binding.isDefault && ctx.engine.getModelClass(binding.modelName) && binding.when(ctx, collectionField),
     );
-    if (defaultBinding) {
-      return defaultBinding;
+    if (defaultBindings.length === 1) {
+      return defaultBindings[0];
+    }
+    if (defaultBindings.length > 0) {
+      let defaultBinding = null;
+      defaultBinding = defaultBindings.find((binding) => binding.when !== defaultWhen);
+      if (defaultBinding) {
+        return defaultBinding;
+      }
+      defaultBinding = defaultBindings.find((binding) => binding.when === defaultWhen);
+      if (defaultBinding) {
+        return defaultBinding;
+      }
     }
     if (options.useStrict) {
       return null;
@@ -178,7 +191,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
       modelName,
       isDefault: options.isDefault || false,
       defaultProps: options.defaultProps || null,
-      when: options.when || (() => true),
+      when: options.when || defaultWhen,
     });
 
     // Update the map
