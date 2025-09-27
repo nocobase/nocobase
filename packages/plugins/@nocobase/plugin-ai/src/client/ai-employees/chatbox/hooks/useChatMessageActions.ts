@@ -37,6 +37,7 @@ export const useChatMessageActions = () => {
   const setAbortController = useChatMessagesStore.use.setAbortController();
   const setAttachments = useChatMessagesStore.use.setAttachments();
   const setContextItems = useChatMessagesStore.use.setContextItems();
+  const setWebSearching = useChatMessagesStore.use.setWebSearching();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
 
@@ -95,6 +96,7 @@ export const useChatMessageActions = () => {
         const { done, value } = await reader.read();
         if (done || error) {
           setResponseLoading(false);
+          setWebSearching(null);
           break;
         }
 
@@ -133,6 +135,11 @@ export const useChatMessageActions = () => {
                 };
               });
             }
+            if (data.type === 'web_search' && data.body?.length) {
+              for (const item of data.body) {
+                setWebSearching(item);
+              }
+            }
             if (data.type === 'new_message') {
               addMessage({
                 key: uid(),
@@ -143,6 +150,7 @@ export const useChatMessageActions = () => {
             }
             if (data.type === 'error') {
               error = true;
+              result = data.body;
             }
             if (data.type === 'tool_calls') {
               tools = data.body;

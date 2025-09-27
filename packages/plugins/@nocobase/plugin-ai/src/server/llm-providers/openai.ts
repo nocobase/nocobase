@@ -13,6 +13,7 @@ import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../utils';
+import { AIMessageChunk } from '@langchain/core/messages';
 
 const OPENAI_URL = 'https://api.openai.com/v1';
 
@@ -97,6 +98,24 @@ export class OpenAIProvider extends LLMProvider {
 
   protected isToolConflict(): boolean {
     return false;
+  }
+
+  parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
+    const tool_outputs = chunk?.additional_kwargs?.tool_outputs as
+      | {
+          type: string;
+          status: string;
+          action: { type: string; query: string };
+        }[]
+      | null
+      | undefined;
+    if (!tool_outputs) {
+      return [];
+    }
+    return tool_outputs
+      .filter((tool) => tool.type === 'web_search_call')
+      .filter((tool) => tool.action)
+      .map((tool) => tool.action);
   }
 }
 
