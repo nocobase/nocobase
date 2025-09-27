@@ -49,7 +49,7 @@ export const FlowRoute = () => {
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(flowEngine.context.route.params.name);
   const viewStateRef = useRef<{
-    [uid in string]: { close: () => void; update: (value: any) => void };
+    [uid in string]: { close: (force?: boolean) => void; update: (value: any) => void };
   }>({});
   const prevViewListRef = useRef<ViewItem[]>([]);
   const hasStepNavigatedRef = useRef(false);
@@ -146,7 +146,7 @@ export const FlowRoute = () => {
             }
 
             const viewItem = viewsToOpen[index];
-            const closeRef = React.createRef<() => void>();
+            const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
             const updateRef = React.createRef<(value: any) => void>();
             const openViewParams = getOpenViewStepParams(viewItem.model);
 
@@ -174,7 +174,7 @@ export const FlowRoute = () => {
             });
 
             viewStateRef.current[getKey(viewItem)] = {
-              close: () => closeRef.current?.(),
+              close: (force?: boolean) => closeRef.current?.(undefined, force),
               update: (value: any) => updateRef.current?.(value),
             };
           };
@@ -182,9 +182,9 @@ export const FlowRoute = () => {
           openView(0);
         }
 
-        // 5. 处理需要关闭的视图
+        // 5. 处理需要关闭的视图（强制关闭，确保触发 onClose 并绕过 preventClose）
         viewsToClose.forEach((viewItem) => {
-          viewStateRef.current[getKey(viewItem)].close();
+          viewStateRef.current[getKey(viewItem)]?.close?.(true);
           delete viewStateRef.current[getKey(viewItem)];
           prevViewListRef.current = prevViewListRef.current.filter((item) => getKey(item) !== getKey(viewItem));
         });
@@ -194,7 +194,16 @@ export const FlowRoute = () => {
       },
     );
 
-    return dispose;
+    // Cleanup: on unmount, force-close all opened views and remove their models
+    return () => {
+      dispose?.();
+      prevViewListRef.current.forEach((viewItem) => {
+        viewStateRef.current[getKey(viewItem)]?.close?.(true);
+        flowEngine.removeModel(viewItem.params.viewUid);
+        delete viewStateRef.current[getKey(viewItem)];
+      });
+      prevViewListRef.current = [];
+    };
   }, [flowEngine, isMobileLayout, routeModel]);
 
   return <div ref={layoutContentRef} />;

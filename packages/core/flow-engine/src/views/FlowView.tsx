@@ -16,7 +16,7 @@ export type FlowView = {
   inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;
-  close: () => void;
+  close: (result?: any, force?: boolean) => void;
   update: (newConfig: any) => void;
   navigation?: ViewNavigation;
   /** 页面的销毁方法 */
