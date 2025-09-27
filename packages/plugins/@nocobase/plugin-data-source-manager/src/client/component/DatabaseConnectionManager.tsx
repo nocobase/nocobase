@@ -17,7 +17,7 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import { Button, Card } from 'antd';
+import { Card } from 'antd';
 import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
@@ -107,19 +107,6 @@ export const DatabaseConnectionManagerPane = () => {
     $self.visible = key !== 'main';
   };
 
-  const ExtendableActions: React.FC = () => {
-    const managerActions = plugin.extensionManager.getManagerActions();
-    return managerActions?.length ? (
-      <div style={{ margin: '0px 8px' }}>
-        {_.sortBy(managerActions, 'order').map((action, index) => (
-          <action.component key={index} />
-        ))}
-      </div>
-    ) : (
-      <></>
-    );
-  };
-
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -127,7 +114,6 @@ export const DatabaseConnectionManagerPane = () => {
           CreateDatabaseConnectAction,
           EditDatabaseConnectionAction,
           ViewDatabaseConnectionAction,
-          ExtendableActions,
         }}
         scope={{
           useNewId: (prefix) => `${prefix}${uid()}`,

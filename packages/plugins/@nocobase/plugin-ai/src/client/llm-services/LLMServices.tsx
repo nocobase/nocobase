@@ -26,14 +26,15 @@ import { Button, Dropdown, App, Tag } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import llmServices from '../../collections/llm-services';
 import { llmsSchema, createLLMSchema } from '../schemas/llms';
-import { LLMProviderContext, LLMProvidersContext, useLLMProviders } from './llm-providers';
+import { LLMProviderContext, LLMProvidersContext, useLLMProviders, useLLMProvider } from './llm-providers';
 import { Schema, useForm, observer } from '@formily/react';
 import { createForm } from '@formily/core';
 import { uid } from '@formily/shared';
 import PluginAIClient from '..';
+import { LLMTestFlight } from './component/LLMTestFlight';
 
 const useCreateFormProps = () => {
-  const { provider } = useContext(LLMProviderContext);
+  const provider = useLLMProvider();
   const form = useMemo(
     () =>
       createForm({
@@ -158,7 +159,11 @@ const AddNew = () => {
             {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
-        <SchemaComponent scope={{ setProvider, useCreateFormProps }} schema={createLLMSchema} />
+        <SchemaComponent
+          components={{ LLMTestFlight }}
+          scope={{ setProvider, useCreateFormProps }}
+          schema={createLLMSchema}
+        />
       </LLMProviderContext.Provider>
     </ActionContextProvider>
   );
@@ -210,7 +215,7 @@ export const LLMServices: React.FC = () => {
       <ExtendCollectionsProvider collections={[llmServices]}>
         <SchemaComponent
           schema={llmsSchema}
-          components={{ AddNew, Settings }}
+          components={{ AddNew, Settings, LLMTestFlight }}
           scope={{ t, providers, useEditFormProps, useCancelActionProps, useCreateActionProps, useEditActionProps }}
         />
       </ExtendCollectionsProvider>

@@ -10,10 +10,9 @@
 import { UploadOutlined } from '@ant-design/icons';
 import { Upload } from '@formily/antd-v5';
 import { castArray } from 'lodash';
-import { largeField, escapeT } from '@nocobase/flow-engine';
+import { largeField, escapeT, EditableItemModel } from '@nocobase/flow-engine';
 import React, { useState } from 'react';
 import { FieldContext } from '@formily/react';
-import { FormItemModel } from '../blocks/form/FormItemModel';
 import { FieldModel } from '../base';
 
 export const CardUpload = (props) => {
@@ -132,7 +131,7 @@ UploadFieldModel.registerFlow({
 UploadFieldModel.define({
   label: escapeT('Upload'),
 });
-FormItemModel.bindModelToInterface(
+EditableItemModel.bindModelToInterface(
   'UploadFieldModel',
   ['attachment', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
   {
