@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './useFlowModelById';
-export * from './useFlowModel';
-export * from './useApplyAutoFlows';
-export * from './useFlowSettingsContext';
-export * from './useNiceDropdownMaxHeight';
-export * from './useFlowStep';
+import React, { useContext } from 'react';
+
+export const FlowStepContext = React.createContext({
+  path: '',
+  params: {} as Record<string, any>,
+});
+
+export const useFlowStep = () => {
+  return useContext(FlowStepContext);
+};

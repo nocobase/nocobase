@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ThunderboltOutlined, DeleteOutlined, PlusOutlined, CloseOutlined } from '@ant-design/icons';
+import { ThunderboltOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   ActionDefinition,
   ActionScene,
@@ -18,6 +18,7 @@ import {
   useFlowContext,
   FlowDefinition,
   FlowStep,
+  FlowStepContext,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -345,12 +346,16 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                         </Tooltip>
                       </div>
                       <div>
-                        {flowEngine.flowSettings.renderStepForm({
-                          uiSchema: actionDef.uiSchema,
-                          initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
-                          flowEngine,
-                          onFormValuesChange: (form: any) => handleActionValueChange(step, form.values),
-                        })}
+                        {React.createElement(
+                          FlowStepContext.Provider,
+                          { value: { params: step.defaultParams, path: `${model.uid}_${step.flowKey}_${step.key}` } },
+                          flowEngine.flowSettings.renderStepForm({
+                            uiSchema: actionDef.uiSchema,
+                            initialValues: untracked(() => step.defaultParams), // 防止代码编辑器失焦
+                            flowEngine,
+                            onFormValuesChange: (form: any) => handleActionValueChange(step, form.values),
+                          }),
+                        )}
                       </div>
                     </div>
                   );
