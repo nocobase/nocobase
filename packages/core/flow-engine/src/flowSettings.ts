@@ -496,7 +496,7 @@ export class FlowSettings {
 
     return React.createElement(
       FormProviderWithForm,
-      { form, scopes, initialValues, onFormValuesChange },
+      { form, initialValues, onFormValuesChange },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
@@ -1022,13 +1022,11 @@ export class FlowSettings {
 function FormProviderWithForm({
   children,
   form,
-  scopes,
   initialValues,
   onFormValuesChange: _onFormValuesChange,
 }: {
   children?: React.ReactNode;
   form?: any;
-  scopes?: Record<string, any>;
   initialValues?: Record<string, any>;
   onFormValuesChange?: (form: any) => void;
 }) {
@@ -1036,7 +1034,7 @@ function FormProviderWithForm({
 
   if (!formInstanceRef.current) {
     formInstanceRef.current = createForm({
-      initialValues: compileUiSchema(scopes, initialValues),
+      initialValues,
       effects() {
         onFormValuesChange(_onFormValuesChange);
       },
