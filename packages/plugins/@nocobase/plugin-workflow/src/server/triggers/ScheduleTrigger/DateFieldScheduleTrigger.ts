@@ -206,17 +206,17 @@ export default class DateFieldScheduleTrigger {
 
     if (repeat) {
       // when repeat is number, means repeat after startsOn
-      // (now - startsOn) % repeat <= cacheCycle
       if (typeof repeat === 'number') {
         const tsFn = DialectTimestampFnMap[db.options.dialect];
         if (repeat > range && tsFn) {
           const offsetSeconds = Math.round(((startsOn.offset || 0) * (startsOn.unit || 1000)) / 1000);
-          const repeatSecond = Math.round(repeat / 1000);
+          const repeatSeconds = Math.round(repeat / 1000);
+          const nowSeconds = Math.round(timestamp / 1000);
           const { field } = model.getAttributes()[startsOn.field];
           const modExp = literal(
-            `${repeatSecond} - MOD(${Math.round(timestamp / 1000)} - ${tsFn(
+            `MOD(MOD(${tsFn(
               db.sequelize.getQueryInterface().quoteIdentifiers(field),
-            )} - ${offsetSeconds}, ${repeatSecond})`,
+            )} + ${offsetSeconds} - ${nowSeconds}, ${repeatSeconds}) + ${repeatSeconds}, ${repeatSeconds})`,
           );
           conditions.push(where(modExp, { [Op.lt]: Math.round(range / 1000) }));
         }
@@ -297,7 +297,6 @@ export default class DateFieldScheduleTrigger {
       }
     }
     if (typeof repeat === 'number') {
-      // const passedCycles = Math.floor((timestamp - startTime) / repeat);
       nextTime = timestamp + repeat - ((timestamp - startTime) % repeat);
       if (nextTime - timestamp > range) {
         logger.debug(`[Schedule on date field] getNextTime: nextTime (${nextTime}) is out of caching window`);
