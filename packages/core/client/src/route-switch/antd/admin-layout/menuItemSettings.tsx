@@ -231,7 +231,7 @@ const InsertMenuItems = (props) => {
 
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}page`}
-        title={t('Classic page')}
+        title={t('Classic page (v1)')}
         schema={
           {
             type: 'object',
@@ -295,7 +295,7 @@ const InsertMenuItems = (props) => {
       />
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}flowPage`}
-        title={t('Modern page')}
+        title={t('Modern page (v2)')}
         schema={
           {
             type: 'object',
