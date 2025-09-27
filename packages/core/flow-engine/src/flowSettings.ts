@@ -17,7 +17,7 @@ import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/D
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from './emitter';
 import { FlowRuntimeContext } from './flowContext';
-import { FlowEngine } from './flowEngine';
+import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
@@ -782,7 +782,7 @@ export class FlowSettings {
               FlowStepContext.Provider,
               {
                 value: {
-                  params: { ...entry.initialValues, ...form.values },
+                  params: untracked(() => ({ ...entry.initialValues, ...form.values })),
                   path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
                 },
               },
