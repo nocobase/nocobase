@@ -10,9 +10,10 @@
 import { useForm } from '@formily/react';
 import { DataBlockModel, SubPageModel } from '@nocobase/client';
 import { SQLResource, useFlowContext } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+import { Button, Badge } from 'antd';
 import React, { createRef } from 'react';
 import { useT } from '../../locale';
+import { EyeOutlined } from '@ant-design/icons';
 import { convertDatasetFormats } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
@@ -159,19 +160,18 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
   }
 
-  async setParamsAndPreview(params) {
-    // 暂存预览前的 stepParams，用于取消预览时回滚
+  // 预览，暂存预览前的 stepParams，并刷新图表
+  async setParamsAndRerender(params) {
     if (!this._previousStepParams) {
-      this._previousStepParams = _.cloneDeep(this.stepParams);
+      this._previousStepParams = _.cloneDeep(this.stepParams.chartSettings?.configure);
     }
     this.setStepParams('chartSettings', 'configure', params);
-    console.log('---latest setParams', this.getStepParams('chartSettings', 'configure'));
     this.rerender();
-    // rerender -> applyAutoFlows -> handler -> runQueryAndUpdateResult
+    // 调用链：rerender -> applyAutoFlows -> handler（处理数据、属性、事件） -> runQueryAndUpdateResult（查数据）
   }
 
-  // 取消预览，回滚stepParams
-  async cancelPreview() {
+  // 取消预览，回滚stepParams，并刷新图表
+  async cancelAndRerender() {
     if (this._previousStepParams) {
       this.setStepParams('chartSettings', 'configure', this._previousStepParams);
       this._previousStepParams = null;
@@ -185,22 +185,47 @@ const PreviewButton = ({ style }) => {
   const ctx = useFlowContext();
   const form = useForm();
   return (
+    <Badge dot offset={[-8, 2]}>
+      <Button
+        type="default"
+        style={style}
+        icon={<EyeOutlined />}
+        onClick={async () => {
+          // 这里通过普通的 form.values 拿不到数据
+          const formValues = ctx.getStepFormValues('chartSettings', 'configure');
+          const query = formValues?.query || {};
+
+          if (query.mode === 'builder') {
+            await form.submit();
+          }
+
+          ctx.model.checkResource(query); // 保证 resource 正确
+          if (query?.mode === 'sql') {
+            (ctx.model.resource as SQLResource).setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+          }
+          ctx.model.setParamsAndRerender(formValues || {});
+        }}
+      >
+        {t('Preview')}
+      </Button>
+    </Badge>
+  );
+};
+
+const CancelButton = ({ style }) => {
+  const t = useT();
+  const ctx = useFlowContext();
+  return (
     <Button
       type="default"
       style={style}
-      onClick={async () => {
-        const formValues = ctx.getStepFormValues('chartSettings', 'configure');
-        if (formValues?.query?.mode === 'builder') {
-          await form.submit();
-        }
-        ctx.model.checkResource(formValues.query); // 保证 resource 正确
-        if (formValues?.query?.mode === 'sql') {
-          ctx.model.resource.setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
-        }
-        ctx.model.setParamsAndPreview(formValues || {});
+      onClick={() => {
+        // 回滚 未保存的 stepParams 并刷新图表
+        ctx.model.cancelAndRerender();
+        ctx.view.close();
       }}
     >
-      {t('Preview')}
+      {t('Cancel')}
     </Button>
   );
 };
@@ -219,10 +244,11 @@ ChartBlockModel.registerFlow({
         type: 'embed',
         props: {
           minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
-          footer: (originNode) => (
+          footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-              <PreviewButton style={{ marginRight: 4 }} />
-              {originNode}
+              <PreviewButton style={{ marginRight: 6 }} />
+              <CancelButton style={{ marginRight: 6 }} />
+              <OkBtn />
             </div>
           ),
         },
