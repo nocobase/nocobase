@@ -141,14 +141,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
         throw new Error('Query mode is required');
       }
       if (query.mode === 'sql') {
-        if (!(this.resource instanceof SQLResource)) {
-          this.initResource('sql');
-        }
         (this.resource as SQLResource).setSQL(query.sql);
       } else {
-        if (!(this.resource instanceof ChartResource)) {
-          this.initResource('builder');
-        }
         (this.resource as ChartResource).setQueryParams(query);
       }
       await this.resource.refresh();
@@ -201,7 +195,8 @@ const PreviewButton = ({ style }) => {
 
           ctx.model.checkResource(query); // 保证 resource 正确
           if (query?.mode === 'sql') {
-            (ctx.model.resource as SQLResource).setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+            // 开启 debug 模式，sql 查询不要走 runById
+            (ctx.model.resource as SQLResource).setDebug(true);
           }
           ctx.model.setParamsAndRerender(formValues || {});
         }}
@@ -288,6 +283,7 @@ ChartBlockModel.registerFlow({
         }
         try {
           // 数据部分
+          ctx.model.checkResource(query); // 保证 resource 正确
           await ctx.model.runQueryAndUpdateResult(query);
 
           // 图表部分
