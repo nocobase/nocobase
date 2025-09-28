@@ -71,7 +71,7 @@ interface FilterGroupProps {
  */
 export const FilterGroup: FC<FilterGroupProps> = observer(
   (props) => {
-    const { value, FilterItem, showBorder = false, onRemove, onChange } = props;
+    const { value = { logic: '$and', items: [] }, FilterItem, showBorder = false, onRemove, onChange } = props;
     const { token } = theme.useToken();
     const { t } = useTranslation();
 
