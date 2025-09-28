@@ -35,12 +35,13 @@ export const setupAICoding = () => {
           setProps((prev) => ({
             ...prev,
             rightExtra: [
-              (editorRef) => {
+              (editorRef, setActive) => {
                 const props = {
                   uid: getUid(settingContext, name),
                   scene: getScene(settingContext),
                   language,
                   editorRef,
+                  setActive,
                 };
                 return <AICodingButton key="plugin-ai-button-ai-coding" {...props} />;
               },

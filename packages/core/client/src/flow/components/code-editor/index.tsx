@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // CodeMirror imports
 import { autocompletion } from '@codemirror/autocomplete';
@@ -36,7 +36,7 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
 }
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
@@ -218,16 +218,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         overflow: 'hidden',
       }}
     >
-      {rightExtra ? (
-        <Flex
-          gap="middle"
-          justify="flex-end"
-          align="center"
-          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
-        >
-          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
-        </Flex>
-      ) : null}
+      <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
       <div ref={editorRef} />
       {placeholder && !value && (
         <div
@@ -244,5 +235,28 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+const RightExtra: React.FC<{
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  extraEditorRef: EditorRef;
+}> = ({ rightExtra, extraEditorRef }) => {
+  const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
+  const setActive = (key: string, active: boolean) => {
+    setActiveCount((prev) => ({ ...prev, [key]: active }));
+  };
+
+  const style = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
+  if (Object.entries(activeCount).filter(([_, v]) => v).length <= 0) {
+    style['display'] = 'none';
+  }
+
+  return (
+    rightExtra?.length && (
+      <Flex gap="middle" justify="flex-end" align="center" style={style}>
+        {<div>{rightExtra.map((fn) => fn(extraEditorRef, setActive))}</div>}
+      </Flex>
+    )
   );
 };
