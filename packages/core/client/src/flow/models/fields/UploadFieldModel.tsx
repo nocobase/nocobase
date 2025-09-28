@@ -21,7 +21,7 @@ import {
   ZoomOutOutlined,
 } from '@ant-design/icons';
 import { Upload } from '@formily/antd-v5';
-import { Image, Space, Button } from 'antd';
+import { Image, Space, Alert } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, escapeT, EditableItemModel, observable } from '@nocobase/flow-engine';
@@ -29,6 +29,7 @@ import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel } from '../base';
 import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
+import { matchMimetype } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
   const { allowSelectExistingRecord, multiple, value, disabled, onSelectExitRecordClick } = props;
@@ -87,7 +88,6 @@ export const CardUpload = (props) => {
         link.remove();
       });
   };
-  console.log(currentImageIndex);
   return (
     <FieldContext.Provider
       value={
@@ -142,9 +142,9 @@ export const CardUpload = (props) => {
 
                   <RightOutlined
                     style={{
-                      cursor: currentImageIndex === value.length - 1 ? 'not-allowed' : 'pointer',
+                      cursor: currentImageIndex === fileList.length - 1 ? 'not-allowed' : 'pointer',
                     }}
-                    disabled={currentImageIndex === value.length - 1}
+                    disabled={currentImageIndex === fileList.length - 1}
                     onClick={() => currentImageIndex !== value.length - 1 && goToNextImage()}
                   />
 
@@ -158,6 +158,48 @@ export const CardUpload = (props) => {
                   <UndoOutlined onClick={onReset} />
                 </Space>
               ),
+              imageRender: (originalNode, info) => {
+                const file: any = info.image;
+                // 根据文件类型决定如何渲染预览
+                if (matchMimetype(file, 'application/pdf')) {
+                  // PDF 文件的预览
+                  return (
+                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
+                  );
+                } else if (matchMimetype(file, 'audio/*')) {
+                  // 音频文件的预览
+                  return (
+                    <audio controls>
+                      <source src={file.url || file.preview} type={file.type} />
+                      您的浏览器不支持音频标签。
+                    </audio>
+                  );
+                } else if (matchMimetype(file, 'video/*')) {
+                  // 视频文件的预览
+                  return (
+                    <video controls width="100%">
+                      <source src={file.url || file.preview} type={file.type} />
+                      您的浏览器不支持视频标签。
+                    </video>
+                  );
+                } else if (matchMimetype(file, 'text/plain')) {
+                  // 文本文件的预览
+                  return (
+                    <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />
+                  );
+                } else if (matchMimetype(file, 'image/*')) {
+                  // 图片文件的预览
+                  return originalNode;
+                } else {
+                  return (
+                    <Alert
+                      type="warning"
+                      description={t('File type is not supported for previewing, please download it to preview.')}
+                      showIcon
+                    />
+                  );
+                }
+              },
             }}
             src={previewImage}
           />

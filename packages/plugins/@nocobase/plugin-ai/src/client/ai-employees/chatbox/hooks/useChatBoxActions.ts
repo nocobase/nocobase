@@ -124,6 +124,7 @@ export const useChatBoxActions = () => {
 
   const triggerTask = useCallback(
     async (options: TriggerTaskOptions) => {
+      clear();
       const { aiEmployee, tasks } = options;
       updateRole(aiEmployee);
       if (!open) {

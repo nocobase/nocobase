@@ -128,11 +128,11 @@ export const DatasourceSettingForm: React.FC = () => {
           <Flex justify="flex-end" align="end">
             <Space>
               <Button style={{ margin: '0 8px' }} onClick={() => prev()} disabled={current === 0}>
-                Previous
+                {ctx.t('Previous')}
               </Button>
               {current < items.length - 1 && (
                 <Button type="primary" onClick={() => next()}>
-                  Next
+                  {ctx.t('Next')}
                 </Button>
               )}
               {current === items.length - 1 && (
@@ -141,11 +141,11 @@ export const DatasourceSettingForm: React.FC = () => {
                   onClick={async () => {
                     const resource = ctx.resource as MultiRecordResource;
                     await resource.create(formData);
-                    ctx.message.success('Processing complete!');
+                    ctx.message.success(ctx.t('Processing complete!'));
                     ctx.view?.close();
                   }}
                 >
-                  Submit
+                  {ctx.t('Submit')}
                 </Button>
               )}
             </Space>

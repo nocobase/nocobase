@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // CodeMirror imports
 import { autocompletion } from '@codemirror/autocomplete';
@@ -63,6 +63,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [actionCount, setActionCount] = useState(0);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -220,9 +221,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         ...wrapperStyle,
       }}
     >
-      <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
-      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
-      <div ref={editorRef} />
+      <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} onActionCountChange={setActionCount} />
+      <div style={{ height: `calc(100% - ${actionCount > 0 ? 50 : 0}px)` }} ref={editorRef} />
       {placeholder && !value && (
         <div
           style={{
@@ -244,10 +244,15 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
 const RightExtra: React.FC<{
   rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
   extraEditorRef: EditorRef;
-}> = ({ rightExtra, extraEditorRef }) => {
+  onActionCountChange?: (count: number) => void;
+}> = ({ rightExtra, extraEditorRef, onActionCountChange }) => {
   const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
   const setActive = (key: string, active: boolean) => {
-    setActiveCount((prev) => ({ ...prev, [key]: active }));
+    setActiveCount((prev) => {
+      const newState = { ...prev, [key]: active };
+      onActionCountChange?.(Object.entries(newState).filter(([_, v]) => v).length);
+      return newState;
+    });
   };
 
   const style = { padding: '8px', borderBottom: '1px solid #d9d9d9' };

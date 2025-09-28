@@ -39,7 +39,7 @@ function createStaticInputRenderer(
   schema: any,
   fieldMeta: MetaTreeNode | null,
   t: (s: string) => string,
-): (inputProps: { value?: any; onChange?: (v: any) => void }) => JSX.Element {
+): (inputProps: { value?: any; onChange?: (v: any) => void } & Record<string, any>) => JSX.Element {
   const xComponent = schema?.['x-component'];
   const fieldComponentProps = fieldMeta?.uiSchema?.['x-component-props'] || {};
   const operatorComponentProps = schema?.['x-component-props'] || {};
@@ -56,19 +56,22 @@ function createStaticInputRenderer(
   };
 
   return (inputProps: any) => {
-    const { value, onChange } = inputProps || {};
-    if (xComponent === 'InputNumber') return <InputNumber {...commonProps} value={value} onChange={onChange} />;
-    if (xComponent === 'NumberPicker') return <NumberPicker {...commonProps} value={value} onChange={onChange} />;
-    if (xComponent === 'Switch') return <Switch {...commonProps} checked={!!value} onChange={onChange} />;
+    const { value, onChange, ...rest } = inputProps || {};
+    if (xComponent === 'InputNumber')
+      return <InputNumber {...commonProps} {...rest} value={value} onChange={onChange} />;
+    if (xComponent === 'NumberPicker')
+      return <NumberPicker {...commonProps} {...rest} value={value} onChange={onChange} />;
+    if (xComponent === 'Switch') return <Switch {...commonProps} {...rest} checked={!!value} onChange={onChange} />;
     if (xComponent === 'Select') {
       // 若操作符或字段 props 未显式传入 options，则使用枚举兜底
       const hasOptions = Array.isArray((commonProps as any)?.options) && (commonProps as any).options.length > 0;
       const finalProps = hasOptions || !optionsFromEnum ? commonProps : { ...commonProps, options: optionsFromEnum };
-      return <Select {...finalProps} value={value} onChange={onChange} />;
+      return <Select {...finalProps} {...rest} value={value} onChange={onChange} />;
     }
     if (xComponent === 'DateFilterDynamicComponent')
-      return <DateFilterDynamicComponent {...commonProps} value={value} onChange={onChange} />;
-    return <Input {...commonProps} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
+      return <DateFilterDynamicComponent {...commonProps} {...rest} value={value} onChange={onChange} />;
+    // 普通文本输入：透传组合输入事件，避免 IME 被中断
+    return <Input {...commonProps} {...rest} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
   };
 }
 

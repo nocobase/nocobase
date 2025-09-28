@@ -7,28 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
-import { templateBlockInitializerItem } from './initializers';
-import { NAMESPACE } from './constants';
-import { BlockTemplateList, BlockTemplatePage } from './components';
 import { ISchema, Schema } from '@formily/json-schema';
-import * as _ from 'lodash';
-import { revertSettingItem } from './settings/revertSetting';
-import { getFullSchema } from './utils/template';
-import { registerTemplateBlockInterceptors } from './utils/interceptors';
-import { TemplateGridDecorator } from './components/TemplateGridDecorator';
+import { BlockTemplatesPane, Plugin, SchemaSettingsFormItemTemplate, SchemaSettingsTemplate } from '@nocobase/client';
 import PluginMobileClient from '@nocobase/plugin-mobile/client';
+import * as _ from 'lodash';
+import { BlockTemplateList, BlockTemplatePage } from './components';
+import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
 import { BlockTemplateMobilePage } from './components/BlockTemplateMobilePage';
+import { TemplateGridDecorator } from './components/TemplateGridDecorator';
+import { NAMESPACE } from './constants';
+import { templateBlockInitializerItem } from './initializers';
+import { convertToNormalBlockSettingItem } from './settings/convertToNormalBlockSetting';
+import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
+import { revertSettingItem } from './settings/revertSetting';
+import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
+import { registerTemplateBlockInterceptors } from './utils/interceptors';
 import {
   hideBlocksFromTemplate,
   hideConnectDataBlocksFromTemplate,
   hideConvertToBlockSettingItem,
   hideDeleteSettingItem,
 } from './utils/setting';
-import { BlockTemplateMenusProvider } from './components/BlockTemplateMenusProvider';
-import { disabledDeleteSettingItem } from './settings/disabledDeleteSetting';
-import { saveAsTemplateSetting } from './settings/saveAsTemplateSetting';
-import { convertToNormalBlockSettingItem } from './settings/convertToNormalBlockSetting';
+import { getFullSchema } from './utils/template';
 
 export class PluginBlockTemplateClient extends Plugin {
   templateInfos = new Map();
@@ -89,8 +89,9 @@ export class PluginBlockTemplateClient extends Plugin {
 
     this.#afterAllPluginsLoaded();
     this.app.pluginSettingsManager.add('block-templates', {
-      title: `{{t("Block templates", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Block templates (deprecated)", { ns: "${NAMESPACE}" })}}`,
       icon: 'ProfileOutlined',
+      sort: 1000,
       // Component: BlockTemplateList,
     });
 

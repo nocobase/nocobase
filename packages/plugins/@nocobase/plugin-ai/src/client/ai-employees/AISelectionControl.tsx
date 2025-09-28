@@ -13,8 +13,10 @@ import { notification, Flex, Button } from 'antd';
 import { aiSelection } from './stores/ai-selection';
 import { BorderOutlined } from '@ant-design/icons';
 import { dialogController } from './stores/dialog-controller';
+import { useT } from '../locale';
 
 export const AISelectionControl: React.FC = observer(() => {
+  const t = useT();
   const [api, contextHolder] = notification.useNotification();
   const key = useRef(`ai-selection-control-${new Date().getTime()}`);
   if (aiSelection.selectable !== '') {
@@ -23,7 +25,7 @@ export const AISelectionControl: React.FC = observer(() => {
       closeIcon: false,
       message: (
         <Flex justify="space-between" align="center">
-          <span>Picking Block</span>
+          <span>{t('Picking Block')}</span>
           <Button
             type="primary"
             danger

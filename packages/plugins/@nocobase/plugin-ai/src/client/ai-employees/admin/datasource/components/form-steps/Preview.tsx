@@ -22,7 +22,7 @@ export const Preview: React.FC<{
 }> = ({ formData, show }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
   const currentCollection = useCollectionContext();
-  const title = `Collection: ${currentCollection.displayName}`;
+  const title = `${ctx.t('Collection')}: ${currentCollection.displayName}`;
   const { loading, collectionFields, datasource, refresh } = usePreview(formData);
 
   useEffect(() => {

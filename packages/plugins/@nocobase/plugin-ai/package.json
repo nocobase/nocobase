@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-ai",
-  "displayName": "AI integration",
-  "displayName.zh-CN": "AI 集成",
-  "description": "Support integration with AI services, providing AI-related workflow nodes to enhance business processing capabilities.",
-  "description.zh-CN": "支持接入 AI 服务，提供 AI 相关的工作流节点，增强业务处理能力。",
+  "displayName": "AI employees",
+  "displayName.zh-CN": "AI 员工",
+  "description": "Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.",
+  "description.zh-CN": "创建各种技能的 AI 员工，与人类协同，搭建系统，处理业务。",
   "version": "1.9.0-alpha.16",
   "main": "dist/server/index.js",
   "peerDependencies": {
@@ -37,5 +37,8 @@
     "use-context-selector": "^2.0.0",
     "zustand": "^5.0.6",
     "jsonrepair": "3.13.1"
-  }
+  },
+  "keywords": [
+    "AI"
+  ]
 }

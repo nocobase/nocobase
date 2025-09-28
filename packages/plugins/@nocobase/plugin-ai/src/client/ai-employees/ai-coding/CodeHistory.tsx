@@ -18,7 +18,7 @@ import ReactMarkdown from 'react-markdown';
 import { Code } from '../chatbox/markdown/Code';
 import { avatars } from '../avatars';
 import { Typography } from 'antd';
-import { FlowRuntimeContext, useFlowContext } from '@nocobase/flow-engine';
+import { useT } from '../../locale';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -30,7 +30,7 @@ type WorkContent = {
 };
 
 export const CodeHistory: React.FC = () => {
-  const ctx = useFlowContext<FlowRuntimeContext>();
+  const t = useT();
   const { token } = useToken();
   const setShowCodeHistory = useChatBoxStore.use.setShowCodeHistory();
   return (
@@ -65,7 +65,7 @@ export const CodeHistory: React.FC = () => {
             }}
           />
           <Title level={5} style={{ margin: 0 }}>
-            {ctx.t('Code history')}
+            {t('Code history')}
           </Title>
         </Flex>
       </Header>

@@ -12,7 +12,6 @@ import { FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { DatasourceSettingGrid } from '../components/DatasourceSettingGrid';
 import { namespace } from '../../../../locale';
-import sort from 'packages/plugins/@nocobase/plugin-mock-collections/dist/server/field-interfaces/sort';
 
 export class DatasourceSettingModel extends FlowModel {
   declare resource: MultiRecordResource;
