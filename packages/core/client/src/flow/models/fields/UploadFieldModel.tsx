@@ -163,8 +163,7 @@ UploadFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          //  allowSelectExistingRecord: ctx.collectionField.targetCollection,
-          allowSelectExistingRecord: false,
+          allowSelectExistingRecord: ctx.collectionField.targetCollection && ctx.collectionField.isAssociationField(),
         };
       },
       handler(ctx, params) {
