@@ -52,20 +52,22 @@ export class JSItemModel extends CommonItemModel {
    * 解决某些情况下命中旧缓存导致新节点未写入而显示空白的问题。
    */
   protected onMount() {
-    // 订阅 refresh：仅在分页页码改变后触发 jsSettings
-    const resource: any = this.context.resource;
-    this._lastPage = resource.getPage?.();
-    const handler = () => {
-      const current = resource.getPage?.();
-      if (current !== this._lastPage) {
-        this.applyFlow('jsSettings');
-      }
-      this._lastPage = current;
-    };
-    resource.on('refresh', handler);
-    this._offResourceRefresh = () => {
-      resource.off('refresh', handler);
-    };
+    const resource = this.context.resource;
+    if (resource) {
+      // 订阅 refresh：仅在分页页码改变后触发 jsSettings
+      this._lastPage = resource.getPage?.();
+      const handler = () => {
+        const current = resource?.getPage?.();
+        if (current !== this._lastPage) {
+          this.applyFlow('jsSettings');
+        }
+        this._lastPage = current;
+      };
+      resource.on('refresh', handler);
+      this._offResourceRefresh = () => {
+        resource.off('refresh', handler);
+      };
+    }
 
     if (this._mountedOnce) {
       if (this.context.ref?.current) {
