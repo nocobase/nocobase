@@ -20,21 +20,24 @@ export const CodeInternal: React.FC<{
   language: string;
   value: string;
   height?: string;
-}> = ({ language, value, height, ...rest }) => {
+  scrollToBottom?: boolean;
+}> = ({ language, value, height, scrollToBottom, ...rest }) => {
   const { isDarkTheme } = useGlobalTheme();
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (scrollToBottom === true) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [value, scrollToBottom]);
 
   return (
-    <SyntaxHighlighter
-      {...rest}
-      PreTag="div"
-      language={language}
-      style={isDarkTheme ? dark : defaultStyle}
-      className={css`
-        height: ${height ?? '500px'};
-      `}
-    >
-      {value}
-    </SyntaxHighlighter>
+    <div style={{ maxHeight: height ?? '500px', overflowY: 'auto' }}>
+      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
+        {value}
+      </SyntaxHighlighter>
+      <div ref={bottomRef} />
+    </div>
   );
 };
 
@@ -110,7 +113,7 @@ export const Code = (props: any) => {
           : []
       }
     >
-      <CodeInternal {...rest} language={language} value={value} />
+      <CodeInternal {...rest} language={language} value={value} scrollToBottom={!isFullText} />
     </Card>
   ) : (
     <Typography.Text code {...rest} className={className}>
