@@ -127,6 +127,7 @@ const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'ty
       }
       onAdd({
         uid,
+        title: model.title ?? '',
       });
     },
   });
