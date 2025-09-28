@@ -67,7 +67,7 @@ export const useQueryBuilderLogic = () => {
       };
 
       // 限制最大深度为 1（与原 QueryBuilder 使用一致）
-      if (depth >= 1) {
+      if (depth < 1) {
         // children: filterable.children（如 year/month 等虚拟子项）
         const children = iface.filterable?.children || [];
         if (children.length) {
