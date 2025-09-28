@@ -222,7 +222,6 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
     >
       <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
       <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
-      <div ref={editorRef} />
       {placeholder && !value && (
         <div
           style={{
