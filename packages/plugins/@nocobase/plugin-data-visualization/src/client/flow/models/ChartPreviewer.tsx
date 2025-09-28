@@ -17,6 +17,7 @@ import { EChartsType } from 'echarts';
 import { debounce } from 'lodash';
 import { convertDatasetFormats } from '../utils';
 
+// deprecated: 预览器已废弃，现在使用页面运行时 ChartBlockModel 直接替代
 export const ChartPreviewer: React.FC = observer(() => {
   const ref = useRef<EChartsType | null>(null);
   const ctx = useFlowSettingsContext<ChartBlockModel>();

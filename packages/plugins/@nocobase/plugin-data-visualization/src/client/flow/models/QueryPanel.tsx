@@ -65,7 +65,8 @@ export const QueryPanel: React.FC = observer(() => {
 
       ctx.model.checkResource(query); // 保证 resource 正确
       if (query?.mode === 'sql') {
-        (ctx.model.resource as SQLResource).setDebug(true); // 开启 debug 模式，sql 查询不要走 runById
+        // 开启 debug 模式，sql 查询不要走 runById
+        (ctx.model.resource as SQLResource).setDebug(true);
       }
 
       await ctx.model.runQueryAndUpdateResult(query);
