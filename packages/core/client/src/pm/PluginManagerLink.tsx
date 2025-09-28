@@ -12,6 +12,7 @@ import { Button, Dropdown, Tooltip } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useACLRoleContext } from '../acl';
 import { useApp, useNavigateNoUpdate } from '../application';
 import { useMobileLayout } from '../route-switch/antd/admin-layout';
 import { useCompile } from '../schema-component';
@@ -46,10 +47,11 @@ export const SettingsCenterDropdown = () => {
   const { t } = useTranslation();
   const { token } = useToken();
   const app = useApp();
+  const { snippets = [] } = useACLRoleContext();
   const settingItems = useMemo(() => {
     const settings = app.pluginSettingsManager.getList();
     const pinnedSettings = settings
-      .filter((v) => v.isPinned && v.isTopLevel !== false)
+      .filter((v) => v.isPinned && !v.hidden && v.isTopLevel !== false)
       .map((setting) => {
         return {
           key: setting.name,
@@ -62,7 +64,7 @@ export const SettingsCenterDropdown = () => {
         };
       });
     const othersSettings = settings
-      .filter((v) => !v.isPinned && v.isTopLevel !== false)
+      .filter((v) => !v.isPinned && !v.hidden && v.isTopLevel !== false)
       .map((setting) => {
         return {
           key: setting.name,
@@ -75,12 +77,20 @@ export const SettingsCenterDropdown = () => {
         };
       });
     return [
+      snippets.includes('pm') && {
+        key: 'plugin-manager',
+        icon: <ApiOutlined />,
+        label: <Link to={'/admin/settings/plugin-manager'}>{t('Plugin manager')}</Link>,
+      },
+      snippets.includes('pm') && {
+        type: 'divider',
+      },
       ...pinnedSettings,
       {
         type: 'divider',
       },
       ...othersSettings,
-    ];
+    ].filter(Boolean) as any[];
   }, [app, t]);
 
   useEffect(() => {
@@ -102,7 +112,7 @@ export const SettingsCenterDropdown = () => {
           maxHeight: '70vh',
           overflow: 'auto',
         },
-        items: settingItems,
+        items: settingItems as any[],
       }}
     >
       <Button
