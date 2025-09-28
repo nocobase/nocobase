@@ -17,7 +17,14 @@ export const formFiller: ToolOptions = {
   execution: 'frontend',
   schema: z.object({
     form: z.string().describe('The UI Schema ID of the target form to be filled.'),
-    data: z.record(z.any()).describe("Structured data matching the form's JSON Schema, to be assigned to form.values."),
+    data: z
+      .object({})
+      .catchall(z.any())
+      .describe(
+        `Structured key-value pairs matching the form's JSON Schema,
+       to be assigned to form.values.
+       Example: { "username": "alice", "email": "alice@example.com", "age": 30 }`,
+      ),
   }),
   invoke: async () => {
     return {
